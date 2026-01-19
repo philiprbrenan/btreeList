@@ -16,24 +16,19 @@ my $user    = q(philiprbrenan);                                                 
 my $home    = fpd q(/home/phil), $repo;                                         # Home folder
 my $shaFile = fpe $home, q(sha);                                                # Sh256 file sums for each known file to detect changes
 my $wf      = q(.github/workflows/main.yml);                                    # Work flow on Ubuntu
-my @ext     = qw(.java .jpg .json .md .pl .png .py .rst .sdc .sh .v .yaml .zip);# Extensions of files to upload to github
-my $big     = 16*1024*1024;                                                     # A big file
+my @ext     = qw(.java .pl);                                                    # Extensions of files to upload to github
 
 say STDERR timeStamp,  " push to github $repo";
 
 my @files = searchDirectoryTreesForMatchingFiles($home, @ext);                  # Files to upload
-   @files = grep {!m(/verilog/build/)  } @files;                                # Exclude verilog build
-   @files = grep {!m(/docs/build/)     } @files;                                # Exclude docs build
-   @files = grep {!m(/siliconCompiler/)} @files;                                # Select files to upload
-   @files = grep {fileSize($_) < $big  } @files;                                # Ignore big files
-#say STDERR "AAAA ", dump(\@files); exit(1);
-my @java  = grep {fe($_) =~ m(java)is} @files;                                  # Java files
    @files = changedFiles $shaFile, @files;                                      # Filter out files that have not changed
+my @java  = grep {fe($_) =~ m(java)is} @files;                                  # Java files
 
 if (!@files)                                                                    # No new files
  {say "Everything up to date";
-  exit;
+  #exit;
  }
+
 
 if  (1)                                                                         # Upload via github crud
  {for my $s(@files)                                                             # Upload each selected file
