@@ -47,8 +47,12 @@ class Btree extends Test                                                        
      }
 
     class Key                                                                   // Key used in the stuck
-     {int value;
+     {private int value;
+
       Key(int Key) {value = Key;}
+
+      String get() {return ""+value;}                                           // Print the value of the key
+
       boolean equals(Key that)                                                  // Whether two keys are equal
        {return value == that.value;
        }
@@ -64,8 +68,9 @@ class Btree extends Test                                                        
      }
 
     class Data                                                                  // Data used in the stuck
-     {int value;
+     {private int value;
       Data(int Data) {value = Data;}
+      String get() {return ""+value;}                                           // Print the value of the data
       void set(Data Data)                                                       // Set the value of this data element
        {value = Data.value;
        }
@@ -108,10 +113,10 @@ class Btree extends Test                                                        
 
     void insert(Key Key, Data Data)                                             // Insert a key, data pair in the stuck
      {confirmNotFull();
-      for (int i = 0; i < size; i++)
-       {final int  p = pairs[i];
-        final Key  k = keys[p];
-        final Data d = data[p];
+      for (int i = 0; i < size; i++)                                            // Search for equal or greater key
+       {final int  p = pairs[i];                                                // Each pair
+        final Key  k = keys[p];                                                 // Key of pair
+        final Data d = data[p];                                                 // Data of pair
         if (k.equals(Key))                                                      // Found an equal key - update corresponding data
          {d.set(Data);
           return;
@@ -167,7 +172,7 @@ class Btree extends Test                                                        
        {final int  p = pairs[i];
         final Key  k = keys[p];
         final Data d = data[p];
-        s.append(String.format("%02d  %4d: %d\n", i, k.value, d.value));
+        s.append(String.format("%02d  %4s: %s\n", i, k.get(), d.get()));
        }
       return ""+s;
      }
