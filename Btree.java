@@ -99,6 +99,13 @@ class Btree extends Test                                                        
      {for(int i = Index; i < maxStuckSize-1; ++i) pairs[i] = pairs[i+1];
      }
 
+    void append(Data Data)                                                      // Append a data value at the end
+     {confirmNotFull();
+      final int index = allocatePair();                                         // Allocate a new key, data pair
+      pairs[size] = index;                                                      // Index allocated key,data pair
+      data[index].set(Data);                                                    // Append new data without a key and wothoiut chaning size - this is used in branch nodes to store the refernce to the top child
+     }
+
     void insert(Key Key, Data Data)                                             // Insert a key, data pair in the stuck
      {confirmNotFull();
       for (int i = 0; i < size; i++)
@@ -141,7 +148,7 @@ class Btree extends Test                                                        
       return null;
      }
 
-    public String toString()
+    public String toString()                                                    // Print a stuck as a string
      {final StringBuilder s = new StringBuilder();
       s.append("Stuck("+number+"): size="+size);
 
