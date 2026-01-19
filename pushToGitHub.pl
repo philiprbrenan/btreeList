@@ -32,7 +32,7 @@ my @java  = grep {fe($_) =~ m(java)is} @files;                                  
 
 if (!@files)                                                                    # No new files
  {say "Everything up to date";
-  #exit;
+  exit;
  }
 
 if  (1)                                                                         # Upload via github crud
