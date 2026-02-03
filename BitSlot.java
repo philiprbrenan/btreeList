@@ -22,9 +22,9 @@ class BitSlot extends Test                                                      
 
 //D1 Overrides                                                                  // Manipulators for objects validated by the bits slots
 
-  void shifter(int To, int From) {}                                             // You should shift from From to To
-  boolean eq  (int At)           {return false;}                                // Tell me if the specified element is equal to the search key
-  boolean le  (int At)           {return false;}                                // Tell me if the specified element is less than or equal to the search key
+  void shifter   (int To, int From) {}                                          // You should shift from From to To
+  boolean eq     (int At)           {return false;}                             // Tell me if the specified element is equal to the search key
+  boolean le     (int At)           {return false;}                             // Tell me if the specified element is less than or equal to the search key
   void setElement(int At) {}                                                    // Set the specified element to the current key
 
 //D1 State                                                                      // Query the stata eof the Manipulators for objects validated by the bits slots
@@ -52,22 +52,19 @@ class BitSlot extends Test                                                      
    }
 
   void shift(int Position, int Width)                                           // Shift the specified number of bits around the specified position one bit left or right depending on teh sign of the width
-   {if (Width == 0) return;                                                     // Nothing to to do
-    if (Width > 0)                                                              // Shift up
+   {if (Width > 0)                                                              // Shift up including the current slot
      {for (int i = Width; i > 0; --i)
        {final int p = Position+i;
-        bits[p] = bits[p-1];
+        bits[p] = true;                                                         // We only move occupied slots
         shifter(p, p-1);
        }
-      bits[Position] = false;                                                   // Show the liberated slot as free
      }
-    else                                                                        // Shift down
+    else if (Width < 0)                                                         // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
      {for (int i = Width; i < 0; ++i)
        {final int p = Position+i;
-        bits[p] = bits[p+1];
+        bits[p] = true;                                                         // We only move occupied slots
         shifter(p, p+1);
        }
-      bits[Position] = false;                                                 // Show the liberated slot as free
      }
    }
 
@@ -105,7 +102,7 @@ class BitSlot extends Test                                                      
     return ""+s;
    }
 
-//D1 Tests                                                                      // Test the bitslot
+//D1 Tests                                                                      // Test the bit slot
 
   static BitSlot load()
    {final BitSlot b = new BitSlot(16);
@@ -202,12 +199,9 @@ class BitSlot extends Test                                                      
   static void test_shift()
    {final BitSlot b = load();
     ok(b, "..XX.XXX.X.X.X..");
-    b.shift(2, b.locateNearestFreeSlot(2));
-    ok(b, ".X.X.XXX.X.X.X..");
-    b.shift(5, b.locateNearestFreeSlot(5));
-    ok(b, ".X.XX.XX.X.X.X..");
-    b.shift(7, b.locateNearestFreeSlot(7));
-    ok(b, ".X.XX.X.XX.X.X..");
+    b.shift(2, b.locateNearestFreeSlot(2)); ok(b, ".X.X.XXX.X.X.X..");
+    b.shift(5, b.locateNearestFreeSlot(5)); ok(b, ".X.XX.XX.X.X.X..");
+    b.shift(7, b.locateNearestFreeSlot(7)); ok(b, ".X.XX.X.XX.X.X..");
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
