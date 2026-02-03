@@ -1165,6 +1165,14 @@ public class Test                                                               
     return fails > 0;
    }
 
+  static boolean ok(int[]G, int[]E)                                             // Check that two integer arrays are are equal
+   {final Integer[]g = new Integer[G.length];
+    final Integer[]e = new Integer[E.length];
+    for (int i = 0; i < G.length; i++) g[i] = G[i];
+    for (int i = 0; i < E.length; i++) e[i] = E[i];
+    return ok(g, e);
+   }
+
   static void testSummary()                                                     // Print a summary of the testing
    {final double d = (System.nanoTime() - start) / (double)(1<<30);             // Run time in seconds
     final String
