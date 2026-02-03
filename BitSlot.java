@@ -62,12 +62,12 @@ class BitSlot extends Test                                                      
       bits[Position] = false;                                                   // Show the liberated slot as free
      }
     else                                                                        // Shift down
-     {for (int i = Width; i < -1; ++i)
+     {for (int i = Width; i < 0; ++i)
        {final int p = Position+i;
         bits[p] = bits[p+1];
         shifter(p, p+1);
        }
-      bits[Position-1] = false;                                                 // Show the liberated slot as free
+      bits[Position] = false;                                                 // Show the liberated slot as free
      }
    }
 
@@ -133,9 +133,9 @@ class BitSlot extends Test                                                      
     Integer[]Key = new Integer[1];
 
     final BitSlot b = new BitSlot(N)
-     {void shifter(int To, int From) {n[To] = n[From];}
-      void setElement(int At) {n[At] = Key[0];}
-      boolean le(int At) {return Key[0] <= n[At];}
+     {void    shifter(int To, int From) {n[To] = n[From];}
+      void setElement(int At)           {n[At] = Key[0];}
+      boolean      le(int At)           {return Key[0] <= n[At];}
      };
 
     ok(b.empty(), true);
@@ -144,38 +144,60 @@ class BitSlot extends Test                                                      
         n[3] = 4; n[4] = 6;
     //     01234567
     //        46
-    ok(b, "...XX...");
+    ok(b, "...XX...");  ok(n, new int[]{0, 0, 0, 4, 6, 0, 0, 0});
 
     Key[0] = 5; b.insert();
     //     01234567
     //        456
-    ok(b, "...XXX.."); ok(n[3], 4); ok(n[4], 5); ok(n[5], 6);
+    ok(b, "...XXX..");  ok(n, new int[]{0, 0, 0, 4, 5, 6, 0, 0});
 
     Key[0] = 3; b.insert();
     //     01234567
     //       3456
-    ok(b, "..XXXX.."); ok(n[2], 3); ok(n[3], 4); ok(n[4], 5); ok(n[5], 6);
+    ok(b, "..XXXX.."); ok(n, new int[]{0, 0, 3, 4, 5, 6, 0, 0});
 
     Key[0] = 8; b.insert();
     //     01234567
     //       3456 8
-    ok(b, "..XXXX.X"); ok(n[2], 3); ok(n[3], 4); ok(n[4], 5); ok(n[5], 6); ok(n[7], 8);
+    ok(b, "..XXXX.X"); ok(n, new int[]{0, 0, 3, 4, 5, 6, 0, 8});
 
     Key[0] = 7; b.insert();
     //     01234567
     //       345678
-    ok(b, "..XXXXXX"); ok(n[2], 3); ok(n[3], 4); ok(n[4], 5); ok(n[5], 6); ok(n[6], 7); ok(n[7], 8);
+    ok(b, "..XXXXXX"); ok(n, new int[]{0, 0, 3, 4, 5, 6, 7, 8});
 
     Key[0] = 2; b.insert();
     //     01234567
     //      2345678
-    ok(b, ".XXXXXXX"); ok(n[1], 2); ok(n[2], 3); ok(n[3], 4); ok(n[4], 5); ok(n[5], 6); ok(n[6], 7); ok(n[7], 8);
+    ok(b, ".XXXXXXX"); ok(n, new int[]{0, 2, 3, 4, 5, 6, 7, 8});
+    ok(b.empty(), false);
+    ok(b.full(),  false);
 
     Key[0] = 1; b.insert();
     //     01234567
     //     12345678
-    ok(b, "XXXXXXXX"); ok(n[0], 1); ok(n[1], 2); ok(n[2], 3); ok(n[3], 4); ok(n[4], 5); ok(n[5], 6); ok(n[6], 7); ok(n[7], 8);
+    ok(b, "XXXXXXXX"); ok(n, new int[]{1, 2, 3, 4, 5, 6, 7, 8});
+    ok(b.empty(), false); ok(b.full(),  true);
   }
+
+  static void test_less_from_empty()
+   {final int  N = 4;
+    final int[]n = new int[N];
+    Integer[]Key = new Integer[1];
+
+    final BitSlot b = new BitSlot(N)
+     {void shifter(int To, int From) {n[To] = n[From];}
+      void setElement(int At) {n[At] = Key[0];}
+      boolean le(int At) {return Key[0] <= n[At];}
+     };
+
+    Key[0] = 3; b.insert(); ok(b, "...X");
+    Key[0] = 1; b.insert(); ok(b, "..XX");
+    Key[0] = 2; b.insert(); ok(b, ".XXX");
+    Key[0] = 4; b.insert(); ok(b, "XXXX");
+
+    ok(n, new int[]{1, 2, 3, 4});
+   }
 
   static void test_shift()
    {final BitSlot b = load();
@@ -191,10 +213,12 @@ class BitSlot extends Test                                                      
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_load();
     test_shift();
+    test_less();
    }
 
   static void newTests()                                                        // Tests being worked on
    {test_less();
+    test_less_from_empty();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
