@@ -186,14 +186,14 @@ class Slots extends Test                                                        
       final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
       if (ma != null)
        {if (eq(slots[ma])) return ma;                                           // Found their search key at lower end
-        if (le(slots[ma])) b = ma; else a = ma;                                 // Not at the end of the range   with more than one element
+        if (le(slots[ma])) b = ma; else if (a == ma) return null; else a = ma;                                 // Not at the end of the range   with more than one element
         continue;
        }
 
       final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
       if (mb != null)
        {if (eq(slots[mb])) return mb;                                           // Found their search key at upper end
-        if (le(slots[mb])) b = mb; else a = mb;
+        if (le(slots[mb])) {if (b == mb) return null; else b = mb;} else a = mb;
         continue;
        }
       stop("This should not happen:", a, b, ma, mb);                            // We know there is at least one occupied slot so there will be a lower or upper linit to the range
@@ -204,7 +204,7 @@ class Slots extends Test                                                        
 
   Integer find()                                                                // Find the index in user space of the current key
    {final Integer i = locate();
-    return i == null ? i : slots[i];
+    return i == null ? null : slots[i];
    }
 
   Integer find2()                                                               // Find the current key if possible in the slots
@@ -413,6 +413,23 @@ class Slots extends Test                                                        
      }
    }
 
+  static void test_tooManySearches()
+   {final int    N = 8;
+    final float[]F = new float[N];
+          float[]K = new float[1];
+
+    final Slots b = new Slots(N)
+     {void storeKey(int Ref) {F[Ref] = K[0];}
+      boolean    eq(int Ref) {return K[0] == F[Ref];}
+      boolean    le(int Ref) {return K[0] <= F[Ref];}
+      String getRef(int Ref) {return ""+F[Ref];}
+     };
+
+    K[0] = 10f; b.insert();
+    K[0] = 20f; b.insert();
+    K[0] = 15f; b.find();
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_locateNearestUsedSlot();
@@ -429,6 +446,7 @@ class Slots extends Test                                                        
     test_redistribute_odd();
     test_ifd();
     test_idn();
+    test_tooManySearches();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
