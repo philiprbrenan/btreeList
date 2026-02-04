@@ -18,7 +18,6 @@ class Slots extends Test                                                        
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfSlots];
-    //for (int i = 0; i < numberOfSlots; i++) usedSlots[i] = false;
    }
 
   int allocRef()                                                                // Allocate a reference
@@ -88,15 +87,13 @@ class Slots extends Test                                                        
      }
    }
 
-  void redistribute()                                                           // Redistribute the unused slots evenly
+  void redistribute()                                                           // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
    {if (empty()) return;
-    final int      N = numberOfSlots, c = countUsed(), space = (N - c) / c,
-               cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);        // Covered sp[ace from first used slot to last used slot, uncovered remainder
-    final int    []s = new int    [numberOfSlots];
-    final boolean[]u = new boolean[numberOfSlots];
-    int p = remainder == 0 ? 0 :
-            remainder == 1 ? 0 :
-            remainder / 2;
+    final int      N = numberOfSlots, c = countUsed(), space = (N - c) / c,     // Space between used slots
+               cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);        // Covered space from first used slot to last used slot, uncovered remainder
+    final int    []s = new int    [numberOfSlots];                              // New slots distribution
+    final boolean[]u = new boolean[numberOfSlots];                              // New used slots distribution
+    int p = remainder / 2;
     for  (int i = 0; i < numberOfSlots; ++i)                                    // Redistribute slots
      {if (usedSlots[i])                                                         // Redistribute active slots
        {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the slots put
