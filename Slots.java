@@ -385,28 +385,31 @@ class Slots extends Test                                                        
     K[0] = 1.0f; ok(b.locate(), null);
    }
 
-  static void test_idn()
+  static void test_idn()                                                        // Repeated inserts and deletes
    {final int    N = 8;
     final float[]F = new float[N];
           float[]K = new float[1];
 
     final Slots b = new Slots(N)
-     {void storeKey(int Ref) {F[Ref] = K[0];}                                   // Store the current key at this location
-      boolean    eq(int Ref) {return K[0] == F[Ref];}                           // Tell me if the indexed Key is equal to the search key
-      boolean    le(int Ref) {return K[0] <= F[Ref];}                           // Tell me if the indexed Key is less than or equal to the search key
-      String getRef(int Ref) {return ""+F[Ref];}                                // Value of the referenced key as a string
+     {void storeKey(int Ref) {F[Ref] = K[0];}
+      boolean    eq(int Ref) {return K[0] == F[Ref];}
+      boolean    le(int Ref) {return K[0] <= F[Ref];}
+      String getRef(int Ref) {return ""+F[Ref];}
      };
 
-    for (int i = 0; i < numberOfSlots*2; i++)
-     {K[0] = 1.4f; b.insert();
-      K[0] = 1.3f; b.insert();
-      K[0] = 1.6f; b.insert();
-      K[0] = 1.5f; b.insert();
-      K[0] = 1.4f; b.delete();
-      K[0] = 1.3f; b.delete();
-      K[0] = 1.6f; b.delete();
-      K[0] = 1.5f; b.delete();
-      say("AAAA", b);
+    for (int i = 0; i < b.numberOfSlots*10; i++)
+     {K[0] = 1.4f; b.insert(); b.redistribute();
+      K[0] = 1.3f; b.insert(); b.redistribute();
+      K[0] = 1.6f; b.insert(); b.redistribute();
+      K[0] = 1.5f; b.insert(); b.redistribute();
+      ok(b, "1.3, 1.4, 1.5, 1.6");
+      ok(b.printSlots(), "X.X.X.X.");
+      K[0] = 1.4f; b.delete(); b.redistribute();
+      K[0] = 1.3f; b.delete(); b.redistribute();
+      K[0] = 1.6f; b.delete(); b.redistribute();
+      K[0] = 1.5f; b.delete(); b.redistribute();
+      ok(b, "");
+      ok(b.printSlots(), "........");
      }
    }
 
@@ -416,7 +419,7 @@ class Slots extends Test                                                        
     test_redistribute();
     test_redistribute_odd();
     test_ifd();
-    test_ifn();
+    test_idn();
    }
 
   static void newTests()                                                        // Tests being worked on
