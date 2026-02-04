@@ -196,6 +196,7 @@ class Slots extends Test                                                        
     ok(b.locateNearestFreeSlot(12),  0);
     ok(b.locateNearestFreeSlot(13), -1);
     ok(b.locateNearestFreeSlot(14),  0);
+    ok(b.locateNearestFreeSlot(15),  0);
    }
 
   static void test_locateNearestUsedSlot()
@@ -208,15 +209,16 @@ class Slots extends Test                                                        
     ok(b.locateNearestUsedSlot( 2),  0);
     ok(b.locateNearestUsedSlot( 3),  0);
     ok(b.locateNearestUsedSlot( 4), -1);
-    ok(b.locateNearestUsedSlot( 5),  -1);
-    ok(b.locateNearestUsedSlot( 6), -2);
-    ok(b.locateNearestUsedSlot( 8), +1);
-    ok(b.locateNearestUsedSlot( 9), +1);
-    ok(b.locateNearestUsedSlot(10), +1);
-    ok(b.locateNearestUsedSlot(11), +1);
-    ok(b.locateNearestUsedSlot(12), +1);
-    ok(b.locateNearestUsedSlot(13), +1);
-    ok(b.locateNearestUsedSlot(14), +1);
+    ok(b.locateNearestUsedSlot( 5),  0);
+    ok(b.locateNearestUsedSlot( 6),  0);
+    ok(b.locateNearestUsedSlot( 8), -1);
+    ok(b.locateNearestUsedSlot( 9),  0);
+    ok(b.locateNearestUsedSlot(10), -1);
+    ok(b.locateNearestUsedSlot(11),  0);
+    ok(b.locateNearestUsedSlot(12), -1);
+    ok(b.locateNearestUsedSlot(13),  0);
+    ok(b.locateNearestUsedSlot(14), -1);
+    ok(b.locateNearestUsedSlot(15), -2);
    }
 
   static void test_redistribute()
