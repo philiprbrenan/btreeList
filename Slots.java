@@ -10,6 +10,7 @@ class Slots extends Test                                                        
   final int    []slots;                                                         // Key order
   final boolean[]usedSlots;                                                     // Slots in use
   final boolean[]usedRefs;                                                      // Positions for keys
+  final int ReasonableNumberOfSearches = 99;                                    // A resonable number of searches
 
 //D1 Construction                                                               // Construct and layout a btree
 
@@ -174,20 +175,29 @@ class Slots extends Test                                                        
   Integer locate()                                                              // Locate the slot containing the current key if possible.
    {if (empty()) return null;                                                   // Empty so cannot be found
     Integer a = locateNextUsedSlot(0), b = locatePrevUsedSlot(numberOfSlots-1); // Lower limit, upper limit
-    final int N = 99;                                                           // A resonable number of searches
-    for(int i = 0; i < N; ++i)                                                  // Perform a reasonable number of searches
-     {if (a == b)       return eq(slots[a]) ? a : null;                         // Narrowed to one possible key
-      if (eq(slots[a])) return a;                                               // Not at the start of the range with more than one element
-      if (eq(slots[b])) return b;                                               // Not at the end of the range   with more than one element
-      final int M = (a + b) / 2;                                                // Desired mid point - but there might not be a slot in use at this point
-      final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
-      final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
+    if ( le(slots[a]) && !eq(slots[a])) return null;                            // Smaller than any key
+    if (!le(slots[b]))                  return null;                            // Greater than any key
+    if (eq(slots[a])) return a;                                                 // Not at the start of the range with more than one element
+    if (eq(slots[b])) return b;                                                 // Not at the end of the range   with more than one element
 
-      if (ma != null) {if (le(slots[ma])) b = ma; else a = ma; continue;}
-      if (mb != null) {if (le(slots[mb])) b = mb; else a = mb; continue;}
+    for(int i = 0; i < ReasonableNumberOfSearches; ++i)                         // Perform a reasonable number of searches
+     {if (a == b) return null;                                                  // Narrowed to one possible key so no more seraching is possib;e
+      final int M = (a + b) / 2;                                                // Desired mid point - but there might not be a slot in use at this point
+
+      final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
+      if (ma != null)
+       {if (eq(slots[ma])) return ma;                                           // Found key at lower end
+        if (le(slots[ma])) b = ma; else a = ma; continue;                       // Not at the end of the range   with more than one element
+       }
+
+      final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
+      if (mb != null)
+       {if (eq(slots[mb])) return mb;                                           // Found key at lower end
+        if (le(slots[mb])) b = mb; else a = mb; continue;
+       }
       stop("This should not happen:", a, b, ma, mb);
      }
-    stop("Searched more than the maximum number of times:", N);
+    stop("Searched more than the maximum number of times:", ReasonableNumberOfSearches);
     return null;                                                                // Key not present
    }
 
@@ -326,7 +336,7 @@ class Slots extends Test                                                        
     b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...............");
    }
 
-  static void test_less()
+  static void test_ifd()
    {final int    N = 8;
     final float[]F = new float[N];
           float[]K = new float[1];
@@ -359,6 +369,7 @@ class Slots extends Test                                                        
     K[0] = 1.2f; ok(b.locate(), 1);
     K[0] = 1.1f; ok(b.locate(), 0);
     K[0] = 1.0f; ok(b.locate(), null);
+    K[0] = 2.0f; ok(b.locate(), null);
 
     K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
     K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
@@ -368,6 +379,8 @@ class Slots extends Test                                                        
     K[0] = 1.1f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
     K[0] = 1.7f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
     K[0] = 1.5f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
+
+    K[0] = 1.0f; ok(b.locate(), null);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
@@ -375,7 +388,7 @@ class Slots extends Test                                                        
     test_locateNearestUsedSlot();
     test_redistribute();
     test_redistribute_odd();
-    test_less();
+    test_ifd();
    }
 
   static void newTests()                                                        // Tests being worked on
@@ -383,7 +396,7 @@ class Slots extends Test                                                        
     test_locateNearestUsedSlot();
     test_redistribute();
     test_redistribute_odd();
-    test_less();
+    test_ifd();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
