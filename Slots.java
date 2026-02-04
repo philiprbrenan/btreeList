@@ -6,8 +6,8 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Slots extends Test                                                        // Manipulate a btree in a block of memory
- {final int numberOfSlots;                                                      // Number of slots in the bit slot
-  final int[]slots;                                                             // Key order
+ {final int      numberOfSlots;                                                 // Number of slots in the bit slot
+  final int    []slots;                                                         // Key order
   final boolean[]usedSlots;                                                     // Slots in use
   final boolean[]usedRefs;                                                      // Positions for keys
 
@@ -20,15 +20,15 @@ class Slots extends Test                                                        
     usedRefs  = new boolean[numberOfSlots];
    }
 
-  void setSlots(int...Slots)                                                    // Set these slots as used
+  void setSlots(int...Slots)                                                    // Set slots as used
    {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = true;
    }
 
-  void clearSlots(int...Slots)                                                  // Set these slots as not in being used
+  void clearSlots(int...Slots)                                                  // Set slots as not being used
    {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = false;
    }
 
-  void clearFirstSlot()                                                  // Set these slots as not in being used
+  void clearFirstSlot()                                                         // Set the forst used slot to not used
    {for (int i = 0; i < numberOfSlots; i++)
      {if (usedSlots[i])
        {usedSlots[i] = false;
@@ -37,7 +37,7 @@ class Slots extends Test                                                        
      }
    }
 
-  int allocRef()                                                                // Allocate a reference
+  int allocSlot()                                                               // Allocate a reference
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
        {usedRefs[i] = true;
@@ -99,23 +99,23 @@ class Slots extends Test                                                        
 
   void shift(int Position, int Width)                                           // Shift the specified number of slots around the specified position one bit left or right depending on teh sign of the width
    {if (Width > 0)                                                              // Shift up including the current slot
-     {for (int i = Width; i > 0; --i)
-       {final int p = Position+i;
-        slots[p] = slots[p-1];
-        usedSlots[p] = true;
+     {for (int i = Width; i > 0; --i)                                           // Move each slot
+       {final int p = Position+i;                                               // Index of target
+        slots[p] = slots[p-1];                                                  // Move slot
+        usedSlots[p] = true;                                                    // We only move occupied slots
        }
      }
     else if (Width < 0)                                                         // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
-     {for (int i = Width; i < 0; ++i)
-       {final int p = Position+i;
-        slots[p] = slots[p+1];                                                  // We only move occupied slots
-        usedSlots[p] = true;
+     {for (int i = Width; i < 0; ++i)                                           // Move each slot
+       {final int p = Position+i;                                               // Index of target
+        slots[p] = slots[p+1];                                                  // Move slot
+        usedSlots[p] = true;                                                    // We only move occupied slots
        }
      }
    }
 
   void redistribute()                                                           // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
-   {if (empty()) return;
+   {if (empty()) return;                                                        // Nothing to redistribute
     final int      N = numberOfSlots, c = countUsed(), space = (N - c) / c,     // Space between used slots
                cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);        // Covered space from first used slot to last used slot, uncovered remainder
     final int    []s = new int    [numberOfSlots];                              // New slots distribution
@@ -135,19 +135,19 @@ class Slots extends Test                                                        
 
   boolean insert()                                                              // Insert the current search key maintaining the order of the keys
    {if (full()) return false;                                                   // No space in which to insert
-    final int ref = allocRef();                                                 // Location to store key
-    storeKey(ref);                                                              // Tell the caller to store the key in the indexed location
+    final int slot = allocSlot();                                               // Location to store key
+    storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
     for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the first greater than or equal key
      {if (usedSlots[i])                                                         // Valid slot
        {if (le(slots[i]))                                                       // First key we are less than or equal to
          {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to make a slot here
           if (w > 0)                                                            // Move up liberating a sopace at the Spacve
            {shift(i, w);                                                        // Make a slot at this point
-            slots[i] = ref;                                                     // Place the current key in the empty slot and mark it as set
+            slots[i] = slot;                                                    // Place the current key in the empty slot and mark it as set
            }
           else if (w < 0)                                                       // Make a slot below the current slot
            {shift(i-1, w + 1);                                                  // Shift any intervening slots blocking the slot below
-            slots[i-1] = ref;                                                   // Insert into the slot below
+            slots[i-1] = slot;                                                  // Insert into the slot below
             usedSlots[i-1] = true;
            }
           return true;                                                          // Sucessfully inserted
@@ -156,7 +156,7 @@ class Slots extends Test                                                        
      }
     final int last = numberOfSlots - 1;                                         // Bigger than all keys so place at the end
     shift(last, locateNearestFreeSlot(last));                                   // Create an empty slot if needed
-    slots    [last] = ref;                                                      // Insert key in last slot
+    slots    [last] = slot;                                                     // Insert key in last slot
     usedSlots[last] = true;                                                     // Insert key in last slot
     return true;                                                                // Success
    }
@@ -325,14 +325,14 @@ class Slots extends Test                                                        
     K[0] = 1.1f; ok(b.find(), 0);
     K[0] = 1.0f; ok(b.find(), null);
 
-    K[0] = 1.4f; ok(b.delete()); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8");
-    K[0] = 1.2f; ok(b.delete()); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");
-    K[0] = 1.3f; ok(b.delete()); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");
-    K[0] = 1.6f; ok(b.delete()); ok(b, "1.1, 1.5, 1.7, 1.8");
-    K[0] = 1.8f; ok(b.delete()); ok(b, "1.1, 1.5, 1.7");
-    K[0] = 1.1f; ok(b.delete()); ok(b, "1.5, 1.7");
-    K[0] = 1.7f; ok(b.delete()); ok(b, "1.5");
-    K[0] = 1.5f; ok(b.delete()); ok(b, "");
+    K[0] = 1.4f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
+    K[0] = 1.2f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
+    K[0] = 1.3f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
+    K[0] = 1.6f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
+    K[0] = 1.8f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
+    K[0] = 1.1f; ok(b.delete()); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
+    K[0] = 1.7f; ok(b.delete()); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
+    K[0] = 1.5f; ok(b.delete()); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
