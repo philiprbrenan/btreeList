@@ -171,7 +171,7 @@ class Slots extends Test                                                        
     return true;                                                                // Success
    }
 
-  Integer locate()                                                              // Find the current key if possible in the slots
+  Integer locate()                                                              // Locate the slot containing the current key if possible.
    {if (empty()) return null;                                                   // Empty so cannot be found
     Integer a = locateNextUsedSlot(0), b = locatePrevUsedSlot(numberOfSlots-1); // Lower limit, upper limit
     final int N = 99;                                                           // A resonable number of searches
