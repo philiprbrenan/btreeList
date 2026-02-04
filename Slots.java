@@ -97,6 +97,16 @@ class Slots extends Test                                                        
     return null;                                                                // No free slot - this is not actually an error.
    }
 
+  Integer locatePrevUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or the nearest lower used slot to this position.
+   {for (int i = Position; i >= 0; i--) if (usedSlots[i]) return i;
+    return null;                                                                // No free slot - this is not actually an error.
+   }
+
+  Integer locateNextUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or the nearest higher used slot to this position.
+   {for (int i = Position; i < numberOfSlots; ++i) if (usedSlots[i]) return i;
+    return null;                                                                // No free slot - this is not actually an error.
+   }
+
   void shift(int Position, int Width)                                           // Shift the specified number of slots around the specified position one bit left or right depending on teh sign of the width
    {if (Width > 0)                                                              // Shift up including the current slot
      {for (int i = Width; i > 0; --i)                                           // Move each slot
@@ -162,6 +172,28 @@ class Slots extends Test                                                        
    }
 
   Integer find()                                                                // Find the current key if possible in the slots
+   {if (empty()) return null;                                                   // Empty so cannot be found
+    Integer a = locateNextUsedSlot(0), b = locatePrevUsedSlot(numberOfSlots-1); // Lower limit, upper limit
+    final int N = 99;                                                           // A resonable number of searches
+    for(int i = 0; i <99; ++i)                                                 // Perform a reasonable number of searches
+     {if (a == b) return eq(slots[a]) ? a : null;                               // Found key
+      else
+       {if (eq(slots[a])) return a;
+        if (eq(slots[b])) return b;
+       }
+      final int M = (a + b) / 2;
+      final Integer ma = locatePrevUsedSlot(M);
+      final Integer mb = locateNextUsedSlot(M);
+
+      if (ma != null) {if (le(slots[ma])) b = ma; else a = ma; continue;}
+      if (mb != null) {if (le(slots[mb])) b = mb; else a = mb; continue;}
+      stop("This should not happen:", a, b, ma, mb);
+     }
+    stop("Searched more than the maximum number of times:", N);
+    return null;                                                                // Key not present
+   }
+
+  Integer find2()                                                               // Find the current key if possible in the slots
    {for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the first greater than or equal key
      {if (usedSlots[i])                                                         // Valid slot
        {if (eq(slots[i])) return i;                                             // Found key
