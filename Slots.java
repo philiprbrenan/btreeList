@@ -20,6 +20,10 @@ class Slots extends Test                                                        
     usedRefs  = new boolean[numberOfSlots];
    }
 
+  void setSlots(int...Slots)                                                    // Set these slots as used
+   {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = true;
+   }
+
   int allocRef()                                                                // Allocate a reference
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
@@ -93,13 +97,13 @@ class Slots extends Test                                                        
                cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);        // Covered space from first used slot to last used slot, uncovered remainder
     final int    []s = new int    [numberOfSlots];                              // New slots distribution
     final boolean[]u = new boolean[numberOfSlots];                              // New used slots distribution
-    int p = remainder / 2;
-    for  (int i = 0; i < numberOfSlots; ++i)                                    // Redistribute slots
+    int p = remainder / 2;                                                      // Start position for first used slt
+    for (int i = 0; i < numberOfSlots; ++i)                                     // Redistribute slots
      {if (usedSlots[i])                                                         // Redistribute active slots
-       {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the slots put
+       {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the used slots out
        }
      }
-    for  (int i = 0; i < numberOfSlots; ++i)                                    // Copy redistribution back into slots
+    for(int i = 0; i < numberOfSlots; ++i)                                      // Copy redistribution back into original
      {slots[i] = s[i]; usedSlots[i] = u[i];
      }
    }
@@ -126,7 +130,7 @@ class Slots extends Test                                                        
        }
      }
     final int last = numberOfSlots - 1;                                         // Bigger than all keys so place at the end
-    shift(last, locateNearestFreeSlot(last));                                   // Create an empty slot of needed
+    shift(last, locateNearestFreeSlot(last));                                   // Create an empty slot if needed
     slots    [last] = ref;                                                      // Insert key in last slot
     usedSlots[last] = true;                                                     // Insert key in last slot
     return true;                                                                // Success
@@ -134,29 +138,26 @@ class Slots extends Test                                                        
 
 //D1 Print                                                                      // Print the bit slot
 
-  String printSlots()
+  String printSlots()                                                           // Print the occupancy of each slot
    {final StringBuilder s = new StringBuilder();
     for (int i = 0; i < numberOfSlots; i++) s.append(usedSlots[i] ? "X" : ".");
     return ""+s;
    }
 
-  public String toString()
+  public String toString()                                                      // Print the valus in the used slots
    {final StringJoiner s = new StringJoiner(", ");
     for (int i = 0; i < numberOfSlots; i++)
      {if (usedSlots[i]) s.add(getRef(slots[i]));
      }
-
     return ""+s;
    }
 
 //D1 Tests                                                                      // Test the bit slot
 
-  static void test_load()
+  static void test_locateNearestFreeSlot()
    {final Slots b = new Slots(16);
-    b.usedSlots[2] = b.usedSlots[ 3] =
-    b.usedSlots[5] = b.usedSlots[ 6] =  b.usedSlots[ 7] =
-    b.usedSlots[9] = b.usedSlots[11] =  b.usedSlots[13] = true;
-    //     0123456789012345
+    b.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
+                      //0123456789012345
     ok(b.printSlots(), "..XX.XXX.X.X.X..");
     ok(b.locateNearestFreeSlot(1),  0);
     ok(b.locateNearestFreeSlot(2), -1);
@@ -165,8 +166,22 @@ class Slots extends Test                                                        
     ok(b.locateNearestFreeSlot(5), -1);
     ok(b.locateNearestFreeSlot(6), -2);
     ok(b.locateNearestFreeSlot(7), +1);
+   }
+
+  static void test_redistribute()
+   {final Slots b = new Slots(16);
+    for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
                                                                 //0123456789012345
-                            b.redistribute(); ok(b.printSlots(), "X.X.X.X.X.X.X.X.");
+                                              ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
+                            b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
+    b.usedSlots[0] = false; b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX.");
+    b.usedSlots[0] = false; b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXXX.");
+    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX..");
+    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXXX..");
+    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX...");
+    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), "...XXXXXXXXXX...");
+    b.usedSlots[3] = false; b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX....");
+    b.usedSlots[3] = false; b.redistribute(); ok(b.printSlots(), "X.X.X.X.X.X.X.X.");
     b.usedSlots[0] = false; b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X..");
     b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X...");
     b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X..");
@@ -202,12 +217,14 @@ class Slots extends Test                                                        
   }
 
   static void oldTests()                                                        // Tests thought to be in good shape
-   {test_load();
+   {test_locateNearestFreeSlot();
+    test_redistribute();
     test_less();
    }
 
   static void newTests()                                                        // Tests being worked on
-   {test_load();
+   {test_locateNearestFreeSlot();
+    test_redistribute();
     test_less();
    }
 
