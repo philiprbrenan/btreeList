@@ -1088,8 +1088,9 @@ public class Test                                                               
               final String r = ruler.repeat(1 + n / 100);                       // A sufficiently long ruler to bracket the difference lines
               say(b, r);                                                        // Write the difference lines bracketed with rulers
               say(b, sg[k]);                                                    // What we got
-              say(b, dg); say(b, de); say(b, dm);                               // Difference markers
-              say(b, error); say(b, r);                                         // Error detail
+              //say(b, dg);
+              say(b, de); say(b, dm);                               // Difference markers
+              //say(b, error); say(b, r);                                         // Error detail
              }
            }
           else say(b, sg[k]);                                                   // Line that is not the first error line
