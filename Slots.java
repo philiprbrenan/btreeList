@@ -196,6 +196,29 @@ class Slots extends Test                                                        
     b.clearSlots(7); b.redistribute(); ok(b.printSlots(), "................");
    }
 
+  static void test_redistribute_odd()
+   {final Slots b = new Slots(15);
+    for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
+                                                         //012345689012345
+                                       ok(b.printSlots(), "XXXXXXXXXXXXXXX");
+                     b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX");
+    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXX.");
+    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX.");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXX..");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX..");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXX...");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX...");
+    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), "...XXXXXXXX....");
+    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X.");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X..");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X.");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X..X..X..X...");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "..X....X....X..");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...X......X....");
+    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), ".......X.......");
+    b.clearSlots(7); b.redistribute(); ok(b.printSlots(), "...............");
+   }
+
   static void test_less()
    {final int    N = 8;
     final float[]F = new float[N];
@@ -223,12 +246,14 @@ class Slots extends Test                                                        
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_redistribute();
+    test_redistribute_odd();
     test_less();
    }
 
   static void newTests()                                                        // Tests being worked on
    {test_locateNearestFreeSlot();
     test_redistribute();
+    test_redistribute_odd();
     test_less();
    }
 
