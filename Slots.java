@@ -10,7 +10,6 @@ class Slots extends Test                                                        
   final int    []slots;                                                         // Key ordering
   final boolean[]usedSlots;                                                     // Slots in use
   final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistribited to make it insertions faster
-  final int      ReasonableNumberOfSearches = 99;                               // A reasonable number of searches
 
 //D1 Construction                                                               // Construct and layout the slots
 
@@ -76,7 +75,7 @@ class Slots extends Test                                                        
     return n;
    }
 
-//D1 Low level operations                                                       // Low level opeations on slots
+//D1 Low level operations                                                       // Low level operations on slots
 
   Integer locateNearestFreeSlot(int Position)                                   // Relative position of the nearest free slot to the indicated position if there is one.
    {if (!usedSlots[Position]) return 0;                                         // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
@@ -150,7 +149,7 @@ class Slots extends Test                                                        
     storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
     for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the slot containing the first key greater than or equal key to their search key
      {if (usedSlots[i])                                                         // Valid slot
-       {if (le(slots[i]))                                                       // First key their  searcj key is less than or equal to
+       {if (le(slots[i]))                                                       // First key their search key is less than or equal to
          {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to liberate a slot here
           if (w > 0)                                                            // Move up
            {shift(i, w);                                                        // Liberate a slot at this point
@@ -180,7 +179,7 @@ class Slots extends Test                                                        
     if (eq(slots[a])) return a;                                                 // Found at the start of the range
     if (eq(slots[b])) return b;                                                 // Found at the end of the range
 
-    for(int i = 0; i < ReasonableNumberOfSearches; ++i)                         // Perform a reasonable number of searches knowing the key, if it is present, is within the current range
+    for(int i = 0; i < numberOfSlots; ++i)                                      // Perform a reasonable number of searches knowing the key, if it is present, is within the current range
      {if (a == b) return null;                                                  // Narrowed to one possible key so no more searching is possible
       final int M = (a + b) / 2;                                                // Desired mid point - but there might not be a slot in use at this point
 
@@ -199,7 +198,7 @@ class Slots extends Test                                                        
        }
       stop("This should not happen:", a, b, ma, mb);                            // We know there is at least one occupied slot so there will be a lower or upper linit to the range
      }
-    stop("Searched more than the maximum number of times:", ReasonableNumberOfSearches);
+    stop("Searched more than the maximum number of times:", numberOfSlots);
     return null;                                                                // Key not present
    }
 
@@ -222,6 +221,7 @@ class Slots extends Test                                                        
      {if (usedSlots[i])                                                         // Valid slot
        {if (eq(slots[i]))                                                       // Found key
          {clearSlots(i);                                                        // Delete key
+          freeSlot(slots[i]);                                                   // Mark the key refence is being available for a new key
           return true;                                                          // Indicate that the key was deleted
          }
        }
@@ -345,8 +345,8 @@ class Slots extends Test                                                        
 
     final Slots b = new Slots(N)
      {void storeKey(int Ref) {F[Ref] = K[0];}                                   // Store the current key at this location
-      boolean    eq(int Ref) {return F[Ref] == K[0];}                           // Tell me if the indexed Key is equal to the search key
-      boolean    le(int Ref) {return F[Ref] >= K[0];}                           // Tell me if the indexed Key is less than or equal to the search key
+      boolean    eq(int Ref) {return K[0] == F[Ref];}                           // Tell me if the indexed Key is equal to the search key
+      boolean    le(int Ref) {return K[0] <= F[Ref];}                           // Tell me if the indexed Key is less than or equal to the search key
       String getRef(int Ref) {return ""+F[Ref];}                                // Value of the referenced key as a string
      };
 
@@ -385,12 +385,38 @@ class Slots extends Test                                                        
     K[0] = 1.0f; ok(b.locate(), null);
    }
 
+  static void test_idn()
+   {final int    N = 8;
+    final float[]F = new float[N];
+          float[]K = new float[1];
+
+    final Slots b = new Slots(N)
+     {void storeKey(int Ref) {F[Ref] = K[0];}                                   // Store the current key at this location
+      boolean    eq(int Ref) {return K[0] == F[Ref];}                           // Tell me if the indexed Key is equal to the search key
+      boolean    le(int Ref) {return K[0] <= F[Ref];}                           // Tell me if the indexed Key is less than or equal to the search key
+      String getRef(int Ref) {return ""+F[Ref];}                                // Value of the referenced key as a string
+     };
+
+    for (int i = 0; i < numberOfSlots*2; i++)
+     {K[0] = 1.4f; b.insert();
+      K[0] = 1.3f; b.insert();
+      K[0] = 1.6f; b.insert();
+      K[0] = 1.5f; b.insert();
+      K[0] = 1.4f; b.delete();
+      K[0] = 1.3f; b.delete();
+      K[0] = 1.6f; b.delete();
+      K[0] = 1.5f; b.delete();
+      say("AAAA", b);
+     }
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_locateNearestUsedSlot();
     test_redistribute();
     test_redistribute_odd();
     test_ifd();
+    test_ifn();
    }
 
   static void newTests()                                                        // Tests being worked on
@@ -399,6 +425,7 @@ class Slots extends Test                                                        
     test_redistribute();
     test_redistribute_odd();
     test_ifd();
+    test_idn();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
