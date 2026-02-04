@@ -402,7 +402,7 @@ class Slots extends Test                                                        
       K[0] = 1.3f; b.insert(); b.redistribute();
       K[0] = 1.6f; b.insert(); b.redistribute();
       K[0] = 1.5f; b.insert(); b.redistribute();
-      ok(b, "1.3, 1.4, 1.5, 1.6") ;
+      ok(b, "1.3, 1.4, 1.5, 1.6");
       ok(b.printSlots(), "X.X.X.X.");
       K[0] = 1.4f; b.delete(); b.redistribute();
       K[0] = 1.3f; b.delete(); b.redistribute();
