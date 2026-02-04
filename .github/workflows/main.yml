@@ -1,4 +1,4 @@
-# Test 2026-02-03 at 21:21:18
+# Test 2026-02-04 at 01:11:33
 
 name: Test
 run-name: btreeList
@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        task: [BitSlot, Btree, Test]
+        task: [Btree, Slots, Test]
 
     steps:
     - uses: actions/checkout@v4
@@ -38,22 +38,22 @@ jobs:
       run: |
         mkdir -p com/AppaApps/Silicon
         tree
-        cp BitSlot.java Btree.java Test.java com/AppaApps/Silicon
+        cp Btree.java Slots.java Test.java com/AppaApps/Silicon
 
     - name: Java
       run: |
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
 
-    - name: Test BitSlot
-      if: matrix.task == 'BitSlot'
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSlot
-
-
     - name: Test Btree
       if: matrix.task == 'Btree'
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Btree
+
+
+    - name: Test Slots
+      if: matrix.task == 'Slots'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots
 
 
     - name: Test Test
