@@ -53,6 +53,12 @@ class Slots extends Test                                                        
     return true;
    }
 
+  int countUsed()                                                               // Number or slots in use
+   {int n = 0;
+    for (int i = 0; i < numberOfSlots; i++) if (usedSlots[i]) ++n;
+    return n;
+   }
+
 //D1 Manipulate                                                                 // Manipulate the bit slot
 
   Integer locateNearestFreeSlot(int Position)                                   // Relative position of the nearest free slot to the indicated position if there is one.
@@ -79,6 +85,25 @@ class Slots extends Test                                                        
         slots[p] = slots[p+1];                                                  // We only move occupied slots
         usedSlots[p] = true;
        }
+     }
+   }
+
+  void redistribute()                                                           // Redistribute the unused slots evenly
+   {if (empty()) return;
+    final int      N = numberOfSlots, c = countUsed(), space = (N - c) / c,
+               cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);        // Covered sp[ace from first used slot to last used slot, uncovered remainder
+    final int    []s = new int    [numberOfSlots];
+    final boolean[]u = new boolean[numberOfSlots];
+    int p = remainder == 0 ? 0 :
+            remainder == 1 ? 0 :
+            remainder / 2;
+    for  (int i = 0; i < numberOfSlots; ++i)                                    // Redistribute slots
+     {if (usedSlots[i])                                                         // Redistribute active slots
+       {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the slots put
+       }
+     }
+    for  (int i = 0; i < numberOfSlots; ++i)                                    // Copy redistribution back into slots
+     {slots[i] = s[i]; usedSlots[i] = u[i];
      }
    }
 
@@ -129,16 +154,11 @@ class Slots extends Test                                                        
 
 //D1 Tests                                                                      // Test the bit slot
 
-  static Slots load()
+  static void test_load()
    {final Slots b = new Slots(16);
     b.usedSlots[2] = b.usedSlots[ 3] =
     b.usedSlots[5] = b.usedSlots[ 6] =  b.usedSlots[ 7] =
     b.usedSlots[9] = b.usedSlots[11] =  b.usedSlots[13] = true;
-    return b;
-   }
-
-  static void test_load()
-   {final Slots b = load();
     //     0123456789012345
     ok(b.printSlots(), "..XX.XXX.X.X.X..");
     ok(b.locateNearestFreeSlot(1),  0);
@@ -148,6 +168,16 @@ class Slots extends Test                                                        
     ok(b.locateNearestFreeSlot(5), -1);
     ok(b.locateNearestFreeSlot(6), -2);
     ok(b.locateNearestFreeSlot(7), +1);
+                                                                //0123456789012345
+                            b.redistribute(); ok(b.printSlots(), "X.X.X.X.X.X.X.X.");
+    b.usedSlots[0] = false; b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X..");
+    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X...");
+    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X..");
+    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), ".X...X...X...X..");
+    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), "..X....X....X...");
+    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), "...X.......X....");
+    b.usedSlots[3] = false; b.redistribute(); ok(b.printSlots(), ".......X........");
+    b.usedSlots[7] = false; b.redistribute(); ok(b.printSlots(), "................");
    }
 
   static void test_less()
@@ -164,7 +194,7 @@ class Slots extends Test                                                        
 
                               ok(b.empty(), true);  ok(b.full(), false);
     K[0] = 1.4f; b.insert();  ok(b.empty(), false); ok(b.full(), false);
-    K[0] = 1.3f; b.insert();
+    K[0] = 1.3f; b.insert();  ok(b.countUsed(), 2);
     K[0] = 1.6f; b.insert();
     K[0] = 1.5f; b.insert();
     K[0] = 1.8f; b.insert();
