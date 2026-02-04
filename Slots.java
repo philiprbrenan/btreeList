@@ -171,19 +171,17 @@ class Slots extends Test                                                        
     return true;                                                                // Success
    }
 
-  Integer find()                                                                // Find the current key if possible in the slots
+  Integer locate()                                                              // Find the current key if possible in the slots
    {if (empty()) return null;                                                   // Empty so cannot be found
     Integer a = locateNextUsedSlot(0), b = locatePrevUsedSlot(numberOfSlots-1); // Lower limit, upper limit
     final int N = 99;                                                           // A resonable number of searches
-    for(int i = 0; i <99; ++i)                                                 // Perform a reasonable number of searches
-     {if (a == b) return eq(slots[a]) ? a : null;                               // Found key
-      else
-       {if (eq(slots[a])) return a;
-        if (eq(slots[b])) return b;
-       }
-      final int M = (a + b) / 2;
-      final Integer ma = locatePrevUsedSlot(M);
-      final Integer mb = locateNextUsedSlot(M);
+    for(int i = 0; i < N; ++i)                                                  // Perform a reasonable number of searches
+     {if (a == b)       return eq(slots[a]) ? a : null;                         // Narrowed to one possible key
+      if (eq(slots[a])) return a;                                               // Not at the start of the range with more than one element
+      if (eq(slots[b])) return b;                                               // Not at the end of the range   with more than one element
+      final int M = (a + b) / 2;                                                // Desired mid point - but there might not be a slot in use at this point
+      final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
+      final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
 
       if (ma != null) {if (le(slots[ma])) b = ma; else a = ma; continue;}
       if (mb != null) {if (le(slots[mb])) b = mb; else a = mb; continue;}
@@ -191,6 +189,11 @@ class Slots extends Test                                                        
      }
     stop("Searched more than the maximum number of times:", N);
     return null;                                                                // Key not present
+   }
+
+  Integer find()                                                                // Find the index in user space of the current key
+   {final Integer i = locate();
+    return i == null ? i : slots[i];
    }
 
   Integer find2()                                                               // Find the current key if possible in the slots
@@ -347,24 +350,24 @@ class Slots extends Test                                                        
     //     0    1    2    3    4    5    6    7
     ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
 
-    K[0] = 1.4f; ok(b.find(), 3);
-    K[0] = 1.3f; ok(b.find(), 2);
-    K[0] = 1.6f; ok(b.find(), 5);
-    K[0] = 1.5f; ok(b.find(), 4);
-    K[0] = 1.8f; ok(b.find(), 7);
-    K[0] = 1.7f; ok(b.find(), 6);
-    K[0] = 1.2f; ok(b.find(), 1);
-    K[0] = 1.1f; ok(b.find(), 0);
-    K[0] = 1.0f; ok(b.find(), null);
+    K[0] = 1.4f; ok(b.locate(), 3);
+    K[0] = 1.3f; ok(b.locate(), 2);
+    K[0] = 1.6f; ok(b.locate(), 5);
+    K[0] = 1.5f; ok(b.locate(), 4);
+    K[0] = 1.8f; ok(b.locate(), 7);
+    K[0] = 1.7f; ok(b.locate(), 6);
+    K[0] = 1.2f; ok(b.locate(), 1);
+    K[0] = 1.1f; ok(b.locate(), 0);
+    K[0] = 1.0f; ok(b.locate(), null);
 
-    K[0] = 1.4f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
-    K[0] = 1.2f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
-    K[0] = 1.3f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
-    K[0] = 1.6f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
-    K[0] = 1.8f; ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
-    K[0] = 1.1f; ok(b.delete()); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
-    K[0] = 1.7f; ok(b.delete()); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
-    K[0] = 1.5f; ok(b.delete()); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
+    K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
+    K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
+    K[0] = 1.3f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
+    K[0] = 1.6f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
+    K[0] = 1.8f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
+    K[0] = 1.1f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
+    K[0] = 1.7f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
+    K[0] = 1.5f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
