@@ -75,7 +75,7 @@ class Slots extends Test                                                        
     return n;
    }
 
-//D1 Manipulate                                                                 // Manipulate the bit slot
+//D1 Low level operations                                                       // Manipulate the slots
 
   Integer locateNearestFreeSlot(int Position)                                   // Relative position of the nearest free slot to the indicated position if there is one.
    {if (!usedSlots[Position]) return 0;                                         // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
@@ -131,6 +131,8 @@ class Slots extends Test                                                        
      }
    }
 
+//D1 High level operations                                                      // Find, insert, delete values in the slots
+
   boolean insert()                                                              // Insert the current search key maintaining the order of the keys
    {if (full()) return false;                                                   // No space in which to insert
     final int ref = allocRef();                                                 // Location to store key
@@ -157,6 +159,15 @@ class Slots extends Test                                                        
     slots    [last] = ref;                                                      // Insert key in last slot
     usedSlots[last] = true;                                                     // Insert key in last slot
     return true;                                                                // Success
+   }
+
+  Integer find()                                                                // Find the current key if possible in the slots
+   {for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the first greater than or equal key
+     {if (usedSlots[i])                                                         // Valid slot
+       {if (eq(slots[i])) return i;                                             // Found key
+       }
+     }
+    return null;                                                                // Key not present
    }
 
 //D1 Print                                                                      // Print the bit slot
@@ -290,7 +301,19 @@ class Slots extends Test                                                        
     K[0] = 1.2f; b.insert();
     K[0] = 1.1f; b.insert();  ok(b.empty(), false); ok(b.full(), true);
     ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
-  }
+
+    K[0] = 1.6f;
+    ok(b.find(), 5);
+    K[0] = 1.4f; ok(b.find(), 3);
+    K[0] = 1.3f; ok(b.find(), 2);
+    K[0] = 1.6f; ok(b.find(), 5);
+    K[0] = 1.5f; ok(b.find(), 4);
+    K[0] = 1.8f; ok(b.find(), 7);
+    K[0] = 1.7f; ok(b.find(), 6);
+    K[0] = 1.2f; ok(b.find(), 1);
+    K[0] = 1.1f; ok(b.find(), 0);
+    K[0] = 1.0f; ok(b.find(), null);
+   }
 
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
