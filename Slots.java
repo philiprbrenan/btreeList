@@ -10,7 +10,7 @@ class Slots extends Test                                                        
   final int    []slots;                                                         // Key order
   final boolean[]usedSlots;                                                     // Slots in use
   final boolean[]usedRefs;                                                      // Positions for keys
-  final int ReasonableNumberOfSearches = 99;                                    // A resonable number of searches
+  final int ReasonableNumberOfSearches = 99;                                    // A reasonable number of searches
 
 //D1 Construction                                                               // Construct and layout a btree
 
@@ -29,7 +29,7 @@ class Slots extends Test                                                        
    {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = false;
    }
 
-  void clearFirstSlot()                                                         // Set the forst used slot to not used
+  void clearFirstSlot()                                                         // Set the first used slot to not used
    {for (int i = 0; i < numberOfSlots; i++)
      {if (usedSlots[i])
        {usedSlots[i] = false;
@@ -38,7 +38,7 @@ class Slots extends Test                                                        
      }
    }
 
-  int allocSlot()                                                               // Allocate a reference
+  int allocSlot()                                                               // Allocate a slot
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
        {usedRefs[i] = true;
@@ -49,16 +49,16 @@ class Slots extends Test                                                        
     return -1;
    }
 
-  void freeRef(int Ref) {usedRefs[Ref] = false;}                                 // Free a ref
+  void freeSlot(int Ref) {usedRefs[Ref] = false;}                               // Free a slot
 
 //D1 Overrides                                                                  // Manipulators for objects validated by the slots slots
 
-  void storeKey(int Ref) {}                                                     // Store the current key at this lcoatgion
+  void storeKey(int Ref) {}                                                     // Store the current key at this location
   boolean    eq(int Ref) {return false;}                                        // Tell me if the indexed Key is equal to the search key
   boolean    le(int Ref) {return false;}                                        // Tell me if the indexed Key is less than or equal to the search key
   String getRef(int Ref) {return "";}                                           // Value of the referenced key as a string
 
-//D1 State                                                                      // Query the stata eof the Manipulators for objects validated by the slots slots
+//D1 State                                                                      // Query the state of the slots
 
   boolean empty()                                                               // True if the bit slots are all empty
    {for (int i = 0; i < numberOfSlots; i++) if ( usedSlots[i]) return false;
@@ -108,7 +108,7 @@ class Slots extends Test                                                        
     return null;                                                                // No free slot - this is not actually an error.
    }
 
-  void shift(int Position, int Width)                                           // Shift the specified number of slots around the specified position one bit left or right depending on teh sign of the width
+  void shift(int Position, int Width)                                           // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width
    {if (Width > 0)                                                              // Shift up including the current slot
      {for (int i = Width; i > 0; --i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
@@ -131,7 +131,7 @@ class Slots extends Test                                                        
                cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);        // Covered space from first used slot to last used slot, uncovered remainder
     final int    []s = new int    [numberOfSlots];                              // New slots distribution
     final boolean[]u = new boolean[numberOfSlots];                              // New used slots distribution
-    int p = remainder / 2;                                                      // Start position for first used slt
+    int p = remainder / 2;                                                      // Start position for first used slot
     for (int i = 0; i < numberOfSlots; ++i)                                     // Redistribute slots
      {if (usedSlots[i])                                                         // Redistribute active slots
        {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the used slots out
@@ -151,8 +151,8 @@ class Slots extends Test                                                        
     for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the first greater than or equal key
      {if (usedSlots[i])                                                         // Valid slot
        {if (le(slots[i]))                                                       // First key we are less than or equal to
-         {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to make a slot here
-          if (w > 0)                                                            // Move up liberating a sopace at the Spacve
+         {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to liberate a slot here
+          if (w > 0)                                                            // Move up
            {shift(i, w);                                                        // Make a slot at this point
             slots[i] = slot;                                                    // Place the current key in the empty slot and mark it as set
            }
@@ -161,7 +161,7 @@ class Slots extends Test                                                        
             slots[i-1] = slot;                                                  // Insert into the slot below
             usedSlots[i-1] = true;
            }
-          return true;                                                          // Sucessfully inserted
+          return true;                                                          // Successfully inserted
          }
        }
      }
@@ -180,8 +180,8 @@ class Slots extends Test                                                        
     if (eq(slots[a])) return a;                                                 // Not at the start of the range with more than one element
     if (eq(slots[b])) return b;                                                 // Not at the end of the range   with more than one element
 
-    for(int i = 0; i < ReasonableNumberOfSearches; ++i)                         // Perform a reasonable number of searches
-     {if (a == b) return null;                                                  // Narrowed to one possible key so no more seraching is possib;e
+    for(int i = 0; i < ReasonableNumberOfSearches; ++i)                         // Perform a reasonable number of searches knowing the key, if it is present, is within the current range
+     {if (a == b) return null;                                                  // Narrowed to one possible key so no more searching is possible
       final int M = (a + b) / 2;                                                // Desired mid point - but there might not be a slot in use at this point
 
       final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
@@ -237,7 +237,7 @@ class Slots extends Test                                                        
     return ""+s;
    }
 
-  public String toString()                                                      // Print the valus in the used slots
+  public String toString()                                                      // Print the values in the used slots
    {final StringJoiner s = new StringJoiner(", ");
     for (int i = 0; i < numberOfSlots; i++)
      {if (usedSlots[i]) s.add(getRef(slots[i]));
@@ -344,7 +344,7 @@ class Slots extends Test                                                        
           float[]K = new float[1];
 
     final Slots b = new Slots(N)
-     {void storeKey(int Ref) {F[Ref] = K[0];}                                   // Store the current key at this lcoatgion
+     {void storeKey(int Ref) {F[Ref] = K[0];}                                   // Store the current key at this location
       boolean    eq(int Ref) {return F[Ref] == K[0];}                           // Tell me if the indexed Key is equal to the search key
       boolean    le(int Ref) {return F[Ref] >= K[0];}                           // Tell me if the indexed Key is less than or equal to the search key
       String getRef(int Ref) {return ""+F[Ref];}                                // Value of the referenced key as a string
