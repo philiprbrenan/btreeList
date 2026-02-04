@@ -18,6 +18,7 @@ class Slots extends Test                                                        
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfSlots];
+    //for (int i = 0; i < numberOfSlots; i++) usedSlots[i] = false;
    }
 
   int allocRef()                                                                // Allocate a reference
@@ -38,6 +39,7 @@ class Slots extends Test                                                        
   void storeKey(int Ref) {}                                                     // Store the current key at this lcoatgion
   boolean    eq(int Ref) {return false;}                                        // Tell me if the indexed Key is equal to the search key
   boolean    le(int Ref) {return false;}                                        // Tell me if the indexed Key is less than or equal to the search key
+  String getRef(int Ref) {return "";}                                           // Value of the referenced key as a string
 
 //D1 State                                                                      // Query the stata eof the Manipulators for objects validated by the slots slots
 
@@ -55,7 +57,7 @@ class Slots extends Test                                                        
 
   Integer locateNearestFreeSlot(int Position)                                   // Relative position of the nearest free slot to the indicated position if there is one.
    {if (!usedSlots[Position]) return 0;                                         // The slot is free already. If it it not free we do art least get an error if the specified positoin is invalid
-    for (int i = 0; i < numberOfSlots; i++)
+    for (int i = 1; i < numberOfSlots; i++)
      {final int p = Position + i, q = Position - i;
       if (q >= 0            && !usedSlots[q]) return -i;                        // Look down preferentially to avoid mving the existing key if possible
       if (p < numberOfSlots && !usedSlots[p]) return +i;                        // Look up
@@ -95,6 +97,7 @@ class Slots extends Test                                                        
           else if (w < 0)                                                       // Make a slot below the current slot
            {shift(i-1, w + 1);                                                  // Shift any intervening slots blocking the slot below
             slots[i-1] = ref;                                                   // Insert into the slot below
+            usedSlots[i-1] = true;
            }
           return true;                                                          // Sucessfully inserted
          }
@@ -102,15 +105,25 @@ class Slots extends Test                                                        
      }
     final int last = numberOfSlots - 1;                                         // Bigger than all keys so place at the end
     shift(last, locateNearestFreeSlot(last));                                   // Create an empty slot of needed
-    slots[last] = ref;                                                          // Insert key in last slot
+    slots    [last] = ref;                                                      // Insert key in last slot
+    usedSlots[last] = true;                                                     // Insert key in last slot
     return true;                                                                // Success
    }
 
 //D1 Print                                                                      // Print the bit slot
 
-  public String toString()
+  String printSlots()
    {final StringBuilder s = new StringBuilder();
     for (int i = 0; i < numberOfSlots; i++) s.append(usedSlots[i] ? "X" : ".");
+    return ""+s;
+   }
+
+  public String toString()
+   {final StringJoiner s = new StringJoiner(", ");
+    for (int i = 0; i < numberOfSlots; i++)
+     {if (usedSlots[i]) s.add(getRef(slots[i]));
+     }
+
     return ""+s;
    }
 
@@ -126,104 +139,47 @@ class Slots extends Test                                                        
 
   static void test_load()
    {final Slots b = load();
-    ok(b, "..XX.XXX.X.X.X..");
+    //     0123456789012345
+    ok(b.printSlots(), "..XX.XXX.X.X.X..");
     ok(b.locateNearestFreeSlot(1),  0);
     ok(b.locateNearestFreeSlot(2), -1);
     ok(b.locateNearestFreeSlot(3), +1);
     ok(b.locateNearestFreeSlot(4),  0);
     ok(b.locateNearestFreeSlot(5), -1);
-    ok(b.locateNearestFreeSlot(6), +2);
+    ok(b.locateNearestFreeSlot(6), -2);
     ok(b.locateNearestFreeSlot(7), +1);
    }
 
   static void test_less()
-   {final int  N = 8;
-    final int[]n = new int[N];
-    Integer[]Key = new Integer[1];
+   {final int    N = 8;
+    final float[]F = new float[N];
+          float[]K = new float[1];
 
     final Slots b = new Slots(N)
-     {void    shifter(int To, int From) {n[To] = n[From];}
-      boolean      le(int At)           {return Key[0] <= n[At];}
+     {void storeKey(int Ref) {F[Ref] = K[0];}                                   // Store the current key at this lcoatgion
+      boolean    eq(int Ref) {return F[Ref] == K[0];}                           // Tell me if the indexed Key is equal to the search key
+      boolean    le(int Ref) {return F[Ref] >= K[0];}                           // Tell me if the indexed Key is less than or equal to the search key
+      String getRef(int Ref) {return ""+F[Ref];}                                // Value of the referenced key as a string
      };
-/*
+
     ok(b.empty(), true);
     ok(b.full(),  false);
-    b.set(3, 4); b.set(4, 6);
-    //     01234567
-    //        46
-    ok(b, "...XX...");  ok(n, new int[]{0, 0, 0, 4, 6, 0, 0, 0});
-
-    Key[0] = 5; b.insert();
-    //     01234567
-    //        456
-    ok(b, "...XXX..");  ok(n, new int[]{0, 0, 0, 4, 5, 6, 0, 0});
-
-    Key[0] = 3; b.insert();
-    //     01234567
-    //       3456
-    ok(b, "..XXXX.."); ok(n, new int[]{0, 0, 3, 4, 5, 6, 0, 0});
-
-    Key[0] = 8; b.insert();
-    //     01234567
-    //       3456 8
-    ok(b, "..XXXX.X"); ok(n, new int[]{0, 0, 3, 4, 5, 6, 0, 8});
-
-    Key[0] = 7; b.insert();
-    //     01234567
-    //       345678
-    ok(b, "..XXXXXX"); ok(n, new int[]{0, 0, 3, 4, 5, 6, 7, 8});
-
-    Key[0] = 2; b.insert();
-    //     01234567
-    //      2345678
-    ok(b, ".XXXXXXX"); ok(n, new int[]{0, 2, 3, 4, 5, 6, 7, 8});
-    ok(b.empty(), false);
-    ok(b.full(),  false);
-
-    Key[0] = 1; b.insert();
-    //     01234567
-    //     12345678
-    ok(b, "XXXXXXXX"); ok(n, new int[]{1, 2, 3, 4, 5, 6, 7, 8});
-    ok(b.empty(), false); ok(b.full(),  true);
-*/
+    K[0] = 1.4f; b.insert();
+    K[0] = 1.3f; b.insert();
+    K[0] = 1.6f; b.insert();
+    K[0] = 1.5f; b.insert();
+    K[0] = 1.8f; b.insert();
+    K[0] = 1.7f; b.insert();
   }
-
-  static void test_less_from_empty()
-   {final int  N = 4;
-    final int[]n = new int[N];
-    Integer[]Key = new Integer[1];
-
-    final Slots b = new Slots(N)
-     {void shifter(int To, int From) {n[To] = n[From];}
-      boolean le(int At) {return Key[0] <= n[At];}
-     };
-
-    //Key[0] = 3; b.insert(); ok(b, "...X");
-    //Key[0] = 1; b.insert(); ok(b, "..XX");
-    //Key[0] = 2; b.insert(); ok(b, ".XXX");
-    //Key[0] = 4; b.insert(); ok(b, "XXXX");
-
-    ok(n, new int[]{1, 2, 3, 4});
-   }
-
-  static void test_shift()
-   {final Slots b = load();
-    ok(b, "..XX.XXX.X.X.X..");
-    b.shift(2, b.locateNearestFreeSlot(2)); ok(b, ".X.X.XXX.X.X.X..");
-    b.shift(5, b.locateNearestFreeSlot(5)); ok(b, ".X.XX.XX.X.X.X..");
-    b.shift(7, b.locateNearestFreeSlot(7)); ok(b, ".X.XX.X.XX.X.X..");
-   }
 
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_load();
-    test_shift();
     test_less();
    }
 
   static void newTests()                                                        // Tests being worked on
    {test_load();
-    //test_less();
-    //test_less_from_empty();
+    test_less();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
