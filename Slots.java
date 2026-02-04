@@ -28,6 +28,15 @@ class Slots extends Test                                                        
    {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = false;
    }
 
+  void clearFirstSlot()                                                  // Set these slots as not in being used
+   {for (int i = 0; i < numberOfSlots; i++)
+     {if (usedSlots[i])
+       {usedSlots[i] = false;
+        return;
+       }
+     }
+   }
+
   int allocRef()                                                                // Allocate a reference
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
@@ -69,11 +78,21 @@ class Slots extends Test                                                        
 //D1 Manipulate                                                                 // Manipulate the bit slot
 
   Integer locateNearestFreeSlot(int Position)                                   // Relative position of the nearest free slot to the indicated position if there is one.
-   {if (!usedSlots[Position]) return 0;                                         // The slot is free already. If it it not free we do art least get an error if the specified positoin is invalid
+   {if (!usedSlots[Position]) return 0;                                         // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
     for (int i = 1; i < numberOfSlots; i++)
      {final int p = Position + i, q = Position - i;
-      if (q >= 0            && !usedSlots[q]) return -i;                        // Look down preferentially to avoid mving the existing key if possible
+      if (q >= 0            && !usedSlots[q]) return -i;                        // Look down preferentially to avoid moving the existing key if possible
       if (p < numberOfSlots && !usedSlots[p]) return +i;                        // Look up
+     }
+    return null;                                                                // No free slot - this is not actually an error.
+   }
+
+  Integer locateNearestUsedSlot(int Position)                                   // Relative position of the nearest used slot to the indicated position if there is one.
+   {if ( usedSlots[Position]) return 0;                                         // The slot is already in use. If it is free we do at least get an error if the specified position is invalid
+    for (int i = 1; i < numberOfSlots; i++)
+     {final int p = Position + i, q = Position - i;
+      if (q >= 0            &&  usedSlots[q]) return -i;                        // Look down preferentially to avoid moving the existing key if possible
+      if (p < numberOfSlots &&  usedSlots[p]) return +i;                        // Look up
      }
     return null;                                                                // No free slot - this is not actually an error.
    }
@@ -163,60 +182,88 @@ class Slots extends Test                                                        
     b.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
                       //0123456789012345
     ok(b.printSlots(), "..XX.XXX.X.X.X..");
-    ok(b.locateNearestFreeSlot(1),  0);
-    ok(b.locateNearestFreeSlot(2), -1);
-    ok(b.locateNearestFreeSlot(3), +1);
-    ok(b.locateNearestFreeSlot(4),  0);
-    ok(b.locateNearestFreeSlot(5), -1);
-    ok(b.locateNearestFreeSlot(6), -2);
-    ok(b.locateNearestFreeSlot(7), +1);
+    ok(b.locateNearestFreeSlot( 0),  0);
+    ok(b.locateNearestFreeSlot( 1),  0);
+    ok(b.locateNearestFreeSlot( 2), -1);
+    ok(b.locateNearestFreeSlot( 3), +1);
+    ok(b.locateNearestFreeSlot( 4),  0);
+    ok(b.locateNearestFreeSlot( 5), -1);
+    ok(b.locateNearestFreeSlot( 6), -2);
+    ok(b.locateNearestFreeSlot( 8),  0);
+    ok(b.locateNearestFreeSlot( 9), -1);
+    ok(b.locateNearestFreeSlot(10),  0);
+    ok(b.locateNearestFreeSlot(11), -1);
+    ok(b.locateNearestFreeSlot(12),  0);
+    ok(b.locateNearestFreeSlot(13), -1);
+    ok(b.locateNearestFreeSlot(14),  0);
+   }
+
+  static void test_locateNearestUsedSlot()
+   {final Slots b = new Slots(16);
+    b.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
+                      //0123456789012345
+    ok(b.printSlots(), "..XX.XXX.X.X.X..");
+    ok(b.locateNearestUsedSlot( 0),  2);
+    ok(b.locateNearestUsedSlot( 1),  1);
+    ok(b.locateNearestUsedSlot( 2),  0);
+    ok(b.locateNearestUsedSlot( 3),  0);
+    ok(b.locateNearestUsedSlot( 4), -1);
+    ok(b.locateNearestUsedSlot( 5),  -1);
+    ok(b.locateNearestUsedSlot( 6), -2);
+    ok(b.locateNearestUsedSlot( 8), +1);
+    ok(b.locateNearestUsedSlot( 9), +1);
+    ok(b.locateNearestUsedSlot(10), +1);
+    ok(b.locateNearestUsedSlot(11), +1);
+    ok(b.locateNearestUsedSlot(12), +1);
+    ok(b.locateNearestUsedSlot(13), +1);
+    ok(b.locateNearestUsedSlot(14), +1);
    }
 
   static void test_redistribute()
    {final Slots b = new Slots(16);
     for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
-                                                         //0123456789012345
-                                       ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
-                     b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
-    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX.");
-    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXXX.");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX..");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXXX..");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX...");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXXX...");
-    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX....");
-    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), "X.X.X.X.X.X.X.X.");
-    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X..");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X...");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X..");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), ".X...X...X...X..");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X....X....X...");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...X.......X....");
-    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), ".......X........");
-    b.clearSlots(7); b.redistribute(); ok(b.printSlots(), "................");
+                                                            //0123456789012345
+                                          ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
+                        b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX.");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXXX.");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXXX..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX...");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXXX...");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX....");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "X.X.X.X.X.X.X.X.");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X...");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".X...X...X...X..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X....X....X...");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...X.......X....");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".......X........");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "................");
    }
 
   static void test_redistribute_odd()
    {final Slots b = new Slots(15);
     for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
-                                                         //012345689012345
-                                       ok(b.printSlots(), "XXXXXXXXXXXXXXX");
-                     b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX");
-    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXX.");
-    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX.");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXX..");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX..");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXX...");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX...");
-    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), "...XXXXXXXX....");
-    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X.");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X..");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X.");
-    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X..X..X..X...");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "..X....X....X..");
-    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...X......X....");
-    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), ".......X.......");
-    b.clearSlots(7); b.redistribute(); ok(b.printSlots(), "...............");
+                                                            //012345689012345
+                                          ok(b.printSlots(), "XXXXXXXXXXXXXXX");
+                        b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXX.");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX.");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXX..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXX...");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX...");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...XXXXXXXX....");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X.");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X.");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X..X..X..X...");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X....X....X..");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...X......X....");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".......X.......");
+    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...............");
    }
 
   static void test_less()
@@ -245,6 +292,7 @@ class Slots extends Test                                                        
 
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
+    test_locateNearestUsedSlot();
     test_redistribute();
     test_redistribute_odd();
     test_less();
@@ -252,6 +300,7 @@ class Slots extends Test                                                        
 
   static void newTests()                                                        // Tests being worked on
    {test_locateNearestFreeSlot();
+    test_locateNearestUsedSlot();
     test_redistribute();
     test_redistribute_odd();
     test_less();
