@@ -162,15 +162,16 @@ class Slots extends Test                                                        
       String getRef(int Ref) {return ""+F[Ref];}                                // Value of the referenced key as a string
      };
 
-    ok(b.empty(), true);
-    ok(b.full(),  false);
-    K[0] = 1.4f; b.insert();
+                              ok(b.empty(), true);  ok(b.full(), false);
+    K[0] = 1.4f; b.insert();  ok(b.empty(), false); ok(b.full(), false);
     K[0] = 1.3f; b.insert();
     K[0] = 1.6f; b.insert();
     K[0] = 1.5f; b.insert();
     K[0] = 1.8f; b.insert();
     K[0] = 1.7f; b.insert();
-    ok(b, "1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
+    K[0] = 1.2f; b.insert();
+    K[0] = 1.1f; b.insert();  ok(b.empty(), false); ok(b.full(), true);
+    ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
   }
 
   static void oldTests()                                                        // Tests thought to be in good shape
