@@ -187,13 +187,15 @@ class Slots extends Test                                                        
       final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
       if (ma != null)
        {if (eq(slots[ma])) return ma;                                           // Found key at lower end
-        if (le(slots[ma])) b = ma; else a = ma; continue;                       // Not at the end of the range   with more than one element
+        if (le(slots[ma])) b = ma; else a = ma;                                 // Not at the end of the range   with more than one element
+        continue;
        }
 
       final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
       if (mb != null)
        {if (eq(slots[mb])) return mb;                                           // Found key at lower end
-        if (le(slots[mb])) b = mb; else a = mb; continue;
+        if (le(slots[mb])) b = mb; else a = mb;
+        continue;
        }
       stop("This should not happen:", a, b, ma, mb);
      }
