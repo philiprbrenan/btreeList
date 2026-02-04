@@ -170,6 +170,7 @@ class Slots extends Test                                                        
     K[0] = 1.5f; b.insert();
     K[0] = 1.8f; b.insert();
     K[0] = 1.7f; b.insert();
+    ok(b, "1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
   }
 
   static void oldTests()                                                        // Tests thought to be in good shape
