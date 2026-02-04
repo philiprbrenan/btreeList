@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Slots for key references
+// Array of key references maintained in ascending order with insertion slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
