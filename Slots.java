@@ -325,8 +325,6 @@ class Slots extends Test                                                        
     K[0] = 1.1f; ok(b.find(), 0);
     K[0] = 1.0f; ok(b.find(), null);
 
-
-                                 //     0    1    2    3    4    5    6
     K[0] = 1.4f; ok(b.delete()); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8");
     K[0] = 1.2f; ok(b.delete()); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");
     K[0] = 1.3f; ok(b.delete()); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");
