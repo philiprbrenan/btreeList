@@ -24,6 +24,10 @@ class Slots extends Test                                                        
    {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = true;
    }
 
+  void clearSlots(int...Slots)                                                  // Set these slots as not in being used
+   {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = false;
+   }
+
   int allocRef()                                                                // Allocate a reference
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
@@ -171,25 +175,25 @@ class Slots extends Test                                                        
   static void test_redistribute()
    {final Slots b = new Slots(16);
     for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
-                                                                //0123456789012345
-                                              ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
-                            b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
-    b.usedSlots[0] = false; b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX.");
-    b.usedSlots[0] = false; b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXXX.");
-    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX..");
-    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXXX..");
-    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX...");
-    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), "...XXXXXXXXXX...");
-    b.usedSlots[3] = false; b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX....");
-    b.usedSlots[3] = false; b.redistribute(); ok(b.printSlots(), "X.X.X.X.X.X.X.X.");
-    b.usedSlots[0] = false; b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X..");
-    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X...");
-    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X..");
-    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), ".X...X...X...X..");
-    b.usedSlots[1] = false; b.redistribute(); ok(b.printSlots(), "..X....X....X...");
-    b.usedSlots[2] = false; b.redistribute(); ok(b.printSlots(), "...X.......X....");
-    b.usedSlots[3] = false; b.redistribute(); ok(b.printSlots(), ".......X........");
-    b.usedSlots[7] = false; b.redistribute(); ok(b.printSlots(), "................");
+                                                         //0123456789012345
+                                       ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
+                     b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
+    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX.");
+    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXXX.");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX..");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXXX..");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX...");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXXX...");
+    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX....");
+    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), "X.X.X.X.X.X.X.X.");
+    b.clearSlots(0); b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X..");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X...");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X..");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), ".X...X...X...X..");
+    b.clearSlots(1); b.redistribute(); ok(b.printSlots(), "..X....X....X...");
+    b.clearSlots(2); b.redistribute(); ok(b.printSlots(), "...X.......X....");
+    b.clearSlots(3); b.redistribute(); ok(b.printSlots(), ".......X........");
+    b.clearSlots(7); b.redistribute(); ok(b.printSlots(), "................");
    }
 
   static void test_less()
