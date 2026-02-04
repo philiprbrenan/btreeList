@@ -170,6 +170,18 @@ class Slots extends Test                                                        
     return null;                                                                // Key not present
    }
 
+  boolean delete()                                                              // Delete the current key
+   {for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the first greater than or equal key
+     {if (usedSlots[i])                                                         // Valid slot
+       {if (eq(slots[i]))                                                       // Found key
+         {clearSlots(i);                                                        // Delete key
+          return true;                                                          // Indicate that the key was deleted
+         }
+       }
+     }
+    return false;                                                               // Key not present
+   }
+
 //D1 Print                                                                      // Print the bit slot
 
   String printSlots()                                                           // Print the occupancy of each slot
@@ -300,10 +312,9 @@ class Slots extends Test                                                        
     K[0] = 1.7f; b.insert();
     K[0] = 1.2f; b.insert();
     K[0] = 1.1f; b.insert();  ok(b.empty(), false); ok(b.full(), true);
+    //     0    1    2    3    4    5    6    7
     ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
 
-    K[0] = 1.6f;
-    ok(b.find(), 5);
     K[0] = 1.4f; ok(b.find(), 3);
     K[0] = 1.3f; ok(b.find(), 2);
     K[0] = 1.6f; ok(b.find(), 5);
@@ -313,6 +324,17 @@ class Slots extends Test                                                        
     K[0] = 1.2f; ok(b.find(), 1);
     K[0] = 1.1f; ok(b.find(), 0);
     K[0] = 1.0f; ok(b.find(), null);
+
+
+                                 //     0    1    2    3    4    5    6
+    K[0] = 1.4f; ok(b.delete()); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8");
+    K[0] = 1.2f; ok(b.delete()); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");
+    K[0] = 1.3f; ok(b.delete()); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");
+    K[0] = 1.6f; ok(b.delete()); ok(b, "1.1, 1.5, 1.7, 1.8");
+    K[0] = 1.8f; ok(b.delete()); ok(b, "1.1, 1.5, 1.7");
+    K[0] = 1.1f; ok(b.delete()); ok(b, "1.5, 1.7");
+    K[0] = 1.7f; ok(b.delete()); ok(b, "1.5");
+    K[0] = 1.5f; ok(b.delete()); ok(b, "");
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
