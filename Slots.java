@@ -143,12 +143,12 @@ class Slots extends Test                                                        
          {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to liberate a slot here =- we know tehre is one becuase we know the slots are not full
           if (w > 0)                                                            // Move up
            {shift(i, w);                                                        // Liberate a slot at this point
-            slots[i] = slot;                                                    // Place their current key in the empty slot and mark it as set
+            slots[i] = slot;                                                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
            }
           else if (w < 0)                                                       // Liberate a slot below the current slot
            {shift(i-1, w + 1);                                                  // Shift any intervening slots blocking the slot below
             slots[i-1] = slot;                                                  // Insert into the slot below
-            usedSlots[i-1] = true;
+            usedSlots[i-1] = true;                                              // Mark the free slot at the start of teh range of occupied slots as now in use
            }
           redistribute();                                                       // Redistribute the remaining free slots
           return true;                                                          // Successfully inserted
