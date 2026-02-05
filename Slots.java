@@ -8,7 +8,7 @@ import java.util.*;
 class Slots extends Test                                                        // Maintain key references in ascending order using distributed slots
  {final int      numberOfSlots;                                                 // Number of slots
   final int    []slots;                                                         // Key ordering
-  final boolean[]usedSlots;                                                     // Slots in use
+  final boolean[]usedSlots;                                                     // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistribited to make it insertions faster
   final int redistributeFrequency;                                              // Call redistribute afte this many actions
   int actions = 0;                                                              // Number of actions performed
@@ -134,9 +134,11 @@ class Slots extends Test                                                        
      }
    }
 
-  boolean redistributeNow() {return actions++ % redistributeFrequency == 0;}    // Whether we should request a redistribution of free slots
+  boolean redistributeNow() {return ++actions % redistributeFrequency == 0;}    // Whether we should request a redistribution of free slots - avoids a redistibution on the first insert or delete.
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
+
+// redo insert and delete to use binary search
 
   public boolean insert()                                                       // Insert their current search key maintaining the order of the keys in the slots
    {if (full()) return false;                                                   // No slot available in which to insert a new key
