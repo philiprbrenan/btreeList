@@ -97,7 +97,7 @@ class Slots extends Test                                                        
     return null;                                                                // No free slot
    }
 
-  private void shift(int Position, int Width)                                   // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width
+  private void shift(int Position, int Width)                                   // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
    {if (Width > 0)                                                              // Shift up including the current slot
      {for (int i = Width; i > 0; --i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
@@ -133,7 +133,7 @@ class Slots extends Test                                                        
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
-  public boolean insert()                                                              // Insert their current search key maintaining the order of the keys in the slots
+  public boolean insert()                                                       // Insert their current search key maintaining the order of the keys in the slots
    {if (full()) return false;                                                   // No slot available in which to insert a new key
     final int slot = allocSlot();                                               // Their location in which to store the search key
     storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
@@ -178,14 +178,24 @@ class Slots extends Test                                                        
       final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
       if (ma != null)
        {if (eq(slots[ma])) return ma;                                           // Found their search key at lower end
-        if (le(slots[ma])) b = ma; else if (a == ma) return null; else a = ma;  // If their search key is less than the lower mid point then  the lower midpoint is the upper end of the search range, or if their search key is greater then the lower mid point and we have not been here before then the lower mid point is the lower end of the search range, otherwise we are merely repeating an unsatisfiable search
+        if (le(slots[ma]))                                                      // Their key is less than the lower mod point
+         {if (b == ma) return null;                                             // We have been here before so we are not going to find their search key
+          else b = ma;                                                          // New upper limit
+         }
+        else if (a == ma) return null;                                          // We have been here before so we are not going to find their search key
+        else     a = ma;                                                        // New lower limit
         continue;
        }
 
       final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
       if (mb != null)
        {if (eq(slots[mb])) return mb;                                           // Found their search key at upper end
-        if (le(slots[mb])) {if (b == mb) return null; else b = mb;} else a = mb;// If their search key is less than the upper mid point then  the upper midpoint is the upper end of the search range as long as we have not been here before else we are merely repeating an unsatisfiable search, otherwise if their search key is greater then the upper mid point then the upper mid point is the lower end of the search range
+        if (le(slots[mb]))                                                      // Their search key is less than the upper mid point
+         {if (b == mb) return null;                                             // We have been here before so we are not going to find their search key
+          else b = mb;                                                          // New upper limit
+         }
+        else if (a == mb) return null;                                          // We have been here before so we are not going to find their search key
+        else a = mb;                                                            // New lower limit
         continue;
        }
       stop("This should not happen:", a, b, ma, mb);                            // We know there is at least one occupied slot so there will be a lower or upper linit to the range
