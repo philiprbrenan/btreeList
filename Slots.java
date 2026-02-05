@@ -10,11 +10,14 @@ class Slots extends Test                                                        
   final int    []slots;                                                         // Key ordering
   final boolean[]usedSlots;                                                     // Slots in use
   final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistribited to make it insertions faster
+  final int redistributeFrequency;                                              // Call redistribute afte this many actions
+  int actions = 0;                                                              // Number of actions performed
 
 //D1 Construction                                                               // Construct and layout the slots
 
   Slots(int NumberOfSlots)                                                      // Create the slots
-   {numberOfSlots = NumberOfSlots;
+   {numberOfSlots         = NumberOfSlots;
+    redistributeFrequency = (int)java.lang.Math.sqrt(numberOfSlots);            // Call redistribute afte this many actions
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfSlots];
@@ -37,7 +40,7 @@ class Slots extends Test                                                        
      }
    }
 
-  private int allocSlot()                                                       // Allocate a slot
+  private int allocRef()                                                        // Allocate a reference to one of their keys
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
        {usedRefs[i] = true;
@@ -48,7 +51,7 @@ class Slots extends Test                                                        
     return -1;
    }
 
-  private void freeSlot(int Ref) {usedRefs[Ref] = false;}                       // Free a slot
+  private void freeRef(int Ref) {usedRefs[Ref] = false;}                        // Free a reference to one of their keys
 
 //D1 Overrides                                                                  // Overides which enable them to tell us about their keys
 
@@ -131,16 +134,18 @@ class Slots extends Test                                                        
      }
    }
 
+  boolean redistributeNow() {return actions++ % redistributeFrequency == 0;}    // Whether we should request a redistribution of free slots
+
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
   public boolean insert()                                                       // Insert their current search key maintaining the order of the keys in the slots
    {if (full()) return false;                                                   // No slot available in which to insert a new key
-    final int slot = allocSlot();                                               // Their location in which to store the search key
+    final int slot = allocRef();                                                // Their location in which to store the search key
     storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
     for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the slot containing the first key greater than or equal key to their search key
      {if (usedSlots[i])                                                         // Valid slot
        {if (le(slots[i]))                                                       // First key their search key is less than or equal to
-         {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to liberate a slot here =- we know tehre is one becuase we know the slots are not full
+         {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
           if (w > 0)                                                            // Move up
            {shift(i, w);                                                        // Liberate a slot at this point
             slots[i] = slot;                                                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
@@ -150,7 +155,7 @@ class Slots extends Test                                                        
             slots[i-1] = slot;                                                  // Insert into the slot below
             usedSlots[i-1] = true;                                              // Mark the free slot at the start of teh range of occupied slots as now in use
            }
-          redistribute();                                                       // Redistribute the remaining free slots
+          if (redistributeNow()) redistribute();                               // Redistribute the remaining free slots
           return true;                                                          // Successfully inserted
          }
        }
@@ -159,7 +164,7 @@ class Slots extends Test                                                        
     shift(last, locateNearestFreeSlot(last));                                   // Create an empty slot if needed - we know there is one available because we know the slots are not full
     slots    [last] = slot;                                                     // Insert key in last slot
     usedSlots[last] = true;                                                     // Show last slot as in use
-    redistribute();                                                             // Redistribute the remaining free slots
+    if (redistributeNow()) redistribute();                                      // Redistribute the remaining free slots
     return true;                                                                // Success
    }
 
@@ -223,8 +228,8 @@ class Slots extends Test                                                        
      {if (usedSlots[i])                                                         // Valid slot
        {if (eq(slots[i]))                                                       // Found key
          {clearSlots(i);                                                        // Delete key
-          freeSlot(slots[i]);                                                   // Mark the key refence is being available for a new key
-          redistribute();                                                       // Redistribute the remaining free slots
+          freeRef(slots[i]);                                                    // Mark the key refence is being available for a new key
+          if (redistributeNow()) redistribute();                                // Redistribute the remaining free slots
           return true;                                                          // Indicate that the key was deleted
          }
        }
@@ -354,14 +359,14 @@ class Slots extends Test                                                        
     K[0] = 1.0f; ok(b.locate(), null);
     K[0] = 2.0f; ok(b.locate(), null);
 
-    K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
-    K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
-    K[0] = 1.3f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
-    K[0] = 1.6f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
-    K[0] = 1.8f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
-    K[0] = 1.1f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
-    K[0] = 1.7f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
-    K[0] = 1.5f; ok(F[b.find()], K[0]); ok(b.delete()); ok(b, "");                                  ok(b.printSlots(), "........");
+    K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
+    K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
+    K[0] = 1.3f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
+    K[0] = 1.6f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
+    K[0] = 1.8f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
+    K[0] = 1.1f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
+    K[0] = 1.7f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
+    K[0] = 1.5f; ok(F[b.find()], K[0]); ok(b.delete()); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
 
     K[0] = 1.0f; ok(b.locate(), null);
    }
