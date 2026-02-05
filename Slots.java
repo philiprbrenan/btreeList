@@ -164,7 +164,7 @@ class Slots extends Test                                                        
        }
       if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
      }
-    else if (l.below)                                                          // Insert their key below the found key
+    else if (l.below)                                                           // Insert their key below the found key
      {final int i = l.at;
       final int w = locateNearestFreeSlot(i);                                   // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
@@ -179,36 +179,6 @@ class Slots extends Test                                                        
       if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
      }
     return true;
-   }
-
-  public boolean insert2()                                                       // Insert their current search key maintaining the order of the keys in the slots
-   {if (full()) return false;                                                   // No slot available in which to insert a new key
-    final int slot = allocRef();                                                // Their location in which to store the search key
-    storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
-    for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the slot containing the first key greater than or equal key to their search key
-     {if (usedSlots[i])                                                         // Valid slot
-       {if (le(slots[i]))                                                       // First key their search key is less than or equal to
-         {final int w = locateNearestFreeSlot(i);                               // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
-          if (w > 0)                                                            // Move up
-           {shift(i, w);                                                        // Liberate a slot at this point
-            slots[i] = slot;                                                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
-           }
-          else if (w < 0)                                                       // Liberate a slot below the current slot
-           {shift(i-1, w + 1);                                                  // Shift any intervening slots blocking the slot below
-            slots[i-1] = slot;                                                  // Insert into the slot below
-            usedSlots[i-1] = true;                                              // Mark the free slot at the start of teh range of occupied slots as now in use
-           }
-          if (redistributeNow()) redistribute();                               // Redistribute the remaining free slots
-          return true;                                                          // Successfully inserted
-         }
-       }
-     }
-    final int last = numberOfSlots - 1;                                         // Bigger than the keys in all the slots so place in the last slot
-    shift(last, locateNearestFreeSlot(last));                                   // Create an empty slot if needed - we know there is one available because we know the slots are not full
-    slots    [last] = slot;                                                     // Insert key in last slot
-    usedSlots[last] = true;                                                     // Show last slot as in use
-    if (redistributeNow()) redistribute();                                      // Redistribute the remaining free slots
-    return true;                                                                // Success
    }
 
   class Locate                                                                  // Locate the slot containing their current search key if possible.
@@ -262,7 +232,7 @@ class Slots extends Test                                                        
             else b = mb;                                                        // New upper limit
            }
           else if (a == mb)  {above(a);  return;}                               // We have been here before so we are not going to find their search key
-          else     a =  mb;                                                    // New lower limit
+          else     a =  mb;                                                     // New lower limit
           continue;
          }
         stop("This should not happen:", a, b, ma, mb);                          // We know there is at least one occupied slot so there will be a lower or upper linit to the range
@@ -280,15 +250,6 @@ class Slots extends Test                                                        
   public Integer find()                                                         // Find the index in user space of the current key
    {final Integer i = locate();
     return i == null ? null : slots[i];
-   }
-
-  public Integer find2()                                                        // Find the current key if possible in the slots
-   {for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the first greater than or equal key
-     {if (usedSlots[i])                                                         // Valid slot
-       {if (eq(slots[i])) return i;                                             // Found key
-       }
-     }
-    return null;                                                                // Key not present
    }
 
   public boolean delete()                                                       // Delete the current key
