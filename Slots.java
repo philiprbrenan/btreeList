@@ -2,25 +2,35 @@
 // Maintain key references in ascending order using distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// Add random inserts/deletes to stress locate/insert/delete
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
 
-class Slots extends Test                                                        // Maintain key references in ascending order using distributed slots
+public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
  {final int      numberOfSlots;                                                 // Number of slots
   final int    []slots;                                                         // Key ordering
   final boolean[]usedSlots;                                                     // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistributed to make it insertions faster
-  final int redistributeFrequency;                                              // Call redistribute after this many actions
+  final int      redistributeFrequency;                                         // Call redistribute after this many actions
+  final Object   userSpace;                                                     // Space in which the user might store date to respond to the overrideable methods
   int actions = 0;                                                              // Number of actions performed
 
 //D1 Construction                                                               // Construct and layout the slots
 
-  Slots(int NumberOfSlots)                                                      // Create the slots
+  public Slots(int NumberOfSlots, Object UserSpace)                                               // Create the slots
    {numberOfSlots         = NumberOfSlots;
     redistributeFrequency = (int)java.lang.Math.sqrt(numberOfSlots);            // Call redistribute after this many actions
+    userSpace = UserSpace;
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfSlots];
+   }
+
+  private Slots(int NumberOfSlots) {this(NumberOfSlots,  null);}                // Make a new set of slots the same size as the current set
+
+
+  private Slots like(Object UserSpace)                                          // Make a new set of slots the same size as the current set
+   {return new Slots(numberOfSlots,  UserSpace);
    }
 
   private void setSlots(int...Slots)                                            // Set slots as used
@@ -51,14 +61,14 @@ class Slots extends Test                                                        
     return -1;
    }
 
-  private void freeRef(int Ref) {usedRefs[Ref] = false;}                        // Free a reference to one of their keys
+  private void freeRef(int Ref) {usedRefs[Ref] = false;}                        // Free a reference to one of their keys - java checks for array bounds sdo no point in an explicit check.
 
 //D1 Overrides                                                                  // Overides which enable them to tell us about their keys
 
   protected void storeKey(int Ref) {}                                           // Store the current key at this location in their storage
   protected boolean    eq(int Ref) {return false;}                              // Tell me if the indexed key is equal to the search key
   protected boolean    le(int Ref) {return false;}                              // Tell me if the indexed key is less than or equal to the search key
-  protected String getRef(int Ref) {return "";}                                 // Value of the referenced key as a string
+  protected String getKey(int Ref) {return "";}                                 // Value of the referenced key as a string
   protected String    key()        {return "";}                                 // Value of the current key
 
 //D1 State                                                                      // Query the state of the slots
@@ -275,7 +285,7 @@ class Slots extends Test                                                        
   public String toString()                                                      // Print the values in the used slots
    {final StringJoiner s = new StringJoiner(", ");
     for (int i = 0; i < numberOfSlots; i++)
-     {if (usedSlots[i]) s.add(getRef(slots[i]));
+     {if (usedSlots[i]) s.add(getKey(slots[i]));
      }
     return ""+s;
    }
@@ -356,14 +366,13 @@ class Slots extends Test                                                        
     final float[]F = new float[N];
           float[]K = new float[1];
 
-    final Slots b = new Slots(N)
-     {protected void storeKey(int Ref) {F[Ref] = K[0];}                         // Store the current key at this location
-      protected boolean    eq(int Ref) {return K[0] == F[Ref];}                 // Tell me if the indexed Key is equal to the search key
-      protected boolean    le(int Ref) {return K[0] <= F[Ref];}                 // Tell me if the indexed Key is less than or equal to the search key
-      protected String getRef(int Ref) {return ""+F[Ref];}                      // Value of the referenced key as a string
-      protected String    key()        {return ""+K[0];}                        // Value of the current key
+    final Slots b = new Slots(N, F)
+     {protected void storeKey(int Ref) {F[Ref] = K[0];}                            // Store the current key at this location
+      protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];} // Tell me if the indexed Key is equal to the search key
+      protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];} // Tell me if the indexed Key is less than or equal to the search key
+      protected String getKey(int Ref) {return ""+     ((float[])userSpace)[Ref];} // Value of the referenced key as a string
+      protected String    key()        {return ""+K[0];}                           // Value of the current key
      };
-
                               ok(b.empty(), true);  ok(b.full(), false);
     K[0] = 1.4f; b.insert();  ok(b.empty(), false); ok(b.full(), false);
     K[0] = 1.3f; b.insert();  ok(b.countUsed(), 2);
@@ -406,11 +415,11 @@ class Slots extends Test                                                        
     final float[]F = new float[N];
           float[]K = new float[1];
 
-    final Slots b = new Slots(N)
+    final Slots b = new Slots(N, F)
      {protected void storeKey(int Ref) {F[Ref] = K[0];}
-      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
-      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
-      protected String getRef(int Ref) {return ""+F[Ref];}
+      protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];}
+      protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];}
+      protected String getKey(int Ref) {return ""+     ((float[])userSpace)[Ref];}
       protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
 
@@ -435,11 +444,11 @@ class Slots extends Test                                                        
     final float[]F = new float[N];
           float[]K = new float[1];
 
-    final Slots b = new Slots(N)
+    final Slots b = new Slots(N, F)
      {protected void storeKey(int Ref) {F[Ref] = K[0];}
-      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
-      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
-      protected String getRef(int Ref) {return ""+F[Ref];}
+      protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];}
+      protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];}
+      protected String getKey(int Ref) {return ""+     ((float[])userSpace)[Ref];}
       protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
 
