@@ -363,11 +363,10 @@ public class Slots extends Test                                                 
 
   static void test_ifd()
    {final int    N = 8;
-    final float[]F = new float[N];
           float[]K = new float[1];
 
-    final Slots b = new Slots(N, F)
-     {protected void storeKey(int Ref) {F[Ref] = K[0];}                            // Store the current key at this location
+    final Slots b = new Slots(N, new float[N])
+     {protected void storeKey(int Ref) {((float[])userSpace)[Ref] = K[0];}         // Store the current key at this location
       protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];} // Tell me if the indexed Key is equal to the search key
       protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];} // Tell me if the indexed Key is less than or equal to the search key
       protected String getKey(int Ref) {return ""+     ((float[])userSpace)[Ref];} // Value of the referenced key as a string
@@ -398,6 +397,7 @@ public class Slots extends Test                                                 
     K[0] = 1.0f; ok(b.locate(), null);
     K[0] = 2.0f; ok(b.locate(), null);
 
+    final float[]F = (float[])b.userSpace;
     K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
     K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
     K[0] = 1.3f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
@@ -448,7 +448,7 @@ public class Slots extends Test                                                 
      {protected void storeKey(int Ref) {F[Ref] = K[0];}
       protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];}
       protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];}
-      protected String getKey(int Ref) {return ""+     ((float[])userSpace)[Ref];}
+      protected String getKey(int Ref) {return ""+((float[])userSpace)[Ref];}
       protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
 
