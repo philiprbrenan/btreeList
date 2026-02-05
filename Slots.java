@@ -359,16 +359,16 @@ class Slots extends Test                                                        
     K[0] = 1.0f; ok(b.locate(), null);
     K[0] = 2.0f; ok(b.locate(), null);
 
-    K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
-    K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
-    K[0] = 1.3f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
-    K[0] = 1.6f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
-    K[0] = 1.8f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
-    K[0] = 1.1f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
-    K[0] = 1.7f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
-    K[0] = 1.5f; ok(F[b.find()], K[0]); ok(b.delete(), true);; b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
+    K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
+    K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
+    K[0] = 1.3f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
+    K[0] = 1.6f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
+    K[0] = 1.8f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
+    K[0] = 1.1f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
+    K[0] = 1.7f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
+    K[0] = 1.5f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
 
-    K[0] = 1.0f; ok(b.locate(), null);
+    K[0] = 1.0f; ok(b.locate(), null); ok(b.delete(), false);
    }
 
   static void test_idn()                                                        // Repeated inserts and deletes
