@@ -9,15 +9,15 @@ class Slots extends Test                                                        
  {final int      numberOfSlots;                                                 // Number of slots
   final int    []slots;                                                         // Key ordering
   final boolean[]usedSlots;                                                     // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
-  final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistribited to make it insertions faster
-  final int redistributeFrequency;                                              // Call redistribute afte this many actions
+  final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistributed to make it insertions faster
+  final int redistributeFrequency;                                              // Call redistribute after this many actions
   int actions = 0;                                                              // Number of actions performed
 
 //D1 Construction                                                               // Construct and layout the slots
 
   Slots(int NumberOfSlots)                                                      // Create the slots
    {numberOfSlots         = NumberOfSlots;
-    redistributeFrequency = (int)java.lang.Math.sqrt(numberOfSlots);            // Call redistribute afte this many actions
+    redistributeFrequency = (int)java.lang.Math.sqrt(numberOfSlots);            // Call redistribute after this many actions
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfSlots];
@@ -40,7 +40,7 @@ class Slots extends Test                                                        
      }
    }
 
-  private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here becuase in hardware this will be done in parallel
+  private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here because in hardware this will be done in parallel
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
        {usedRefs[i] = true;
@@ -130,12 +130,15 @@ class Slots extends Test                                                        
        {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the used slots out
        }
      }
-    for(int i = 0; i < numberOfSlots; ++i)                                      // Copy redistribution back into original
+    for(int i = 0; i < numberOfSlots; ++i)                                      // Copy redistribution back into original avoiding use of java array methods to make everything explici for hardware conversion
      {slots[i] = s[i]; usedSlots[i] = u[i];
      }
    }
 
-  boolean redistributeNow() {return ++actions % redistributeFrequency == 0;}    // Whether we should request a redistribution of free slots - avoids a redistibution on the first insert or delete.
+  boolean redistributeNow()                                                     // Whether we should request a redistribution of free slots - avoids a redistibution on the first insert or delete.
+   {actions = (actions + 1) & 0x7fffffff;
+    return actions % redistributeFrequency == 0;
+   }
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
@@ -174,7 +177,7 @@ class Slots extends Test                                                        
       else if (w < 0)                                                           // Liberate a slot below the current slot
        {shift(i-1, w + 1);                                                      // Shift any intervening slots blocking the slot below
         slots[i-1] = slot;                                                      // Insert into the slot below
-        usedSlots[i-1] = true;                                                  // Mark the free slot at the start of teh range of occupied slots as now in use
+        usedSlots[i-1] = true;                                                  // Mark the free slot at the start of the range of occupied slots as now in use
        }
       if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
      }
@@ -208,7 +211,7 @@ class Slots extends Test                                                        
       if (eq(slots[a]))                   {found(a); return;}                   // Found at the start of the range
       if (eq(slots[b]))                   {found(b); return;}                   // Found at the end of the range
 
-      for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range
+      for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this i snot a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {if (a == b) {pos(a, false, false); return;}                             // Narrowed to one possible key so no more searching is possible
         final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
 
@@ -235,7 +238,7 @@ class Slots extends Test                                                        
           else     a =  mb;                                                     // New lower limit
           continue;
          }
-        stop("This should not happen:", a, b, ma, mb);                          // We know there is at least one occupied slot so there will be a lower or upper linit to the range
+        stop("This should not happen:", a, b, ma, mb);                          // We know there is at least one occupied slot so there will be a lower or upper limit to the range
        }
       stop("Searched more than the maximum number of times:", numberOfSlots);
      }
