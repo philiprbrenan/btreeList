@@ -163,7 +163,7 @@ class Slots extends Test                                                        
     return true;                                                                // Success
    }
 
-  public Integer locate()                                                              // Locate the slot containing their current search key if possible.
+  public Integer locate()                                                       // Locate the slot containing their current search key if possible.
    {if (empty()) return null;                                                   // Empty so their search key cannot be found
     Integer a = locateNextUsedSlot(0), b = locatePrevUsedSlot(numberOfSlots-1); // Lower limit, upper limit
     if ( le(slots[a]) && !eq(slots[a])) return null;                            // Smaller than any key
@@ -178,14 +178,14 @@ class Slots extends Test                                                        
       final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
       if (ma != null)
        {if (eq(slots[ma])) return ma;                                           // Found their search key at lower end
-        if (le(slots[ma])) b = ma; else if (a == ma) return null; else a = ma;  // Not at the end of the range with more than one element
+        if (le(slots[ma])) b = ma; else if (a == ma) return null; else a = ma;  // If their search key is less than the lower mid point then  the lower midpoint is the upper end of the search range, or if their search key is greater then the lower mid point and we have not been here before then the lower mid point is the lower end of the search range, otherwise we are merely repeating an unsatisfiable search
         continue;
        }
 
       final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
       if (mb != null)
        {if (eq(slots[mb])) return mb;                                           // Found their search key at upper end
-        if (le(slots[mb])) {if (b == mb) return null; else b = mb;} else a = mb;
+        if (le(slots[mb])) {if (b == mb) return null; else b = mb;} else a = mb;// If their search key is less than the upper mid point then  the upper midpoint is the upper end of the search range as long as we have not been here before else we are merely repeating an unsatisfiable search, otherwise if their search key is greater then the upper mid point then the upper mid point is the lower end of the search range
         continue;
        }
       stop("This should not happen:", a, b, ma, mb);                            // We know there is at least one occupied slot so there will be a lower or upper linit to the range
