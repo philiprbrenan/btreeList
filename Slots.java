@@ -399,7 +399,7 @@ class Slots extends Test                                                        
      }
    }
 
-  static void test_tooManySearches()
+  static void test_reuse()
    {final int    N = 8;
     final float[]F = new float[N];
           float[]K = new float[1];
@@ -413,7 +413,7 @@ class Slots extends Test                                                        
 
     K[0] = 10f; b.insert();
     K[0] = 20f; b.insert();
-    K[0] = 15f; b.find();
+    K[0] = 15f; ok(b.find(), null);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
@@ -422,6 +422,7 @@ class Slots extends Test                                                        
     test_redistribute_odd();
     test_ifd();
     test_idn();
+    test_reuse();
    }
 
   static void newTests()                                                        // Tests being worked on
@@ -430,7 +431,7 @@ class Slots extends Test                                                        
     test_redistribute_odd();
     test_ifd();
     test_idn();
-    test_tooManySearches();
+    test_reuse();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
