@@ -28,9 +28,14 @@ public class Slots extends Test                                                 
 
   private Slots(int NumberOfSlots) {this(NumberOfSlots,  null);}                // Make a new set of slots the same size as the current set
 
-
-  private Slots like(Object UserSpace)                                          // Make a new set of slots the same size as the current set
-   {return new Slots(numberOfSlots,  UserSpace);
+  private Slots duplicate()                                                     // Duplicate a set of slots
+   {final Slots s = new Slots(numberOfSlots,  copyUserSpace());
+    for (int i = 0; i < numberOfSlots; i++)                                     // Copy the slots fromn source to target
+     {s.slots    [i] = slots    [i];
+      s.usedSlots[i] = usedSlots[i];
+      s.usedRefs [i] = usedRefs [i];
+     }
+    return s;
    }
 
   private void setSlots(int...Slots)                                            // Set slots as used
@@ -68,8 +73,9 @@ public class Slots extends Test                                                 
   protected void storeKey(int Ref) {}                                           // Store the current key at this location in their storage
   protected boolean    eq(int Ref) {return false;}                              // Tell me if the indexed key is equal to the search key
   protected boolean    le(int Ref) {return false;}                              // Tell me if the indexed key is less than or equal to the search key
-  protected String getKey(int Ref) {return "";}                                 // Value of the referenced key as a string
-  protected String    key()        {return "";}                                 // Value of the current key
+  protected String getKey(int Ref) {return null;}                               // Value of the referenced key as a string
+  protected String    key()        {return null;}                               // Value of the current key
+  protected Object copyUserSpace() {return null;}                               // Copy user space so that a new set of slots can use it
 
 //D1 State                                                                      // Query the state of the slots
 
@@ -274,6 +280,27 @@ public class Slots extends Test                                                 
     return true;                                                                // Indicate that the key was deleted
    }
 
+//D1 Split                                                                      // Split the slots in various ways
+
+  Slots splitOutRightLeaf(int Count)                                            // Split the slots in a left leaf into a right leaf retaining the specified number of slots in the left leaf
+   {final Slots Right = duplicate();
+    int s = 0;
+    for (int i = 0; i < numberOfSlots; i++)
+     {if (usedSlots[i])
+       {if (s < Count)
+         {Right.freeRef(Right.slots[i]);
+          Right.clearSlots(i);
+          s++;
+         }
+        else
+         {freeRef(slots[i]);
+          clearSlots(i);
+         }
+       }
+     }
+    return Right;
+   }
+
 //D1 Print                                                                      // Print the bit slot
 
   private String printSlots()                                                   // Print the occupancy of each slot
@@ -366,11 +393,12 @@ public class Slots extends Test                                                 
           float[]K = new float[1];
 
     final Slots b = new Slots(N, new float[N])
-     {protected void storeKey(int Ref) {((float[])userSpace)[Ref] = K[0];}         // Store the current key at this location
-      protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];} // Tell me if the indexed Key is equal to the search key
-      protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];} // Tell me if the indexed Key is less than or equal to the search key
-      protected String getKey(int Ref) {return ""+     ((float[])userSpace)[Ref];} // Value of the referenced key as a string
-      protected String    key()        {return ""+K[0];}                           // Value of the current key
+     {final float[]F = (float[])userSpace;
+      protected void storeKey(int Ref) {F[Ref] = K[0];}                         // Store the current key at this location
+      protected boolean    eq(int Ref) {return K[0] == F[Ref];}                 // Tell me if the indexed Key is equal to the search key
+      protected boolean    le(int Ref) {return K[0] <= F[Ref];}                 // Tell me if the indexed Key is less than or equal to the search key
+      protected String getKey(int Ref) {return ""+     F[Ref];}                 // Value of the referenced key as a string
+      protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
                               ok(b.empty(), true);  ok(b.full(), false);
     K[0] = 1.4f; b.insert();  ok(b.empty(), false); ok(b.full(), false);
@@ -412,14 +440,14 @@ public class Slots extends Test                                                 
 
   static void test_idn()                                                        // Repeated inserts and deletes
    {final int    N = 8;
-    final float[]F = new float[N];
           float[]K = new float[1];
 
-    final Slots b = new Slots(N, F)
-     {protected void storeKey(int Ref) {F[Ref] = K[0];}
-      protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];}
-      protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];}
-      protected String getKey(int Ref) {return ""+     ((float[])userSpace)[Ref];}
+    final Slots b = new Slots(N, new float[N])
+     {final float[]F = (float[])userSpace;
+      protected void storeKey(int Ref) {F[Ref] = K[0];}
+      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
+      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
+      protected String getKey(int Ref) {return ""+     F[Ref];}
       protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
 
@@ -441,15 +469,39 @@ public class Slots extends Test                                                 
 
   static void test_tooManySearches()
    {final int    N = 8;
-    final float[]F = new float[N];
           float[]K = new float[1];
 
-    final Slots b = new Slots(N, F)
-     {protected void storeKey(int Ref) {F[Ref] = K[0];}
-      protected boolean    eq(int Ref) {return K[0] == ((float[])userSpace)[Ref];}
-      protected boolean    le(int Ref) {return K[0] <= ((float[])userSpace)[Ref];}
-      protected String getKey(int Ref) {return ""+((float[])userSpace)[Ref];}
+    final Slots b = new Slots(N, new float[N])
+     {final float[]F = (float[])userSpace;
+      protected void storeKey(int Ref) {F[Ref] = K[0];}
+      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
+      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
+      protected String getKey(int Ref) {return ""+     F[Ref];}
       protected String    key()        {return ""+K[0];}                        // Value of the current key
+     };
+
+    K[0] = 10f; b.insert();
+    K[0] = 20f; b.insert();
+    K[0] = 15f; ok(b.find(), null);
+   }
+
+  static void test_splitLeftleafIntoRight()
+   {final int    N = 8;
+          float[]K = new float[1];
+
+    final Slots b = new Slots(N, new float[N])
+     {final float[]F = (float[])userSpace;
+      protected void storeKey(int Ref) {               F[Ref] = K[0];}
+      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
+      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
+      protected String getKey(int Ref) {return ""+     F[Ref];}
+      protected String    key()        {return ""+K[0];}                        // Value of the current key
+      protected Object copyUserSpace()
+       {final float[]T = new float[N];
+        final float[]S = F;
+        for (int i = 0; i < N; i++) T[i] = S[i];
+        return T;
+       }
      };
 
     K[0] = 10f; b.insert();
@@ -463,6 +515,7 @@ public class Slots extends Test                                                 
     test_redistribute_odd();
     test_ifd();
     test_idn();
+    test_splitLeftleafIntoRight();
    }
 
   static void newTests()                                                        // Tests being worked on
@@ -472,6 +525,7 @@ public class Slots extends Test                                                 
     test_ifd();
     test_idn();
     test_tooManySearches();
+    test_splitLeftleafIntoRight();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
