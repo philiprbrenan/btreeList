@@ -59,20 +59,21 @@ class Slots extends Test                                                        
   protected boolean    eq(int Ref) {return false;}                              // Tell me if the indexed key is equal to the search key
   protected boolean    le(int Ref) {return false;}                              // Tell me if the indexed key is less than or equal to the search key
   protected String getRef(int Ref) {return "";}                                 // Value of the referenced key as a string
+  protected String    key()        {return "";}                                 // Value of the current key
 
 //D1 State                                                                      // Query the state of the slots
 
-  boolean empty()                                                               // True if the bit slots are all empty
+  boolean empty()                                                               // True if the bit slots are all empty. The linear scan can be replaced with a parallel one in hardware.
    {for (int i = 0; i < numberOfSlots; i++) if ( usedSlots[i]) return false;
     return true;
    }
 
-  boolean full()                                                                // True if the bit slots are all full
+  boolean full()                                                                // True if the bit slots are all full. The linear scan can be replaced with a parallel one in hardware.
    {for (int i = 0; i < numberOfSlots; i++) if (!usedSlots[i]) return false;
     return true;
    }
 
-  int countUsed()                                                               // Number or slots in use
+  int countUsed()                                                               // Number or slots in use. How can we do this quickly in parallel?
    {int n = 0;
     for (int i = 0; i < numberOfSlots; i++) if (usedSlots[i]) ++n;
     return n;
@@ -138,9 +139,49 @@ class Slots extends Test                                                        
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
-// redo to use binary search
-
   public boolean insert()                                                       // Insert their current search key maintaining the order of the keys in the slots
+   {if (full()) return false;                                                   // No slot available in which to insert a new key
+    final int slot = allocRef();                                                // Their location in which to store the search key
+    storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
+    final Locate l = new Locate();                                              // Search for the slot containing the key closest to their search key
+    if ( l.above &&  l.below) {}                                                // Found
+    else if (!l.above && !l.below)                                              // Empty
+     {slots    [numberOfSlots/2] = slot;
+      usedSlots[numberOfSlots/2] = true;
+      return true;
+     }
+    else if (l.above)                                                           // Insert their key above the found key
+     {final int i = l.at;
+      final int w = locateNearestFreeSlot(i);                                   // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+      if (w > 0)                                                                // Move up
+       {shift(i+1, w-1);                                                        // Liberate a slot at this point
+        slots[i+1] = slot;                                                      // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+        usedSlots[i+1] = true;
+       }
+      else if (w < 0)                                                           // Liberate a slot below the current slot
+       {shift(i, w);                                                            // Shift any intervening slots blocking the slot below
+        slots[i] = slot;                                                        // Insert into the slot below
+       }
+      if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
+     }
+    else if (l.below)                                                          // Insert their key below the found key
+     {final int i = l.at;
+      final int w = locateNearestFreeSlot(i);                                   // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+      if (w > 0)                                                                // Move up
+       {shift(i, w);                                                            // Liberate a slot at this point
+        slots[i] = slot;                                                        // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+       }
+      else if (w < 0)                                                           // Liberate a slot below the current slot
+       {shift(i-1, w + 1);                                                      // Shift any intervening slots blocking the slot below
+        slots[i-1] = slot;                                                      // Insert into the slot below
+        usedSlots[i-1] = true;                                                  // Mark the free slot at the start of teh range of occupied slots as now in use
+       }
+      if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
+     }
+    return true;
+   }
+
+  public boolean insert2()                                                       // Insert their current search key maintaining the order of the keys in the slots
    {if (full()) return false;                                                   // No slot available in which to insert a new key
     final int slot = allocRef();                                                // Their location in which to store the search key
     storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
@@ -175,7 +216,10 @@ class Slots extends Test                                                        
     boolean above;                                                              // The search key is above or equal to the found key
     boolean below;                                                              // The search key is below or equal to the found key
 
-    void none() {}                                                              // Slots are empty
+    public String toString()
+     {return String.format("%2d %s %s", at, above ? "above" : "",
+                                            below ? "below" : "");
+     }
 
     void pos(int At, boolean Above, boolean Below)
      {at = At; above = Above; below = Below;
@@ -183,10 +227,8 @@ class Slots extends Test                                                        
 
     void above(int At) {pos(At, true, false);}                                  // Their search key is above this key
     void below(int At) {pos(At, false, true);}                                  // Their search key is below this key
-
-    void found(int At)
-     {at = At; above = true; below = true;                                      // Found their search key
-     }
+    void found(int At) {at = At; above = true; below = true;}                   // Found their search key
+    void none() {}                                                              // Slots are empty
 
     Locate()                                                                    // Locate the slot containing their current search key if possible.
      {if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
@@ -355,6 +397,7 @@ class Slots extends Test                                                        
       protected boolean    eq(int Ref) {return K[0] == F[Ref];}                 // Tell me if the indexed Key is equal to the search key
       protected boolean    le(int Ref) {return K[0] <= F[Ref];}                 // Tell me if the indexed Key is less than or equal to the search key
       protected String getRef(int Ref) {return ""+F[Ref];}                      // Value of the referenced key as a string
+      protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
 
                               ok(b.empty(), true);  ok(b.full(), false);
@@ -365,7 +408,9 @@ class Slots extends Test                                                        
     K[0] = 1.8f; b.insert();
     K[0] = 1.7f; b.insert();
     K[0] = 1.2f; b.insert();
-    K[0] = 1.1f; b.insert();  ok(b.empty(), false); ok(b.full(), true);
+    K[0] = 1.1f; b.insert();
+    ok(b.empty(), false);
+    ok(b.full(), true);
     //     0    1    2    3    4    5    6    7
     ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
 
@@ -402,6 +447,7 @@ class Slots extends Test                                                        
       protected boolean    eq(int Ref) {return K[0] == F[Ref];}
       protected boolean    le(int Ref) {return K[0] <= F[Ref];}
       protected String getRef(int Ref) {return ""+F[Ref];}
+      protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
 
     for (int i = 0; i < b.numberOfSlots*10; i++)
@@ -430,6 +476,7 @@ class Slots extends Test                                                        
       protected boolean    eq(int Ref) {return K[0] == F[Ref];}
       protected boolean    le(int Ref) {return K[0] <= F[Ref];}
       protected String getRef(int Ref) {return ""+F[Ref];}
+      protected String    key()        {return ""+K[0];}                        // Value of the current key
      };
 
     K[0] = 10f; b.insert();
