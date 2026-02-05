@@ -87,16 +87,6 @@ class Slots extends Test                                                        
     return null;                                                                // No free slot - this is not actually an error.
    }
 
-  private Integer locateNearestUsedSlot(int Position)                           // Relative position of the nearest used slot to the indicated position if there is one.
-   {if ( usedSlots[Position]) return 0;                                         // The slot is already in use. If it is free we do at least get an error if the specified position is invalid
-    for (int i = 1; i < numberOfSlots; i++)
-     {final int p = Position + i, q = Position - i;
-      if (q >= 0            &&  usedSlots[q]) return -i;                        // Look down preferentially to avoid moving the existing key if possible
-      if (p < numberOfSlots &&  usedSlots[p]) return +i;                        // Look up
-     }
-    return null;                                                                // No free slot - this is not actually an error.
-   }
-
   private Integer locatePrevUsedSlot(int Position)                              // Absolute position of this slot if it is in use or the nearest lower used slot to this position.
    {for (int i = Position; i >= 0; i--) if (usedSlots[i]) return i;
     return null;                                                                // No free slot
@@ -272,28 +262,6 @@ class Slots extends Test                                                        
     ok(b.locateNearestFreeSlot(15),  0);
    }
 
-  static void test_locateNearestUsedSlot()
-   {final Slots b = new Slots(16);
-    b.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
-                      //0123456789012345
-    ok(b.printSlots(), "..XX.XXX.X.X.X..");
-    ok(b.locateNearestUsedSlot( 0),  2);
-    ok(b.locateNearestUsedSlot( 1),  1);
-    ok(b.locateNearestUsedSlot( 2),  0);
-    ok(b.locateNearestUsedSlot( 3),  0);
-    ok(b.locateNearestUsedSlot( 4), -1);
-    ok(b.locateNearestUsedSlot( 5),  0);
-    ok(b.locateNearestUsedSlot( 6),  0);
-    ok(b.locateNearestUsedSlot( 8), -1);
-    ok(b.locateNearestUsedSlot( 9),  0);
-    ok(b.locateNearestUsedSlot(10), -1);
-    ok(b.locateNearestUsedSlot(11),  0);
-    ok(b.locateNearestUsedSlot(12), -1);
-    ok(b.locateNearestUsedSlot(13),  0);
-    ok(b.locateNearestUsedSlot(14), -1);
-    ok(b.locateNearestUsedSlot(15), -2);
-   }
-
   static void test_redistribute()
    {final Slots b = new Slots(16);
     for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
@@ -435,7 +403,6 @@ class Slots extends Test                                                        
 
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
-    test_locateNearestUsedSlot();
     test_redistribute();
     test_redistribute_odd();
     test_ifd();
@@ -444,7 +411,6 @@ class Slots extends Test                                                        
 
   static void newTests()                                                        // Tests being worked on
    {test_locateNearestFreeSlot();
-    test_locateNearestUsedSlot();
     test_redistribute();
     test_redistribute_odd();
     test_ifd();
