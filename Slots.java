@@ -170,45 +170,69 @@ class Slots extends Test                                                        
     return true;                                                                // Success
    }
 
-  public Integer locate()                                                       // Locate the slot containing their current search key if possible.
-   {if (empty()) return null;                                                   // Empty so their search key cannot be found
-    Integer a = locateNextUsedSlot(0), b = locatePrevUsedSlot(numberOfSlots-1); // Lower limit, upper limit
-    if ( le(slots[a]) && !eq(slots[a])) return null;                            // Smaller than any key
-    if (!le(slots[b]))                  return null;                            // Greater than any key
-    if (eq(slots[a])) return a;                                                 // Found at the start of the range
-    if (eq(slots[b])) return b;                                                 // Found at the end of the range
+  class Locate                                                                  // Locate the slot containing their current search key if possible.
+   {int at;                                                                     // The point at which the closest key was found
+    boolean above;                                                              // The search key is above or equal to the found key
+    boolean below;                                                              // The search key is below or equal to the found key
 
-    for(int i = 0; i < numberOfSlots; ++i)                                      // Perform a reasonable number of searches knowing the key, if it is present, is within the current range
-     {if (a == b) return null;                                                  // Narrowed to one possible key so no more searching is possible
-      final int M = (a + b) / 2;                                                // Desired mid point - but there might not be a slot in use at this point
+    void none() {}                                                              // Slots are empty
 
-      final Integer ma = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
-      if (ma != null)
-       {if (eq(slots[ma])) return ma;                                           // Found their search key at lower end
-        if (le(slots[ma]))                                                      // Their key is less than the lower mod point
-         {if (b == ma) return null;                                             // We have been here before so we are not going to find their search key
-          else b = ma;                                                          // New upper limit
-         }
-        else if (a == ma) return null;                                          // We have been here before so we are not going to find their search key
-        else     a = ma;                                                        // New lower limit
-        continue;
-       }
-
-      final Integer mb = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
-      if (mb != null)
-       {if (eq(slots[mb])) return mb;                                           // Found their search key at upper end
-        if (le(slots[mb]))                                                      // Their search key is less than the upper mid point
-         {if (b == mb) return null;                                             // We have been here before so we are not going to find their search key
-          else b = mb;                                                          // New upper limit
-         }
-        else if (a == mb) return null;                                          // We have been here before so we are not going to find their search key
-        else a = mb;                                                            // New lower limit
-        continue;
-       }
-      stop("This should not happen:", a, b, ma, mb);                            // We know there is at least one occupied slot so there will be a lower or upper linit to the range
+    void pos(int At, boolean Above, boolean Below)
+     {at = At; above = Above; below = Below;
      }
-    stop("Searched more than the maximum number of times:", numberOfSlots);
-    return null;                                                                // Key not present
+
+    void above(int At) {pos(At, true, false);}                                  // Their search key is above this key
+    void below(int At) {pos(At, false, true);}                                  // Their search key is below this key
+
+    void found(int At)
+     {at = At; above = true; below = true;                                      // Found their search key
+     }
+
+    Locate()                                                                    // Locate the slot containing their current search key if possible.
+     {if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
+      Integer a = locateNextUsedSlot(0),b = locatePrevUsedSlot(numberOfSlots-1);// Lower limit, upper limit
+      if ( le(slots[a]) && !eq(slots[a])) {below(a); return;}                   // Smaller than any key
+      if (!le(slots[b]))                  {above(b); return;}                   // Greater than any key
+      if (eq(slots[a]))                   {found(a); return;}                   // Found at the start of the range
+      if (eq(slots[b]))                   {found(b); return;}                   // Found at the end of the range
+
+      for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range
+       {if (a == b) {pos(a, false, false); return;}                             // Narrowed to one possible key so no more searching is possible
+        final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
+
+        final Integer ma = locatePrevUsedSlot(M);                               // Occupied slot preceding mid point
+        if (ma != null)
+         {if (eq(slots[ma])) {found(ma); return;};                              // Found their search key at lower end
+          if (le(slots[ma]))                                                    // Their key is less than the lower mod point
+           {if (b == ma)     {below(b);  return;}                               // We have been here before so we are not going to find their search key
+            else b = ma;                                                        // New upper limit
+           }
+          else if (a == ma)  {above(a);  return;}                               // We have been here before so we are not going to find their search key
+          else     a =  ma;                                                     // New lower limit
+          continue;
+         }
+
+        final Integer mb = locateNextUsedSlot(M);                               // Occupied slot succeeding mid point
+        if (mb != null)
+         {if (eq(slots[mb])) {found(mb); return;}                               // Found their search key at upper end
+          if (le(slots[mb]))                                                    // Their search key is less than the upper mid point
+           {if (b == mb)     {below(b);  return;}                               // We have been here before so we are not going to find their search key
+            else b = mb;                                                        // New upper limit
+           }
+          else if (a == mb)  {above(a);  return;}                               // We have been here before so we are not going to find their search key
+          else     a =  mb;                                                    // New lower limit
+          continue;
+         }
+        stop("This should not happen:", a, b, ma, mb);                          // We know there is at least one occupied slot so there will be a lower or upper linit to the range
+       }
+      stop("Searched more than the maximum number of times:", numberOfSlots);
+     }
+   }
+
+  public Integer locate()                                                       // Locate the slot containing their current search key if possible.
+   {final Locate l = new Locate();                                              // Locate their search key
+    if (l.above && l.below) return l.at;                                        // Found
+    return null;                                                                // Not found
    }
 
   public Integer find()                                                         // Find the index in user space of the current key
