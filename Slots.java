@@ -112,15 +112,15 @@ class Slots extends Test                                                        
      {for (int i = Width; i > 0; --i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
         slots[p] = slots[p-1];                                                  // Move slot
-        usedSlots[p] = true;                                                    // We only move occupied slots
        }
+      usedSlots[Position+Width] = true;                                         // We only move occupied slots
      }
     else if (Width < 0)                                                         // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
      {for (int i = Width; i < 0; ++i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
         slots[p] = slots[p+1];                                                  // Move slot
-        usedSlots[p] = true;                                                    // We only move occupied slots
        }
+      usedSlots[Position+Width] = true;                                         // We only move occupied slots
      }
    }
 
