@@ -44,7 +44,7 @@ class Slots extends Test                                                        
         return i;
        }
      }
-    stop("No more refs available");
+    stop("No more slots available");
     return -1;
    }
 
