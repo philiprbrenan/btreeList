@@ -40,7 +40,7 @@ class Slots extends Test                                                        
      }
    }
 
-  private int allocRef()                                                        // Allocate a reference to one of their keys
+  private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here becuase in hardware this will be done in parallel
    {for (int i = 0; i < numberOfSlots; i++)
      {if (!usedRefs[i])
        {usedRefs[i] = true;
@@ -138,7 +138,7 @@ class Slots extends Test                                                        
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
-// redo insert and delete to use binary search
+// redo to use binary search
 
   public boolean insert()                                                       // Insert their current search key maintaining the order of the keys in the slots
    {if (full()) return false;                                                   // No slot available in which to insert a new key
@@ -226,17 +226,12 @@ class Slots extends Test                                                        
    }
 
   public boolean delete()                                                       // Delete the current key
-   {for (int i = 0; i < numberOfSlots; ++i)                                     // Search for the first greater than or equal key
-     {if (usedSlots[i])                                                         // Valid slot
-       {if (eq(slots[i]))                                                       // Found key
-         {clearSlots(i);                                                        // Delete key
-          freeRef(slots[i]);                                                    // Mark the key refence is being available for a new key
-          if (redistributeNow()) redistribute();                                // Redistribute the remaining free slots
-          return true;                                                          // Indicate that the key was deleted
-         }
-       }
-     }
-    return false;                                                               // Key not present
+   {final Integer i = locate();                                                 // Locate their key
+    if (i == null) return false;                                                // Their key is not in the slots
+    clearSlots(i);                                                              // Delete key
+    freeRef(slots[i]);                                                          // Mark the key refence is being available for a new key
+    if (redistributeNow()) redistribute();                                      // Redistribute the remaining free slots
+    return true;                                                                // Indicate that the key was deleted
    }
 
 //D1 Print                                                                      // Print the bit slot
