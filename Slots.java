@@ -281,7 +281,7 @@ public class Slots extends Test                                                 
 
 //D1 Split                                                                      // Split the slots in various ways
 
-  Slots splitOutRightLeaf(int Count)                                            // Split the slots in a left leaf into a right leaf retaining the specified number of slots in the left leaf
+  Slots splitLeftleafIntoRight(int Count)                                            // Split the slots in a left leaf into a right leaf retaining the specified number of slots in the left leaf
    {final Slots Right = duplicate();
 
     int s = 0;
@@ -473,7 +473,7 @@ public class Slots extends Test                                                 
 
     final double[]d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
     for (int i = 0; i < d.length; i++) l.insert(d[i]);
-    final Slots r = l.splitOutRightLeaf(d.length / 2);
+    final Slots r = l.splitLeftleafIntoRight(d.length / 2);
     ok(l, "1.1, 1.2, 1.3, 1.4");
     ok(r, "1.5, 1.6, 1.7, 1.8");
    }
