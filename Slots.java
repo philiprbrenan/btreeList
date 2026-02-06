@@ -11,30 +11,31 @@ public class Slots extends Test                                                 
   final int    []slots;                                                         // Key ordering
   final boolean[]usedSlots;                                                     // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistributed to make it insertions faster
+  final double []keys;                                                          // Keys
   final int      redistributeFrequency;                                         // Call redistribute after this many actions
-  final Object   userSpace;                                                     // Space in which the user might store date to respond to the overrideable methods
   int actions = 0;                                                              // Number of actions performed
+  static boolean debug = false;                                                 // Debug if true
 
 //D1 Construction                                                               // Construct and layout the slots
 
-  public Slots(int NumberOfSlots, Object UserSpace)                                               // Create the slots
+  public Slots(int NumberOfSlots)                                               // Create the slots
    {numberOfSlots         = NumberOfSlots;
     redistributeFrequency = (int)java.lang.Math.sqrt(numberOfSlots);            // Call redistribute after this many actions
-    userSpace = UserSpace;
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfSlots];
+    keys      = new double [numberOfSlots];
    }
 
-  private Slots(int NumberOfSlots) {this(NumberOfSlots,  null);}                // Make a new set of slots the same size as the current set
-
   private Slots duplicate()                                                     // Duplicate a set of slots
-   {final Slots s = new Slots(numberOfSlots,  copyUserSpace());
+   {final Slots s = new Slots(numberOfSlots);
     for (int i = 0; i < numberOfSlots; i++)                                     // Copy the slots fromn source to target
      {s.slots    [i] = slots    [i];
       s.usedSlots[i] = usedSlots[i];
       s.usedRefs [i] = usedRefs [i];
+      s.keys     [i] = keys     [i];
      }
+
     return s;
    }
 
@@ -68,14 +69,11 @@ public class Slots extends Test                                                 
 
   private void freeRef(int Ref) {usedRefs[Ref] = false;}                        // Free a reference to one of their keys - java checks for array bounds sdo no point in an explicit check.
 
-//D1 Overrides                                                                  // Overides which enable them to tell us about their keys
+//D1 Keys                                                                       // Operations on keys
 
-  protected void storeKey(int Ref) {}                                           // Store the current key at this location in their storage
-  protected boolean    eq(int Ref) {return false;}                              // Tell me if the indexed key is equal to the search key
-  protected boolean    le(int Ref) {return false;}                              // Tell me if the indexed key is less than or equal to the search key
-  protected String getKey(int Ref) {return null;}                               // Value of the referenced key as a string
-  protected String    key()        {return null;}                               // Value of the current key
-  protected Object copyUserSpace() {return null;}                               // Copy user space so that a new set of slots can use it
+  boolean    eq(double Key, int Slot) {return Key == keys[slots[Slot]];}        // Search key is equal to indexed key
+  boolean    le(double Key, int Slot) {return Key <= keys[slots[Slot]];}        // Search key is less than or equal to indexed key
+  String getKey(int Slot) {return ""+                keys[slots[Slot]];}        // Value of the referenced key as a string
 
 //D1 State                                                                      // Query the state of the slots
 
@@ -158,12 +156,12 @@ public class Slots extends Test                                                 
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
-  public boolean insert()                                                       // Insert their current search key maintaining the order of the keys in the slots
+  public boolean insert(double Key)                                             // Insert a key into the slots maintaining the order of all the keys in the slots
    {if (full()) return false;                                                   // No slot available in which to insert a new key
-    final int slot = allocRef();                                                // Their location in which to store the search key
-    storeKey(slot);                                                             // Tell the caller to store the key in the indexed location
-    final Locate l = new Locate();                                              // Search for the slot containing the key closest to their search key
-    if ( l.above &&  l.below) {}                                                // Found
+    final int slot = allocRef();                                                // The location in which to store the search key
+    keys[slot] = Key;                                                           // Store the new key in the referenced location
+    final Locate l = new Locate(Key);                                           // Search for the slot containing the key closest to their search key
+    if ( l.above && l.below) {}                                                 // Found
     else if (!l.above && !l.below)                                              // Empty
      {slots    [numberOfSlots/2] = slot;
       usedSlots[numberOfSlots/2] = true;
@@ -219,22 +217,23 @@ public class Slots extends Test                                                 
     void found(int At) {at = At; above = true; below = true;}                   // Found their search key
     void none() {}                                                              // Slots are empty
 
-    Locate()                                                                    // Locate the slot containing their current search key if possible.
+    Locate(double Key)                                                          // Locate the slot containing their current search key if possible.
      {if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
       Integer a = locateNextUsedSlot(0),b = locatePrevUsedSlot(numberOfSlots-1);// Lower limit, upper limit
-      if ( le(slots[a]) && !eq(slots[a])) {below(a); return;}                   // Smaller than any key
-      if (!le(slots[b]))                  {above(b); return;}                   // Greater than any key
-      if (eq(slots[a]))                   {found(a); return;}                   // Found at the start of the range
-      if (eq(slots[b]))                   {found(b); return;}                   // Found at the end of the range
+      if ( le(Key, a) && !eq(Key, a)) {below(a); return;}                       // Smaller than any key
+      if (!le(Key, b))                       {above(b); return;}                // Greater than any key
+      if ( eq(Key, a))                       {found(a); return;}                // Found at the start of the range
+      if ( eq(Key, b))                       {found(b); return;}                // Found at the end of the range
 
       for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this i snot a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {if (a == b) {pos(a, false, false); return;}                             // Narrowed to one possible key so no more searching is possible
         final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
 
         final Integer ma = locatePrevUsedSlot(M);                               // Occupied slot preceding mid point
+
         if (ma != null)
-         {if (eq(slots[ma])) {found(ma); return;};                              // Found their search key at lower end
-          if (le(slots[ma]))                                                    // Their key is less than the lower mod point
+         {if (eq(Key, ma))   {found(ma); return;};                              // Found their search key at lower end
+          if (le(Key, ma))                                                      // Their key is less than the lower mod point
            {if (b == ma)     {below(b);  return;}                               // We have been here before so we are not going to find their search key
             else b = ma;                                                        // New upper limit
            }
@@ -245,8 +244,8 @@ public class Slots extends Test                                                 
 
         final Integer mb = locateNextUsedSlot(M);                               // Occupied slot succeeding mid point
         if (mb != null)
-         {if (eq(slots[mb])) {found(mb); return;}                               // Found their search key at upper end
-          if (le(slots[mb]))                                                    // Their search key is less than the upper mid point
+         {if (eq(Key, mb)) {found(mb); return;}                                 // Found their search key at upper end
+          if (le(Key, mb))                                                      // Their search key is less than the upper mid point
            {if (b == mb)     {below(b);  return;}                               // We have been here before so we are not going to find their search key
             else b = mb;                                                        // New upper limit
            }
@@ -260,19 +259,19 @@ public class Slots extends Test                                                 
      }
    }
 
-  public Integer locate()                                                       // Locate the slot containing their current search key if possible.
-   {final Locate l = new Locate();                                              // Locate their search key
+  public Integer locate(double Key)                                             // Locate the slot containing the current search key if possible.
+   {final Locate l = new Locate(Key);                                           // Locate the search key
     if (l.above && l.below) return l.at;                                        // Found
     return null;                                                                // Not found
    }
 
-  public Integer find()                                                         // Find the index in user space of the current key
-   {final Integer i = locate();
+  public Integer find(double Key)                                               // Find the index of the current key in the slots
+   {final Integer i = locate(Key);
     return i == null ? null : slots[i];
    }
 
-  public boolean delete()                                                       // Delete the current key
-   {final Integer i = locate();                                                 // Locate their key
+  public boolean delete(double Key)                                             // Delete the specified key
+   {final Integer i = locate(Key);                                              // Locate their key
     if (i == null) return false;                                                // Their key is not in the slots
     clearSlots(i);                                                              // Delete key
     freeRef(slots[i]);                                                          // Mark the key refence is being available for a new key
@@ -284,6 +283,7 @@ public class Slots extends Test                                                 
 
   Slots splitOutRightLeaf(int Count)                                            // Split the slots in a left leaf into a right leaf retaining the specified number of slots in the left leaf
    {final Slots Right = duplicate();
+
     int s = 0;
     for (int i = 0; i < numberOfSlots; i++)
      {if (usedSlots[i])
@@ -309,10 +309,26 @@ public class Slots extends Test                                                 
     return ""+s;
    }
 
+  private String dump()                                                         // Dump the slots
+   {final StringBuilder s = new StringBuilder();
+    final int N = numberOfSlots;
+    s.append("\npositions: ");
+    for (int i = 0; i < N; i++) s.append(String.format(" %3d", i));
+    s.append("\nslots    : ");
+    for (int i = 0; i < N; i++) s.append(String.format(" %3d", slots[i]));
+    s.append("\nusedSlots: ");
+    for (int i = 0; i < N; i++) s.append(usedSlots[i] ? "   X" : "   .");
+    s.append("\nusedRefs : ");
+    for (int i = 0; i < N; i++) s.append(usedRefs [i] ? "   X" : "   .");
+    s.append("\nkeys     : ");
+    for (int i = 0; i < N; i++) s.append(String.format(" %3.1f", keys[i]));
+    return ""+s;
+   }
+
   public String toString()                                                      // Print the values in the used slots
    {final StringJoiner s = new StringJoiner(", ");
     for (int i = 0; i < numberOfSlots; i++)
-     {if (usedSlots[i]) s.add(getKey(slots[i]));
+     {if (usedSlots[i]) s.add(""+keys[slots[i]]);
      }
     return ""+s;
    }
@@ -389,124 +405,75 @@ public class Slots extends Test                                                 
    }
 
   static void test_ifd()
-   {final int    N = 8;
-          float[]K = new float[1];
-
-    final Slots b = new Slots(N, new float[N])
-     {final float[]F = (float[])userSpace;
-      protected void storeKey(int Ref) {F[Ref] = K[0];}                         // Store the current key at this location
-      protected boolean    eq(int Ref) {return K[0] == F[Ref];}                 // Tell me if the indexed Key is equal to the search key
-      protected boolean    le(int Ref) {return K[0] <= F[Ref];}                 // Tell me if the indexed Key is less than or equal to the search key
-      protected String getKey(int Ref) {return ""+     F[Ref];}                 // Value of the referenced key as a string
-      protected String    key()        {return ""+K[0];}                        // Value of the current key
-     };
-                              ok(b.empty(), true);  ok(b.full(), false);
-    K[0] = 1.4f; b.insert();  ok(b.empty(), false); ok(b.full(), false);
-    K[0] = 1.3f; b.insert();  ok(b.countUsed(), 2);
-    K[0] = 1.6f; b.insert();
-    K[0] = 1.5f; b.insert();
-    K[0] = 1.8f; b.insert();
-    K[0] = 1.7f; b.insert();
-    K[0] = 1.2f; b.insert();
-    K[0] = 1.1f; b.insert();
-    ok(b.empty(), false);
-    ok(b.full(), true);
+   {final Slots b = new Slots(8);
+                    ok(b.empty(), true);  ok(b.full(), false);
+    b.insert(1.4);  ok(b.empty(), false); ok(b.full(), false);
+    b.insert(1.3);  ok(b.countUsed(), 2);
+    b.insert(1.6);
+    b.insert(1.5);
+    b.insert(1.8);
+    b.insert(1.7);
+    b.insert(1.2);
+    b.insert(1.1); ok(b.empty(), false); ok(b.full(), true);
     //     0    1    2    3    4    5    6    7
     ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
 
-    K[0] = 1.4f; ok(b.locate(), 3);
-    K[0] = 1.3f; ok(b.locate(), 2);
-    K[0] = 1.6f; ok(b.locate(), 5);
-    K[0] = 1.5f; ok(b.locate(), 4);
-    K[0] = 1.8f; ok(b.locate(), 7);
-    K[0] = 1.7f; ok(b.locate(), 6);
-    K[0] = 1.2f; ok(b.locate(), 1);
-    K[0] = 1.1f; ok(b.locate(), 0);
-    K[0] = 1.0f; ok(b.locate(), null);
-    K[0] = 2.0f; ok(b.locate(), null);
+    ok(b.locate(1.4), 3);
+    ok(b.locate(1.3), 2);
+    ok(b.locate(1.6), 5);
+    ok(b.locate(1.5), 4);
+    ok(b.locate(1.8), 7);
+    ok(b.locate(1.7), 6);
+    ok(b.locate(1.2), 1);
+    ok(b.locate(1.1), 0);
+    ok(b.locate(1.0), null);
+    ok(b.locate(2.0), null);
 
-    final float[]F = (float[])b.userSpace;
-    K[0] = 1.4f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
-    K[0] = 1.2f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
-    K[0] = 1.3f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
-    K[0] = 1.6f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
-    K[0] = 1.8f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
-    K[0] = 1.1f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
-    K[0] = 1.7f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
-    K[0] = 1.5f; ok(F[b.find()], K[0]); ok(b.delete(), true); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
+    ok(b.keys[b.find(1.4)], 1.4); ok(b.delete(1.4), true); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
+    ok(b.keys[b.find(1.2)], 1.2); ok(b.delete(1.2), true); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
+    ok(b.keys[b.find(1.3)], 1.3); ok(b.delete(1.3), true); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
+    ok(b.keys[b.find(1.6)], 1.6); ok(b.delete(1.6), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
+    ok(b.keys[b.find(1.8)], 1.8); ok(b.delete(1.8), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
+    ok(b.keys[b.find(1.1)], 1.1); ok(b.delete(1.1), true); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
+    ok(b.keys[b.find(1.7)], 1.7); ok(b.delete(1.7), true); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
+    ok(b.keys[b.find(1.5)], 1.5); ok(b.delete(1.5), true); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
 
-    K[0] = 1.0f; ok(b.locate(), null); ok(b.delete(), false);
+    ok(b.locate(1.0), null); ok(b.delete(1.0), false);
    }
 
   static void test_idn()                                                        // Repeated inserts and deletes
-   {final int    N = 8;
-          float[]K = new float[1];
-
-    final Slots b = new Slots(N, new float[N])
-     {final float[]F = (float[])userSpace;
-      protected void storeKey(int Ref) {F[Ref] = K[0];}
-      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
-      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
-      protected String getKey(int Ref) {return ""+     F[Ref];}
-      protected String    key()        {return ""+K[0];}                        // Value of the current key
-     };
+   {final Slots b = new Slots(8);
 
     for (int i = 0; i < b.numberOfSlots*10; i++)
-     {K[0] = 1.4f; b.insert(); b.redistribute();
-      K[0] = 1.3f; b.insert(); b.redistribute();
-      K[0] = 1.6f; b.insert(); b.redistribute();
-      K[0] = 1.5f; b.insert(); b.redistribute();
+     {b.insert(1.4); b.redistribute();
+      b.insert(1.3); b.redistribute();
+      b.insert(1.6); b.redistribute();
+      b.insert(1.5); b.redistribute();
       ok(b, "1.3, 1.4, 1.5, 1.6");
       ok(b.printSlots(), "X.X.X.X.");
-      K[0] = 1.4f; b.delete(); b.redistribute();
-      K[0] = 1.3f; b.delete(); b.redistribute();
-      K[0] = 1.6f; b.delete(); b.redistribute();
-      K[0] = 1.5f; b.delete(); b.redistribute();
+      b.delete(1.4); b.redistribute();
+      b.delete(1.3); b.redistribute();
+      b.delete(1.6); b.redistribute();
+      b.delete(1.5); b.redistribute();
       ok(b, "");
       ok(b.printSlots(), "........");
      }
    }
 
   static void test_tooManySearches()
-   {final int    N = 8;
-          float[]K = new float[1];
+   {final Slots b = new Slots(8);
 
-    final Slots b = new Slots(N, new float[N])
-     {final float[]F = (float[])userSpace;
-      protected void storeKey(int Ref) {F[Ref] = K[0];}
-      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
-      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
-      protected String getKey(int Ref) {return ""+     F[Ref];}
-      protected String    key()        {return ""+K[0];}                        // Value of the current key
-     };
-
-    K[0] = 10f; b.insert();
-    K[0] = 20f; b.insert();
-    K[0] = 15f; ok(b.find(), null);
+    b.insert(10.0);
+    b.insert(20.0);
+    ok(b.find(15.0), null);
    }
 
   static void test_splitLeftleafIntoRight()
-   {final int    N = 8;
-          float[]K = new float[1];
+   {final Slots l = new Slots(8);
 
-    final Slots b = new Slots(N, new float[N])
-     {final float[]F = (float[])userSpace;
-      protected void storeKey(int Ref) {               F[Ref] = K[0];}
-      protected boolean    eq(int Ref) {return K[0] == F[Ref];}
-      protected boolean    le(int Ref) {return K[0] <= F[Ref];}
-      protected String getKey(int Ref) {return ""+     F[Ref];}
-      protected String    key()        {return ""+K[0];}                        // Value of the current key
-      protected Object copyUserSpace()
-       {final float[]T = new float[N];
-        final float[]S = F;
-        for (int i = 0; i < N; i++) T[i] = S[i];
-        return T;
-       }
-     };
-
-    K[0] = 10f; b.insert();
-    K[0] = 20f; b.insert();
-    K[0] = 15f; ok(b.find(), null);
+    final double[]d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
+    for (int i = 0; i < d.length; i++) l.insert(d[i]);
+    final Slots r = l.splitOutRightLeaf(d.length / 2);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
