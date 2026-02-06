@@ -281,24 +281,44 @@ public class Slots extends Test                                                 
 
 //D1 Split                                                                      // Split the slots in various ways
 
-  Slots splitLeftleafIntoRight(int Count)                                            // Split the slots in a left leaf into a right leaf retaining the specified number of slots in the left leaf
-   {final Slots Right = duplicate();
+  Slots splitLeftLeafIntoRight(int Count)                                       // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
+   {final Slots Right = duplicate();                                            // Create the right leaf as a duplicate of the left leaf
 
-    int s = 0;
-    for (int i = 0; i < numberOfSlots; i++)
-     {if (usedSlots[i])
-       {if (s < Count)
-         {Right.freeRef(Right.slots[i]);
-          Right.clearSlots(i);
-          s++;
+    int s = 0;                                                                  // Count slots used
+    for (int i = 0; i < numberOfSlots; i++)                                     // Each slot
+     {if (usedSlots[i])                                                         // Slot is in use
+       {if (s < Count)                                                          // Still in left leaf
+         {Right.freeRef(Right.slots[i]);                                        // Remove this entry from the right leaf as it belongs to the left leaf
+          Right.clearSlots(i);                                                  // Free the entry from the right leaf as it is being used in the left leaf
+          s++;                                                                  // Number of entries active in left leaf
          }
-        else
-         {freeRef(slots[i]);
-          clearSlots(i);
+        else                                                                    // Modify left leaf
+         {freeRef(slots[i]);                                                    // Free key being used in right leaf
+          clearSlots(i);                                                        // Clear slot being used in right leaf
          }
        }
-     }
+     }                                                                          // The new right leaf
     return Right;
+   }
+
+  Slots splitRightLeafIntoLeft(int Count)                                       // Split the specified number of leading slots in a right leaf to a new left leaf and return the left elaf
+   {final Slots Left = duplicate();                                            // Create the right leaf as a duplicate of the left leaf
+
+    int s = 0;                                                                  // Count slots used
+    for (int i = 0; i < numberOfSlots; i++)                                     // Each slot
+     {if (usedSlots[i])                                                         // Slot is in use
+       {if (s < Count)                                                          // Still in left leaf
+         {freeRef(slots[i]);                                                    // Remove this entry from the right leaf as it belongs to the left leaf
+          clearSlots(i);                                                        // Free the entry from the right leaf as it is being used in the left leaf
+          s++;                                                                  // Number of entries active in left leaf
+         }
+        else                                                                    // Modify left leaf
+         {Left.freeRef(slots[i]);                                               // Free key being used in right leaf
+          Left.clearSlots(i);                                                   // Clear slot being used in right leaf
+         }
+       }
+     }                                                                          // The new right leaf
+    return Left;
    }
 
 //D1 Print                                                                      // Print the bit slot
@@ -473,7 +493,17 @@ public class Slots extends Test                                                 
 
     final double[]d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
     for (int i = 0; i < d.length; i++) l.insert(d[i]);
-    final Slots r = l.splitLeftleafIntoRight(d.length / 2);
+    final Slots r = l.splitLeftLeafIntoRight(d.length / 2);
+    ok(l, "1.1, 1.2, 1.3, 1.4");
+    ok(r, "1.5, 1.6, 1.7, 1.8");
+   }
+
+  static void test_splitRightleafIntoLeft()
+   {final Slots r = new Slots(8);
+
+    final double[]d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
+    for (int i = 0; i < d.length; i++) r.insert(d[i]);
+    final Slots l = r.splitRightLeafIntoLeft(d.length / 2);
     ok(l, "1.1, 1.2, 1.3, 1.4");
     ok(r, "1.5, 1.6, 1.7, 1.8");
    }
@@ -485,16 +515,11 @@ public class Slots extends Test                                                 
     test_ifd();
     test_idn();
     test_splitLeftleafIntoRight();
+    test_splitRightleafIntoLeft();
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//test_locateNearestFreeSlot();
-    //test_redistribute();
-    //test_redistribute_odd();
-    //test_ifd();
-    //test_idn();
-    //test_tooManySearches();
-    test_splitLeftleafIntoRight();
+   {test_splitRightleafIntoLeft();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
