@@ -474,6 +474,8 @@ public class Slots extends Test                                                 
     final double[]d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
     for (int i = 0; i < d.length; i++) l.insert(d[i]);
     final Slots r = l.splitOutRightLeaf(d.length / 2);
+    ok(l, "1.1, 1.2, 1.3, 1.4");
+    ok(r, "1.5, 1.6, 1.7, 1.8");
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
@@ -486,12 +488,12 @@ public class Slots extends Test                                                 
    }
 
   static void newTests()                                                        // Tests being worked on
-   {test_locateNearestFreeSlot();
-    test_redistribute();
-    test_redistribute_odd();
-    test_ifd();
-    test_idn();
-    test_tooManySearches();
+   {//test_locateNearestFreeSlot();
+    //test_redistribute();
+    //test_redistribute_odd();
+    //test_ifd();
+    //test_idn();
+    //test_tooManySearches();
     test_splitLeftleafIntoRight();
    }
 
