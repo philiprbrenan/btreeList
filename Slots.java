@@ -647,11 +647,12 @@ data: 1.5, 1.6, 1.7, 1.8
 
   static Slots.Branch test_branch()
    {final Slots.Branch b = Slots.Branch(7);
+    final Slots        s = b.parentSlots;
 
     final double[]k = new double[]{1.3, 1.6, 1.5, 1.7, 1.4, 1.2, 1.1};
     final String[]d = new String[]{"3", "6", "5", "7", "4", "2", "1"};
-    for (int i = 0; i < d.length; i++) b.insert(k[i], b.parentSlots.new TestLeafOrBranch(d[i]));
-    b.setTop(b.parentSlots.new TestLeafOrBranch("8"));
+    for (int i = 0; i < d.length; i++) b.insert(k[i], s.new TestLeafOrBranch(d[i]));
+    b.setTop(s.new TestLeafOrBranch("8"));
     return b;
    }
 
