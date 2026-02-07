@@ -370,12 +370,12 @@ public class Slots extends Test                                                 
    {final Slots parentSlots = Slots.this;                                       // Explicit reference to containing class
     final double     []data = new double[numberOfSlots];                        // Data corresponding to each key in the leaf
 
-    Leaf splitLeftLeafIntoRight(int Count)                                      // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
+    Leaf splitRight(int Count)                                      // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
      {final Leaf Right = (Leaf)duplicateLeafOrBranch();                         // Create the right leaf as a duplicate of the left leaf
-      return splitLeftLeafIntoRight(Count, Right);                              // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
+      return splitRight(Count, Right);                              // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
      }
 
-    Leaf splitLeftLeafIntoRight(int Count, Leaf Right)                          // Split the slots in a left leaf into an existing right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
+    Leaf splitRight(int Count, Leaf Right)                          // Split the slots in a left leaf into an existing right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
      {int s = 0;                                                                // Count slots used
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
        {if (usedSlots[i])                                                       // Slot is in use
@@ -389,9 +389,9 @@ public class Slots extends Test                                                 
       return Right;
      }
 
-    Leaf splitRightLeafIntoLeft(int Count)                                      // Split the specified number of leading slots in a right leaf to a new left leaf and return the left leaf
+    Leaf splitLeft(int Count)                                      // Split the specified number of leading slots in a right leaf to a new left leaf and return the left leaf
      {final Leaf Left = (Leaf)duplicateLeafOrBranch();                          // Create the right leaf as a duplicate of the left leaf
-      Left.splitLeftLeafIntoRight(Count, this);
+      Left.splitRight(Count, this);
       return Left;
      }
 
@@ -442,12 +442,12 @@ public class Slots extends Test                                                 
        }
      }
 
-    Split splitLeftBranchIntoRight(int Count)                                   // Split the slots in a left branch into a new right branch retaining the specified number of slots in the left branch and returning the new right branch
+    Split splitRight(int Count)                                   // Split the slots in a left branch into a new right branch retaining the specified number of slots in the left branch and returning the new right branch
      {final Branch Right = (Branch)duplicateLeafOrBranch();                     // Create the right branch as a duplicate of the left branch
-      return splitLeftBranchIntoRight(Count, Right);                            // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
+      return splitRight(Count, Right);                            // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
      }
 
-    Split splitLeftBranchIntoRight(int Count, Branch Right)                     // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
+    Split splitRight(int Count, Branch Right)                     // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
      {Double split = null;                                                      // Splitting key
       int s = 0;                                                                // Count slots used
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
@@ -469,9 +469,9 @@ public class Slots extends Test                                                 
       return split == null ? null : new Split(split, this, Right);              // Details of the split
      }
 
-    Split splitRightBranchIntoLeft(int Count)                                   // Split the specified number of leading slots in a right branch to a new left branch and return the left leaf
+    Split splitLeft(int Count)                                   // Split the specified number of leading slots in a right branch to a new left branch and return the left leaf
      {final Branch Left = (Branch)duplicateLeafOrBranch();                      // Create the right branch as a duplicate of the left branch
-      return Left.splitLeftBranchIntoRight(Count, this);
+      return Left.splitRight(Count, this);
      }
 
     LeafOrBranch duplicateLeafOrBranch()                                        // Duplicate a branch
@@ -723,11 +723,25 @@ keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
   static void test_squeezeRight()
    {final Slots b = new Slots(16);
-    b.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
-                      //0123456789012345
-    ok(b.printSlots(), "..XX.XXX.X.X.X..");
+    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1;
+    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2;
+    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3;
+    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4;
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
+usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
+keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+""");
     b.squeezeRight();
-    ok(b.printSlots(), "........XXXXXXXX");
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   0   0   0   0   0   0   0   0   0   0   0  12  13  14  15
+usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
+usedRefs :    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
+keys     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
+""");
    }
 
   static Slots.Leaf test_leaf()
@@ -739,7 +753,7 @@ keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
   static void test_splitLeftLeafIntoRight()
    {final Slots.Leaf l = test_leaf();
-    final Slots.Leaf r = l.splitLeftLeafIntoRight(l.numberOfSlots() / 2);
+    final Slots.Leaf r = l.splitRight(l.numberOfSlots() / 2);
     ok(l, """
 keys: 1.1, 1.2, 1.3, 1.4
 data: 1.1, 1.2, 1.3, 1.4
@@ -752,7 +766,7 @@ data: 1.5, 1.6, 1.7, 1.8
 
   static void test_splitRightLeafIntoLeft()
    {final Slots.Leaf r = test_leaf();
-    final Slots.Leaf l = r.splitRightLeafIntoLeft(r.numberOfSlots() / 2);
+    final Slots.Leaf l = r.splitLeft(r.numberOfSlots() / 2);
     ok(l, """
 keys: 1.1, 1.2, 1.3, 1.4
 data: 1.1, 1.2, 1.3, 1.4
@@ -776,7 +790,7 @@ data: 1.5, 1.6, 1.7, 1.8
 
   static void test_splitLeftBranchIntoRight()
    {final Slots.Branch       l = test_branch();
-    final Slots.Branch.Split s = l.splitLeftBranchIntoRight(l.numberOfSlots() / 2);
+    final Slots.Branch.Split s = l.splitRight(l.numberOfSlots() / 2);
     ok(s.left, """
 keys: 1.1, 1.2, 1.3
 data: 1, 2, 3
@@ -792,7 +806,7 @@ top : 8
 
   static void test_splitRightBranchIntoLeft()
    {final Slots.Branch       r = test_branch();
-    final Slots.Branch.Split s = r.splitRightBranchIntoLeft(r.numberOfSlots() / 2);
+    final Slots.Branch.Split s = r.splitLeft(r.numberOfSlots() / 2);
     ok(s.left, """
 keys: 1.1, 1.2, 1.3
 data: 1, 2, 3
