@@ -60,11 +60,13 @@ public class Slots extends Test                                                 
 
   private void clearSlotAndRef(int I) {freeRef(slots[I]); clearSlots(I);}       // Remove a key from the slots
 
-  private int slots(int I) {return slots[I];}                                   // The indexed slot
+  private int     slots    (int I) {return slots[I];}                           // The indexed slot
+  private boolean usedSlots(int I) {return usedSlots[I];}                       // The indexed slot usage indicator
+  private boolean usedRefs (int I) {return usedRefs[I];}                        // The indexed reference usage indicator
 
   private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here because in hardware this will be done in parallel
    {for (int i = 0; i < numberOfSlots; i++)
-     {if (!usedRefs[i])
+     {if (!usedRefs(i))
        {usedRefs[i] = true;
         return i;
        }
@@ -208,7 +210,7 @@ public class Slots extends Test                                                 
      }
    }
 
-  void squeezeRight()                                                            // Squeeze the used slots to the left end
+  void squeezeRight()                                                           // Squeeze the used slots to the left end
    {if (empty() || full()) return;                                              // Nothing to squeeze
     final Slots d = duplicate();
     int p = numberOfSlots - 1;
@@ -355,6 +357,9 @@ public class Slots extends Test                                                 
    {LeafOrBranch duplicateLeafOrBranch() {return null;}
     int numberOfSlots() {return numberOfSlots;}
     void clearSlotAndRef(int I) {Slots.this.clearSlotAndRef(I);}                // Remove a key from the slots
+    void squeezeLeft () {}
+    void squeezeRight() {}
+    String dump()       {return null;}
    }
 
   class TestLeafOrBranch extends LeafOrBranch                                   // Leaf or branch used during testing to check splits and merges
@@ -389,7 +394,7 @@ public class Slots extends Test                                                 
       return Right;
      }
 
-    Leaf splitLeft(int Count)                                      // Split the specified number of leading slots in a right leaf to a new left leaf and return the left leaf
+    Leaf splitLeft(int Count)                                                   // Split the specified number of leading slots in a right leaf to a new left leaf and return the left leaf
      {final Leaf Left = (Leaf)duplicateLeafOrBranch();                          // Create the right leaf as a duplicate of the left leaf
       Left.splitRight(Count, this);
       return Left;
@@ -420,6 +425,31 @@ public class Slots extends Test                                                 
         if (usedSlots[i]) d.add(""+data[slots[i]]);
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
+     }
+
+    String dump()                                                               // Dump a leaf
+     {final StringBuilder d = new StringBuilder();
+      final int N = numberOfSlots();
+      for (int i = 0; i < N; i++) d.append(String.format(" %3.1f", data[i]));
+      return parentSlots.dump() + "data     : "+d+"\n";
+     }
+
+    void squeezeLeft()                                                          // Squeeze the leaf left
+     {final int N = numberOfSlots();
+      final double[]d = new double[N];
+      int p = 0;
+      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
+      parentSlots.squeezeLeft();
+      for (int i = 0; i < N; i++) data[i] = d[i];
+     }
+
+    void squeezeRight()                                                         // Squeeze the leaf right
+     {final int N = numberOfSlots();
+      final double[]d = new double[N];
+      int p = N-1;
+      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
+      parentSlots.squeezeRight();
+      for (int i = 0; i < N; i++) data[i] = d[i];
      }
    }
 
@@ -505,6 +535,35 @@ public class Slots extends Test                                                 
       final String t = top == null ? "" : "\ntop : "+top+"\n";
       return "keys: "+k+"\n"+"data: "+d+t;
      }
+
+    String dump()                                                               // Dump a leaf
+     {final StringBuilder d = new StringBuilder();
+      final int N = numberOfSlots();
+      for (int i = 0; i < N; i++)
+       {if (usedRefs[i]) d.append(" "+data[i]);
+        else             d.append("   .");
+       }
+      final String t = top == null ? "" : "top      : "+top+"\n";
+      return parentSlots.dump() + "data     : "+d+"\n"+t;
+     }
+
+    void squeezeLeft()                                                          // Squeeze the leaf left
+     {final int N = numberOfSlots();
+      final LeafOrBranch[]d = new LeafOrBranch[N];
+      int p = 0;
+      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
+      parentSlots.squeezeLeft();
+      for (int i = 0; i < N; i++) data[i] = d[i];
+     }
+
+    void squeezeRight()                                                         // Squeeze the leaf right
+     {final int N = numberOfSlots();
+      final LeafOrBranch[]d = new LeafOrBranch[N];
+      int p = N-1;
+      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
+      parentSlots.squeezeRight();
+      for (int i = 0; i < N; i++) data[i] = d[i];
+     }
    }
 
   static Branch Branch(int NumberOfSlots)                                       // Create a branch
@@ -527,9 +586,9 @@ public class Slots extends Test                                                 
     s.append("\nslots    : ");
     for (int i = 0; i < N; i++) s.append(String.format(" %3d", slots[i]));
     s.append("\nusedSlots: ");
-    for (int i = 0; i < N; i++) s.append(usedSlots[i] ? "   X" : "   .");
+    for (int i = 0; i < N; i++) s.append(usedSlots(i) ? "   X" : "   .");
     s.append("\nusedRefs : ");
-    for (int i = 0; i < N; i++) s.append(usedRefs [i] ? "   X" : "   .");
+    for (int i = 0; i < N; i++) s.append(usedRefs (i) ? "   X" : "   .");
     s.append("\nkeys     : ");
     for (int i = 0; i < N; i++) s.append(String.format(" %3.1f", keys[i]));
     return ""+s+"\n";
@@ -744,6 +803,113 @@ keys     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
 """);
    }
 
+  static void test_squeezeLeafLeft()
+   {final Slots.Leaf l = Leaf(16);
+    final Slots      b = l.parentSlots;
+    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = 2.1;
+    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = 2.2;
+    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = 2.3;
+    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4; l.data[ 0] = 2.4;
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
+usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
+keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+data     :  2.4 0.0 0.0 0.0 2.3 0.0 0.0 0.0 2.2 0.0 0.0 0.0 0.0 0.0 2.1 0.0
+""");
+    l.squeezeLeft();
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
+usedRefs :    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
+keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+data     :  2.1 2.2 2.3 2.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+""");
+   }
+
+  static void test_squeezeLeafRight()
+   {final Slots.Leaf l = Leaf(16);
+    final Slots      b = l.parentSlots;
+    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = 2.1;
+    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = 2.2;
+    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = 2.3;
+    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4; l.data[ 0] = 2.4;
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
+usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
+keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+data     :  2.4 0.0 0.0 0.0 2.3 0.0 0.0 0.0 2.2 0.0 0.0 0.0 0.0 0.0 2.1 0.0
+""");
+    l.squeezeRight();
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   0   0   0   0   0   0   0   0   0   0   0  12  13  14  15
+usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
+usedRefs :    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
+keys     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
+data     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.1 2.2 2.3 2.4
+""");
+   }
+
+  static void test_squeezeBranchLeft()
+   {final Slots.Branch l = Branch(16);
+    final Slots        b = l.parentSlots;
+    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = b.new TestLeafOrBranch("  1");
+    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = b.new TestLeafOrBranch("  2");
+    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = b.new TestLeafOrBranch("  3");
+    l.top = b.new TestLeafOrBranch("4");
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   .   .   .   .   .   .   .   .   .   .
+usedRefs :    .   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
+keys     :  0.0 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+data     :    .   .   .   .   3   .   .   .   2   .   .   .   .   .   1   .
+top      : 4
+""");
+    l.squeezeLeft();
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   1   2   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedRefs :    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+keys     :  1.1 1.2 1.3 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+data     :    1   2   3   .   .   .   .   .   .   .   .   .   .   .   .   .
+top      : 4
+""");
+   }
+
+  static void test_squeezeBranchRight()
+   {final Slots.Branch l = Branch(16);
+    final Slots        b = l.parentSlots;
+    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = b.new TestLeafOrBranch("  1");
+    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = b.new TestLeafOrBranch("  2");
+    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = b.new TestLeafOrBranch("  3");
+    l.top = b.new TestLeafOrBranch("4");
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   .   .   .   .   .   .   .   .   .   .
+usedRefs :    .   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
+keys     :  0.0 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+data     :    .   .   .   .   3   .   .   .   2   .   .   .   .   .   1   .
+top      : 4
+""");
+    l.squeezeRight();
+    ok(l.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   0   0   0   0   0   0   0   0   0   0   0   0  13  14  15
+usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   .   X   X   X
+usedRefs :    .   .   .   .   .   .   .   .   .   .   .   .   .   X   X   X
+keys     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.1 1.2 1.3
+data     :    .   .   .   .   .   .   .   .   .   .   .   .   .   1   2   3
+top      : 4
+""");
+   }
   static Slots.Leaf test_leaf()
    {final Slots.Leaf l = Slots.Leaf(8);
     final double   []d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
@@ -831,12 +997,14 @@ top : 8
     test_splitRightBranchIntoLeft();
     test_squeezeLeft();
     test_squeezeRight();
+    test_squeezeLeafLeft();
+    test_squeezeLeafRight();
+    test_squeezeBranchLeft();
    }
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
-    test_squeezeLeft();
-    test_squeezeRight();
+    test_squeezeBranchRight();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
