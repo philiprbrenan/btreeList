@@ -39,6 +39,8 @@ public class Slots extends Test                                                 
     return s;
    }
 
+//D2 Slots                                                                      // Manage the slots
+
   private void setSlots(int...Slots)                                            // Set slots as used
    {for (int i = 0; i < Slots.length; i++) usedSlots[Slots[i]] = true;
    }
@@ -335,7 +337,7 @@ public class Slots extends Test                                                 
      }
 
     Integer insert(double Key, double Data)                                     // Insert a key data pair into a leaf
-     {final Integer i = parentSlots.insert(Key);
+     {final Integer i = Slots.this.insert(Key);
       if (i != null) data[i] = Data;
       return i;
      }
