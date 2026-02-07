@@ -391,8 +391,8 @@ public class Slots extends Test                                                 
             s++;                                                                // Number of entries active in left branch
            }
          else if (s == Count)                                                   // Splitting point
-           {split = parentSlots.keys[slots(i)];                                 // Splitting key
-            top   =             data[slots(i)];                                 // New top for left
+           {split = Slots.this.keys[slots(i)];                                  // Splitting key
+            top   =            data[slots(i)];                                  // New top for left
                   clearSlotAndRef(i);                                           // Free the entry from the left branch as it is being used in the left branch
             Right.clearSlotAndRef(i);                                           // Free the entry from the right branch as it is being used in the left branch
             s++;                                                                // Number of entries active in left branch
@@ -417,7 +417,7 @@ public class Slots extends Test                                                 
      }
 
     Integer insert(double Key, LeafOrBranch Data)                               // Insert a key data pair into a branch
-     {final Integer i = parentSlots.insert(Key);
+     {final Integer i = Slots.this.insert(Key);
       if (i != null) data[i] = Data;
       return i;
      }
