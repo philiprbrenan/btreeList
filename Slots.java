@@ -83,7 +83,7 @@ public class Slots extends Test                                                 
   boolean    le(double Key, int Slot) {return Key <= keys[slots[Slot]];}        // Search key is less than or equal to indexed key
   String getKey(int Slot) {return ""+                keys[slots[Slot]];}        // Value of the referenced key as a string
 
-//D1 State                                                                      // Query the state of the slots
+//D1 Statistics                                                                 // Query the state of the slots
 
   boolean empty()                                                               // True if the bit slots are all empty. The linear scan can be replaced with a parallel one in hardware.
    {for (int i = 0; i < numberOfSlots; i++) if ( usedSlots[i]) return false;
@@ -192,14 +192,17 @@ public class Slots extends Test                                                 
     return actions % redistributeFrequency == 0;
    }
 
-  void squeezeLeft()                                                            // Squeeze the used slots to the left end
-   {if (empty() || full()) return;                                              // Nothing to squeeze
-    final Slots d = duplicate();
-    int p = 0;
-    for (int i = 0; i < numberOfSlots; i++)
+  void reset()                                                                  // Reset the slots
+   {for (int i = 0; i < numberOfSlots; i++)
      {usedSlots[i] = usedRefs[i] = false;
           slots[i] = 0;  keys[i] = 0;
      }
+   }
+
+  void compactLeft()                                                            // Squeeze the used slots to the left end
+   {if (empty() || full()) return;                                              // Nothing to squeeze
+    final Slots d = duplicate(); reset();
+    int p = 0;
     for (int i = 0; i < numberOfSlots; i++)
      {if (d.usedSlots[i])                                                        // Squeeze complete
        {usedSlots[p] = usedRefs[p] = true;
@@ -210,16 +213,12 @@ public class Slots extends Test                                                 
      }
    }
 
-  void squeezeRight()                                                           // Squeeze the used slots to the left end
+  void compactRight()                                                           // Squeeze the used slots to the left end
    {if (empty() || full()) return;                                              // Nothing to squeeze
-    final Slots d = duplicate();
+    final Slots d = duplicate(); reset();
     int p = numberOfSlots - 1;
-    for (int i = 0; i < numberOfSlots; i++)
-     {usedSlots[i] = usedRefs[i] = false;
-          slots[i] = 0;  keys[i] = 0;
-     }
     for (int i = numberOfSlots - 1; i >= 0; --i)
-     {if (d.usedSlots[i])                                                        // Squeeze complete
+     {if (d.usedSlots[i])
        {usedSlots[p] = usedRefs[p] = true;
             slots[p] = p;
              keys[p] = d.keys[d.slots[i]];
@@ -357,8 +356,8 @@ public class Slots extends Test                                                 
    {LeafOrBranch duplicateLeafOrBranch() {return null;}
     int numberOfSlots() {return numberOfSlots;}
     void clearSlotAndRef(int I) {Slots.this.clearSlotAndRef(I);}                // Remove a key from the slots
-    void squeezeLeft () {}
-    void squeezeRight() {}
+    void compactLeft () {}
+    void compactRight() {}
     String dump()       {return null;}
    }
 
@@ -375,12 +374,12 @@ public class Slots extends Test                                                 
    {final Slots parentSlots = Slots.this;                                       // Explicit reference to containing class
     final double     []data = new double[numberOfSlots];                        // Data corresponding to each key in the leaf
 
-    Leaf splitRight(int Count)                                      // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
+    Leaf splitRight(int Count)                                                  // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
      {final Leaf Right = (Leaf)duplicateLeafOrBranch();                         // Create the right leaf as a duplicate of the left leaf
-      return splitRight(Count, Right);                              // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
+      return splitRight(Count, Right);                                          // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
      }
 
-    Leaf splitRight(int Count, Leaf Right)                          // Split the slots in a left leaf into an existing right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
+    Leaf splitRight(int Count, Leaf Right)                                      // Split the slots in a left leaf into an existing right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
      {int s = 0;                                                                // Count slots used
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
        {if (usedSlots[i])                                                       // Slot is in use
@@ -413,10 +412,6 @@ public class Slots extends Test                                                 
       return i;
      }
 
-    public Integer locate(double Key) {return locate(Key);}                     // Locate the slot containing the current search key if possible.
-    public Integer find  (double Key) {return find  (Key);}                     // Find the index of the current key in the slots
-    public boolean delete(double Key) {return delete(Key);}                     // Delete the specified key
-
     public String toString()                                                    // Print the values in the used slots
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
@@ -434,21 +429,21 @@ public class Slots extends Test                                                 
       return parentSlots.dump() + "data     : "+d+"\n";
      }
 
-    void squeezeLeft()                                                          // Squeeze the leaf left
+    void compactLeft()                                                          // Squeeze the leaf left
      {final int N = numberOfSlots();
       final double[]d = new double[N];
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
-      parentSlots.squeezeLeft();
+      parentSlots.compactLeft();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
 
-    void squeezeRight()                                                         // Squeeze the leaf right
+    void compactRight()                                                         // Squeeze the leaf right
      {final int N = numberOfSlots();
       final double[]d = new double[N];
       int p = N-1;
       for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
-      parentSlots.squeezeRight();
+      parentSlots.compactRight();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
    }
@@ -472,12 +467,12 @@ public class Slots extends Test                                                 
        }
      }
 
-    Split splitRight(int Count)                                   // Split the slots in a left branch into a new right branch retaining the specified number of slots in the left branch and returning the new right branch
+    Split splitRight(int Count)                                                 // Split the slots in a left branch into a new right branch retaining the specified number of slots in the left branch and returning the new right branch
      {final Branch Right = (Branch)duplicateLeafOrBranch();                     // Create the right branch as a duplicate of the left branch
-      return splitRight(Count, Right);                            // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
+      return splitRight(Count, Right);                                          // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
      }
 
-    Split splitRight(int Count, Branch Right)                     // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
+    Split splitRight(int Count, Branch Right)                                   // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
      {Double split = null;                                                      // Splitting key
       int s = 0;                                                                // Count slots used
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
@@ -499,7 +494,7 @@ public class Slots extends Test                                                 
       return split == null ? null : new Split(split, this, Right);              // Details of the split
      }
 
-    Split splitLeft(int Count)                                   // Split the specified number of leading slots in a right branch to a new left branch and return the left leaf
+    Split splitLeft(int Count)                                                  // Split the specified number of leading slots in a right branch to a new left branch and return the left leaf
      {final Branch Left = (Branch)duplicateLeafOrBranch();                      // Create the right branch as a duplicate of the left branch
       return Left.splitRight(Count, this);
      }
@@ -521,10 +516,6 @@ public class Slots extends Test                                                 
     void setTop(LeafOrBranch Top) {top = Top;}                                  // Set the top leaf or branch
     LeafOrBranch getTop() { return top;}                                        // Get the top leaf or branch
 
-    public Integer locate(double Key) {return locate(Key);}                     // Locate the slot containing the current search key if possible.
-    public Integer find  (double Key) {return find  (Key);}                     // Find the index of the current key in the slots
-    public boolean delete(double Key) {return delete(Key);}                     // Delete the specified key
-
     public String toString()                                                    // Print the values in the used slots
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
@@ -536,7 +527,7 @@ public class Slots extends Test                                                 
       return "keys: "+k+"\n"+"data: "+d+t;
      }
 
-    String dump()                                                               // Dump a leaf
+    String dump()                                                               // Dump a branch
      {final StringBuilder d = new StringBuilder();
       final int N = numberOfSlots();
       for (int i = 0; i < N; i++)
@@ -547,21 +538,21 @@ public class Slots extends Test                                                 
       return parentSlots.dump() + "data     : "+d+"\n"+t;
      }
 
-    void squeezeLeft()                                                          // Squeeze the leaf left
+    void compactLeft()                                                          // Squeeze the branch to the left
      {final int N = numberOfSlots();
       final LeafOrBranch[]d = new LeafOrBranch[N];
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
-      parentSlots.squeezeLeft();
+      parentSlots.compactLeft();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
 
-    void squeezeRight()                                                         // Squeeze the leaf right
+    void compactRight()                                                         // Squeeze the branch to the  right
      {final int N = numberOfSlots();
       final LeafOrBranch[]d = new LeafOrBranch[N];
       int p = N-1;
       for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
-      parentSlots.squeezeRight();
+      parentSlots.compactRight();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
    }
@@ -757,7 +748,7 @@ public class Slots extends Test                                                 
     ok(b.find(15.0), null);
    }
 
-  static void test_squeezeLeft()
+  static void test_compactLeft()
    {final Slots b = new Slots(16);
     b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1;
     b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2;
@@ -770,7 +761,7 @@ usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
 usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
 keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 """);
-    b.squeezeLeft();
+    b.compactLeft();
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
@@ -780,7 +771,7 @@ keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
    }
 
-  static void test_squeezeRight()
+  static void test_compactRight()
    {final Slots b = new Slots(16);
     b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1;
     b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2;
@@ -793,7 +784,7 @@ usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
 usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
 keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 """);
-    b.squeezeRight();
+    b.compactRight();
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   0   0   0   0   0   0  12  13  14  15
@@ -818,7 +809,7 @@ usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
 keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 data     :  2.4 0.0 0.0 0.0 2.3 0.0 0.0 0.0 2.2 0.0 0.0 0.0 0.0 0.0 2.1 0.0
 """);
-    l.squeezeLeft();
+    l.compactLeft();
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
@@ -844,7 +835,7 @@ usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
 keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 data     :  2.4 0.0 0.0 0.0 2.3 0.0 0.0 0.0 2.2 0.0 0.0 0.0 0.0 0.0 2.1 0.0
 """);
-    l.squeezeRight();
+    l.compactRight();
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   0   0   0   0   0   0  12  13  14  15
@@ -871,7 +862,7 @@ keys     :  0.0 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 data     :    .   .   .   .   3   .   .   .   2   .   .   .   .   .   1   .
 top      : 4
 """);
-    l.squeezeLeft();
+    l.compactLeft();
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -899,7 +890,7 @@ keys     :  0.0 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 data     :    .   .   .   .   3   .   .   .   2   .   .   .   .   .   1   .
 top      : 4
 """);
-    l.squeezeRight();
+    l.compactRight();
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   0   0   0   0   0   0   0  13  14  15
@@ -995,8 +986,8 @@ top : 8
     test_splitRightLeafIntoLeft();
     test_splitLeftBranchIntoRight();
     test_splitRightBranchIntoLeft();
-    test_squeezeLeft();
-    test_squeezeRight();
+    test_compactLeft();
+    test_compactRight();
     test_squeezeLeafLeft();
     test_squeezeLeafRight();
     test_squeezeBranchLeft();
