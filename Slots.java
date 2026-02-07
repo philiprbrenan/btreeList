@@ -359,6 +359,7 @@ public class Slots extends Test                                                 
     void compactLeft () {}
     void compactRight() {}
     String dump()       {return null;}
+    void redistribute() {Slots.this.redistribute();}
    }
 
   class TestLeafOrBranch extends LeafOrBranch                                   // Leaf or branch used during testing to check splits and merges
@@ -390,6 +391,7 @@ public class Slots extends Test                                                 
           else clearSlotAndRef(i);                                              // Clear slot being used in right leaf
          }
        }                                                                        // The new right leaf
+      redistribute(); Right.redistribute();
       return Right;
      }
 
@@ -491,6 +493,7 @@ public class Slots extends Test                                                 
           else clearSlotAndRef(i);                                              // Modify left branch
          }
        }                                                                        // The new right branch
+      redistribute(); Right.redistribute();
       return split == null ? null : new Split(split, this, Right);              // Details of the split
      }
 
