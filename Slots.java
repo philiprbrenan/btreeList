@@ -190,12 +190,40 @@ public class Slots extends Test                                                 
     return actions % redistributeFrequency == 0;
    }
 
-  void squeezeLeft()                                                            // Squeeze the slots to the left end
-   {if (empty()) return;                                                        // Nothing  to squeeze
-//    int f=0; for(int i = numberOfSlots; i >= 0; --i) if(!usedSlots[i]) f = i; // First empty slot
-//     {if (usedSlots[i]) f = i;
-//     }actions = (actions + 1) & 0x7fffffff;
-//    return actions % redistributeFrequency == 0;
+  void squeezeLeft()                                                            // Squeeze the used slots to the left end
+   {if (empty() || full()) return;                                              // Nothing to squeeze
+    final Slots d = duplicate();
+    int p = 0;
+    for (int i = 0; i < numberOfSlots; i++)
+     {usedSlots[i] = usedRefs[i] = false;
+          slots[i] = 0;  keys[i] = 0;
+     }
+    for (int i = 0; i < numberOfSlots; i++)
+     {if (d.usedSlots[i])                                                        // Squeeze complete
+       {usedSlots[p] = usedRefs[p] = true;
+            slots[p] = p;
+             keys[p] = d.keys[d.slots[i]];
+        ++p;
+       }
+     }
+   }
+
+  void squeezeRight()                                                            // Squeeze the used slots to the left end
+   {if (empty() || full()) return;                                              // Nothing to squeeze
+    final Slots d = duplicate();
+    int p = numberOfSlots - 1;
+    for (int i = 0; i < numberOfSlots; i++)
+     {usedSlots[i] = usedRefs[i] = false;
+          slots[i] = 0;  keys[i] = 0;
+     }
+    for (int i = numberOfSlots - 1; i >= 0; --i)
+     {if (d.usedSlots[i])                                                        // Squeeze complete
+       {usedSlots[p] = usedRefs[p] = true;
+            slots[p] = p;
+             keys[p] = d.keys[d.slots[i]];
+        --p;
+       }
+     }
    }
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
@@ -494,7 +522,7 @@ public class Slots extends Test                                                 
   private String dump()                                                         // Dump the slots
    {final StringBuilder s = new StringBuilder();
     final int N = numberOfSlots;
-    s.append("\npositions: ");
+    s.append("positions: ");
     for (int i = 0; i < N; i++) s.append(String.format(" %3d", i));
     s.append("\nslots    : ");
     for (int i = 0; i < N; i++) s.append(String.format(" %3d", slots[i]));
@@ -504,7 +532,7 @@ public class Slots extends Test                                                 
     for (int i = 0; i < N; i++) s.append(usedRefs [i] ? "   X" : "   .");
     s.append("\nkeys     : ");
     for (int i = 0; i < N; i++) s.append(String.format(" %3.1f", keys[i]));
-    return ""+s;
+    return ""+s+"\n";
    }
 
   public String toString()                                                      // Print the values in the used slots
@@ -670,6 +698,38 @@ public class Slots extends Test                                                 
     ok(b.find(15.0), null);
    }
 
+  static void test_squeezeLeft()
+   {final Slots b = new Slots(16);
+    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1;
+    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2;
+    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3;
+    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4;
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
+usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
+keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+""");
+    b.squeezeLeft();
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
+usedRefs :    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
+keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+""");
+   }
+
+  static void test_squeezeRight()
+   {final Slots b = new Slots(16);
+    b.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
+                      //0123456789012345
+    ok(b.printSlots(), "..XX.XXX.X.X.X..");
+    b.squeezeRight();
+    ok(b.printSlots(), "........XXXXXXXX");
+   }
+
   static Slots.Leaf test_leaf()
    {final Slots.Leaf l = Slots.Leaf(8);
     final double   []d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
@@ -755,10 +815,14 @@ top : 8
     test_splitRightLeafIntoLeft();
     test_splitLeftBranchIntoRight();
     test_splitRightBranchIntoLeft();
+    test_squeezeLeft();
+    test_squeezeRight();
    }
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
+    test_squeezeLeft();
+    test_squeezeRight();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
