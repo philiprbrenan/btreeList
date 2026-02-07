@@ -428,7 +428,7 @@ public class Slots extends Test                                                 
      {final StringBuilder d = new StringBuilder();
       final int N = numberOfSlots();
       for (int i = 0; i < N; i++) d.append(String.format(" %3.1f", data[i]));
-      return parentSlots.dump() + "data     : "+d+"\n";
+      return Slots.this.dump() + "data     : "+d+"\n";
      }
 
     void compactLeft()                                                          // Squeeze the leaf left
@@ -436,7 +436,7 @@ public class Slots extends Test                                                 
       final double[]d = new double[N];
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
-      parentSlots.compactLeft();
+      Slots.this.compactLeft();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
 
@@ -445,7 +445,7 @@ public class Slots extends Test                                                 
       final double[]d = new double[N];
       int p = N-1;
       for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
-      parentSlots.compactRight();
+      Slots.this.compactRight();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
    }
@@ -538,7 +538,7 @@ public class Slots extends Test                                                 
         else             d.append("   .");
        }
       final String t = top == null ? "" : "top      : "+top+"\n";
-      return parentSlots.dump() + "data     : "+d+"\n"+t;
+      return Slots.this.dump() + "data     : "+d+"\n"+t;
      }
 
     void compactLeft()                                                          // Squeeze the branch to the left
@@ -546,7 +546,7 @@ public class Slots extends Test                                                 
       final LeafOrBranch[]d = new LeafOrBranch[N];
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
-      parentSlots.compactLeft();
+      Slots.this.compactLeft();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
 
@@ -555,7 +555,7 @@ public class Slots extends Test                                                 
       final LeafOrBranch[]d = new LeafOrBranch[N];
       int p = N-1;
       for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
-      parentSlots.compactRight();
+      Slots.this.compactRight();
       for (int i = 0; i < N; i++) data[i] = d[i];
      }
    }
