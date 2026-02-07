@@ -29,7 +29,7 @@ public class Slots extends Test                                                 
 
   private Slots duplicate()                                                     // Duplicate a set of slots
    {final Slots s = new Slots(numberOfSlots);
-    for (int i = 0; i < numberOfSlots; i++)                                     // Copy the slots fromn source to target
+    for (int i = 0; i < numberOfSlots; i++)                                     // Copy the slots from source to target
      {s.slots    [i] = slots    [i];
       s.usedSlots[i] = usedSlots[i];
       s.usedRefs [i] = usedRefs [i];
@@ -111,13 +111,43 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot - this is not actually an error.
    }
 
-  private Integer locatePrevUsedSlot(int Position)                              // Absolute position of this slot if it is in use or the nearest lower used slot to this position.
-   {for (int i = Position; i >= 0; i--) if (usedSlots[i]) return i;
+  private Integer locateFirstUsedSlot()                                         // Absolute position of the first slot in use
+   {for (int i = 0; i < numberOfSlots; ++i)        if (usedSlots[i]) return i;
     return null;                                                                // No free slot
    }
 
-  private Integer locateNextUsedSlot(int Position)                              // Absolute position of this slot if it is in use or the nearest higher used slot to this position.
+  private Integer locateLastUsedSlot()                                          // Absolute position of the last slot in use
+   {for (int i = numberOfSlots-1; i >= 0; i--)     if (usedSlots[i]) return i;
+    return null;                                                                // No free slot
+   }
+
+  private Integer locatePrevUsedSlot(int Position)                              // Absolute position of this slot if it is in use or else the next lower used slot
+   {for (int i = Position; i >= 0; i--)            if (usedSlots[i]) return i;
+    return null;                                                                // No free slot
+   }
+
+  private Integer locateNextUsedSlot(int Position)                              // Absolute position of this slot if it is in use or else the next higher used slot
    {for (int i = Position; i < numberOfSlots; ++i) if (usedSlots[i]) return i;
+    return null;                                                                // No free slot
+   }
+
+  private Integer locateFirstEmptySlot()                                        // Absolute position of the first free slot
+   {for (int i = 0; i < numberOfSlots; ++i)        if (!usedSlots[i]) return i;
+    return null;                                                                // No free slot
+   }
+
+  private Integer locateLastEmptySlot()                                         // Absolute position of the last free slot
+   {for (int i = numberOfSlots-1; i >= 0; i--)     if (!usedSlots[i]) return i;
+    return null;                                                                // No free slot
+   }
+
+  private Integer locatePrevEmptySlot(int Position)                             // Absolute position of this slot if it is free or the nearest lower free slot before this position.
+   {for (int i = Position; i >= 0; i--)            if (!usedSlots[i]) return i;
+    return null;                                                                // No free slot
+   }
+
+  private Integer locateNextEmptySlot(int Position)                             // Absolute position of this slot if it is in use or the nearest higher free slot after this position.
+   {for (int i = Position; i < numberOfSlots; ++i) if (!usedSlots[i]) return i;
     return null;                                                                // No free slot
    }
 
@@ -150,14 +180,22 @@ public class Slots extends Test                                                 
        {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the used slots out
        }
      }
-    for(int i = 0; i < numberOfSlots; ++i)                                      // Copy redistribution back into original avoiding use of java array methods to make everything explici for hardware conversion
+    for(int i = 0; i < numberOfSlots; ++i)                                      // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
      {slots[i] = s[i]; usedSlots[i] = u[i];
      }
    }
 
-  boolean redistributeNow()                                                     // Whether we should request a redistribution of free slots - avoids a redistibution on the first insert or delete.
+  boolean redistributeNow()                                                     // Whether we should request a redistribution of free slots - avoids a redistribution on the first insert or delete.
    {actions = (actions + 1) & 0x7fffffff;
     return actions % redistributeFrequency == 0;
+   }
+
+  void squeezeLeft()                                                            // Squeeze the slots to the left end
+   {if (empty()) return;                                                        // Nothing  to squeeze
+//    int f=0; for(int i = numberOfSlots; i >= 0; --i) if(!usedSlots[i]) f = i; // First empty slot
+//     {if (usedSlots[i]) f = i;
+//     }actions = (actions + 1) & 0x7fffffff;
+//    return actions % redistributeFrequency == 0;
    }
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
@@ -200,7 +238,7 @@ public class Slots extends Test                                                 
        }
       if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
      }
-    return slot;                                                                // The index of the refernce to the key
+    return slot;                                                                // The index of the reference to the key
    }
 
   class Locate                                                                  // Locate the slot containing their current search key if possible.
@@ -230,7 +268,7 @@ public class Slots extends Test                                                 
       if ( eq(Key, a))                       {found(a); return;}                // Found at the start of the range
       if ( eq(Key, b))                       {found(b); return;}                // Found at the end of the range
 
-      for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this i snot a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
+      for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {if (a == b) {pos(a, false, false); return;}                             // Narrowed to one possible key so no more searching is possible
         final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
 
@@ -323,7 +361,7 @@ public class Slots extends Test                                                 
       return Right;
      }
 
-    Leaf splitRightLeafIntoLeft(int Count)                                      // Split the specified number of leading slots in a right leaf to a new left leaf and return the left elaf
+    Leaf splitRightLeafIntoLeft(int Count)                                      // Split the specified number of leading slots in a right leaf to a new left leaf and return the left leaf
      {final Leaf Left = (Leaf)duplicateLeafOrBranch();                          // Create the right leaf as a duplicate of the left leaf
       Left.splitLeftLeafIntoRight(Count, this);
       return Left;
@@ -403,7 +441,7 @@ public class Slots extends Test                                                 
       return split == null ? null : new Split(split, this, Right);              // Details of the split
      }
 
-    Split splitRightBranchIntoLeft(int Count)                                   // Split the specified number of leading slots in a right branch to a new left branch and return the left elaf
+    Split splitRightBranchIntoLeft(int Count)                                   // Split the specified number of leading slots in a right branch to a new left branch and return the left leaf
      {final Branch Left = (Branch)duplicateLeafOrBranch();                      // Create the right branch as a duplicate of the left branch
       return Left.splitLeftBranchIntoRight(Count, this);
      }
@@ -499,6 +537,26 @@ public class Slots extends Test                                                 
     ok(b.locateNearestFreeSlot(13), -1);
     ok(b.locateNearestFreeSlot(14),  0);
     ok(b.locateNearestFreeSlot(15),  0);
+
+    ok(b.locateFirstUsedSlot(),      2);
+    ok(b.locateLastUsedSlot(),      13);
+    ok(b.locatePrevUsedSlot( 9),     9);
+    ok(b.locatePrevUsedSlot(10),     9);
+    ok(b.locateNextUsedSlot(10),    11);
+    ok(b.locateNextUsedSlot(11),    11);
+    ok(b.locateFirstEmptySlot(),     0);
+    ok(b.locateLastEmptySlot(),     15);
+    ok(b.locatePrevEmptySlot(4),     4);
+    ok(b.locatePrevEmptySlot(5),     4);
+    ok(b.locateNextEmptySlot(4),     4);
+    ok(b.locateNextEmptySlot(5),     8);
+
+    ok(b.locatePrevUsedSlot ( 1),   null);
+    ok(b.locateNextUsedSlot (14),   null);
+
+    b.setSlots(0, 15);
+    ok(b.locatePrevEmptySlot( 0),   null);
+    ok(b.locateNextEmptySlot(15),   null);
    }
 
   static void test_redistribute()
