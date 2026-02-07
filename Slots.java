@@ -606,12 +606,16 @@ public class Slots extends Test                                                 
     ok(b.find(15.0), null);
    }
 
-  static void test_splitLeftLeafIntoRight()
+  static Slots.Leaf test_leaf()
    {final Slots.Leaf l = Slots.Leaf(8);
-
-    final double[]d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
+    final double   []d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
     for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
-    final Slots.Leaf r = l.splitLeftLeafIntoRight(d.length / 2);
+    return l;
+   }
+
+  static void test_splitLeftLeafIntoRight()
+   {final Slots.Leaf l = test_leaf();
+    final Slots.Leaf r = l.splitLeftLeafIntoRight(l.parentSlots.numberOfSlots / 2);
     ok(l, """
 keys: 1.1, 1.2, 1.3, 1.4
 data: 1.1, 1.2, 1.3, 1.4
@@ -623,11 +627,8 @@ data: 1.5, 1.6, 1.7, 1.8
    }
 
   static void test_splitRightLeafIntoLeft()
-   {final Slots.Leaf r = Slots.Leaf(8);
-
-    final double[]d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
-    for (int i = 0; i < d.length; i++) r.insert(d[i], d[i]);
-    final Slots.Leaf l = r.splitRightLeafIntoLeft(d.length / 2);
+   {final Slots.Leaf r = test_leaf();
+    final Slots.Leaf l = r.splitRightLeafIntoLeft(r.parentSlots.numberOfSlots / 2);
     ok(l, """
 keys: 1.1, 1.2, 1.3, 1.4
 data: 1.1, 1.2, 1.3, 1.4
@@ -638,14 +639,19 @@ data: 1.5, 1.6, 1.7, 1.8
 """);
    }
 
-  static void test_splitLeftBranchIntoRight()
-   {final Slots.Branch l = Slots.Branch(8);
+  static Slots.Branch test_branch()
+   {final Slots.Branch b = Slots.Branch(7);
 
     final double[]k = new double[]{1.3, 1.6, 1.5, 1.7, 1.4, 1.2, 1.1};
     final String[]d = new String[]{"3", "6", "5", "7", "4", "2", "1"};
-    for (int i = 0; i < d.length; i++) l.insert(k[i], l.parentSlots.new TestLeafOrBranch(d[i]));
-    l.setTop(l.parentSlots.new TestLeafOrBranch("8"));
-    final Slots.Branch.Split s = l.splitLeftBranchIntoRight(d.length / 2);
+    for (int i = 0; i < d.length; i++) b.insert(k[i], b.parentSlots.new TestLeafOrBranch(d[i]));
+    b.setTop(b.parentSlots.new TestLeafOrBranch("8"));
+    return b;
+   }
+
+  static void test_splitLeftBranchIntoRight()
+   {final Slots.Branch       l = test_branch();
+    final Slots.Branch.Split s = l.splitLeftBranchIntoRight(l.parentSlots.numberOfSlots / 2);
     ok(s.left, """
 keys: 1.1, 1.2, 1.3
 data: 1, 2, 3
