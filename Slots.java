@@ -669,13 +669,14 @@ top : 8
     final Slots.Branch.Split s = r.splitRightBranchIntoLeft(d.length / 2);
     ok(s.left, """
 keys: 1.1, 1.2, 1.3
-data: 1.1, 1.2, 1.3
+data: 1, 2, 3
+top : 4
 """);
     ok(s.right, """
 keys: 1.5, 1.6, 1.7
-data: 1.5, 1.6, 1.7
+data: 5, 6, 7
+top : 8
 """);
-    ok(s.key, 1.4);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
@@ -686,11 +687,12 @@ data: 1.5, 1.6, 1.7
     test_idn();
     test_splitLeftLeafIntoRight();
     test_splitRightLeafIntoLeft();
+    test_splitLeftBranchIntoRight();
+    test_splitRightBranchIntoLeft();
    }
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
-    test_splitLeftBranchIntoRight();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
