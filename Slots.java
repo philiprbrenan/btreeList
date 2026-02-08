@@ -10,7 +10,7 @@ public class Slots extends Test                                                 
  {final int      numberOfSlots;                                                 // Number of slots
   final int    []slots;                                                         // Key ordering
   final boolean[]usedSlots;                                                     // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
-  final boolean[]usedRefs;                                                      // Index of each key in their storage. This index is stable even when the slots are redistributed to make it insertions faster
+  final boolean[]usedRefs;                                                      // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
   final double []keys;                                                          // Keys
   final int      redistributeFrequency;                                         // Call redistribute after this many actions
   int actions = 0;                                                              // Number of actions performed
@@ -113,12 +113,12 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot - this is not actually an error.
    }
 
-  private Integer locateFirstUsedSlot()                                         // Absolute position of the first slot in use
+  Integer locateFirstUsedSlot()                                                 // Absolute position of the first slot in use
    {for (int i = 0; i < numberOfSlots; ++i)        if (usedSlots[i]) return i;
     return null;                                                                // No free slot
    }
 
-  private Integer locateLastUsedSlot()                                          // Absolute position of the last slot in use
+  Integer locateLastUsedSlot()                                                  // Absolute position of the last slot in use
    {for (int i = numberOfSlots-1; i >= 0; i--)     if (usedSlots[i]) return i;
     return null;                                                                // No free slot
    }
@@ -305,7 +305,7 @@ public class Slots extends Test                                                 
     return slot;                                                                // The index of the reference to the key
    }
 
-  class Locate                                                                  // Locate the slot containing their current search key if possible.
+  class Locate                                                                  // Locate the slot containing the search key if possible else the key immediately above or below the search key.
    {int at;                                                                     // The point at which the closest key was found
     boolean above;                                                              // The search key is above or equal to the found key
     boolean below;                                                              // The search key is below or equal to the found key
@@ -324,13 +324,13 @@ public class Slots extends Test                                                 
     void found(int At) {at = At; above = true; below = true;}                   // Found their search key
     void none() {}                                                              // Slots are empty
 
-    Locate(double Key)                                                          // Locate the slot containing their current search key if possible.
+    Locate(double Key)                                                          // Locate the slot containing the search key if possible.
      {if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
       Integer a = locateNextUsedSlot(0),b = locatePrevUsedSlot(numberOfSlots-1);// Lower limit, upper limit
       if ( le(Key, a) && !eq(Key, a)) {below(a); return;}                       // Smaller than any key
-      if (!le(Key, b))                       {above(b); return;}                // Greater than any key
-      if ( eq(Key, a))                       {found(a); return;}                // Found at the start of the range
-      if ( eq(Key, b))                       {found(b); return;}                // Found at the end of the range
+      if (!le(Key, b))                {above(b); return;}                       // Greater than any key
+      if ( eq(Key, a))                {found(a); return;}                       // Found at the start of the range
+      if ( eq(Key, b))                {found(b); return;}                       // Found at the end of the range
 
       for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {if (a == b) {pos(a, false, false); return;}                             // Narrowed to one possible key so no more searching is possible
@@ -366,6 +366,12 @@ public class Slots extends Test                                                 
      }
    }
 
+  Integer locateFirstGe(double Key)                                             // Locate the slot containing the first key greater than or equal to the search key
+   {final Locate l = new Locate(Key);
+    if (l.above) return l.at;
+    return locateNextUsedSlot(l.at+1);
+   }
+
   public Integer locate(double Key)                                             // Locate the slot containing the current search key if possible.
    {final Locate l = new Locate(Key);                                           // Locate the search key
     if (l.above && l.below) return l.at;                                        // Found
@@ -378,7 +384,7 @@ public class Slots extends Test                                                 
    }
 
   public boolean delete(double Key)                                             // Delete the specified key
-   {final Integer i = locate(Key);                                              // Locate their key
+   {final Integer i = locate(Key);                                              // Locate the search key
     if (i == null) return false;                                                // Their key is not in the slots
     clearSlotAndRef(i);                                                         // Delete key
     if (redistributeNow()) redistribute();                                      // Redistribute the remaining free slots
@@ -1160,6 +1166,30 @@ top :   8
 """);
    }
 
+  static void test_locateFirstGe()
+   {final Slots b = new Slots(8);
+    b.insert(1);
+    b.insert(5);
+    b.insert(3);
+    b.redistribute();
+    stop("AAAA", b.dump());
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   0   1   0   2   0   0
+usedSlots:    .   X   .   X   .   X   .   .
+usedRefs :    X   X   X   .   .   .   .   .
+keys     :  1.0 3.0 5.0 0.0 0.0 0.0 0.0 0.0
+""");
+
+    ok(b.locateFirstGe(0), 1);
+    ok(b.locateFirstGe(1), 1);
+    ok(b.locateFirstGe(2), 1);
+    ok(b.locateFirstGe(3), 1);
+    ok(b.locateFirstGe(4), 2);
+    ok(b.locateFirstGe(5), 2);
+    ok(b.locateFirstGe(6), null);
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_redistribute();
@@ -1178,12 +1208,13 @@ top :   8
     test_squeezeBranchRight();
     test_mergeLeafLeft();
     test_mergeLeafRight();
+    test_mergeBranchLeft();
+    test_mergeBranchRight();
    }
 
   static void newTests()                                                        // Tests being worked on
-   {oldTests();
-    test_mergeBranchLeft();
-    test_mergeBranchRight();
+   {//oldTests();
+    test_locateFirstGe();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
