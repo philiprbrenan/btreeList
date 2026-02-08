@@ -204,7 +204,7 @@ public class Slots extends Test                                                 
     final Slots d = duplicate(); reset();
     int p = 0;
     for (int i = 0; i < numberOfSlots; i++)
-     {if (d.usedSlots[i])                                                        // Squeeze complete
+     {if (d.usedSlots[i])                                                       // Squeeze complete
        {usedSlots[p] = usedRefs[p] = true;
             slots[p] = p;
              keys[p] = d.keys[d.slots[i]];
@@ -225,6 +225,41 @@ public class Slots extends Test                                                 
         --p;
        }
      }
+   }
+
+  void mergeCompacted(Slots Left, Slots Right)                                  // Merge left and right compacted slots into the current slots
+   {final Slots l = Left, r = Right;
+    for (int i = 0; i < numberOfSlots; ++i)
+     {if (l.usedSlots(i))
+       {    slots[i] = l.    slots[i];
+        usedSlots[i] = l.usedSlots[i];
+         usedRefs[i] = l. usedRefs[i];
+             keys[i] = l.     keys[i];
+       }
+      else if (r.usedSlots(i))
+       {    slots[i] = r.    slots[i];
+        usedSlots[i] = r.usedSlots[i];
+         usedRefs[i] = r. usedRefs[i];
+             keys[i] = r.     keys[i];
+       }
+      else usedSlots[i] = usedRefs[i] = false;
+     }
+   }
+
+  boolean mergeOnRight(Slots Right)                                             // Merge the specified slots from the right
+   {if (countUsed() + Right.countUsed() > numberOfSlots) return false;
+    final Slots l = duplicate(), r = Right.duplicate();
+    l.compactLeft(); r.compactRight();
+    mergeCompacted(l, r);
+    return true;
+   }
+
+  boolean mergeOnLeft(Slots Left)                                               // Merge the specified slots from the left
+   {if (Left.countUsed() + countUsed() > numberOfSlots) return false;
+    final Slots l = Left.duplicate(), r = duplicate();
+    l.compactLeft(); r.compactRight();
+    mergeCompacted(l, r);
+    return true;
    }
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
@@ -358,6 +393,8 @@ public class Slots extends Test                                                 
     void clearSlotAndRef(int I) {Slots.this.clearSlotAndRef(I);}                // Remove a key from the slots
     void compactLeft () {}
     void compactRight() {}
+    void mergeOnLeft () {}
+    void mergeOnRight() {}
     String dump()       {return null;}
     void redistribute() {Slots.this.redistribute();}
    }
@@ -447,6 +484,36 @@ public class Slots extends Test                                                 
       for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
       Slots.this.compactRight();
       for (int i = 0; i < N; i++) data[i] = d[i];
+     }
+
+    void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
+     {final Leaf l = Left, r = Right;
+      for (int i = 0; i < numberOfSlots; ++i)
+       {if      (l.parentSlots.usedSlots(i)) data[i] = l.data[i];
+        else if (r.parentSlots.usedSlots(i)) data[i] = r.data[i];
+       }
+     }
+
+    boolean mergeOnRight(Leaf Right)                                            // Merge the specified slots from the right
+     {if (countUsed() + Right.parentSlots.countUsed() > numberOfSlots) return false;
+      final Leaf l = (Leaf)      duplicateLeafOrBranch(),
+                 r = (Leaf)Right.duplicateLeafOrBranch();
+      l.compactLeft(); r.compactRight();
+      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
+      mergeData(l, r);
+      redistribute();
+      return true;
+     }
+
+    boolean mergeOnLeft(Leaf Left)                                              // Merge the specified slots from the right
+     {if (Left.parentSlots.countUsed() + countUsed() > numberOfSlots) return false;
+      final Leaf l = (Leaf)Left.duplicateLeafOrBranch(),
+                 r = (Leaf)     duplicateLeafOrBranch();
+      l.compactLeft(); r.compactRight();
+      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
+      mergeData(l, r);
+      redistribute();
+      return true;
      }
    }
 
@@ -557,6 +624,43 @@ public class Slots extends Test                                                 
       for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
       Slots.this.compactRight();
       for (int i = 0; i < N; i++) data[i] = d[i];
+     }
+
+    void mergeData(double Key, Branch Left, Branch Right)                       // Merge the data from the compacted left and right slots
+     {final Branch l = Left, r = Right;
+      for (int i = 0; i < numberOfSlots; ++i)
+       {if      (l.parentSlots.usedSlots(i)) data[i] = l.data[i];
+        else if (r.parentSlots.usedSlots(i)) data[i] = r.data[i];
+       }
+      final Slots s  = parentSlots;
+      final int   i  = (s.numberOfSlots + 1) / 2;
+      s.    slots[i] = i;
+      s.     keys[i] = Key;
+      s.usedSlots[i] = true;
+      s.usedRefs [i] = true;
+             data[i] = l.top;
+      top            = r.top;
+      redistribute();
+     }
+
+    boolean mergeOnRight(double Key, Branch Right)                              // Merge the specified slots from the right
+     {if (countUsed() + Right.parentSlots.countUsed() > numberOfSlots) return false;
+      final Branch l = (Branch)      duplicateLeafOrBranch(),
+                   r = (Branch)Right.duplicateLeafOrBranch();
+      l.compactLeft(); r.compactRight();
+      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
+      mergeData(Key, l, r);
+      return true;
+     }
+
+    boolean mergeOnLeft(double Key, Branch Left)                                // Merge the specified slots from the right
+     {if (Left.parentSlots.countUsed() + countUsed() > numberOfSlots) return false;
+      final Branch l = (Branch)Left.duplicateLeafOrBranch(),
+                   r = (Branch)     duplicateLeafOrBranch();
+      l.compactLeft(); r.compactRight();
+      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
+      mergeData(Key, l, r);
+      return true;
      }
    }
 
@@ -904,6 +1008,7 @@ data     :    .   .   .   .   .   .   .   .   .   .   .   .   .   1   2   3
 top      : 4
 """);
    }
+
   static Slots.Leaf test_leaf()
    {final Slots.Leaf l = Slots.Leaf(8);
     final double   []d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
@@ -979,6 +1084,82 @@ top : 8
 """);
    }
 
+  static Slots.Leaf test_leaf1()
+   {final Slots.Leaf l = Slots.Leaf(8);
+    final double   []d = new double[]{1.3, 1.4, 1.2, 1.1};
+    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
+    return l;
+   }
+
+  static Slots.Leaf test_leaf2()
+   {final Slots.Leaf l = Slots.Leaf(8);
+    final double   []d = new double[]{1.6, 1.5, 1.8, 1.7};
+    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
+    return l;
+   }
+
+  static void test_mergeLeafLeft()
+   {final Slots.Leaf l = test_leaf1();
+    final Slots.Leaf r = test_leaf2();
+    l.mergeOnRight(r);
+    ok(l, """
+keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
+data: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
+""");
+   }
+
+  static void test_mergeLeafRight()
+   {final Slots.Leaf l = test_leaf1();
+    final Slots.Leaf r = test_leaf2();
+    r.mergeOnLeft(l);
+    ok(r, """
+keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
+data: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
+""");
+   }
+
+  static Slots.Branch test_branch1()
+   {final Slots.Branch l = Slots.Branch(8);
+    final Slots        b = l.parentSlots;
+    final double[]k = new double[]{ 1.3,   1.2,   1.1};
+    final String[]d = new String[]{"  3", "  2", "  1"};
+    for (int i = 0; i < k.length; i++) l.insert(k[i], b.new TestLeafOrBranch(d[i]));
+    l.top = b.new TestLeafOrBranch("  4");
+    return l;
+   }
+
+  static Slots.Branch test_branch2()
+   {final Slots.Branch l = Slots.Branch(8);
+    final Slots        b = l.parentSlots;
+    final double[]k = new double[]{ 1.6,    1.5,  1.7};
+    final String[]d = new String[]{"  6", "  5", "  7"};
+    for (int i = 0; i < k.length; i++) l.insert(k[i], b.new TestLeafOrBranch(d[i]));
+    l.top = b.new TestLeafOrBranch("  8");
+    return l;
+   }
+
+  static void test_mergeBranchLeft()
+   {final Slots.Branch l = test_branch1();
+    final Slots.Branch r = test_branch2();
+    l.mergeOnRight(1.4, r);
+    ok(l, """
+keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
+data:   1,   2,   3,   4,   5,   6,   7
+top :   8
+""");
+   }
+
+  static void test_mergeBranchRight()
+   {final Slots.Branch l = test_branch1();
+    final Slots.Branch r = test_branch2();
+    r.mergeOnLeft(1.4, l);
+    ok(r, """
+keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
+data:   1,   2,   3,   4,   5,   6,   7
+top :   8
+""");
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_redistribute();
@@ -994,11 +1175,15 @@ top : 8
     test_squeezeLeafLeft();
     test_squeezeLeafRight();
     test_squeezeBranchLeft();
+    test_squeezeBranchRight();
+    test_mergeLeafLeft();
+    test_mergeLeafRight();
    }
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
-    test_squeezeBranchRight();
+    test_mergeBranchLeft();
+    test_mergeBranchRight();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
