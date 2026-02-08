@@ -12,7 +12,6 @@ public class Slots extends Test                                                 
   final boolean[]usedSlots;                                                     // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   final boolean[]usedRefs;                                                      // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
   final double []keys;                                                          // Keys
-  final int      redistributeFrequency;                                         // Call redistribute after this many actions
   int actions = 0;                                                              // Number of actions performed
   static boolean debug = false;                                                 // Debug if true
 
@@ -20,7 +19,6 @@ public class Slots extends Test                                                 
 
   public Slots(int NumberOfSlots)                                               // Create the slots
    {numberOfSlots         = NumberOfSlots;
-    redistributeFrequency = (int)java.lang.Math.sqrt(numberOfSlots);            // Call redistribute after this many actions
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfSlots];
@@ -187,11 +185,6 @@ public class Slots extends Test                                                 
      }
    }
 
-  boolean redistributeNow()                                                     // Whether we should request a redistribution of free slots - avoids a redistribution on the first insert or delete.
-   {actions = (actions + 1) & 0x7fffffff;
-    return actions % redistributeFrequency == 0;
-   }
-
   void reset()                                                                  // Reset the slots
    {for (int i = 0; i < numberOfSlots; i++)
      {usedSlots[i] = usedRefs[i] = false;
@@ -286,7 +279,6 @@ public class Slots extends Test                                                 
        {shift(i, w);                                                            // Shift any intervening slots blocking the slot below
         slots[i] = slot;                                                        // Insert into the slot below
        }
-      if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
      }
     else if (l.below)                                                           // Insert their key below the found key
      {final int i = l.at;
@@ -300,7 +292,6 @@ public class Slots extends Test                                                 
         slots[i-1] = slot;                                                      // Insert into the slot below
         usedSlots[i-1] = true;                                                  // Mark the free slot at the start of the range of occupied slots as now in use
        }
-      if (redistributeNow()) redistribute();                                    // Redistribute the remaining free slots
      }
     return slot;                                                                // The index of the reference to the key
    }
@@ -368,7 +359,7 @@ public class Slots extends Test                                                 
 
   Integer locateFirstGe(double Key)                                             // Locate the slot containing the first key greater than or equal to the search key
    {final Locate l = new Locate(Key);
-    if (l.above) return l.at;
+    if (l.below) return l.at;
     return locateNextUsedSlot(l.at+1);
    }
 
@@ -387,7 +378,6 @@ public class Slots extends Test                                                 
    {final Integer i = locate(Key);                                              // Locate the search key
     if (i == null) return false;                                                // Their key is not in the slots
     clearSlotAndRef(i);                                                         // Delete key
-    if (redistributeNow()) redistribute();                                      // Redistribute the remaining free slots
     return true;                                                                // Indicate that the key was deleted
    }
 
@@ -401,8 +391,9 @@ public class Slots extends Test                                                 
     void compactRight() {}
     void mergeOnLeft () {}
     void mergeOnRight() {}
-    String dump()       {return null;}
+    String       dump() {return null;}
     void redistribute() {Slots.this.redistribute();}
+    int     countUsed() {return Slots.this.countUsed();}
    }
 
   class TestLeafOrBranch extends LeafOrBranch                                   // Leaf or branch used during testing to check splits and merges
@@ -533,6 +524,12 @@ public class Slots extends Test                                                 
    {final Slots  parentSlots = Slots.this;                                      // Explicit reference to containing class
     final LeafOrBranch[]data = new LeafOrBranch[numberOfSlots];                 // Link to Data corresponding to each key in the branch
           LeafOrBranch   top;                                                   // Top element of branch which could be a leaf or a branch
+
+    LeafOrBranch child(Integer Index)                                           // The indexed child. The index must be valid or null - if null, top is returned
+     {if (Index == null) return top;                                            // A null index produces top
+      if (!usedSlots(Index)) stop("Indexing unused slot:", Index);              // The slot must be valid
+      return data[slots(Index)];                                                // The indicated child
+     }
 
     class Split                                                                 // The result of splitting a branch
      {final double key;
@@ -922,7 +919,9 @@ usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
 keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 data     :  2.4 0.0 0.0 0.0 2.3 0.0 0.0 0.0 2.2 0.0 0.0 0.0 0.0 0.0 2.1 0.0
 """);
+    ok(l.countUsed(), 4);
     l.compactLeft();
+    ok(l.countUsed(), 4);
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
@@ -965,7 +964,7 @@ data     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.1 2.2 2.3 2.4
     b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = b.new TestLeafOrBranch("  1");
     b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = b.new TestLeafOrBranch("  2");
     b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = b.new TestLeafOrBranch("  3");
-    l.top = b.new TestLeafOrBranch("4");
+    l.top = b.new TestLeafOrBranch("  4");
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
@@ -973,9 +972,17 @@ usedSlots:    .   X   .   X   .   X   .   .   .   .   .   .   .   .   .   .
 usedRefs :    .   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
 keys     :  0.0 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
 data     :    .   .   .   .   3   .   .   .   2   .   .   .   .   .   1   .
-top      : 4
+top      :   4
 """);
+    ok(l.countUsed(), 3);
+    ok(l.child(1),    "  1");
+    ok(l.child(3),    "  2");
+    ok(l.child(5),    "  3");
+    ok(l.child(null), "  4");
+
     l.compactLeft();
+
+    ok(l.countUsed(), 3);
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -983,7 +990,7 @@ usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedRefs :    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 keys     :  1.1 1.2 1.3 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 data     :    1   2   3   .   .   .   .   .   .   .   .   .   .   .   .   .
-top      : 4
+top      :   4
 """);
    }
 
@@ -1167,26 +1174,26 @@ top :   8
    }
 
   static void test_locateFirstGe()
-   {final Slots b = new Slots(8);
+   {final Slots b = new Slots(16);
     b.insert(1);
     b.insert(5);
     b.insert(3);
     b.redistribute();
-    stop("AAAA", b.dump());
+    //stop(b.dump());
     ok(b.dump(), """
-positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   1   0   2   0   0
-usedSlots:    .   X   .   X   .   X   .   .
-usedRefs :    X   X   X   .   .   .   .   .
-keys     :  1.0 3.0 5.0 0.0 0.0 0.0 0.0 0.0
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   0   0   0   0   0   0   2   0   0   0   0   1   0   0   0
+usedSlots:    .   .   X   .   .   .   .   X   .   .   .   .   X   .   .   .
+usedRefs :    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
 
-    ok(b.locateFirstGe(0), 1);
-    ok(b.locateFirstGe(1), 1);
-    ok(b.locateFirstGe(2), 1);
-    ok(b.locateFirstGe(3), 1);
-    ok(b.locateFirstGe(4), 2);
-    ok(b.locateFirstGe(5), 2);
+    ok(b.locateFirstGe(0),  2);
+    ok(b.locateFirstGe(1),  2);
+    ok(b.locateFirstGe(2),  7);
+    ok(b.locateFirstGe(3),  7);
+    ok(b.locateFirstGe(4), 12);
+    ok(b.locateFirstGe(5), 12);
     ok(b.locateFirstGe(6), null);
    }
 
@@ -1213,7 +1220,7 @@ keys     :  1.0 3.0 5.0 0.0 0.0 0.0 0.0 0.0
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//oldTests();
+   {oldTests();
     test_locateFirstGe();
    }
 
