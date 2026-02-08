@@ -22,13 +22,29 @@ class Tree extends Test                                                         
     maxLeafSize = MaxLeafSize;                                                  // The maximum number of entries in a leaf
    }
 
-//D1 High level operations                                                      // Inserm find delete operations on the tree
+//D1 Low level operations                                                       // Low level operations
+
+  boolean split(Slots.Branch Parent, Integer Index)                             // Split the indexed child of the specified branch. Split top is if the index is null
+   {if (
+     if (!Parents.usedSlots(Index)) stop("Indexing an unused slot:", Index);     // Cannot split
+    final Slots.Branch p = Parent;
+    if (Parent.countUsed() >= MaxLeafSize-1) return false;                      // Cannot split child if parent is full
+    final Slots.LeafOrBranch c = p.child(Index);                                // The indexed child
+    if (Parent.countUsed() >= MaxLeafSize-1) return false;                      // Cannot split child if parent is full
+       !(root instanceof Slots.Leaf) &&
+       !(root instanceof Slots.Branch))
+     {stop("Root must be empty, or a leaf or a branch, not a: ",
+       root.getClass().getName());
+     }
+   }
+
+//D1 High level operations                                                      // Insert find delete operations on the tree
 
   void insert(double Key, double Data)                                          // Insert a key value pair
    {if ((root != null) &&
        !(root instanceof Slots.Leaf) &&
        !(root instanceof Slots.Branch))
-     {stop("Root nust be empty, or a leaf or a branch, not a: ",
+     {stop("Root must be empty, or a leaf or a branch, not a: ",
        root.getClass().getName());                                                                                 //
      }
 
