@@ -2,41 +2,61 @@
 // Maintain key references in ascending order using distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Make the slots wider the indexed data so we always have some free - they are so narrow that this is cheap and will save insertion moves when the slots are close to full
 // Add random inserts/deletes to stress locate/insert/delete
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
 
 public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
- {final int      numberOfSlots;                                                 // Number of slots
-  final int    []slots;                                                         // Key ordering
-  final boolean[]usedSlots;                                                     // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
-  final boolean[]usedRefs;                                                      // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
-  final double []keys;                                                          // Keys
-  int actions = 0;                                                              // Number of actions performed
+ {protected final int      numberOfSlots;                                       // Number of slots
+  protected final int      numberOfRefs;                                        // Number of references which shopuld be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
+  protected final int      redistributionWidth;                                 // Redistribute if the next slot is further than this
+  protected final int    []slots;                                               // Key ordering
+  protected final boolean[]usedSlots;                                           // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
+  protected final boolean[]usedRefs;                                            // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
+  protected final double []keys;                                                // Keys
+  String         name;                                                          // String name of these slots for debugging purposes
   static boolean debug = false;                                                 // Debug if true
 
 //D1 Construction                                                               // Construct and layout the slots
 
-  public Slots(int NumberOfSlots)                                               // Create the slots
-   {numberOfSlots         = NumberOfSlots;
+  public Slots(int NumberOfRefs)                                                // Create the slots
+   {numberOfSlots = NumberOfRefs * 2;                                           // The lots are narrow while the refs are wide so we having more slots reduces the amount of slot movement withouit greatly increasing memory requirements
+    numberOfRefs  = NumberOfRefs;
+    redistributionWidth  = (int)java.lang.Math.sqrt(numberOfRefs);
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
-    usedRefs  = new boolean[numberOfSlots];
-    keys      = new double [numberOfSlots];
+    usedRefs  = new boolean[numberOfRefs];
+    keys      = new double [numberOfRefs];
    }
+
+  public Slots(String Name) {this(0); name = Name;}                             // Create empty named slots to assist with debugging
 
   private Slots duplicate()                                                     // Duplicate a set of slots
-   {final Slots s = new Slots(numberOfSlots);
-    for (int i = 0; i < numberOfSlots; i++)                                     // Copy the slots from source to target
-     {s.slots    [i] = slots    [i];
-      s.usedSlots[i] = usedSlots[i];
-      s.usedRefs [i] = usedRefs [i];
-      s.keys     [i] = keys     [i];
-     }
-
+   {final Slots s = new Slots(numberOfRefs);
+    s.copy(this);
     return s;
    }
+
+  protected void copy(Slots Source)                                             // Copy the source slots
+   {if (Source.numberOfSlots != numberOfSlots)
+     {stop("Different number of slots:", Source.numberOfSlots, numberOfSlots);
+     }
+    if (Source.numberOfRefs != numberOfRefs)
+     {stop("Different number of refs:", Source.numberOfRefs, numberOfRefs);
+     }
+    for (int i = 0; i < Source.numberOfSlots; i++)                              // Copy the slots from source to target
+     {slots    [i] = Source.slots    [i];
+      usedSlots[i] = Source.usedSlots[i];
+     }
+
+    for (int i = 0; i < numberOfRefs; i++)                                      // Copy the references from source to target
+     {usedRefs [i] = Source.usedRefs [i];
+      keys     [i] = Source.keys     [i];
+     }
+   }
+
+  int numberOfSlots() {return numberOfSlots;}
+  int numberOfRefs()  {return numberOfRefs;}
 
 //D2 Slots                                                                      // Manage the slots
 
@@ -57,14 +77,16 @@ public class Slots extends Test                                                 
      }
    }
 
-  private void clearSlotAndRef(int I) {freeRef(slots[I]); clearSlots(I);}       // Remove a key from the slots
+  protected void clearSlotAndRef(int I) {freeRef(slots[I]); clearSlots(I);}     // Remove a key from the slots
+  protected int            slots(int I) {return slots    [I];}                  // The indexed slot
+  protected boolean    usedSlots(int I) {return usedSlots[I];}                  // The indexed slot usage indicator
+  protected boolean     usedRefs(int I) {return usedRefs [I];}                  // The indexed reference usage indicator
+  double                     key(int I) {return keys[slots[I]];}                // The indexed key
 
-  private int     slots    (int I) {return slots[I];}                           // The indexed slot
-  private boolean usedSlots(int I) {return usedSlots[I];}                       // The indexed slot usage indicator
-  private boolean usedRefs (int I) {return usedRefs[I];}                        // The indexed reference usage indicator
+//D2 Refs                                                                       // Allocate and free references to keys
 
   private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here because in hardware this will be done in parallel
-   {for (int i = 0; i < numberOfSlots; i++)
+   {for (int i = 0; i < numberOfRefs; i++)
      {if (!usedRefs(i))
        {usedRefs[i] = true;
         return i;
@@ -78,26 +100,31 @@ public class Slots extends Test                                                 
 
 //D1 Keys                                                                       // Operations on keys
 
-  boolean    eq(double Key, int Slot) {return Key == keys[slots[Slot]];}        // Search key is equal to indexed key
-  boolean    le(double Key, int Slot) {return Key <= keys[slots[Slot]];}        // Search key is less than or equal to indexed key
-  String getKey(int Slot) {return ""+                keys[slots[Slot]];}        // Value of the referenced key as a string
+  boolean eq(double Key, int Slot) {return Key == keys[slots[Slot]];}           // Search key is equal to indexed key
+  boolean le(double Key, int Slot) {return Key <= keys[slots[Slot]];}           // Search key is less than or equal to indexed key
+  boolean lt(double Key, int Slot) {return !eq(Key, Slot) && le(Key, Slot);}    // Search key is less than or equal to indexed key
+  boolean ge(double Key, int Slot) {return  eq(Key, Slot) || gt(Key, Slot);}    // Search key is less than or equal to indexed key
+  boolean gt(double Key, int Slot) {return !le(Key, Slot);}                     // Search key is less than or equal to indexed key
+  String getKey(int Slot)          {return ""+keys[slots[Slot]];}               // Value of the referenced key as a string
 
 //D1 Statistics                                                                 // Query the state of the slots
-
-  boolean empty()                                                               // True if the bit slots are all empty. The linear scan can be replaced with a parallel one in hardware.
-   {for (int i = 0; i < numberOfSlots; i++) if ( usedSlots[i]) return false;
-    return true;
-   }
-
-  boolean full()                                                                // True if the bit slots are all full. The linear scan can be replaced with a parallel one in hardware.
-   {for (int i = 0; i < numberOfSlots; i++) if (!usedSlots[i]) return false;
-    return true;
-   }
 
   int countUsed()                                                               // Number or slots in use. How can we do this quickly in parallel?
    {int n = 0;
     for (int i = 0; i < numberOfSlots; i++) if (usedSlots[i]) ++n;
     return n;
+   }
+
+  boolean empty() {return countUsed() == 0;}                                    // All references are unused
+  boolean full()  {return countUsed() == numberOfRefs;}                         // All references are in use
+
+  boolean adjacentUsedSlots(int Start, int Finish)                              // Checks wether two used slots are adjacent
+   {if (!usedSlots[Start])  stop("Start  slot  must be occupied but it is empty, slot:", Start);
+    if (!usedSlots[Finish]) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
+    if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
+
+    for (int i = Start+1; i < Finish; i++) if (usedSlots[i]) return false;      // From start to finish looking for an intermediate used slot
+    return true;
    }
 
 //D1 Low level operations                                                       // Low level operations on slots
@@ -169,7 +196,7 @@ public class Slots extends Test                                                 
      }
    }
 
-  private void redistribute()                                                   // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
+  protected void redistribute()                                                 // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
    {if (empty()) return;                                                        // Nothing to redistribute
     final int      N = numberOfSlots, c = countUsed(), space = (N - c) / c,     // Space between used slots
                cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);        // Covered space from first used slot to last used slot, uncovered remainder
@@ -188,17 +215,19 @@ public class Slots extends Test                                                 
 
   void reset()                                                                  // Reset the slots
    {for (int i = 0; i < numberOfSlots; i++)
-     {usedSlots[i] = usedRefs[i] = false;
-          slots[i] = 0;  keys[i] = 0;
+     {usedSlots[i] = false; slots[i] = 0;
+     }
+    for (int i = 0; i < numberOfRefs; i++)
+     {usedRefs[i] = false; keys[i] = 0;
      }
    }
 
-  void compactLeft()                                                            // Squeeze the used slots to the left end
-   {if (empty() || full()) return;                                              // Nothing to squeeze
+  void compactLeft()                                                            // Compact the used slots to the left end
+   {if (empty() || full()) return;                                              // Nothing to compact
     final Slots d = duplicate(); reset();
     int p = 0;
-    for (int i = 0; i < numberOfSlots; i++)
-     {if (d.usedSlots[i])                                                       // Squeeze complete
+    for (int i = 0; i < numberOfSlots; i++)                                     // Each slot
+     {if (d.usedSlots[i])                                                       // Each used slot
        {usedSlots[p] = usedRefs[p] = true;
             slots[p] = p;
              keys[p] = d.keys[d.slots[i]];
@@ -210,7 +239,7 @@ public class Slots extends Test                                                 
   void compactRight()                                                           // Squeeze the used slots to the left end
    {if (empty() || full()) return;                                              // Nothing to squeeze
     final Slots d = duplicate(); reset();
-    int p = numberOfSlots - 1;
+    int p = numberOfRefs - 1;
     for (int i = numberOfSlots - 1; i >= 0; --i)
      {if (d.usedSlots[i])
        {usedSlots[p] = usedRefs[p] = true;
@@ -223,7 +252,8 @@ public class Slots extends Test                                                 
 
   void mergeCompacted(Slots Left, Slots Right)                                  // Merge left and right compacted slots into the current slots
    {final Slots l = Left, r = Right;
-    for (int i = 0; i < numberOfSlots; ++i)
+    reset();
+    for (int i = 0; i < numberOfRefs; ++i)
      {if (l.usedSlots(i))
        {    slots[i] = l.    slots[i];
         usedSlots[i] = l.usedSlots[i];
@@ -264,7 +294,7 @@ public class Slots extends Test                                                 
     keys[slot] = Key;                                                           // Store the new key in the referenced location
     final Locate l = new Locate(Key);                                           // Search for the slot containing the key closest to their search key
     if ( l.above && l.below) {}                                                 // Found
-    else if (!l.above && !l.below)                                              // Empty
+    else if (!l.above && !l.below)                                              // Empty place the key in the middle
      {slots    [numberOfSlots/2] = slot;
       usedSlots[numberOfSlots/2] = true;
      }
@@ -280,6 +310,7 @@ public class Slots extends Test                                                 
        {shift(i, w);                                                            // Shift any intervening slots blocking the slot below
         slots[i] = slot;                                                        // Insert into the slot below
        }
+      if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();          // Redistribute if the used slots are densely packed
      }
     else if (l.below)                                                           // Insert their key below the found key
      {final int i = l.at;
@@ -293,6 +324,7 @@ public class Slots extends Test                                                 
         slots[i-1] = slot;                                                      // Insert into the slot below
         usedSlots[i-1] = true;                                                  // Mark the free slot at the start of the range of occupied slots as now in use
        }
+      if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();        // Redistribute if the used slots are densely packed
      }
     return slot;                                                                // The index of the reference to the key
    }
@@ -313,46 +345,32 @@ public class Slots extends Test                                                 
 
     void above(int At) {pos(At, true, false);}                                  // Their search key is above this key
     void below(int At) {pos(At, false, true);}                                  // Their search key is below this key
-    void found(int At) {at = At; above = true; below = true;}                   // Found their search key
-    void none() {}                                                              // Slots are empty
+    void found(int At) {pos(At, true,  true);}                                   // Found their search key
+    void none ()       {}                                                       // Slots are empty
 
     Locate(double Key)                                                          // Locate the slot containing the search key if possible.
      {if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
       Integer a = locateNextUsedSlot(0),b = locatePrevUsedSlot(numberOfSlots-1);// Lower limit, upper limit
-      if ( le(Key, a) && !eq(Key, a)) {below(a); return;}                       // Smaller than any key
-      if (!le(Key, b))                {above(b); return;}                       // Greater than any key
-      if ( eq(Key, a))                {found(a); return;}                       // Found at the start of the range
-      if ( eq(Key, b))                {found(b); return;}                       // Found at the end of the range
+      if ( eq(Key, a)) {found(a); return;}                                      // Found at the start of the range
+      if ( eq(Key, b)) {found(b); return;}                                      // Found at the end of the range
+      if ( le(Key, a)) {below(a); return;}                                      // Smaller than any key
+      if (!le(Key, b)) {above(b); return;}                                      // Greater than any key
 
       for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
-       {if (a == b) {pos(a, false, false); return;}                             // Narrowed to one possible key so no more searching is possible
-        final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
+       {final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
+        final int ma = locatePrevUsedSlot(M);                                   // Occupied slot preceding mid point
+        final int mb = locateNextUsedSlot(M);                                   // Occupied slot succeeding mid point
 
-        final Integer ma = locatePrevUsedSlot(M);                               // Occupied slot preceding mid point
-
-        if (ma != null)
-         {if (eq(Key, ma))   {found(ma); return;};                              // Found their search key at lower end
-          if (le(Key, ma))                                                      // Their key is less than the lower mod point
-           {if (b == ma)     {below(b);  return;}                               // We have been here before so we are not going to find their search key
-            else b = ma;                                                        // New upper limit
-           }
-          else if (a == ma)  {above(a);  return;}                               // We have been here before so we are not going to find their search key
-          else     a =  ma;                                                     // New lower limit
-          continue;
-         }
-
-        final Integer mb = locateNextUsedSlot(M);                               // Occupied slot succeeding mid point
-        if (mb != null)
-         {if (eq(Key, mb))   {found(mb); return;}                               // Found their search key at upper end
-          if (le(Key, mb))                                                      // Their search key is less than the upper mid point
-           {if (b == mb)     {below(b);  return;}                               // We have been here before so we are not going to find their search key
-            else b = mb;                                                        // New upper limit
-           }
-          else if (a == mb)  {above(a);  return;}                               // We have been here before so we are not going to find their search key
-          else     a =  mb;                                                     // New lower limit
-          continue;
-         }
-        stop("This should not happen:", a, b, ma, mb);                          // We know there is at least one occupied slot so there will be a lower or upper limit to the range
+        if      (ma != a && ge(Key, ma)) a = ma;
+        else if (ma != b && le(Key, ma)) b = ma;
+        else if (mb != a && ge(Key, mb)) a = mb;
+        else if (mb != b && le(Key, mb)) b = mb;
+        else                                                                    // The slots must be adjacent
+         {if (eq(Key, a)) {found(a); return;};                                 // Found the search key at the lower end
+          if (eq(Key, b)) {found(b); return;};                                 // Found the search key at the upper end
+          below(b);
+          return;
+         }                                                                      // New mid point
        }
       stop("Searched more than the maximum number of times:", numberOfSlots);
      }
@@ -382,309 +400,17 @@ public class Slots extends Test                                                 
     return true;                                                                // Indicate that the key was deleted
    }
 
-//D1 Leaf or branch                                                             // Use the slots to model a leaf or a branch
-
-  class LeafOrBranch                                                            // Leaf or branch
-   {LeafOrBranch duplicateLeafOrBranch() {return null;}
-    int numberOfSlots() {return numberOfSlots;}
-    void clearSlotAndRef(int I) {Slots.this.clearSlotAndRef(I);}                // Remove a key from the slots
-    void compactLeft () {}
-    void compactRight() {}
-    void mergeOnLeft () {}
-    void mergeOnRight() {}
-    String       dump() {return null;}
-    void redistribute() {Slots.this.redistribute();}
-    int     countUsed() {return Slots.this.countUsed();}
-    boolean     empty() {return Slots.this.empty();}
-    boolean      full() {return Slots.this.full(); }
-   }
-
-  class TestLeafOrBranch extends LeafOrBranch                                   // Leaf or branch used during testing to check splits and merges
-   {final String name;
-    TestLeafOrBranch(String Name) {name = Name;}
-    LeafOrBranch duplicateLeafOrBranch() {return new TestLeafOrBranch(name);}
-    public String toString()             {return name;}
-   }
-
-//D1 Leaf                                                                       // Use the slots to model a leaf
-
-  class Leaf extends LeafOrBranch                                               // Leaf
-   {final Slots parentSlots = Slots.this;                                       // Explicit reference to containing class
-    final double     []data = new double[numberOfSlots];                        // Data corresponding to each key in the leaf
-
-    Leaf splitRight(int Count)                                                  // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
-     {final Leaf Right = (Leaf)duplicateLeafOrBranch();                         // Create the right leaf as a duplicate of the left leaf
-      return splitRight(Count, Right);                                          // Split the slots in a left leaf into a new right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
-     }
-
-    Leaf splitRight(int Count, Leaf Right)                                      // Split the slots in a left leaf into an existing right leaf retaining the specified number of slots in the left leaf and returning the new right leaf
-     {int s = 0;                                                                // Count slots used
-      for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
-       {if (usedSlots[i])                                                       // Slot is in use
-         {if (s < Count)                                                        // Still in left leaf
-           {Right.clearSlotAndRef(i);                                           // Free the entry from the right leaf as it is being used in the left leaf
-            s++;                                                                // Number of entries active in left leaf
-           }
-          else clearSlotAndRef(i);                                              // Clear slot being used in right leaf
-         }
-       }                                                                        // The new right leaf
-      redistribute(); Right.redistribute();
-      return Right;
-     }
-
-    Leaf splitLeft(int Count)                                                   // Split the specified number of leading slots in a right leaf to a new left leaf and return the left leaf
-     {final Leaf Left = (Leaf)duplicateLeafOrBranch();                          // Create the right leaf as a duplicate of the left leaf
-      Left.splitRight(Count, this);
-      return Left;
-     }
-
-    LeafOrBranch duplicateLeafOrBranch()                                        // Duplicate a leaf
-     {final Slots s = duplicate();
-      final Leaf l = s.new Leaf();
-      for (int i = 0; i < numberOfSlots; i++) l.data[i] = data[i];
-      return l;
-     }
-
-    Integer insert(double Key, double Data)                                     // Insert a key data pair into a leaf
-     {final Integer i = Slots.this.insert(Key);
-      if (i != null) data[i] = Data;
-      return i;
-     }
-
-    public String toString()                                                    // Print the values in the used slots
-     {final StringJoiner k = new StringJoiner(", ");
-      final StringJoiner d = new StringJoiner(", ");
-      for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots[i]) k.add(""+keys[slots[i]]);
-        if (usedSlots[i]) d.add(""+data[slots[i]]);
-       }
-      return "keys: "+k+"\n"+"data: "+d+"\n";
-     }
-
-    String dump()                                                               // Dump a leaf
-     {final StringBuilder d = new StringBuilder();
-      final int N = numberOfSlots();
-      for (int i = 0; i < N; i++) d.append(String.format(" %3.1f", data[i]));
-      return Slots.this.dump() + "data     : "+d+"\n";
-     }
-
-    void compactLeft()                                                          // Squeeze the leaf left
-     {final int N = numberOfSlots();
-      final double[]d = new double[N];
-      int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
-      Slots.this.compactLeft();
-      for (int i = 0; i < N; i++) data[i] = d[i];
-     }
-
-    void compactRight()                                                         // Squeeze the leaf right
-     {final int N = numberOfSlots();
-      final double[]d = new double[N];
-      int p = N-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
-      Slots.this.compactRight();
-      for (int i = 0; i < N; i++) data[i] = d[i];
-     }
-
-    void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
-     {final Leaf l = Left, r = Right;
-      for (int i = 0; i < numberOfSlots; ++i)
-       {if      (l.parentSlots.usedSlots(i)) data[i] = l.data[i];
-        else if (r.parentSlots.usedSlots(i)) data[i] = r.data[i];
-       }
-     }
-
-    boolean mergeOnRight(Leaf Right)                                            // Merge the specified slots from the right
-     {if (countUsed() + Right.parentSlots.countUsed() > numberOfSlots) return false;
-      final Leaf l = (Leaf)      duplicateLeafOrBranch(),
-                 r = (Leaf)Right.duplicateLeafOrBranch();
-      l.compactLeft(); r.compactRight();
-      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
-      mergeData(l, r);
-      redistribute();
-      return true;
-     }
-
-    boolean mergeOnLeft(Leaf Left)                                              // Merge the specified slots from the right
-     {if (Left.parentSlots.countUsed() + countUsed() > numberOfSlots) return false;
-      final Leaf l = (Leaf)Left.duplicateLeafOrBranch(),
-                 r = (Leaf)     duplicateLeafOrBranch();
-      l.compactLeft(); r.compactRight();
-      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
-      mergeData(l, r);
-      redistribute();
-      return true;
-     }
-   }
-
-  static Leaf Leaf(int NumberOfSlots)                                           // Create a leaf
-   {return new Slots(NumberOfSlots).new Leaf();
-   }
-
-//D1 Branch                                                                     // Use the slots to model a branch
-
-  class Branch extends LeafOrBranch                                             // Branch
-   {final Slots  parentSlots = Slots.this;                                      // Explicit reference to containing class
-    final LeafOrBranch[]data = new LeafOrBranch[numberOfSlots];                 // Link to Data corresponding to each key in the branch
-          LeafOrBranch   top;                                                   // Top element of branch which could be a leaf or a branch
-
-    LeafOrBranch child(Integer Index)                                           // The indexed child. The index must be valid or null - if null, top is returned
-     {if (Index == null) return top;                                            // A null index produces top
-      if (!usedSlots(Index)) stop("Indexing unused slot:", Index);              // The slot must be valid
-      return data[slots(Index)];                                                // The indicated child
-     }
-
-    class Split                                                                 // The result of splitting a branch
-     {final double key;
-      final Branch left, right;
-      Split(double Key, Branch Left, Branch Right)
-       {key = Key; left = Left; right = Right;
-       }
-     }
-
-    Split splitRight(int Count)                                                 // Split the slots in a left branch into a new right branch retaining the specified number of slots in the left branch and returning the new right branch
-     {final Branch Right = (Branch)duplicateLeafOrBranch();                     // Create the right branch as a duplicate of the left branch
-      return splitRight(Count, Right);                                          // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
-     }
-
-    Split splitRight(int Count, Branch Right)                                   // Split the slots in a left branch into an existing right branch retaining the specified number of slots in the left branch and returning the new right branch
-     {Double split = null;                                                      // Splitting key
-      int s = 0;                                                                // Count slots used
-      for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
-       {if (usedSlots[i])                                                       // Slot is in use
-         {if (s < Count)                                                        // Still in left branch
-           {Right.clearSlotAndRef(i);                                           // Free the entry from the right branch as it is being used in the left branch
-            s++;                                                                // Number of entries active in left branch
-           }
-         else if (s == Count)                                                   // Splitting point
-           {split = Slots.this.keys[slots(i)];                                  // Splitting key
-            top   =            data[slots(i)];                                  // New top for left
-                  clearSlotAndRef(i);                                           // Free the entry from the left branch as it is being used in the left branch
-            Right.clearSlotAndRef(i);                                           // Free the entry from the right branch as it is being used in the left branch
-            s++;                                                                // Number of entries active in left branch
-           }
-          else clearSlotAndRef(i);                                              // Modify left branch
-         }
-       }                                                                        // The new right branch
-      redistribute(); Right.redistribute();
-      return split == null ? null : new Split(split, this, Right);              // Details of the split
-     }
-
-    Split splitLeft(int Count)                                                  // Split the specified number of leading slots in a right branch to a new left branch and return the left leaf
-     {final Branch Left = (Branch)duplicateLeafOrBranch();                      // Create the right branch as a duplicate of the left branch
-      return Left.splitRight(Count, this);
-     }
-
-    LeafOrBranch duplicateLeafOrBranch()                                        // Duplicate a branch
-     {final Slots s = duplicate();
-      final Branch b = s.new Branch();
-      for (int i = 0; i < numberOfSlots; i++) b.data[i] = data[i];
-      if (top != null) b.top = top.duplicateLeafOrBranch();
-      return b;
-     }
-
-    Integer insert(double Key, LeafOrBranch Data)                               // Insert a key data pair into a branch
-     {final Integer i = Slots.this.insert(Key);
-      if (i != null) data[i] = Data;
-      return i;
-     }
-
-    void setTop(LeafOrBranch Top) {top = Top;}                                  // Set the top leaf or branch
-    LeafOrBranch getTop() { return top;}                                        // Get the top leaf or branch
-
-    public String toString()                                                    // Print the values in the used slots
-     {final StringJoiner k = new StringJoiner(", ");
-      final StringJoiner d = new StringJoiner(", ");
-      for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots[i]) k.add(""+keys[slots[i]]);
-        if (usedSlots[i]) d.add(""+data[slots[i]]);
-       }
-      final String t = top == null ? "" : "\ntop : "+top+"\n";
-      return "keys: "+k+"\n"+"data: "+d+t;
-     }
-
-    String dump()                                                               // Dump a branch
-     {final StringBuilder d = new StringBuilder();
-      final int N = numberOfSlots();
-      for (int i = 0; i < N; i++)
-       {if (usedRefs[i]) d.append(" "+data[i]);
-        else             d.append("   .");
-       }
-      final String t = top == null ? "" : "top      : "+top+"\n";
-      return Slots.this.dump() + "data     : "+d+"\n"+t;
-     }
-
-    void compactLeft()                                                          // Squeeze the branch to the left
-     {final int N = numberOfSlots();
-      final LeafOrBranch[]d = new LeafOrBranch[N];
-      int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
-      Slots.this.compactLeft();
-      for (int i = 0; i < N; i++) data[i] = d[i];
-     }
-
-    void compactRight()                                                         // Squeeze the branch to the  right
-     {final int N = numberOfSlots();
-      final LeafOrBranch[]d = new LeafOrBranch[N];
-      int p = N-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
-      Slots.this.compactRight();
-      for (int i = 0; i < N; i++) data[i] = d[i];
-     }
-
-    void mergeData(double Key, Branch Left, Branch Right)                       // Merge the data from the compacted left and right slots
-     {final Branch l = Left, r = Right;
-      for (int i = 0; i < numberOfSlots; ++i)
-       {if      (l.parentSlots.usedSlots(i)) data[i] = l.data[i];
-        else if (r.parentSlots.usedSlots(i)) data[i] = r.data[i];
-       }
-      final Slots s  = parentSlots;
-      final int   i  = (s.numberOfSlots + 1) / 2;
-      s.    slots[i] = i;
-      s.     keys[i] = Key;
-      s.usedSlots[i] = true;
-      s.usedRefs [i] = true;
-             data[i] = l.top;
-      top            = r.top;
-      redistribute();
-     }
-
-    boolean mergeOnRight(double Key, Branch Right)                              // Merge the specified slots from the right
-     {if (countUsed() + Right.parentSlots.countUsed() > numberOfSlots) return false;
-      final Branch l = (Branch)      duplicateLeafOrBranch(),
-                   r = (Branch)Right.duplicateLeafOrBranch();
-      l.compactLeft(); r.compactRight();
-      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
-      mergeData(Key, l, r);
-      return true;
-     }
-
-    boolean mergeOnLeft(double Key, Branch Left)                                // Merge the specified slots from the right
-     {if (Left.parentSlots.countUsed() + countUsed() > numberOfSlots) return false;
-      final Branch l = (Branch)Left.duplicateLeafOrBranch(),
-                   r = (Branch)     duplicateLeafOrBranch();
-      l.compactLeft(); r.compactRight();
-      parentSlots.mergeCompacted(l.parentSlots, r.parentSlots);
-      mergeData(Key, l, r);
-      return true;
-     }
-   }
-
-  static Branch Branch(int NumberOfSlots)                                       // Create a branch
-   {return new Slots(NumberOfSlots).new Branch();
-   }
-
 //D1 Print                                                                      // Print the bit slot
 
-  private String printSlots()                                                   // Print the occupancy of each slot
+  protected String printSlots()                                                 // Print the occupancy of each slot
    {final StringBuilder s = new StringBuilder();
     for (int i = 0; i < numberOfSlots; i++) s.append(usedSlots[i] ? "X" : ".");
     return ""+s;
    }
 
-  private String dump()                                                         // Dump the slots
+  protected String dump()                                                       // Dump the slots
    {final StringBuilder s = new StringBuilder();
-    final int N = numberOfSlots;
+    final int N = numberOfSlots, R = numberOfRefs;
     s.append("positions: ");
     for (int i = 0; i < N; i++) s.append(String.format(" %3d", i));
     s.append("\nslots    : ");
@@ -692,9 +418,9 @@ public class Slots extends Test                                                 
     s.append("\nusedSlots: ");
     for (int i = 0; i < N; i++) s.append(usedSlots(i) ? "   X" : "   .");
     s.append("\nusedRefs : ");
-    for (int i = 0; i < N; i++) s.append(usedRefs (i) ? "   X" : "   .");
+    for (int i = 0; i < R; i++) s.append(usedRefs (i) ? "   X" : "   .");
     s.append("\nkeys     : ");
-    for (int i = 0; i < N; i++) s.append(String.format(" %3.1f", keys[i]));
+    for (int i = 0; i < R; i++) s.append(String.format(" %3.1f", keys[i]));
     return ""+s+"\n";
    }
 
@@ -709,7 +435,7 @@ public class Slots extends Test                                                 
 //D1 Tests                                                                      // Test the slots
 
   static void test_locateNearestFreeSlot()
-   {final Slots b = new Slots(16);
+   {final Slots b = new Slots(8);
     b.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
                       //0123456789012345
     ok(b.printSlots(), "..XX.XXX.X.X.X..");
@@ -751,7 +477,7 @@ public class Slots extends Test                                                 
    }
 
   static void test_redistribute()
-   {final Slots b = new Slots(16);
+   {final Slots b = new Slots(8);
     for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
                                                             //0123456789012345
                                           ok(b.printSlots(), "XXXXXXXXXXXXXXXX");
@@ -774,29 +500,6 @@ public class Slots extends Test                                                 
     b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "................");
    }
 
-  static void test_redistribute_odd()
-   {final Slots b = new Slots(15);
-    for (int i = 0; i < b.numberOfSlots; i++) b.setSlots(i);
-                                                            //012345689012345
-                                          ok(b.printSlots(), "XXXXXXXXXXXXXXX");
-                        b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXXX");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "XXXXXXXXXXXXXX.");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXXX.");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".XXXXXXXXXXXX..");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXXX..");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..XXXXXXXXXX...");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...XXXXXXXXX...");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...XXXXXXXX....");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".X.X.X.X.X.X.X.");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X.X.X.X.X.X..");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".X..X..X..X..X.");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X..X..X..X...");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "..X....X....X..");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...X......X....");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), ".......X.......");
-    b.clearFirstSlot(); b.redistribute(); ok(b.printSlots(), "...............");
-   }
-
   static void test_ifd()
    {final Slots b = new Slots(8);
                     ok(b.empty(), true);  ok(b.full(), false);
@@ -807,29 +510,36 @@ public class Slots extends Test                                                 
     b.insert(1.8);
     b.insert(1.7);
     b.insert(1.2);
-    b.insert(1.1); ok(b.empty(), false); ok(b.full(), true);
-    //     0    1    2    3    4    5    6    7
+    b.insert(1.1);
     ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
-
-    ok(b.locate(1.4), 3);
-    ok(b.locate(1.3), 2);
-    ok(b.locate(1.6), 5);
-    ok(b.locate(1.5), 4);
-    ok(b.locate(1.8), 7);
-    ok(b.locate(1.7), 6);
-    ok(b.locate(1.2), 1);
-    ok(b.locate(1.1), 0);
+    ok(b.empty(), false);
+    ok(b.full(), true);
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
+usedRefs :    X   X   X   X   X   X   X   X
+keys     :  1.4 1.3 1.6 1.5 1.8 1.7 1.2 1.1
+""");
+    ok(b.locate(1.1),  5);
+    ok(b.locate(1.2),  6);
+    ok(b.locate(1.3),  7);
+    ok(b.locate(1.4),  8);
+    ok(b.locate(1.5),  9);
+    ok(b.locate(1.6), 10);
+    ok(b.locate(1.7), 11);
+    ok(b.locate(1.8), 12);
     ok(b.locate(1.0), null);
     ok(b.locate(2.0), null);
 
-    ok(b.keys[b.find(1.4)], 1.4); ok(b.delete(1.4), true); b.redistribute(); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8"); ok(b.printSlots(), "XXXXXXX.");
-    ok(b.keys[b.find(1.2)], 1.2); ok(b.delete(1.2), true); b.redistribute(); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");      ok(b.printSlots(), ".XXXXXX.");
-    ok(b.keys[b.find(1.3)], 1.3); ok(b.delete(1.3), true); b.redistribute(); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");           ok(b.printSlots(), ".XXXXX..");
-    ok(b.keys[b.find(1.6)], 1.6); ok(b.delete(1.6), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7, 1.8");                ok(b.printSlots(), "X.X.X.X.");
-    ok(b.keys[b.find(1.8)], 1.8); ok(b.delete(1.8), true); b.redistribute(); ok(b, "1.1, 1.5, 1.7");                     ok(b.printSlots(), ".X.X.X..");
-    ok(b.keys[b.find(1.1)], 1.1); ok(b.delete(1.1), true); b.redistribute(); ok(b, "1.5, 1.7");                          ok(b.printSlots(), ".X...X..");
-    ok(b.keys[b.find(1.7)], 1.7); ok(b.delete(1.7), true); b.redistribute(); ok(b, "1.5");                               ok(b.printSlots(), "...X....");
-    ok(b.keys[b.find(1.5)], 1.5); ok(b.delete(1.5), true); b.redistribute(); ok(b, "");                                  ok(b.printSlots(), "........");
+    ok(b.keys[b.find(1.4)], 1.4); ok(b.delete(1.4), true); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8");
+    ok(b.keys[b.find(1.2)], 1.2); ok(b.delete(1.2), true); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");
+    ok(b.keys[b.find(1.3)], 1.3); ok(b.delete(1.3), true); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");
+    ok(b.keys[b.find(1.6)], 1.6); ok(b.delete(1.6), true); ok(b, "1.1, 1.5, 1.7, 1.8");
+    ok(b.keys[b.find(1.8)], 1.8); ok(b.delete(1.8), true); ok(b, "1.1, 1.5, 1.7");
+    ok(b.keys[b.find(1.1)], 1.1); ok(b.delete(1.1), true); ok(b, "1.5, 1.7");
+    ok(b.keys[b.find(1.7)], 1.7); ok(b.delete(1.7), true); ok(b, "1.5");
+    ok(b.keys[b.find(1.5)], 1.5); ok(b.delete(1.5), true); ok(b, "");
 
     ok(b.locate(1.0), null); ok(b.delete(1.0), false);
    }
@@ -843,13 +553,13 @@ public class Slots extends Test                                                 
       b.insert(1.6); b.redistribute();
       b.insert(1.5); b.redistribute();
       ok(b, "1.3, 1.4, 1.5, 1.6");
-      ok(b.printSlots(), "X.X.X.X.");
+      ok(b.countUsed(), 4);
       b.delete(1.4); b.redistribute();
       b.delete(1.3); b.redistribute();
       b.delete(1.6); b.redistribute();
       b.delete(1.5); b.redistribute();
       ok(b, "");
-      ok(b.printSlots(), "........");
+      ok(b.countUsed(), 0);
      }
    }
 
@@ -861,370 +571,84 @@ public class Slots extends Test                                                 
     ok(b.find(15.0), null);
    }
 
-  static void test_compactLeft()
-   {final Slots b = new Slots(16);
-    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1;
-    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2;
-    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3;
-    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4;
+  static void test_locateFirstGe()
+   {final Slots b = new Slots(8);
+    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 1.1;
+    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 1.2;
+    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 1.3;
+    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 1.4;
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
-usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
-usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
-keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
+usedRefs :    X   .   X   .   X   .   .   X
+keys     :  1.4 0.0 1.3 0.0 1.2 0.0 0.0 1.1
+""");
+    ok(b.locateFirstGe(1.15),    5);
+    ok(b.locateFirstGe(1.2),     5);
+    ok(b.locateFirstGe(1.24),    9);
+    ok(b.locateFirstGe(1.5),  null);
+   }
+
+  static void test_compactLeft()
+   {final Slots b = new Slots(8);
+    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 1.1;
+    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 1.2;
+    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 1.3;
+    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 1.4;
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
+usedRefs :    X   .   X   .   X   .   .   X
+keys     :  1.4 0.0 1.3 0.0 1.2 0.0 0.0 1.1
 """);
     b.compactLeft();
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
-usedRefs :    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
-keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+usedRefs :    X   X   X   X   .   .   .   .
+keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0
 """);
    }
 
   static void test_compactRight()
-   {final Slots b = new Slots(16);
-    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1;
-    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2;
-    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3;
-    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4;
+   {final Slots b = new Slots(8);
+    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 1.1;
+    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 1.2;
+    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 1.3;
+    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 1.4;
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
-usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
-usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
-keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
+slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
+usedRefs :    X   .   X   .   X   .   .   X
+keys     :  1.4 0.0 1.3 0.0 1.2 0.0 0.0 1.1
 """);
     b.compactRight();
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   0   0   0   0   0   0   0   0   0   0   0  12  13  14  15
-usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
-usedRefs :    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
-keys     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
+slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
+usedRefs :    .   .   .   .   X   X   X   X
+keys     :  0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
 """);
-   }
-
-  static void test_squeezeLeafLeft()
-   {final Slots.Leaf l = Leaf(16);
-    final Slots      b = l.parentSlots;
-    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = 2.1;
-    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = 2.2;
-    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = 2.3;
-    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4; l.data[ 0] = 2.4;
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
-usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
-usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
-keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
-data     :  2.4 0.0 0.0 0.0 2.3 0.0 0.0 0.0 2.2 0.0 0.0 0.0 0.0 0.0 2.1 0.0
-""");
-    ok(l.countUsed(), 4);
-    l.compactLeft();
-    ok(l.countUsed(), 4);
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
-usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
-usedRefs :    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
-keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-data     :  2.1 2.2 2.3 2.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-""");
-   }
-
-  static void test_squeezeLeafRight()
-   {final Slots.Leaf l = Leaf(16);
-    final Slots      b = l.parentSlots;
-    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = 2.1;
-    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = 2.2;
-    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = 2.3;
-    b.usedSlots[7] = true; b.slots[7] =  0; b.usedRefs[ 0] = true; b.keys[ 0] = 1.4; l.data[ 0] = 2.4;
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
-usedSlots:    .   X   .   X   .   X   .   X   .   .   .   .   .   .   .   .
-usedRefs :    X   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
-keys     :  1.4 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
-data     :  2.4 0.0 0.0 0.0 2.3 0.0 0.0 0.0 2.2 0.0 0.0 0.0 0.0 0.0 2.1 0.0
-""");
-    l.compactRight();
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   0   0   0   0   0   0   0   0   0   0   0  12  13  14  15
-usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
-usedRefs :    .   .   .   .   .   .   .   .   .   .   .   .   X   X   X   X
-keys     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
-data     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 2.1 2.2 2.3 2.4
-""");
-   }
-
-  static void test_squeezeBranchLeft()
-   {final Slots.Branch l = Branch(16);
-    final Slots        b = l.parentSlots;
-    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = b.new TestLeafOrBranch("  1");
-    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = b.new TestLeafOrBranch("  2");
-    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = b.new TestLeafOrBranch("  3");
-    l.top = b.new TestLeafOrBranch("  4");
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
-usedSlots:    .   X   .   X   .   X   .   .   .   .   .   .   .   .   .   .
-usedRefs :    .   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
-keys     :  0.0 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
-data     :    .   .   .   .   3   .   .   .   2   .   .   .   .   .   1   .
-top      :   4
-""");
-    ok(l.countUsed(), 3);
-    ok(l.child(1),    "  1");
-    ok(l.child(3),    "  2");
-    ok(l.child(5),    "  3");
-    ok(l.child(null), "  4");
-
-    l.compactLeft();
-
-    ok(l.countUsed(), 3);
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   1   2   0   0   0   0   0   0   0   0   0   0   0   0   0
-usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
-usedRefs :    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
-keys     :  1.1 1.2 1.3 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-data     :    1   2   3   .   .   .   .   .   .   .   .   .   .   .   .   .
-top      :   4
-""");
-   }
-
-  static void test_squeezeBranchRight()
-   {final Slots.Branch l = Branch(16);
-    final Slots        b = l.parentSlots;
-    b.usedSlots[1] = true; b.slots[1] = 14; b.usedRefs[14] = true; b.keys[14] = 1.1; l.data[14] = b.new TestLeafOrBranch("  1");
-    b.usedSlots[3] = true; b.slots[3] =  8; b.usedRefs[ 8] = true; b.keys[ 8] = 1.2; l.data[ 8] = b.new TestLeafOrBranch("  2");
-    b.usedSlots[5] = true; b.slots[5] =  4; b.usedRefs[ 4] = true; b.keys[ 4] = 1.3; l.data[ 4] = b.new TestLeafOrBranch("  3");
-    l.top = b.new TestLeafOrBranch("4");
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0  14   0   8   0   4   0   0   0   0   0   0   0   0   0   0
-usedSlots:    .   X   .   X   .   X   .   .   .   .   .   .   .   .   .   .
-usedRefs :    .   .   .   .   X   .   .   .   X   .   .   .   .   .   X   .
-keys     :  0.0 0.0 0.0 0.0 1.3 0.0 0.0 0.0 1.2 0.0 0.0 0.0 0.0 0.0 1.1 0.0
-data     :    .   .   .   .   3   .   .   .   2   .   .   .   .   .   1   .
-top      : 4
-""");
-    l.compactRight();
-    ok(l.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   0   0   0   0   0   0   0   0   0   0   0   0  13  14  15
-usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   .   X   X   X
-usedRefs :    .   .   .   .   .   .   .   .   .   .   .   .   .   X   X   X
-keys     :  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.1 1.2 1.3
-data     :    .   .   .   .   .   .   .   .   .   .   .   .   .   1   2   3
-top      : 4
-""");
-   }
-
-  static Slots.Leaf test_leaf()
-   {final Slots.Leaf l = Slots.Leaf(8);
-    final double   []d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
-    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
-    return l;
-   }
-
-  static void test_splitLeftLeafIntoRight()
-   {final Slots.Leaf l = test_leaf();
-    final Slots.Leaf r = l.splitRight(l.numberOfSlots() / 2);
-    ok(l, """
-keys: 1.1, 1.2, 1.3, 1.4
-data: 1.1, 1.2, 1.3, 1.4
-""");
-    ok(r, """
-keys: 1.5, 1.6, 1.7, 1.8
-data: 1.5, 1.6, 1.7, 1.8
-""");
-   }
-
-  static void test_splitRightLeafIntoLeft()
-   {final Slots.Leaf r = test_leaf();
-    final Slots.Leaf l = r.splitLeft(r.numberOfSlots() / 2);
-    ok(l, """
-keys: 1.1, 1.2, 1.3, 1.4
-data: 1.1, 1.2, 1.3, 1.4
-""");
-    ok(r, """
-keys: 1.5, 1.6, 1.7, 1.8
-data: 1.5, 1.6, 1.7, 1.8
-""");
-   }
-
-  static Slots.Branch test_branch()
-   {final Slots.Branch b = Slots.Branch(7);
-    final Slots        s = b.parentSlots;
-
-    final double[]k = new double[]{1.3, 1.6, 1.5, 1.7, 1.4, 1.2, 1.1};
-    final String[]d = new String[]{"3", "6", "5", "7", "4", "2", "1"};
-    for (int i = 0; i < d.length; i++) b.insert(k[i], s.new TestLeafOrBranch(d[i]));
-    b.setTop(s.new TestLeafOrBranch("8"));
-    return b;
-   }
-
-  static void test_splitLeftBranchIntoRight()
-   {final Slots.Branch       l = test_branch();
-    final Slots.Branch.Split s = l.splitRight(l.numberOfSlots() / 2);
-    ok(s.left, """
-keys: 1.1, 1.2, 1.3
-data: 1, 2, 3
-top : 4
-""");
-    ok(s.right, """
-keys: 1.5, 1.6, 1.7
-data: 5, 6, 7
-top : 8
-""");
-    ok(s.key, 1.4);
-   }
-
-  static void test_splitRightBranchIntoLeft()
-   {final Slots.Branch       r = test_branch();
-    final Slots.Branch.Split s = r.splitLeft(r.numberOfSlots() / 2);
-    ok(s.left, """
-keys: 1.1, 1.2, 1.3
-data: 1, 2, 3
-top : 4
-""");
-    ok(s.right, """
-keys: 1.5, 1.6, 1.7
-data: 5, 6, 7
-top : 8
-""");
-   }
-
-  static Slots.Leaf test_leaf1()
-   {final Slots.Leaf l = Slots.Leaf(8);
-    final double   []d = new double[]{1.3, 1.4, 1.2, 1.1};
-    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
-    return l;
-   }
-
-  static Slots.Leaf test_leaf2()
-   {final Slots.Leaf l = Slots.Leaf(8);
-    final double   []d = new double[]{1.6, 1.5, 1.8, 1.7};
-    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
-    return l;
-   }
-
-  static void test_mergeLeafLeft()
-   {final Slots.Leaf l = test_leaf1();
-    final Slots.Leaf r = test_leaf2();
-    l.mergeOnRight(r);
-    ok(l, """
-keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
-data: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
-""");
-   }
-
-  static void test_mergeLeafRight()
-   {final Slots.Leaf l = test_leaf1();
-    final Slots.Leaf r = test_leaf2();
-    r.mergeOnLeft(l);
-    ok(r, """
-keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
-data: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
-""");
-   }
-
-  static Slots.Branch test_branch1()
-   {final Slots.Branch l = Slots.Branch(8);
-    final Slots        b = l.parentSlots;
-    final double[]k = new double[]{ 1.3,   1.2,   1.1};
-    final String[]d = new String[]{"  3", "  2", "  1"};
-    for (int i = 0; i < k.length; i++) l.insert(k[i], b.new TestLeafOrBranch(d[i]));
-    l.top = b.new TestLeafOrBranch("  4");
-    return l;
-   }
-
-  static Slots.Branch test_branch2()
-   {final Slots.Branch l = Slots.Branch(8);
-    final Slots        b = l.parentSlots;
-    final double[]k = new double[]{ 1.6,    1.5,  1.7};
-    final String[]d = new String[]{"  6", "  5", "  7"};
-    for (int i = 0; i < k.length; i++) l.insert(k[i], b.new TestLeafOrBranch(d[i]));
-    l.top = b.new TestLeafOrBranch("  8");
-    return l;
-   }
-
-  static void test_mergeBranchLeft()
-   {final Slots.Branch l = test_branch1();
-    final Slots.Branch r = test_branch2();
-    l.mergeOnRight(1.4, r);
-    ok(l, """
-keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
-data:   1,   2,   3,   4,   5,   6,   7
-top :   8
-""");
-   }
-
-  static void test_mergeBranchRight()
-   {final Slots.Branch l = test_branch1();
-    final Slots.Branch r = test_branch2();
-    r.mergeOnLeft(1.4, l);
-    ok(r, """
-keys: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
-data:   1,   2,   3,   4,   5,   6,   7
-top :   8
-""");
-   }
-
-  static void test_locateFirstGe()
-   {final Slots b = new Slots(16);
-    b.insert(1);
-    b.insert(5);
-    b.insert(3);
-    b.redistribute();
-    //stop(b.dump());
-    ok(b.dump(), """
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   0   0   0   0   0   0   2   0   0   0   0   1   0   0   0
-usedSlots:    .   .   X   .   .   .   .   X   .   .   .   .   X   .   .   .
-usedRefs :    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
-keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-""");
-
-    ok(b.locateFirstGe(0),  2);
-    ok(b.locateFirstGe(1),  2);
-    ok(b.locateFirstGe(2),  7);
-    ok(b.locateFirstGe(3),  7);
-    ok(b.locateFirstGe(4), 12);
-    ok(b.locateFirstGe(5), 12);
-    ok(b.locateFirstGe(6), null);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_redistribute();
-    test_redistribute_odd();
     test_ifd();
     test_idn();
-    test_splitLeftLeafIntoRight();
-    test_splitRightLeafIntoLeft();
-    test_splitLeftBranchIntoRight();
-    test_splitRightBranchIntoLeft();
+    test_tooManySearches();
+    test_locateFirstGe();
     test_compactLeft();
     test_compactRight();
-    test_squeezeLeafLeft();
-    test_squeezeLeafRight();
-    test_squeezeBranchLeft();
-    test_squeezeBranchRight();
-    test_mergeLeafLeft();
-    test_mergeLeafRight();
-    test_mergeBranchLeft();
-    test_mergeBranchRight();
    }
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
-    test_locateFirstGe();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
