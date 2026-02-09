@@ -2,6 +2,7 @@
 // Maintain key references in ascending order using distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// Make the slots wider the indexed data so we always have some free - they are so narrow that this is cheap and will save insertion moves when the slots are close to full
 // Add random inserts/deletes to stress locate/insert/delete
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
@@ -394,6 +395,8 @@ public class Slots extends Test                                                 
     String       dump() {return null;}
     void redistribute() {Slots.this.redistribute();}
     int     countUsed() {return Slots.this.countUsed();}
+    boolean     empty() {return Slots.this.empty();}
+    boolean      full() {return Slots.this.full(); }
    }
 
   class TestLeafOrBranch extends LeafOrBranch                                   // Leaf or branch used during testing to check splits and merges
