@@ -22,6 +22,9 @@ class Tree extends Test                                                         
     maxLeafSize = MaxLeafSize;                                                  // The maximum number of entries in a leaf
    }
 
+  Slots.Leaf   leaf  () {return Slots.Leaf  (maxLeafSize);}                     // Create a leaf
+  Slots.Branch branch() {return Slots.Branch(maxLeafSize-1);}                   // Create a branch
+
 //D1 Low level operations                                                       // Low level operations
 
   int leafSize()   {return maxLeafSize;}                                        // Maximum size of a leaf
@@ -30,7 +33,7 @@ class Tree extends Test                                                         
   double leafSplittingKey(Slots.Leaf Leaf)                                      // Splitting key from a leaf
    {final Slots l = Leaf.parentSlots;
     if (!l.full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
-    final int   m = leafSize() / 2;                                             // Index of mid point
+    final int   m = leafSize() / 2;                                            // Index of mid point
     return (l.keys[l.slots[m-1]]+l.keys[l.slots[m]]) / 2;                       // The splitting key
    }
 
@@ -90,6 +93,7 @@ class Tree extends Test                                                         
       r.insert(Key, Data);
       return;
      }
+
     if (root instanceof Slots.Leaf)                                             // Tree is a single leaf
      {final Slots.Leaf R = (Slots.Leaf) root;
       if (R.insert(Key, Data) != null) return;                                  // Sufficient space to insert into root leaf
@@ -97,11 +101,31 @@ class Tree extends Test                                                         
       final Slots.Leaf r = l.splitRight(maxLeafSize / 2);                       // Split the root leaf
       final Slots     sl = l.parentSlots;
       final Slots     sr = r.parentSlots;
-      final Slots.Branch b = Slots.Branch(maxLeafSize-1);                       // The root will be a branch
+      final Slots.Branch b =  branch();                                         // The root will be a branch
       final double ll = sl.keys[sl.slots[sl.locateLastUsedSlot()]];
       final double rf = sr.keys[0];
       root = b; b.insert((ll+rf)/2, l); b.top = r;                              // The root now points to the two leaves
       return;
+     }
+
+    Slots.Branch p = (Slots.Branch)root;                                        // Start at root
+    if (p.full())                                                               // Split root if necessary
+     {final double sk = branchSplittingKey(p);                                  // Root splitting key
+      final Slots.Branch.Split s = p.splitRight(branchSize() / 2);                    // Split branch
+      final Slots.Branch R = branch();
+      R.insert(sk, s.left); R.top = s.right;
+      p = R;
+     }
+    for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down through tree levels splitting as we go
+     {final Integer f = p.parentSlots.locateFirstGe(Key);                       // Position of child
+      split(p, f);                                                              // Split child if necessary
+      final Slots.LeafOrBranch c = stepDown(Key, p);
+      if (c instanceof Slots.Leaf)                                                                                 //
+       {final Slots.Leaf l = (Slots.Leaf)c;
+        l.insert(Key, Data);
+        return;
+       }
+      p = (Slots.Branch)c;
      }
    }
 
