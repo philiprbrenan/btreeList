@@ -41,7 +41,11 @@ class Tree extends Test                                                         
     return b.keys[b.slots[m]];                                                  // The splitting key
    }
 
-  boolean split(Slots.Branch Parent, Integer Index)                             // Split the indexed child of the specified branch. Split top is if the index is null
+  Slots.LeafOrBranch stepDown(double Key, Slots.Branch Branch)                  // Step down from a branch to the next level down
+   {return Branch.child(Branch.parentSlots.locateFirstGe(Key));
+   }
+
+  boolean split(Slots.Branch Parent, Integer Index)                             // Split the indexed child of the specified branch. Split top if the index is null
    {final Slots p = Parent.parentSlots;
     if (p.full()) stop("Attempting to split the child of a full parent");       // Programming error
     final Slots.LeafOrBranch c = Parent.child(Index);                           // The indexed child
