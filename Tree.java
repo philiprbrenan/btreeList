@@ -6,7 +6,7 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Tree extends Test                                                         // Manipulate a tree
- {final int           maxLeafSize;                                              // The maximum number of entries in a leaf
+ {final int           maxLeafSize;                                              // The maximum number of entries in a leaf - the number of slots in a leaf and one more than the number of slots in a branch
   Slots.LeafOrBranch         root;                                              // The root of the tree
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
   boolean           suppressMerge = false;                                      // Suppress merges during put to allow merge steps to be tested individually.  If this is on the trees built for testing are already merged so there is nothing to test.
@@ -24,18 +24,50 @@ class Tree extends Test                                                         
 
 //D1 Low level operations                                                       // Low level operations
 
+  int leafSize()   {return maxLeafSize;}                                        // Maximum size of a leaf
+  int branchSize() {return maxLeafSize-1;}                                      // Maximum size of a branch
+
+  double leafSplittingKey(Slots.Leaf Leaf)                                      // Splitting key from a leaf
+   {final Slots l = Leaf.parentSlots;
+    if (!l.full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
+    final int   m = leafSize() / 2;                                             // Index of mid point
+    return (l.keys[l.slots[m-1]]+l.keys[l.slots[m]]) / 2;                       // The splitting key
+   }
+
+  double branchSplittingKey(Slots.Branch Branch)                                // Splitting key from a branch
+   {final Slots b = Branch.parentSlots;
+    if (!b.full()) stop("Branch not full");                                     // The branch must be full if we are going to split it
+    final int   m = branchSize() / 2;                                           // Index of mid point
+    return b.keys[b.slots[m]];                                                  // The splitting key
+   }
+
   boolean split(Slots.Branch Parent, Integer Index)                             // Split the indexed child of the specified branch. Split top is if the index is null
-   {if (
-     if (!Parents.usedSlots(Index)) stop("Indexing an unused slot:", Index);     // Cannot split
-    final Slots.Branch p = Parent;
-    if (Parent.countUsed() >= MaxLeafSize-1) return false;                      // Cannot split child if parent is full
-    final Slots.LeafOrBranch c = p.child(Index);                                // The indexed child
-    if (Parent.countUsed() >= MaxLeafSize-1) return false;                      // Cannot split child if parent is full
-       !(root instanceof Slots.Leaf) &&
-       !(root instanceof Slots.Branch))
-     {stop("Root must be empty, or a leaf or a branch, not a: ",
+   {final Slots p = Parent.parentSlots;
+    if (p.full()) stop("Attempting to split the child of a full parent");       // Programming error
+    final Slots.LeafOrBranch c = Parent.child(Index);                           // The indexed child
+    if (!c.full()) return false;                                                // Cannot split child unless it is full
+
+    if (!(c instanceof Slots.Leaf) && !(c instanceof Slots.Branch))             // If it is not a leaf or a branch something has gone wrong
+     {stop("Invalid object in tree, not a leaf or a branch:",
        root.getClass().getName());
      }
+
+    if (c instanceof Slots.Leaf)                                                // Split a leaf
+     {final Slots.Leaf r = (Slots.Leaf)c;
+      final double k = leafSplittingKey(r);
+      final Slots.Leaf l = r.splitLeft(leafSize() / 2);
+      Parent.insert(k, l);
+      return true;
+     }
+
+    if (c instanceof Slots.Branch)                                              // Split a branch
+     {final Slots.Branch r = (Slots.Branch)c;
+      final double k = branchSplittingKey(r);
+      final Slots.Branch.Split l = r.splitLeft(branchSize() / 2);
+      Parent.insert(k, l.left);
+      return true;
+     }
+    stop("Should not happen"); return false;
    }
 
 //D1 High level operations                                                      // Insert find delete operations on the tree
