@@ -352,14 +352,17 @@ class Tree extends Test                                                         
     Integer parentIndex;                                                        // Slot used in parent for leaf
     Integer childIndex;                                                         // Slot used for key in child if present
     long    key;                                                                // Search key
-    Find(long Key, Branch Branch, Leaf Leaf,
-         Integer ParentIndex, Integer ChildIndex)
+    Slots.Locate locate;                                                        // Location details for key
+
+    Find(long Key, Branch Branch, Leaf Leaf, Integer ParentIndex)
      {key         = Key;
       branch      = Branch;
       leaf        = Leaf;
       parentIndex = ParentIndex;
-      childIndex  = ChildIndex;
+      locate      = Leaf.new Locate(Key);
+      childIndex  = Leaf.locate(Key);
      }
+
     public String toString()
      {final StringBuilder s = new StringBuilder();
       s.append("Find Key : "+key+"\n");
@@ -367,6 +370,7 @@ class Tree extends Test                                                         
       if (leaf         != null) s.append(leaf  .dump());
       if (parentIndex  != null) s.append("ParentIndex : "+parentIndex  +"\n");
       if (childIndex   != null) s.append("ChildIndex  : "+childIndex   +"\n");
+      if (locate       != null) s.append("Locate      : "+locate   +"\n");
       return ""+s;
      }
    }
@@ -375,7 +379,7 @@ class Tree extends Test                                                         
    {if (root == null) return null;                                              // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-      return new Find(Key, null, l, null, l.locate(Key));
+      return new Find(Key, null, l, null);
      }
     Branch p = (Branch)root;                                                    // Start at root
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
@@ -383,7 +387,7 @@ class Tree extends Test                                                         
       final Slots q = p.child(P);
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
-        return new Find(Key, p, l, P, l.locate(Key));
+        return new Find(Key, p, l, P);
        }
       p = (Branch)q;                                                            // Step down into non full branch
      }
@@ -1122,6 +1126,7 @@ usedRefs :    X   .   X   .
 keys     :   11  13  12  14
 data     :   21  23  22  24
 ParentIndex : 2
+Locate      :  1  below all
 """);
 
     ok(t.find(23), """
@@ -1143,6 +1148,7 @@ keys     :   23  25  24  26
 data     :   33  35  34  36
 ParentIndex : 2
 ChildIndex  : 1
+Locate      :  1 exact
 """);
    }
 
