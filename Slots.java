@@ -333,10 +333,12 @@ public class Slots extends Test                                                 
    {int at;                                                                     // The point at which the closest key was found
     boolean above;                                                              // The search key is above or equal to the found key
     boolean below;                                                              // The search key is below or equal to the found key
+    boolean all;                                                                // Above all or below all if true
 
     public String toString()
-     {return String.format("%2d %s %s", at, above ? "above" : "",
-                                            below ? "below" : "");
+     {return String.format("%2d %s %s %s", at, above ? "above" : "",
+                                               below ? "below" : "",
+                                               all   ? "all"   : "");
      }
 
     void pos(int At, boolean Above, boolean Below)
