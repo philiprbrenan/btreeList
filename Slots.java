@@ -336,7 +336,8 @@ public class Slots extends Test                                                 
     boolean all;                                                                // Above all or below all if true
 
     public String toString()
-     {return String.format("%2d %s %s %s", at, above ? "above" : "",
+     {if (exact()) return String.format("%2d exact", at);
+      return String.format("%2d %s %s %s", at, above ? "above" : "",
                                                below ? "below" : "",
                                                all   ? "all"   : "");
      }
@@ -349,6 +350,8 @@ public class Slots extends Test                                                 
     void below(int At) {pos(At, false, true);}                                  // Their search key is below this key
     void found(int At) {pos(At, true,  true);}                                  // Found their search key
     void none ()       {}                                                       // Slots are empty
+
+    boolean exact() {return above && below;}                                    // Oh America - my new found land.
 
     Locate(long Key)                                                            // Locate the slot containing the search key if possible.
      {if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
@@ -386,7 +389,7 @@ public class Slots extends Test                                                 
 
   public Integer locate(long Key)                                               // Locate the slot containing the current search key if possible.
    {final Locate l = new Locate(Key);                                           // Locate the search key
-    if (l.above && l.below) return l.at;                                        // Found
+    if (l.exact()) return l.at;                                                 // Found
     return null;                                                                // Not found
    }
 
