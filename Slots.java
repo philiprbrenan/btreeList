@@ -13,7 +13,7 @@ public class Slots extends Test                                                 
   protected final int    []slots;                                               // Key ordering
   protected final boolean[]usedSlots;                                           // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   protected final boolean[]usedRefs;                                            // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
-  protected final double []keys;                                                // Keys
+  protected final long   []keys;                                                // Keys
   String         name;                                                          // String name of these slots for debugging purposes
   static boolean debug = false;                                                 // Debug if true
 
@@ -26,7 +26,7 @@ public class Slots extends Test                                                 
     slots     = new int    [numberOfSlots];
     usedSlots = new boolean[numberOfSlots];
     usedRefs  = new boolean[numberOfRefs];
-    keys      = new double [numberOfRefs];
+    keys      = new long   [numberOfRefs];
    }
 
   public Slots(String Name) {this(0); name = Name;}                             // Create empty named slots to assist with debugging
@@ -81,7 +81,7 @@ public class Slots extends Test                                                 
   protected int            slots(int I) {return slots    [I];}                  // The indexed slot
   protected boolean    usedSlots(int I) {return usedSlots[I];}                  // The indexed slot usage indicator
   protected boolean     usedRefs(int I) {return usedRefs [I];}                  // The indexed reference usage indicator
-  double                     key(int I) {return keys[slots[I]];}                // The indexed key
+  long                      keys(int I) {return keys[slots[I]];}                // The indexed key
 
 //D2 Refs                                                                       // Allocate and free references to keys
 
@@ -100,11 +100,11 @@ public class Slots extends Test                                                 
 
 //D1 Keys                                                                       // Operations on keys
 
-  boolean eq(double Key, int Slot) {return Key == keys[slots[Slot]];}           // Search key is equal to indexed key
-  boolean le(double Key, int Slot) {return Key <= keys[slots[Slot]];}           // Search key is less than or equal to indexed key
-  boolean lt(double Key, int Slot) {return !eq(Key, Slot) && le(Key, Slot);}    // Search key is less than or equal to indexed key
-  boolean ge(double Key, int Slot) {return  eq(Key, Slot) || gt(Key, Slot);}    // Search key is less than or equal to indexed key
-  boolean gt(double Key, int Slot) {return !le(Key, Slot);}                     // Search key is less than or equal to indexed key
+  boolean eq(long Key, int Slot) {return Key == keys[slots[Slot]];}             // Search key is equal to indexed key
+  boolean le(long Key, int Slot) {return Key <= keys[slots[Slot]];}             // Search key is less than or equal to indexed key
+  boolean lt(long Key, int Slot) {return !eq(Key, Slot) && le(Key, Slot);}      // Search key is less than or equal to indexed key
+  boolean ge(long Key, int Slot) {return  eq(Key, Slot) || gt(Key, Slot);}      // Search key is less than or equal to indexed key
+  boolean gt(long Key, int Slot) {return !le(Key, Slot);}                       // Search key is less than or equal to indexed key
   String getKey(int Slot)          {return ""+keys[slots[Slot]];}               // Value of the referenced key as a string
 
 //D1 Statistics                                                                 // Query the state of the slots
@@ -288,7 +288,7 @@ public class Slots extends Test                                                 
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
-  public Integer insert(double Key)                                             // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
+  public Integer insert(long Key)                                               // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
    {if (full()) return null;                                                    // No slot available in which to insert a new key
     final int slot = allocRef();                                                // The location in which to store the search key
     keys[slot] = Key;                                                           // Store the new key in the referenced location
@@ -345,10 +345,10 @@ public class Slots extends Test                                                 
 
     void above(int At) {pos(At, true, false);}                                  // Their search key is above this key
     void below(int At) {pos(At, false, true);}                                  // Their search key is below this key
-    void found(int At) {pos(At, true,  true);}                                   // Found their search key
+    void found(int At) {pos(At, true,  true);}                                  // Found their search key
     void none ()       {}                                                       // Slots are empty
 
-    Locate(double Key)                                                          // Locate the slot containing the search key if possible.
+    Locate(long Key)                                                            // Locate the slot containing the search key if possible.
      {if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
       Integer a = locateNextUsedSlot(0),b = locatePrevUsedSlot(numberOfSlots-1);// Lower limit, upper limit
       if ( eq(Key, a)) {found(a); return;}                                      // Found at the start of the range
@@ -376,24 +376,24 @@ public class Slots extends Test                                                 
      }
    }
 
-  Integer locateFirstGe(double Key)                                             // Locate the slot containing the first key greater than or equal to the search key
+  Integer locateFirstGe(long Key)                                               // Locate the slot containing the first key greater than or equal to the search key
    {final Locate l = new Locate(Key);
     if (l.below) return l.at;
     return locateNextUsedSlot(l.at+1);
    }
 
-  public Integer locate(double Key)                                             // Locate the slot containing the current search key if possible.
+  public Integer locate(long Key)                                               // Locate the slot containing the current search key if possible.
    {final Locate l = new Locate(Key);                                           // Locate the search key
     if (l.above && l.below) return l.at;                                        // Found
     return null;                                                                // Not found
    }
 
-  public Integer find(double Key)                                               // Find the index of the current key in the slots
+  public Integer find(long Key)                                                 // Find the index of the current key in the slots
    {final Integer i = locate(Key);
     return i == null ? null : slots[i];
    }
 
-  public boolean delete(double Key)                                             // Delete the specified key
+  public boolean delete(long Key)                                               // Delete the specified key
    {final Integer i = locate(Key);                                              // Locate the search key
     if (i == null) return false;                                                // Their key is not in the slots
     clearSlotAndRef(i);                                                         // Delete key
@@ -420,7 +420,7 @@ public class Slots extends Test                                                 
     s.append("\nusedRefs : ");
     for (int i = 0; i < R; i++) s.append(usedRefs (i) ? "   X" : "   .");
     s.append("\nkeys     : ");
-    for (int i = 0; i < R; i++) s.append(String.format(" %3.1f", keys[i]));
+    for (int i = 0; i < R; i++) s.append(String.format(" %3d", keys[i]));
     return ""+s+"\n";
    }
 
@@ -502,16 +502,16 @@ public class Slots extends Test                                                 
 
   static void test_ifd()
    {final Slots b = new Slots(8);
-                    ok(b.empty(), true);  ok(b.full(), false);
-    b.insert(1.4);  ok(b.empty(), false); ok(b.full(), false);
-    b.insert(1.3);  ok(b.countUsed(), 2);
-    b.insert(1.6);
-    b.insert(1.5);
-    b.insert(1.8);
-    b.insert(1.7);
-    b.insert(1.2);
-    b.insert(1.1);
-    ok(b, "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8");
+                   ok(b.empty(), true);  ok(b.full(), false);
+    b.insert(14);  ok(b.empty(), false); ok(b.full(), false);
+    b.insert(13);  ok(b.countUsed(), 2);
+    b.insert(16);
+    b.insert(15);
+    b.insert(18);
+    b.insert(17);
+    b.insert(12);
+    b.insert(11);
+    ok(b, "11, 12, 13, 14, 15, 16, 17, 18");
     ok(b.empty(), false);
     ok(b.full(), true);
     ok(b.dump(), """
@@ -519,45 +519,45 @@ positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
 usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
 usedRefs :    X   X   X   X   X   X   X   X
-keys     :  1.4 1.3 1.6 1.5 1.8 1.7 1.2 1.1
+keys     :   14  13  16  15  18  17  12  11
 """);
-    ok(b.locate(1.1),  5);
-    ok(b.locate(1.2),  6);
-    ok(b.locate(1.3),  7);
-    ok(b.locate(1.4),  8);
-    ok(b.locate(1.5),  9);
-    ok(b.locate(1.6), 10);
-    ok(b.locate(1.7), 11);
-    ok(b.locate(1.8), 12);
-    ok(b.locate(1.0), null);
-    ok(b.locate(2.0), null);
+    ok(b.locate(11),  5);
+    ok(b.locate(12),  6);
+    ok(b.locate(13),  7);
+    ok(b.locate(14),  8);
+    ok(b.locate(15),  9);
+    ok(b.locate(16), 10);
+    ok(b.locate(17), 11);
+    ok(b.locate(18), 12);
+    ok(b.locate(10), null);
+    ok(b.locate(20), null);
 
-    ok(b.keys[b.find(1.4)], 1.4); ok(b.delete(1.4), true); ok(b, "1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8");
-    ok(b.keys[b.find(1.2)], 1.2); ok(b.delete(1.2), true); ok(b, "1.1, 1.3, 1.5, 1.6, 1.7, 1.8");
-    ok(b.keys[b.find(1.3)], 1.3); ok(b.delete(1.3), true); ok(b, "1.1, 1.5, 1.6, 1.7, 1.8");
-    ok(b.keys[b.find(1.6)], 1.6); ok(b.delete(1.6), true); ok(b, "1.1, 1.5, 1.7, 1.8");
-    ok(b.keys[b.find(1.8)], 1.8); ok(b.delete(1.8), true); ok(b, "1.1, 1.5, 1.7");
-    ok(b.keys[b.find(1.1)], 1.1); ok(b.delete(1.1), true); ok(b, "1.5, 1.7");
-    ok(b.keys[b.find(1.7)], 1.7); ok(b.delete(1.7), true); ok(b, "1.5");
-    ok(b.keys[b.find(1.5)], 1.5); ok(b.delete(1.5), true); ok(b, "");
+    ok(b.keys[b.find(14)], 14); ok(b.delete(14), true); ok(b, "11, 12, 13, 15, 16, 17, 18");
+    ok(b.keys[b.find(12)], 12); ok(b.delete(12), true); ok(b, "11, 13, 15, 16, 17, 18");
+    ok(b.keys[b.find(13)], 13); ok(b.delete(13), true); ok(b, "11, 15, 16, 17, 18");
+    ok(b.keys[b.find(16)], 16); ok(b.delete(16), true); ok(b, "11, 15, 17, 18");
+    ok(b.keys[b.find(18)], 18); ok(b.delete(18), true); ok(b, "11, 15, 17");
+    ok(b.keys[b.find(11)], 11); ok(b.delete(11), true); ok(b, "15, 17");
+    ok(b.keys[b.find(17)], 17); ok(b.delete(17), true); ok(b, "15");
+    ok(b.keys[b.find(15)], 15); ok(b.delete(15), true); ok(b, "");
 
-    ok(b.locate(1.0), null); ok(b.delete(1.0), false);
+    ok(b.locate(10), null); ok(b.delete(10), false);
    }
 
   static void test_idn()                                                        // Repeated inserts and deletes
    {final Slots b = new Slots(8);
 
     for (int i = 0; i < b.numberOfSlots*10; i++)
-     {b.insert(1.4); b.redistribute();
-      b.insert(1.3); b.redistribute();
-      b.insert(1.6); b.redistribute();
-      b.insert(1.5); b.redistribute();
-      ok(b, "1.3, 1.4, 1.5, 1.6");
+     {b.insert(14); b.redistribute();
+      b.insert(13); b.redistribute();
+      b.insert(16); b.redistribute();
+      b.insert(15); b.redistribute();
+      ok(b, "13, 14, 15, 16");
       ok(b.countUsed(), 4);
-      b.delete(1.4); b.redistribute();
-      b.delete(1.3); b.redistribute();
-      b.delete(1.6); b.redistribute();
-      b.delete(1.5); b.redistribute();
+      b.delete(14); b.redistribute();
+      b.delete(13); b.redistribute();
+      b.delete(16); b.redistribute();
+      b.delete(15); b.redistribute();
       ok(b, "");
       ok(b.countUsed(), 0);
      }
@@ -566,42 +566,42 @@ keys     :  1.4 1.3 1.6 1.5 1.8 1.7 1.2 1.1
   static void test_tooManySearches()
    {final Slots b = new Slots(8);
 
-    b.insert(10.0);
-    b.insert(20.0);
-    ok(b.find(15.0), null);
+    b.insert(10);
+    b.insert(20);
+    ok(b.find(15), null);
    }
 
   static void test_locateFirstGe()
    {final Slots b = new Slots(8);
-    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 1.1;
-    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 1.2;
-    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 1.3;
-    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 1.4;
+    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 22;
+    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 24;
+    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 26;
+    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 28;
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
-keys     :  1.4 0.0 1.3 0.0 1.2 0.0 0.0 1.1
+keys     :   28   0  26   0  24   0   0  22
 """);
-    ok(b.locateFirstGe(1.15),    5);
-    ok(b.locateFirstGe(1.2),     5);
-    ok(b.locateFirstGe(1.24),    9);
-    ok(b.locateFirstGe(1.5),  null);
+    ok(b.locateFirstGe(23),    5);
+    ok(b.locateFirstGe(24),    5);
+    ok(b.locateFirstGe(25),    9);
+    ok(b.locateFirstGe(30), null);
    }
 
   static void test_compactLeft()
    {final Slots b = new Slots(8);
-    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 1.1;
-    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 1.2;
-    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 1.3;
-    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 1.4;
+    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 11;
+    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 12;
+    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 13;
+    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 14;
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
-keys     :  1.4 0.0 1.3 0.0 1.2 0.0 0.0 1.1
+keys     :   14   0  13   0  12   0   0  11
 """);
     b.compactLeft();
     ok(b.dump(), """
@@ -609,22 +609,22 @@ positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
 usedRefs :    X   X   X   X   .   .   .   .
-keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0
+keys     :   11  12  13  14   0   0   0   0
 """);
    }
 
   static void test_compactRight()
    {final Slots b = new Slots(8);
-    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 1.1;
-    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 1.2;
-    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 1.3;
-    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 1.4;
+    b.usedSlots[ 1] = true; b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 11;
+    b.usedSlots[ 5] = true; b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 12;
+    b.usedSlots[ 9] = true; b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 13;
+    b.usedSlots[14] = true; b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 14;
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
-keys     :  1.4 0.0 1.3 0.0 1.2 0.0 0.0 1.1
+keys     :   14   0  13   0  12   0   0  11
 """);
     b.compactRight();
     ok(b.dump(), """
@@ -632,7 +632,7 @@ positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
 usedRefs :    .   .   .   .   X   X   X   X
-keys     :  0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
+keys     :    0   0   0   0  11  12  13  14
 """);
    }
 
