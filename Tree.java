@@ -83,12 +83,12 @@ class Tree extends Test                                                         
           ++p;                                                                  // Next position
          }
        }
-      return k /= 2;                                                            // Average splitting ley
+      return k /= 2;                                                            // Average splitting key
      }
 
     Branch split()                                                              // Split a leaf into two leaves and a branch
-     {final long sk = splittingKey();
-      final Leaf l = duplicate(), r = l.splitRight();
+     {final long  sk = splittingKey();
+      final Leaf   l = duplicate(), r = l.splitRight();
       final Branch b = new Branch();
       b.insert(sk, l); b.top = r;
       return b;
@@ -243,7 +243,7 @@ class Tree extends Test                                                         
      }
 
     Branch split()                                                              // Split a branch
-     {final long      sk = splittingKey();
+     {final long        sk = splittingKey();
       final Branch       l = duplicate();
       final Branch.Split s = l.splitRight();
       final Branch b = new Branch();
@@ -398,6 +398,7 @@ class Tree extends Test                                                         
       l.insert(Key, Data);                                                      // Insert into leaf root
       return;
      }
+
     final Find F = find(Key);                                                   // See if key is already present
     if (F.childIndex != null)                                                   // Key already present so update data associated with the key
      {final Leaf l = F.leaf;                                                    // Child leaf
@@ -407,6 +408,15 @@ class Tree extends Test                                                         
     else if (!F.leaf.full())                                                    // Leaf not full so insert directly
      {final Leaf l = F.leaf;                                                    // Child leaf
       l.insert(Key, Data);                                                      // Insert key
+      return;
+     }
+    else if (F.branch != null && !F.branch.full())                              // Leaf is full, parent branch is not full so we can split leaf
+     {final Branch b = F.branch;                                                // Parent branch
+      final Leaf   r = F.leaf;
+      final long  sk = r.splittingKey();
+      final Leaf   l = r.splitLeft();
+      b.insert(sk, l);                                                          // Insert new left leaf into branch
+      if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);             // insert new key, data pair into leaf
       return;
      }
 
@@ -428,7 +438,7 @@ class Tree extends Test                                                         
        {final Leaf r = (Leaf)q;
         if (r.full())                                                           // Split the leaf if it is full
          {final long sk = r.splittingKey();
-          final Leaf l = r.splitLeft();
+          final Leaf l  = r.splitLeft();
           p.insert(sk, l);                                                      // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
           if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
          }
@@ -1014,15 +1024,13 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     t.insert(31, 41);
     ok(t, """
-                              18                                                |
-              14                              22                                |
+              14              18              22                                |
       12              16              20              24      26      28        |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30,31|
 """);
     t.insert(32, 42);
     ok(t, """
-                              18                                                   |
-              14                              22                                   |
+              14              18              22                                   |
       12              16              20              24      26      28           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30,31,32|
 """);
@@ -1070,15 +1078,15 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     t.insert(39, 49);
     ok(t, """
-                              18                              26                                                |
-              14                              22                              30                                |
+                              18                                                                                |
+              14                              22              26              30                                |
       12              16              20              24              28              32      34      36        |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38,39|
 """);
     t.insert(40, 50);
     ok(t, """
-                              18                              26                                                   |
-              14                              22                              30                                   |
+                              18                                                                                   |
+              14                              22              26              30                                   |
       12              16              20              24              28              32      34      36           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38,39,40|
 """);
