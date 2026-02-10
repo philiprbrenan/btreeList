@@ -84,7 +84,7 @@ class Tree extends Test                                                         
       return k /= 2;                                                            // Average splitting ley
      }
 
-    Branch splitLeafRoot()                                                      // Split a leaf into two leaves and a branch
+    Branch split()                                                              // Split a leaf into two leaves and a branch
      {final double sk = splittingKey();
       final Leaf l = duplicate(), r = l.splitRight();
       final Branch b = new Branch();
@@ -227,7 +227,24 @@ class Tree extends Test                                                         
 
     double splittingKey()                                                       // Splitting key from a branch
      {if (!full()) stop("Branch not full");                                     // The branch must be full if we are going to split it
-      return key(splitSize());                                                 // The splitting key
+      double k = 0;                                                             // Splitting key
+      int    p = 0;                                                             // Position in leaf
+      for (int i = 0; i < numberOfSlots; i++)                                   // Scan for splitting keys
+       {if (usedSlots(i))                                                       // Used slot
+         {if (p == splitSize()) k += key(i);                                    // Splitting key as last on left and first on right of split
+          ++p;                                                                  // Next position
+         }
+       }
+      return k;                                                                 // Splitting key
+     }
+
+    Branch split()                                                              // Split a branch
+     {final double      sk = splittingKey();
+      final Branch       l = duplicate();
+      final Branch.Split s = l.splitRight();
+      final Branch b = new Branch();
+      b.insert(sk, s.left); b.top = s.right;
+      return b;
      }
 
     Integer insert(double Key, Slots Data)                                      // Insert a key data pair into a branch
@@ -349,7 +366,7 @@ class Tree extends Test                                                         
         if (s instanceof Leaf)
          {printLeaf  ((Leaf)s,   P, level+1);
          }
-        else
+        else if (s instanceof Branch)
          {printBranch((Branch)s, P, level+1);
          }
         //final int key  = stuckKeys.memoryGet(BtreeIndex, i);
@@ -369,7 +386,7 @@ class Tree extends Test                                                         
     if (branch.top instanceof Leaf)                                                    // Print leaf
      {printLeaf  (  (Leaf)branch.top, P, level+1);
      }
-    else                                                                        // Print branch
+    else if (branch.top instanceof Branch)                                                    // Print leaf
      {printBranch((Branch)branch.top, P, level+1);
      }
 
@@ -746,13 +763,23 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     ok(b.locateFirstGe(6), null);
    }
 
-  static void test_splitLeafRoot()
-   {final Branch b = test_leaf().splitLeafRoot();
+  static void test_splitLeaf()
+   {final Branch b = test_leaf().split();
     final Tree   t = b.tree();
     t.root = b;
     ok(t.print(), """
                 1.45               |
 1.1,1.2,1.3,1.4     1.5,1.6,1.7,1.8|
+""");
+   }
+
+  static void test_splitBranch()
+   {final Branch b = test_branch().split();
+    final Tree   t = b.tree();
+    t.root = b;
+    ok(t.print(), """
+             1.4            |
+ 1.1 1.2 1.3     1.5 1.6 1.7|
 """);
    }
 
@@ -769,10 +796,13 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     test_mergeLeafRight();
     test_mergeBranchLeft();
     test_mergeBranchRight();
+    test_splitLeaf();
+    test_splitBranch();
    }
 
   static void newTests()                                                        // Tests being worked on
-   {test_splitLeafRoot();
+   {oldTests();
+    test_splitBranch();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
