@@ -355,8 +355,8 @@ public class Slots extends Test                                                 
       Integer a = locateNextUsedSlot(0),b = locatePrevUsedSlot(numberOfSlots-1);// Lower limit, upper limit
       if ( eq(Key, a)) {found(a); return;}                                      // Found at the start of the range
       if ( eq(Key, b)) {found(b); return;}                                      // Found at the end of the range
-      if ( le(Key, a)) {below(a); return;}                                      // Smaller than any key
-      if (!le(Key, b)) {above(b); return;}                                      // Greater than any key
+      if ( le(Key, a)) {below(a); all = true; return;}                          // Smaller than any key
+      if (!le(Key, b)) {above(b); all = true; return;}                          // Greater than any key
 
       for(int i = 0; i < numberOfSlots; ++i)                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
