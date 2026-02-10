@@ -375,8 +375,7 @@ class Tree extends Test                                                         
    {if (root == null) return null;                                              // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-      final Integer i = l.locate(Key);
-      return new Find(Key, null, l, null, i);
+      return new Find(Key, null, l, null, l.locate(Key));
      }
     Branch p = (Branch)root;                                                    // Start at root
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
