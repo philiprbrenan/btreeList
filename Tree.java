@@ -340,18 +340,76 @@ class Tree extends Test                                                         
     Tree tree() {return Tree.this;}                                             // Containing tree
 
     private Slots stepDown(long Key)                                            // Step down from this branch
-     {return child(find(Key));
+     {return child(locateFirstGe(Key));
      }
    }
 
 //D1 High Level                                                                 // High level operations: insert, find, delete
 
-  void insert(long Key, long Data)
+  class Find                                                                    // Find results
+   {Branch  branch;                                                             // Last branch
+    Leaf    leaf;                                                               // Leaf that should contain the key
+    Integer parentIndex;                                                        // Slot used in parent for leaf
+    Integer childIndex;                                                         // Slot used for key in child if present
+    long    key;                                                                // Search key
+    Find(long Key, Branch Branch, Leaf Leaf,
+         Integer ParentIndex, Integer ChildIndex)
+     {key         = Key;
+      branch      = Branch;
+      leaf        = Leaf;
+      parentIndex = ParentIndex;
+      childIndex  = ChildIndex;
+     }
+    public String toString()
+     {final StringBuilder s = new StringBuilder();
+      s.append("Find Key : "+key+"\n");
+      if (branch       != null) s.append(branch.dump());
+      if (leaf         != null) s.append(leaf  .dump());
+      if (parentIndex  != null) s.append("ParentIndex : "+parentIndex  +"\n");
+      if (childIndex   != null) s.append("ChildIndex  : "+childIndex   +"\n");
+      return ""+s;
+     }
+   }
+
+  Find find(long Key)
+   {if (root == null) return null;                                              // Empty tree
+    if (root instanceof Leaf)                                                   // Leaf root
+     {final Leaf l = (Leaf)root;
+      final Integer i = l.locate(Key);
+      return new Find(Key, null, l, null, i);
+     }
+    Branch p = (Branch)root;                                                    // Start at root
+    for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
+     {final Integer P = p.locateFirstGe(Key);
+      final Slots q = p.child(P);
+      if (q instanceof Leaf)                                                    // Step down to a leaf
+       {final Leaf l = (Leaf)q;
+        return new Find(Key, p, l, P, l.locate(Key));
+       }
+      p = (Branch)q;                                                            // Step down into non full branch
+     }
+    stop("Find fell off the end of tree after this many searches:", MaximumNumberOfLevels);
+    return null;
+   }
+
+  void insert(long Key, long Data)                                              // Insert a key, data pair or update key data pair in the tree
    {if (root == null)                                                           // Empty tree
      {final Leaf l = new Leaf(); root = l;                                      // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
       return;
      }
+    final Find F = find(Key);                                                   // See if key is already present
+    if (F.childIndex != null)                                                   // Key already present so update data associated with the key
+     {final Leaf l = F.leaf;                                                    // Child leaf
+      l.data[l.slots[F.childIndex]] = Data;                                     // Update data                                                                            //
+      return;
+     }
+    else if (!F.leaf.full())                                                    // Leaf not full so insert directly
+     {final Leaf l = F.leaf;                                                    // Child leaf
+      l.insert(Key, Data);                                                      // Insert key
+      return;
+     }
+
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
       if (!l.full())                                                            // Still space in leaf root
@@ -386,7 +444,7 @@ class Tree extends Test                                                         
        }
       else p = r;                                                               // Step down into non full branch
      }
-    stop("Fallen off end of tree after this many searches:", MaximumNumberOfLevels);
+    stop("Insert fell off the end of tree after this many searches:", MaximumNumberOfLevels);
    }
 
 //D1 Print                                                                      // Print the tree horizontally
@@ -494,22 +552,25 @@ class Tree extends Test                                                         
     l.insert(12, 22);
     l.insert(14, 24);
     l.insert(11, 21);
+
     ok(l.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   X   .   .   .   .   .   .
 usedRefs :    X   X   X   X   .   .   .   .
-keys     :  1.3 1.2 1.4 1.1 0.0 0.0 0.0 0.0
-data     :  2.3 2.2 2.4 2.1 0.0 0.0 0.0 0.0
+keys     :   13  12  14  11   0   0   0   0
+data     :   23  22  24  21   0   0   0   0
 """);
     l.compactLeft();
     ok(l.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
 usedRefs :    X   X   X   X   .   .   .   .
-keys     :  1.1 1.2 1.3 1.4 0.0 0.0 0.0 0.0
-data     :  2.1 2.2 2.3 2.4 0.0 0.0 0.0 0.0
+keys     :   11  12  13  14   0   0   0   0
+data     :   21  22  23  24   0   0   0   0
 """);
    }
 
@@ -520,22 +581,23 @@ data     :  2.1 2.2 2.3 2.4 0.0 0.0 0.0 0.0
     l.insert(14, 24);
     l.insert(11, 21);
     ok(l.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   X   .   .   .   .   .   .
 usedRefs :    X   X   X   X   .   .   .   .
-keys     :  1.3 1.2 1.4 1.1 0.0 0.0 0.0 0.0
-data     :  2.3 2.2 2.4 2.1 0.0 0.0 0.0 0.0
+keys     :   13  12  14  11   0   0   0   0
+data     :   23  22  24  21   0   0   0   0
 """);
     l.compactRight();
-//  stop(l.dump());
     ok(l.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
 usedRefs :    .   .   .   .   X   X   X   X
-keys     :  0.0 0.0 0.0 0.0 1.1 1.2 1.3 1.4
-data     :  0.0 0.0 0.0 0.0 2.1 2.2 2.3 2.4
+keys     :    0   0   0   0  11  12  13  14
+data     :    0   0   0   0  21  22  23  24
 """);
    }
 
@@ -546,24 +608,26 @@ data     :  0.0 0.0 0.0 0.0 2.1 2.2 2.3 2.4
     b.insert(13, new Slots(" 13"));
     b.top = new Slots("  4");
     ok(b.dump(), """
+Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   0   0   0   0   1   0   2   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   .   .   .   .   .
 usedRefs :    X   X   X   .   .   .   .
-keys     :  1.2 1.1 1.3 0.0 0.0 0.0 0.0
-data     :  1.2 1.1 1.3   .   .   .   .
+keys     :   12  11  13   0   0   0   0
+data     :   12  11  13   .   .   .   .
 top      :    4
 """);
 
     b.compactLeft();
 
     ok(b.dump(), """
+Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   1   2   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .
 usedRefs :    X   X   X   .   .   .   .
-keys     :  1.1 1.2 1.3 0.0 0.0 0.0 0.0
-data     :  1.1 1.2 1.3   .   .   .   .
+keys     :   11  12  13   0   0   0   0
+data     :   11  12  13   .   .   .   .
 top      :    4
 """);
    }
@@ -575,23 +639,25 @@ top      :    4
     b.insert(13, new Slots(" 13"));
     b.top = new Slots("  4");
     ok(b.dump(), """
+Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   0   0   0   0   1   0   2   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   .   .   .   .   .
 usedRefs :    X   X   X   .   .   .   .
-keys     :  1.2 1.1 1.3 0.0 0.0 0.0 0.0
-data     :  1.2 1.1 1.3   .   .   .   .
+keys     :   12  11  13   0   0   0   0
+data     :   12  11  13   .   .   .   .
 top      :    4
 """);
 
     b.compactRight();
     ok(b.dump(), """
+Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   0   0   4   5   6   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   .   .   .   .   .   .   .
 usedRefs :    .   .   .   .   X   X   X
-keys     :  0.0 0.0 0.0 0.0 1.1 1.2 1.3
-data     :    .   .   .   . 1.1 1.2 1.3
+keys     :    0   0   0   0  11  12  13
+data     :    .   .   .   .  11  12  13
 top      :    4
 """);
    }
@@ -606,37 +672,40 @@ top      :    4
   static void test_splitLeftLeafIntoRight()
    {final Leaf l = test_leaf();
     ok(l.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    7   6   0   0   5   0   2   0   1   0   4   0   3   0   0   0
 usedSlots:    X   X   X   .   X   .   X   .   X   .   X   .   X   .   .   .
 usedRefs :    X   X   X   X   X   X   X   X
-keys     :  1.3 1.6 1.5 1.8 1.7 1.4 1.2 1.1
-data     :  1.3 1.6 1.5 1.8 1.7 1.4 1.2 1.1
+keys     :   13  16  15  18  17  14  12  11
+data     :   13  16  15  18  17  14  12  11
 """);
     final Leaf r = l.splitRight();
     ok(l.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   6   0   0   0   0   0   0   0   5   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedRefs :    X   .   .   .   .   X   X   X
-keys     :  1.3 1.6 1.5 1.8 1.7 1.4 1.2 1.1
-data     :  1.3 1.6 1.5 1.8 1.7 1.4 1.2 1.1
+keys     :   13  16  15  18  17  14  12  11
+data     :   13  16  15  18  17  14  12  11
 """);
     ok(r.dump(), """
+Leaf     : 1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   2   0   0   0   1   0   0   0   4   0   0   0   3   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedRefs :    .   X   X   X   X   .   .   .
-keys     :  1.3 1.6 1.5 1.8 1.7 1.4 1.2 1.1
-data     :  1.3 1.6 1.5 1.8 1.7 1.4 1.2 1.1
+keys     :   13  16  15  18  17  14  12  11
+data     :   13  16  15  18  17  14  12  11
 """);
     ok(l, """
-keys: 1.1, 1.2, 1.3, 1.4
-data: 1.1, 1.2, 1.3, 1.4
+keys: 11, 12, 13, 14
+data: 11, 12, 13, 14
 """);
     ok(r, """
-keys: 1.5, 1.6, 1.7, 1.8
-data: 1.5, 1.6, 1.7, 1.8
+keys: 15, 16, 17, 18
+data: 15, 16, 17, 18
 """);
    }
 
@@ -644,12 +713,12 @@ data: 1.5, 1.6, 1.7, 1.8
    {final Leaf r = test_leaf();
     final Leaf l = r.splitLeft();
     ok(l, """
-keys: 1.1, 1.2, 1.3, 1.4
-data: 1.1, 1.2, 1.3, 1.4
+keys: 11, 12, 13, 14
+data: 11, 12, 13, 14
 """);
     ok(r, """
-keys: 1.5, 1.6, 1.7, 1.8
-data: 1.5, 1.6, 1.7, 1.8
+keys: 15, 16, 17, 18
+data: 15, 16, 17, 18
 """);
    }
 
@@ -667,32 +736,32 @@ data: 1.5, 1.6, 1.7, 1.8
    {final Branch       b = test_branch();
     final Branch.Split s = b.splitRight();
     ok(s.left, """
-keys: 1.1, 1.2, 1.3
+keys: 11, 12, 13
 data:   1,   2,   3
 top :   4
 """);
     ok(s.right, """
-keys: 1.5, 1.6, 1.7
+keys: 15, 16, 17
 data:   5,   6,   7
 top :   8
 """);
-    ok(s.key, 1.4);
+    ok(s.key, 14);
    }
 
   static void test_splitRightBranchIntoLeft()
    {final Branch       r = test_branch();
     final Branch.Split s = r.splitLeft();
     ok(s.left, """
-keys: 1.1, 1.2, 1.3
+keys: 11, 12, 13
 data:   1,   2,   3
 top :   4
 """);
     ok(s.right, """
-keys: 1.5, 1.6, 1.7
+keys: 15, 16, 17
 data:   5,   6,   7
 top :   8
 """);
-    ok(s.key, 1.4);
+    ok(s.key, 14);
    }
 
   static Leaf test_leaf1()
@@ -714,12 +783,13 @@ top :   8
     final Leaf r = test_leaf2();
     l.mergeOnRight(r);
     ok(l.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X   X   X   X   X
-keys     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
-data     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
+keys     :   11  12  13  14  15  16  17  18
+data     :   11  12  13  14  15  16  17  18
 """);
    }
 
@@ -728,12 +798,13 @@ data     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
     final Leaf r = test_leaf2();
     r.mergeOnLeft(l);
     ok(r.dump(), """
+Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X   X   X   X   X
-keys     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
-data     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
+keys     :   11  12  13  14  15  16  17  18
+data     :   11  12  13  14  15  16  17  18
 """);
    }
 
@@ -760,11 +831,12 @@ data     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
     final Branch r = test_branch2();
     l.mergeOnRight(14, r);
     ok(l.dump(), """
+Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   1   0   2   0   0   0   4   0   5   0   6   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X   X   X   X
-keys     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7
+keys     :   11  12  13  14  15  16  17
 data     :    1   2   3   4   5   6   7
 top      :    8
 """);
@@ -775,11 +847,12 @@ top      :    8
     final Branch r = test_branch2();
     r.mergeOnLeft(14, l);
     ok(r.dump(), """
+Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   1   0   2   0   0   0   4   0   5   0   6   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X   X   X   X
-keys     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7
+keys     :   11  12  13  14  15  16  17
 data     :    1   2   3   4   5   6   7
 top      :    8
 """);
@@ -814,8 +887,8 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     final Tree   t = b.tree();
     t.root = b;
     ok(t, """
-                1.45               |
-1.1,1.2,1.3,1.4     1.5,1.6,1.7,1.8|
+            14           |
+11,12,13,14   15,16,17,18|
 """);
    }
 
@@ -824,8 +897,8 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     final Tree   t = b.tree();
     t.root = b;
     ok(t, """
-             1.4            |
- 1.1 1.2 1.3     1.5 1.6 1.7|
+          14         |
+ 11 12 13    15 16 17|
 """);
    }
 
@@ -876,8 +949,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     t.insert(20, 30);
     ok(t, """
-              14                   |
-      12              16           |
+      12      14      16           |
 11,12   13,14   15,16   17,18,19,20|
 """);
     t.insert(21, 31);
@@ -900,8 +972,8 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     t.insert(24, 34);
     ok(t, """
-              14              18                   |
-      12              16              20           |
+              14                                   |
+      12              16      18      20           |
 11,12   13,14   15,16   17,18   19,20   21,22,23,24|
 """);
     t.insert(25, 35);
@@ -924,21 +996,19 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     t.insert(28, 38);
     ok(t, """
-              14              18              22                   |
-      12              16              20              24           |
+              14              18                                   |
+      12              16              20      22      24           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26,27,28|
 """);
     t.insert(29, 39);
     ok(t, """
-                              18                                        |
-              14                              22                        |
+              14              18              22                        |
       12              16              20              24      26        |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28,29|
 """);
     t.insert(30, 40);
     ok(t, """
-                              18                                           |
-              14                              22                           |
+              14              18              22                           |
       12              16              20              24      26           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28,29,30|
 """);
@@ -952,8 +1022,8 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     t.insert(32, 42);
     ok(t, """
                               18                                                   |
-              14                              22              26                   |
-      12              16              20              24              28           |
+              14                              22                                   |
+      12              16              20              24      26      28           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30,31,32|
 """);
     t.insert(33, 43);
@@ -980,21 +1050,21 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     t.insert(36, 46);
     ok(t, """
                               18                                                                   |
-              14                              22              26              30                   |
-      12              16              20              24              28              32           |
+              14                              22              26                                   |
+      12              16              20              24              28      30      32           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34,35,36|
 """);
     t.insert(37, 47);
     ok(t, """
-                              18                              26                                        |
-              14                              22                              30                        |
+                              18                                                                        |
+              14                              22              26              30                        |
       12              16              20              24              28              32      34        |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36,37|
 """);
     t.insert(38, 48);
     ok(t, """
-                              18                              26                                           |
-              14                              22                              30                           |
+                              18                                                                           |
+              14                              22              26              30                           |
       12              16              20              24              28              32      34           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36,37,38|
 """);
@@ -1008,8 +1078,8 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     t.insert(40, 50);
     ok(t, """
                               18                              26                                                   |
-              14                              22                              30              34                   |
-      12              16              20              24              28              32              36           |
+              14                              22                              30                                   |
+      12              16              20              24              28              32      34      36           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38,39,40|
 """);
     t.insert(41, 51);
@@ -1025,6 +1095,47 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
               14                              22                              30              34                           |
       12              16              20              24              28              32              36      38           |
 11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38   39,40,41,42|
+""");
+
+    ok(t.find(10), """
+Find Key : 10
+Branch   : 1
+positions:    0   1   2   3   4   5
+slots    :    0   0   0   0   0   0
+usedSlots:    .   .   X   .   .   .
+usedRefs :    X   .   .
+keys     :   12  14  16
+data     :  1 3 4
+top      :  3
+Leaf     : 1
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   0   0   0   2   0   0
+usedSlots:    .   X   .   .   .   X   .   .
+usedRefs :    X   .   X   .
+keys     :   11  13  12  14
+data     :   21  23  22  24
+ParentIndex : 2
+""");
+
+    ok(t.find(23), """
+Find Key : 23
+Branch   : 9
+positions:    0   1   2   3   4   5
+slots    :    0   0   2   0   0   0
+usedSlots:    .   .   X   .   .   .
+usedRefs :    .   .   X
+keys     :   26  28  24
+data     :  9 10 8
+top      :  9
+Leaf     : 8
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   0   0   0   2   0   0
+usedSlots:    .   X   .   .   .   X   .   .
+usedRefs :    X   .   X   .
+keys     :   23  25  24  26
+data     :   33  35  34  36
+ParentIndex : 2
+ChildIndex  : 1
 """);
    }
 
@@ -1046,7 +1157,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//oldTests();
+   {oldTests();
     test_insert();
    }
 
