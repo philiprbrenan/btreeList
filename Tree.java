@@ -10,9 +10,10 @@ class Tree extends Test                                                         
   final int         maxBranchSize;                                              // The maximum number of entries in a branch
   Slots                      root;                                              // The root of the tree
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
-  boolean           suppressMerge = false;                                      // Suppress merges during put to allow merge steps to be tested individually.  If this is on the trees built for testing are already merged so there is nothing to test.
+  boolean           suppressMerge = true;                                       // Suppress merges during put to allow merge steps to be tested individually.  If this is on the trees built for testing are already merged so there is nothing to test.
   static boolean  createTestTrees = false;                                      // Create trees to assist testing
   static boolean            debug = false;                                      // Debug if enabled
+  int leaves = 0, branches = 0;                                                 // Labels for the leaves and branches to assist in debugging
 
 //D1 Construction                                                               // Construct and layout a tree
 
@@ -31,10 +32,11 @@ class Tree extends Test                                                         
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
   class Leaf extends Slots                                                      // Leaf
-   {final double[]data = new double[maxLeafSize()];                             // Data corresponding to each key in the leaf
+   {final long[]data = new long[maxLeafSize()];                                 // Data corresponding to each key in the leaf
 
     Leaf()                                                                      // Create a leaf
      {super(maxLeafSize);                                                       // Slots for leaf
+      name = ""+(leaves++);                                                     // Name the leaf to help in debugging
      }
 
     int splitSize() {return maxLeafSize / 2;}                                   // Size of a split leaf
@@ -71,13 +73,13 @@ class Tree extends Test                                                         
       return l;
      }
 
-    double splittingKey()                                                       // Splitting key from a leaf
+    long splittingKey()                                                         // Splitting key from a leaf
      {if (!full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
-      double k = 0;                                                             // Splitting key
+      long k = 0;                                                               // Splitting key
       int    p = 0;                                                             // Position in leaf
       for (int i = 0; i < numberOfSlots; i++)                                   // Scan for splitting keys
        {if (usedSlots(i))                                                       // Used slot
-         {if (p == splitSize()-1 || p == splitSize()) k += key(i);              // Accumulate splitting key as last on left and first on right of split
+         {if (p == splitSize()-1 || p == splitSize()) k += keys(i);             // Accumulate splitting key as last on left and first on right of split
           ++p;                                                                  // Next position
          }
        }
@@ -85,14 +87,14 @@ class Tree extends Test                                                         
      }
 
     Branch split()                                                              // Split a leaf into two leaves and a branch
-     {final double sk = splittingKey();
+     {final long sk = splittingKey();
       final Leaf l = duplicate(), r = l.splitRight();
       final Branch b = new Branch();
       b.insert(sk, l); b.top = r;
       return b;
      }
 
-    Integer insert(double Key, double Data)                                     // Insert a key data pair into a leaf
+    Integer insert(long Key, long Data)                                         // Insert a key data pair into a leaf
      {final Integer i = insert(Key);
       if (i != null) data[i] = Data;
       return i;
@@ -113,13 +115,13 @@ class Tree extends Test                                                         
     protected String dump()                                                     // Dump a leaf
      {final StringBuilder d = new StringBuilder();
       final int N = numberOfRefs();
-      for (int i = 0; i < N; i++) d.append(String.format(" %3.1f", data[i]));
-      return super.dump() + "data     : "+d+"\n";
+      for (int i = 0; i < N; i++) d.append(String.format(" %3d", data[i]));
+      return "Leaf     : "+name+"\n"+super.dump() + "data     : "+d+"\n";
      }
 
     void compactLeft()                                                          // Compact the leaf to the left
      {final int N = numberOfSlots(), R = numberOfRefs();
-      final double[]d = new double[R];
+      final long[]d = new long[R];
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
       super.compactLeft();
@@ -128,7 +130,7 @@ class Tree extends Test                                                         
 
     void compactRight()                                                         // Compact the leaf to the right
      {final int N = numberOfSlots(), R = numberOfRefs();
-      final double[]d = new double[R];
+      final long[]d = new long[R];
       int p = R-1;
       for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
       super.compactRight();
@@ -176,9 +178,11 @@ class Tree extends Test                                                         
 
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
+      name = ""+(branches++);                                                   // Name the branch to help in debugging
      }
 
     int splitSize() {return maxBranchSize / 2;}                                 // Size of a split branch
+    Slots data(int Index) {return data[slots(Index)];}                          // Data at the indexed slot
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
@@ -191,9 +195,9 @@ class Tree extends Test                                                         
     Split splitRight() {return splitRight(duplicate());}                        // Split a left branch into a new right branch
 
     class Split                                                                 // The result of splitting a branch
-     {final double key;
-      final Branch left, right;
-      Split(double Key, Branch Left, Branch Right)
+     {final long key;                                                           // The splitting key
+      final Branch left, right;                                                 // Left and right sides of split branch
+      Split(long Key, Branch Left, Branch Right)
        {key = Key; left = Left; right = Right;
        }
      }
@@ -202,7 +206,7 @@ class Tree extends Test                                                         
      {if (!full()) return null;                                                 // Only full branches can be split
       final int Count = splitSize();
       int s = 0;                                                                // Count slots used
-      double sk = 0;                                                            // Splitting key
+      long sk = 0;                                                              // Splitting key
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
        {if (usedSlots[i])                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left branch
@@ -210,10 +214,10 @@ class Tree extends Test                                                         
             s++;                                                                // Number of entries active in left branch
            }
           else if (s == Count)                                                  // Splitting key
-           {sk  = keys[i];
-            top = data[i];
-                   clearSlotAndRef(i);
-             Right.clearSlotAndRef(i);
+           {sk  = keys(i);
+            top = data(i);
+                  clearSlotAndRef(i);
+            Right.clearSlotAndRef(i);
             s++;                                                                // Number of entries active in left branch
            }
           else clearSlotAndRef(i);                                              // Clear slot being used in right branch
@@ -225,13 +229,13 @@ class Tree extends Test                                                         
 
     Split splitLeft() {return duplicate().splitRight(this);}                    // Split a right branch into a new left branch
 
-    double splittingKey()                                                       // Splitting key from a branch
+    long splittingKey()                                                         // Splitting key from a branch
      {if (!full()) stop("Branch not full");                                     // The branch must be full if we are going to split it
-      double k = 0;                                                             // Splitting key
+      long k = 0;                                                               // Splitting key
       int    p = 0;                                                             // Position in leaf
       for (int i = 0; i < numberOfSlots; i++)                                   // Scan for splitting keys
        {if (usedSlots(i))                                                       // Used slot
-         {if (p == splitSize()) k += key(i);                                    // Splitting key as last on left and first on right of split
+         {if (p == splitSize()) k += keys(i);                                   // Splitting key as last on left and first on right of split
           ++p;                                                                  // Next position
          }
        }
@@ -239,7 +243,7 @@ class Tree extends Test                                                         
      }
 
     Branch split()                                                              // Split a branch
-     {final double      sk = splittingKey();
+     {final long      sk = splittingKey();
       final Branch       l = duplicate();
       final Branch.Split s = l.splitRight();
       final Branch b = new Branch();
@@ -247,7 +251,7 @@ class Tree extends Test                                                         
       return b;
      }
 
-    Integer insert(double Key, Slots Data)                                      // Insert a key data pair into a branch
+    Integer insert(long Key, Slots Data)                                        // Insert a key data pair into a branch
      {final Integer i = insert(Key);
       if (i != null) data[i] = Data;
       return i;
@@ -272,7 +276,7 @@ class Tree extends Test                                                         
        {final Slots s = data[i];
         if (s == null) d.add("  ."); else d.add(s.name);
         }
-      return super.dump() + "data     :  "+d+"\ntop      :  "+top.name+"\n";
+      return "Branch   : "+name+"\n"+super.dump() + "data     :  "+d+"\ntop      :  "+top.name+"\n";
      }
 
     void compactLeft()                                                          // Compact the branch to the left
@@ -293,7 +297,7 @@ class Tree extends Test                                                         
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
 
-    void mergeData(double Key, Branch Left, Branch Right)                       // Merge the data from the compacted left and right slots
+    void mergeData(long Key, Branch Left, Branch Right)                         // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
       for (int i = 0; i < maxBranchSize; ++i)
        {if      (l.usedRefs(i)) data[i] = l.data[i];
@@ -305,7 +309,7 @@ class Tree extends Test                                                         
       top = Right.top;
      }
 
-    boolean mergeOnRight(double Key, Branch Right)                              // Merge the specified slots from the right
+    boolean mergeOnRight(long Key, Branch Right)                                // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() > maxBranchSize) return false;
       final Branch l =       duplicate(),
                    r = Right.duplicate();
@@ -316,7 +320,7 @@ class Tree extends Test                                                         
       return true;
      }
 
-    boolean mergeOnLeft(double Key, Branch Left)                                // Merge the specified slots from the right
+    boolean mergeOnLeft(long Key, Branch Left)                                  // Merge the specified slots from the right
      {if (Left.countUsed() + countUsed() > maxBranchSize) return false;
       final Branch l = Left.duplicate(),
                    r =      duplicate();
@@ -334,6 +338,55 @@ class Tree extends Test                                                         
      }
 
     Tree tree() {return Tree.this;}                                             // Containing tree
+
+    private Slots stepDown(long Key)                                            // Step down from this branch
+     {return child(find(Key));
+     }
+   }
+
+//D1 High Level                                                                 // High level operations: insert, find, delete
+
+  void insert(long Key, long Data)
+   {if (root == null)                                                           // Empty tree
+     {final Leaf l = new Leaf(); root = l;                                      // Root is a leaf
+      l.insert(Key, Data);                                                      // Insert into leaf root
+      return;
+     }
+    if (root instanceof Leaf)                                                   // Leaf root
+     {final Leaf l = (Leaf)root;
+      if (!l.full())                                                            // Still space in leaf root
+       {l.insert(Key, Data);                                                    // Insert into leaf root
+        return;
+       }
+      else                                                                      // Leaf root is full
+       {root = l.split();                                                       // Split full leaf root
+       }
+     }
+    Branch p = (Branch)root;                                                    // Start at root
+    if (p.full()) {root = p.split(); p = (Branch)root;}                         // Split full root branch
+    for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
+     {final Slots q = p.stepDown(Key);                                          // Step down
+      if (q instanceof Leaf)                                                    // Step down to a leaf
+       {final Leaf r = (Leaf)q;
+        if (r.full())                                                           // Split the leaf if it is full
+         {final long sk = r.splittingKey();
+          final Leaf l = r.splitLeft();
+          p.insert(sk, l);                                                      // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+          if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
+         }
+        else r.insert(Key, Data);                                               // leaf has suffucient space
+        return;
+       }
+      final Branch r = (Branch)q;
+      if (r.full())                                                             // Split the leaf if it is full
+       {final long      sk = r.splittingKey();
+        final Branch.Split s = r.splitLeft();
+        p.insert(sk, s.left);                                                   // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+        if (Key <= sk) p = s.left; else p = s.right;                            // Traverse left or right
+       }
+      else p = r;                                                               // Step down into non full branch
+     }
+    stop("Fallen off end of tree after this many searches:", MaximumNumberOfLevels);
    }
 
 //D1 Print                                                                      // Print the tree horizontally
@@ -346,7 +399,7 @@ class Tree extends Test                                                         
 
     final StringJoiner s = new StringJoiner(",");
     for (int i = 0; i < leaf.numberOfSlots; i++)
-     {if (leaf.usedSlots(i)) s.add(""+leaf.key(i));
+     {if (leaf.usedSlots(i)) s.add(""+leaf.keys(i));
      }
     P.elementAt(level*linesToPrintABranch).append(s);
     padStrings(P, level);
@@ -372,7 +425,7 @@ class Tree extends Test                                                         
         //final int key  = stuckKeys.memoryGet(BtreeIndex, i);
         //final int data = stuckData.memoryGet(BtreeIndex, i);
 
-        P.elementAt(L+0).append(" "+branch.key(i));                             // Key
+        P.elementAt(L+0).append(" "+branch.keys(i));                            // Key
         //P.elementAt(L+1).append(""+BtreeIndex+(i > 0 ?  "."+i : ""));         // Branch,key, next pair
         //P.elementAt(L+2).append(""+stuckData.memoryGet(BtreeIndex, i));
        }
@@ -383,10 +436,10 @@ class Tree extends Test                                                         
     //final int top = stuckData.memoryGet(BtreeIndex, K);                       // Top next will always be present
     //P.elementAt(L+3).append(top);                                             // Append top next
 
-    if (branch.top instanceof Leaf)                                                    // Print leaf
+    if (branch.top instanceof Leaf)                                             // Print leaf
      {printLeaf  (  (Leaf)branch.top, P, level+1);
      }
-    else if (branch.top instanceof Branch)                                                    // Print leaf
+    else if (branch.top instanceof Branch)                                      // Print leaf
      {printBranch((Branch)branch.top, P, level+1);
      }
 
@@ -424,7 +477,7 @@ class Tree extends Test                                                         
     return t.toString();
    }
 
-  String print()                                                                // Print a tree horizontally
+  public String toString()
    {final Stack<StringBuilder> P = new Stack<>();
     if (root instanceof Leaf) printLeaf  ((Leaf)  root, P, 0);
     else                      printBranch((Branch)root, P, 0);
@@ -435,19 +488,12 @@ class Tree extends Test                                                         
 
   final static int[]random_32 = {12, 3, 27, 1, 23, 20, 8, 18, 2, 31, 25, 16, 13, 32, 11, 21, 5, 24, 4, 10, 26, 30, 9, 6, 29, 17, 28, 15, 14, 19, 7, 22};
 
-//  static void test_insert()
-//   {final Tree t = new Tree(4, 3);
-//    t.insert(1.1, 2.1);
-//    ok(t, """
-//""");
-//   }
-
   static void test_compactLeafLeft()
    {final Leaf l = new Tree(8, 7).new Leaf();
-    l.insert(1.3, 2.3);
-    l.insert(1.2, 2.2);
-    l.insert(1.4, 2.4);
-    l.insert(1.1, 2.1);
+    l.insert(13, 23);
+    l.insert(12, 22);
+    l.insert(14, 24);
+    l.insert(11, 21);
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
@@ -469,10 +515,10 @@ data     :  2.1 2.2 2.3 2.4 0.0 0.0 0.0 0.0
 
   static void test_compactLeafRight()
    {final Leaf l = new Tree(8, 7).new Leaf();
-    l.insert(1.3, 2.3);
-    l.insert(1.2, 2.2);
-    l.insert(1.4, 2.4);
-    l.insert(1.1, 2.1);
+    l.insert(13, 23);
+    l.insert(12, 22);
+    l.insert(14, 24);
+    l.insert(11, 21);
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
@@ -495,9 +541,9 @@ data     :  0.0 0.0 0.0 0.0 2.1 2.2 2.3 2.4
 
   static void test_compactBranchLeft()
    {final Branch b = new Tree(8, 7).new Branch();
-    b.insert(1.2, new Slots("1.2"));
-    b.insert(1.1, new Slots("1.1"));
-    b.insert(1.3, new Slots("1.3"));
+    b.insert(12, new Slots(" 12"));
+    b.insert(11, new Slots(" 11"));
+    b.insert(13, new Slots(" 13"));
     b.top = new Slots("  4");
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -524,9 +570,9 @@ top      :    4
 
   static void test_compactBranchRight()
    {final Branch b = new Tree(8, 7).new Branch();
-    b.insert(1.2, new Slots("1.2"));
-    b.insert(1.1, new Slots("1.1"));
-    b.insert(1.3, new Slots("1.3"));
+    b.insert(12, new Slots(" 12"));
+    b.insert(11, new Slots(" 11"));
+    b.insert(13, new Slots(" 13"));
     b.top = new Slots("  4");
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -552,7 +598,7 @@ top      :    4
 
   static Leaf test_leaf()
    {final Leaf l = new Tree(8, 7).new Leaf();
-    final double   []d = new double[]{1.3, 1.6, 1.5, 1.8, 1.7, 1.4, 1.2, 1.1};
+    final long   []d = new long[]{13, 16, 15, 18, 17, 14, 12, 11};
     for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
     return l;
    }
@@ -610,7 +656,7 @@ data: 1.5, 1.6, 1.7, 1.8
   static Branch test_branch()
    {final Branch b = new Tree(8, 7).new Branch();
 
-    final double[]k = new double[]{1.3, 1.6, 1.5, 1.7, 1.4, 1.2, 1.1};
+    final long[]k = new long[]{13, 16, 15, 17, 14, 12, 11};
     final String[]d = new String[]{"  3", "  6", "  5", "  7", "  4", "  2", "  1"};
     for (int i = 0; i < d.length; i++) b.insert(k[i], new Slots(d[i]));
     b.top = new Slots("  8");
@@ -651,14 +697,14 @@ top :   8
 
   static Leaf test_leaf1()
    {final Leaf    l = new Tree(8,7).new Leaf();
-    final double[]d = new double[]{1.3, 1.4, 1.2, 1.1};
+    final long[]d = new long[]{13, 14, 12, 11};
     for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
     return l;
    }
 
   static Leaf test_leaf2()
    {final Leaf    l = new Tree(8,7).new Leaf();
-    final double[]d = new double[]{1.6, 1.5, 1.8, 1.7};
+    final long[]d = new long[]{16, 15, 18, 17};
     for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
     return l;
    }
@@ -693,7 +739,7 @@ data     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
 
   static Branch test_branch1()
    {final Branch b = new Tree(8, 7).new Branch();
-    final double[]k = new double[]{ 1.3,   1.2,   1.1};
+    final long[]k = new long[]{13, 12, 11};
     final String[]d = new String[]{"  3", "  2", "  1"};
     for (int i = 0; i < k.length; i++) b.insert(k[i], new Slots(d[i]));
     b.top = new Slots("  4");
@@ -702,7 +748,7 @@ data     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
 
   static Branch test_branch2()
    {final Branch b = new Tree(8, 7).new Branch();
-    final double[]k = new double[]{ 1.6,    1.5,  1.7};
+    final long[]k = new long[]{16, 15, 17};
     final String[]d = new String[]{"  6", "  5", "  7"};
     for (int i = 0; i < k.length; i++) b.insert(k[i], new Slots(d[i]));
     b.top = new Slots("  8");
@@ -712,7 +758,7 @@ data     :  1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8
   static void test_mergeBranchLeft()
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
-    l.mergeOnRight(1.4, r);
+    l.mergeOnRight(14, r);
     ok(l.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   1   0   2   0   0   0   4   0   5   0   6   0
@@ -727,7 +773,7 @@ top      :    8
   static void test_mergeBranchRight()
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
-    r.mergeOnLeft(1.4, l);
+    r.mergeOnLeft(14, l);
     ok(r.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   1   0   2   0   0   0   4   0   5   0   6   0
@@ -767,7 +813,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
    {final Branch b = test_leaf().split();
     final Tree   t = b.tree();
     t.root = b;
-    ok(t.print(), """
+    ok(t, """
                 1.45               |
 1.1,1.2,1.3,1.4     1.5,1.6,1.7,1.8|
 """);
@@ -777,9 +823,208 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
    {final Branch b = test_branch().split();
     final Tree   t = b.tree();
     t.root = b;
-    ok(t.print(), """
+    ok(t, """
              1.4            |
  1.1 1.2 1.3     1.5 1.6 1.7|
+""");
+   }
+
+  static void test_insert()
+   {final Tree t = new Tree(4, 3);
+    t.suppressMerge = false;
+
+    t.insert(11, 21);
+    ok(t, """
+11|
+""");
+    t.insert(13, 23);
+    ok(t, """
+11,13|
+""");
+    t.insert(12, 22);
+    ok(t, """
+11,12,13|
+""");
+    t.insert(14, 24);
+    ok(t, """
+11,12,13,14|
+""");
+    t.insert(15, 25);
+    ok(t, """
+      12        |
+11,12   13,14,15|
+""");
+    t.insert(16, 26);
+    ok(t, """
+      12           |
+11,12   13,14,15,16|
+""");
+    t.insert(17, 27);
+    ok(t, """
+      12      14        |
+11,12   13,14   15,16,17|
+""");
+    t.insert(18, 28);
+    ok(t, """
+      12      14           |
+11,12   13,14   15,16,17,18|
+""");
+    t.insert(19, 29);
+    ok(t, """
+      12      14      16        |
+11,12   13,14   15,16   17,18,19|
+""");
+    t.insert(20, 30);
+    ok(t, """
+              14                   |
+      12              16           |
+11,12   13,14   15,16   17,18,19,20|
+""");
+    t.insert(21, 31);
+    ok(t, """
+              14                        |
+      12              16      18        |
+11,12   13,14   15,16   17,18   19,20,21|
+""");
+    t.insert(22, 32);
+    ok(t, """
+              14                           |
+      12              16      18           |
+11,12   13,14   15,16   17,18   19,20,21,22|
+""");
+    t.insert(23, 33);
+    ok(t, """
+              14                                |
+      12              16      18      20        |
+11,12   13,14   15,16   17,18   19,20   21,22,23|
+""");
+    t.insert(24, 34);
+    ok(t, """
+              14              18                   |
+      12              16              20           |
+11,12   13,14   15,16   17,18   19,20   21,22,23,24|
+""");
+    t.insert(25, 35);
+    ok(t, """
+              14              18                        |
+      12              16              20      22        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24,25|
+""");
+    t.insert(26, 36);
+    ok(t, """
+              14              18                           |
+      12              16              20      22           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24,25,26|
+""");
+    t.insert(27, 37);
+    ok(t, """
+              14              18                                |
+      12              16              20      22      24        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26,27|
+""");
+    t.insert(28, 38);
+    ok(t, """
+              14              18              22                   |
+      12              16              20              24           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26,27,28|
+""");
+    t.insert(29, 39);
+    ok(t, """
+                              18                                        |
+              14                              22                        |
+      12              16              20              24      26        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28,29|
+""");
+    t.insert(30, 40);
+    ok(t, """
+                              18                                           |
+              14                              22                           |
+      12              16              20              24      26           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28,29,30|
+""");
+    t.insert(31, 41);
+    ok(t, """
+                              18                                                |
+              14                              22                                |
+      12              16              20              24      26      28        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30,31|
+""");
+    t.insert(32, 42);
+    ok(t, """
+                              18                                                   |
+              14                              22              26                   |
+      12              16              20              24              28           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30,31,32|
+""");
+    t.insert(33, 43);
+    ok(t, """
+                              18                                                        |
+              14                              22              26                        |
+      12              16              20              24              28      30        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32,33|
+""");
+    t.insert(34, 44);
+    ok(t, """
+                              18                                                           |
+              14                              22              26                           |
+      12              16              20              24              28      30           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32,33,34|
+""");
+    t.insert(35, 45);
+    ok(t, """
+                              18                                                                |
+              14                              22              26                                |
+      12              16              20              24              28      30      32        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34,35|
+""");
+    t.insert(36, 46);
+    ok(t, """
+                              18                                                                   |
+              14                              22              26              30                   |
+      12              16              20              24              28              32           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34,35,36|
+""");
+    t.insert(37, 47);
+    ok(t, """
+                              18                              26                                        |
+              14                              22                              30                        |
+      12              16              20              24              28              32      34        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36,37|
+""");
+    t.insert(38, 48);
+    ok(t, """
+                              18                              26                                           |
+              14                              22                              30                           |
+      12              16              20              24              28              32      34           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36,37,38|
+""");
+    t.insert(39, 49);
+    ok(t, """
+                              18                              26                                                |
+              14                              22                              30                                |
+      12              16              20              24              28              32      34      36        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38,39|
+""");
+    t.insert(40, 50);
+    ok(t, """
+                              18                              26                                                   |
+              14                              22                              30              34                   |
+      12              16              20              24              28              32              36           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38,39,40|
+""");
+    t.insert(41, 51);
+    ok(t, """
+                              18                              26                                                        |
+              14                              22                              30              34                        |
+      12              16              20              24              28              32              36      38        |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38   39,40,41|
+""");
+    t.insert(42, 52);
+    ok(t, """
+                              18                              26                                                           |
+              14                              22                              30              34                           |
+      12              16              20              24              28              32              36      38           |
+11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38   39,40,41,42|
 """);
    }
 
@@ -801,8 +1046,8 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
    }
 
   static void newTests()                                                        // Tests being worked on
-   {oldTests();
-    test_splitBranch();
+   {//oldTests();
+    test_insert();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
