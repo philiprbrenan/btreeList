@@ -105,7 +105,17 @@ public class Slots extends Test                                                 
   boolean lt(long Key, int Slot) {return !eq(Key, Slot) && le(Key, Slot);}      // Search key is less than or equal to indexed key
   boolean ge(long Key, int Slot) {return  eq(Key, Slot) || gt(Key, Slot);}      // Search key is less than or equal to indexed key
   boolean gt(long Key, int Slot) {return !le(Key, Slot);}                       // Search key is less than or equal to indexed key
-  String getKey(int Slot)          {return ""+keys[slots[Slot]];}               // Value of the referenced key as a string
+  String getKey(int Slot)        {return ""+keys[slots[Slot]];}                 // Value of the referenced key as a string
+
+  long firstKey()                                                               // First key in slots
+   {if (empty()) stop("No first key in empty slots");                           // First key in slots if there is one
+    return keys(locateFirstUsedSlot());
+   }
+
+  long lastKey()                                                                // Last key in slots
+   {if (empty()) stop("No last key in empty slots");                            // Last key in slots if there is one
+    return keys(locateLastUsedSlot());
+   }
 
 //D1 Statistics                                                                 // Query the state of the slots
 
@@ -639,6 +649,9 @@ usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
 usedRefs :    .   .   .   .   X   X   X   X
 keys     :    0   0   0   0  11  12  13  14
 """);
+
+    ok(b.firstKey(), 11);
+    ok(b.lastKey(),  14);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
