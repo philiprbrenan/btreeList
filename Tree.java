@@ -1148,7 +1148,7 @@ keys     :   23  25  24  26
 data     :   33  35  34  36
 ParentIndex : 2
 ChildIndex  : 1
-Locate      :  1 exact
+Locate      : 1 exact
 """);
    }
 
