@@ -336,7 +336,7 @@ public class Slots extends Test                                                 
     boolean all;                                                                // Above all or below all if true
 
     public String toString()
-     {if (exact()) return String.format("%2d exact", at);
+     {if (exact()) return String.format("%d exact", at);
       return String.format("%2d %s %s %s", at, above ? "above" : "",
                                                below ? "below" : "",
                                                all   ? "all"   : "");
