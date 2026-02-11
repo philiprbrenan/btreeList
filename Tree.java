@@ -10,7 +10,6 @@ class Tree extends Test                                                         
   final int         maxBranchSize;                                              // The maximum number of entries in a branch
   Slots                      root;                                              // The root of the tree
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
-  boolean           suppressMerge = true;                                       // Suppress merges during put to allow merge steps to be tested individually.  If this is on the trees built for testing are already merged so there is nothing to test.
   static boolean  createTestTrees = false;                                      // Create trees to assist testing
   static boolean            debug = false;                                      // Debug if enabled
   int leaves = 0, branches = 0;                                                 // Labels for the leaves and branches to assist in debugging
@@ -508,7 +507,6 @@ class Tree extends Test                                                         
        {r.insert(Key, Data);                                                    // Insert key, data
        }
       final Integer K = b.locateFirstGe(Key);                                 // Position of leaf in parent
-if (Tree.debug) say("AAAA", Key, K, b.dump());
       b.mergeLeftSibling (K);                                                  // Merge left leaf into prior leaf if possible
       b.mergeRightSibling(K);                                                  // Merge left leaf into prior leaf if possible
       if (b.canStepLeft  (K)) b.mergeLeftSibling (b.stepLeft (K));             // Merge right leaf into next leaf if possible
@@ -541,7 +539,8 @@ if (Tree.debug) say("AAAA", Key, K, b.dump());
           if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
          }
         else r.insert(Key, Data);                                               // Leaf has sufficient space
-        mergeAlongPath(Key);
+
+        mergeAlongPath(Key);                                                    // Merge along the path taken by the key to compress the tree
         return;
        }
       final Branch r = (Branch)q;
@@ -1062,7 +1061,6 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
   static void test_insert()
    {final Tree t = new Tree(4, 3);
-    t.suppressMerge = false;
 
     t.insert(11, 21);
     ok(t, """
