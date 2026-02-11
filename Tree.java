@@ -17,9 +17,14 @@ class Tree extends Test                                                         
 //D1 Construction                                                               // Construct and layout a tree
 
   Tree(int MaxLeafSize, int MaxBranchSize)                                      // Create the tree
-   {if (MaxLeafSize   < 2) stop("The maximum leaf size must be 2 or more, not:",   MaxLeafSize);
-    if (MaxBranchSize < 3) stop("The maximum branch size must be 3 or more, not:", MaxBranchSize);
-    if (MaxBranchSize %2 == 0) stop("The maximum branch size must be odd, not:",   MaxBranchSize);
+   {final String m  = "The maximum ";
+    final String m1 = m + "leaf size must be 2 or more, not: "   +MaxLeafSize;
+    final String m2 = m + "branch size must be 3 or more, not: " +MaxBranchSize;
+    final String m3 = m + "branch size must be odd, not: "       +MaxBranchSize;
+
+    if (MaxLeafSize      <  2) stop(m1);
+    if (MaxBranchSize    <  3) stop(m2);
+    if (MaxBranchSize %2 == 0) stop(m3);
 
     maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
@@ -506,11 +511,11 @@ class Tree extends Test                                                         
       else                                                                      // Insert new key, data pair into right leaf
        {r.insert(Key, Data);                                                    // Insert key, data
        }
-      final Integer K = b.locateFirstGe(Key);                                 // Position of leaf in parent
-      b.mergeLeftSibling (K);                                                  // Merge left leaf into prior leaf if possible
-      b.mergeRightSibling(K);                                                  // Merge left leaf into prior leaf if possible
-      if (b.canStepLeft  (K)) b.mergeLeftSibling (b.stepLeft (K));             // Merge right leaf into next leaf if possible
-      if (b.canStepRight (K)) b.mergeRightSibling(b.stepRight(K));             // Merge right leaf into next leaf if possible
+      final Integer K = b.locateFirstGe(Key);                                   // Position of leaf in parent
+      b.mergeLeftSibling (K);                                                   // Merge left leaf into prior leaf if possible
+      b.mergeRightSibling(K);                                                   // Merge left leaf into prior leaf if possible
+      if (b.canStepLeft  (K)) b.mergeLeftSibling (b.stepLeft (K));              // Merge right leaf into next leaf if possible
+      if (b.canStepRight (K)) b.mergeRightSibling(b.stepRight(K));              // Merge right leaf into next leaf if possible
       return;
      }
 
@@ -569,8 +574,8 @@ class Tree extends Test                                                         
     for (int i = N-1; i >= 0; --i)                                              // Go up the tree merging as we go
      {final Branch b = f.path.elementAt(i);                                     // Parent  branch some of whose siblings might be mergable
       final Integer l = b.locateFirstGe(Key);                                   // Position of key
-      b.mergeRightSibling(l);                                                     // Merge right sibling of keyed child
-      b.mergeLeftSibling(l);                                                      // Merge left sibling of keyed child
+      b.mergeRightSibling(l);                                                   // Merge right sibling of keyed child
+      b.mergeLeftSibling(l);                                                    // Merge left sibling of keyed child
 
       final Integer k = b.locateFirstGe(Key);                                   // Look further left
       if (k != null)
