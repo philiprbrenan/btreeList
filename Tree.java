@@ -181,8 +181,9 @@ class Tree extends Test                                                         
       name = ""+(branches++);                                                   // Name the branch to help in debugging
      }
 
-    int splitSize() {return maxBranchSize / 2;}                                 // Size of a split branch
+    int splitSize()       {return maxBranchSize / 2;}                           // Size of a split branch
     Slots data(int Index) {return data[slots(Index)];}                          // Data at the indexed slot
+    Slots firstChild()    {return data[slots[locateFirstUsedSlot()]];}          // First child assuming the is one
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
@@ -299,18 +300,17 @@ class Tree extends Test                                                         
 
     void mergeData(long Key, Branch Left, Branch Right)                         // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
-      for (int i = 0; i < maxBranchSize; ++i)
-       {if      (l.usedRefs(i)) data[i] = l.data[i];
-        else if (r.usedRefs(i)) data[i] = r.data[i];
+      for (int i = 0; i < maxBranchSize; ++i)                                   // Each slot
+       {if      (l.usedRefs(i)) data[i] = l.data[i];                            // Merge from left first
+        else if (r.usedRefs(i)) data[i] = r.data[i];                            // Merge from right last
        }
-      keys[splitSize()] = Key;
-      data[splitSize()] = Left.top;
-      usedSlots[splitSize()] = usedRefs[splitSize()] = true;
+say("AAAA", Key, Left.top);
+      l.insert(Key, Left.top);                                                  // Insert left top
       top = Right.top;
      }
 
     boolean mergeOnRight(long Key, Branch Right)                                // Merge the specified slots from the right
-     {if (countUsed() + Right.countUsed() > maxBranchSize) return false;
+     {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
       final Branch l =       duplicate(),
                    r = Right.duplicate();
       l.compactLeft(); r.compactRight();
@@ -321,14 +321,48 @@ class Tree extends Test                                                         
      }
 
     boolean mergeOnLeft(long Key, Branch Left)                                  // Merge the specified slots from the right
-     {if (Left.countUsed() + countUsed() > maxBranchSize) return false;
-      final Branch l = Left.duplicate(),
-                   r =      duplicate();
+     {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
+      final Branch l = Left.duplicate();
+      final Branch r =      duplicate();
       l.compactLeft(); r.compactRight();
       mergeCompacted((Slots)l, (Slots)r);
+say("GGGG111", dump(), l.dump(), r.dump());
       mergeData(Key, l, r);
+say("GGGG222", dump());
       redistribute();
       return true;
+     }
+
+    boolean mergeLeftChild(Integer Right)                                       // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
+     {final Integer left = Right != null ? locatePrevUsedSlot(Right-1) :        // Left sibling from right child
+                                           locateLastUsedSlot();                // Left sibling from top
+      if (left == null) return false;                                           // No left sibling to merge
+      final Slots L = data(left);                                               // Left sibling as slots
+      if (L instanceof Leaf)                                                    // Merging leaves
+       {final Leaf l = (Leaf)L;                                                 // Left  leaf sibling
+        final Leaf r = (Leaf)(Right != null ? data[slots[Right]] : top);        // Right leaf sibling
+        final boolean m = r.mergeOnLeft(l);                                     // Merge left sibling into right
+        if (m)                                                                  // Merge left sibling into right
+         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
+          return true;
+         }
+       }
+      else                                                                      // Children are branches
+       {final Branch l = (Branch)L;                                             // Left  branch sibling
+        final Branch r = (Branch)(Right != null ? data[slots[Right]] : top);    // Right leaf sibling
+        if (r.mergeOnLeft(keys(left), l))                                       // Merge left sibling into right
+         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
+          return true;
+         }
+       }
+      return false;
+     }
+
+    boolean mergeRightChild(Integer Left)                                       // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
+     {if (Left == null) return false;                                           // Nothing to right of top
+      final Integer lastChild = locateLastUsedSlot();                           // Last child in body of parent branch
+      if (Left == lastChild) return mergeLeftChild(null);                       // Recast as a left merge as we already have code for that
+      return mergeLeftChild(locateNextUsedSlot(Left+1));                          // Recast as a merge from the left
      }
 
     Slots child(Integer Index)                                                  // The indexed child. The index must be valid or null - if null, top is returned
@@ -344,6 +378,34 @@ class Tree extends Test                                                         
      }
    }
 
+//D1 Low Level                                                                  // Low level operations
+
+  void mergeRoot()                                                              // Collapse the root if possible
+   {if (root == null) return;                                                   // Empty tree
+    if (root instanceof Leaf)                                                   // Leaf root
+     {final Leaf l = (Leaf)root;
+      if (l.empty()) root = null;                                               // Free leaf if it is empty
+      return;
+     }
+    final Branch b = (Branch)root;                                              // Branch root
+    if (b.countUsed() == 0) {root = b.top; return;}                             // Root body is empty so collapse to top
+    if (b.countUsed() >  1) return;                                             // Root body too big too collapse
+
+    if (b.top instanceof Leaf)                                                  // Leaves for children
+     {final Leaf l = (Leaf)b.firstChild();
+      final Leaf r = (Leaf)b.top;
+      if (l.mergeOnRight(r)) root = l;                                          // Update root if the leaves were successfully merged
+      return;
+     }
+    final Branch l = (Branch)b.firstChild();                                    // Root has branches for children
+    final Branch r = (Branch)b.top;
+say("CCCC", print(true));
+    final boolean m = r.mergeOnLeft(b.firstKey(), l);
+say("DDDD", print(true));
+    if (m) root = r;                                                            // Update root if the branches were successfully merged
+say("EEEE", m, print(true));
+   }
+
 //D1 High Level                                                                 // High level operations: insert, find, delete
 
   class Find                                                                    // Find results
@@ -353,14 +415,17 @@ class Tree extends Test                                                         
     Integer childIndex;                                                         // Slot used for key in child if present
     long    key;                                                                // Search key
     Slots.Locate locate;                                                        // Location details for key
+    final Stack<Branch> path;                                                   // The path taken to perform the find
 
-    Find(long Key, Branch Branch, Leaf Leaf, Integer ParentIndex)
+    Find(long Key, Branch Branch, Leaf Leaf,
+      Integer ParentIndex, Stack<Branch> Path)
      {key         = Key;
       branch      = Branch;
       leaf        = Leaf;
       parentIndex = ParentIndex;
       locate      = Leaf.new Locate(Key);
       childIndex  = Leaf.locate(Key);
+      path        = Path;
      }
 
     public String toString()
@@ -371,6 +436,11 @@ class Tree extends Test                                                         
       if (parentIndex  != null) s.append("ParentIndex : "+parentIndex  +"\n");
       if (childIndex   != null) s.append("ChildIndex  : "+childIndex   +"\n");
       if (locate       != null) s.append("Locate      : "+locate   +"\n");
+      if (path         != null)                                                 // Path taken by find
+       {final StringJoiner j = new StringJoiner(", ");
+        for(Branch p : path) j.add(p.name);
+        s.append("Path        : "+j+"\n");
+       }
       return ""+s;
      }
    }
@@ -379,17 +449,21 @@ class Tree extends Test                                                         
    {if (root == null) return null;                                              // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-      return new Find(Key, null, l, null);
+      return new Find(Key, null, l, null, null);
      }
+
+    final Stack<Branch> path = new Stack<>();                                   // The path taken to perform the find
     Branch p = (Branch)root;                                                    // Start at root
+
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
      {final Integer P = p.locateFirstGe(Key);
       final Slots q = p.child(P);
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
-        return new Find(Key, p, l, P);
+        return new Find(Key, p, l, P, path);
        }
       p = (Branch)q;                                                            // Step down into non full branch
+      path.push(p);
      }
     stop("Find fell off the end of tree after this many searches:", MaximumNumberOfLevels);
     return null;
@@ -433,8 +507,10 @@ class Tree extends Test                                                         
        {root = l.split();                                                       // Split full leaf root
        }
      }
+
     Branch p = (Branch)root;                                                    // Start at root
     if (p.full()) {root = p.split(); p = (Branch)root;}                         // Split full root branch
+
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
      {final Slots q = p.stepDown(Key);                                          // Step down
       if (q instanceof Leaf)                                                    // Step down to a leaf
@@ -445,7 +521,9 @@ class Tree extends Test                                                         
           p.insert(sk, l);                                                      // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
           if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
          }
-        else r.insert(Key, Data);                                               // leaf has suffucient space
+        else r.insert(Key, Data);                                               // Leaf has sufficient space
+        mergeAlongPath(Key);
+say("FFFF", Tree.this.print(true));
         return;
        }
       final Branch r = (Branch)q;
@@ -460,58 +538,105 @@ class Tree extends Test                                                         
     stop("Insert fell off the end of tree after this many searches:", MaximumNumberOfLevels);
    }
 
+  void delete(long Key)                                                         // Delete a key from the tree
+   {if (root == null) return;                                                   // Empty tree
+    final Find f = find(Key);
+    if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
+    f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data
+   }
+
+  void mergeAlongPath(long Key)                                                 // Merge along the path from the specified key to the root
+   {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
+    if (f == null) return;                                                      // Empty tree
+    final int N = f.path.size();
+    for (int i = N-1; i >= 0; --i)                                              // Go up the tree merging as we go
+     {final Branch b = f.path.elementAt(i);                                     // Parent  branch some of whose siblings might be mergable
+      final Integer l = b.locateFirstGe(Key);                                   // Position of key
+
+      b.mergeRightChild(l);                                                     // Merge right sibling of keyed child
+      b.mergeLeftChild(l);                                                      // Merge left sibling of keyed child
+
+      final Integer k = b.locateFirstGe(Key);                                   // Look further left
+      if (k != null)
+       {final Integer K = b.locatePrevUsedSlot(k-1);
+        if (K != null)
+         {b.mergeLeftChild(K);
+         }
+       }
+      else
+       {final Integer K = b.locateLastUsedSlot();
+        if (K != null)
+         {b.mergeLeftChild(K);
+         }
+       }
+      final Integer m = b.locateFirstGe(Key);                                   // Look further right
+      if (m != null)
+       {final Integer M = b.locateNextUsedSlot(m+1);
+        if (M != null)
+         {b.mergeRightChild(M);
+         }
+       }
+     }
+    mergeRoot();                                                                // Merge the root if possible
+   }
+
 //D1 Print                                                                      // Print the tree horizontally
 
   final int linesToPrintABranch =  4;                                           // The number of lines required to print a branch
   final int maxPrintLevels      =  3;                                           // The maximum number of levels to print `- this avoids endless print loops when something goes wrong
 
-  void printLeaf(Leaf leaf, Stack<StringBuilder>P, int level)                   // Print leaf horizontally
+  void printLeaf(Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details)  // Print leaf horizontally
    {padStrings(P, level);
 
     final StringJoiner s = new StringJoiner(",");
-    for (int i = 0; i < leaf.numberOfSlots; i++)
-     {if (leaf.usedSlots(i)) s.add(""+leaf.keys(i));
+    for (int i = 0; i < Leaf.numberOfSlots; i++)
+     {if (Leaf.usedSlots(i)) s.add(""+Leaf.keys(i));
      }
-    P.elementAt(level*linesToPrintABranch).append(s);
+    final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
+    P.elementAt(L+0).append(s);
+    if (Details) P.elementAt(L+1).append("("+Leaf.name+")");
     padStrings(P, level);
    }
 
-  void printBranch(Branch branch, Stack<StringBuilder>P, int level)             // Print branch horizontally
+  void printBranch(Branch Branch, Stack<StringBuilder>P, int level, boolean Details) // Print branch horizontally
    {if (level > maxPrintLevels) return;
     padStrings(P, level);
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
-    final int K = branch.countUsed();                                           // Size of branch
+    final int K = Branch.countUsed();                                           // Size of branch
 
     if (K > 0)                                                                  // Branch has key, next pairs
-     {for  (int i = 0; i < branch.numberOfSlots; i++)
-       {if (!branch.usedSlots(i)) continue;
-        final Slots s = branch.data[branch.slots(i)];
+     {for  (int i = 0; i < Branch.numberOfSlots; i++)
+       {if (!Branch.usedSlots(i)) continue;
+        final Slots s = Branch.data[Branch.slots(i)];
 
         if (s instanceof Leaf)
-         {printLeaf  ((Leaf)s,   P, level+1);
+         {printLeaf  ((Leaf)s,   P, level+1, Details);
          }
         else if (s instanceof Branch)
-         {printBranch((Branch)s, P, level+1);
+         {printBranch((Branch)s, P, level+1, Details);
          }
         //final int key  = stuckKeys.memoryGet(BtreeIndex, i);
         //final int data = stuckData.memoryGet(BtreeIndex, i);
 
-        P.elementAt(L+0).append(" "+branch.keys(i));                            // Key
-        //P.elementAt(L+1).append(""+BtreeIndex+(i > 0 ?  "."+i : ""));         // Branch,key, next pair
-        //P.elementAt(L+2).append(""+stuckData.memoryGet(BtreeIndex, i));
+        P.elementAt(L+0).append(" "+Branch.keys(i));                            // Key
+        if (Details)
+         {P.elementAt(L+1).append("["+Branch.name+(i > 0 ?  "."+i : "")+"]");     // Branch, key, next pair
+          P.elementAt(L+2).append("("+s.name+")");                                // Link to next level
+         }
        }
      }
     else                                                                        // Branch is empty so print just the index of the branch
      {//P.elementAt(L+0).append(""+BtreeIndex+"Empty");
      }
+    if (Details) P.elementAt(L+2).append("{"+Branch.top.name+"}");                           // Top of branch
     //final int top = stuckData.memoryGet(BtreeIndex, K);                       // Top next will always be present
     //P.elementAt(L+3).append(top);                                             // Append top next
 
-    if (branch.top instanceof Leaf)                                             // Print leaf
-     {printLeaf  (  (Leaf)branch.top, P, level+1);
+    if      (Branch.top instanceof Leaf)                                        // Print leaf
+     {printLeaf  (  (Leaf)Branch.top, P, level+1, Details);
      }
-    else if (branch.top instanceof Branch)                                      // Print leaf
-     {printBranch((Branch)branch.top, P, level+1);
+    else if (Branch.top instanceof Branch)                                      // Print leaf
+     {printBranch((Branch)Branch.top, P, level+1, Details);
      }
 
     padStrings(P, level);
@@ -548,10 +673,12 @@ class Tree extends Test                                                         
     return t.toString();
    }
 
-  public String toString()
+  public String toString() {return print(false);}                               // Print the tree without details
+
+  String print(boolean Details)                                                 // Print the tree with and without details
    {final Stack<StringBuilder> P = new Stack<>();
-    if (root instanceof Leaf) printLeaf  ((Leaf)  root, P, 0);
-    else                      printBranch((Branch)root, P, 0);
+    if (root instanceof Leaf) printLeaf  ((Leaf)  root, P, 0, Details);
+    else                      printBranch((Branch)root, P, 0, Details);
     return printCollapsed(P);
    }
 
@@ -843,6 +970,8 @@ data     :   11  12  13  14  15  16  17  18
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
     l.mergeOnRight(14, r);
+say (l.dump());
+stop(r.dump());
     ok(l.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -971,6 +1100,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
       12              16      18        |
 11,12   13,14   15,16   17,18   19,20,21|
 """);
+stop(t);
     t.insert(22, 32);
     ok(t, """
               14                           |
@@ -1127,6 +1257,7 @@ keys     :   11  13  12  14
 data     :   21  23  22  24
 ParentIndex : 2
 Locate      :  1  below all
+Path        : 6, 1
 """);
 
     ok(t.find(23), """
@@ -1149,6 +1280,7 @@ data     :   33  35  34  36
 ParentIndex : 2
 ChildIndex  : 1
 Locate      : 1 exact
+Path        : 11, 9
 """);
    }
 
