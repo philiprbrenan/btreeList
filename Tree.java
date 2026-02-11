@@ -96,7 +96,7 @@ class Tree extends Test                                                         
 
     Integer insert(long Key, long Data)                                         // Insert a key data pair into a leaf
      {final Integer i = insert(Key);
-      if (i != null) data[i] = Data;
+      if (i != null) data[i] = Data;                                            // Save data in allocated reference
       return i;
      }
 
@@ -304,8 +304,7 @@ class Tree extends Test                                                         
        {if      (l.usedRefs(i)) data[i] = l.data[i];                            // Merge from left first
         else if (r.usedRefs(i)) data[i] = r.data[i];                            // Merge from right last
        }
-say("AAAA", Key, Left.top);
-      l.insert(Key, Left.top);                                                  // Insert left top
+      insert(Key, Left.top);                                                    // Insert left top
       top = Right.top;
      }
 
@@ -326,17 +325,31 @@ say("AAAA", Key, Left.top);
       final Branch r =      duplicate();
       l.compactLeft(); r.compactRight();
       mergeCompacted((Slots)l, (Slots)r);
-say("GGGG111", dump(), l.dump(), r.dump());
       mergeData(Key, l, r);
-say("GGGG222", dump());
       redistribute();
       return true;
      }
 
-    boolean mergeLeftChild(Integer Right)                                       // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
-     {final Integer left = Right != null ? locatePrevUsedSlot(Right-1) :        // Left sibling from right child
-                                           locateLastUsedSlot();                // Left sibling from top
-      if (left == null) return false;                                           // No left sibling to merge
+    boolean canStepLeft(Integer Location)                                       // Whether we can step left from this location. A location of null means top.
+     {if (Location == null) return locateLastUsedSlot() != null;                // From top
+      return locatePrevUsedSlot(Location-1) != null;                            // From body
+     }
+
+    boolean canStepRight(Integer Location)                                      // Whether we can step right from this location. A location of null means top.
+     {return Location != null;                                                  // Cannot step right from top otherwose we can
+     }
+
+    Integer stepLeft(Integer Loc)                                               // Step left to prior occupied slot assuming that such a step has been checked as possible
+     {return Loc != null ? locatePrevUsedSlot(Loc-1) : locateLastUsedSlot();
+     }
+
+    Integer stepRight(Integer Location)                                         // Step left to prior occupied slot assuming that such a step has been checked as possible
+     {return locateNextUsedSlot(Location+1);
+     }
+
+    boolean mergeLeftSibling(Integer Right)                                     // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
+     {if (!canStepLeft(Right)) return  false;                                   // Cannot step left
+      final Integer left = stepLeft(Right);                                     // Left sibling from right child
       final Slots L = data(left);                                               // Left sibling as slots
       if (L instanceof Leaf)                                                    // Merging leaves
        {final Leaf l = (Leaf)L;                                                 // Left  leaf sibling
@@ -358,11 +371,9 @@ say("GGGG222", dump());
       return false;
      }
 
-    boolean mergeRightChild(Integer Left)                                       // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
-     {if (Left == null) return false;                                           // Nothing to right of top
-      final Integer lastChild = locateLastUsedSlot();                           // Last child in body of parent branch
-      if (Left == lastChild) return mergeLeftChild(null);                       // Recast as a left merge as we already have code for that
-      return mergeLeftChild(locateNextUsedSlot(Left+1));                          // Recast as a merge from the left
+    boolean mergeRightSibling(Integer Left)                                     // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
+     {if (!canStepRight(Left)) return false;                                    // Nothing to right of top
+      return mergeLeftSibling(stepRight(Left));                                 // Recast as a merge from the left
      }
 
     Slots child(Integer Index)                                                  // The indexed child. The index must be valid or null - if null, top is returned
@@ -399,11 +410,8 @@ say("GGGG222", dump());
      }
     final Branch l = (Branch)b.firstChild();                                    // Root has branches for children
     final Branch r = (Branch)b.top;
-say("CCCC", print(true));
     final boolean m = r.mergeOnLeft(b.firstKey(), l);
-say("DDDD", print(true));
     if (m) root = r;                                                            // Update root if the branches were successfully merged
-say("EEEE", m, print(true));
    }
 
 //D1 High Level                                                                 // High level operations: insert, find, delete
@@ -492,8 +500,19 @@ say("EEEE", m, print(true));
       final Leaf   r = F.leaf;
       final long  sk = r.splittingKey();
       final Leaf   l = r.splitLeft();
-      b.insert(sk, l);                                                          // Insert new left leaf into branch
-      if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);             // insert new key, data pair into leaf
+      b.insert(sk, l);                                                          // Insert new left leaf into leaf
+      if (Key <= sk)                                                            // Insert new key, data pair into left leaf
+       {l.insert(Key, Data);                                                    // Insert key, data
+       }
+      else                                                                      // Insert new key, data pair into right leaf
+       {r.insert(Key, Data);                                                    // Insert key, data
+       }
+      final Integer K = b.locateFirstGe(Key);                                 // Position of leaf in parent
+if (Tree.debug) say("AAAA", Key, K, b.dump());
+      b.mergeLeftSibling (K);                                                  // Merge left leaf into prior leaf if possible
+      b.mergeRightSibling(K);                                                  // Merge left leaf into prior leaf if possible
+      if (b.canStepLeft  (K)) b.mergeLeftSibling (b.stepLeft (K));             // Merge right leaf into next leaf if possible
+      if (b.canStepRight (K)) b.mergeRightSibling(b.stepRight(K));             // Merge right leaf into next leaf if possible
       return;
      }
 
@@ -523,7 +542,6 @@ say("EEEE", m, print(true));
          }
         else r.insert(Key, Data);                                               // Leaf has sufficient space
         mergeAlongPath(Key);
-say("FFFF", Tree.this.print(true));
         return;
        }
       final Branch r = (Branch)q;
@@ -552,28 +570,27 @@ say("FFFF", Tree.this.print(true));
     for (int i = N-1; i >= 0; --i)                                              // Go up the tree merging as we go
      {final Branch b = f.path.elementAt(i);                                     // Parent  branch some of whose siblings might be mergable
       final Integer l = b.locateFirstGe(Key);                                   // Position of key
-
-      b.mergeRightChild(l);                                                     // Merge right sibling of keyed child
-      b.mergeLeftChild(l);                                                      // Merge left sibling of keyed child
+      b.mergeRightSibling(l);                                                     // Merge right sibling of keyed child
+      b.mergeLeftSibling(l);                                                      // Merge left sibling of keyed child
 
       final Integer k = b.locateFirstGe(Key);                                   // Look further left
       if (k != null)
        {final Integer K = b.locatePrevUsedSlot(k-1);
         if (K != null)
-         {b.mergeLeftChild(K);
+         {b.mergeLeftSibling(K);
          }
        }
       else
        {final Integer K = b.locateLastUsedSlot();
         if (K != null)
-         {b.mergeLeftChild(K);
+         {b.mergeLeftSibling(K);
          }
        }
       final Integer m = b.locateFirstGe(Key);                                   // Look further right
       if (m != null)
        {final Integer M = b.locateNextUsedSlot(m+1);
         if (M != null)
-         {b.mergeRightChild(M);
+         {b.mergeRightSibling(M);
          }
        }
      }
@@ -674,6 +691,7 @@ say("FFFF", Tree.this.print(true));
    }
 
   public String toString() {return print(false);}                               // Print the tree without details
+  public String dump()     {return debug ? print(true) : "";}                               // Print the tree without details
 
   String print(boolean Details)                                                 // Print the tree with and without details
    {final Stack<StringBuilder> P = new Stack<>();
@@ -970,12 +988,10 @@ data     :   11  12  13  14  15  16  17  18
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
     l.mergeOnRight(14, r);
-say (l.dump());
-stop(r.dump());
     ok(l.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
-slots    :    0   0   1   0   2   0   0   0   4   0   5   0   6   0
+slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X   X   X   X
 keys     :   11  12  13  14  15  16  17
@@ -991,7 +1007,7 @@ top      :    8
     ok(r.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
-slots    :    0   0   1   0   2   0   0   0   4   0   5   0   6   0
+slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X   X   X   X
 keys     :   11  12  13  14  15  16  17
@@ -1076,188 +1092,171 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     t.insert(17, 27);
     ok(t, """
-      12      14        |
-11,12   13,14   15,16,17|
+            14        |
+11,12,13,14   15,16,17|
 """);
     t.insert(18, 28);
     ok(t, """
-      12      14           |
-11,12   13,14   15,16,17,18|
+            14           |
+11,12,13,14   15,16,17,18|
 """);
     t.insert(19, 29);
     ok(t, """
-      12      14      16        |
-11,12   13,14   15,16   17,18,19|
+            14      16        |
+11,12,13,14   15,16   17,18,19|
 """);
     t.insert(20, 30);
     ok(t, """
-      12      14      16           |
-11,12   13,14   15,16   17,18,19,20|
+            14      16           |
+11,12,13,14   15,16   17,18,19,20|
 """);
     t.insert(21, 31);
     ok(t, """
-              14                        |
-      12              16      18        |
-11,12   13,14   15,16   17,18   19,20,21|
+            14            18        |
+11,12,13,14   15,16,17,18   19,20,21|
 """);
-stop(t);
     t.insert(22, 32);
     ok(t, """
-              14                           |
-      12              16      18           |
-11,12   13,14   15,16   17,18   19,20,21,22|
+            14            18           |
+11,12,13,14   15,16,17,18   19,20,21,22|
 """);
     t.insert(23, 33);
     ok(t, """
-              14                                |
-      12              16      18      20        |
-11,12   13,14   15,16   17,18   19,20   21,22,23|
+            14            18      20        |
+11,12,13,14   15,16,17,18   19,20   21,22,23|
 """);
     t.insert(24, 34);
     ok(t, """
-              14                                   |
-      12              16      18      20           |
-11,12   13,14   15,16   17,18   19,20   21,22,23,24|
+            14            18      20           |
+11,12,13,14   15,16,17,18   19,20   21,22,23,24|
 """);
     t.insert(25, 35);
     ok(t, """
-              14              18                        |
-      12              16              20      22        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24,25|
+            14            18            22        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25|
 """);
     t.insert(26, 36);
     ok(t, """
-              14              18                           |
-      12              16              20      22           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24,25,26|
+            14            18            22           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26|
 """);
     t.insert(27, 37);
     ok(t, """
-              14              18                                |
-      12              16              20      22      24        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26,27|
+                          18                              |
+            14                          22      24        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27|
 """);
     t.insert(28, 38);
     ok(t, """
-              14              18                                   |
-      12              16              20      22      24           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26,27,28|
+                          18                                 |
+            14                          22      24           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27,28|
 """);
     t.insert(29, 39);
     ok(t, """
-              14              18              22                        |
-      12              16              20              24      26        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28,29|
+                          18                                    |
+            14                          22            26        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29|
 """);
     t.insert(30, 40);
     ok(t, """
-              14              18              22                           |
-      12              16              20              24      26           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28,29,30|
+                          18                                       |
+            14                          22            26           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30|
 """);
     t.insert(31, 41);
     ok(t, """
-              14              18              22                                |
-      12              16              20              24      26      28        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30,31|
+                          18                                            |
+            14                          22            26      28        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31|
 """);
     t.insert(32, 42);
     ok(t, """
-              14              18              22                                   |
-      12              16              20              24      26      28           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30,31,32|
+                          18                                               |
+            14                          22            26      28           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31,32|
 """);
     t.insert(33, 43);
     ok(t, """
-                              18                                                        |
-              14                              22              26                        |
-      12              16              20              24              28      30        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32,33|
+                          18                          26                      |
+            14                          22                          30        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33|
 """);
     t.insert(34, 44);
     ok(t, """
-                              18                                                           |
-              14                              22              26                           |
-      12              16              20              24              28      30           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32,33,34|
+                          18                          26                         |
+            14                          22                          30           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34|
 """);
     t.insert(35, 45);
     ok(t, """
-                              18                                                                |
-              14                              22              26                                |
-      12              16              20              24              28      30      32        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34,35|
+                          18                          26                              |
+            14                          22                          30      32        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35|
 """);
     t.insert(36, 46);
     ok(t, """
-                              18                                                                   |
-              14                              22              26                                   |
-      12              16              20              24              28      30      32           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34,35,36|
+                          18                          26                                 |
+            14                          22                          30      32           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35,36|
 """);
     t.insert(37, 47);
     ok(t, """
-                              18                                                                        |
-              14                              22              26              30                        |
-      12              16              20              24              28              32      34        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36,37|
+                          18                          26                                    |
+            14                          22                          30            34        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37|
 """);
     t.insert(38, 48);
     ok(t, """
-                              18                                                                           |
-              14                              22              26              30                           |
-      12              16              20              24              28              32      34           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36,37,38|
+                          18                          26                                       |
+            14                          22                          30            34           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38|
 """);
     t.insert(39, 49);
     ok(t, """
-                              18                                                                                |
-              14                              22              26              30                                |
-      12              16              20              24              28              32      34      36        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38,39|
+                          18                          26                                            |
+            14                          22                          30            34      36        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39|
 """);
     t.insert(40, 50);
     ok(t, """
-                              18                                                                                   |
-              14                              22              26              30                                   |
-      12              16              20              24              28              32      34      36           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38,39,40|
+                          18                          26                                               |
+            14                          22                          30            34      36           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39,40|
 """);
     t.insert(41, 51);
     ok(t, """
-                              18                              26                                                        |
-              14                              22                              30              34                        |
-      12              16              20              24              28              32              36      38        |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38   39,40,41|
+                          18                          26                          34                      |
+            14                          22                          30                          38        |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41|
 """);
     t.insert(42, 52);
     ok(t, """
-                              18                              26                                                           |
-              14                              22                              30              34                           |
-      12              16              20              24              28              32              36      38           |
-11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38   39,40,41,42|
+                          18                          26                          34                         |
+            14                          22                          30                          38           |
+11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41,42|
 """);
 
     ok(t.find(10), """
 Find Key : 10
-Branch   : 1
+Branch   : 6
 positions:    0   1   2   3   4   5
 slots    :    0   0   0   0   0   0
 usedSlots:    .   .   X   .   .   .
 usedRefs :    X   .   .
-keys     :   12  14  16
-data     :  1 3 4
-top      :  3
-Leaf     : 1
+keys     :   14  18  22
+data     :  3 7 11
+top      :  7
+Leaf     : 3
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   0   0   2   0   0
-usedSlots:    .   X   .   .   .   X   .   .
-usedRefs :    X   .   X   .
-keys     :   11  13  12  14
-data     :   21  23  22  24
+slots    :    0   0   1   0   2   0   3   0
+usedSlots:    X   .   X   .   X   .   X   .
+usedRefs :    X   X   X   X
+keys     :   11  12  13  14
+data     :   21  22  23  24
 ParentIndex : 2
-Locate      :  1  below all
-Path        : 6, 1
+Locate      :  0  below all
+Path        : 6
 """);
 
     ok(t.find(23), """
@@ -1267,20 +1266,19 @@ positions:    0   1   2   3   4   5
 slots    :    0   0   2   0   0   0
 usedSlots:    .   .   X   .   .   .
 usedRefs :    .   .   X
-keys     :   26  28  24
-data     :  9 10 8
-top      :  9
-Leaf     : 8
+keys     :   28  26  22
+data     :  18 15 11
+top      :  15
+Leaf     : 15
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   0   0   2   0   0
-usedSlots:    .   X   .   .   .   X   .   .
-usedRefs :    X   .   X   .
-keys     :   23  25  24  26
-data     :   33  35  34  36
-ParentIndex : 2
-ChildIndex  : 1
-Locate      : 1 exact
-Path        : 11, 9
+slots    :    0   0   1   0   2   0   3   0
+usedSlots:    X   .   X   .   X   .   X   .
+usedRefs :    X   X   X   X
+keys     :   23  24  25  26
+data     :   33  34  35  36
+ChildIndex  : 0
+Locate      : 0 exact
+Path        : 9
 """);
    }
 
