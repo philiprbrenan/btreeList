@@ -398,15 +398,19 @@ class Tree extends Test                                                         
 
   void mergeRoot()                                                              // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
-say("XXXX111");
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-say("XXXX2222", l.empty());
 
       if (l.empty()) root = null;                                               // Free leaf if it is empty
       return;
      }
     final Branch b = (Branch)root;                                              // Branch root
+
+    for (int i = 0; i < maxBranchSize; i++)                                     // Merge root as far as possible
+     {if (b.usedSlots(i)) b.mergeLeftSibling(i);
+     }
+    b.mergeLeftSibling(null);
+
     if (b.countUsed() == 0) {root = b.top; return;}                             // Root body is empty so collapse to top
     if (b.countUsed() >  1) return;                                             // Root body too big too collapse
 
@@ -577,41 +581,42 @@ say("XXXX2222", l.empty());
     final Find f = find(Key);
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
     f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
-say("JJJJ");
     mergeAlongPath(Key);
    }
 
   void mergeAlongPath(long Key)                                                 // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
-    if (f == null || f.path == null) return;                                    // Empty tree
-    final int N = f.path.size();
-    for (int i = N-1; i >= 0; --i)                                              // Go up the tree merging as we go
-     {final Branch b = f.path.elementAt(i);                                     // Parent  branch some of whose siblings might be mergable
-      final Integer l = b.locateFirstGe(Key);                                   // Position of key
-      b.mergeRightSibling(l);                                                   // Merge right sibling of keyed child
-      b.mergeLeftSibling(l);                                                    // Merge left sibling of keyed child
+    if (f == null) return;                                                      // Empty tree
+    if (f.path != null)                                                         // Process path from leaf to root
+     {final int N = f.path.size();
+      for (int i = N-1; i >= 0; --i)                                            // Go up the tree merging as we go
+       {final Branch b = f.path.elementAt(i);                                   // Parent  branch some of whose siblings might be mergable
+        final Integer l = b.locateFirstGe(Key);                                 // Position of key
+        b.mergeRightSibling(l);                                                 // Merge right sibling of keyed child
+        b.mergeLeftSibling(l);                                                  // Merge left sibling of keyed child
 
-      final Integer k = b.locateFirstGe(Key);                                   // Look further left
-      if (k != null)                                                            // Not top
-       {final Integer K = b.locatePrevUsedSlot(k-1);
-        if (K != null)
-         {b.mergeLeftSibling(K);
+        final Integer k = b.locateFirstGe(Key);                                 // Look further left
+        if (k != null)                                                          // Not top
+         {final Integer K = b.locatePrevUsedSlot(k-1);
+          if (K != null)
+           {b.mergeLeftSibling(K);
+           }
          }
-       }
-      else                                                                      // Top
-       {final Integer K = b.locateLastUsedSlot();
-        if (K != null)
-         {b.mergeLeftSibling(K);
+        else                                                                    // Top
+         {final Integer K = b.locateLastUsedSlot();
+          if (K != null)
+           {b.mergeLeftSibling(K);
+           }
          }
-       }
-      final Integer m = b.locateFirstGe(Key);                                   // Look further right
-      if (m != null)
-       {final Integer M = b.locateNextUsedSlot(m+1);
-        if (M != null)
-         {b.mergeRightSibling(M);
+        final Integer m = b.locateFirstGe(Key);                                 // Look further right
+        if (m != null)
+         {final Integer M = b.locateNextUsedSlot(m+1);
+          if (M != null)
+           {b.mergeRightSibling(M);
+           }
          }
+        b.mergeLeftSibling(null);                                               // Migrate into top
        }
-      b.mergeLeftSibling(null);                                                 // Migrate into top
      }
     mergeRoot();                                                                // Merge the root if possible
    }
@@ -708,9 +713,10 @@ say("JJJJ");
 
   String print(boolean Details)                                                 // Print the tree with and without details
    {final Stack<StringBuilder> P = new Stack<>();
-    if (root instanceof Leaf) printLeaf  ((Leaf)  root, P, 0, Details);
-    else                      printBranch((Branch)root, P, 0, Details);
-    return printCollapsed(P);
+    if (root == null) return "|\n";                                               // Empty tree
+    if (root instanceof Leaf) printLeaf  ((Leaf)  root, P, 0, Details);         // Tree is a single leaf
+    else                      printBranch((Branch)root, P, 0, Details);         // Tree has one or more branches
+    return printCollapsed(P);                                                   // Remove blank lines and add right fence
    }
 
 //D1 Tests                                                                      // Test the btree
@@ -1189,15 +1195,15 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31,32|
 """);
     t.insert(33, 43);
-    ok(t, """
-                          18                          26                      |
-            14                          22                          30        |
+    ok(""+t, """
+                          18                                                  |
+            14                          22            26            30        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33|
 """);
     t.insert(34, 44);
     ok(t, """
-                          18                          26                         |
-            14                          22                          30           |
+                          18                                                     |
+            14                          22            26            30           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34|
 """);
     t.insert(35, 45);
@@ -1238,27 +1244,27 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     t.insert(41, 51);
     ok(t, """
-                          18                          26                          34                      |
-            14                          22                          30                          38        |
+                                                      26                                                  |
+            14            18            22                          30            34            38        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41|
 """);
     t.insert(42, 52);
     ok(t, """
-                          18                          26                          34                         |
-            14                          22                          30                          38           |
+                                                      26                                                     |
+            14            18            22                          30            34            38           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41,42|
 """);
 
     ok(t.find(10), """
 Find Key : 10
-Branch   : 6
+Branch   : 12
 positions:    0   1   2   3   4   5
-slots    :    0   0   0   0   0   0
-usedSlots:    .   .   X   .   .   .
-usedRefs :    X   .   .
+slots    :    0   0   1   0   2   0
+usedSlots:    X   .   X   .   X   .
+usedRefs :    X   X   X
 keys     :   14  18  22
 data     :  3 7 11
-top      :  7
+top      :  15
 Leaf     : 3
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
@@ -1266,20 +1272,20 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :   11  12  13  14
 data     :   21  22  23  24
-ParentIndex : 2
+ParentIndex : 0
 Locate      :  0  below all
-Path        : 6
+Path        : 12
 """);
 
     ok(t.find(23), """
 Find Key : 23
-Branch   : 9
+Branch   : 12
 positions:    0   1   2   3   4   5
-slots    :    0   0   2   0   0   0
-usedSlots:    .   .   X   .   .   .
-usedRefs :    .   .   X
-keys     :   28  26  22
-data     :  18 15 11
+slots    :    0   0   1   0   2   0
+usedSlots:    X   .   X   .   X   .
+usedRefs :    X   X   X
+keys     :   14  18  22
+data     :  3 7 11
 top      :  15
 Leaf     : 15
 positions:    0   1   2   3   4   5   6   7
@@ -1290,7 +1296,7 @@ keys     :   23  24  25  26
 data     :   33  34  35  36
 ChildIndex  : 0
 Locate      : 0 exact
-Path        : 9
+Path        : 12
 """);
    }
 
@@ -1299,8 +1305,8 @@ Path        : 9
     final int N = 32;
     for (int i = N; i > 0; i--) t.insert(i, i);
     ok(t, """
-                 8                         16                          24                         |
-        4                    12                          20                          28           |
+                 8                         16                                                     |
+        4                    12                          20            24            28           |
 1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
 """);
    }
@@ -1309,8 +1315,8 @@ Path        : 9
    {final Tree t = new Tree(4, 3);
     for (int i = 0; i < random_32.length; i++) t.insert(random_32[i], i);
     ok(t, """
-               7                        15                                       26                   |
-        4                 11                          19      21         24                    30     |
+                                        15                                       26                   |
+        4      7          11                          19      21         24                    30     |
 1,2,3,4  5,6,7  8,9,10,11   12,13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
 """);
     return t;
@@ -1318,24 +1324,382 @@ Path        : 9
 
   static void test_delete()
    {final Tree t = new Tree(4, 3);
-    final int N = 6, D = 6;
+    final int N = 32;
     for (int i = 1; i <= N; ++i) t.insert(i, i);
-    say("AAAA", t);
-    for (int i = 1; i < D; ++i)
+
+    final StringBuilder s = new StringBuilder();
+    s.append("Start\n"+t);
+    for (int i = 1; i <= N; ++i)
      {t.delete(i);
-      say("DDDD", i, t.dump());
+      s.append("Delete: "+i+"\n"+t);
      }
-    debug = true;
-    t.delete(D);
-    say("EEEE", t.dump());
+    ok(s, """
+Start
+                                           16                                                     |
+        4        8           12                          20            24            28           |
+1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 1
+                                         16                                                     |
+      4        8           12                          20            24            28           |
+2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 2
+                                       16                                                     |
+    4        8           12                          20            24            28           |
+3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 3
+                                     16                                                     |
+  4        8           12                          20            24            28           |
+4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 4
+                                  16                                                     |
+        8           12                          20            24            28           |
+5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 5
+                                16                                                     |
+      8           12                          20            24            28           |
+6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 6
+                              16                                                     |
+    8           12                          20            24            28           |
+7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 7
+                            16                                                     |
+  8           12                          20            24            28           |
+8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 8
+                         16                                                     |
+           12                          20            24            28           |
+9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 9
+                       16                                                     |
+         12                          20            24            28           |
+10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 10
+                    16                                                     |
+      12                          20            24            28           |
+11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 11
+                 16                                                     |
+   12                          20            24            28           |
+12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 12
+            16                                                     |
+                          20            24            28           |
+13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 13
+         16                                                     |
+                       20            24            28           |
+14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 14
+      16                                                     |
+                    20            24            28           |
+15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 15
+   16                                                     |
+                 20            24            28           |
+16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 16
+ 16                                                     |
+               20            24            28           |
+   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 17
+ 16                                                  |
+            20            24            28           |
+   18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 18
+ 16                                               |
+         20            24            28           |
+   19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 19
+ 16                                            |
+      20            24            28           |
+   20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 20
+ 16            24            28           |
+   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 21
+         24            28           |
+22,23,24   25,26,27,28   29,30,31,32|
+Delete: 22
+      24            28           |
+23,24   25,26,27,28   29,30,31,32|
+Delete: 23
+   24            28           |
+24   25,26,27,28   29,30,31,32|
+Delete: 24
+ 24            28           |
+   25,26,27,28   29,30,31,32|
+Delete: 25
+ 24         28           |
+   26,27,28   29,30,31,32|
+Delete: 26
+ 24      28           |
+   27,28   29,30,31,32|
+Delete: 27
+ 24   28           |
+   28   29,30,31,32|
+Delete: 28
+29,30,31,32|
+Delete: 29
+30,31,32|
+Delete: 30
+31,32|
+Delete: 31
+32|
+Delete: 32
+|
+""");
+   }
+  static void test_delete_descending()
+   {final Tree t = new Tree(4, 3);
+    final int N = 16
+    for (int i = 1; i <= N; ++i) t.insert(i, i);
+
+    final StringBuilder s = new StringBuilder();
+    s.append("Start\n"+t);
+    for (int i = N; i > 0; --i)
+     {t.delete(i);
+      s.append("Delete: "+i+"\n"+t);
+     }
+    ok(s, """
+Start
+                                           16                                                     |
+        4        8           12                          20            24            28           |
+1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 1
+                                         16                                                     |
+      4        8           12                          20            24            28           |
+2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 2
+                                       16                                                     |
+    4        8           12                          20            24            28           |
+3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 3
+                                     16                                                     |
+  4        8           12                          20            24            28           |
+4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 4
+                                  16                                                     |
+        8           12                          20            24            28           |
+5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 5
+                                16                                                     |
+      8           12                          20            24            28           |
+6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 6
+                              16                                                     |
+    8           12                          20            24            28           |
+7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 7
+                            16                                                     |
+  8           12                          20            24            28           |
+8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 8
+                         16                                                     |
+           12                          20            24            28           |
+9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 9
+                       16                                                     |
+         12                          20            24            28           |
+10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 10
+                    16                                                     |
+      12                          20            24            28           |
+11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 11
+                 16                                                     |
+   12                          20            24            28           |
+12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 12
+            16                                                     |
+                          20            24            28           |
+13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 13
+         16                                                     |
+                       20            24            28           |
+14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 14
+      16                                                     |
+                    20            24            28           |
+15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 15
+   16                                                     |
+                 20            24            28           |
+16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 16
+ 16                                                     |
+               20            24            28           |
+   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 17
+ 16                                                  |
+            20            24            28           |
+   18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 18
+ 16                                               |
+         20            24            28           |
+   19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 19
+ 16                                            |
+      20            24            28           |
+   20   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 20
+ 16            24            28           |
+   21,22,23,24   25,26,27,28   29,30,31,32|
+Delete: 21
+         24            28           |
+22,23,24   25,26,27,28   29,30,31,32|
+Delete: 22
+      24            28           |
+23,24   25,26,27,28   29,30,31,32|
+Delete: 23
+   24            28           |
+24   25,26,27,28   29,30,31,32|
+Delete: 24
+ 24            28           |
+   25,26,27,28   29,30,31,32|
+Delete: 25
+ 24         28           |
+   26,27,28   29,30,31,32|
+Delete: 26
+ 24      28           |
+   27,28   29,30,31,32|
+Delete: 27
+ 24   28           |
+   28   29,30,31,32|
+Delete: 28
+29,30,31,32|
+Delete: 29
+30,31,32|
+Delete: 30
+31,32|
+Delete: 31
+32|
+Delete: 32
+""");
    }
 
   static void test_delete_random()
    {final Tree t = test_insert_random();
+    final StringBuilder s = new StringBuilder();
+    s.append("Start\n"+t);
     for (int i = 0; i < random_32.length; i++)
      {t.delete(random_32[i]);
-      say("AAAA", i, random_32[i], t);
+      s.append("Delete "+random_32[i]+"\n"+t);
      }
+    ok(""+s, """
+Start
+                                        15                                       26                   |
+        4      7          11                          19      21         24                    30     |
+1,2,3,4  5,6,7  8,9,10,11   12,13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
+Delete 12
+                                     15                                       26                   |
+        4      7          11                       19      21         24                    30     |
+1,2,3,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
+Delete 3
+                                   15                                       26                   |
+      4      7          11                       19      21         24                    30     |
+1,2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
+Delete 27
+                                   15                                       26                |
+      4      7          11                       19      21         24                 30     |
+1,2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   28,29,30   31,32|
+Delete 1
+                                 15                                       26                |
+    4      7          11                       19      21         24                 30     |
+2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   28,29,30   31,32|
+Delete 23
+                                 15                                            |
+    4      7          11                       19            26         30     |
+2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   22,24,25,26   28,29,30   31,32|
+Delete 20
+                                 15                                            |
+    4      7          11                       19            26         30     |
+2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   22,24,25,26   28,29,30   31,32|
+Delete 8
+                               15                                            |
+    4      7        11                       19            26         30     |
+2,4  5,6,7  9,10,11   13,14,15   16,17,18,19   22,24,25,26   28,29,30   31,32|
+Delete 18
+                               15                                         |
+    4      7        11                    19            26         30     |
+2,4  5,6,7  9,10,11   13,14,15   16,17,19   22,24,25,26   28,29,30   31,32|
+Delete 2
+                            15                                         |
+        7        11                    19            26         30     |
+4,5,6,7  9,10,11   13,14,15   16,17,19   22,24,25,26   28,29,30   31,32|
+Delete 31
+                            15                                    |
+        7        11                    19            26           |
+4,5,6,7  9,10,11   13,14,15   16,17,19   22,24,25,26   28,29,30,32|
+Delete 25
+                            15                                 |
+        7        11                    19         26           |
+4,5,6,7  9,10,11   13,14,15   16,17,19   22,24,26   28,29,30,32|
+Delete 16
+                            15                              |
+        7        11                 19         26           |
+4,5,6,7  9,10,11   13,14,15   17,19   22,24,26   28,29,30,32|
+Delete 13
+                         15                              |
+        7        11              19         26           |
+4,5,6,7  9,10,11   14,15   17,19   22,24,26   28,29,30,32|
+Delete 32
+                         15                           |
+        7        11              19         26        |
+4,5,6,7  9,10,11   14,15   17,19   22,24,26   28,29,30|
+Delete 11
+                    15                           |
+        7                   19         26        |
+4,5,6,7  9,10,14,15   17,19   22,24,26   28,29,30|
+Delete 21
+                    15                           |
+        7                   19         26        |
+4,5,6,7  9,10,14,15   17,19   22,24,26   28,29,30|
+Delete 5
+                  15                           |
+      7                   19         26        |
+4,6,7  9,10,14,15   17,19   22,24,26   28,29,30|
+Delete 24
+      7           15            26        |
+4,6,7  9,10,14,15   17,19,22,26   28,29,30|
+Delete 4
+    7           15            26        |
+6,7  9,10,14,15   17,19,22,26   28,29,30|
+Delete 10
+    7        15            26        |
+6,7  9,14,15   17,19,22,26   28,29,30|
+Delete 26
+    7        15         26        |
+6,7  9,14,15   17,19,22   28,29,30|
+Delete 30
+    7        15         26     |
+6,7  9,14,15   17,19,22   28,29|
+Delete 9
+          15         26     |
+6,7,14,15   17,19,22   28,29|
+Delete 6
+        15         26     |
+7,14,15   17,19,22   28,29|
+Delete 29
+        15           |
+7,14,15   17,19,22,28|
+Delete 17
+        15        |
+7,14,15   19,22,28|
+Delete 28
+        15     |
+7,14,15   19,22|
+Delete 15
+7,14,19,22|
+Delete 14
+7,19,22|
+Delete 19
+7,22|
+Delete 7
+22|
+Delete 22
+|
+""");
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
@@ -1357,12 +1721,13 @@ Path        : 9
     test_insert_reverse();
     test_insert_random();
     test_delete();
+    test_delete_descending();
     test_delete_random();
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//oldTests();
-    test_delete();
+   {oldTests();
+    test_delete_descending();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
