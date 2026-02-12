@@ -281,7 +281,7 @@ public class Slots extends Test                                                 
          usedRefs(i, r. usedRefs(i));
              keys(i, r.     keys(i));
        }
-      else usedSlots[i] = usedRefs[i] = false;
+      else {usedSlots(i, false); usedRefs(i, false);}
      }
    }
 
