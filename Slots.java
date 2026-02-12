@@ -259,7 +259,7 @@ public class Slots extends Test                                                 
      {if (d.usedSlots(i))
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, p);
-             keys[p] = d.keys[d.slots(i)];
+             keys(p, d.keys[d.slots(i)]);
         --p;
        }
      }
