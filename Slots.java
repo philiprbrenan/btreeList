@@ -45,13 +45,13 @@ public class Slots extends Test                                                 
      {stop("Different number of refs:", Source.numberOfRefs, numberOfRefs);
      }
     for (int i = 0; i < Source.numberOfSlots; i++)                              // Copy the slots from source to target
-     {slots    [i] = Source.slots    (i);
-      usedSlots[i] = Source.usedSlots(i);
+     {slots    (i, Source.slots    (i));
+      usedSlots(i, Source.usedSlots(i));
      }
 
     for (int i = 0; i < numberOfRefs; i++)                                      // Copy the references from source to target
-     {usedRefs [i] = Source.usedRefs (i);
-      keys     [i] = Source.keys     [i];
+     {usedRefs(i, Source.usedRefs (i));
+      keys    [i] = Source.keys   [i];
      }
    }
 
@@ -105,12 +105,12 @@ public class Slots extends Test                                                 
 
 //D1 Keys                                                                       // Operations on keys
 
-  boolean eq(long Key, int Slot) {return Key == keys[slots(Slot)];}             // Search key is equal to indexed key
-  boolean le(long Key, int Slot) {return Key <= keys[slots(Slot)];}             // Search key is less than or equal to indexed key
+  boolean eq(long Key, int Slot) {return Key == keys(Slot);}                    // Search key is equal to indexed key
+  boolean le(long Key, int Slot) {return Key <= keys(Slot);}                    // Search key is less than or equal to indexed key
   boolean lt(long Key, int Slot) {return !eq(Key, Slot) && le(Key, Slot);}      // Search key is less than or equal to indexed key
   boolean ge(long Key, int Slot) {return  eq(Key, Slot) || gt(Key, Slot);}      // Search key is less than or equal to indexed key
   boolean gt(long Key, int Slot) {return !le(Key, Slot);}                       // Search key is less than or equal to indexed key
-  String getKey(int Slot)        {return ""+keys[slots(Slot)];}                 // Value of the referenced key as a string
+  String getKey(int Slot)        {return ""+ keys(Slot);}                       // Value of the referenced key as a string
 
   long firstKey()                                                               // First key in slots
    {if (empty()) stop("No first key in empty slots");                           // First key in slots if there is one
