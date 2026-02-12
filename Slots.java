@@ -200,7 +200,7 @@ public class Slots extends Test                                                 
        {final int p = Position+i;                                               // Index of target
         slots(p, slots(p-1));                                                   // Move slot
        }
-      usedSlots(Position+Width, true);                                         // We only move occupied slots
+      usedSlots(Position+Width, true);                                          // We only move occupied slots
      }
     else if (Width < 0)                                                         // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
      {for (int i = Width; i < 0; ++i)                                           // Move each slot
@@ -259,7 +259,7 @@ public class Slots extends Test                                                 
      {if (d.usedSlots(i))
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, p);
-             keys(p, d.keys[d.slots(i)]);
+             keys(p, d.keys(i));
         --p;
        }
      }
