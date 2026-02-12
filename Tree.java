@@ -45,10 +45,13 @@ class Tree extends Test                                                         
 
     int splitSize() {return maxLeafSize / 2;}                                   // Size of a split leaf
 
+    long data(int I)             {return data[I];}                              // Value of data field at index
+    void data(int I, long Value) {data[I] = Value;}                             // Value of data field at index
+
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
       d.copy((Slots)this);                                                      // Copy slots
-      for (int i = 0; i < numberOfRefs; i++) d.data[i] = data[i];               // Copy data associated wuth leaf keys
+      for (int i = 0; i < numberOfRefs; i++) d.data(i, data(i));                // Copy data associated wuth leaf keys
       return d;
      }
 
@@ -100,7 +103,7 @@ class Tree extends Test                                                         
 
     Integer insert(long Key, long Data)                                         // Insert a key data pair into a leaf
      {final Integer i = insert(Key);
-      if (i != null) data[i] = Data;                                            // Save data in allocated reference
+      if (i != null) data(i, Data);                                             // Save data in allocated reference
       return i;
      }
 
@@ -108,10 +111,10 @@ class Tree extends Test                                                         
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) k.add(""+keys[slots(i)]);
+       {if (usedSlots(i)) k.add(""+keys(i));
        }
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) d.add(""+data[slots(i)]);
+       {if (usedSlots(i)) d.add(""+data(slots(i)));
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -119,7 +122,7 @@ class Tree extends Test                                                         
     protected String dump()                                                     // Dump a leaf
      {final StringBuilder d = new StringBuilder();
       final int N = numberOfRefs();
-      for (int i = 0; i < N; i++) d.append(String.format(" %3d", data[i]));
+      for (int i = 0; i < N; i++) d.append(String.format(" %3d", data(i)));
       return "Leaf     : "+name+"\n"+super.dump() + "data     : "+d+"\n";
      }
 
@@ -127,7 +130,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data[slots(i)];
+      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(i));
       super.compactLeft();
 
       for (int i = 0; i < R; i++) data[i] = d[i];
@@ -137,16 +140,16 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data[slots(i)];
+      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(slots(i));
       super.compactRight();
-      for (int i = 0; i < R; i++) data[i] = d[i];
+      for (int i = 0; i < R; i++) data(i, d[i]);
      }
 
     void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
      {final Leaf l = Left, r = Right;
       for (int i = 0; i < maxLeafSize; ++i)
-       {if      (l.usedRefs(i)) data[i] = l.data[i];
-        else if (r.usedRefs(i)) data[i] = r.data[i];
+       {if      (l.usedRefs(i)) data(i, l.data(i));
+        else if (r.usedRefs(i)) data(i, r.data(i));
        }
      }
 
@@ -188,7 +191,7 @@ class Tree extends Test                                                         
 
     int splitSize()       {return maxBranchSize / 2;}                           // Size of a split branch
     Slots data(int Index) {return data[slots(Index)];}                          // Data at the indexed slot
-    Slots firstChild()    {return data[slots(locateFirstUsedSlot())];}          // First child assuming the is one
+    Slots firstChild()    {return data(locateFirstUsedSlot());}                 // First child assuming the is one
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
@@ -267,7 +270,7 @@ class Tree extends Test                                                         
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) k.add(""+keys[slots(i)]);
+       {if (usedSlots(i)) k.add(""+keys(i));
        }
       for (int i = 0; i < numberOfSlots; i++)
        {if (usedSlots(i)) d.add(""+data[slots(i)].name);
