@@ -129,6 +129,7 @@ class Tree extends Test                                                         
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
       super.compactLeft();
+
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
 
@@ -149,7 +150,7 @@ class Tree extends Test                                                         
        }
      }
 
-    boolean mergeOnRight(Leaf Right)                                            // Merge the specified slots from the right
+    boolean mergeFromRight(Leaf Right)                                            // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() > maxLeafSize) return false;
       final Leaf l =       duplicate(),
                  r = Right.duplicate();
@@ -160,7 +161,7 @@ class Tree extends Test                                                         
       return true;
      }
 
-    boolean mergeOnLeft(Leaf Left)                                              // Merge the specified slots from the right
+    boolean mergeFromLeft(Leaf Left)                                              // Merge the specified slots from the left
      {if (Left.countUsed() + countUsed() > maxLeafSize) return false;
       final Leaf l = Left.duplicate(),
                  r =      duplicate();
@@ -313,7 +314,7 @@ class Tree extends Test                                                         
       top = Right.top;
      }
 
-    boolean mergeOnRight(long Key, Branch Right)                                // Merge the specified slots from the right
+    boolean mergeFromRight(long Key, Branch Right)                                // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
       final Branch l =       duplicate(),
                    r = Right.duplicate();
@@ -324,7 +325,7 @@ class Tree extends Test                                                         
       return true;
      }
 
-    boolean mergeOnLeft(long Key, Branch Left)                                  // Merge the specified slots from the right
+    boolean mergeFromLeft(long Key, Branch Left)                                  // Merge the specified slots from the right
      {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
       final Branch l = Left.duplicate();
       final Branch r =      duplicate();
@@ -353,13 +354,13 @@ class Tree extends Test                                                         
      }
 
     boolean mergeLeftSibling(Integer Right)                                     // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
-     {if (!canStepLeft(Right)) return  false;                                   // Cannot step left
+     {if (!canStepLeft(Right)) return false;                                    // Cannot step left
       final Integer left = stepLeft(Right);                                     // Left sibling from right child
       final Slots L = data(left);                                               // Left sibling as slots
       if (L instanceof Leaf)                                                    // Merging leaves
        {final Leaf l = (Leaf)L;                                                 // Left  leaf sibling
         final Leaf r = (Leaf)(Right != null ? data[slots[Right]] : top);        // Right leaf sibling
-        final boolean m = r.mergeOnLeft(l);                                     // Merge left sibling into right
+        final boolean m = r.mergeFromLeft(l);                                     // Merge left sibling into right
         if (m)                                                                  // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
           return true;
@@ -368,7 +369,7 @@ class Tree extends Test                                                         
       else                                                                      // Children are branches
        {final Branch l = (Branch)L;                                             // Left  branch sibling
         final Branch r = (Branch)(Right != null ? data[slots[Right]] : top);    // Right leaf sibling
-        if (r.mergeOnLeft(keys(left), l))                                       // Merge left sibling into right
+        if (r.mergeFromLeft(keys(left), l))                                       // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
           return true;
          }
@@ -404,12 +405,15 @@ class Tree extends Test                                                         
       if (l.empty()) root = null;                                               // Free leaf if it is empty
       return;
      }
+
     final Branch b = (Branch)root;                                              // Branch root
 
     for (int i = 0; i < maxBranchSize; i++)                                     // Merge root as far as possible
      {if (b.usedSlots(i)) b.mergeLeftSibling(i);
      }
+if (debug) say("DDDD11", dump());
     b.mergeLeftSibling(null);
+if (debug) say("DDDD22", dump());
 
     if (b.countUsed() == 0) {root = b.top; return;}                             // Root body is empty so collapse to top
     if (b.countUsed() >  1) return;                                             // Root body too big too collapse
@@ -417,7 +421,7 @@ class Tree extends Test                                                         
     if (b.top instanceof Leaf)                                                  // Leaves for children
      {final Leaf l = (Leaf)b.firstChild();
       final Leaf r = (Leaf)b.top;
-      final boolean m = l.mergeOnRight(r);
+      final boolean m = l.mergeFromRight(r);
 
       if (m)
        {root = l;                                          // Update root if the leaves were successfully merged
@@ -427,7 +431,7 @@ class Tree extends Test                                                         
      }
     final Branch  l = (Branch)b.firstChild();                                    // Root has branches for children
     final Branch  r = (Branch)b.top;
-    final boolean m = r.mergeOnLeft(b.firstKey(), l);
+    final boolean m = r.mergeFromLeft(b.firstKey(), l);
     if (m) root = r;
    }
 
@@ -958,7 +962,7 @@ top :   8
   static void test_mergeLeafLeft()
    {final Leaf l = test_leaf1();
     final Leaf r = test_leaf2();
-    l.mergeOnRight(r);
+    l.mergeFromRight(r);
     ok(l.dump(), """
 Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -973,7 +977,7 @@ data     :   11  12  13  14  15  16  17  18
   static void test_mergeLeafRight()
    {final Leaf l = test_leaf1();
     final Leaf r = test_leaf2();
-    r.mergeOnLeft(l);
+    r.mergeFromLeft(l);
     ok(r.dump(), """
 Leaf     : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1006,7 +1010,7 @@ data     :   11  12  13  14  15  16  17  18
   static void test_mergeBranchLeft()
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
-    l.mergeOnRight(14, r);
+    l.mergeFromRight(14, r);
     ok(l.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -1022,7 +1026,7 @@ top      :    8
   static void test_mergeBranchRight()
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
-    r.mergeOnLeft(14, l);
+    r.mergeFromLeft(14, l);
     ok(r.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -1452,7 +1456,7 @@ Delete: 32
    }
   static void test_delete_descending()
    {final Tree t = new Tree(4, 3);
-    final int N = 16
+    final int N = 16;
     for (int i = 1; i <= N; ++i) t.insert(i, i);
 
     final StringBuilder s = new StringBuilder();
@@ -1463,118 +1467,51 @@ Delete: 32
      }
     ok(s, """
 Start
-                                           16                                                     |
-        4        8           12                          20            24            28           |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 1
-                                         16                                                     |
-      4        8           12                          20            24            28           |
-2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 2
-                                       16                                                     |
-    4        8           12                          20            24            28           |
-3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 3
-                                     16                                                     |
-  4        8           12                          20            24            28           |
-4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 4
-                                  16                                                     |
-        8           12                          20            24            28           |
-5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 5
-                                16                                                     |
-      8           12                          20            24            28           |
-6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 6
-                              16                                                     |
-    8           12                          20            24            28           |
-7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 7
-                            16                                                     |
-  8           12                          20            24            28           |
-8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 8
-                         16                                                     |
-           12                          20            24            28           |
-9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 9
-                       16                                                     |
-         12                          20            24            28           |
-10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 10
-                    16                                                     |
-      12                          20            24            28           |
-11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 11
-                 16                                                     |
-   12                          20            24            28           |
-12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 12
-            16                                                     |
-                          20            24            28           |
-13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 13
-         16                                                     |
-                       20            24            28           |
-14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 14
-      16                                                     |
-                    20            24            28           |
-15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 15
-   16                                                     |
-                 20            24            28           |
-16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+        4        8           12           |
+1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16|
 Delete: 16
- 16                                                     |
-               20            24            28           |
-   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 17
- 16                                                  |
-            20            24            28           |
-   18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 18
- 16                                               |
-         20            24            28           |
-   19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 19
- 16                                            |
-      20            24            28           |
-   20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 20
- 16            24            28           |
-   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 21
-         24            28           |
-22,23,24   25,26,27,28   29,30,31,32|
-Delete: 22
-      24            28           |
-23,24   25,26,27,28   29,30,31,32|
-Delete: 23
-   24            28           |
-24   25,26,27,28   29,30,31,32|
-Delete: 24
- 24            28           |
-   25,26,27,28   29,30,31,32|
-Delete: 25
- 24         28           |
-   26,27,28   29,30,31,32|
-Delete: 26
- 24      28           |
-   27,28   29,30,31,32|
-Delete: 27
- 24   28           |
-   28   29,30,31,32|
-Delete: 28
-29,30,31,32|
-Delete: 29
-30,31,32|
-Delete: 30
-31,32|
-Delete: 31
-32|
-Delete: 32
+        4        8           12        |
+1,2,3,4  5,6,7,8  9,10,11,12   13,14,15|
+Delete: 15
+        4        8           12     |
+1,2,3,4  5,6,7,8  9,10,11,12   13,14|
+Delete: 14
+        4        8           12  |
+1,2,3,4  5,6,7,8  9,10,11,12   13|
+Delete: 13
+        4        8          |
+1,2,3,4  5,6,7,8  9,10,11,12|
+Delete: 12
+        4        8       |
+1,2,3,4  5,6,7,8  9,10,11|
+Delete: 11
+        4        8    |
+1,2,3,4  5,6,7,8  9,10|
+Delete: 10
+        4        8 |
+1,2,3,4  5,6,7,8  9|
+Delete: 9
+        4       |
+1,2,3,4  5,6,7,8|
+Delete: 8
+        4     |
+1,2,3,4  5,6,7|
+Delete: 7
+        4   |
+1,2,3,4  5,6|
+Delete: 6
+        4 |
+1,2,3,4  5|
+Delete: 5
+1,2,3,4|
+Delete: 4
+1,2,3|
+Delete: 3
+1,2|
+Delete: 2
+1|
+Delete: 1
+|
 """);
    }
 
