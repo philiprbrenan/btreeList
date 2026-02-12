@@ -59,7 +59,7 @@ class Tree extends Test                                                         
       final int Count = splitSize();
       int s = 0;                                                                // Count slots used
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
-       {if (usedSlots[i])                                                       // Slot is in use
+       {if (usedSlots(i))                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left leaf
            {Right.clearSlotAndRef(i);                                           // Free the entry from the right leaf as it is being used in the left leaf
             s++;                                                                // Number of entries active in left leaf
@@ -80,7 +80,7 @@ class Tree extends Test                                                         
     long splittingKey()                                                         // Splitting key from a leaf
      {if (!full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
       long k = 0;                                                               // Splitting key
-      int    p = 0;                                                             // Position in leaf
+      int  p = 0;                                                               // Position in leaf
       for (int i = 0; i < numberOfSlots; i++)                                   // Scan for splitting keys
        {if (usedSlots(i))                                                       // Used slot
          {if (p == splitSize()-1 || p == splitSize()) k += keys(i);             // Accumulate splitting key as last on left and first on right of split
@@ -290,7 +290,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
+      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data(i);
       super.compactLeft();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
@@ -299,7 +299,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
+      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data(i);
       super.compactRight();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
@@ -314,7 +314,7 @@ class Tree extends Test                                                         
       top = Right.top;
      }
 
-    boolean mergeFromRight(long Key, Branch Right)                                // Merge the specified slots from the right
+    boolean mergeFromRight(long Key, Branch Right)                              // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
       final Branch l =       duplicate(),
                    r = Right.duplicate();
@@ -325,7 +325,7 @@ class Tree extends Test                                                         
       return true;
      }
 
-    boolean mergeFromLeft(long Key, Branch Left)                                  // Merge the specified slots from the right
+    boolean mergeFromLeft(long Key, Branch Left)                                // Merge the specified slots from the right
      {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
       final Branch l = Left.duplicate();
       final Branch r =      duplicate();
@@ -359,8 +359,8 @@ class Tree extends Test                                                         
       final Slots L = data(left);                                               // Left sibling as slots
       if (L instanceof Leaf)                                                    // Merging leaves
        {final Leaf l = (Leaf)L;                                                 // Left  leaf sibling
-        final Leaf r = (Leaf)(Right != null ? data[slots[Right]] : top);        // Right leaf sibling
-        final boolean m = r.mergeFromLeft(l);                                     // Merge left sibling into right
+        final Leaf r = (Leaf)(Right != null ? data(Right) : top);               // Right leaf sibling
+        final boolean m = r.mergeFromLeft(l);                                   // Merge left sibling into right
         if (m)                                                                  // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
           return true;
@@ -368,8 +368,8 @@ class Tree extends Test                                                         
        }
       else                                                                      // Children are branches
        {final Branch l = (Branch)L;                                             // Left  branch sibling
-        final Branch r = (Branch)(Right != null ? data[slots[Right]] : top);    // Right leaf sibling
-        if (r.mergeFromLeft(keys(left), l))                                       // Merge left sibling into right
+        final Branch r = (Branch)(Right != null ? data(Right) : top);           // Right leaf sibling
+        if (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
           return true;
          }
@@ -411,9 +411,7 @@ class Tree extends Test                                                         
     for (int i = 0; i < maxBranchSize; i++)                                     // Merge root as far as possible
      {if (b.usedSlots(i)) b.mergeLeftSibling(i);
      }
-if (debug) say("DDDD11", dump());
-    b.mergeLeftSibling(null);
-if (debug) say("DDDD22", dump());
+    b.mergeLeftSibling(null);                                                   // Move towards top
 
     if (b.countUsed() == 0) {root = b.top; return;}                             // Root body is empty so collapse to top
     if (b.countUsed() >  1) return;                                             // Root body too big too collapse
@@ -423,18 +421,14 @@ if (debug) say("DDDD22", dump());
       final Leaf r = (Leaf)b.top;
       final boolean m = l.mergeFromRight(r);
 
-      if (m)
-       {root = l;                                          // Update root if the leaves were successfully merged
-       }
-      //root = r.countUsed() == 0 ? r.top : r;                                                            // Update root if the branches were successfully merged
+      if (m) root = l;                                                          // Update root if the leaves were successfully merged
       return;
      }
-    final Branch  l = (Branch)b.firstChild();                                    // Root has branches for children
+    final Branch  l = (Branch)b.firstChild();                                   // Root has branches for children
     final Branch  r = (Branch)b.top;
     final boolean m = r.mergeFromLeft(b.firstKey(), l);
     if (m) root = r;
    }
-
 
 //D1 High Level                                                                 // High level operations: insert, find, delete
 
@@ -524,12 +518,7 @@ if (debug) say("DDDD22", dump());
       final long  sk = r.splittingKey();
       final Leaf   l = r.splitLeft();
       b.insert(sk, l);                                                          // Insert new left leaf into leaf
-      if (Key <= sk)                                                            // Insert new key, data pair into left leaf
-       {l.insert(Key, Data);                                                    // Insert key, data
-       }
-      else                                                                      // Insert new key, data pair into right leaf
-       {r.insert(Key, Data);                                                    // Insert key, data
-       }
+      if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);             // Insert new key, data pair into left leaf
       final Integer K = b.locateFirstGe(Key);                                   // Position of leaf in parent
       b.mergeLeftSibling (K);                                                   // Merge left leaf into prior leaf if possible
       b.mergeRightSibling(K);                                                   // Merge left leaf into prior leaf if possible
@@ -544,9 +533,7 @@ if (debug) say("DDDD22", dump());
        {l.insert(Key, Data);                                                    // Insert into leaf root
         return;
        }
-      else                                                                      // Leaf root is full
-       {root = l.split();                                                       // Split full leaf root
-       }
+      else root = l.split();                                                    // Split full leaf root
      }
 
     Branch p = (Branch)root;                                                    // Start at root
@@ -569,7 +556,7 @@ if (debug) say("DDDD22", dump());
        }
       final Branch r = (Branch)q;
       if (r.full())                                                             // Split the leaf if it is full
-       {final long      sk = r.splittingKey();
+       {final long        sk = r.splittingKey();
         final Branch.Split s = r.splitLeft();
         p.insert(sk, s.left);                                                   // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
         if (Key <= sk) p = s.left; else p = s.right;                            // Traverse left or right
@@ -602,22 +589,16 @@ if (debug) say("DDDD22", dump());
         final Integer k = b.locateFirstGe(Key);                                 // Look further left
         if (k != null)                                                          // Not top
          {final Integer K = b.locatePrevUsedSlot(k-1);
-          if (K != null)
-           {b.mergeLeftSibling(K);
-           }
+          if (K != null) b.mergeLeftSibling(K);                                 // Merge further left sibling
          }
         else                                                                    // Top
          {final Integer K = b.locateLastUsedSlot();
-          if (K != null)
-           {b.mergeLeftSibling(K);
-           }
+          if (K != null) b.mergeLeftSibling(K);                                 // Merge further left of top
          }
         final Integer m = b.locateFirstGe(Key);                                 // Look further right
         if (m != null)
          {final Integer M = b.locateNextUsedSlot(m+1);
-          if (M != null)
-           {b.mergeRightSibling(M);
-           }
+          if (M != null) b.mergeRightSibling(M);                                // Merge further right sibling
          }
         b.mergeLeftSibling(null);                                               // Migrate into top
        }
@@ -669,6 +650,7 @@ if (debug) say("DDDD22", dump());
          }
        }
      }
+
     if (Details) P.elementAt(L+2).append("{"+Branch.top.name+"}");              // Top of branch
 
     if      (Branch.top instanceof Leaf)                                        // Print top leaf
@@ -717,7 +699,7 @@ if (debug) say("DDDD22", dump());
 
   String print(boolean Details)                                                 // Print the tree with and without details
    {final Stack<StringBuilder> P = new Stack<>();
-    if (root == null) return "|\n";                                               // Empty tree
+    if (root == null) return "|\n";                                             // Empty tree
     if (root instanceof Leaf) printLeaf  ((Leaf)  root, P, 0, Details);         // Tree is a single leaf
     else                      printBranch((Branch)root, P, 0, Details);         // Tree has one or more branches
     return printCollapsed(P);                                                   // Remove blank lines and add right fence
