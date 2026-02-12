@@ -612,10 +612,10 @@ keys     :   28   0  26   0  24   0   0  22
 
   static void test_compactLeft()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots[ 1] = 7; b.usedRefs[7] = true; b.keys[7] = 11;
-    b.usedSlots( 5, true); b.slots[ 5] = 4; b.usedRefs[4] = true; b.keys[4] = 12;
-    b.usedSlots( 9, true); b.slots[ 9] = 2; b.usedRefs[2] = true; b.keys[2] = 13;
-    b.usedSlots(14, true); b.slots[14] = 0; b.usedRefs[0] = true; b.keys[0] = 14;
+    b.usedSlots( 1, true); b.slots[ 1] = 7; b.usedRefs(7, true); b.keys[7] = 11;
+    b.usedSlots( 5, true); b.slots[ 5] = 4; b.usedRefs(4, true); b.keys[4] = 12;
+    b.usedSlots( 9, true); b.slots[ 9] = 2; b.usedRefs(2, true); b.keys[2] = 13;
+    b.usedSlots(14, true); b.slots[14] = 0; b.usedRefs(0, true); b.keys[0] = 14;
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
