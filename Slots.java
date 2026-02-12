@@ -257,7 +257,7 @@ public class Slots extends Test                                                 
     int p = numberOfRefs - 1;
     for (int i = numberOfSlots - 1; i >= 0; --i)
      {if (d.usedSlots(i))
-       {usedSlots[p] = usedRefs[p] = true;
+       {usedSlots(p, true); usedRefs(p, true);
             slots(p, p);
              keys[p] = d.keys[d.slots(i)];
         --p;
