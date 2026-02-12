@@ -46,7 +46,7 @@ public class Slots extends Test                                                 
      }
     for (int i = 0; i < Source.numberOfSlots; i++)                              // Copy the slots from source to target
      {slots    [i] = Source.slots    [i];
-      usedSlots[i] = Source.usedSlots[i];
+      usedSlots[i] = Source.usedSlots(i);
      }
 
     for (int i = 0; i < numberOfRefs; i++)                                      // Copy the references from source to target
@@ -70,7 +70,7 @@ public class Slots extends Test                                                 
 
   void clearFirstSlot()                                                         // Set the first used slot to not used
    {for (int i = 0; i < numberOfSlots; i++)
-     {if (usedSlots[i])
+     {if (usedSlots(i))
        {usedSlots[i] = false;
         return;
        }
@@ -121,7 +121,7 @@ public class Slots extends Test                                                 
 
   int countUsed()                                                               // Number or slots in use. How can we do this quickly in parallel?
    {int n = 0;
-    for (int i = 0; i < numberOfSlots; i++) if (usedSlots[i]) ++n;
+    for (int i = 0; i < numberOfSlots; i++) if (usedSlots(i)) ++n;
     return n;
    }
 
@@ -133,7 +133,7 @@ public class Slots extends Test                                                 
     if (!usedSlots[Finish]) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
     if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
 
-    for (int i = Start+1; i < Finish; i++) if (usedSlots[i]) return false;      // From start to finish looking for an intermediate used slot
+    for (int i = Start+1; i < Finish; i++) if (usedSlots(i)) return false;      // From start to finish looking for an intermediate used slot
     return true;
    }
 
@@ -214,7 +214,7 @@ public class Slots extends Test                                                 
     final boolean[]u = new boolean[numberOfSlots];                              // New used slots distribution
     int p = remainder / 2;                                                      // Start position for first used slot
     for (int i = 0; i < numberOfSlots; ++i)                                     // Redistribute slots
-     {if (usedSlots[i])                                                         // Redistribute active slots
+     {if (usedSlots(i))                                                         // Redistribute active slots
        {s[p] = slots[i]; u[p] = true; p += space+1;                             // Spread the used slots out
        }
      }
@@ -237,7 +237,7 @@ public class Slots extends Test                                                 
     final Slots d = duplicate(); reset();
     int p = 0;
     for (int i = 0; i < numberOfSlots; i++)                                     // Each slot
-     {if (d.usedSlots[i])                                                       // Each used slot
+     {if (d.usedSlots(i))                                                       // Each used slot
        {usedSlots[p] = usedRefs[p] = true;
             slots[p] = p;
              keys[p] = d.keys[d.slots[i]];
@@ -251,7 +251,7 @@ public class Slots extends Test                                                 
     final Slots d = duplicate(); reset();
     int p = numberOfRefs - 1;
     for (int i = numberOfSlots - 1; i >= 0; --i)
-     {if (d.usedSlots[i])
+     {if (d.usedSlots(i))
        {usedSlots[p] = usedRefs[p] = true;
             slots[p] = p;
              keys[p] = d.keys[d.slots[i]];
@@ -419,7 +419,7 @@ public class Slots extends Test                                                 
 
   protected String printSlots()                                                 // Print the occupancy of each slot
    {final StringBuilder s = new StringBuilder();
-    for (int i = 0; i < numberOfSlots; i++) s.append(usedSlots[i] ? "X" : ".");
+    for (int i = 0; i < numberOfSlots; i++) s.append(usedSlots(i) ? "X" : ".");
     return ""+s;
    }
 
@@ -442,7 +442,7 @@ public class Slots extends Test                                                 
   public String toString()                                                      // Print the values in the used slots
    {final StringJoiner s = new StringJoiner(", ");
     for (int i = 0; i < numberOfSlots; i++)
-     {if (usedSlots[i]) s.add(""+keys[slots[i]]);
+     {if (usedSlots(i)) s.add(""+keys[slots[i]]);
      }
     return ""+s;
    }
