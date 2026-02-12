@@ -281,7 +281,8 @@ class Tree extends Test                                                         
        {final Slots s = data[i];
         if (s == null) d.add("  ."); else d.add(s.name);
         }
-      return "Branch   : "+name+"\n"+super.dump() + "data     :  "+d+"\ntop      :  "+top.name+"\n";
+      return "Branch   : "+name+"\n"+super.dump() +
+             "data     :  "+d+"\ntop      :  "+top.name+"\n";
      }
 
     void compactLeft()                                                          // Compact the branch to the left
@@ -397,8 +398,11 @@ class Tree extends Test                                                         
 
   void mergeRoot()                                                              // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
+say("XXXX111");
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
+say("XXXX2222", l.empty());
+
       if (l.empty()) root = null;                                               // Free leaf if it is empty
       return;
      }
@@ -409,14 +413,20 @@ class Tree extends Test                                                         
     if (b.top instanceof Leaf)                                                  // Leaves for children
      {final Leaf l = (Leaf)b.firstChild();
       final Leaf r = (Leaf)b.top;
-      if (l.mergeOnRight(r)) root = l;                                          // Update root if the leaves were successfully merged
+      final boolean m = l.mergeOnRight(r);
+
+      if (m)
+       {root = l;                                          // Update root if the leaves were successfully merged
+       }
+      //root = r.countUsed() == 0 ? r.top : r;                                                            // Update root if the branches were successfully merged
       return;
      }
-    final Branch l = (Branch)b.firstChild();                                    // Root has branches for children
-    final Branch r = (Branch)b.top;
+    final Branch  l = (Branch)b.firstChild();                                    // Root has branches for children
+    final Branch  r = (Branch)b.top;
     final boolean m = r.mergeOnLeft(b.firstKey(), l);
-    if (m) root = r;                                                            // Update root if the branches were successfully merged
+    if (m) root = r;
    }
+
 
 //D1 High Level                                                                 // High level operations: insert, find, delete
 
@@ -477,7 +487,8 @@ class Tree extends Test                                                         
       p = (Branch)q;                                                            // Step down into non full branch
       path.push(p);
      }
-    stop("Find fell off the end of tree after this many searches:", MaximumNumberOfLevels);
+    stop("Find fell off the end of tree after this many searches:",
+         MaximumNumberOfLevels);
     return null;
    }
 
@@ -557,19 +568,22 @@ class Tree extends Test                                                         
        }
       else p = r;                                                               // Step down into non full branch
      }
-    stop("Insert fell off the end of tree after this many searches:", MaximumNumberOfLevels);
+    stop("Insert fell off the end of tree after this many searches:",
+          MaximumNumberOfLevels);
    }
 
   void delete(long Key)                                                         // Delete a key from the tree
    {if (root == null) return;                                                   // Empty tree
     final Find f = find(Key);
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
-    f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data
+    f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
+say("JJJJ");
+    mergeAlongPath(Key);
    }
 
   void mergeAlongPath(long Key)                                                 // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
-    if (f == null) return;                                                      // Empty tree
+    if (f == null || f.path == null) return;                                    // Empty tree
     final int N = f.path.size();
     for (int i = N-1; i >= 0; --i)                                              // Go up the tree merging as we go
      {final Branch b = f.path.elementAt(i);                                     // Parent  branch some of whose siblings might be mergable
@@ -578,13 +592,13 @@ class Tree extends Test                                                         
       b.mergeLeftSibling(l);                                                    // Merge left sibling of keyed child
 
       final Integer k = b.locateFirstGe(Key);                                   // Look further left
-      if (k != null)
+      if (k != null)                                                            // Not top
        {final Integer K = b.locatePrevUsedSlot(k-1);
         if (K != null)
          {b.mergeLeftSibling(K);
          }
        }
-      else
+      else                                                                      // Top
        {final Integer K = b.locateLastUsedSlot();
         if (K != null)
          {b.mergeLeftSibling(K);
@@ -597,6 +611,7 @@ class Tree extends Test                                                         
          {b.mergeRightSibling(M);
          }
        }
+      b.mergeLeftSibling(null);                                                 // Migrate into top
      }
     mergeRoot();                                                                // Merge the root if possible
    }
@@ -619,7 +634,8 @@ class Tree extends Test                                                         
     padStrings(P, level);
    }
 
-  void printBranch(Branch Branch, Stack<StringBuilder>P, int level, boolean Details) // Print branch horizontally
+  void printBranch                                                              // Print branch horizontally
+   (Branch Branch, Stack<StringBuilder>P, int level, boolean Details)
    {if (level > maxPrintLevels) return;
     padStrings(P, level);
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
@@ -636,31 +652,24 @@ class Tree extends Test                                                         
         else if (s instanceof Branch)
          {printBranch((Branch)s, P, level+1, Details);
          }
-        //final int key  = stuckKeys.memoryGet(BtreeIndex, i);
-        //final int data = stuckData.memoryGet(BtreeIndex, i);
 
         P.elementAt(L+0).append(" "+Branch.keys(i));                            // Key
         if (Details)
-         {P.elementAt(L+1).append("["+Branch.name+(i > 0 ?  "."+i : "")+"]");     // Branch, key, next pair
-          P.elementAt(L+2).append("("+s.name+")");                                // Link to next level
+         {P.elementAt(L+1).append("["+Branch.name+(i > 0 ?  "."+i : "")+"]");   // Branch, key, next pair
+          P.elementAt(L+2).append("("+s.name+")");                              // Link to next level
          }
        }
      }
-    else                                                                        // Branch is empty so print just the index of the branch
-     {//P.elementAt(L+0).append(""+BtreeIndex+"Empty");
-     }
-    if (Details) P.elementAt(L+2).append("{"+Branch.top.name+"}");                           // Top of branch
-    //final int top = stuckData.memoryGet(BtreeIndex, K);                       // Top next will always be present
-    //P.elementAt(L+3).append(top);                                             // Append top next
+    if (Details) P.elementAt(L+2).append("{"+Branch.top.name+"}");              // Top of branch
 
-    if      (Branch.top instanceof Leaf)                                        // Print leaf
+    if      (Branch.top instanceof Leaf)                                        // Print top leaf
      {printLeaf  (  (Leaf)Branch.top, P, level+1, Details);
      }
-    else if (Branch.top instanceof Branch)                                      // Print leaf
+    else if (Branch.top instanceof Branch)                                      // Print top branch
      {printBranch((Branch)Branch.top, P, level+1, Details);
      }
 
-    padStrings(P, level);
+    padStrings(P, level);                                                       // Equalize the strings used to print the tree
    }
 
  String printBoxed()                                                            // Print a tree in a box
@@ -695,7 +704,7 @@ class Tree extends Test                                                         
    }
 
   public String toString() {return print(false);}                               // Print the tree without details
-  public String dump()     {return debug ? print(true) : "";}                               // Print the tree without details
+  public String dump()     {return print(true); }                               // Print the tree with details
 
   String print(boolean Details)                                                 // Print the tree with and without details
    {final Stack<StringBuilder> P = new Stack<>();
@@ -1285,6 +1294,50 @@ Path        : 9
 """);
    }
 
+  static void test_insert_reverse()
+   {final Tree t = new Tree(4, 3);
+    final int N = 32;
+    for (int i = N; i > 0; i--) t.insert(i, i);
+    ok(t, """
+                 8                         16                          24                         |
+        4                    12                          20                          28           |
+1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+""");
+   }
+
+  static Tree test_insert_random()
+   {final Tree t = new Tree(4, 3);
+    for (int i = 0; i < random_32.length; i++) t.insert(random_32[i], i);
+    ok(t, """
+               7                        15                                       26                   |
+        4                 11                          19      21         24                    30     |
+1,2,3,4  5,6,7  8,9,10,11   12,13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
+""");
+    return t;
+   }
+
+  static void test_delete()
+   {final Tree t = new Tree(4, 3);
+    final int N = 6, D = 6;
+    for (int i = 1; i <= N; ++i) t.insert(i, i);
+    say("AAAA", t);
+    for (int i = 1; i < D; ++i)
+     {t.delete(i);
+      say("DDDD", i, t.dump());
+     }
+    debug = true;
+    t.delete(D);
+    say("EEEE", t.dump());
+   }
+
+  static void test_delete_random()
+   {final Tree t = test_insert_random();
+    for (int i = 0; i < random_32.length; i++)
+     {t.delete(random_32[i]);
+      say("AAAA", i, random_32[i], t);
+     }
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_compactLeafLeft();
     test_compactLeafRight();
@@ -1300,11 +1353,16 @@ Path        : 9
     test_mergeBranchRight();
     test_splitLeaf();
     test_splitBranch();
+    test_insert();
+    test_insert_reverse();
+    test_insert_random();
+    test_delete();
+    test_delete_random();
    }
 
   static void newTests()                                                        // Tests being worked on
-   {oldTests();
-    test_insert();
+   {//oldTests();
+    test_delete();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
