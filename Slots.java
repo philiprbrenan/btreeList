@@ -134,8 +134,8 @@ public class Slots extends Test                                                 
   boolean full()  {return countUsed() == numberOfRefs;}                         // All references are in use
 
   boolean adjacentUsedSlots(int Start, int Finish)                              // Checks wether two used slots are adjacent
-   {if (!usedSlots[Start])  stop("Start  slot  must be occupied but it is empty, slot:", Start);
-    if (!usedSlots[Finish]) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
+   {if (!usedSlots(Start))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
+    if (!usedSlots(Finish)) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
     if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
 
     for (int i = Start+1; i < Finish; i++) if (usedSlots(i)) return false;      // From start to finish looking for an intermediate used slot
@@ -243,9 +243,9 @@ public class Slots extends Test                                                 
     int p = 0;
     for (int i = 0; i < numberOfSlots; i++)                                     // Each slot
      {if (d.usedSlots(i))                                                       // Each used slot
-       {usedSlots[p] = usedRefs[p] = true;
+       {usedSlots(p, true); usedRefs(p, true);
             slots(p, p);
-             keys[p] = d.keys[d.slots(i)];
+             keys(p, d.keys[d.slots(i)]);
         ++p;
        }
      }
