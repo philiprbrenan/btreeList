@@ -150,42 +150,42 @@ public class Slots extends Test                                                 
    }
 
   Integer locateFirstUsedSlot()                                                 // Absolute position of the first slot in use
-   {for (int i = 0; i < numberOfSlots; ++i)        if (usedSlots[i]) return i;
+   {for (int i = 0; i < numberOfSlots; ++i)        if (usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateLastUsedSlot()                                                  // Absolute position of the last slot in use
-   {for (int i = numberOfSlots-1; i >= 0; i--)     if (usedSlots[i]) return i;
+   {for (int i = numberOfSlots-1; i >= 0; i--)     if (usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locatePrevUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next lower used slot
-   {for (int i = Position; i >= 0; i--)            if (usedSlots[i]) return i;
+   {for (int i = Position; i >= 0; i--)            if (usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateNextUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next higher used slot
-   {for (int i = Position; i < numberOfSlots; ++i) if (usedSlots[i]) return i;
+   {for (int i = Position; i < numberOfSlots; ++i) if (usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateFirstEmptySlot()                                                // Absolute position of the first free slot
-   {for (int i = 0; i < numberOfSlots; ++i)        if (!usedSlots[i]) return i;
+   {for (int i = 0; i < numberOfSlots; ++i)        if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateLastEmptySlot()                                                 // Absolute position of the last free slot
-   {for (int i = numberOfSlots-1; i >= 0; i--)     if (!usedSlots[i]) return i;
+   {for (int i = numberOfSlots-1; i >= 0; i--)     if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locatePrevEmptySlot(int Position)                                     // Absolute position of this slot if it is free or the nearest lower free slot before this position.
-   {for (int i = Position; i >= 0; i--)            if (!usedSlots[i]) return i;
+   {for (int i = Position; i >= 0; i--)            if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateNextEmptySlot(int Position)                                     // Absolute position of this slot if it is in use or the nearest higher free slot after this position.
-   {for (int i = Position; i < numberOfSlots; ++i) if (!usedSlots[i]) return i;
+   {for (int i = Position; i < numberOfSlots; ++i) if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
