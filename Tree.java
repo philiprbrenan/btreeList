@@ -150,7 +150,7 @@ class Tree extends Test                                                         
        }
      }
 
-    boolean mergeFromRight(Leaf Right)                                            // Merge the specified slots from the right
+    boolean mergeFromRight(Leaf Right)                                          // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() > maxLeafSize) return false;
       final Leaf l =       duplicate(),
                  r = Right.duplicate();
@@ -161,7 +161,7 @@ class Tree extends Test                                                         
       return true;
      }
 
-    boolean mergeFromLeft(Leaf Left)                                              // Merge the specified slots from the left
+    boolean mergeFromLeft(Leaf Left)                                            // Merge the specified slots from the left
      {if (Left.countUsed() + countUsed() > maxLeafSize) return false;
       final Leaf l = Left.duplicate(),
                  r =      duplicate();
