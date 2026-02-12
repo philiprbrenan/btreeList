@@ -77,10 +77,10 @@ public class Slots extends Test                                                 
      }
    }
 
-  protected void clearSlotAndRef(int I) {freeRef(slots[I]); clearSlots(I);}     // Remove a key from the slots
-  protected int            slots(int I) {return slots    [I];}                  // The indexed slot
-  protected boolean    usedSlots(int I) {return usedSlots[I];}                  // The indexed slot usage indicator
-  protected boolean     usedRefs(int I) {return usedRefs [I];}                  // The indexed reference usage indicator
+  protected void clearSlotAndRef(int I) {freeRef(slots    [I]); clearSlots(I);} // Remove a key from the slots
+  protected int            slots(int I) {return  slots    [I];}                 // The indexed slot
+  protected boolean    usedSlots(int I) {return  usedSlots[I];}                 // The indexed slot usage indicator
+  protected boolean     usedRefs(int I) {return  usedRefs [I];}                 // The indexed reference usage indicator
   long                      keys(int I) {return keys[slots[I]];}                // The indexed key
 
 //D2 Refs                                                                       // Allocate and free references to keys
@@ -150,22 +150,22 @@ public class Slots extends Test                                                 
    }
 
   Integer locateFirstUsedSlot()                                                 // Absolute position of the first slot in use
-   {for (int i = 0; i < numberOfSlots; ++i)        if (usedSlots(i)) return i;
+   {for (int i = 0; i < numberOfSlots; ++i)        if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateLastUsedSlot()                                                  // Absolute position of the last slot in use
-   {for (int i = numberOfSlots-1; i >= 0; i--)     if (usedSlots(i)) return i;
+   {for (int i = numberOfSlots-1; i >= 0; i--)     if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locatePrevUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next lower used slot
-   {for (int i = Position; i >= 0; i--)            if (usedSlots(i)) return i;
+   {for (int i = Position; i >= 0; i--)            if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateNextUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next higher used slot
-   {for (int i = Position; i < numberOfSlots; ++i) if (usedSlots(i)) return i;
+   {for (int i = Position; i < numberOfSlots; ++i) if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
@@ -254,7 +254,7 @@ public class Slots extends Test                                                 
      {if (d.usedSlots(i))
        {usedSlots[p] = usedRefs[p] = true;
             slots[p] = p;
-             keys[p] = d.keys[d.slots[i]];
+             keys[p] = d.keys[d.slots(i)];
         --p;
        }
      }
