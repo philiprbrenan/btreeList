@@ -108,10 +108,10 @@ class Tree extends Test                                                         
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots[i]) k.add(""+keys[slots[i]]);
+       {if (usedSlots(i)) k.add(""+keys[slots(i)]);
        }
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots[i]) d.add(""+data[slots[i]]);
+       {if (usedSlots(i)) d.add(""+data[slots(i)]);
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -127,7 +127,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data[slots[i]];
+      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data[slots(i)];
       super.compactLeft();
 
       for (int i = 0; i < R; i++) data[i] = d[i];
@@ -137,7 +137,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data[slots[i]];
+      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data[slots(i)];
       super.compactRight();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
@@ -188,7 +188,7 @@ class Tree extends Test                                                         
 
     int splitSize()       {return maxBranchSize / 2;}                           // Size of a split branch
     Slots data(int Index) {return data[slots(Index)];}                          // Data at the indexed slot
-    Slots firstChild()    {return data[slots[locateFirstUsedSlot()]];}          // First child assuming the is one
+    Slots firstChild()    {return data[slots(locateFirstUsedSlot())];}          // First child assuming the is one
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
@@ -214,7 +214,7 @@ class Tree extends Test                                                         
       int s = 0;                                                                // Count slots used
       long sk = 0;                                                              // Splitting key
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
-       {if (usedSlots[i])                                                       // Slot is in use
+       {if (usedSlots(i))                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left branch
            {Right.clearSlotAndRef(i);                                           // Free the entry from the right branch as it is being used in the left branch
             s++;                                                                // Number of entries active in left branch
@@ -238,7 +238,7 @@ class Tree extends Test                                                         
     long splittingKey()                                                         // Splitting key from a branch
      {if (!full()) stop("Branch not full");                                     // The branch must be full if we are going to split it
       long k = 0;                                                               // Splitting key
-      int    p = 0;                                                             // Position in leaf
+      int  p = 0;                                                               // Position in leaf
       for (int i = 0; i < numberOfSlots; i++)                                   // Scan for splitting keys
        {if (usedSlots(i))                                                       // Used slot
          {if (p == splitSize()) k += keys(i);                                   // Splitting key as last on left and first on right of split
@@ -267,10 +267,10 @@ class Tree extends Test                                                         
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots[i]) k.add(""+keys[slots[i]]);
+       {if (usedSlots(i)) k.add(""+keys[slots(i)]);
        }
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots[i]) d.add(""+data[slots[i]].name);
+       {if (usedSlots(i)) d.add(""+data[slots(i)].name);
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top.name+"\n";
      }
@@ -290,7 +290,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots[i]) d[p++] = data(i);
+      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(i);
       super.compactLeft();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
@@ -299,7 +299,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots[i]) d[p--] = data(i);
+      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(i);
       super.compactRight();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
