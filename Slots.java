@@ -247,7 +247,7 @@ public class Slots extends Test                                                 
    }
 
   void compactRight()                                                           // Squeeze the used slots to the left end
-   {if (empty() || full()) return;                                              // Nothing to squeeze
+   {if (empty()) return;                                                        // Nothing to squeeze
     final Slots d = duplicate(); reset();
     int p = numberOfRefs - 1;
     for (int i = numberOfSlots - 1; i >= 0; --i)
