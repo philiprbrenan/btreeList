@@ -481,7 +481,7 @@ class Tree extends Test                                                         
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
      {final Integer P = p.locateFirstGe(Key);
-      final Slots q = p.child(P);
+      final Slots   q = p.child(P);
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
         return new Find(Key, p, l, P, path);
@@ -504,7 +504,7 @@ class Tree extends Test                                                         
     final Find F = find(Key);                                                   // See if key is already present
     if (F.childIndex != null)                                                   // Key already present so update data associated with the key
      {final Leaf l = F.leaf;                                                    // Child leaf
-      l.data[l.slots[F.childIndex]] = Data;                                     // Update data                                                                            //
+      l.data[l.slots(F.childIndex)] = Data;                                     // Update data
       return;
      }
     else if (!F.leaf.full())                                                    // Leaf not full so insert directly
