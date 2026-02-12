@@ -410,7 +410,7 @@ public class Slots extends Test                                                 
 
   public Integer find(long Key)                                                 // Find the index of the current key in the slots
    {final Integer i = locate(Key);
-    return i == null ? null : slots[i];
+    return i == null ? null : slots(i);
    }
 
   public boolean delete(long Key)                                               // Delete the specified key
