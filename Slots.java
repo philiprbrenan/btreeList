@@ -233,7 +233,7 @@ public class Slots extends Test                                                 
    }
 
   void compactLeft()                                                            // Compact the used slots to the left end
-   {if (empty() || full()) return;                                              // Nothing to compact
+   {if (empty()) return;                                                        // Nothing to compact
     final Slots d = duplicate(); reset();
     int p = 0;
     for (int i = 0; i < numberOfSlots; i++)                                     // Each slot
