@@ -43,8 +43,7 @@ class Tree extends Test                                                         
       name = ""+(leaves++);                                                     // Name the leaf to help in debugging
      }
 
-    int splitSize() {return maxLeafSize / 2;}                                   // Size of a split leaf
-
+    int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
     long data(int I)             {return data[I];}                              // Value of data field at index
     void data(int I, long Value) {data[I] = Value;}                             // Value of data field at index
 
@@ -97,7 +96,7 @@ class Tree extends Test                                                         
      {final long  sk = splittingKey();
       final Leaf   l = duplicate(), r = l.splitRight();
       final Branch b = new Branch();
-      b.insert(sk, l); b.top = r;
+      b.insert(sk, l);  b.top = r;
       return b;
      }
 
@@ -670,7 +669,7 @@ class Tree extends Test                                                         
 
         P.elementAt(L+0).append(" "+Branch.keys(i));                            // Key
         if (Details)
-         {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");   // Branch, key, next pair
+         {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                   // Branch, key, next pair
           P.elementAt(L+2).append("("+s.name+")");                              // Link to next level
          }
        }
