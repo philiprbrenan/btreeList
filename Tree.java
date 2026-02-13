@@ -630,6 +630,80 @@ class Tree extends Test                                                         
     return countBranch((Branch)root);                                           // Tree has one or more branches
    }
 
+//D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
+
+  class Position                                                                // Location of key
+   {final Leaf leaf;                                                            // Leaf containing key
+    final int  index;                                                           // Index of key within leaf
+    final long key;                                                             // Key
+
+    Position(Leaf Leaf, int Index, long Key)                                    // Describe a position in the tree
+     {leaf  = Leaf;
+      index = Index;
+      key   = Key;
+     }
+    public String toString()                                                    // Print position
+     {final StringBuilder s = new StringBuilder();
+      s.append("Key  : "+key+"\n");
+      s.append("Index: "+index+"\n");
+      s.append(leaf.dump());
+      return ""+s;
+     }
+   }
+
+  Position first()                                                              // Find the position of the first key in the key
+   {if (root == null) return null;                                              // Empty tree does not have a first key
+    if (root instanceof Leaf)
+     {final Leaf l = (Leaf)root;
+      final int  i = l.locateFirstUsedSlot();
+      final long k = l.data(i);
+      return new Position(l, i, k);
+     }
+
+    Branch p = (Branch)root;                                                    // Start at root
+
+    for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
+     {final int   P = p.locateFirstUsedSlot();
+      final Slots q = p.child(P);
+      if (q instanceof Leaf)                                                    // Step down to a leaf
+       {final Leaf l = (Leaf)q;
+        final int  i = l.locateFirstUsedSlot();
+        final long k = l.data(l.slots(i));
+        return new Position(l, i, k);
+       }
+      p = (Branch)q;                                                            // Step down into non full branch
+     }
+    stop("First fell off the end of tree after this many searches:",
+         MaximumNumberOfLevels);
+    return null;
+   }
+
+  Position last()                                                               // Find the position of the last key in the tree
+   {if (root == null) return null;                                              // Empty tree does not have a last key
+    if (root instanceof Leaf)
+     {final Leaf l = (Leaf)root;
+      final int  i = l.locateLastUsedSlot();
+      final long k = l.data(i);
+      return new Position(l, i, k);
+     }
+
+    Branch p = (Branch)root;                                                    // Start at root
+
+    for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
+     {final Slots q = p.top;
+      if (q instanceof Leaf)                                                    // Step down to a leaf
+       {final Leaf l = (Leaf)q;
+        final int  i = l.locateLastUsedSlot();
+        final long k = l.data(l.slots(i));
+        return new Position(l, i, k);
+       }
+      p = (Branch)q;                                                            // Step down into non full branch
+     }
+    stop("Last fell off the end of tree after this many searches:",
+         MaximumNumberOfLevels);
+    return null;
+   }
+
 //D1 Print                                                                      // Print the tree horizontally
 
   final int linesToPrintABranch =  4;                                           // The number of lines required to print a branch
@@ -1327,6 +1401,30 @@ Path        : 12
                  8                         16                                                     |
         4                    12                          20            24            28           |
 1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
+""");
+
+    ok(t.first(), """
+Key  : 1
+Index: 0
+Leaf     : 27
+positions:    0   1   2   3   4   5   6   7
+slots    :    3   0   2   0   1   0   0   0
+usedSlots:    X   .   X   .   X   .   X   .
+usedRefs :    X   X   X   X
+keys     :    4   3   2   1
+data     :    4   3   2   1
+""");
+
+    ok(t.last(), """
+Key  : 32
+Index: 6
+Leaf     : 2
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   1   0   2   0   3   0
+usedSlots:    X   .   X   .   X   .   X   .
+usedRefs :    X   X   X   X
+keys     :   29  30  31  32
+data     :   29  30  31  32
 """);
    }
 
