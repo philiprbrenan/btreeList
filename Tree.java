@@ -432,16 +432,17 @@ class Tree extends Test                                                         
 //D1 High Level                                                                 // High level operations: insert, find, delete
 
   class Find                                                                    // Find results
-   {Branch  branch;                                                             // Last branch
-    Leaf    leaf;                                                               // Leaf that should contain the key
-    Integer parentIndex;                                                        // Slot used in parent for leaf
-    Integer childIndex;                                                         // Slot used for key in child if present
-    long    key;                                                                // Search key
-    Slots.Locate locate;                                                        // Location details for key
+   {final Branch  branch;                                                       // Last branch
+    final Leaf    leaf;                                                         // Leaf that should contain the key
+    final Integer parentIndex;                                                  // Slot used in parent for leaf
+    final Integer childIndex;                                                   // Slot used for key in child if present
+    final long    key;                                                          // Search key
+    final Slots.Locate locate;                                                  // Location details for key
     final Stack<Branch> path;                                                   // The path taken to perform the find
+    final Branch wentTop, wentLeft;                                               // Position of turns
 
     Find(long Key, Branch Branch, Leaf Leaf,
-      Integer ParentIndex, Stack<Branch> Path)
+      Integer ParentIndex, Stack<Branch> Path, Branch WentTop, Branch WentLeft)
      {key         = Key;
       branch      = Branch;
       leaf        = Leaf;
@@ -449,6 +450,8 @@ class Tree extends Test                                                         
       locate      = Leaf.new Locate(Key);
       childIndex  = Leaf.locate(Key);
       path        = Path;
+      wentTop     = WentTop;
+      wentLeft      = WentLeft;
      }
 
     public String toString()
@@ -464,6 +467,8 @@ class Tree extends Test                                                         
         for(Branch p : path) j.add(p.name);
         s.append("Path        : "+j+"\n");
        }
+      if (wentTop      != null) s.append("Went " + wentTop.dump());
+      if (wentLeft       != null) s.append("Left " +  wentLeft.dump());
       return ""+s;
      }
    }
@@ -472,19 +477,27 @@ class Tree extends Test                                                         
    {if (root == null) return null;                                              // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-      return new Find(Key, null, l, null, null);
+      return new Find(Key, null, l, null, null, null, null);
      }
 
     final Stack<Branch> path = new Stack<>();                                   // The path taken to perform the find
-    Branch p = (Branch)root;                                                    // Start at root
+    Branch p = (Branch)root, wentTop = null, wentLeft = null;                   // Start at root recording where we last went through top or not
+
+    return find(Key, p);                                                        // Search from root
+   }
+
+  Find find(long Key, Branch Start)
+   {final Stack<Branch> path = new Stack<>();                                   // The path taken to perform the find
+    Branch p = Start, wentTop = null, wentLeft = null;                          // Start at root recording where we last went through top or not
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
      {final Integer P = p.locateFirstGe(Key);
       final Slots   q = p.child(P);
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
-        return new Find(Key, p, l, P, path);
+        return new Find(Key, p, l, P, path, wentTop, wentLeft);
        }
+      if (P == null) wentTop = p; else wentLeft = p;                            // Record last turn
       p = (Branch)q;                                                            // Step down into non full branch
       path.push(p);
      }
@@ -680,6 +693,32 @@ class Tree extends Test                                                         
 
   Position last()                                                               // Find the position of the last key in the tree
    {if (root == null) return null;                                              // Empty tree does not have a last key
+    if (root instanceof Leaf)
+     {final Leaf l = (Leaf)root;
+      final int  i = l.locateLastUsedSlot();
+      final long k = l.data(i);
+      return new Position(l, i, k);
+     }
+
+    Branch p = (Branch)root;                                                    // Start at root
+
+    for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
+     {final Slots q = p.top;
+      if (q instanceof Leaf)                                                    // Step down to a leaf
+       {final Leaf l = (Leaf)q;
+        final int  i = l.locateLastUsedSlot();
+        final long k = l.data(l.slots(i));
+        return new Position(l, i, k);
+       }
+      p = (Branch)q;                                                            // Step down into non full branch
+     }
+    stop("Last fell off the end of tree after this many searches:",
+         MaximumNumberOfLevels);
+    return null;
+   }
+
+  Position next(long Key)                                                       // Find the position of the next greater key in the tree
+   {if (root == null) return null;                                              // Empty tree does not have a next key
     if (root instanceof Leaf)
      {final Leaf l = (Leaf)root;
       final int  i = l.locateLastUsedSlot();
@@ -1365,6 +1404,14 @@ data     :   21  22  23  24
 ParentIndex : 0
 Locate      :  0  below all
 Path        : 12
+Left Branch   : 8
+positions:    0   1   2   3   4   5
+slots    :    0   0   1   0   2   0
+usedSlots:    .   .   X   .   .   .
+usedRefs :    .   X   .
+keys     :   18  26  34
+data     :  6 12 13
+top      :  7
 """);
 
     ok(t.find(23), """
@@ -1387,6 +1434,14 @@ data     :   33  34  35  36
 ChildIndex  : 0
 Locate      : 0 exact
 Path        : 12
+Left Branch   : 8
+positions:    0   1   2   3   4   5
+slots    :    0   0   1   0   2   0
+usedSlots:    .   .   X   .   .   .
+usedRefs :    .   X   .
+keys     :   18  26  34
+data     :  6 12 13
+top      :  7
 """);
    }
 
