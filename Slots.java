@@ -20,13 +20,13 @@ public class Slots extends Test                                                 
 //D1 Construction                                                               // Construct and layout the slots
 
   public Slots(int NumberOfRefs)                                                // Create the slots
-   {numberOfSlots = NumberOfRefs * 2;                                           // The lots are narrow while the refs are wide so we having more slots reduces the amount of slot movement withouit greatly increasing memory requirements
-    numberOfRefs  = NumberOfRefs;
-    redistributionWidth  = (int)java.lang.Math.sqrt(numberOfRefs);
-    slots     = new int    [numberOfSlots];
-    usedSlots = new boolean[numberOfSlots];
-    usedRefs  = new boolean[numberOfRefs];
-    keys      = new long   [numberOfRefs];
+   {numberOfSlots       = NumberOfRefs * 2;                                     // The lots are narrow while the refs are wide so we having more slots reduces the amount of slot movement withouit greatly increasing memory requirements
+    numberOfRefs        = NumberOfRefs;
+    redistributionWidth = (int)java.lang.Math.sqrt(numberOfRefs);
+    slots               = new int    [numberOfSlots];
+    usedSlots           = new boolean[numberOfSlots];
+    usedRefs            = new boolean[numberOfRefs];
+    keys                = new long   [numberOfRefs];
    }
 
   public Slots(String Name) {this(0); name = Name;}                             // Create empty named slots to assist with debugging
@@ -350,14 +350,14 @@ public class Slots extends Test                                                 
     boolean below;                                                              // The search key is below or equal to the found key
     boolean all;                                                                // Above all or below all if true
 
-    public String toString()
+    public String toString()                                                    // Print the location
      {if (exact()) return String.format("%d exact", at);
       return String.format("%2d %s %s %s", at, above ? "above" : "",
                                                below ? "below" : "",
                                                all   ? "all"   : "");
      }
 
-    void pos(int At, boolean Above, boolean Below)
+    void pos(int At, boolean Above, boolean Below)                              // Specify the position of the location
      {at = At; above = Above; below = Below;
      }
 
@@ -386,8 +386,8 @@ public class Slots extends Test                                                 
         else if (mb != a && ge(Key, mb)) a = mb;
         else if (mb != b && le(Key, mb)) b = mb;
         else                                                                    // The slots must be adjacent
-         {if (eq(Key, a)) {found(a); return;};                                 // Found the search key at the lower end
-          if (eq(Key, b)) {found(b); return;};                                 // Found the search key at the upper end
+         {if (eq(Key, a)) {found(a); return;};                                  // Found the search key at the lower end
+          if (eq(Key, b)) {found(b); return;};                                  // Found the search key at the upper end
           below(b);
           return;
          }                                                                      // New mid point
