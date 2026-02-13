@@ -451,7 +451,7 @@ class Tree extends Test                                                         
       childIndex  = Leaf.locate(Key);
       path        = Path;
       wentTop     = WentTop;
-      wentLeft      = WentLeft;
+      wentLeft    = WentLeft;
      }
 
     public String toString()
@@ -664,13 +664,13 @@ class Tree extends Test                                                         
      }
    }
 
-  Position first()                                                              // Find the position of the first key in the key
+  Find first()                                                                  // Find the position of the first key in the key
    {if (root == null) return null;                                              // Empty tree does not have a first key
     if (root instanceof Leaf)
      {final Leaf l = (Leaf)root;
       final int  i = l.locateFirstUsedSlot();
       final long k = l.data(i);
-      return new Position(l, i, k);
+      return new Find(k, null, l, null, null, (Branch)root, (Branch)root);
      }
 
     Branch p = (Branch)root;                                                    // Start at root
@@ -682,7 +682,7 @@ class Tree extends Test                                                         
        {final Leaf l = (Leaf)q;
         final int  i = l.locateFirstUsedSlot();
         final long k = l.data(l.slots(i));
-        return new Position(l, i, k);
+        return new Find(k, p, l, P, null, (Branch)root, (Branch)root);
        }
       p = (Branch)q;                                                            // Step down into non full branch
      }
@@ -691,13 +691,13 @@ class Tree extends Test                                                         
     return null;
    }
 
-  Position last()                                                               // Find the position of the last key in the tree
+  Find last()                                                                  // Find the position of the last key in the tree
    {if (root == null) return null;                                              // Empty tree does not have a last key
     if (root instanceof Leaf)
      {final Leaf l = (Leaf)root;
       final int  i = l.locateLastUsedSlot();
       final long k = l.data(i);
-      return new Position(l, i, k);
+      return new Find(k, null, l, null, null, (Branch)root, (Branch)root);
      }
 
     Branch p = (Branch)root;                                                    // Start at root
@@ -708,7 +708,7 @@ class Tree extends Test                                                         
        {final Leaf l = (Leaf)q;
         final int  i = l.locateLastUsedSlot();
         final long k = l.data(l.slots(i));
-        return new Position(l, i, k);
+        return new Find(k, p, l, null, null, (Branch)root, (Branch)root);
        }
       p = (Branch)q;                                                            // Step down into non full branch
      }
@@ -717,31 +717,34 @@ class Tree extends Test                                                         
     return null;
    }
 
-  Position next(long Key)                                                       // Find the position of the next greater key in the tree
-   {if (root == null) return null;                                              // Empty tree does not have a next key
-    if (root instanceof Leaf)
-     {final Leaf l = (Leaf)root;
-      final int  i = l.locateLastUsedSlot();
-      final long k = l.data(i);
-      return new Position(l, i, k);
-     }
-
-    Branch p = (Branch)root;                                                    // Start at root
-
-    for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
-     {final Slots q = p.top;
-      if (q instanceof Leaf)                                                    // Step down to a leaf
-       {final Leaf l = (Leaf)q;
-        final int  i = l.locateLastUsedSlot();
-        final long k = l.data(l.slots(i));
-        return new Position(l, i, k);
-       }
-      p = (Branch)q;                                                            // Step down into non full branch
-     }
-    stop("Last fell off the end of tree after this many searches:",
-         MaximumNumberOfLevels);
-    return null;
-   }
+//    Find(long Key, Branch Branch, Leaf Leaf,
+//      Integer ParentIndex, Stack<Branch> Path, Branch WentTop, Branch WentLeft)
+//
+//  Position next(long Key)                                                       // Find the position of the next greater key in the tree
+//   {if (root == null) return null;                                              // Empty tree does not have a next key
+//    if (root instanceof Leaf)
+//     {final Leaf l = (Leaf)root;
+//      final int  i = l.locateLastUsedSlot();
+//      final long k = l.data(i);
+//      return new Position(l, i, k);
+//     }
+//
+//    Branch p = (Branch)root;                                                    // Start at root
+//
+//    for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
+//     {final Slots q = p.top;
+//      if (q instanceof Leaf)                                                    // Step down to a leaf
+//       {final Leaf l = (Leaf)q;
+//        final int  i = l.locateLastUsedSlot();
+//        final long k = l.data(l.slots(i));
+//        return new Position(l, i, k);
+//       }
+//      p = (Branch)q;                                                            // Step down into non full branch
+//     }
+//    stop("Last fell off the end of tree after this many searches:",
+//         MaximumNumberOfLevels);
+//    return null;
+//   }
 
 //D1 Print                                                                      // Print the tree horizontally
 
@@ -1459,8 +1462,15 @@ top      :  7
 """);
 
     ok(t.first(), """
-Key  : 1
-Index: 0
+Find Key : 1
+Branch   : 12
+positions:    0   1   2   3   4   5
+slots    :    0   0   0   0   1   0
+usedSlots:    .   X   .   .   .   .
+usedRefs :    X   .   .
+keys     :    4   6   8
+data     :  27 26 23
+top      :  23
 Leaf     : 27
 positions:    0   1   2   3   4   5   6   7
 slots    :    3   0   2   0   1   0   0   0
@@ -1468,11 +1478,37 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :    4   3   2   1
 data     :    4   3   2   1
+ParentIndex : 1
+ChildIndex  : 0
+Locate      : 0 exact
+Went Branch   : 8
+positions:    0   1   2   3   4   5
+slots    :    0   0   0   0   1   0
+usedSlots:    .   X   .   .   X   .
+usedRefs :    X   X   .
+keys     :    8  16   0
+data     :  12 9   .
+top      :  7
+Left Branch   : 8
+positions:    0   1   2   3   4   5
+slots    :    0   0   0   0   1   0
+usedSlots:    .   X   .   .   X   .
+usedRefs :    X   X   .
+keys     :    8  16   0
+data     :  12 9   .
+top      :  7
 """);
 
     ok(t.last(), """
-Key  : 32
-Index: 6
+Find Key : 32
+Branch   : 7
+positions:    0   1   2   3   4   5
+slots    :    0   0   1   0   2   0
+usedSlots:    X   .   X   .   X   .
+usedRefs :    X   X   X
+keys     :   20  24  28
+data     :  11 7 3
+top      :  2
 Leaf     : 2
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
@@ -1480,6 +1516,24 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :   29  30  31  32
 data     :   29  30  31  32
+ChildIndex  : 6
+Locate      : 6 exact
+Went Branch   : 8
+positions:    0   1   2   3   4   5
+slots    :    0   0   0   0   1   0
+usedSlots:    .   X   .   .   X   .
+usedRefs :    X   X   .
+keys     :    8  16   0
+data     :  12 9   .
+top      :  7
+Left Branch   : 8
+positions:    0   1   2   3   4   5
+slots    :    0   0   0   0   1   0
+usedSlots:    .   X   .   .   X   .
+usedRefs :    X   X   .
+keys     :    8  16   0
+data     :  12 9   .
+top      :  7
 """);
    }
 
