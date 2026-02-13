@@ -96,7 +96,7 @@ class Tree extends Test                                                         
      {final long  sk = splittingKey();
       final Leaf   l = duplicate(), r = l.splitRight();
       final Branch b = new Branch();
-      b.insert(sk, l);  b.top = r;
+      b.insert(sk, l); b.top = r;
       return b;
      }
 
