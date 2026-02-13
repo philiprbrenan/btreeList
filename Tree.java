@@ -273,7 +273,7 @@ class Tree extends Test                                                         
        {if (usedSlots(i)) k.add(""+keys(i));
        }
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) d.add(""+data[slots(i)].name);
+       {if (usedSlots(i)) d.add(""+data(i).name);
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top.name+"\n";
      }
@@ -348,11 +348,11 @@ class Tree extends Test                                                         
      {return Location != null;                                                  // Cannot step right from top otherwose we can
      }
 
-    Integer stepLeft(Integer Loc)                                               // Step left to prior occupied slot assuming that such a step has been checked as possible
+    Integer stepLeft(Integer Loc)                                               // Step left to prior occupied slot assuming that such a step is possible
      {return Loc != null ? locatePrevUsedSlot(Loc-1) : locateLastUsedSlot();
      }
 
-    Integer stepRight(Integer Location)                                         // Step left to prior occupied slot assuming that such a step has been checked as possible
+    Integer stepRight(Integer Location)                                         // Step right to next occupied slot assuming that such a step is possible
      {return locateNextUsedSlot(Location+1);
      }
 
@@ -388,14 +388,11 @@ class Tree extends Test                                                         
     Slots child(Integer Index)                                                  // The indexed child. The index must be valid or null - if null, top is returned
      {if (Index == null) return top;                                            // A null index produces top
       if (!usedSlots(Index)) stop("Indexing unused slot:", Index);              // The slot must be valid
-      return data[slots(Index)];                                                // The indicated child
+      return data(Index);                                                       // The indicated child
      }
 
     Tree tree() {return Tree.this;}                                             // Containing tree
-
-    private Slots stepDown(long Key)                                            // Step down from this branch
-     {return child(locateFirstGe(Key));
-     }
+    private Slots stepDown(long Key)  {return child(locateFirstGe(Key));}       // Step down from this branch
    }
 
 //D1 Low Level                                                                  // Low level operations
@@ -507,7 +504,7 @@ class Tree extends Test                                                         
     final Find F = find(Key);                                                   // See if key is already present
     if (F.childIndex != null)                                                   // Key already present so update data associated with the key
      {final Leaf l = F.leaf;                                                    // Child leaf
-      l.data[l.slots(F.childIndex)] = Data;                                     // Update data
+      l.data(F.childIndex, Data);                                               // Update data
       return;
      }
     else if (!F.leaf.full())                                                    // Leaf not full so insert directly
@@ -542,13 +539,13 @@ class Tree extends Test                                                         
     Branch p = (Branch)root;                                                    // Start at root
     if (p.full()) {root = p.split(); p = (Branch)root;}                         // Split full root branch
 
-    for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
+    for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {final Slots q = p.stepDown(Key);                                          // Step down
       if (q instanceof Leaf)                                                    // Step down to a leaf
-       {final Leaf r = (Leaf)q;
+       {final Leaf r = (Leaf)q;                                                 // We have reached a leaf
         if (r.full())                                                           // Split the leaf if it is full
-         {final long sk = r.splittingKey();
-          final Leaf l  = r.splitLeft();
+         {final long sk = r.splittingKey();                                     // Splitting key
+          final Leaf l  = r.splitLeft();                                        // Right leaf split out of the leaf
           p.insert(sk, l);                                                      // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
           if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
          }
@@ -559,8 +556,8 @@ class Tree extends Test                                                         
        }
       final Branch r = (Branch)q;
       if (r.full())                                                             // Split the leaf if it is full
-       {final long        sk = r.splittingKey();
-        final Branch.Split s = r.splitLeft();
+       {final long        sk = r.splittingKey();                                // Splitting key
+        final Branch.Split s = r.splitLeft();                                   // Branch slit out on right from
         p.insert(sk, s.left);                                                   // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
         if (Key <= sk) p = s.left; else p = s.right;                            // Traverse left or right
        }
@@ -571,8 +568,8 @@ class Tree extends Test                                                         
    }
 
   void delete(long Key)                                                         // Delete a key from the tree
-   {if (root == null) return;                                                   // Empty tree
-    final Find f = find(Key);
+   {if (root == null) return;                                                   // The tree is empty tree so thre is nothing to delete
+    final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
     f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
     mergeAlongPath(Key);
@@ -583,6 +580,7 @@ class Tree extends Test                                                         
     if (f == null) return;                                                      // Empty tree
     if (f.path != null)                                                         // Process path from leaf to root
      {final int N = f.path.size();
+
       for (int i = N-1; i >= 0; --i)                                            // Go up the tree merging as we go
        {final Branch b = f.path.elementAt(i);                                   // Parent  branch some of whose siblings might be mergable
         final Integer l = b.locateFirstGe(Key);                                 // Position of key
@@ -598,6 +596,7 @@ class Tree extends Test                                                         
          {final Integer K = b.locateLastUsedSlot();
           if (K != null) b.mergeLeftSibling(K);                                 // Merge further left of top
          }
+
         final Integer m = b.locateFirstGe(Key);                                 // Look further right
         if (m != null)
          {final Integer M = b.locateNextUsedSlot(m+1);
@@ -606,6 +605,7 @@ class Tree extends Test                                                         
         b.mergeLeftSibling(null);                                               // Migrate into top
        }
      }
+
     mergeRoot();                                                                // Merge the root if possible
    }
 
