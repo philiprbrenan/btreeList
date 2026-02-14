@@ -460,7 +460,7 @@ class Tree extends Test                                                         
       if (locate       != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
       for(Branch p = leaf.up; p != null; p = p.up) j.add(p.name);
-      s.append("Path        : "+j+"\n");
+      if (leaf.up != null) s.append("Path        : "+j+"\n");
       return ""+s;
      }
    }
@@ -1401,7 +1401,6 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     ok(t.count(), 32);
 
-say(t.dump());
     ok(t.find(10), """
 Find Key : 10
 Branch   : 12
@@ -1443,15 +1442,7 @@ keys     :   23  24  25  26
 data     :   33  34  35  36
 ChildIndex  : 0
 Locate      : 0 exact
-Path        : 12
-Left Branch   : 8
-positions:    0   1   2   3   4   5
-slots    :    0   0   1   0   2   0
-usedSlots:    .   .   X   .   .   .
-usedRefs :    .   X   .
-keys     :   18  26  34
-data     :  6 12 13
-top      :  7
+Path        : 12, 8
 """);
    }
 
@@ -1463,8 +1454,8 @@ top      :  7
       ok(t.count(), N-i+1);
      }
     ok(t, """
-                 8                         16                                                     |
-        4                    12                          20            24            28           |
+                                           16                                                     |
+        4        8           12                          20            24            28           |
 1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
 """);
 
@@ -1474,12 +1465,12 @@ top      :  7
 Find Key : 1
 Branch   : 12
 positions:    0   1   2   3   4   5
-slots    :    0   0   0   0   1   0
-usedSlots:    .   X   .   .   .   .
-usedRefs :    X   .   .
-keys     :    4   6   8
-data     :  27 26 23
-top      :  23
+slots    :    0   0   1   0   2   0
+usedSlots:    X   .   X   .   X   .
+usedRefs :    X   X   X
+keys     :    4   8  12
+data     :  27 23 19
+top      :  15
 Leaf     : 27
 positions:    0   1   2   3   4   5   6   7
 slots    :    3   0   2   0   1   0   0   0
@@ -1487,25 +1478,10 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :    4   3   2   1
 data     :    4   3   2   1
-ParentIndex : 1
+ParentIndex : 0
 ChildIndex  : 0
 Locate      : 0 exact
-Went Branch   : 8
-positions:    0   1   2   3   4   5
-slots    :    0   0   0   0   1   0
-usedSlots:    .   X   .   .   X   .
-usedRefs :    X   X   .
-keys     :    8  16   0
-data     :  12 9   .
-top      :  7
-Left Branch   : 12
-positions:    0   1   2   3   4   5
-slots    :    0   0   0   0   1   0
-usedSlots:    .   X   .   .   .   .
-usedRefs :    X   .   .
-keys     :    4   6   8
-data     :  27 26 23
-top      :  23
+Path        : 12, 8
 """);
 
     //final Find p2 = t.next(p1); ok(p2.key, 2);
@@ -1532,22 +1508,6 @@ keys     :   29  30  31  32
 data     :   29  30  31  32
 ChildIndex  : 6
 Locate      : 6 exact
-Went Branch   : 8
-positions:    0   1   2   3   4   5
-slots    :    0   0   0   0   1   0
-usedSlots:    .   X   .   .   X   .
-usedRefs :    X   X   .
-keys     :    8  16   0
-data     :  12 9   .
-top      :  7
-Left Branch   : 8
-positions:    0   1   2   3   4   5
-slots    :    0   0   0   0   1   0
-usedSlots:    .   X   .   .   X   .
-usedRefs :    X   X   .
-keys     :    8  16   0
-data     :  12 9   .
-top      :  7
 """);
    }
 
@@ -1686,17 +1646,17 @@ Delete: 23
    24            28           |
 24   25,26,27,28   29,30,31,32|
 Delete: 24
- 24            28           |
-   25,26,27,28   29,30,31,32|
+            28           |
+25,26,27,28   29,30,31,32|
 Delete: 25
- 24         28           |
-   26,27,28   29,30,31,32|
+         28           |
+26,27,28   29,30,31,32|
 Delete: 26
- 24      28           |
-   27,28   29,30,31,32|
+      28           |
+27,28   29,30,31,32|
 Delete: 27
- 24   28           |
-   28   29,30,31,32|
+   28           |
+28   29,30,31,32|
 Delete: 28
 29,30,31,32|
 Delete: 29
