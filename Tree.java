@@ -36,7 +36,7 @@ class Tree extends Test                                                         
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
   class Leaf extends Slots                                                      // Leaf
-   {Branch up;                                                                  // The branch above
+   {Branch up; Integer upIndex;                                                 // The branch above
     final long[]data = new long[maxLeafSize()];                                 // Data corresponding to each key in the leaf
 
     Leaf()                                                                      // Create a leaf
@@ -181,7 +181,7 @@ class Tree extends Test                                                         
 //D1 Branch                                                                     // Use the slots to model a branch
 
   class Branch extends Slots                                                    // Branch
-   {Branch up;                                                                  // The branch above
+   {Branch up; Integer upIndex;                                                 // The branch above
     final Slots[]data = new Slots[maxBranchSize()];                             // Data corresponding to each key in the branch
     Slots top;                                                                  // Top most element
 
@@ -488,11 +488,12 @@ class Tree extends Test                                                         
       final Slots   q = p.child(P);
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
-        l.up = p;                                                               // Parent of leaf along find path
+        l.up = p; l.upIndex = P;                                                // Parent of leaf along find path
         return new Find(Key, p, l, P);
        }
-      ((Branch)q).up = p;                                                       // Record parent branch
-      p = (Branch)q;                                                            // Step down into non full branch
+      final Branch b = (Branch)q;
+      b.up = p; b.upIndex = P;                                                  // Record parent branch
+      p = b;                                                                    // Step down into non full branch
       path.push(p);
      }
     stop("Find fell off the end of tree after this many searches:",
@@ -676,13 +677,14 @@ class Tree extends Test                                                         
       final Slots q = p.child(P);
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
-        l.up = p;
+        l.up = p; l.upIndex = P;
         final int  i = l.locateFirstUsedSlot();
         final long k = l.data(l.slots(i));
         return new Find(k, p, l, P);
        }
-         ((Branch)q).up = p;                                                    // Step down into non full branch
-      p = (Branch)q;                                                            // Step down into non full branch
+      final Branch b = (Branch)q;
+          b.up = p; b.upIndex = P;                                              // Step down into non full branch
+      p = b;                                                                    // Step down into non full branch
      }
     stop("First fell off the end of tree after this many searches:",
          MaximumNumberOfLevels);
@@ -734,26 +736,25 @@ class Tree extends Test                                                         
     final Slots.Locate locate;                                                  // Location details for key
     final Stack<Branch> path;                                                   // The path taken to perform the find
     final Branch wentTop, wentLeft;                                               // Position of turns
-*/
-/*  Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming tha the structure of the tree has not changed
+
+  Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming tha the structure of the tree has not changed
    {if (root == null) return null;                                              // Empty tree does not have a next key
-    final Leaf     l = Found.leaf;
-    final Integer  i = l.locateNextUsedSlot(Found.childIndex+1);
+    final Leaf    l = Found.leaf;
+    final Integer i = l.locateNextUsedSlot(Found.childIndex+1);
     if (i != null)
-     {final long   k = l.data(l.slots(i));
-      return new Find(k, Found.branch, Found.leaf, Found.parentIndex,
-        Found.path, Found.wentTop, Found.wentLeft);
+     {final long k = l.data(l.slots(i));
+      return new Find(k, Found.branch, Found.leaf, Found.parentIndex);
      }
 
     final Branch p = Found.wentLeft;                                            // Last point at which we went left
     if (p == null) return null;                                                 // End of tree
     final Integer j = p.locateNextUsedSlot(Found.parentIndex+1);
     if (j != null)
-     {final Slots s = p.data[p.slots[j]]);
+     {final Slots s = p.data[p.slots[j]];
       if (s instanceof Leaf)
        {final Leaf l = (Leaf)s;
          final int k = l.keys(l.locateFirstUsedSlot());
-         return new Find(k, Found.branch, Found.wentLeft(Branch)p.data[p.slots[j],                //
+         return new Find(k, Found.branch, Found.wentLeft(Branch)p.data[p.slots[j]);        //
      {return goFirst(Found.wentTop, (Branch)p.data[p.slots[j]]);                //
      }
     return goFirst(p,
