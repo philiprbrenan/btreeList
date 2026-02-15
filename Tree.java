@@ -123,7 +123,9 @@ class Tree extends Test                                                         
      {final StringBuilder d = new StringBuilder();
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++) d.append(String.format(" %3d", data(i)));
-      return "Leaf     : "+name+"\n"+super.dump() + "data     : "+d+"\n";
+      final String U = " up: "   +(up      != null ? up.name : "null");
+      final String I = " index: "+(upIndex != null ? upIndex : "null");
+      return "Leaf     : "+name+U+I+"\n"+super.dump() + "data     : "+d+"\n";
      }
 
     void compactLeft()                                                          // Compact the leaf to the left
@@ -447,7 +449,7 @@ class Tree extends Test                                                         
     public String toString()
      {final StringBuilder s = new StringBuilder();
       s.append("Find Key : "+key+"\n");
-      if (leaf   != null) s.append(leaf  .dump());
+      if (leaf   != null) s.append(leaf.dump());
       if (locate != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
       for(Branch p = leaf.up; p != null; p = p.up) j.add(p.name);
@@ -460,7 +462,7 @@ class Tree extends Test                                                         
    {if (root == null) return null;                                              // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-      l.up = null;
+      l.up = null; l.upIndex = null;
       return new Find(Key, l);
      }
 
@@ -715,43 +717,38 @@ class Tree extends Test                                                         
     return null;
    }
 
-//    Find(long Key, Branch Branch, Leaf Leaf,
-//      Integer ParentIndex, Stack<Branch> Path, Branch WentTop, Branch WentLeft)
-/*
-  class Find                                                                    // Find results
-   {final Branch  branch;                                                       // Last branch
-    final Leaf    leaf;                                                         // Leaf that should contain the key
-    final Integer parentIndex;                                                  // Slot used in parent for leaf
-    final Integer childIndex;                                                   // Slot used for key in child if present
-    final long    key;                                                          // Search key
-    final Slots.Locate locate;                                                  // Location details for key
-    final Stack<Branch> path;                                                   // The path taken to perform the find
-    final Branch wentTop, wentLeft;                                               // Position of turns
-
   Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming tha the structure of the tree has not changed
    {if (root == null) return null;                                              // Empty tree does not have a next key
     final Leaf    l = Found.leaf;
-    final Integer i = l.locateNextUsedSlot(Found.childIndex+1);
+    final Integer i = l.locateNextUsedSlot(Found.locate.at+1);
     if (i != null)
      {final long k = l.data(l.slots(i));
-      return new Find(k, Found.branch, Found.leaf, Found.parentIndex);
+      return new Find(k, l);
      }
 
-    final Branch p = Found.wentLeft;                                            // Last point at which we went left
-    if (p == null) return null;                                                 // End of tree
-    final Integer j = p.locateNextUsedSlot(Found.parentIndex+1);
-    if (j != null)
-     {final Slots s = p.data[p.slots[j]];
-      if (s instanceof Leaf)
-       {final Leaf l = (Leaf)s;
-         final int k = l.keys(l.locateFirstUsedSlot());
-         return new Find(k, Found.branch, Found.wentLeft(Branch)p.data[p.slots[j]);        //
-     {return goFirst(Found.wentTop, (Branch)p.data[p.slots[j]]);                //
+    if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
+say("AAAA", Found.key, Found.locate.at, l.dump(), dump());
+    if (l.up.top != l)                                                          // In the body of the parent branch of the leaf
+     {final Integer I = l.up.locateNextUsedSlot(l.upIndex+1);
+      final Leaf L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
+      final long k = L.firstKey();
+say("BBBB", I, k, L.dump());
+      return new Find(k, L);
      }
-    return goFirst(p,
-      p.top instanceof Branch ? (Branch)p.top : Found.wentLeft);                //
+    Branch p;                                                                   // Last point at which we went left
+    Branch q = l.up;
+    for(p = q.up; p != null; q = p, p = q.up)
+     {say("BBBB");
+      if (p.top != q)                                                           // In the body of the parent branch of the leaf
+       {final Integer I = p.locateNextUsedSlot(q.upIndex+1);
+        final Branch  b = (Branch)p.data(I);
+        b.up = p; b.upIndex = I;
+        return goFirst(b);
+       }
+     }
+    return null;
    }
-*/
+
 //D1 Print                                                                      // Print the tree horizontally
 
   final int linesToPrintABranch =  4;                                           // The number of lines required to print a branch
@@ -766,7 +763,9 @@ class Tree extends Test                                                         
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
-    if (Details) P.elementAt(L+1).append("("+Leaf.name+")");
+    final String U = Leaf.up      != null ? ", "+Leaf.name    : "";
+    final String I = Leaf.upIndex != null ? ", "+Leaf.upIndex : "null";
+    if (Details) P.elementAt(L+1).append("("+Leaf.name+U+I+")");
     padStrings(P, level);
    }
 
@@ -864,7 +863,7 @@ class Tree extends Test                                                         
     l.insert(11, 21);
 
     ok(l.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   X   .   .   .   .   .   .
@@ -874,7 +873,7 @@ data     :   23  22  24  21   0   0   0   0
 """);
     l.compactLeft();
     ok(l.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
@@ -891,7 +890,7 @@ data     :   21  22  23  24   0   0   0   0
     l.insert(14, 24);
     l.insert(11, 21);
     ok(l.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   X   .   .   .   .   .   .
@@ -901,7 +900,7 @@ data     :   23  22  24  21   0   0   0   0
 """);
     l.compactRight();
     ok(l.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
@@ -982,7 +981,7 @@ top      :    4
   static void test_splitLeftLeafIntoRight()
    {final Leaf l = test_leaf();
     ok(l.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    7   6   0   0   5   0   2   0   1   0   4   0   3   0   0   0
 usedSlots:    X   X   X   .   X   .   X   .   X   .   X   .   X   .   .   .
@@ -992,7 +991,7 @@ data     :   13  16  15  18  17  14  12  11
 """);
     final Leaf r = l.splitRight();
     ok(l.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   6   0   0   0   0   0   0   0   5   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
@@ -1001,7 +1000,7 @@ keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
     ok(r.dump(), """
-Leaf     : 1
+Leaf     : 1 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   2   0   0   0   1   0   0   0   4   0   0   0   3   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
@@ -1093,7 +1092,7 @@ top :   8
     final Leaf r = test_leaf2();
     l.mergeFromRight(r);
     ok(l.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .   X   .
@@ -1108,7 +1107,7 @@ data     :   11  12  13  14  15  16  17  18
     final Leaf r = test_leaf2();
     r.mergeFromLeft(l);
     ok(r.dump(), """
-Leaf     : 0
+Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
 usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .   X   .
@@ -1395,7 +1394,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
     ok(t.find(10), """
 Find Key : 10
-Leaf     : 3
+Leaf     : 3 up: 12 index: 0
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1408,7 +1407,7 @@ Path        : 12, 8
 
     ok(t.find(23), """
 Find Key : 23
-Leaf     : 15
+Leaf     : 15 up: 12 index: null
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1437,7 +1436,7 @@ Path        : 12, 8
     final Find p1 = t.first();
     ok(p1, """
 Find Key : 1
-Leaf     : 27
+Leaf     : 27 up: 12 index: 0
 positions:    0   1   2   3   4   5   6   7
 slots    :    3   0   2   0   1   0   0   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1448,14 +1447,22 @@ Locate      : 0 exact
 Path        : 12, 8
 """);
 
-    //final Find p2 = t.next(p1); ok(p2.key, 2);
-    //final Find p3 = t.next(p2); ok(p3.key, 3);
-    //final Find p4 = t.next(p3); ok(p4.key, 4);
-    //final Find p5 = t.next(p4); ok(p5.key, 5);
+    final Find  p2 = t.next(p1);  ok(p2.key,   2);
+    final Find  p3 = t.next(p2);  ok(p3.key,   3);
+    final Find  p4 = t.next(p3);  ok(p4.key,   4);
+    final Find  p5 = t.next(p4);  ok(p5.key,   5);
+    final Find  p6 = t.next(p5);  ok(p6.key,   6);
+    final Find  p7 = t.next(p6);  ok(p7.key,   7);
+    final Find  p8 = t.next(p7);  ok(p8.key,   8);
+Tree.debug = true;
+    final Find  p9 = t.next(p8);  ok(p9.key,   9);
+stop();
+    final Find p10 = t.next(p9);  ok(p10.key, 10);
+    final Find p11 = t.next(p10); ok(p11.key, 11);
 
     ok(t.last(), """
 Find Key : 32
-Leaf     : 2
+Leaf     : 2 index: 6
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
