@@ -728,9 +728,8 @@ class Tree extends Test                                                         
     if (l.up.top != l)                                                          // In the body of the parent branch of the leaf
      {final Integer I = l.up.locateNextUsedSlot(l.upIndex+1);
       final Leaf    L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
-      final long    k = L.firstKey();
       L.up = l.up; L.upIndex = I;
-      return new Find(k, L);
+      return new Find(L.firstKey(), L);
      }
     Branch p;                                                                   // Last point at which we went left
     Branch q = l.up;
@@ -747,7 +746,7 @@ class Tree extends Test                                                         
 
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
    {if (root == null) return null;                                              // Empty tree does not have a next key
-    final Leaf l = Found.leaf;
+    final Leaf    l = Found.leaf;
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
 
     final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);
@@ -756,16 +755,14 @@ class Tree extends Test                                                         
     if (l.upIndex == null)                                                      // Last leaf of parent
      {final Integer I = l.up.locateLastUsedSlot();
       final Leaf    L = (Leaf)l.up.data(I);
-      final long    k = L.lastKey();
       L.up = l.up; L.upIndex = I;
-      return new Find(k, L);
+      return new Find(L.lastKey(), L);
      }
     else if (l.upIndex != l.locateFirstUsedSlot())                              // Not the first leaf of the parent branch
      {final Integer I = l.up.locatePrevUsedSlot(l.upIndex-1);
       final Leaf    L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
-      final long    k = L.lastKey();
       L.up = l.up; L.upIndex = I;
-      return new Find(k, L);
+      return new Find(L.lastKey(), L);
      }
     Branch p;                                                                   // Last point at which we went left
     Branch q = l.up;
