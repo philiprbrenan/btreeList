@@ -1,8 +1,8 @@
 //------------------------------------------------------------------------------
-// Btree with stucks implemented as slots
+// Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-package com.AppaApps.Silicon;                                                   // Ttree in a block on the surface of a silicon chip.
+package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
 
 class Tree extends Test                                                         // Manipulate a tree
