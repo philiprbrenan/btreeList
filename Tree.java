@@ -434,30 +434,21 @@ class Tree extends Test                                                         
 //D1 High Level                                                                 // High level operations: insert, find, delete
 
   class Find                                                                    // Find results
-   {final Branch  branch;                                                       // Last branch
-    final Leaf    leaf;                                                         // Leaf that should contain the key
-    final Integer parentIndex;                                                  // Slot used in parent for leaf
-    final Integer childIndex;                                                   // Slot used for key in child if present
+   {final Leaf    leaf;                                                         // Leaf that should contain the key
     final long    key;                                                          // Search key
     final Slots.Locate locate;                                                  // Location details for key
 
-    Find(long Key, Branch Branch, Leaf Leaf, Integer ParentIndex)
+    Find(long Key, Leaf Leaf)
      {key         = Key;
-      branch      = Branch;
       leaf        = Leaf;
-      parentIndex = ParentIndex;
       locate      = Leaf.new Locate(Key);
-      childIndex  = Leaf.locate(Key);
      }
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
       s.append("Find Key : "+key+"\n");
-      if (branch       != null) s.append(branch.dump());
-      if (leaf         != null) s.append(leaf  .dump());
-      if (parentIndex  != null) s.append("ParentIndex : "+parentIndex  +"\n");
-      if (childIndex   != null) s.append("ChildIndex  : "+childIndex   +"\n");
-      if (locate       != null) s.append("Locate      : "+locate   +"\n");
+      if (leaf   != null) s.append(leaf  .dump());
+      if (locate != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
       for(Branch p = leaf.up; p != null; p = p.up) j.add(p.name);
       if (leaf.up != null) s.append("Path        : "+j+"\n");
@@ -470,7 +461,7 @@ class Tree extends Test                                                         
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
       l.up = null;
-      return new Find(Key, null, l, null);
+      return new Find(Key, l);
      }
 
     final Stack<Branch> path = new Stack<>();                                   // The path taken to perform the find
@@ -481,7 +472,7 @@ class Tree extends Test                                                         
 
   Find find(long Key, Branch Start)
    {final Stack<Branch> path = new Stack<>();                                   // The path taken to perform the find
-    Branch p = Start, wentTop = null, wentLeft = null;                          // Start at root recording where we last went through top or not
+    Branch p = Start;                                                           // Start at root
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
      {final Integer P = p.locateFirstGe(Key);
@@ -489,7 +480,7 @@ class Tree extends Test                                                         
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
         l.up = p; l.upIndex = P;                                                // Parent of leaf along find path
-        return new Find(Key, p, l, P);
+        return new Find(Key, l);
        }
       final Branch b = (Branch)q;
       b.up = p; b.upIndex = P;                                                  // Record parent branch
@@ -509,9 +500,9 @@ class Tree extends Test                                                         
      }
 
     final Find F = find(Key);                                                   // See if key is already present
-    if (F.childIndex != null)                                                   // Key already present so update data associated with the key
+    if (F.locate.exact())                                                       // Key already present so update data associated with the key
      {final Leaf l = F.leaf;                                                    // Child leaf
-      l.data(F.childIndex, Data);                                               // Update data
+      l.data(F.locate.at, Data);                                                // Update data
       return;
      }
     else if (!F.leaf.full())                                                    // Leaf not full so insert directly
@@ -519,8 +510,8 @@ class Tree extends Test                                                         
       l.insert(Key, Data);                                                      // Insert key
       return;
      }
-    else if (F.branch != null && !F.branch.full())                              // Leaf is full, parent branch is not full so we can split leaf
-     {final Branch b = F.branch;                                                // Parent branch
+    else if (F.leaf.up != null && !F.leaf.up.full())                            // Leaf is full, parent branch is not full so we can split leaf
+     {final Branch b = F.leaf.up;                                               // Parent branch
       final Leaf   r = F.leaf;
       final long  sk = r.splittingKey();
       final Leaf   l = r.splitLeft();
@@ -662,8 +653,8 @@ class Tree extends Test                                                         
      {final Leaf l = (Leaf)root;
       final int  i = l.locateFirstUsedSlot();
       final long k = l.data(i);
-      l.up = null;
-      return new Find(k, null, l, null);
+      l.up = null; l.upIndex = i;
+      return new Find(k, l);
      }
 
     return goFirst((Branch)root);                                               // Start at root and go all the way first
@@ -680,7 +671,7 @@ class Tree extends Test                                                         
         l.up = p; l.upIndex = P;
         final int  i = l.locateFirstUsedSlot();
         final long k = l.data(l.slots(i));
-        return new Find(k, p, l, P);
+        return new Find(k, l);
        }
       final Branch b = (Branch)q;
           b.up = p; b.upIndex = P;                                              // Step down into non full branch
@@ -695,10 +686,10 @@ class Tree extends Test                                                         
    {if (root == null) return null;                                              // Empty tree does not have a last key
     if (root instanceof Leaf)
      {final Leaf l = (Leaf)root;
-      l.up = null;
       final int  i = l.locateLastUsedSlot();
       final long k = l.data(i);
-      return new Find(k, null, l, null);
+      l.up = null; l.upIndex = i;
+      return new Find(k, l);
      }
 
     return goLast((Branch)root);                                                // Start at root and go all the way last
@@ -711,10 +702,10 @@ class Tree extends Test                                                         
      {final Slots q = p.top;
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
-        l.up = null;
         final int  i = l.locateLastUsedSlot();
         final long k = l.data(l.slots(i));
-        return new Find(k, p, l, null);
+        l.up = null; l.upIndex = i;
+        return new Find(k, l);
        }
          ((Branch)q).up = p;
       p = (Branch)q;                                                            // Step down into non full branch
@@ -1404,14 +1395,6 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
     ok(t.find(10), """
 Find Key : 10
-Branch   : 12
-positions:    0   1   2   3   4   5
-slots    :    0   0   1   0   2   0
-usedSlots:    X   .   X   .   X   .
-usedRefs :    X   X   X
-keys     :   14  18  22
-data     :  3 7 11
-top      :  15
 Leaf     : 3
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
@@ -1419,21 +1402,12 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :   11  12  13  14
 data     :   21  22  23  24
-ParentIndex : 0
 Locate      :  0  below all
 Path        : 12, 8
 """);
 
     ok(t.find(23), """
 Find Key : 23
-Branch   : 12
-positions:    0   1   2   3   4   5
-slots    :    0   0   1   0   2   0
-usedSlots:    X   .   X   .   X   .
-usedRefs :    X   X   X
-keys     :   14  18  22
-data     :  3 7 11
-top      :  15
 Leaf     : 15
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
@@ -1441,7 +1415,6 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :   23  24  25  26
 data     :   33  34  35  36
-ChildIndex  : 0
 Locate      : 0 exact
 Path        : 12, 8
 """);
@@ -1464,14 +1437,6 @@ Path        : 12, 8
     final Find p1 = t.first();
     ok(p1, """
 Find Key : 1
-Branch   : 12
-positions:    0   1   2   3   4   5
-slots    :    0   0   1   0   2   0
-usedSlots:    X   .   X   .   X   .
-usedRefs :    X   X   X
-keys     :    4   8  12
-data     :  27 23 19
-top      :  15
 Leaf     : 27
 positions:    0   1   2   3   4   5   6   7
 slots    :    3   0   2   0   1   0   0   0
@@ -1479,8 +1444,6 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :    4   3   2   1
 data     :    4   3   2   1
-ParentIndex : 0
-ChildIndex  : 0
 Locate      : 0 exact
 Path        : 12, 8
 """);
@@ -1492,14 +1455,6 @@ Path        : 12, 8
 
     ok(t.last(), """
 Find Key : 32
-Branch   : 7
-positions:    0   1   2   3   4   5
-slots    :    0   0   1   0   2   0
-usedSlots:    X   .   X   .   X   .
-usedRefs :    X   X   X
-keys     :   20  24  28
-data     :  11 7 3
-top      :  2
 Leaf     : 2
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
@@ -1507,7 +1462,6 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :   29  30  31  32
 data     :   29  30  31  32
-ChildIndex  : 6
 Locate      : 6 exact
 """);
    }
