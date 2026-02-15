@@ -458,8 +458,8 @@ class Tree extends Test                                                         
     if (b.countUsed() != 1) return;                                             // Root body too big too collapse
 
     if (b.top instanceof Leaf)                                                  // Leaves for children
-     {final Leaf l = (Leaf)b.firstChild();
-      final Leaf r = (Leaf)b.top;
+     {final Leaf    l = (Leaf)b.firstChild();
+      final Leaf    r = (Leaf)b.top;
       final boolean m = l.mergeFromRight(r);
 
       if (m) root = l;                                                          // Update root if the leaves were successfully merged
@@ -500,19 +500,14 @@ class Tree extends Test                                                         
    {if (root == null) return null;                                              // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-      l.up = null; l.upIndex = null;
+      l.up = null; l.upIndex = null;                                            // Trace path taken to this leaf
       return new Find(Key, l);
      }
-
-    final Stack<Branch> path = new Stack<>();                                   // The path taken to perform the find
-    Branch p = (Branch)root, wentTop = null, wentLeft = null;                   // Start at root recording where we last went through top or not
-
-    return find(Key, p);                                                        // Search from root
+    return find(Key, (Branch)root);                                             // Start search from root
    }
 
   Find find(long Key, Branch Start)
-   {final Stack<Branch> path = new Stack<>();                                   // The path taken to perform the find
-    Branch p = Start;                                                           // Start at root
+   {Branch p = Start;                                                           // Start at root
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
      {final Integer P = p.locateFirstGe(Key);
@@ -525,7 +520,6 @@ class Tree extends Test                                                         
       final Branch b = (Branch)q;
       b.up = p; b.upIndex = P;                                                  // Record parent branch
       p = b;                                                                    // Step down into non full branch
-      path.push(p);
      }
     stop("Find fell off the end of tree after this many searches:",
          MaximumNumberOfLevels);
