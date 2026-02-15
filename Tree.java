@@ -134,10 +134,10 @@ class Tree extends Test                                                         
 
     boolean mergeFromRight(Leaf Right)                                          // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() > maxLeafSize) return false;
-      final Leaf l =       duplicate(),
-                 r = Right.duplicate();
+      final Leaf l =       duplicate();
+      final Leaf r = Right.duplicate();
       l.compactLeft(); r.compactRight();
-      mergeCompacted((Slots)l, (Slots)r);
+      mergeCompacted(l, r);
       mergeData(l, r);
       redistribute();
       return true;
@@ -148,7 +148,7 @@ class Tree extends Test                                                         
       final Leaf l = Left.duplicate(),
                  r =      duplicate();
       l.compactLeft(); r.compactRight();
-      mergeCompacted((Slots)l, (Slots)r);
+      mergeCompacted(l, r);
       mergeData(l, r);
       redistribute();
       return true;
@@ -159,9 +159,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       for (int i = 0; i < numberOfSlots; i++)
        {if (usedSlots(i)) k.add(""+keys(i));
-       }
-      for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) d.add(""+data(slots(i)));
+        if (usedSlots(i)) d.add(""+data(slots(i)));
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -321,7 +319,7 @@ class Tree extends Test                                                         
       final Branch l =       duplicate(),
                    r = Right.duplicate();
       l.compactLeft(); r.compactRight();
-      mergeCompacted((Slots)l, (Slots)r);
+      mergeCompacted(l, r);
       mergeData(Key, l, r);
       redistribute();
       return true;
@@ -332,7 +330,7 @@ class Tree extends Test                                                         
       final Branch l = Left.duplicate();
       final Branch r =      duplicate();
       l.compactLeft(); r.compactRight();
-      mergeCompacted((Slots)l, (Slots)r);
+      mergeCompacted(l, r);
       mergeData(Key, l, r);
       redistribute();
       return true;
@@ -349,7 +347,7 @@ class Tree extends Test                                                         
      {return Loc != null ? locatePrevUsedSlot(Loc-1) : locateLastUsedSlot();
      }
 
-    Integer stepRight(Integer Location) {return locateNextUsedSlot(Location+1);}// Step right to next occupied slot assuming that such a step is possible
+    Integer stepRight(Integer Index) {return locateNextUsedSlot(Index+1);}      // Step right to next occupied slot assuming that such a step is possible
 
     boolean mergeLeftSibling(Integer Right)                                     // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
      {if (!canStepLeft(Right)) return false;                                    // Cannot step left
@@ -358,8 +356,7 @@ class Tree extends Test                                                         
       if (L instanceof Leaf)                                                    // Merging leaves
        {final Leaf l = (Leaf)L;                                                 // Left  leaf sibling
         final Leaf r = (Leaf)(Right != null ? data(Right) : top);               // Right leaf sibling
-        final boolean m = r.mergeFromLeft(l);                                   // Merge left sibling into right
-        if (m)                                                                  // Merge left sibling into right
+        if (r.mergeFromLeft(l))                                                 // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
           return true;
          }
@@ -576,7 +573,7 @@ class Tree extends Test                                                         
        {final Leaf r = (Leaf)q;                                                 // We have reached a leaf
         if (r.full())                                                           // Split the leaf if it is full
          {final long sk = r.splittingKey();                                     // Splitting key
-          final Leaf l  = r.splitLeft();                                        // Right leaf split out of the leaf
+          final Leaf  l = r.splitLeft();                                        // Right leaf split out of the leaf
           p.insert(sk, l);                                                      // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
           if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
          }
@@ -612,25 +609,6 @@ class Tree extends Test                                                         
    }
 
 //D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
-
-  class Position                                                                // Location of key
-   {final Leaf leaf;                                                            // Leaf containing key
-    final int  index;                                                           // Index of key within leaf
-    final long key;                                                             // Key
-
-    Position(Leaf Leaf, int Index, long Key)                                    // Describe a position in the tree
-     {leaf  = Leaf;
-      index = Index;
-      key   = Key;
-     }
-    public String toString()                                                    // Print position
-     {final StringBuilder s = new StringBuilder();
-      s.append("Key  : "+key+"\n");
-      s.append("Index: "+index+"\n");
-      s.append(leaf.dump());
-      return ""+s;
-     }
-   }
 
   Find first()                                                                  // Find the position of the first key in the key
    {if (root == null) return null;                                              // Empty tree does not have a first key
