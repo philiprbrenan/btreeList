@@ -690,7 +690,7 @@ class Tree extends Test                                                         
      {final Leaf l = (Leaf)root;
       final int  i = l.locateLastUsedSlot();
       final long k = l.data(i);
-      l.up = null; l.upIndex = i;
+      l.up = null; l.upIndex = null;
       return new Find(k, l);
      }
 
@@ -706,8 +706,8 @@ class Tree extends Test                                                         
        {final Leaf l = (Leaf)q;
         final int  i = l.locateLastUsedSlot();
         final long k = l.data(l.slots(i));
-        l.up = null; l.upIndex = i;
-        return new Find(k, l);
+        l.up = p; l.upIndex = null;
+        return new Find(k, l);  // This key and slot re irrelevant
        }
          ((Branch)q).up = p;
       p = (Branch)q;                                                            // Step down into non full branch
@@ -717,7 +717,7 @@ class Tree extends Test                                                         
     return null;
    }
 
-  Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming tha the structure of the tree has not changed
+  Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming that the structure of the tree has not changed
    {if (root == null) return null;                                              // Empty tree does not have a next key
     final Leaf    l = Found.leaf;
     final Integer i = l.locateNextUsedSlot(Found.locate.at+1);
@@ -727,7 +727,6 @@ class Tree extends Test                                                         
      }
 
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
-if (debug) say("AAAA", Found.key, Found.locate.at, l.dump(), dump());
     if (l.up.top != l)                                                          // In the body of the parent branch of the leaf
      {final Integer I = l.up.locateNextUsedSlot(l.upIndex+1);
       final Leaf L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
@@ -748,6 +747,44 @@ if (debug) say("AAAA", Found.key, Found.locate.at, l.dump(), dump());
     return null;
    }
 
+  Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
+   {if (root == null) return null;                                              // Empty tree does not have a next key
+    final Leaf    l = Found.leaf;
+    final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);
+    if (i != null)
+     {final long k = l.data(l.slots(i));
+      return new Find(k, l);
+     }
+
+    if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
+    if (l.upIndex == null)                                                      // Last leaf of parent
+     {final Integer I = l.up.locateLastUsedSlot();
+      final Leaf L = (Leaf)l.up.data(I);
+      final long k = L.lastKey();
+      L.up = l.up; L.upIndex = I;
+      return new Find(k, L);
+     }
+    else if (l.upIndex != l.locateFirstUsedSlot())                              // Not the first leaf of the parent branch
+     {final Integer I = l.up.locatePrevUsedSlot(l.upIndex-1);
+      final Leaf L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
+      final long k = L.lastKey();
+      L.up = l.up; L.upIndex = I;
+      return new Find(k, L);
+     }
+if (debug) say("AAAA", dump(), l.dump());
+    Branch p;                                                                   // Last point at which we went left
+    Branch q = l.up;
+    for(p = q.up; p != null; q = p, p = q.up)
+     {if (q.upIndex == null)                                                           // In the body of the parent branch of the leaf
+       {final Integer I = p.locateLastUsedSlot();
+        final Branch  b = (Branch)p.data(I);
+        b.up = p; b.upIndex = I;
+        return goLast(b);
+       }
+     }
+    return null;
+   }
+
 //D1 Print                                                                      // Print the tree horizontally
 
   final int linesToPrintABranch =  4;                                           // The number of lines required to print a branch
@@ -762,9 +799,9 @@ if (debug) say("AAAA", Found.key, Found.locate.at, l.dump(), dump());
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
-    final String U = Leaf.up      != null ? ", "+Leaf.up.name : "";
-    final String I = Leaf.upIndex != null ? ", "+Leaf.upIndex : ", null";
-    if (Details) P.elementAt(L+1).append("("+Leaf.name+U+I+")");
+    final String U = Leaf.up      != null ?    Leaf.up.name : "null";
+    final String I = Leaf.upIndex != null ? ""+Leaf.upIndex : "null";
+    if (Details) P.elementAt(L+1).append("("+Leaf.name+", "+U+", "+I+")");
     padStrings(P, level);
    }
 
@@ -790,9 +827,9 @@ if (debug) say("AAAA", Found.key, Found.locate.at, l.dump(), dump());
         P.elementAt(L+0).append(" "+Branch.keys(i));                            // Key
         if (Details)
          {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                   // Branch, key, next pair
-          final String U = Branch.up      != null ? ", "+Branch.up.name : "";
-          final String I = Branch.upIndex != null ? ", "+Branch.upIndex : ", null";
-          P.elementAt(L+2).append("("+s.name+U+I+")");                          // Link to next level
+          final String U = Branch.up      != null ?    Branch.up.name : "null";
+          final String I = Branch.upIndex != null ? ""+Branch.upIndex : "null";
+          P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");                          // Link to next level
          }
        }
      }
@@ -1434,8 +1471,8 @@ Path        : 12, 8
 """);
 
     //stop(t.first());
-    final Find p1 = t.first();
-    ok(p1, """
+    final Find n1 = t.first();
+    ok(n1, """
 Find Key : 1
 Leaf     : 27 up: 12 index: 0
 positions:    0   1   2   3   4   5   6   7
@@ -1448,41 +1485,42 @@ Locate      : 0 exact
 Path        : 12, 8
 """);
 
-    final Find  p2 = t.next(p1);  ok(p2.key,   2);
-    final Find  p3 = t.next(p2);  ok(p3.key,   3);
-    final Find  p4 = t.next(p3);  ok(p4.key,   4);
-    final Find  p5 = t.next(p4);  ok(p5.key,   5);
-    final Find  p6 = t.next(p5);  ok(p6.key,   6);
-    final Find  p7 = t.next(p6);  ok(p7.key,   7);
-    final Find  p8 = t.next(p7);  ok(p8.key,   8);
-    final Find  p9 = t.next(p8);  ok(p9.key,   9);
-    final Find p10 = t.next(p9);  ok(p10.key, 10);
-    final Find p11 = t.next(p10); ok(p11.key, 11);
-    final Find p12 = t.next(p11); ok(p12.key, 12);
-    final Find p13 = t.next(p12); ok(p13.key, 13);
-    final Find p14 = t.next(p13); ok(p14.key, 14);
-    final Find p15 = t.next(p14); ok(p15.key, 15);
-    final Find p16 = t.next(p15); ok(p16.key, 16);
-    final Find p17 = t.next(p16); ok(p17.key, 17);
-    final Find p18 = t.next(p17); ok(p18.key, 18);
-    final Find p19 = t.next(p18); ok(p19.key, 19);
-    final Find p20 = t.next(p19); ok(p20.key, 20);
-    final Find p21 = t.next(p20); ok(p21.key, 21);
-    final Find p22 = t.next(p21); ok(p22.key, 22);
-    final Find p23 = t.next(p22); ok(p23.key, 23);
-    final Find p24 = t.next(p23); ok(p24.key, 24);
-    final Find p25 = t.next(p24); ok(p25.key, 25);
-    final Find p26 = t.next(p25); ok(p26.key, 26);
-    final Find p27 = t.next(p26); ok(p27.key, 27);
-    final Find p28 = t.next(p27); ok(p28.key, 28);
-    final Find p29 = t.next(p28); ok(p29.key, 29);
-    final Find p30 = t.next(p29); ok(p30.key, 30);
-    final Find p31 = t.next(p30); ok(p31.key, 31);
-    final Find p32 = t.next(p31); ok(p32.key, 32);
+    final Find  n2 = t.next(n1);  ok(n2.key,   2);
+    final Find  n3 = t.next(n2);  ok(n3.key,   3);
+    final Find  n4 = t.next(n3);  ok(n4.key,   4);
+    final Find  n5 = t.next(n4);  ok(n5.key,   5);
+    final Find  n6 = t.next(n5);  ok(n6.key,   6);
+    final Find  n7 = t.next(n6);  ok(n7.key,   7);
+    final Find  n8 = t.next(n7);  ok(n8.key,   8);
+    final Find  n9 = t.next(n8);  ok(n9.key,   9);
+    final Find n10 = t.next(n9);  ok(n10.key, 10);
+    final Find n11 = t.next(n10); ok(n11.key, 11);
+    final Find n12 = t.next(n11); ok(n12.key, 12);
+    final Find n13 = t.next(n12); ok(n13.key, 13);
+    final Find n14 = t.next(n13); ok(n14.key, 14);
+    final Find n15 = t.next(n14); ok(n15.key, 15);
+    final Find n16 = t.next(n15); ok(n16.key, 16);
+    final Find n17 = t.next(n16); ok(n17.key, 17);
+    final Find n18 = t.next(n17); ok(n18.key, 18);
+    final Find n19 = t.next(n18); ok(n19.key, 19);
+    final Find n20 = t.next(n19); ok(n20.key, 20);
+    final Find n21 = t.next(n20); ok(n21.key, 21);
+    final Find n22 = t.next(n21); ok(n22.key, 22);
+    final Find n23 = t.next(n22); ok(n23.key, 23);
+    final Find n24 = t.next(n23); ok(n24.key, 24);
+    final Find n25 = t.next(n24); ok(n25.key, 25);
+    final Find n26 = t.next(n25); ok(n26.key, 26);
+    final Find n27 = t.next(n26); ok(n27.key, 27);
+    final Find n28 = t.next(n27); ok(n28.key, 28);
+    final Find n29 = t.next(n28); ok(n29.key, 29);
+    final Find n30 = t.next(n29); ok(n30.key, 30);
+    final Find n31 = t.next(n30); ok(n31.key, 31);
+    final Find n32 = t.next(n31); ok(n32.key, 32);
+    final Find n33 = t.next(n32); ok(n33 == null, true);
 
     ok(t.last(), """
 Find Key : 32
-Leaf     : 2 up: null index: 6
+Leaf     : 2 up: 7 index: null
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1490,7 +1528,42 @@ usedRefs :    X   X   X   X
 keys     :   29  30  31  32
 data     :   29  30  31  32
 Locate      : 6 exact
+Path        : 7, 8
 """);
+
+
+    final Find p31 = t.prev(n32); ok(p31.key, 31);
+    final Find p30 = t.prev(p31); ok(p30.key, 30);
+    final Find p29 = t.prev(p30); ok(p29.key, 29);
+    final Find p28 = t.prev(p29); ok(p28.key, 28);
+    final Find p27 = t.prev(p28); ok(p27.key, 27);
+    final Find p26 = t.prev(p27); ok(p26.key, 26);
+    final Find p25 = t.prev(p26); ok(p25.key, 25);
+    final Find p24 = t.prev(p25); ok(p24.key, 24);
+    final Find p23 = t.prev(p24); ok(p23.key, 23);
+    final Find p22 = t.prev(p23); ok(p22.key, 22);
+    final Find p21 = t.prev(p22); ok(p21.key, 21);
+    final Find p20 = t.prev(p21); ok(p20.key, 20);
+    final Find p19 = t.prev(p20); ok(p19.key, 19);
+    final Find p18 = t.prev(p19); ok(p18.key, 18);
+    final Find p17 = t.prev(p18); ok(p17.key, 17);
+    final Find p16 = t.prev(p17); ok(p16.key, 16);
+    final Find p15 = t.prev(p16); ok(p15.key, 15);
+    final Find p14 = t.prev(p15); ok(p14.key, 14);
+    final Find p13 = t.prev(p14); ok(p13.key, 13);
+    final Find p12 = t.prev(p13); ok(p12.key, 12);
+    final Find p11 = t.prev(p12); ok(p11.key, 11);
+    final Find p10 = t.prev(p11); ok(p10.key, 10);
+    final Find  p9 = t.prev(p10); ok(p9.key,   9);
+    final Find  p8 = t.prev(p9);  ok(p8.key,   8);
+    final Find  p7 = t.prev(p8);  ok(p7.key,   7);
+    final Find  p6 = t.prev(p7);  ok(p6.key,   6);
+    final Find  p5 = t.prev(p6);  ok(p5.key,   5);
+    final Find  p4 = t.prev(p5);  ok(p4.key,   4);
+    final Find  p3 = t.prev(p4);  ok(p3.key,   3);
+    final Find  p2 = t.prev(p3);  ok(p2.key,   2);
+    final Find  p1 = t.prev(p2);  ok(p1.key,   1);
+    final Find  p0 = t.prev(p1);  ok(p0 == null, true);
    }
 
   static Tree test_insert_random_32()
