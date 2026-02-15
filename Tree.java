@@ -107,27 +107,6 @@ class Tree extends Test                                                         
       return i;
      }
 
-    public String toString()                                                    // Print the values in the used slots
-     {final StringJoiner k = new StringJoiner(", ");
-      final StringJoiner d = new StringJoiner(", ");
-      for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) k.add(""+keys(i));
-       }
-      for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) d.add(""+data(slots(i)));
-       }
-      return "keys: "+k+"\n"+"data: "+d+"\n";
-     }
-
-    protected String dump()                                                     // Dump a leaf
-     {final StringBuilder d = new StringBuilder();
-      final int N = numberOfRefs();
-      for (int i = 0; i < N; i++) d.append(String.format(" %3d", data(i)));
-      final String U = " up: "   +(up      != null ? up.name : "null");
-      final String I = " index: "+(upIndex != null ? upIndex : "null");
-      return "Leaf     : "+name+U+I+"\n"+super.dump() + "data     : "+d+"\n";
-     }
-
     void compactLeft()                                                          // Compact the leaf to the left
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
@@ -175,6 +154,27 @@ class Tree extends Test                                                         
       mergeData(l, r);
       redistribute();
       return true;
+     }
+
+    public String toString()                                                    // Print the values in the used slots
+     {final StringJoiner k = new StringJoiner(", ");
+      final StringJoiner d = new StringJoiner(", ");
+      for (int i = 0; i < numberOfSlots; i++)
+       {if (usedSlots(i)) k.add(""+keys(i));
+       }
+      for (int i = 0; i < numberOfSlots; i++)
+       {if (usedSlots(i)) d.add(""+data(slots(i)));
+       }
+      return "keys: "+k+"\n"+"data: "+d+"\n";
+     }
+
+    protected String dump()                                                     // Dump a leaf
+     {final StringBuilder d = new StringBuilder();
+      final int N = numberOfRefs();
+      for (int i = 0; i < N; i++) d.append(String.format(" %3d", data(i)));
+      final String U = " up: "   +(up      != null ? up.name : "null");
+      final String I = " index: "+(upIndex != null ? upIndex : "null");
+      return "Leaf     : "+name+U+I+"\n"+super.dump() + "data     : "+d+"\n";
      }
    }
 
