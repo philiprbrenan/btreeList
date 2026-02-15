@@ -399,7 +399,8 @@ class Tree extends Test                                                         
   void mergeRoot()                                                              // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
-     {if (((Leaf)root)l.empty()) root = null;                                   // Free leaf if it is empty
+     {final Leaf l = (Leaf)root;
+      if (l.empty()) root = null;                                               // Free leaf if it is empty
       return;
      }
 
