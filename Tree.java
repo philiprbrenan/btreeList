@@ -727,21 +727,20 @@ class Tree extends Test                                                         
      }
 
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
-say("AAAA", Found.key, Found.locate.at, l.dump(), dump());
+if (debug) say("AAAA", Found.key, Found.locate.at, l.dump(), dump());
     if (l.up.top != l)                                                          // In the body of the parent branch of the leaf
      {final Integer I = l.up.locateNextUsedSlot(l.upIndex+1);
       final Leaf L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
       final long k = L.firstKey();
-say("BBBB", I, k, L.dump());
+      L.up = l.up; L.upIndex = I;
       return new Find(k, L);
      }
     Branch p;                                                                   // Last point at which we went left
     Branch q = l.up;
     for(p = q.up; p != null; q = p, p = q.up)
-     {say("BBBB");
-      if (p.top != q)                                                           // In the body of the parent branch of the leaf
+     {if (p.top != q)                                                           // In the body of the parent branch of the leaf
        {final Integer I = p.locateNextUsedSlot(q.upIndex+1);
-        final Branch  b = (Branch)p.data(I);
+        final Branch  b = I != null ? (Branch)p.data(I) : (Branch)p.top;
         b.up = p; b.upIndex = I;
         return goFirst(b);
        }
@@ -763,8 +762,8 @@ say("BBBB", I, k, L.dump());
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
-    final String U = Leaf.up      != null ? ", "+Leaf.name    : "";
-    final String I = Leaf.upIndex != null ? ", "+Leaf.upIndex : "null";
+    final String U = Leaf.up      != null ? ", "+Leaf.up.name : "";
+    final String I = Leaf.upIndex != null ? ", "+Leaf.upIndex : ", null";
     if (Details) P.elementAt(L+1).append("("+Leaf.name+U+I+")");
     padStrings(P, level);
    }
@@ -791,7 +790,9 @@ say("BBBB", I, k, L.dump());
         P.elementAt(L+0).append(" "+Branch.keys(i));                            // Key
         if (Details)
          {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                   // Branch, key, next pair
-          P.elementAt(L+2).append("("+s.name+")");                              // Link to next level
+          final String U = Branch.up      != null ? ", "+Branch.up.name : "";
+          final String I = Branch.upIndex != null ? ", "+Branch.upIndex : ", null";
+          P.elementAt(L+2).append("("+s.name+U+I+")");                          // Link to next level
          }
        }
      }
@@ -1454,15 +1455,34 @@ Path        : 12, 8
     final Find  p6 = t.next(p5);  ok(p6.key,   6);
     final Find  p7 = t.next(p6);  ok(p7.key,   7);
     final Find  p8 = t.next(p7);  ok(p8.key,   8);
-Tree.debug = true;
     final Find  p9 = t.next(p8);  ok(p9.key,   9);
-stop();
     final Find p10 = t.next(p9);  ok(p10.key, 10);
     final Find p11 = t.next(p10); ok(p11.key, 11);
+    final Find p12 = t.next(p11); ok(p12.key, 12);
+    final Find p13 = t.next(p12); ok(p13.key, 13);
+    final Find p14 = t.next(p13); ok(p14.key, 14);
+    final Find p15 = t.next(p14); ok(p15.key, 15);
+    final Find p16 = t.next(p15); ok(p16.key, 16);
+    final Find p17 = t.next(p16); ok(p17.key, 17);
+    final Find p18 = t.next(p17); ok(p18.key, 18);
+    final Find p19 = t.next(p18); ok(p19.key, 19);
+    final Find p20 = t.next(p19); ok(p20.key, 20);
+    final Find p21 = t.next(p20); ok(p21.key, 21);
+    final Find p22 = t.next(p21); ok(p22.key, 22);
+    final Find p23 = t.next(p22); ok(p23.key, 23);
+    final Find p24 = t.next(p23); ok(p24.key, 24);
+    final Find p25 = t.next(p24); ok(p25.key, 25);
+    final Find p26 = t.next(p25); ok(p26.key, 26);
+    final Find p27 = t.next(p26); ok(p27.key, 27);
+    final Find p28 = t.next(p27); ok(p28.key, 28);
+    final Find p29 = t.next(p28); ok(p29.key, 29);
+    final Find p30 = t.next(p29); ok(p30.key, 30);
+    final Find p31 = t.next(p30); ok(p31.key, 31);
+    final Find p32 = t.next(p31); ok(p32.key, 32);
 
     ok(t.last(), """
 Find Key : 32
-Leaf     : 2 index: 6
+Leaf     : 2 up: null index: 6
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
