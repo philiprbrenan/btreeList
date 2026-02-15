@@ -775,7 +775,7 @@ if (debug) say("AAAA", dump(), l.dump());
     Branch p;                                                                   // Last point at which we went left
     Branch q = l.up;
     for(p = q.up; p != null; q = p, p = q.up)
-     {if (q.upIndex == null)                                                           // In the body of the parent branch of the leaf
+     {if (q.upIndex == null)                                                    // In the body of the parent branch of the leaf
        {final Integer I = p.locateLastUsedSlot();
         final Branch  b = (Branch)p.data(I);
         b.up = p; b.upIndex = I;
@@ -829,7 +829,7 @@ if (debug) say("AAAA", dump(), l.dump());
          {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                   // Branch, key, next pair
           final String U = Branch.up      != null ?    Branch.up.name : "null";
           final String I = Branch.upIndex != null ? ""+Branch.upIndex : "null";
-          P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");                          // Link to next level
+          P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");                // Link to next level
          }
        }
      }
