@@ -30,8 +30,9 @@ class Tree extends Test                                                         
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
    }
 
-  int maxLeafSize()   {return maxLeafSize;}                                     // Maximum size of a leaf
+  int maxLeafSize  () {return maxLeafSize;}                                     // Maximum size of a leaf
   int maxBranchSize() {return maxBranchSize;}                                   // Maximum size of a branch
+  int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
@@ -256,7 +257,7 @@ class Tree extends Test                                                         
      {final long        sk = splittingKey();
       final Branch       l = duplicate();
       final Branch.Split s = l.splitRight();
-      final Branch b = new Branch();
+      final Branch       b = new Branch();
       b.insert(sk, s.left); b.top = s.right;
       return b;
      }
@@ -388,8 +389,8 @@ class Tree extends Test                                                         
       return data(Index);                                                       // The indicated child
      }
 
-    Tree tree() {return Tree.this;}                                             // Containing tree
-    private Slots stepDown(long Key)  {return child(locateFirstGe(Key));}       // Step down from this branch
+    Tree tree()                      {return Tree.this;}                        // Containing tree
+    private Slots stepDown(long Key) {return child(locateFirstGe(Key));}        // Step down from this branch
 
     private int count()                                                         // Count the number of entries under this branch
      {int n = 0;
@@ -518,8 +519,7 @@ class Tree extends Test                                                         
       b.up = p; b.upIndex = P;                                                  // Record parent branch
       p = b;                                                                    // Step down into non full branch
      }
-    stop("Find fell off the end of tree after this many searches:",
-         MaximumNumberOfLevels);
+    stop("Find fell off the end of tree after this many searches:", mnl());
     return null;
    }
 
@@ -597,8 +597,7 @@ class Tree extends Test                                                         
        }
       else p = r;                                                               // Step down into non full branch
      }
-    stop("Insert fell off the end of tree after this many searches:",
-          MaximumNumberOfLevels);
+    stop("Insert fell off the end of tree after this many searches:", mnl());
    }
 
   void delete(long Key)                                                         // Delete a key from the tree
@@ -666,8 +665,7 @@ class Tree extends Test                                                         
           b.up = p; b.upIndex = P;                                              // Step down into non full branch
       p = b;                                                                    // Step down into non full branch
      }
-    stop("First fell off the end of tree after this many searches:",
-         MaximumNumberOfLevels);
+    stop("First fell off the end of tree after this many searches:", mnl());
     return null;
    }
 
@@ -699,8 +697,7 @@ class Tree extends Test                                                         
          ((Branch)q).up = p;
       p = (Branch)q;                                                            // Step down into non full branch
      }
-    stop("Last fell off the end of tree after this many searches:",
-         MaximumNumberOfLevels);
+    stop("Last fell off the end of tree after this many searches:", mnl());
     return null;
    }
 
