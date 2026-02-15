@@ -454,8 +454,8 @@ class Tree extends Test                                                         
      }
 
     final Branch b = (Branch)root;                                              // Branch root
-    if (b.countUsed() == 0) {root = b.top; return;}                             // Root body is empty so collapse to top
-    if (b.countUsed() >  1) return;                                             // Root body too big too collapse
+    if (b.countUsed() == 0) root = b.top;                                       // Root body is empty so collapse to top
+    if (b.countUsed() != 1) return;                                             // Root body too big too collapse
 
     if (b.top instanceof Leaf)                                                  // Leaves for children
      {final Leaf l = (Leaf)b.firstChild();
