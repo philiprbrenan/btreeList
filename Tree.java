@@ -176,8 +176,6 @@ class Tree extends Test                                                         
       redistribute();
       return true;
      }
-
-    Tree tree() {return Tree.this;}                                             // Containing tree
    }
 
 //D1 Branch                                                                     // Use the slots to model a branch
@@ -398,8 +396,8 @@ class Tree extends Test                                                         
       for  (int i = 0; i < numberOfSlots; i++)                                  // Each slot
        {if (usedSlots(i))                                                       // Active slot
          {final Slots s = data(i);
-          if      (s instanceof Leaf)    n += s.countUsed();
-          else if (s instanceof Branch)  n += ((Branch)s).count();
+          if      (s instanceof Leaf)   n += s.countUsed();
+          else if (s instanceof Branch) n += ((Branch)s).count();
          }
        }
       final Slots s = top;                                                      // Count entries below top
