@@ -64,11 +64,8 @@ class Tree extends Test                                                         
       int s = 0;                                                                // Count slots used
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
        {if (usedSlots(i))                                                       // Slot is in use
-         {if (s < Count)                                                        // Still in left leaf
-           {Right.clearSlotAndRef(i);                                           // Free the entry from the right leaf as it is being used in the left leaf
-            s++;                                                                // Number of entries active in left leaf
-           }
-          else clearSlotAndRef(i);                                              // Clear slot being used in right leaf
+         {if (s++ < Count) Right.clearSlotAndRef(i);                            // Still in left leaf
+          else                   clearSlotAndRef(i);                            // Clear slot being used in right leaf
          }
        }                                                                        // The new right leaf
       redistribute(); Right.redistribute();
