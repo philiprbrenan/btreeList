@@ -3,8 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 // Merging the root should be on either side of key path
-// Merging should stop after no merges at a level becuase we are only splitting immediately above the leaf
-// Test on deep tree to see if path splitting and merging is effective
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
 
@@ -399,7 +397,55 @@ class Tree extends Test                                                         
 
 //D1 Low Level                                                                  // Low level operations
 
-  void mergeRoot()                                                              // Collapse the root if possible
+  void mergeAlongPath(long Key)                                                 // Merge along the path from the specified key to the root
+   {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
+    if (f == null) return;                                                      // Empty tree
+    if (f.leaf.up != null)                                                      // Process path from leaf to root
+     {for (Branch b = f.leaf.up; b != null; b = b.up)                           // Go up the tree merging as we go: only one merge is needed at each level
+       {final Integer l = b.locateFirstGe(Key);                                 // Position of key
+        if (b.mergeRightSibling(l)) continue;                                   // Merge right sibling of keyed child
+
+        final Integer L = b.locateFirstGe(Key);                                 // Position of key
+        if (b.mergeLeftSibling(L)) continue;                                    // Merge left sibling of keyed child
+
+        final Integer k = b.locateFirstGe(Key);                                 // Look further left
+        if (k != null)                                                          // Not top
+         {final Integer K = b.locatePrevUsedSlot(k-1);
+          if (K != null && b.mergeLeftSibling(K)) continue;                     // Merge further left sibling
+         }
+        else                                                                    // Top
+         {final Integer K = b.locateLastUsedSlot();
+          if (K != null && b.mergeLeftSibling(K)) continue;                     // Merge further left of top
+         }
+
+        final Integer m = b.locateFirstGe(Key);                                 // Look further right
+        if (m != null)
+         {final Integer M = b.locateNextUsedSlot(m+1);
+          if (M != null && b.mergeRightSibling(M)) continue;                    // Merge further right sibling
+         }
+        b.mergeLeftSibling(null);                                               // Migrate into top
+       }
+     }
+
+    mergeRoot(Key);                                                             // Merge the root if possible
+   }
+
+  private int countBranch(Branch Branch)                                        // Count the number of entries under this branch
+   {int n = 0;
+    for  (int i = 0; i < Branch.numberOfSlots; i++)                             // Each slot
+     {if (Branch.usedSlots(i))                                                  // Active slot
+       {final Slots s = Branch.data[Branch.slots(i)];
+        if      (s instanceof Leaf)    n += s.countUsed();
+        else if (s instanceof Branch)  n += countBranch((Branch)s);
+       }
+     }
+    final Slots s = Branch.top;                                                 // Count entries below top
+    if      (s instanceof Leaf)   n += s.countUsed();                           // Top is a leaf
+    else if (s instanceof Branch) n += countBranch((Branch)s);                  // Top is a branch
+    return n;                                                                   // Number below this branch
+   }
+
+  void mergeRoot(long Key)                                                      // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
@@ -408,12 +454,6 @@ class Tree extends Test                                                         
      }
 
     final Branch b = (Branch)root;                                              // Branch root
-
-    for (int i = 0; i < maxBranchSize; i++)                                     // Merge root as far as possible
-     {if (b.usedSlots(i)) b.mergeLeftSibling(i);
-     }
-    b.mergeLeftSibling(null);                                                   // Move towards top
-
     if (b.countUsed() == 0) {root = b.top; return;}                             // Root body is empty so collapse to top
     if (b.countUsed() >  1) return;                                             // Root body too big too collapse
 
@@ -576,53 +616,6 @@ class Tree extends Test                                                         
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
     f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
     mergeAlongPath(Key);
-   }
-
-  void mergeAlongPath(long Key)                                                 // Merge along the path from the specified key to the root
-   {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
-    if (f == null) return;                                                      // Empty tree
-    if (f.leaf.up != null)                                                      // Process path from leaf to root
-     {for (Branch b = f.leaf.up; b != null; b = b.up)                           // Go up the tree merging as we go
-       {final Integer l = b.locateFirstGe(Key);                                 // Position of key
-        b.mergeRightSibling(l);                                                 // Merge right sibling of keyed child
-        final Integer L = b.locateFirstGe(Key);                                 // Position of key
-        b.mergeLeftSibling(L);                                                  // Merge left sibling of keyed child
-
-        final Integer k = b.locateFirstGe(Key);                                 // Look further left
-        if (k != null)                                                          // Not top
-         {final Integer K = b.locatePrevUsedSlot(k-1);
-          if (K != null) b.mergeLeftSibling(K);                                 // Merge further left sibling
-         }
-        else                                                                    // Top
-         {final Integer K = b.locateLastUsedSlot();
-          if (K != null) b.mergeLeftSibling(K);                                 // Merge further left of top
-         }
-
-        final Integer m = b.locateFirstGe(Key);                                 // Look further right
-        if (m != null)
-         {final Integer M = b.locateNextUsedSlot(m+1);
-          if (M != null) b.mergeRightSibling(M);                                // Merge further right sibling
-         }
-        b.mergeLeftSibling(null);                                               // Migrate into top
-       }
-     }
-
-    mergeRoot();                                                                // Merge the root if possible
-   }
-
-  private int countBranch(Branch Branch)                                        // Count the number of entries under this branch
-   {int n = 0;
-    for  (int i = 0; i < Branch.numberOfSlots; i++)                             // Each slot
-     {if (Branch.usedSlots(i))                                                  // Active slot
-       {final Slots s = Branch.data[Branch.slots(i)];
-        if      (s instanceof Leaf)    n += s.countUsed();
-        else if (s instanceof Branch)  n += countBranch((Branch)s);
-       }
-     }
-    final Slots s = Branch.top;                                                 // Count entries below top
-    if      (s instanceof Leaf)   n += s.countUsed();                           // Top is a leaf
-    else if (s instanceof Branch) n += countBranch((Branch)s);                  // Top is a branch
-    return n;                                                                   // Number below this branch
    }
 
   int count()                                                                   // Print the tree with and without details
@@ -1974,6 +1967,19 @@ Delete 22
 """);
    }
 
+  static void test_deep()
+   {final Tree t = new Tree(2, 3);
+    final int N = 256;
+    for (int i = 1; i <= N; ++i) t.insert(i, i);
+    ok(t, """
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            128                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+                                                                                                                 32                                                                                                                              64                                                                                                                              96                                                                                                                                                                                                                                                                                                                                                         160                                                                                                                                                                             192                                                                                                                                                                             224                                                                                                                                                                            |
+                   8                             16                              24                                                              40                              48                              56                                                              72                              80                              88                                                                     104                                         112                                         120                                                                                     136                                         144                                         152                                                                                     168                                         176                                         184                                                                                     200                                         208                                         216                                                                                     232                                         240                                         248                                        |
+    2    4    6          10      12      14              18      20      22              26      28      30              34      36      38              42      44      46              50      52      54              58      60      62              66      68      70              74      76      78              82      84      86              90      92      94              98       100        102                   106        108        110                   114        116        118                   122        124        126                   130        132        134                   138        140        142                   146        148        150                   154        156        158                   162        164        166                   170        172        174                   178        180        182                   186        188        190                   194        196        198                   202        204        206                   210        212        214                   218        220        222                   226        228        230                   234        236        238                   242        244        246                   250        252        254       |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38   39,40   41,42   43,44   45,46   47,48   49,50   51,52   53,54   55,56   57,58   59,60   61,62   63,64   65,66   67,68   69,70   71,72   73,74   75,76   77,78   79,80   81,82   83,84   85,86   87,88   89,90   91,92   93,94   95,96   97,98   99,100    101,102    103,104    105,106    107,108    109,110    111,112    113,114    115,116    117,118    119,120    121,122    123,124    125,126    127,128    129,130    131,132    133,134    135,136    137,138    139,140    141,142    143,144    145,146    147,148    149,150    151,152    153,154    155,156    157,158    159,160    161,162    163,164    165,166    167,168    169,170    171,172    173,174    175,176    177,178    179,180    181,182    183,184    185,186    187,188    189,190    191,192    193,194    195,196    197,198    199,200    201,202    203,204    205,206    207,208    209,210    211,212    213,214    215,216    217,218    219,220    221,222    223,224    225,226    227,228    229,230    231,232    233,234    235,236    237,238    239,240    241,242    243,244    245,246    247,248    249,250    251,252    253,254    255,256|
+""");
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_compactLeafLeft();
     test_compactLeafRight();
@@ -1996,10 +2002,12 @@ Delete 22
     test_delete();
     test_delete_descending();
     test_delete_random_32();
+    test_deep();
    }
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
+    test_deep();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
