@@ -129,7 +129,7 @@ class Tree extends Test                                                         
      }
 
     void compactLeft()                                                          // Compact the leaf to the left
-     {final int N = numberOfSlots(), R = numberOfRefs();
+     {final int   N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(i));
@@ -139,7 +139,7 @@ class Tree extends Test                                                         
      }
 
     void compactRight()                                                         // Compact the leaf to the right
-     {final int N = numberOfSlots(), R = numberOfRefs();
+     {final int   N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = R-1;
       for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(slots(i));
@@ -217,7 +217,7 @@ class Tree extends Test                                                         
     Split splitRight(Branch Right)                                              // Split a left branch into an existing right branch
      {if (!full()) return null;                                                 // Only full branches can be split
       final int Count = splitSize();
-      int s = 0;                                                                // Count slots used
+      int  s  = 0;                                                              // Count slots used
       long sk = 0;                                                              // Splitting key
       for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
        {if (usedSlots(i))                                                       // Slot is in use
@@ -293,7 +293,7 @@ class Tree extends Test                                                         
      }
 
     void compactLeft()                                                          // Compact the branch to the left
-     {final int N = numberOfSlots(), R = numberOfRefs();
+     {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       int p = 0;
       for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(i);
@@ -302,7 +302,7 @@ class Tree extends Test                                                         
      }
 
     void compactRight()                                                         // Compact the branch to the right
-     {final int N = numberOfSlots(), R = numberOfRefs();
+     {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       int p = R-1;
       for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(i);
@@ -347,17 +347,13 @@ class Tree extends Test                                                         
       return locatePrevUsedSlot(Location-1) != null;                            // From body
      }
 
-    boolean canStepRight(Integer Location)                                      // Whether we can step right from this location. A location of null means top.
-     {return Location != null;                                                  // Cannot step right from top otherwose we can
-     }
+    boolean canStepRight(Integer Location) {return Location != null;}           // Whether we can step right from this location. A location of null means top.
 
     Integer stepLeft(Integer Loc)                                               // Step left to prior occupied slot assuming that such a step is possible
      {return Loc != null ? locatePrevUsedSlot(Loc-1) : locateLastUsedSlot();
      }
 
-    Integer stepRight(Integer Location)                                         // Step right to next occupied slot assuming that such a step is possible
-     {return locateNextUsedSlot(Location+1);
-     }
+    Integer stepRight(Integer Location) {return locateNextUsedSlot(Location+1);}// Step right to next occupied slot assuming that such a step is possible
 
     boolean mergeLeftSibling(Integer Right)                                     // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
      {if (!canStepLeft(Right)) return false;                                    // Cannot step left
@@ -403,9 +399,7 @@ class Tree extends Test                                                         
   void mergeRoot()                                                              // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
-     {final Leaf l = (Leaf)root;
-
-      if (l.empty()) root = null;                                               // Free leaf if it is empty
+     {if (((Leaf)root)l.empty()) root = null;                                   // Free leaf if it is empty
       return;
      }
 
