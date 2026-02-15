@@ -719,18 +719,16 @@ class Tree extends Test                                                         
 
   Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming that the structure of the tree has not changed
    {if (root == null) return null;                                              // Empty tree does not have a next key
-    final Leaf    l = Found.leaf;
-    final Integer i = l.locateNextUsedSlot(Found.locate.at+1);
-    if (i != null)
-     {final long k = l.data(l.slots(i));
-      return new Find(k, l);
-     }
-
+    final Leaf l = Found.leaf;
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
+
+    final Integer i = l.locateNextUsedSlot(Found.locate.at+1);
+    if (i != null) return new Find(l.data(l.slots(i)), l);
+
     if (l.up.top != l)                                                          // In the body of the parent branch of the leaf
      {final Integer I = l.up.locateNextUsedSlot(l.upIndex+1);
-      final Leaf L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
-      final long k = L.firstKey();
+      final Leaf    L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
+      final long    k = L.firstKey();
       L.up = l.up; L.upIndex = I;
       return new Find(k, L);
      }
@@ -749,29 +747,26 @@ class Tree extends Test                                                         
 
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
    {if (root == null) return null;                                              // Empty tree does not have a next key
-    final Leaf    l = Found.leaf;
-    final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);
-    if (i != null)
-     {final long k = l.data(l.slots(i));
-      return new Find(k, l);
-     }
-
+    final Leaf l = Found.leaf;
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
+
+    final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);
+    if (i != null) return new Find(l.data(l.slots(i)), l);
+
     if (l.upIndex == null)                                                      // Last leaf of parent
      {final Integer I = l.up.locateLastUsedSlot();
-      final Leaf L = (Leaf)l.up.data(I);
-      final long k = L.lastKey();
+      final Leaf    L = (Leaf)l.up.data(I);
+      final long    k = L.lastKey();
       L.up = l.up; L.upIndex = I;
       return new Find(k, L);
      }
     else if (l.upIndex != l.locateFirstUsedSlot())                              // Not the first leaf of the parent branch
      {final Integer I = l.up.locatePrevUsedSlot(l.upIndex-1);
-      final Leaf L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
-      final long k = L.lastKey();
+      final Leaf    L = I != null ? (Leaf)l.up.data(I) : (Leaf)l.up.top;
+      final long    k = L.lastKey();
       L.up = l.up; L.upIndex = I;
       return new Find(k, L);
      }
-if (debug) say("AAAA", dump(), l.dump());
     Branch p;                                                                   // Last point at which we went left
     Branch q = l.up;
     for(p = q.up; p != null; q = p, p = q.up)
