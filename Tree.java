@@ -615,9 +615,8 @@ class Tree extends Test                                                         
     if (root instanceof Leaf)
      {final Leaf l = (Leaf)root;
       final int  i = l.locateFirstUsedSlot();
-      final long k = l.data(i);
       l.up = null; l.upIndex = i;
-      return new Find(k, l);
+      return new Find(l.data(i), l);
      }
 
     return goFirst((Branch)root);                                               // Start at root and go all the way first
@@ -627,8 +626,8 @@ class Tree extends Test                                                         
    {Branch p = Start;                                                           // Start
 
     for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
-     {final int   P = p.locateFirstUsedSlot();
-      final Slots q = p.child(P);
+     {final int    P = p.locateFirstUsedSlot();
+      final Slots  q = p.child(P);
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
         l.up = p; l.upIndex = P;
@@ -649,9 +648,8 @@ class Tree extends Test                                                         
     if (root instanceof Leaf)
      {final Leaf l = (Leaf)root;
       final int  i = l.locateLastUsedSlot();
-      final long k = l.data(i);
       l.up = null; l.upIndex = null;
-      return new Find(k, l);
+      return new Find(l.data(i), l);
      }
 
     return goLast((Branch)root);                                                // Start at root and go all the way last
@@ -681,7 +679,7 @@ class Tree extends Test                                                         
     final Leaf l = Found.leaf;
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
 
-    final Integer i = l.locateNextUsedSlot(Found.locate.at+1);
+    final Integer i = l.locateNextUsedSlot(Found.locate.at+1);                  // Next slot in leaf
     if (i != null) return new Find(l.data(l.slots(i)), l);
 
     if (l.up.top != l)                                                          // In the body of the parent branch of the leaf
@@ -708,7 +706,7 @@ class Tree extends Test                                                         
     final Leaf    l = Found.leaf;
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
 
-    final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);
+    final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);                  // Previous slot in leaf
     if (i != null) return new Find(l.data(l.slots(i)), l);
 
     if (l.upIndex == null)                                                      // Last leaf of parent
@@ -723,9 +721,7 @@ class Tree extends Test                                                         
       L.up = l.up; L.upIndex = I;
       return new Find(L.lastKey(), L);
      }
-    Branch p;                                                                   // Last point at which we went left
-    Branch q = l.up;
-    for(p = q.up; p != null; q = p, p = q.up)
+    for(Branch q = l.up, p = q.up; p != null; q = p, p = q.up)
      {if (q.upIndex == null)                                                    // In the body of the parent branch of the leaf
        {final Integer I = p.locateLastUsedSlot();
         final Branch  b = (Branch)p.data(I);
