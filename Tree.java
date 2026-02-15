@@ -2,8 +2,8 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Merging the root should be on either side of key path
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
+
 import java.util.*;
 
 class Tree extends Test                                                         // Manipulate a tree
@@ -11,7 +11,6 @@ class Tree extends Test                                                         
   final int         maxBranchSize;                                              // The maximum number of entries in a branch
   Slots                      root;                                              // The root of the tree
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
-  static boolean  createTestTrees = false;                                      // Create trees to assist testing
   static boolean            debug = false;                                      // Debug if enabled
   int leaves = 0, branches = 0;                                                 // Labels for the leaves and branches to assist in debugging
 
@@ -46,8 +45,8 @@ class Tree extends Test                                                         
      }
 
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
-    long data(int I)             {return data[I];}                              // Value of data field at index
-    void data(int I, long Value) {data[I] = Value;}                             // Value of data field at index
+    long data(int I)             {return data[I];}                              // Get value of data field at index
+    void data(int I, long Value) {       data[I] = Value;}                      // Set value of data field at index
 
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
@@ -393,6 +392,21 @@ class Tree extends Test                                                         
 
     Tree tree() {return Tree.this;}                                             // Containing tree
     private Slots stepDown(long Key)  {return child(locateFirstGe(Key));}       // Step down from this branch
+
+    private int count()                                                         // Count the number of entries under this branch
+     {int n = 0;
+      for  (int i = 0; i < numberOfSlots; i++)                                  // Each slot
+       {if (usedSlots(i))                                                       // Active slot
+         {final Slots s = data(i);
+          if      (s instanceof Leaf)    n += s.countUsed();
+          else if (s instanceof Branch)  n += ((Branch)s).count();
+         }
+       }
+      final Slots s = top;                                                      // Count entries below top
+      if      (s instanceof Leaf)   n += s.countUsed();                         // Top is a leaf
+      else if (s instanceof Branch) n += ((Branch)s).count();                   // Top is a branch
+      return n;                                                                 // Number below this branch
+     }
    }
 
 //D1 Low Level                                                                  // Low level operations
@@ -428,21 +442,6 @@ class Tree extends Test                                                         
      }
 
     mergeRoot(Key);                                                             // Merge the root if possible
-   }
-
-  private int countBranch(Branch Branch)                                        // Count the number of entries under this branch
-   {int n = 0;
-    for  (int i = 0; i < Branch.numberOfSlots; i++)                             // Each slot
-     {if (Branch.usedSlots(i))                                                  // Active slot
-       {final Slots s = Branch.data[Branch.slots(i)];
-        if      (s instanceof Leaf)    n += s.countUsed();
-        else if (s instanceof Branch)  n += countBranch((Branch)s);
-       }
-     }
-    final Slots s = Branch.top;                                                 // Count entries below top
-    if      (s instanceof Leaf)   n += s.countUsed();                           // Top is a leaf
-    else if (s instanceof Branch) n += countBranch((Branch)s);                  // Top is a branch
-    return n;                                                                   // Number below this branch
    }
 
   void mergeRoot(long Key)                                                      // Collapse the root if possible
@@ -615,7 +614,7 @@ class Tree extends Test                                                         
   int count()                                                                   // Print the tree with and without details
    {if (root == null) return 0;                                                 // Empty tree
     if (root instanceof Leaf) return root.countUsed();                          // Tree is a single leaf
-    return countBranch((Branch)root);                                           // Tree has one or more branches
+    return ((Branch)root).count();                                              // Tree has one or more branches
    }
 
 //D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
