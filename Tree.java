@@ -436,14 +436,14 @@ class Tree extends Test                                                         
 //D1 High Level                                                                 // High level operations: insert, find, delete
 
   class Find                                                                    // Find results
-   {final Leaf    leaf;                                                         // Leaf that should contain the key
-    final long    key;                                                          // Search key
+   {final Leaf leaf;                                                            // Leaf that should contain the key
+    final long key;                                                             // Search key
     final Slots.Locate locate;                                                  // Location details for key
 
     Find(long Key, Leaf Leaf)
-     {key         = Key;
-      leaf        = Leaf;
-      locate      = Leaf.new Locate(Key);
+     {key    = Key;
+      leaf   = Leaf;
+      locate = Leaf.new Locate(Key);
      }
 
     public String toString()
@@ -707,7 +707,7 @@ class Tree extends Test                                                         
         final int  i = l.locateLastUsedSlot();
         final long k = l.data(l.slots(i));
         l.up = p; l.upIndex = null;
-        return new Find(k, l);  // This key and slot re irrelevant
+        return new Find(k, l);
        }
          ((Branch)q).up = p;
       p = (Branch)q;                                                            // Step down into non full branch
