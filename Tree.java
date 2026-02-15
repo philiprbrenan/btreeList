@@ -112,7 +112,7 @@ class Tree extends Test                                                         
       for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(i));
       super.compactLeft();
 
-      for (int i = 0; i < R; i++) data[i] = d[i];
+      for (int i = 0; i < R; i++) data(i, d[i]);
      }
 
     void compactRight()                                                         // Compact the leaf to the right
