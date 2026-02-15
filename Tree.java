@@ -2,6 +2,9 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// Merging the root should be on either side of key path
+// Merging should stop after no merges at a level becuase we are only splitting immediately above the leaf
+// Test on deep tree to see if path splitting and merging is effective
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
 
@@ -495,31 +498,32 @@ class Tree extends Test                                                         
       l.insert(Key, Data);                                                      // Insert into leaf root
       return;
      }
-
-    final Find F = find(Key);                                                   // See if key is already present
-    if (F.locate.exact())                                                       // Key already present so update data associated with the key
-     {final Leaf l = F.leaf;                                                    // Child leaf
-      l.data(F.locate.at, Data);                                                // Update data
-      return;
-     }
-    else if (!F.leaf.full())                                                    // Leaf not full so insert directly
-     {final Leaf l = F.leaf;                                                    // Child leaf
-      l.insert(Key, Data);                                                      // Insert key
-      return;
-     }
-    else if (F.leaf.up != null && !F.leaf.up.full())                            // Leaf is full, parent branch is not full so we can split leaf
-     {final Branch b = F.leaf.up;                                               // Parent branch
-      final Leaf   r = F.leaf;
-      final long  sk = r.splittingKey();
-      final Leaf   l = r.splitLeft();
-      b.insert(sk, l);                                                          // Insert new left leaf into leaf
-      if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);             // Insert new key, data pair into left leaf
-      final Integer K = b.locateFirstGe(Key);                                   // Position of leaf in parent
-      b.mergeLeftSibling (K);                                                   // Merge left leaf into prior leaf if possible
-      b.mergeRightSibling(K);                                                   // Merge left leaf into prior leaf if possible
-      if (b.canStepLeft  (K)) b.mergeLeftSibling (b.stepLeft (K));              // Merge right leaf into next leaf if possible
-      if (b.canStepRight (K)) b.mergeRightSibling(b.stepRight(K));              // Merge right leaf into next leaf if possible
-      return;
+    else                                                                        // Localize optimized insert for non full leaf or full leaf under non full parent
+     {final Find F = find(Key);                                                 // See if key is already present
+      if (F.locate.exact())                                                     // Key already present so update data associated with the key
+       {final Leaf l = F.leaf;                                                  // Child leaf
+        l.data(F.locate.at, Data);                                              // Update data
+        return;
+       }
+      else if (!F.leaf.full())                                                  // Leaf not full so insert directly
+       {final Leaf l = F.leaf;                                                  // Child leaf
+        l.insert(Key, Data);                                                    // Insert key
+        return;
+       }
+      else if (F.leaf.up != null && !F.leaf.up.full())                          // Leaf is full, parent branch is not full so we can split leaf
+       {final Branch b = F.leaf.up;                                             // Parent branch
+        final Leaf   r = F.leaf;
+        final long  sk = r.splittingKey();
+        final Leaf   l = r.splitLeft();
+        b.insert(sk, l);                                                        // Insert new left leaf into leaf
+        if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);           // Insert new key, data pair into left leaf
+        final Integer K = b.locateFirstGe(Key);                                 // Position of leaf in parent
+        b.mergeLeftSibling (K);                                                 // Merge left leaf into prior leaf if possible
+        b.mergeRightSibling(K);                                                 // Merge left leaf into prior leaf if possible
+        if (b.canStepLeft  (K)) b.mergeLeftSibling (b.stepLeft (K));            // Merge right leaf into next leaf if possible
+        if (b.canStepRight (K)) b.mergeRightSibling(b.stepRight(K));            // Merge right leaf into next leaf if possible
+        return;
+       }
      }
 
     if (root instanceof Leaf)                                                   // Leaf root
@@ -533,6 +537,10 @@ class Tree extends Test                                                         
 
     Branch p = (Branch)root;                                                    // Start at root
     if (p.full()) {root = p.split(); p = (Branch)root;}                         // Split full root branch
+
+    for (Branch q = find(Key).leaf.up, b = q.up; b != null; q = b, b = q.up)    // Path back from leaf to first full branch below a non full branch - the point at which we have to start splitting
+     {if (!b.full()) {p = b; break;}
+     }
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {final Slots q = p.stepDown(Key);                                          // Step down
