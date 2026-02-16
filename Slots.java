@@ -481,24 +481,26 @@ public class Slots extends Test                                                 
       ByteBuffer  .wrap(memory, p, Integer.SIZE).putInt(name);                    p += Integer.SIZE;
      }
 
-    Slots read()                                                                // Reload a set of slots from memory
+    Slots read() {return read(ByteBuffer.wrap(memory));}                         // Reload a set of slots from memory
+
+    Slots read(ByteBuffer memory)                                               // Reload a set of slots from memory
      {int p = 0;
-      final int NumberOfRefs = ByteBuffer.wrap(memory, p, Integer.SIZE).getInt(); p += Integer.SIZE;
+      final int NumberOfRefs = memory.getInt(p); p += Integer.SIZE;
       final Slots s = new Slots(NumberOfRefs);
 
        for (int i = 0; i < s.numberOfSlots; i++)
-        {s.slots[i] = ByteBuffer.wrap(memory, p, Integer.SIZE).getInt();          p += Integer.SIZE;
+        {s.slots[i] = memory.getInt(p);          p += Integer.SIZE;
         }
        for (int i = 0; i < s.numberOfSlots; i++)
-        {s.usedSlots[i] = ByteBuffer.wrap(memory, p, 1).get() > 0 ? true : false; p++;
+        {s.usedSlots[i] = memory.get(p) > 0 ? true : false; p++;
         }
        for (int i = 0; i < s.numberOfRefs; i++)
-        {s.usedRefs [i] = ByteBuffer.wrap(memory, p, 1).get() > 0 ? true : false; p++;
+        {s.usedRefs [i] = memory.get(p) > 0 ? true : false; p++;
         }
        for (int i = 0; i < s.numberOfRefs; i++)
-        {s.keys     [i] = ByteBuffer.wrap(memory, p, Long.SIZE).getLong();        p += Long   .SIZE;
+        {s.keys     [i] = memory.getLong(p);     p += Long   .SIZE;
         }
-       s.name = ByteBuffer.wrap(memory, p, Integer.SIZE).getInt();                p += Integer.SIZE;
+       s.name = memory.getInt(p);                p += Integer.SIZE;
        return s;
       }
     }
