@@ -14,7 +14,7 @@ public class Slots extends Test                                                 
   protected final boolean[]usedSlots;                                           // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   protected final boolean[]usedRefs;                                            // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
   protected final long   []keys;                                                // Keys
-  String         name;                                                          // String name of these slots for debugging purposes
+  int            name;                                                          // Numeric name for these slots for debugging purposes
   static boolean debug = false;                                                 // Debug if true
 
 //D1 Construction                                                               // Construct and layout the slots
@@ -28,8 +28,6 @@ public class Slots extends Test                                                 
     usedRefs            = new boolean[numberOfRefs];
     keys                = new long   [numberOfRefs];
    }
-
-  public Slots(String Name) {this(0); name = Name;}                             // Create empty named slots to assist with debugging
 
   private Slots duplicate()                                                     // Duplicate a set of slots
    {final Slots s = new Slots(numberOfRefs);
@@ -451,6 +449,38 @@ public class Slots extends Test                                                 
      }
     return ""+s;
    }
+
+//D1 Memory                                                                     // Read and write from an array of bytes
+
+  class Mmeory                                                                  // Memory required to hold bytes
+   {final Byte[]memory = new Byte[Integer.SIZE*(1+numberOfSlots)+numberOfSlots+numberOfRefs+numberOfRefs*Long.SIZE+Integer.SIZE];
+
+//        MyObject obj = new MyObject(42, 3.14, "Alice");
+//
+//        // Convert string to bytes
+//        byte[] nameBytes = obj.name.getBytes(StandardCharsets.UTF_8);
+//
+//        // Pre-allocate a byte array (for example: id at 0, value at 4, name at 12)
+//        byte[] byteArray = new byte[12 + nameBytes.length];
+//
+//        // Write int id at position 0
+//        ByteBuffer.wrap(byteArray, 0, 4).putInt(obj.id);
+//
+//        // Write double value at position 4
+//        ByteBuffer.wrap(byteArray, 4, 8).putDouble(obj.value);
+//
+//        // Write string bytes at position 12
+//        System.arraycopy(nameBytes, 0, byteArray, 12, nameBytes.length);
+//
+//        System.out.println("Byte array length: " + byteArray.length);
+//
+//        // Example: reading back manually
+//        int id = ByteBuffer.wrap(byteArray, 0, 4).getInt();
+//        double value = ByteBuffer.wrap(byteArray, 4, 8).getDouble();
+//        String name = new String(byteArray, 12, nameBytes.length, StandardCharsets.UTF_8);
+//
+//        System.out.println("Read back: " + id + ", " + value + ", " + name);
+    }
 
 //D1 Tests                                                                      // Test the slots
 
