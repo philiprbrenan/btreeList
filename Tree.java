@@ -51,7 +51,7 @@ class Tree extends Test                                                         
 
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
-      d.copy((Slots)this);                                                      // Copy slots
+      d.copy(this);                                                             // Copy slots
       for (int i = 0; i < numberOfRefs; i++) d.data(i, data(i));                // Copy data associated wuth leaf keys
       return d;
      }
@@ -192,7 +192,7 @@ class Tree extends Test                                                         
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
-      d.copy((Slots)this);                                                      // Copy slots
+      d.copy(this);                                                             // Copy slots
       for (int i = 0; i < numberOfRefs; i++) d.data[i] = data[i];               // Copy data associated wuth branch keys
       d.top = top;
       return d;
@@ -734,8 +734,8 @@ class Tree extends Test                                                         
 
 //D1 Print                                                                      // Print the tree horizontally
 
-  final int linesToPrintABranch =  4;                                           // The number of lines required to print a branch
-  final int maxPrintLevels      =  3;                                           // The maximum number of levels to print `- this avoids endless print loops when something goes wrong
+  final int linesToPrintABranch = 4;                                            // The number of lines required to print a branch
+  final int maxPrintLevels      = 3;                                            // The maximum number of levels to print `- this avoids endless print loops when something goes wrong
 
   void printLeaf(Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details)  // Print leaf horizontally
    {padStrings(P, level);
@@ -789,7 +789,7 @@ class Tree extends Test                                                         
    }
 
  String printBoxed()                                                            // Print a tree in a box
-  {final String  s = toString();
+  {final String  s = ""+this;
    final int     n = longestLine(s)-1;
    final String[]L = s.split("\n");
    final StringJoiner t = new StringJoiner("\n",  "", "\n");
@@ -813,10 +813,9 @@ class Tree extends Test                                                         
    {final StringBuilder t = new StringBuilder();                                // Print the lines of the tree that are not blank
     for  (StringBuilder s : S)
      {final String l = ""+s;
-      if (l.isBlank()) continue;
-      t.append(l+"|\n");
+      if (!l.isBlank()) t.append(l+"|\n");
      }
-    return t.toString();
+    return ""+t;
    }
 
   public String toString() {return print(false);}                               // Print the tree without details
