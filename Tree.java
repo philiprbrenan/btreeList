@@ -52,7 +52,7 @@ class Tree extends Test                                                         
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
       d.copy(this);                                                             // Copy slots
-      for (int i = 0; i < numberOfRefs; i++) d.data(i, data(i));                // Copy data associated wuth leaf keys
+      for (int i = 0; i < numberOfRefs; i++) d.data(i, data(i));                // Copy data associated with leaf keys
       return d;
      }
 
@@ -158,8 +158,7 @@ class Tree extends Test                                                         
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) k.add(""+keys(i));
-        if (usedSlots(i)) d.add(""+data(slots(i)));
+       {if (usedSlots(i)) {k.add(""+keys(i)); d.add(""+data(slots(i)));}
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -188,12 +187,12 @@ class Tree extends Test                                                         
 
     int splitSize()       {return maxBranchSize / 2;}                           // Size of a split branch
     Slots data(int Index) {return data[slots(Index)];}                          // Data at the indexed slot
-    Slots firstChild()    {return data(locateFirstUsedSlot());}                 // First child assuming the is one
+    Slots firstChild()    {return data(locateFirstUsedSlot());}                 // First child assuming there is one
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
       d.copy(this);                                                             // Copy slots
-      for (int i = 0; i < numberOfRefs; i++) d.data[i] = data[i];               // Copy data associated wuth branch keys
+      for (int i = 0; i < numberOfRefs; i++) d.data[i] = data[i];               // Copy data associated with branch keys
       d.top = top;
       return d;
      }
@@ -357,7 +356,7 @@ class Tree extends Test                                                         
        {final Leaf l = (Leaf)L;                                                 // Left  leaf sibling
         final Leaf r = (Leaf)(Right != null ? data(Right) : top);               // Right leaf sibling
         if (r.mergeFromLeft(l))                                                 // Merge left sibling into right
-         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
+         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
           return true;
          }
        }
@@ -365,7 +364,7 @@ class Tree extends Test                                                         
        {final Branch l = (Branch)L;                                             // Left  branch sibling
         final Branch r = (Branch)(Right != null ? data(Right) : top);           // Right leaf sibling
         if (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
-         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that ut has been merged with its right sibling
+         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
           return true;
          }
        }
@@ -447,7 +446,7 @@ class Tree extends Test                                                         
 
     final Branch b = (Branch)root;                                              // Branch root
     if (b.countUsed() == 0) root = b.top;                                       // Root body is empty so collapse to top
-    if (b.countUsed() != 1) return;                                             // Root body too big too collapse
+    if (b.countUsed() != 1) return;                                             // Root body too big to collapse
 
     if (b.top instanceof Leaf)                                                  // Leaves for children
      {final Leaf    l = (Leaf)b.firstChild();
@@ -479,8 +478,8 @@ class Tree extends Test                                                         
     public String toString()
      {final StringBuilder s = new StringBuilder();
       s.append("Find Key : "+key+"\n");
-      if (leaf   != null) s.append(leaf.dump());
-      if (locate != null) s.append("Locate      : "+locate   +"\n");
+      if (leaf    != null) s.append(leaf.dump());
+      if (locate  != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
       for(Branch p = leaf.up; p != null; p = p.up) j.add(p.name);
       if (leaf.up != null) s.append("Path        : "+j+"\n");
@@ -585,7 +584,7 @@ class Tree extends Test                                                         
       final Branch r = (Branch)q;
       if (r.full())                                                             // Split the leaf if it is full
        {final long        sk = r.splittingKey();                                // Splitting key
-        final Branch.Split s = r.splitLeft();                                   // Branch slit out on right from
+        final Branch.Split s = r.splitLeft();                                   // Branch split out on right from
         p.insert(sk, s.left);                                                   // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
         if (Key <= sk) p = s.left; else p = s.right;                            // Traverse left or right
        }
@@ -595,7 +594,7 @@ class Tree extends Test                                                         
    }
 
   void delete(long Key)                                                         // Delete a key from the tree
-   {if (root == null) return;                                                   // The tree is empty tree so thre is nothing to delete
+   {if (root == null) return;                                                   // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
     f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
@@ -734,10 +733,11 @@ class Tree extends Test                                                         
 
 //D1 Print                                                                      // Print the tree horizontally
 
-  final int linesToPrintABranch = 4;                                            // The number of lines required to print a branch
-  final int maxPrintLevels      = 3;                                            // The maximum number of levels to print `- this avoids endless print loops when something goes wrong
+  private final int linesToPrintABranch = 4;                                    // The number of lines required to print a branch
+  private final int maxPrintLevels      = 3;                                    // The maximum number of levels to print `- this avoids endless print loops when something goes wrong
 
-  void printLeaf(Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details)  // Print leaf horizontally
+  private void printLeaf                                                        // Print leaf horizontally
+   (Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details)
    {padStrings(P, level);
 
     final StringJoiner s = new StringJoiner(",");
@@ -752,7 +752,7 @@ class Tree extends Test                                                         
     padStrings(P, level);
    }
 
-  void printBranch                                                              // Print branch horizontally
+  private void printBranch                                                      // Print branch horizontally
    (Branch Branch, Stack<StringBuilder>P, int level, boolean Details)
    {if (level > maxPrintLevels) return;
     padStrings(P, level);
@@ -788,7 +788,7 @@ class Tree extends Test                                                         
     padStrings(P, level);                                                       // Equalize the strings used to print the tree
    }
 
- String printBoxed()                                                            // Print a tree in a box
+ private String printBoxed()                                                    // Print a tree in a box
   {final String  s = ""+this;
    final int     n = longestLine(s)-1;
    final String[]L = s.split("\n");
@@ -799,7 +799,7 @@ class Tree extends Test                                                         
    return ""+t;
   }
 
-  void padStrings(Stack<StringBuilder> S, int level)                            // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
+  private void padStrings(Stack<StringBuilder> S, int level)                    // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
    {final int N = level * linesToPrintABranch + maxLeafSize;                    // Number of lines we might want
     for (int i = S.size(); i <= N; ++i) S.push(new StringBuilder());            // Make sure we have a full deck of strings
     int m = 0;                                                                  // Maximum length
@@ -809,7 +809,7 @@ class Tree extends Test                                                         
      }
    }
 
-  String printCollapsed(Stack<StringBuilder> S)                                 // Collapse horizontal representation into a string
+  private String printCollapsed(Stack<StringBuilder> S)                         // Collapse horizontal representation into a string
    {final StringBuilder t = new StringBuilder();                                // Print the lines of the tree that are not blank
     for  (StringBuilder s : S)
      {final String l = ""+s;
