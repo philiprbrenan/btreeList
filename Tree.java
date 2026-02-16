@@ -42,7 +42,7 @@ class Tree extends Test                                                         
 
     Leaf()                                                                      // Create a leaf
      {super(maxLeafSize);                                                       // Slots for leaf
-      name = ""+(leaves++);                                                     // Name the leaf to help in debugging
+      name = leaves++;                                                          // Name the leaf to help in debugging
      }
 
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
@@ -164,12 +164,12 @@ class Tree extends Test                                                         
      }
 
     protected String dump()                                                     // Dump a leaf
-     {final StringBuilder d = new StringBuilder();
+     {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
-      for (int i = 0; i < N; i++) d.append(String.format(" %3d", data(i)));
+      for (int i = 0; i < N; i++) d.add(String.format(formatKey, data(i)));
       final String U = " up: "   +(up      != null ? up.name : "null");
       final String I = " index: "+(upIndex != null ? upIndex : "null");
-      return "Leaf     : "+name+U+I+"\n"+super.dump() + "data     : "+d+"\n";
+      return "Leaf     : "+name+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
    }
 
@@ -182,7 +182,7 @@ class Tree extends Test                                                         
 
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
-      name = ""+(branches++);                                                   // Name the branch to help in debugging
+      name = branches++;                                                        // Name the branch to help in debugging
      }
 
     int splitSize()       {return maxBranchSize / 2;}                           // Size of a split branch
@@ -271,10 +271,10 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++)
-       {if (data[i] == null) d.add("  ."); else d.add(data[i].name);
+       {if (data[i] == null) d.add("  ."); else d.add(String.format(formatKey, data[i].name));
        }
       return "Branch   : "+name+"\n"+super.dump() +
-             "data     :  "+d+"\ntop      :  "+top.name+"\n";
+             "data     :  "+d+"\ntop      :  "+String.format(formatKey, top.name)+"\n";
      }
 
     void compactLeft()                                                          // Compact the branch to the left
@@ -466,7 +466,7 @@ class Tree extends Test                                                         
       if (leaf    != null) s.append(leaf.dump());
       if (locate  != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
-      for(Branch p = leaf.up; p != null; p = p.up) j.add(p.name);
+      for(Branch p = leaf.up; p != null; p = p.up) j.add(""+p.name);
       if (leaf.up != null) s.append("Path        : "+j+"\n");
       return ""+s;
      }
@@ -731,7 +731,7 @@ class Tree extends Test                                                         
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
-    final String U = Leaf.up      != null ?    Leaf.up.name : "null";
+    final String U = Leaf.up      != null ? ""+Leaf.up.name : "null";
     final String I = Leaf.upIndex != null ? ""+Leaf.upIndex : "null";
     if (Details) P.elementAt(L+1).append("("+Leaf.name+", "+U+", "+I+")");
     padStrings(P, level);
@@ -756,7 +756,7 @@ class Tree extends Test                                                         
           P.elementAt(L+0).append(" "+B.keys(i));                               // Key
           if (Details)
            {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                 // Branch, key, next pair
-            final String U = B.up      != null ?    B.up.name : "null";
+            final String U = B.up      != null ? ""+B.up.name : "null";
             final String I = B.upIndex != null ? ""+B.upIndex : "null";
             P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");              // Link to next level
            }
@@ -825,7 +825,6 @@ class Tree extends Test                                                         
     l.insert(12, 22);
     l.insert(14, 24);
     l.insert(11, 21);
-
     ok(l.dump(), """
 Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -876,10 +875,10 @@ data     :    0   0   0   0  21  22  23  24
 
   static void test_compactBranchLeft()
    {final Branch b = new Tree(8, 7).new Branch();
-    b.insert(12, new Slots(" 12"));
-    b.insert(11, new Slots(" 11"));
-    b.insert(13, new Slots(" 13"));
-    b.top = new Slots("  4");
+    b.insert(12, Slots.fake(12));
+    b.insert(11, Slots.fake(11));
+    b.insert(13, Slots.fake(13));
+    b.top =      Slots.fake(4);
     ok(b.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -907,10 +906,10 @@ top      :    4
 
   static void test_compactBranchRight()
    {final Branch b = new Tree(8, 7).new Branch();
-    b.insert(12, new Slots(" 12"));
-    b.insert(11, new Slots(" 11"));
-    b.insert(13, new Slots(" 13"));
-    b.top = new Slots("  4");
+    b.insert(12, Slots.fake(12));
+    b.insert(11, Slots.fake(11));
+    b.insert(13, Slots.fake(13));
+    b.top =      Slots.fake(4);
     ok(b.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -998,10 +997,10 @@ data: 15, 16, 17, 18
   static Branch test_branch()
    {final Branch b = new Tree(8, 7).new Branch();
 
-    final long[]k = new long[]{13, 16, 15, 17, 14, 12, 11};
-    final String[]d = new String[]{"  3", "  6", "  5", "  7", "  4", "  2", "  1"};
-    for (int i = 0; i < d.length; i++) b.insert(k[i], new Slots(d[i]));
-    b.top = new Slots("  8");
+    final long[]k = new long[] {13, 16, 15, 17, 14, 12, 11};
+    final int []d = new int [] {3,   6,  5,  7,  4,  2, 1};
+    for (int i = 0; i < d.length; i++) b.insert(k[i], Slots.fake(d[i]));
+    b.top = Slots.fake(8);
     return b;
    }
 
@@ -1010,13 +1009,13 @@ data: 15, 16, 17, 18
     final Branch.Split s = b.splitRight();
     ok(s.left, """
 keys: 11, 12, 13
-data:   1,   2,   3
-top :   4
+data: 1, 2, 3
+top : 4
 """);
     ok(s.right, """
 keys: 15, 16, 17
-data:   5,   6,   7
-top :   8
+data: 5, 6, 7
+top : 8
 """);
     ok(s.key, 14);
    }
@@ -1026,13 +1025,13 @@ top :   8
     final Branch.Split s = r.splitLeft();
     ok(s.left, """
 keys: 11, 12, 13
-data:   1,   2,   3
-top :   4
+data: 1, 2, 3
+top : 4
 """);
     ok(s.right, """
 keys: 15, 16, 17
-data:   5,   6,   7
-top :   8
+data: 5, 6, 7
+top : 8
 """);
     ok(s.key, 14);
    }
@@ -1084,18 +1083,18 @@ data     :   11  12  13  14  15  16  17  18
   static Branch test_branch1()
    {final Branch b = new Tree(8, 7).new Branch();
     final long[]k = new long[]{13, 12, 11};
-    final String[]d = new String[]{"  3", "  2", "  1"};
-    for (int i = 0; i < k.length; i++) b.insert(k[i], new Slots(d[i]));
-    b.top = new Slots("  4");
+    final int []d = new int []{ 3,  2,  1};
+    for (int i = 0; i < k.length; i++) b.insert(k[i], Slots.fake(d[i]));
+    b.top = Slots.fake(4);
     return b;
    }
 
   static Branch test_branch2()
    {final Branch b = new Tree(8, 7).new Branch();
     final long[]k = new long[]{16, 15, 17};
-    final String[]d = new String[]{"  6", "  5", "  7"};
-    for (int i = 0; i < k.length; i++) b.insert(k[i], new Slots(d[i]));
-    b.top = new Slots("  8");
+    final int []d = new int[]{6, 5, 7};
+    for (int i = 0; i < k.length; i++) b.insert(k[i], Slots.fake(d[i]));
+    b.top = Slots.fake(8);
     return b;
    }
 
