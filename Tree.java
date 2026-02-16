@@ -237,12 +237,8 @@ class Tree extends Test                                                         
     long splittingKey()                                                         // Splitting key from a branch
      {if (!full()) stop("Branch not full");                                     // The branch must be full if we are going to split it
       long k = 0;                                                               // Splitting key
-      int  p = 0;                                                               // Position in leaf
-      for (int i = 0; i < numberOfSlots; i++)                                   // Scan for splitting keys
-       {if (usedSlots(i))                                                       // Used slot
-         {if (p == splitSize()) k += keys(i);                                   // Splitting key as last on left and first on right of split
-          ++p;                                                                  // Next position
-         }
+      for (int i = 0, p = 0; i < numberOfSlots; i++)                            // Scan for splitting keys
+       {if (usedSlots(i) && p++ == splitSize()) k += keys(i);                   // Splitting key as last on left and first on right of split
        }
       return k;                                                                 // Splitting key
      }
