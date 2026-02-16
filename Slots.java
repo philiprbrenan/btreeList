@@ -461,50 +461,42 @@ public class Slots extends Test                                                 
 //D1 Memory                                                                     // Read and write from an array of bytes
 
   class Memory                                                                  // Memory required to hold bytes
-   {final byte[]memory = new byte[Integer.SIZE*(1+numberOfSlots)+numberOfSlots+numberOfRefs+numberOfRefs*Long.SIZE+Integer.SIZE];
+   {final int posNumberOfRefs = 0;
+    final int posSlots        = posNumberOfRefs + Integer.SIZE;
+    final int posUsedSlots    = posSlots        + Integer.SIZE*numberOfSlots;
+    final int posUsedRefs     = posNumberOfRefs + numberOfSlots;
+    final int posKeys         = posUsedSlots    + numberOfRefs;
+    final int posName         = posKeys         + Integer.SIZE*numberOfRefs;
+    final int size            = posName;
+    final byte[]memory = new byte[size];
 
-    Memory()                                                                    // Load a set of slots into memory
-     {final ByteBuffer m = ByteBuffer.wrap(memory);
-      int p = 0;
-      m.putInt(p, numberOfRefs);                p += Integer.SIZE;
-      for (int i = 0; i < numberOfSlots; i++)
-       {m.putInt(p, slots[i]);                  p += Integer.SIZE;
-       }
-      for (int i = 0; i < numberOfSlots; i++)
-       {m.put(p, (byte)(usedSlots[i] ? 1 : 0)); p++;
-       }
-      for (int i = 0; i < numberOfRefs; i++)
-       {m.put(p, (byte)(usedRefs [i] ? 1 : 0)); p++;
-       }
-      for (int i = 0; i < numberOfRefs; i++)
-       {m.putLong(p, keys[i]);                  p += Long   .SIZE;
-       }
-      m.putInt(p, name);                        p += Integer.SIZE;
+    void write(ByteBuffer memory)                                               // Write a set of slots into a portion of memory
+     {int p = 0;
+      final ByteBuffer m = memory;
+      m.putInt(p, numberOfRefs);                                                        p += Integer.BYTES;
+      for (int i = 0; i < numberOfSlots; i++) {m.putInt (p, slots[i]);                  p += Integer.BYTES;}
+      for (int i = 0; i < numberOfSlots; i++) {m.put(p, (byte)(usedSlots[i] ? 1 : 0));  p++;}
+      for (int i = 0; i < numberOfRefs;  i++) {m.put(p, (byte)(usedRefs [i] ? 1 : 0));  p++;}
+      for (int i = 0; i < numberOfRefs;  i++) {m.putLong(p, keys[i]);                   p += Long   .BYTES;}
+                                               m.putInt (p, name);                      p += Integer.BYTES;
      }
 
-    Slots read() {return read(ByteBuffer.wrap(memory));}                         // Reload a set of slots from memory
+    Memory(ByteBuffer memory) {write(memory);}                                  // Write a set of slots into a portion of memory
+    Memory() {write(ByteBuffer.wrap(memory));}                                  // Load a set of slots into memory
 
-    Slots read(ByteBuffer memory)                                               // Reload a set of slots from memory
+    Slots read() {return read(ByteBuffer.wrap(memory));}                        // Reload a set of slots from memory
+
+    Slots read(ByteBuffer memory)                                               // Reload a set of slots from a portion of memory
      {int p = 0;
-      final int NumberOfRefs = memory.getInt(p); p += Integer.SIZE;
-      final Slots s = new Slots(NumberOfRefs);
-
-       for (int i = 0; i < s.numberOfSlots; i++)
-        {s.slots[i] = memory.getInt(p);          p += Integer.SIZE;
-        }
-       for (int i = 0; i < s.numberOfSlots; i++)
-        {s.usedSlots[i] = memory.get(p) > 0 ? true : false; p++;
-        }
-       for (int i = 0; i < s.numberOfRefs; i++)
-        {s.usedRefs [i] = memory.get(p) > 0 ? true : false; p++;
-        }
-       for (int i = 0; i < s.numberOfRefs; i++)
-        {s.keys     [i] = memory.getLong(p);     p += Long   .SIZE;
-        }
-       s.name = memory.getInt(p);                p += Integer.SIZE;
-       return s;
-      }
-    }
+      final Slots s = new Slots(memory.getInt(p));                                                  p += Integer.BYTES;
+      for (int i = 0; i < s.numberOfSlots; i++) {s.    slots[i] = memory.getInt(p);                 p += Integer.BYTES;}
+      for (int i = 0; i < s.numberOfSlots; i++) {s.usedSlots[i] = memory.get(p) > 0 ? true : false; p++;}
+      for (int i = 0; i < s.numberOfRefs;  i++) {s.usedRefs [i] = memory.get(p) > 0 ? true : false; p++;}
+      for (int i = 0; i < s.numberOfRefs;  i++) {s.keys     [i] = memory.getLong(p);                p += Long   .BYTES;}
+      s.name = memory.getInt(p);                                                                    p += Integer.BYTES;
+      return s;
+     }
+   }
 
 //D1 Tests                                                                      // Test the slots
 
