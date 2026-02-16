@@ -288,7 +288,7 @@ class Tree extends Test                                                         
     void compactRight()                                                         // Compact the branch to the right
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
-      for (int i = N-1, p = R-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(i);
+      for (int i = N-1, p = R-1; i >= 0;--i) if (usedSlots(i)) d[p--] = data(i);
       super.compactRight();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
@@ -299,14 +299,12 @@ class Tree extends Test                                                         
        {if      (l.usedRefs(i)) data[i] = l.data(i);                            // Merge from left first
         else if (r.usedRefs(i)) data[i] = r.data(i);                            // Merge from right last
        }
-      insert(Key, Left.top);                                                    // Insert left top
-      top = Right.top;
+      insert(Key, l.top); top = r.top;                                          // Insert left top
      }
 
     boolean mergeFromRight(long Key, Branch Right)                              // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
-      final Branch l =       duplicate(),
-                   r = Right.duplicate();
+      final Branch l =       duplicate(), r = Right.duplicate();
       l.compactLeft(); r.compactRight();
       mergeCompacted(l, r);
       mergeData(Key, l, r);
@@ -316,8 +314,7 @@ class Tree extends Test                                                         
 
     boolean mergeFromLeft(long Key, Branch Left)                                // Merge the specified slots from the right
      {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
-      final Branch l = Left.duplicate();
-      final Branch r =      duplicate();
+      final Branch l = Left.duplicate(), r = duplicate();
       l.compactLeft(); r.compactRight();
       mergeCompacted(l, r);
       mergeData(Key, l, r);
@@ -343,17 +340,15 @@ class Tree extends Test                                                         
       final Integer left = stepLeft(Right);                                     // Left sibling from right child
       final Slots L = data(left);                                               // Left sibling as slots
       if (L instanceof Leaf)                                                    // Merging leaves
-       {final Leaf l = (Leaf)L;                                                 // Left  leaf sibling
-        final Leaf r = (Leaf)(Right != null ? data(Right) : top);               // Right leaf sibling
-        if (r.mergeFromLeft(l))                                                 // Merge left sibling into right
+       {final Leaf r = (Leaf)(Right != null ? data(Right) : top);               // Right leaf sibling
+        if (r.mergeFromLeft((Leaf)L))                                           // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
           return true;
          }
        }
       else                                                                      // Children are branches
-       {final Branch l = (Branch)L;                                             // Left  branch sibling
-        final Branch r = (Branch)(Right != null ? data(Right) : top);           // Right leaf sibling
-        if (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
+       {final Branch r = (Branch)(Right != null ? data(Right) : top);           // Right leaf sibling
+        if (r.mergeFromLeft(keys(left), (Branch)L))                             // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
           return true;
          }
