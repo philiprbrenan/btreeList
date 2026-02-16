@@ -464,21 +464,22 @@ public class Slots extends Test                                                 
    {final byte[]memory = new byte[Integer.SIZE*(1+numberOfSlots)+numberOfSlots+numberOfRefs+numberOfRefs*Long.SIZE+Integer.SIZE];
 
     Memory()                                                                    // Load a set of slots into memory
-     {int p = 0;
-      ByteBuffer  .wrap(memory, p, Integer.SIZE).putInt(numberOfRefs);            p += Integer.SIZE;
+     {final ByteBuffer m = ByteBuffer.wrap(memory);
+      int p = 0;
+      m.putInt(p, numberOfRefs);                p += Integer.SIZE;
       for (int i = 0; i < numberOfSlots; i++)
-       {ByteBuffer.wrap(memory, p, Integer.SIZE).putInt(slots[i]);                p += Integer.SIZE;
+       {m.putInt(p, slots[i]);                  p += Integer.SIZE;
        }
       for (int i = 0; i < numberOfSlots; i++)
-       {ByteBuffer.wrap(memory, p, 1).put((byte)(usedSlots[i] ? 1 : 0));          p++;
+       {m.put(p, (byte)(usedSlots[i] ? 1 : 0)); p++;
        }
       for (int i = 0; i < numberOfRefs; i++)
-       {ByteBuffer.wrap(memory, p, 1).put((byte)(usedRefs [i] ? 1 : 0));          p++;
+       {m.put(p, (byte)(usedRefs [i] ? 1 : 0)); p++;
        }
       for (int i = 0; i < numberOfRefs; i++)
-       {ByteBuffer.wrap(memory, p, Long.SIZE).putLong(keys[i]);                   p += Long   .SIZE;
+       {m.putLong(p, keys[i]);                  p += Long   .SIZE;
        }
-      ByteBuffer  .wrap(memory, p, Integer.SIZE).putInt(name);                    p += Integer.SIZE;
+      m.putInt(p, name);                        p += Integer.SIZE;
      }
 
     Slots read() {return read(ByteBuffer.wrap(memory));}                         // Reload a set of slots from memory
