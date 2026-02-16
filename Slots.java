@@ -5,6 +5,7 @@
 // Add random inserts/deletes to stress locate/insert/delete
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
+import java.nio.*;
 
 public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
  {protected final int      numberOfSlots;                                       // Number of slots
@@ -459,34 +460,47 @@ public class Slots extends Test                                                 
 
 //D1 Memory                                                                     // Read and write from an array of bytes
 
-  class Mmeory                                                                  // Memory required to hold bytes
-   {final Byte[]memory = new Byte[Integer.SIZE*(1+numberOfSlots)+numberOfSlots+numberOfRefs+numberOfRefs*Long.SIZE+Integer.SIZE];
+  class Memory                                                                  // Memory required to hold bytes
+   {final byte[]memory = new byte[Integer.SIZE*(1+numberOfSlots)+numberOfSlots+numberOfRefs+numberOfRefs*Long.SIZE+Integer.SIZE];
 
-//        MyObject obj = new MyObject(42, 3.14, "Alice");
-//
-//        // Convert string to bytes
-//        byte[] nameBytes = obj.name.getBytes(StandardCharsets.UTF_8);
-//
-//        // Pre-allocate a byte array (for example: id at 0, value at 4, name at 12)
-//        byte[] byteArray = new byte[12 + nameBytes.length];
-//
-//        // Write int id at position 0
-//        ByteBuffer.wrap(byteArray, 0, 4).putInt(obj.id);
-//
-//        // Write double value at position 4
-//        ByteBuffer.wrap(byteArray, 4, 8).putDouble(obj.value);
-//
-//        // Write string bytes at position 12
-//        System.arraycopy(nameBytes, 0, byteArray, 12, nameBytes.length);
-//
-//        System.out.println("Byte array length: " + byteArray.length);
-//
-//        // Example: reading back manually
-//        int id = ByteBuffer.wrap(byteArray, 0, 4).getInt();
-//        double value = ByteBuffer.wrap(byteArray, 4, 8).getDouble();
-//        String name = new String(byteArray, 12, nameBytes.length, StandardCharsets.UTF_8);
-//
-//        System.out.println("Read back: " + id + ", " + value + ", " + name);
+    Memory()                                                                    // Load a set of slots into memory
+     {int p = 0;
+      ByteBuffer  .wrap(memory, p, Integer.SIZE).putInt(numberOfRefs);            p += Integer.SIZE;
+      for (int i = 0; i < numberOfSlots; i++)
+       {ByteBuffer.wrap(memory, p, Integer.SIZE).putInt(slots[i]);                p += Integer.SIZE;
+       }
+      for (int i = 0; i < numberOfSlots; i++)
+       {ByteBuffer.wrap(memory, p, 1).put((byte)(usedSlots[i] ? 1 : 0));          p++;
+       }
+      for (int i = 0; i < numberOfRefs; i++)
+       {ByteBuffer.wrap(memory, p, 1).put((byte)(usedRefs [i] ? 1 : 0));          p++;
+       }
+      for (int i = 0; i < numberOfRefs; i++)
+       {ByteBuffer.wrap(memory, p, Long.SIZE).putLong(keys[i]);                   p += Long   .SIZE;
+       }
+      ByteBuffer  .wrap(memory, p, Integer.SIZE).putInt(name);                    p += Integer.SIZE;
+     }
+
+    Slots read()                                                                // Reload a set of slots from memory
+     {int p = 0;
+      final int NumberOfRefs = ByteBuffer.wrap(memory, p, Integer.SIZE).getInt(); p += Integer.SIZE;
+      final Slots s = new Slots(NumberOfRefs);
+
+       for (int i = 0; i < s.numberOfSlots; i++)
+        {s.slots[i] = ByteBuffer.wrap(memory, p, Integer.SIZE).getInt();          p += Integer.SIZE;
+        }
+       for (int i = 0; i < s.numberOfSlots; i++)
+        {s.usedSlots[i] = ByteBuffer.wrap(memory, p, 1).get() > 0 ? true : false; p++;
+        }
+       for (int i = 0; i < s.numberOfRefs; i++)
+        {s.usedRefs [i] = ByteBuffer.wrap(memory, p, 1).get() > 0 ? true : false; p++;
+        }
+       for (int i = 0; i < s.numberOfRefs; i++)
+        {s.keys     [i] = ByteBuffer.wrap(memory, p, Long.SIZE).getLong();        p += Long   .SIZE;
+        }
+       s.name = ByteBuffer.wrap(memory, p, Integer.SIZE).getInt();                p += Integer.SIZE;
+       return s;
+      }
     }
 
 //D1 Tests                                                                      // Test the slots
@@ -696,6 +710,24 @@ keys     :    0   0   0   0  11  12  13  14
     ok(b.lastKey(),  14);
    }
 
+  static void test_memory()
+   {final Slots b = new Slots(8);
+    b.usedSlots( 1, true); b.slots[ 1] = 7; b.usedRefs(7, true); b.keys[7] = 11;
+    b.usedSlots( 5, true); b.slots[ 5] = 4; b.usedRefs(4, true); b.keys[4] = 12;
+    b.usedSlots( 9, true); b.slots[ 9] = 2; b.usedRefs(2, true); b.keys[2] = 13;
+    b.usedSlots(14, true); b.slots[14] = 0; b.usedRefs(0, true); b.keys[0] = 14;
+    ok(b.dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
+usedRefs :    X   .   X   .   X   .   .   X
+keys     :   14   0  13   0  12   0   0  11
+""");
+    final Slots.Memory m = b.new Memory();
+    final Slots        B = m.read();
+    ok(B.dump(), b.dump());
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_redistribute();
@@ -709,6 +741,7 @@ keys     :    0   0   0   0  11  12  13  14
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
+    test_memory();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
