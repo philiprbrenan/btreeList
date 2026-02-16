@@ -721,7 +721,7 @@ class Tree extends Test                                                         
       L.up = l.up; L.upIndex = I;
       return new Find(L.lastKey(), L);
      }
-    for(Branch q = l.up, p = q.up; p != null; q = p, p = q.up)
+    for(Branch q = l.up, p = q.up; p != null; q = p, p = q.up)                  // Go up to the last point where we went left
      {if (q.upIndex == null)                                                    // In the body of the parent branch of the leaf
        {final Integer I = p.locateLastUsedSlot();
         final Branch  b = (Branch)p.data(I);
@@ -763,13 +763,9 @@ class Tree extends Test                                                         
      {for  (int i = 0; i < Branch.numberOfSlots; i++)
        {if (!Branch.usedSlots(i)) continue;
         final Slots s = Branch.data[Branch.slots(i)];
-
-        if (s instanceof Leaf)
-         {printLeaf  ((Leaf)s,   P, level+1, Details);
-         }
-        else if (s instanceof Branch)
-         {printBranch((Branch)s, P, level+1, Details);
-         }
+        final boolean l = s instanceof Leaf, b = s instanceof Branch;
+        if      (l) printLeaf  ((Leaf)  s, P, level+1, Details);
+        else if (b) printBranch((Branch)s, P, level+1, Details);
 
         P.elementAt(L+0).append(" "+Branch.keys(i));                            // Key
         if (Details)
