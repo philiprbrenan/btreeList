@@ -14,6 +14,7 @@ public class Slots extends Test                                                 
   protected final boolean[]usedSlots;                                           // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   protected final boolean[]usedRefs;                                            // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
   protected final long   []keys;                                                // Keys
+  final String formatKey = "%3d";                                               // Format a key for dumping during testing
   int            name;                                                          // Numeric name for these slots for debugging purposes
   static boolean debug = false;                                                 // Debug if true
 
@@ -27,6 +28,12 @@ public class Slots extends Test                                                 
     usedSlots           = new boolean[numberOfSlots];
     usedRefs            = new boolean[numberOfRefs];
     keys                = new long   [numberOfRefs];
+   }
+
+  static Slots fake(int Name)                                                   // Slots used during testing to mock attached branches and leaves
+   {final Slots s = new Slots(0);
+    s.name = Name;
+    return s;
    }
 
   private Slots duplicate()                                                     // Duplicate a set of slots
@@ -430,15 +437,15 @@ public class Slots extends Test                                                 
    {final StringBuilder s = new StringBuilder();
     final int N = numberOfSlots, R = numberOfRefs;
     s.append("positions: ");
-    for (int i = 0; i < N; i++) s.append(String.format(" %3d", i));
+    for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
     s.append("\nslots    : ");
-    for (int i = 0; i < N; i++) s.append(String.format(" %3d", slots(i)));
+    for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(i)));
     s.append("\nusedSlots: ");
     for (int i = 0; i < N; i++) s.append(usedSlots(i) ? "   X" : "   .");
     s.append("\nusedRefs : ");
     for (int i = 0; i < R; i++) s.append(usedRefs (i) ? "   X" : "   .");
     s.append("\nkeys     : ");
-    for (int i = 0; i < R; i++) s.append(String.format(" %3d", keys[i]));
+    for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, keys[i]));
     return ""+s+"\n";
    }
 
