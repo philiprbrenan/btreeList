@@ -271,9 +271,8 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++)
-       {final Slots s = data[i];
-        if (s == null) d.add("  ."); else d.add(s.name);
-        }
+       {if (data[i] == null) d.add("  ."); else d.add(data[i].name);
+       }
       return "Branch   : "+name+"\n"+super.dump() +
              "data     :  "+d+"\ntop      :  "+top.name+"\n";
      }
@@ -281,8 +280,7 @@ class Tree extends Test                                                         
     void compactLeft()                                                          // Compact the branch to the left
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
-      int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(i);
+      for (int i = 0, p = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(i);
       super.compactLeft();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
