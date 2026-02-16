@@ -760,9 +760,10 @@ class Tree extends Test                                                         
     final int K = Branch.countUsed();                                           // Size of branch
 
     if (K > 0)                                                                  // Branch has key, next pairs
-     {for  (int i = 0; i < Branch.numberOfSlots; i++)
-       {if (!Branch.usedSlots(i)) continue;
-        final Slots s = Branch.data[Branch.slots(i)];
+     {final Branch B = Branch;
+       for  (int i = 0; i < B.numberOfSlots; i++)
+       {if (!B.usedSlots(i)) continue;
+        final Slots s = B.data(i);
         final boolean l = s instanceof Leaf, b = s instanceof Branch;
         if      (l) printLeaf  ((Leaf)  s, P, level+1, Details);
         else if (b) printBranch((Branch)s, P, level+1, Details);
