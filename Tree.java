@@ -756,36 +756,33 @@ class Tree extends Test                                                         
    (Branch Branch, Stack<StringBuilder>P, int level, boolean Details)
    {if (level > maxPrintLevels) return;
     padStrings(P, level);
-    final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
-    final int K = Branch.countUsed();                                           // Size of branch
+    final Branch B = Branch;
+    final int L = level * linesToPrintABranch, K = B.countUsed();               // Size of branch
 
     if (K > 0)                                                                  // Branch has key, next pairs
-     {final Branch B = Branch;
-       for  (int i = 0; i < B.numberOfSlots; i++)
-       {if (!B.usedSlots(i)) continue;
-        final Slots s = B.data(i);
-        final boolean l = s instanceof Leaf, b = s instanceof Branch;
-        if      (l) printLeaf  ((Leaf)  s, P, level+1, Details);
-        else if (b) printBranch((Branch)s, P, level+1, Details);
+     {for  (int i = 0; i < B.numberOfSlots; i++)
+       {if (B.usedSlots(i))
+         {final Slots s = B.data(i);
+          final boolean l = s instanceof Leaf, b = s instanceof Branch;
+          if      (l) printLeaf  ((Leaf)  s, P, level+1, Details);
+          else if (b) printBranch((Branch)s, P, level+1, Details);
 
-        P.elementAt(L+0).append(" "+Branch.keys(i));                            // Key
-        if (Details)
-         {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                   // Branch, key, next pair
-          final String U = Branch.up      != null ?    Branch.up.name : "null";
-          final String I = Branch.upIndex != null ? ""+Branch.upIndex : "null";
-          P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");                // Link to next level
+          P.elementAt(L+0).append(" "+B.keys(i));                                 // Key
+          if (Details)
+           {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                   // Branch, key, next pair
+            final String U = B.up      != null ?    B.up.name : "null";
+            final String I = B.upIndex != null ? ""+B.upIndex : "null";
+            P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");                // Link to next level
+           }
          }
        }
      }
 
-    if (Details) P.elementAt(L+2).append("{"+Branch.top.name+"}");              // Top of branch
+    if (Details) P.elementAt(L+2).append("{"+B.top.name+"}");                   // Top of branch
 
-    if      (Branch.top instanceof Leaf)                                        // Print top leaf
-     {printLeaf  (  (Leaf)Branch.top, P, level+1, Details);
-     }
-    else if (Branch.top instanceof Branch)                                      // Print top branch
-     {printBranch((Branch)Branch.top, P, level+1, Details);
-     }
+    final boolean l = B.top instanceof Leaf, b = B.top instanceof Branch;       // Print top leaf
+    if      (l) printLeaf  (  (Leaf)B.top, P, level+1, Details);
+    else if (b) printBranch((Branch)B.top, P, level+1, Details);
 
     padStrings(P, level);                                                       // Equalize the strings used to print the tree
    }
