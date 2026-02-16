@@ -762,17 +762,18 @@ class Tree extends Test                                                         
     if (K > 0)                                                                  // Branch has key, next pairs
      {for  (int i = 0; i < B.numberOfSlots; i++)
        {if (B.usedSlots(i))
-         {final Slots s = B.data(i);
+         {final Slots   s = B.data(i);
           final boolean l = s instanceof Leaf, b = s instanceof Branch;
+
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details);
           else if (b) printBranch((Branch)s, P, level+1, Details);
 
-          P.elementAt(L+0).append(" "+B.keys(i));                                 // Key
+          P.elementAt(L+0).append(" "+B.keys(i));                               // Key
           if (Details)
-           {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                   // Branch, key, next pair
+           {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                 // Branch, key, next pair
             final String U = B.up      != null ?    B.up.name : "null";
             final String I = B.upIndex != null ? ""+B.upIndex : "null";
-            P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");                // Link to next level
+            P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");              // Link to next level
            }
          }
        }
@@ -811,7 +812,7 @@ class Tree extends Test                                                         
   String printCollapsed(Stack<StringBuilder> S)                                 // Collapse horizontal representation into a string
    {final StringBuilder t = new StringBuilder();                                // Print the lines of the tree that are not blank
     for  (StringBuilder s : S)
-     {final String l = s.toString();
+     {final String l = ""+s;
       if (l.isBlank()) continue;
       t.append(l+"|\n");
      }
