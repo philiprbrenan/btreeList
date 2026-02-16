@@ -288,8 +288,7 @@ class Tree extends Test                                                         
     void compactRight()                                                         // Compact the branch to the right
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
-      int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(i);
+      for (int i = N-1, p = R-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(i);
       super.compactRight();
       for (int i = 0; i < R; i++) data[i] = d[i];
      }
