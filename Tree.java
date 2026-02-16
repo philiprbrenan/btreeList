@@ -262,10 +262,7 @@ class Tree extends Test                                                         
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) k.add(""+keys(i));
-       }
-      for (int i = 0; i < numberOfSlots; i++)
-       {if (usedSlots(i)) d.add(""+data(i).name);
+       {if (usedSlots(i)) {k.add(""+keys(i)); d.add(""+data(i).name);}
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top.name+"\n";
      }
