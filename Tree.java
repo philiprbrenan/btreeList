@@ -185,14 +185,19 @@ class Tree extends Test                                                         
       name = branches++;                                                        // Name the branch to help in debugging
      }
 
-    int splitSize()       {return maxBranchSize / 2;}                           // Size of a split branch
-    Slots data(int Index) {return data[slots(Index)];}                          // Data at the indexed slot
-    Slots firstChild()    {return data(locateFirstUsedSlot());}                 // First child assuming there is one
+    int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
+    Slots firstChild()          {return data(locateFirstUsedSlot());}           // First child assuming there is one
+    Slots data      (int Index) {return data[slots(Index)];}                    // Data at the indexed slot
+    Slots dataDirect(int Index) {return data[Index];}                           // Data directly
+    void data       (int Index, Slots Slots) {data[slots(Index)] = Slots;}      // Child slots via index
+    void dataDirect (int Index, Slots Slots) {data[Index]        = Slots;}      // Child slots directly
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
       d.copy(this);                                                             // Copy slots
-      for (int i = 0; i < numberOfRefs; i++) d.data[i] = data[i];               // Copy data associated with branch keys
+      for (int i = 0; i < numberOfSlots; i++)
+       {if (usedSlots(i)) d.data(i, data(i));                                   // Copy used data
+       }
       d.top = top;
       return d;
      }
@@ -254,7 +259,7 @@ class Tree extends Test                                                         
 
     Integer insert(long Key, Slots Data)                                        // Insert a key data pair into a branch
      {final Integer i = insert(Key);
-      if (i != null) data[i] = Data;
+      if (i != null) dataDirect(i, Data);
       return i;
      }
 
@@ -271,7 +276,8 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++)
-       {if (data[i] == null) d.add("  ."); else d.add(String.format(formatKey, data[i].name));
+       {if (dataDirect(i) == null) d.add("  .");
+        else d.add(String.format(formatKey, dataDirect(i).name));
        }
       return "Branch   : "+name+"\n"+super.dump() +
              "data     :  "+d+"\ntop      :  "+String.format(formatKey, top.name)+"\n";
@@ -282,7 +288,7 @@ class Tree extends Test                                                         
       final Slots[]d = new Slots[R];
       for (int i = 0, p = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(i);
       super.compactLeft();
-      for (int i = 0; i < R; i++) data[i] = d[i];
+      for (int i = 0; i < R; i++) dataDirect(i, d[i]);
      }
 
     void compactRight()                                                         // Compact the branch to the right
@@ -290,14 +296,14 @@ class Tree extends Test                                                         
       final Slots[]d = new Slots[R];
       for (int i = N-1, p = R-1; i >= 0;--i) if (usedSlots(i)) d[p--] = data(i);
       super.compactRight();
-      for (int i = 0; i < R; i++) data[i] = d[i];
+      for (int i = 0; i < R; i++) dataDirect(i, d[i]);
      }
 
     void mergeData(long Key, Branch Left, Branch Right)                         // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
       for (int i = 0; i < maxBranchSize; ++i)                                   // Each slot
-       {if      (l.usedRefs(i)) data[i] = l.data(i);                            // Merge from left first
-        else if (r.usedRefs(i)) data[i] = r.data(i);                            // Merge from right last
+       {if      (l.usedRefs(i)) dataDirect(i, l.data(i));                       // Merge from left first
+        else if (r.usedRefs(i)) dataDirect(i, r.data(i));                       // Merge from right last
        }
       insert(Key, l.top); top = r.top;                                          // Insert left top
      }
@@ -935,8 +941,8 @@ top      :    4
    }
 
   static Leaf test_leaf()
-   {final Leaf l = new Tree(8, 7).new Leaf();
-    final long   []d = new long[]{13, 16, 15, 18, 17, 14, 12, 11};
+   {final Leaf  l = new Tree(8, 7).new Leaf();
+    final long[]d = new long[]{13, 16, 15, 18, 17, 14, 12, 11};
     for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
     return l;
    }
