@@ -118,7 +118,7 @@ class Tree extends Test                                                         
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(i));
+      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(i).index());
       super.compactLeft();
 
       for (int i = 0; i < R; i++) data(i, d[i]);
@@ -128,7 +128,7 @@ class Tree extends Test                                                         
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final long[]d = new long[R];
       int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(slots(i));
+      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(slots(i).index());
       super.compactRight();
       for (int i = 0; i < R; i++) data(i, d[i]);
      }
@@ -168,7 +168,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+data(slots(i)));}
+       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+data(slots(i).index()));}
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -197,9 +197,9 @@ class Tree extends Test                                                         
 
     int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
     Slots firstChild()          {return data(locateFirstUsedSlot());}           // First child assuming there is one
-    Slots data      (int Index) {return data[slots(Index)];}                    // Data at the indexed slot
+    Slots data      (int Index) {return data[slots(Index).index()];}                    // Data at the indexed slot
     Slots dataDirect(int Index) {return data[Index];}                           // Data directly
-    void data       (int Index, Slots Slots) {data[slots(Index)] = Slots;}      // Child slots via index
+    void data       (int Index, Slots Slots) {data[slots(Index).index()] = Slots;}      // Child slots via index
     void dataDirect (int Index, Slots Slots) {data[Index]        = Slots;}      // Child slots directly
 
     Branch duplicate()                                                          // Duplicate a branch
