@@ -749,7 +749,6 @@ keys     :   14   0  13   0  12   0   0  11
     final Slots        B = m.read();
     ok(B.dump(), b.dump());
 
-
     ok(m.numberOfRefs(),  8);
     ok(m.slots       (0), 0);
     ok(m.slots       (1), 7);
@@ -779,6 +778,21 @@ keys     :   14   0  13   0  12   0   0  11
     ok(m.keys        (4), 12);
     ok(m.keys        (5),  0);
     ok(m.keys        (6),  0);
+
+    m.slots    (13, 6);
+    m.usedSlots(13, true);
+    m.usedRefs(  6, true);
+    m.keys    (  6, 10);
+
+    ok(m.read().dump(), """
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   6   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   X   .
+usedRefs :    X   .   X   .   X   .   X   X
+keys     :   14   0  13   0  12   0  10  11
+""");
+
+
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
