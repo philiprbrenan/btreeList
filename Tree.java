@@ -176,9 +176,9 @@ class Tree extends Test                                                         
 //D1 Branch                                                                     // Use the slots to model a branch
 
   class Branch extends Slots                                                    // Branch
-   {Branch up; Integer upIndex;                                                 // The branch above
-    final Slots[]data = new Slots[maxBranchSize()];                             // Data corresponding to each key in the branch
+   {final Slots[]data = new Slots[maxBranchSize()];                             // Data corresponding to each key in the branch
     Slots top;                                                                  // Top most element
+    Branch up; Integer upIndex;                                                 // The branch above
 
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
