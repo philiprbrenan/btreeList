@@ -462,13 +462,13 @@ public class Slots extends Test                                                 
 
   class Memory                                                                  // Memory required to hold bytes
    {final int posNumberOfRefs = 0;
-    final int posSlots        = posNumberOfRefs + Integer.SIZE;
-    final int posUsedSlots    = posSlots        + Integer.SIZE*numberOfSlots;
-    final int posUsedRefs     = posNumberOfRefs + numberOfSlots;
-    final int posKeys         = posUsedSlots    + numberOfRefs;
-    final int posName         = posKeys         + Integer.SIZE*numberOfRefs;
-    final int size            = posName;
-    final byte[]memory = new byte[size];
+    final int posSlots        = posNumberOfRefs + Integer.BYTES;
+    final int posUsedSlots    = posSlots        + Integer.BYTES*numberOfSlots;
+    final int posUsedRefs     = posUsedSlots    + numberOfSlots;
+    final int posKeys         = posUsedRefs     + numberOfRefs;
+    final int posName         = posKeys         + Long   .BYTES*numberOfRefs;
+    final int size            = posName         + Integer.BYTES;
+    final byte[]memory        = new byte[size];
 
     void write(ByteBuffer memory)                                               // Write a set of slots into a portion of memory
      {int p = 0;
@@ -496,6 +496,33 @@ public class Slots extends Test                                                 
       s.name = memory.getInt(p);                                                                    p += Integer.BYTES;
       return s;
      }
+    int     numberOfRefs(ByteBuffer memory           ) {return memory.getInt (posNumberOfRefs                        );}
+    int     slots       (ByteBuffer memory, int Index) {return memory.getInt (posSlots        + Index * Integer.BYTES);}
+    boolean usedSlots   (ByteBuffer memory, int Index) {return memory.get    (posUsedSlots    + Index                ) > 0 ? true : false;}
+    boolean usedRefs    (ByteBuffer memory, int Index) {return memory.get    (posUsedRefs     + Index                ) > 0 ? true : false;}
+    long    keys        (ByteBuffer memory, int Index) {return memory.getLong(posKeys         + Index * Long.BYTES   );}
+    int     name        (ByteBuffer memory           ) {return memory.getInt (posName                                );}
+
+    void    numberOfRefs(ByteBuffer memory           , int     Value) {memory.putInt (posNumberOfRefs                        , Value);}
+    void    slots       (ByteBuffer memory, int Index, int     Value) {memory.putInt (posSlots        + Index * Integer.BYTES, Value);}
+    void    usedSlots   (ByteBuffer memory, int Index, boolean Value) {memory.put    (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
+    void    usedRefs    (ByteBuffer memory, int Index, boolean Value) {memory.put    (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
+    void    keys        (ByteBuffer memory, int Index, long    Value) {memory.putLong(posKeys         + Index * Long.BYTES   , Value);}
+    void    name        (ByteBuffer memory           , int     Value) {memory.putInt (posName                                , Value);}
+
+    int     numberOfRefs(         )         {return numberOfRefs(ByteBuffer.wrap(memory)       )       ;}
+    int     slots       (int Index)         {return slots       (ByteBuffer.wrap(memory), Index)       ;}
+    boolean usedSlots   (int Index)         {return usedSlots   (ByteBuffer.wrap(memory), Index)       ;}
+    boolean usedRefs    (int Index)         {return usedRefs    (ByteBuffer.wrap(memory), Index)       ;}
+    long    keys        (int Index)         {return keys        (ByteBuffer.wrap(memory), Index)       ;}
+    int     name        (         )         {return name        (ByteBuffer.wrap(memory)       )       ;}
+
+    void    numberOfRefs(           int     Value) {numberOfRefs(ByteBuffer.wrap(memory),        Value);}
+    void    slots       (int Index, int     Value) {slots       (ByteBuffer.wrap(memory), Index, Value);}
+    void    usedSlots   (int Index, boolean Value) {usedSlots   (ByteBuffer.wrap(memory), Index, Value);}
+    void    usedRefs    (int Index, boolean Value) {usedRefs    (ByteBuffer.wrap(memory), Index, Value);}
+    void    keys        (int Index, long    Value) {keys        (ByteBuffer.wrap(memory), Index, Value);}
+    void    name        (           int     Value) {name        (ByteBuffer.wrap(memory),        Value);}
    }
 
 //D1 Tests                                                                      // Test the slots
@@ -721,6 +748,37 @@ keys     :   14   0  13   0  12   0   0  11
     final Slots.Memory m = b.new Memory();
     final Slots        B = m.read();
     ok(B.dump(), b.dump());
+
+
+    ok(m.numberOfRefs(),  8);
+    ok(m.slots       (0), 0);
+    ok(m.slots       (1), 7);
+    ok(m.slots       (2), 0);
+    ok(m.slots       (3), 0);
+    ok(m.slots       (4), 0);
+    ok(m.slots       (5), 4);
+    ok(m.slots       (6), 0);
+    ok(m.usedSlots   (0), false);
+    ok(m.usedSlots   (1), true);
+    ok(m.usedSlots   (2), false);
+    ok(m.usedSlots   (3), false);
+    ok(m.usedSlots   (4), false);
+    ok(m.usedSlots   (5), true);
+    ok(m.usedSlots   (6), false);
+    ok(m.usedRefs    (0), true);
+    ok(m.usedRefs    (1), false);
+    ok(m.usedRefs    (2), true);
+    ok(m.usedRefs    (3), false);
+    ok(m.usedRefs    (4), true);
+    ok(m.usedRefs    (5), false);
+    ok(m.usedRefs    (6), false);
+    ok(m.keys        (0), 14);
+    ok(m.keys        (1),  0);
+    ok(m.keys        (2), 13);
+    ok(m.keys        (3),  0);
+    ok(m.keys        (4), 12);
+    ok(m.keys        (5),  0);
+    ok(m.keys        (6),  0);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
