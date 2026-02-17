@@ -52,7 +52,8 @@ class Tree extends Test                                                         
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
       d.copy(this);                                                             // Copy slots
-      for (int i = 0; i < numberOfRefs; i++) d.data(i, data(i));                // Copy data associated with leaf keys
+      final int R = numberOfRefs();
+      for (int i = 0; i < R; i++) d.data(i, data(i));                           // Copy data associated with leaf keys
       return d;
      }
 
@@ -62,7 +63,8 @@ class Tree extends Test                                                         
      {if (!full()) return null;                                                 // Only full leaves can be split
       final int Count = splitSize();
       int s = 0;                                                                // Count slots used
-      for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
+      final int S = numberOfSlots();
+      for (int i = 0; i < S; i++)                                               // Each slot
        {if (usedSlots(i))                                                       // Slot is in use
          {if (s++ < Count) Right.clearSlotAndRef(i);                            // Still in left leaf
           else                   clearSlotAndRef(i);                            // Clear slot being used in right leaf
@@ -82,7 +84,8 @@ class Tree extends Test                                                         
      {if (!full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
       long k = 0;                                                               // Splitting key
       int  p = 0;                                                               // Position in leaf
-      for (int i = 0; i < numberOfSlots; i++)                                   // Scan for splitting keys
+      final int S = numberOfSlots();
+      for (int i = 0; i < S; i++)                                               // Scan for splitting keys
        {if (usedSlots(i))                                                       // Used slot
          {if (p == splitSize()-1 || p == splitSize()) k += keys(i);             // Accumulate splitting key as last on left and first on right of split
           ++p;                                                                  // Next position
@@ -157,7 +160,8 @@ class Tree extends Test                                                         
     public String toString()                                                    // Print the values in the used slots
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
-      for (int i = 0; i < numberOfSlots; i++)
+      final int S = numberOfSlots();
+      for (int i = 0; i < S; i++)
        {if (usedSlots(i)) {k.add(""+keys(i)); d.add(""+data(slots(i)));}
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
@@ -195,7 +199,8 @@ class Tree extends Test                                                         
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
       d.copy(this);                                                             // Copy slots
-      for (int i = 0; i < numberOfSlots; i++)
+      final int S = numberOfSlots();
+      for (int i = 0; i < S; i++)
        {if (usedSlots(i)) d.data(i, data(i));                                   // Copy used data
        }
       d.top = top;
@@ -217,7 +222,8 @@ class Tree extends Test                                                         
       final int Count = splitSize();
       int  s  = 0;                                                              // Count slots used
       long sk = 0;                                                              // Splitting key
-      for (int i = 0; i < numberOfSlots; i++)                                   // Each slot
+      final int S = numberOfSlots();
+      for (int i = 0; i < S; i++)                                               // Each slot
        {if (usedSlots(i))                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left branch
            {Right.clearSlotAndRef(i);                                           // Free the entry from the right branch as it is being used in the left branch
@@ -242,7 +248,8 @@ class Tree extends Test                                                         
     long splittingKey()                                                         // Splitting key from a branch
      {if (!full()) stop("Branch not full");                                     // The branch must be full if we are going to split it
       long k = 0;                                                               // Splitting key
-      for (int i = 0, p = 0; i < numberOfSlots; i++)                            // Scan for splitting keys
+      final int S = numberOfSlots();
+      for (int i = 0, p = 0; i < S; i++)                                        // Scan for splitting keys
        {if (usedSlots(i) && p++ == splitSize()) k += keys(i);                   // Splitting key as last on left and first on right of split
        }
       return k;                                                                 // Splitting key
@@ -266,7 +273,8 @@ class Tree extends Test                                                         
     public String toString()                                                    // Print the values in the used slots
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
-      for (int i = 0; i < numberOfSlots; i++)
+      final int S = numberOfSlots();
+      for (int i = 0; i < S; i++)
        {if (usedSlots(i)) {k.add(""+keys(i)); d.add(""+data(i).name);}
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top.name+"\n";
@@ -378,7 +386,8 @@ class Tree extends Test                                                         
 
     private int count()                                                         // Count the number of entries under this branch
      {int n = 0;
-      for  (int i = 0; i < numberOfSlots; i++)                                  // Each slot
+      final int S = numberOfSlots();
+      for  (int i = 0; i < S; i++)                                              // Each slot
        {if (usedSlots(i))                                                       // Active slot
          {final Slots s = data(i);
           if      (s instanceof Leaf)   n += s.countUsed();
@@ -732,7 +741,8 @@ class Tree extends Test                                                         
    {padStrings(P, level);
 
     final StringJoiner s = new StringJoiner(",");
-    for (int i = 0; i < Leaf.numberOfSlots; i++)
+    final int S = Leaf.numberOfSlots();
+    for (int i = 0; i < S; i++)
      {if (Leaf.usedSlots(i)) s.add(""+Leaf.keys(i));
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
@@ -751,7 +761,8 @@ class Tree extends Test                                                         
     final int L = level * linesToPrintABranch, K = B.countUsed();               // Size of branch
 
     if (K > 0)                                                                  // Branch has key, next pairs
-     {for  (int i = 0; i < B.numberOfSlots; i++)
+     {final int S = B.numberOfSlots();
+      for  (int i = 0; i < S; i++)
        {if (B.usedSlots(i))
          {final Slots   s = B.data(i);
           final boolean l = s instanceof Leaf, b = s instanceof Branch;
