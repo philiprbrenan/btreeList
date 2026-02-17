@@ -8,13 +8,13 @@ import java.util.*;
 import java.nio.*;
 
 public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
- {protected final int      numberOfSlots;                                       // Number of slots
-  protected final int      numberOfRefs;                                        // Number of references which shopuld be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
-  protected final int      redistributionWidth;                                 // Redistribute if the next slot is further than this
-  protected final int    []slots;                                               // Key ordering
-  protected final boolean[]usedSlots;                                           // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
-  protected final boolean[]usedRefs;                                            // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
-  protected final long   []keys;                                                // Keys
+ {private final int      numberOfSlots;                                         // Number of slots
+  private final int      numberOfRefs;                                          // Number of references which shopuld be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
+  private final int      redistributionWidth;                                   // Redistribute if the next slot is further than this
+  private final int    []slots;                                                 // Key ordering
+  private final boolean[]usedSlots;                                             // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
+  private final boolean[]usedRefs;                                              // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
+  private final long   []keys;                                                  // Keys
   final String formatKey = "%3d";                                               // Format a key for dumping during testing
   int            name;                                                          // Numeric name for these slots for debugging purposes
   static boolean debug = false;                                                 // Debug if true
