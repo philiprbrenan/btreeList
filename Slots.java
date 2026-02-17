@@ -94,8 +94,8 @@ public class Slots extends Test                                                 
   protected void  usedRefs(int I, boolean Value) {usedRefs  [I]  = Value;}      // The indexed reference usage indicator
             void      keys(int I, long    Value) {keys[slots[I]] = Value;}      // The indexed key
 
-  long key(int I) {return      keys[I];}                                        // Gte the key directly
-  void key(int I, long Value) {keys[I] = Value;}                                // Set the key directly
+  protected long key(int I) {return      keys[I];}                                        // Get the key directly
+  protected void key(int I, long Value) {keys[I] = Value;}                                // Set the key directly
 
 //D2 Refs                                                                       // Allocate and free references to keys
 
@@ -119,7 +119,6 @@ public class Slots extends Test                                                 
   boolean lt(long Key, int Slot) {return !eq(Key, Slot) && le(Key, Slot);}      // Search key is less than or equal to indexed key
   boolean ge(long Key, int Slot) {return  eq(Key, Slot) || gt(Key, Slot);}      // Search key is less than or equal to indexed key
   boolean gt(long Key, int Slot) {return !le(Key, Slot);}                       // Search key is less than or equal to indexed key
-  String getKey(int Slot)        {return ""+ keys(Slot);}                       // Value of the referenced key as a string
 
   long firstKey()                                                               // First key in slots
    {if (empty()) stop("No first key in empty slots");                           // First key in slots if there is one
