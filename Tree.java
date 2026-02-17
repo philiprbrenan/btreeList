@@ -22,9 +22,13 @@ class Tree extends Test                                                         
     final String m2 = m + "branch size must be 3 or more, not: " +MaxBranchSize;
     final String m3 = m + "branch size must be odd, not: "       +MaxBranchSize;
 
-    if (MaxLeafSize      <  2) stop(m1);
-    if (MaxBranchSize    <  3) stop(m2);
-    if (MaxBranchSize %2 == 0) stop(m3);
+    final boolean b1 = MaxLeafSize      <  2,
+                  b2 = MaxBranchSize    <  3,
+                  b3 = MaxBranchSize %2 == 0;
+
+    if (b1 && !b2 && !b3) stop(m1); else if (b1) say(m1);
+    if (b2        && !b3) stop(m2); else if (b2) say(m2);
+    if (b3              ) stop(m3);
 
     maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
