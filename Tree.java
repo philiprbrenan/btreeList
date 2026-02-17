@@ -39,6 +39,7 @@ class Tree extends Test                                                         
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
   static Slots.Key Key(long Value) {return new Slots.Key(Value);}
+  public record Data(long value) {}                                             // A data value in a leaf
 
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
@@ -50,8 +51,6 @@ class Tree extends Test                                                         
      {super(maxLeafSize);                                                       // Slots for leaf
       name = leaves++;                                                          // Name the leaf to help in debugging
      }
-
-    public record Data(long value) {}                                           // A data value in a leaf
 
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
     Data data(int I)             {return data[I];}                              // Get value of data field at index
@@ -524,7 +523,7 @@ class Tree extends Test                                                         
     return null;
    }
 
-  void insert(Slots.Key Key, Leaf.Data Data)                                    // Insert a key, data pair or update key data pair in the tree
+  void insert(Slots.Key Key, Data Data)                                         // Insert a key, data pair or update key data pair in the tree
    {if (root == null)                                                           // Empty tree
      {final Leaf l = new Leaf(); root = l;                                      // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
@@ -844,10 +843,10 @@ class Tree extends Test                                                         
 
   static void test_compactLeafLeft()
    {final Leaf l = new Tree(8, 7).new Leaf();
-    l.insert(Key(13), new Leaf.Data(23));
-    l.insert(Key(12), new Leaf.Data(22));
-    l.insert(Key(14), new Leaf.Data(24));
-    l.insert(Key(11), new Leaf.Data(21));
+    l.insert(Key(13), new Data(23));
+    l.insert(Key(12), new Data(22));
+    l.insert(Key(14), new Data(24));
+    l.insert(Key(11), new Data(21));
     ok(l.dump(), """
 Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -871,10 +870,10 @@ data     :   21  22  23  24   0   0   0   0
 
   static void test_compactLeafRight()
    {final Leaf l = new Tree(8, 7).new Leaf();
-    l.insert(Key(13), new Leaf.Data(23));
-    l.insert(Key(12), new Leaf.Data(22));
-    l.insert(Key(14), new Leaf.Data(24));
-    l.insert(Key(11), new Leaf.Data(21));
+    l.insert(Key(13), new Data(23));
+    l.insert(Key(12), new Data(22));
+    l.insert(Key(14), new Data(24));
+    l.insert(Key(11), new Data(21));
     ok(l.dump(), """
 Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -957,15 +956,15 @@ top      :    4
 """);
    }
 
-  static Leaf.Data[]test_leaf_data(int...Values)
-   {final Leaf.Data[]d = new Leaf.Data[Values.length];
-    for (int i = 0; i < d.length; i++) d[i] = new Leaf.Data(Values[i]);
+  static  Data[]test_leaf_data(int...Values)
+   {final Data[]d = new Data[Values.length];
+    for (int i = 0; i < d.length; i++) d[i] = new Data(Values[i]);
     return d;
    }
 
   static Leaf test_leaf()
-   {final Leaf       l = new Tree(8, 7).new Leaf();
-    final Leaf.Data[]d = test_leaf_data(13, 16, 15, 18, 17, 14, 12, 11);
+   {final Leaf  l = new Tree(8, 7).new Leaf();
+    final Data[]d = test_leaf_data(13, 16, 15, 18, 17, 14, 12, 11);
     for (int i = 0; i < d.length; i++) l.insert(Key(d[i].value()), d[i]);
     return l;
    }
@@ -1066,15 +1065,15 @@ top : 8
    }
 
   static Leaf test_leaf1()
-   {final Leaf       l = new Tree(8,7).new Leaf();
-    final Leaf.Data[]d = test_leaf_data(13, 14, 12, 11);
+   {final Leaf  l = new Tree(8,7).new Leaf();
+    final Data[]d = test_leaf_data(13, 14, 12, 11);
     for (int i = 0; i < d.length; i++) l.insert(Key(d[i].value()), d[i]);
     return l;
    }
 
   static Leaf test_leaf2()
-   {final Leaf       l = new Tree(8,7).new Leaf();
-    final Leaf.Data[]d = test_leaf_data(16, 15, 18, 17);
+   {final Leaf  l = new Tree(8,7).new Leaf();
+    final Data[]d = test_leaf_data(16, 15, 18, 17);
     for (int i = 0; i < d.length; i++) l.insert(Key(d[i].value()), d[i]);
     return l;
    }
@@ -1206,177 +1205,177 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
   static void test_insert()
    {final Tree t = new Tree(4, 3);
     ok(t.count(), 0);
-    t.insert(Key(11), new Leaf.Data(21));
+    t.insert(Key(11), new Data(21));
     ok(t, """
 11|
 """);
-    t.insert(Key(13), new Leaf.Data(23));
+    t.insert(Key(13), new Data(23));
     ok(t, """
 11,13|
 """);
-    t.insert(Key(12), new Leaf.Data(22));
+    t.insert(Key(12), new Data(22));
     ok(t, """
 11,12,13|
 """);
-    t.insert(Key(14), new Leaf.Data(24));
+    t.insert(Key(14), new Data(24));
     ok(t, """
 11,12,13,14|
 """);
-    t.insert(Key(15), new Leaf.Data(25));
+    t.insert(Key(15), new Data(25));
     ok(t, """
       12        |
 11,12   13,14,15|
 """);
-    t.insert(Key(16), new Leaf.Data(26));
+    t.insert(Key(16), new Data(26));
     ok(t, """
       12           |
 11,12   13,14,15,16|
 """);
-    t.insert(Key(17), new Leaf.Data(27));
+    t.insert(Key(17), new Data(27));
     ok(t, """
             14        |
 11,12,13,14   15,16,17|
 """);
-    t.insert(Key(18), new Leaf.Data(28));
+    t.insert(Key(18), new Data(28));
     ok(t, """
             14           |
 11,12,13,14   15,16,17,18|
 """);
-    t.insert(Key(19), new Leaf.Data(29));
+    t.insert(Key(19), new Data(29));
     ok(t, """
             14      16        |
 11,12,13,14   15,16   17,18,19|
 """);
-    t.insert(Key(20), new Leaf.Data(30));
+    t.insert(Key(20), new Data(30));
     ok(t, """
             14      16           |
 11,12,13,14   15,16   17,18,19,20|
 """);
-    t.insert(Key(21), new Leaf.Data(31));
+    t.insert(Key(21), new Data(31));
     ok(t, """
             14            18        |
 11,12,13,14   15,16,17,18   19,20,21|
 """);
-    t.insert(Key(22), new Leaf.Data(32));
+    t.insert(Key(22), new Data(32));
     ok(t, """
             14            18           |
 11,12,13,14   15,16,17,18   19,20,21,22|
 """);
-    t.insert(Key(23), new Leaf.Data(33));
+    t.insert(Key(23), new Data(33));
     ok(t, """
             14            18      20        |
 11,12,13,14   15,16,17,18   19,20   21,22,23|
 """);
-    t.insert(Key(24), new Leaf.Data(34));
+    t.insert(Key(24), new Data(34));
     ok(t, """
             14            18      20           |
 11,12,13,14   15,16,17,18   19,20   21,22,23,24|
 """);
-    t.insert(Key(25), new Leaf.Data(35));
+    t.insert(Key(25), new Data(35));
     ok(t, """
             14            18            22        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25|
 """);
     ok(t.count(), 15);
-    t.insert(Key(26), new Leaf.Data(36));
+    t.insert(Key(26), new Data(36));
     ok(t, """
             14            18            22           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26|
 """);
     ok(t.count(), 16);
-    t.insert(Key(27), new Leaf.Data(37));
+    t.insert(Key(27), new Data(37));
     ok(t, """
                           18                              |
             14                          22      24        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27|
 """);
     ok(t.count(), 17);
-    t.insert(Key(28), new Leaf.Data(38));
+    t.insert(Key(28), new Data(38));
     ok(t, """
                           18                                 |
             14                          22      24           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27,28|
 """);
     ok(t.count(), 18);
-    t.insert(Key(29), new Leaf.Data(39));
+    t.insert(Key(29), new Data(39));
     ok(t, """
                           18                                    |
             14                          22            26        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29|
 """);
-    t.insert(Key(30), new Leaf.Data(40));
+    t.insert(Key(30), new Data(40));
     ok(t, """
                           18                                       |
             14                          22            26           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30|
 """);
-    t.insert(Key(31), new Leaf.Data(41));
+    t.insert(Key(31), new Data(41));
     ok(t, """
                           18                                            |
             14                          22            26      28        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31|
 """);
-    t.insert(Key(32), new Leaf.Data(42));
+    t.insert(Key(32), new Data(42));
     ok(t, """
                           18                                               |
             14                          22            26      28           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31,32|
 """);
-    t.insert(Key(33), new Leaf.Data(43));
+    t.insert(Key(33), new Data(43));
     ok(""+t, """
                           18                                                  |
             14                          22            26            30        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33|
 """);
-    t.insert(Key(34), new Leaf.Data(44));
+    t.insert(Key(34), new Data(44));
     ok(t, """
                           18                                                     |
             14                          22            26            30           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34|
 """);
-    t.insert(Key(35), new Leaf.Data(45));
+    t.insert(Key(35), new Data(45));
     ok(t, """
                                                       26                              |
             14            18            22                          30      32        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35|
 """);
-    t.insert(Key(36), new Leaf.Data(46));
+    t.insert(Key(36), new Data(46));
     ok(t, """
                                                       26                                 |
             14            18            22                          30      32           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35,36|
 """);
-    t.insert(Key(37), new Leaf.Data(47));
+    t.insert(Key(37), new Data(47));
     ok(t, """
                                                       26                                    |
             14            18            22                          30            34        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37|
 """);
-    t.insert(Key(38), new Leaf.Data(48));
+    t.insert(Key(38), new Data(48));
     ok(t, """
                                                       26                                       |
             14            18            22                          30            34           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38|
 """);
-    t.insert(Key(39), new Leaf.Data(49));
+    t.insert(Key(39), new Data(49));
     ok(t, """
                                                       26                                            |
             14            18            22                          30            34      36        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39|
 """);
-    t.insert(Key(40), new Leaf.Data(50));
+    t.insert(Key(40), new Data(50));
     ok(t, """
                                                       26                                               |
             14            18            22                          30            34      36           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39,40|
 """);
-    t.insert(Key(41), new Leaf.Data(51));
+    t.insert(Key(41), new Data(51));
     ok(t, """
                                                       26                                                  |
             14            18            22                          30            34            38        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41|
 """);
-    t.insert(Key(42), new Leaf.Data(52));
+    t.insert(Key(42), new Data(52));
     ok(t, """
                                                       26                                                     |
             14            18            22                          30            34            38           |
@@ -1415,7 +1414,7 @@ Path        : 12, 8
    {final Tree t = new Tree(4, 3);
     final int N = 32;
     for (int i = N; i > 0; i--)
-     {t.insert(Key(i), new Leaf.Data(i));
+     {t.insert(Key(i), new Data(i));
       ok(t.count(), N-i+1);
      }
     ok(t, """
@@ -1523,7 +1522,7 @@ Path        : 7, 8
   static Tree test_insert_random_32()
    {final Tree t = new Tree(4, 3);
     for (int i = 0; i < random_32.length; i++)
-     {t.insert(Key(random_32[i]), new Leaf.Data(i));
+     {t.insert(Key(random_32[i]), new Data(i));
       ok(t.count(), i+1);
      }
     ok(t, """
@@ -1537,7 +1536,7 @@ Path        : 7, 8
   static Tree test_insert_random()
    {final Tree t = new Tree(4, 3);
     for (int i = 0; i < random.length; i++)
-     {t.insert(Key(random[i]), new Leaf.Data(i));
+     {t.insert(Key(random[i]), new Data(i));
       ok(t.count(), i+1);
      }
     ok(t, """
@@ -1552,7 +1551,7 @@ Path        : 7, 8
   static void test_delete()
    {final Tree t = new Tree(4, 3);
     final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Leaf.Data(i));
+    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
 
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
@@ -1681,7 +1680,7 @@ Delete: 32
   static void test_delete_descending()
    {final Tree t = new Tree(4, 3);
     final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Leaf.Data(i));
+    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
 
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
@@ -1936,7 +1935,7 @@ Delete 22
   static void test_deep()
    {final Tree t = new Tree(2, 3);
     final int N = 256;
-    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Leaf.Data(i));
+    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
     ok(t, """
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             128                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
                                                                                                                  32                                                                                                                              64                                                                                                                              96                                                                                                                                                                                                                                                                                                                                                         160                                                                                                                                                                             192                                                                                                                                                                             224                                                                                                                                                                            |
