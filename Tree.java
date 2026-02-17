@@ -38,6 +38,8 @@ class Tree extends Test                                                         
   int maxBranchSize() {return maxBranchSize;}                                   // Maximum size of a branch
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
+  static Slots.Key Key(long Value) {return new Slots.Key(Value);}
+
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
   class Leaf extends Slots                                                      // Leaf
@@ -91,7 +93,7 @@ class Tree extends Test                                                         
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Scan for splitting keys
        {if (usedSlots(i))                                                       // Used slot
-         {if (p == splitSize()-1 || p == splitSize()) k += keys(i);             // Accumulate splitting key as last on left and first on right of split
+         {if (p == splitSize()-1 || p == splitSize()) k += keys(i).value();     // Accumulate splitting key as last on left and first on right of split
           ++p;                                                                  // Next position
          }
        }
@@ -102,11 +104,11 @@ class Tree extends Test                                                         
      {final long  sk = splittingKey();
       final Leaf   l = duplicate(), r = l.splitRight();
       final Branch b = new Branch();
-      b.insert(sk, l); b.top = r;
+      b.insert(new Key(sk), l); b.top = r;
       return b;
      }
 
-    Integer insert(long Key, long Data)                                         // Insert a key data pair into a leaf
+    Integer insert(Key Key, long Data)                                          // Insert a key data pair into a leaf
      {final Integer i = insert(Key);
       if (i != null) data(i, Data);                                             // Save data in allocated reference
       return i;
@@ -166,7 +168,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i)) {k.add(""+keys(i)); d.add(""+data(slots(i)));}
+       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+data(slots(i)));}
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -214,9 +216,9 @@ class Tree extends Test                                                         
     Split splitRight() {return splitRight(duplicate());}                        // Split a left branch into a new right branch
 
     class Split                                                                 // The result of splitting a branch
-     {final long key;                                                           // The splitting key
+     {final Key key;                                                            // The splitting key
       final Branch left, right;                                                 // Left and right sides of split branch
-      Split(long Key, Branch Left, Branch Right)
+      Split(Key Key, Branch Left, Branch Right)
        {key = Key; left = Left; right = Right;
        }
      }
@@ -225,7 +227,7 @@ class Tree extends Test                                                         
      {if (!full()) return null;                                                 // Only full branches can be split
       final int Count = splitSize();
       int  s  = 0;                                                              // Count slots used
-      long sk = 0;                                                              // Splitting key
+      Key  sk = null;                                                           // Splitting key
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Each slot
        {if (usedSlots(i))                                                       // Slot is in use
@@ -254,7 +256,7 @@ class Tree extends Test                                                         
       long k = 0;                                                               // Splitting key
       final int S = numberOfSlots();
       for (int i = 0, p = 0; i < S; i++)                                        // Scan for splitting keys
-       {if (usedSlots(i) && p++ == splitSize()) k += keys(i);                   // Splitting key as last on left and first on right of split
+       {if (usedSlots(i) && p++ == splitSize()) k += keys(i).value();           // Splitting key as last on left and first on right of split
        }
       return k;                                                                 // Splitting key
      }
@@ -264,11 +266,11 @@ class Tree extends Test                                                         
       final Branch       l = duplicate();
       final Branch.Split s = l.splitRight();
       final Branch       b = new Branch();
-      b.insert(sk, s.left); b.top = s.right;
+      b.insert(new Key(sk), s.left); b.top = s.right;
       return b;
      }
 
-    Integer insert(long Key, Slots Data)                                        // Insert a key data pair into a branch
+    Integer insert(Key Key, Slots Data)                                         // Insert a key data pair into a branch
      {final Integer i = insert(Key);
       if (i != null) dataDirect(i, Data);
       return i;
@@ -279,7 +281,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i)) {k.add(""+keys(i)); d.add(""+data(i).name);}
+       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+data(i).name);}
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top.name+"\n";
      }
@@ -311,7 +313,7 @@ class Tree extends Test                                                         
       for (int i = 0; i < R; i++) dataDirect(i, d[i]);
      }
 
-    void mergeData(long Key, Branch Left, Branch Right)                         // Merge the data from the compacted left and right slots
+    void mergeData(Key Key, Branch Left, Branch Right)                         // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
       for (int i = 0; i < maxBranchSize; ++i)                                   // Each slot
        {if      (l.usedRefs(i)) dataDirect(i, l.data(i));                       // Merge from left first
@@ -320,7 +322,7 @@ class Tree extends Test                                                         
       insert(Key, l.top); top = r.top;                                          // Insert left top
      }
 
-    boolean mergeFromRight(long Key, Branch Right)                              // Merge the specified slots from the right
+    boolean mergeFromRight(Key Key, Branch Right)                               // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
       final Branch l =       duplicate(), r = Right.duplicate();
       l.compactLeft(); r.compactRight();
@@ -330,7 +332,7 @@ class Tree extends Test                                                         
       return true;
      }
 
-    boolean mergeFromLeft(long Key, Branch Left)                                // Merge the specified slots from the right
+    boolean mergeFromLeft(Key Key, Branch Left)                                 // Merge the specified slots from the right
      {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
       final Branch l = Left.duplicate(), r = duplicate();
       l.compactLeft(); r.compactRight();
@@ -385,8 +387,8 @@ class Tree extends Test                                                         
       return data(Index);                                                       // The indicated child
      }
 
-    Tree tree()                      {return Tree.this;}                        // Containing tree
-    private Slots stepDown(long Key) {return child(locateFirstGe(Key));}        // Step down from this branch
+    Tree tree()                     {return Tree.this;}                         // Containing tree
+    private Slots stepDown(Key Key) {return child(locateFirstGe(Key));}         // Step down from this branch
 
     private int count()                                                         // Count the number of entries under this branch
      {int n = 0;
@@ -407,7 +409,7 @@ class Tree extends Test                                                         
 
 //D1 Low Level                                                                  // Low level operations
 
-  void mergeAlongPath(long Key)                                                 // Merge along the path from the specified key to the root
+  void mergeAlongPath(Slots.Key Key)                                            // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
     if (f == null) return;                                                      // Empty tree
     if (f.leaf.up != null)                                                      // Process path from leaf to root
@@ -440,7 +442,7 @@ class Tree extends Test                                                         
     mergeRoot(Key);                                                             // Merge the root if possible
    }
 
-  void mergeRoot(long Key)                                                      // Collapse the root if possible
+  void mergeRoot(Slots.Key Key)                                                 // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
@@ -470,10 +472,10 @@ class Tree extends Test                                                         
 
   class Find                                                                    // Find results
    {final Leaf leaf;                                                            // Leaf that should contain the key
-    final long key;                                                             // Search key
+    final Slots.Key key;                                                             // Search key
     final Slots.Locate locate;                                                  // Location details for key
 
-    Find(long Key, Leaf Leaf)
+    Find(Slots.Key Key, Leaf Leaf)
      {key    = Key;
       leaf   = Leaf;
       locate = Leaf.new Locate(Key);
@@ -481,7 +483,7 @@ class Tree extends Test                                                         
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
-      s.append("Find Key : "+key+"\n");
+      s.append("Find Key : "+key.value()+"\n");
       if (leaf    != null) s.append(leaf.dump());
       if (locate  != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
@@ -491,7 +493,7 @@ class Tree extends Test                                                         
      }
    }
 
-  Find find(long Key)
+  Find find(Slots.Key Key)
    {if (root == null) return null;                                              // Empty tree
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
@@ -501,7 +503,7 @@ class Tree extends Test                                                         
     return find(Key, (Branch)root);                                             // Start search from root
    }
 
-  Find find(long Key, Branch Start)
+  Find find(Slots.Key Key, Branch Start)
    {Branch p = Start;                                                           // Start at root
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
@@ -520,7 +522,7 @@ class Tree extends Test                                                         
     return null;
    }
 
-  void insert(long Key, long Data)                                              // Insert a key, data pair or update key data pair in the tree
+  void insert(Slots.Key Key, long Data)                                              // Insert a key, data pair or update key data pair in the tree
    {if (root == null)                                                           // Empty tree
      {final Leaf l = new Leaf(); root = l;                                      // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
@@ -543,8 +545,8 @@ class Tree extends Test                                                         
         final Leaf   r = F.leaf;
         final long  sk = r.splittingKey();
         final Leaf   l = r.splitLeft();
-        b.insert(sk, l);                                                        // Insert new left leaf into leaf
-        if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);           // Insert new key, data pair into left leaf
+        b.insert(Key(sk), l);                                                  // Insert new left leaf into leaf
+        if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);           // Insert new key, data pair into left leaf
         final Integer K = b.locateFirstGe(Key);                                 // Position of leaf in parent
         b.mergeLeftSibling (K);                                                 // Merge left leaf into prior leaf if possible
         b.mergeRightSibling(K);                                                 // Merge left leaf into prior leaf if possible
@@ -577,8 +579,8 @@ class Tree extends Test                                                         
         if (r.full())                                                           // Split the leaf if it is full
          {final long sk = r.splittingKey();                                     // Splitting key
           final Leaf  l = r.splitLeft();                                        // Right leaf split out of the leaf
-          p.insert(sk, l);                                                      // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-          if (Key <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
+          p.insert(Key(sk), l);                                                // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+          if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
          }
         else r.insert(Key, Data);                                               // Leaf has sufficient space
 
@@ -589,15 +591,15 @@ class Tree extends Test                                                         
       if (r.full())                                                             // Split the leaf if it is full
        {final long        sk = r.splittingKey();                                // Splitting key
         final Branch.Split s = r.splitLeft();                                   // Branch split out on right from
-        p.insert(sk, s.left);                                                   // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-        if (Key <= sk) p = s.left; else p = s.right;                            // Traverse left or right
+        p.insert(Key(sk), s.left);                                                   // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+        if (Key.value() <= sk) p = s.left; else p = s.right;                            // Traverse left or right
        }
       else p = r;                                                               // Step down into non full branch
      }
     stop("Insert fell off the end of tree after this many searches:", mnl());
    }
 
-  void delete(long Key)                                                         // Delete a key from the tree
+  void delete(Slots.Key Key)                                                         // Delete a key from the tree
    {if (root == null) return;                                                   // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
@@ -619,7 +621,7 @@ class Tree extends Test                                                         
      {final Leaf l = (Leaf)root;
       final int  i = l.locateFirstUsedSlot();
       l.up = null; l.upIndex = i;
-      return new Find(l.data(i), l);
+      return new Find(l.keys(i), l);
      }
 
     return goFirst((Branch)root);                                               // Start at root and go all the way first
@@ -634,9 +636,8 @@ class Tree extends Test                                                         
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
         l.up = p; l.upIndex = P;
-        final int  i = l.locateFirstUsedSlot();
-        final long k = l.data(l.slots(i));
-        return new Find(k, l);
+        final int       i = l.locateFirstUsedSlot();
+        return new Find(l.keys(i), l);
        }
       final Branch b = (Branch)q;
           b.up = p; b.upIndex = P;                                              // Step down into non full branch
@@ -652,7 +653,7 @@ class Tree extends Test                                                         
      {final Leaf l = (Leaf)root;
       final int  i = l.locateLastUsedSlot();
       l.up = null; l.upIndex = null;
-      return new Find(l.data(i), l);
+      return new Find(l.keys(i), l);
      }
 
     return goLast((Branch)root);                                                // Start at root and go all the way last
@@ -666,9 +667,8 @@ class Tree extends Test                                                         
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf l = (Leaf)q;
         final int  i = l.locateLastUsedSlot();
-        final long k = l.data(l.slots(i));
         l.up = p; l.upIndex = null;
-        return new Find(k, l);
+        return new Find(l.keys(i), l);
        }
          ((Branch)q).up = p;
       p = (Branch)q;                                                            // Step down into non full branch
@@ -683,7 +683,7 @@ class Tree extends Test                                                         
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
 
     final Integer i = l.locateNextUsedSlot(Found.locate.at+1);                  // Next slot in leaf
-    if (i != null) return new Find(l.data(l.slots(i)), l);
+    if (i != null) return new Find(l.keys(i), l);
 
     if (l.up.top != l)                                                          // In the body of the parent branch of the leaf
      {final Integer I = l.up.locateNextUsedSlot(l.upIndex+1);
@@ -710,7 +710,7 @@ class Tree extends Test                                                         
     if (l.up == null) return null;                                              // Root is a leaf and we are at the end of it
 
     final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);                  // Previous slot in leaf
-    if (i != null) return new Find(l.data(l.slots(i)), l);
+    if (i != null) return new Find(l.keys(i), l);
 
     if (l.upIndex == null)                                                      // Last leaf of parent
      {final Integer I = l.up.locateLastUsedSlot();
@@ -747,7 +747,7 @@ class Tree extends Test                                                         
     final StringJoiner s = new StringJoiner(",");
     final int S = Leaf.numberOfSlots();
     for (int i = 0; i < S; i++)
-     {if (Leaf.usedSlots(i)) s.add(""+Leaf.keys(i));
+     {if (Leaf.usedSlots(i)) s.add(""+Leaf.keys(i).value());
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
@@ -774,7 +774,7 @@ class Tree extends Test                                                         
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details);
           else if (b) printBranch((Branch)s, P, level+1, Details);
 
-          P.elementAt(L+0).append(" "+B.keys(i));                               // Key
+          P.elementAt(L+0).append(" "+B.keys(i).value());                       // Key
           if (Details)
            {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                 // Branch, key, next pair
             final String U = B.up      != null ? ""+B.up.name : "null";
@@ -842,10 +842,10 @@ class Tree extends Test                                                         
 
   static void test_compactLeafLeft()
    {final Leaf l = new Tree(8, 7).new Leaf();
-    l.insert(13, 23);
-    l.insert(12, 22);
-    l.insert(14, 24);
-    l.insert(11, 21);
+    l.insert(Key(13), 23);
+    l.insert(Key(12), 22);
+    l.insert(Key(14), 24);
+    l.insert(Key(11), 21);
     ok(l.dump(), """
 Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -869,10 +869,10 @@ data     :   21  22  23  24   0   0   0   0
 
   static void test_compactLeafRight()
    {final Leaf l = new Tree(8, 7).new Leaf();
-    l.insert(13, 23);
-    l.insert(12, 22);
-    l.insert(14, 24);
-    l.insert(11, 21);
+    l.insert(Key(13), 23);
+    l.insert(Key(12), 22);
+    l.insert(Key(14), 24);
+    l.insert(Key(11), 21);
     ok(l.dump(), """
 Leaf     : 0 up: null index: null
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -896,9 +896,9 @@ data     :    0   0   0   0  21  22  23  24
 
   static void test_compactBranchLeft()
    {final Branch b = new Tree(8, 7).new Branch();
-    b.insert(12, Slots.fake(12));
-    b.insert(11, Slots.fake(11));
-    b.insert(13, Slots.fake(13));
+    b.insert(Key(12), Slots.fake(12));
+    b.insert(Key(11), Slots.fake(11));
+    b.insert(Key(13), Slots.fake(13));
     b.top =      Slots.fake(4);
     ok(b.dump(), """
 Branch   : 0
@@ -927,9 +927,9 @@ top      :    4
 
   static void test_compactBranchRight()
    {final Branch b = new Tree(8, 7).new Branch();
-    b.insert(12, Slots.fake(12));
-    b.insert(11, Slots.fake(11));
-    b.insert(13, Slots.fake(13));
+    b.insert(Key(12), Slots.fake(12));
+    b.insert(Key(11), Slots.fake(11));
+    b.insert(Key(13), Slots.fake(13));
     b.top =      Slots.fake(4);
     ok(b.dump(), """
 Branch   : 0
@@ -958,7 +958,7 @@ top      :    4
   static Leaf test_leaf()
    {final Leaf  l = new Tree(8, 7).new Leaf();
     final long[]d = new long[]{13, 16, 15, 18, 17, 14, 12, 11};
-    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
+    for (int i = 0; i < d.length; i++) l.insert(Key(d[i]), d[i]);
     return l;
    }
 
@@ -1020,7 +1020,7 @@ data: 15, 16, 17, 18
 
     final long[]k = new long[] {13, 16, 15, 17, 14, 12, 11};
     final int []d = new int [] {3,   6,  5,  7,  4,  2, 1};
-    for (int i = 0; i < d.length; i++) b.insert(k[i], Slots.fake(d[i]));
+    for (int i = 0; i < d.length; i++) b.insert(Key(k[i]), Slots.fake(d[i]));
     b.top = Slots.fake(8);
     return b;
    }
@@ -1038,7 +1038,7 @@ keys: 15, 16, 17
 data: 5, 6, 7
 top : 8
 """);
-    ok(s.key, 14);
+    ok(s.key.value(), 14);
    }
 
   static void test_splitRightBranchIntoLeft()
@@ -1054,20 +1054,20 @@ keys: 15, 16, 17
 data: 5, 6, 7
 top : 8
 """);
-    ok(s.key, 14);
+    ok(s.key.value(), 14);
    }
 
   static Leaf test_leaf1()
    {final Leaf    l = new Tree(8,7).new Leaf();
     final long[]d = new long[]{13, 14, 12, 11};
-    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
+    for (int i = 0; i < d.length; i++) l.insert(Key(d[i]), d[i]);
     return l;
    }
 
   static Leaf test_leaf2()
    {final Leaf    l = new Tree(8,7).new Leaf();
     final long[]d = new long[]{16, 15, 18, 17};
-    for (int i = 0; i < d.length; i++) l.insert(d[i], d[i]);
+    for (int i = 0; i < d.length; i++) l.insert(Key(d[i]), d[i]);
     return l;
    }
 
@@ -1105,7 +1105,7 @@ data     :   11  12  13  14  15  16  17  18
    {final Branch b = new Tree(8, 7).new Branch();
     final long[]k = new long[]{13, 12, 11};
     final int []d = new int []{ 3,  2,  1};
-    for (int i = 0; i < k.length; i++) b.insert(k[i], Slots.fake(d[i]));
+    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), Slots.fake(d[i]));
     b.top = Slots.fake(4);
     return b;
    }
@@ -1114,7 +1114,7 @@ data     :   11  12  13  14  15  16  17  18
    {final Branch b = new Tree(8, 7).new Branch();
     final long[]k = new long[]{16, 15, 17};
     final int []d = new int[]{6, 5, 7};
-    for (int i = 0; i < k.length; i++) b.insert(k[i], Slots.fake(d[i]));
+    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), Slots.fake(d[i]));
     b.top = Slots.fake(8);
     return b;
    }
@@ -1122,7 +1122,7 @@ data     :   11  12  13  14  15  16  17  18
   static void test_mergeBranchLeft()
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
-    l.mergeFromRight(14, r);
+    l.mergeFromRight(Key(14), r);
     ok(l.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -1138,7 +1138,7 @@ top      :    8
   static void test_mergeBranchRight()
    {final Branch l = test_branch1();
     final Branch r = test_branch2();
-    r.mergeFromLeft(14, l);
+    r.mergeFromLeft(Key(14), l);
     ok(r.dump(), """
 Branch   : 0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -1153,9 +1153,9 @@ top      :    8
 
   static void test_locateFirstGe()
    {final Slots b = new Slots(16);
-    b.insert(1);
-    b.insert(5);
-    b.insert(3);
+    b.insert(Key(1));
+    b.insert(Key(5));
+    b.insert(Key(3));
     b.redistribute();
     //stop(b.dump());
     ok(b.dump(), """
@@ -1166,13 +1166,13 @@ usedRefs :    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
 
-    ok(b.locateFirstGe(0),  2);
-    ok(b.locateFirstGe(1),  2);
-    ok(b.locateFirstGe(2),  7);
-    ok(b.locateFirstGe(3),  7);
-    ok(b.locateFirstGe(4), 12);
-    ok(b.locateFirstGe(5), 12);
-    ok(b.locateFirstGe(6), null);
+    ok(b.locateFirstGe(Key(0)),  2);
+    ok(b.locateFirstGe(Key(1)),  2);
+    ok(b.locateFirstGe(Key(2)),  7);
+    ok(b.locateFirstGe(Key(3)),  7);
+    ok(b.locateFirstGe(Key(4)), 12);
+    ok(b.locateFirstGe(Key(5)), 12);
+    ok(b.locateFirstGe(Key(6)), null);
    }
 
   static void test_splitLeaf()
@@ -1198,177 +1198,177 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
   static void test_insert()
    {final Tree t = new Tree(4, 3);
     ok(t.count(), 0);
-    t.insert(11, 21);
+    t.insert(Key(11), 21);
     ok(t, """
 11|
 """);
-    t.insert(13, 23);
+    t.insert(Key(13), 23);
     ok(t, """
 11,13|
 """);
-    t.insert(12, 22);
+    t.insert(Key(12), 22);
     ok(t, """
 11,12,13|
 """);
-    t.insert(14, 24);
+    t.insert(Key(14), 24);
     ok(t, """
 11,12,13,14|
 """);
-    t.insert(15, 25);
+    t.insert(Key(15), 25);
     ok(t, """
       12        |
 11,12   13,14,15|
 """);
-    t.insert(16, 26);
+    t.insert(Key(16), 26);
     ok(t, """
       12           |
 11,12   13,14,15,16|
 """);
-    t.insert(17, 27);
+    t.insert(Key(17), 27);
     ok(t, """
             14        |
 11,12,13,14   15,16,17|
 """);
-    t.insert(18, 28);
+    t.insert(Key(18), 28);
     ok(t, """
             14           |
 11,12,13,14   15,16,17,18|
 """);
-    t.insert(19, 29);
+    t.insert(Key(19), 29);
     ok(t, """
             14      16        |
 11,12,13,14   15,16   17,18,19|
 """);
-    t.insert(20, 30);
+    t.insert(Key(20), 30);
     ok(t, """
             14      16           |
 11,12,13,14   15,16   17,18,19,20|
 """);
-    t.insert(21, 31);
+    t.insert(Key(21), 31);
     ok(t, """
             14            18        |
 11,12,13,14   15,16,17,18   19,20,21|
 """);
-    t.insert(22, 32);
+    t.insert(Key(22), 32);
     ok(t, """
             14            18           |
 11,12,13,14   15,16,17,18   19,20,21,22|
 """);
-    t.insert(23, 33);
+    t.insert(Key(23), 33);
     ok(t, """
             14            18      20        |
 11,12,13,14   15,16,17,18   19,20   21,22,23|
 """);
-    t.insert(24, 34);
+    t.insert(Key(24), 34);
     ok(t, """
             14            18      20           |
 11,12,13,14   15,16,17,18   19,20   21,22,23,24|
 """);
-    t.insert(25, 35);
+    t.insert(Key(25), 35);
     ok(t, """
             14            18            22        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25|
 """);
     ok(t.count(), 15);
-    t.insert(26, 36);
+    t.insert(Key(26), 36);
     ok(t, """
             14            18            22           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26|
 """);
     ok(t.count(), 16);
-    t.insert(27, 37);
+    t.insert(Key(27), 37);
     ok(t, """
                           18                              |
             14                          22      24        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27|
 """);
     ok(t.count(), 17);
-    t.insert(28, 38);
+    t.insert(Key(28), 38);
     ok(t, """
                           18                                 |
             14                          22      24           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27,28|
 """);
     ok(t.count(), 18);
-    t.insert(29, 39);
+    t.insert(Key(29), 39);
     ok(t, """
                           18                                    |
             14                          22            26        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29|
 """);
-    t.insert(30, 40);
+    t.insert(Key(30), 40);
     ok(t, """
                           18                                       |
             14                          22            26           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30|
 """);
-    t.insert(31, 41);
+    t.insert(Key(31), 41);
     ok(t, """
                           18                                            |
             14                          22            26      28        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31|
 """);
-    t.insert(32, 42);
+    t.insert(Key(32), 42);
     ok(t, """
                           18                                               |
             14                          22            26      28           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31,32|
 """);
-    t.insert(33, 43);
+    t.insert(Key(33), 43);
     ok(""+t, """
                           18                                                  |
             14                          22            26            30        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33|
 """);
-    t.insert(34, 44);
+    t.insert(Key(34), 44);
     ok(t, """
                           18                                                     |
             14                          22            26            30           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34|
 """);
-    t.insert(35, 45);
+    t.insert(Key(35), 45);
     ok(t, """
                                                       26                              |
             14            18            22                          30      32        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35|
 """);
-    t.insert(36, 46);
+    t.insert(Key(36), 46);
     ok(t, """
                                                       26                                 |
             14            18            22                          30      32           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35,36|
 """);
-    t.insert(37, 47);
+    t.insert(Key(37), 47);
     ok(t, """
                                                       26                                    |
             14            18            22                          30            34        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37|
 """);
-    t.insert(38, 48);
+    t.insert(Key(38), 48);
     ok(t, """
                                                       26                                       |
             14            18            22                          30            34           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38|
 """);
-    t.insert(39, 49);
+    t.insert(Key(39), 49);
     ok(t, """
                                                       26                                            |
             14            18            22                          30            34      36        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39|
 """);
-    t.insert(40, 50);
+    t.insert(Key(40), 50);
     ok(t, """
                                                       26                                               |
             14            18            22                          30            34      36           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39,40|
 """);
-    t.insert(41, 51);
+    t.insert(Key(41), 51);
     ok(t, """
                                                       26                                                  |
             14            18            22                          30            34            38        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41|
 """);
-    t.insert(42, 52);
+    t.insert(Key(42), 52);
     ok(t, """
                                                       26                                                     |
             14            18            22                          30            34            38           |
@@ -1376,7 +1376,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
     ok(t.count(), 32);
 
-    ok(t.find(10), """
+    ok(t.find(Key(10)), """
 Find Key : 10
 Leaf     : 3 up: 12 index: 0
 positions:    0   1   2   3   4   5   6   7
@@ -1389,7 +1389,7 @@ Locate      :  0  below all
 Path        : 12, 8
 """);
 
-    ok(t.find(23), """
+    ok(t.find(Key(23)), """
 Find Key : 23
 Leaf     : 15 up: 12 index: null
 positions:    0   1   2   3   4   5   6   7
@@ -1407,7 +1407,7 @@ Path        : 12, 8
    {final Tree t = new Tree(4, 3);
     final int N = 32;
     for (int i = N; i > 0; i--)
-     {t.insert(i, i);
+     {t.insert(Key(i), i);
       ok(t.count(), N-i+1);
      }
     ok(t, """
@@ -1431,37 +1431,37 @@ Locate      : 0 exact
 Path        : 12, 8
 """);
 
-    final Find  n2 = t.next(n1);  ok(n2.key,   2);
-    final Find  n3 = t.next(n2);  ok(n3.key,   3);
-    final Find  n4 = t.next(n3);  ok(n4.key,   4);
-    final Find  n5 = t.next(n4);  ok(n5.key,   5);
-    final Find  n6 = t.next(n5);  ok(n6.key,   6);
-    final Find  n7 = t.next(n6);  ok(n7.key,   7);
-    final Find  n8 = t.next(n7);  ok(n8.key,   8);
-    final Find  n9 = t.next(n8);  ok(n9.key,   9);
-    final Find n10 = t.next(n9);  ok(n10.key, 10);
-    final Find n11 = t.next(n10); ok(n11.key, 11);
-    final Find n12 = t.next(n11); ok(n12.key, 12);
-    final Find n13 = t.next(n12); ok(n13.key, 13);
-    final Find n14 = t.next(n13); ok(n14.key, 14);
-    final Find n15 = t.next(n14); ok(n15.key, 15);
-    final Find n16 = t.next(n15); ok(n16.key, 16);
-    final Find n17 = t.next(n16); ok(n17.key, 17);
-    final Find n18 = t.next(n17); ok(n18.key, 18);
-    final Find n19 = t.next(n18); ok(n19.key, 19);
-    final Find n20 = t.next(n19); ok(n20.key, 20);
-    final Find n21 = t.next(n20); ok(n21.key, 21);
-    final Find n22 = t.next(n21); ok(n22.key, 22);
-    final Find n23 = t.next(n22); ok(n23.key, 23);
-    final Find n24 = t.next(n23); ok(n24.key, 24);
-    final Find n25 = t.next(n24); ok(n25.key, 25);
-    final Find n26 = t.next(n25); ok(n26.key, 26);
-    final Find n27 = t.next(n26); ok(n27.key, 27);
-    final Find n28 = t.next(n27); ok(n28.key, 28);
-    final Find n29 = t.next(n28); ok(n29.key, 29);
-    final Find n30 = t.next(n29); ok(n30.key, 30);
-    final Find n31 = t.next(n30); ok(n31.key, 31);
-    final Find n32 = t.next(n31); ok(n32.key, 32);
+    final Find  n2 = t.next(n1);  ok(n2.key.value(),   2);
+    final Find  n3 = t.next(n2);  ok(n3.key.value(),   3);
+    final Find  n4 = t.next(n3);  ok(n4.key.value(),   4);
+    final Find  n5 = t.next(n4);  ok(n5.key.value(),   5);
+    final Find  n6 = t.next(n5);  ok(n6.key.value(),   6);
+    final Find  n7 = t.next(n6);  ok(n7.key.value(),   7);
+    final Find  n8 = t.next(n7);  ok(n8.key.value(),   8);
+    final Find  n9 = t.next(n8);  ok(n9.key.value(),   9);
+    final Find n10 = t.next(n9);  ok(n10.key.value(), 10);
+    final Find n11 = t.next(n10); ok(n11.key.value(), 11);
+    final Find n12 = t.next(n11); ok(n12.key.value(), 12);
+    final Find n13 = t.next(n12); ok(n13.key.value(), 13);
+    final Find n14 = t.next(n13); ok(n14.key.value(), 14);
+    final Find n15 = t.next(n14); ok(n15.key.value(), 15);
+    final Find n16 = t.next(n15); ok(n16.key.value(), 16);
+    final Find n17 = t.next(n16); ok(n17.key.value(), 17);
+    final Find n18 = t.next(n17); ok(n18.key.value(), 18);
+    final Find n19 = t.next(n18); ok(n19.key.value(), 19);
+    final Find n20 = t.next(n19); ok(n20.key.value(), 20);
+    final Find n21 = t.next(n20); ok(n21.key.value(), 21);
+    final Find n22 = t.next(n21); ok(n22.key.value(), 22);
+    final Find n23 = t.next(n22); ok(n23.key.value(), 23);
+    final Find n24 = t.next(n23); ok(n24.key.value(), 24);
+    final Find n25 = t.next(n24); ok(n25.key.value(), 25);
+    final Find n26 = t.next(n25); ok(n26.key.value(), 26);
+    final Find n27 = t.next(n26); ok(n27.key.value(), 27);
+    final Find n28 = t.next(n27); ok(n28.key.value(), 28);
+    final Find n29 = t.next(n28); ok(n29.key.value(), 29);
+    final Find n30 = t.next(n29); ok(n30.key.value(), 30);
+    final Find n31 = t.next(n30); ok(n31.key.value(), 31);
+    final Find n32 = t.next(n31); ok(n32.key.value(), 32);
     final Find n33 = t.next(n32); ok(n33 == null, true);
 
     ok(t.last(), """
@@ -1478,44 +1478,44 @@ Path        : 7, 8
 """);
 
 
-    final Find p31 = t.prev(n32); ok(p31.key, 31);
-    final Find p30 = t.prev(p31); ok(p30.key, 30);
-    final Find p29 = t.prev(p30); ok(p29.key, 29);
-    final Find p28 = t.prev(p29); ok(p28.key, 28);
-    final Find p27 = t.prev(p28); ok(p27.key, 27);
-    final Find p26 = t.prev(p27); ok(p26.key, 26);
-    final Find p25 = t.prev(p26); ok(p25.key, 25);
-    final Find p24 = t.prev(p25); ok(p24.key, 24);
-    final Find p23 = t.prev(p24); ok(p23.key, 23);
-    final Find p22 = t.prev(p23); ok(p22.key, 22);
-    final Find p21 = t.prev(p22); ok(p21.key, 21);
-    final Find p20 = t.prev(p21); ok(p20.key, 20);
-    final Find p19 = t.prev(p20); ok(p19.key, 19);
-    final Find p18 = t.prev(p19); ok(p18.key, 18);
-    final Find p17 = t.prev(p18); ok(p17.key, 17);
-    final Find p16 = t.prev(p17); ok(p16.key, 16);
-    final Find p15 = t.prev(p16); ok(p15.key, 15);
-    final Find p14 = t.prev(p15); ok(p14.key, 14);
-    final Find p13 = t.prev(p14); ok(p13.key, 13);
-    final Find p12 = t.prev(p13); ok(p12.key, 12);
-    final Find p11 = t.prev(p12); ok(p11.key, 11);
-    final Find p10 = t.prev(p11); ok(p10.key, 10);
-    final Find  p9 = t.prev(p10); ok(p9.key,   9);
-    final Find  p8 = t.prev(p9);  ok(p8.key,   8);
-    final Find  p7 = t.prev(p8);  ok(p7.key,   7);
-    final Find  p6 = t.prev(p7);  ok(p6.key,   6);
-    final Find  p5 = t.prev(p6);  ok(p5.key,   5);
-    final Find  p4 = t.prev(p5);  ok(p4.key,   4);
-    final Find  p3 = t.prev(p4);  ok(p3.key,   3);
-    final Find  p2 = t.prev(p3);  ok(p2.key,   2);
-    final Find  p1 = t.prev(p2);  ok(p1.key,   1);
+    final Find p31 = t.prev(n32); ok(p31.key.value(), 31);
+    final Find p30 = t.prev(p31); ok(p30.key.value(), 30);
+    final Find p29 = t.prev(p30); ok(p29.key.value(), 29);
+    final Find p28 = t.prev(p29); ok(p28.key.value(), 28);
+    final Find p27 = t.prev(p28); ok(p27.key.value(), 27);
+    final Find p26 = t.prev(p27); ok(p26.key.value(), 26);
+    final Find p25 = t.prev(p26); ok(p25.key.value(), 25);
+    final Find p24 = t.prev(p25); ok(p24.key.value(), 24);
+    final Find p23 = t.prev(p24); ok(p23.key.value(), 23);
+    final Find p22 = t.prev(p23); ok(p22.key.value(), 22);
+    final Find p21 = t.prev(p22); ok(p21.key.value(), 21);
+    final Find p20 = t.prev(p21); ok(p20.key.value(), 20);
+    final Find p19 = t.prev(p20); ok(p19.key.value(), 19);
+    final Find p18 = t.prev(p19); ok(p18.key.value(), 18);
+    final Find p17 = t.prev(p18); ok(p17.key.value(), 17);
+    final Find p16 = t.prev(p17); ok(p16.key.value(), 16);
+    final Find p15 = t.prev(p16); ok(p15.key.value(), 15);
+    final Find p14 = t.prev(p15); ok(p14.key.value(), 14);
+    final Find p13 = t.prev(p14); ok(p13.key.value(), 13);
+    final Find p12 = t.prev(p13); ok(p12.key.value(), 12);
+    final Find p11 = t.prev(p12); ok(p11.key.value(), 11);
+    final Find p10 = t.prev(p11); ok(p10.key.value(), 10);
+    final Find  p9 = t.prev(p10); ok(p9.key.value(),   9);
+    final Find  p8 = t.prev(p9);  ok(p8.key.value(),   8);
+    final Find  p7 = t.prev(p8);  ok(p7.key.value(),   7);
+    final Find  p6 = t.prev(p7);  ok(p6.key.value(),   6);
+    final Find  p5 = t.prev(p6);  ok(p5.key.value(),   5);
+    final Find  p4 = t.prev(p5);  ok(p4.key.value(),   4);
+    final Find  p3 = t.prev(p4);  ok(p3.key.value(),   3);
+    final Find  p2 = t.prev(p3);  ok(p2.key.value(),   2);
+    final Find  p1 = t.prev(p2);  ok(p1.key.value(),   1);
     final Find  p0 = t.prev(p1);  ok(p0 == null, true);
    }
 
   static Tree test_insert_random_32()
    {final Tree t = new Tree(4, 3);
     for (int i = 0; i < random_32.length; i++)
-     {t.insert(random_32[i], i);
+     {t.insert(Key(random_32[i]), i);
       ok(t.count(), i+1);
      }
     ok(t, """
@@ -1529,7 +1529,7 @@ Path        : 7, 8
   static Tree test_insert_random()
    {final Tree t = new Tree(4, 3);
     for (int i = 0; i < random.length; i++)
-     {t.insert(random[i], i);
+     {t.insert(Key(random[i]), i);
       ok(t.count(), i+1);
      }
     ok(t, """
@@ -1544,12 +1544,12 @@ Path        : 7, 8
   static void test_delete()
    {final Tree t = new Tree(4, 3);
     final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(i, i);
+    for (int i = 1; i <= N; ++i) t.insert(Key(i), i);
 
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
     for (int i = 1; i <= N; ++i)
-     {t.delete(i);
+     {t.delete(Key(i));
       ok(t.count(), N-i);
       s.append("Delete: "+i+"\n"+t);
      }
@@ -1673,12 +1673,12 @@ Delete: 32
   static void test_delete_descending()
    {final Tree t = new Tree(4, 3);
     final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(i, i);
+    for (int i = 1; i <= N; ++i) t.insert(Key(i), i);
 
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
     for (int i = N; i > 0; --i)
-     {t.delete(i);
+     {t.delete(Key(i));
       ok(t.count(), i-1);
       s.append("Delete: "+i+"\n"+t);
      }
@@ -1805,7 +1805,7 @@ Delete: 1
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
     for (int i = 0; i < random_32.length; i++)
-     {t.delete(random_32[i]);
+     {t.delete(Key(random_32[i]));
       ok(t.count(), random_32.length-i-1);
       s.append("Delete "+random_32[i]+"\n"+t);
      }
@@ -1928,7 +1928,7 @@ Delete 22
   static void test_deep()
    {final Tree t = new Tree(2, 3);
     final int N = 256;
-    for (int i = 1; i <= N; ++i) t.insert(i, i);
+    for (int i = 1; i <= N; ++i) t.insert(Key(i), i);
     ok(t, """
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             128                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
                                                                                                                  32                                                                                                                              64                                                                                                                              96                                                                                                                                                                                                                                                                                                                                                         160                                                                                                                                                                             192                                                                                                                                                                             224                                                                                                                                                                            |
