@@ -467,7 +467,7 @@ public class Slots extends Test                                                 
     final int posKeys         = posUsedRefs     + numberOfRefs;
     final int posName         = posKeys         + Long   .BYTES*numberOfRefs;
     final int size            = posName         + Integer.BYTES;
-    final ByteBuffer memory   = ByteBuffer.allocate(size);
+    final ByteBuffer bytes    = ByteBuffer.allocate(size);
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
      {final int N = 8;
