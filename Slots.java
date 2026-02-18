@@ -471,25 +471,25 @@ public class Slots extends Test                                                 
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
      {final int N = 8;
-      for (int i = 0; i < size; i++) memory.put(i, Memory.memory.get(i));
+      for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
      }
 
     Memory() {}                                                                 // Create an empty memory
     Memory(Memory Memory) {copy(Memory);}                                       // Copy a specified memory
 
-    int     numberOfRefs(         ) {return memory.getInt (posNumberOfRefs                        );}
-    int     slots       (int Index) {return memory.getInt (posSlots        + Index * Integer.BYTES);}
-    boolean usedSlots   (int Index) {return memory.get    (posUsedSlots    + Index                ) > 0 ? true : false;}
-    boolean usedRefs    (int Index) {return memory.get    (posUsedRefs     + Index                ) > 0 ? true : false;}
-    long    keys        (int Index) {return memory.getLong(posKeys         + Index * Long.BYTES   );}
-    int     name        (         ) {return memory.getInt (posName                                );}
+    int     numberOfRefs(         ) {return bytes.getInt (posNumberOfRefs                        );}
+    int     slots       (int Index) {return bytes.getInt (posSlots        + Index * Integer.BYTES);}
+    boolean usedSlots   (int Index) {return bytes.get    (posUsedSlots    + Index                ) > 0 ? true : false;}
+    boolean usedRefs    (int Index) {return bytes.get    (posUsedRefs     + Index                ) > 0 ? true : false;}
+    long    keys        (int Index) {return bytes.getLong(posKeys         + Index * Long.BYTES   );}
+    int     name        (         ) {return bytes.getInt (posName                                );}
 
-    void    numberOfRefs(           int     Value) {memory.putInt (posNumberOfRefs                        , Value);}
-    void    slots       (int Index, int     Value) {memory.putInt (posSlots        + Index * Integer.BYTES, Value);}
-    void    usedSlots   (int Index, boolean Value) {memory.put    (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
-    void    usedRefs    (int Index, boolean Value) {memory.put    (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
-    void    keys        (int Index, long    Value) {memory.putLong(posKeys         + Index * Long.BYTES   , Value);}
-    void    name        (           int     Value) {memory.putInt (posName                                , Value);}
+    void    numberOfRefs(           int     Value) {bytes.putInt (posNumberOfRefs                        , Value);}
+    void    slots       (int Index, int     Value) {bytes.putInt (posSlots        + Index * Integer.BYTES, Value);}
+    void    usedSlots   (int Index, boolean Value) {bytes.put    (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
+    void    usedRefs    (int Index, boolean Value) {bytes.put    (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
+    void    keys        (int Index, long    Value) {bytes.putLong(posKeys         + Index * Long.BYTES   , Value);}
+    void    name        (           int     Value) {bytes.putInt (posName                                , Value);}
    }
 
 //D1 Tests                                                                      // Test the slots
