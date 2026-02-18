@@ -8,13 +8,13 @@ import java.util.*;
 import java.nio.*;
 
 public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
- {private final int      numberOfSlots;                                         // Number of slots
-  private final int      numberOfRefs;                                          // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
-  private final int      redistributionWidth;                                   // Redistribute if the next slot is further than this
-  final Memory    memory;                                                       // Memory used by the slots
-  final String formatKey = "%3d";                                               // Format a key for dumping during testing
-  private long   name;                                                          // Numeric name for these slots for debugging purposes
-  static boolean debug = false;                                                 // Debug if true
+ {private final int numberOfSlots;                                              // Number of slots
+  private final int numberOfRefs;                                               // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
+  private final int redistributionWidth;                                        // Redistribute if the next slot is further than this
+  final Memory      memory;                                                     // Memory used by the slots
+  final String      formatKey = "%3d";                                          // Format a key for dumping during testing
+  private long      name;                                                       // Numeric name for these slots for debugging purposes
+  static boolean    debug = false;                                              // Debug if true
 
 //D1 Construction                                                               // Construct and layout the slots
 
@@ -458,7 +458,7 @@ public class Slots extends Test                                                 
 
 //D1 Memory                                                                     // Read and write from an array of bytes
 
-  class Memory                                                                  // Memory required to hold bytes
+  class MemoryPositions                                                         // Positions of fields in memory
    {final int posNumberOfRefs = 0;
     final int posSlots        = posNumberOfRefs + Integer.BYTES;
     final int posUsedSlots    = posSlots        + Integer.BYTES*numberOfSlots;
@@ -466,7 +466,10 @@ public class Slots extends Test                                                 
     final int posKeys         = posUsedRefs     + numberOfRefs;
     final int posName         = posKeys         + Long.BYTES*numberOfRefs;
     final int size            = posName         + Long.BYTES;
-    final ByteBuffer bytes    = ByteBuffer.allocate(size);
+   }
+
+  class Memory extends MemoryPositions                                          // Memory required to hold bytes
+   {final ByteBuffer bytes    = ByteBuffer.allocate(size);
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
      {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
