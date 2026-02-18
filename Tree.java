@@ -1385,7 +1385,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
     ok(t.find(Key(10)), """
 Find Key : 10
-Leaf     : 3 up: 12 index: 0
+Leaf     : 3 up: 16 index: 0
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1393,12 +1393,12 @@ usedRefs :    X   X   X   X
 keys     :   11  12  13  14
 data     :   21  22  23  24
 Locate      :  0  below all
-Path        : 12, 8
+Path        : 16, 10
 """);
 
     ok(t.find(Key(23)), """
 Find Key : 23
-Leaf     : 15 up: 12 index: null
+Leaf     : 21 up: 16 index: null
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1406,7 +1406,7 @@ usedRefs :    X   X   X   X
 keys     :   23  24  25  26
 data     :   33  34  35  36
 Locate      : 0 exact
-Path        : 12, 8
+Path        : 16, 10
 """);
    }
 
@@ -1427,7 +1427,7 @@ Path        : 12, 8
     final Find n1 = t.first();
     ok(n1, """
 Find Key : 1
-Leaf     : 27 up: 12 index: 0
+Leaf     : 39 up: 16 index: 0
 positions:    0   1   2   3   4   5   6   7
 slots    :    3   0   2   0   1   0   0   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1435,7 +1435,7 @@ usedRefs :    X   X   X   X
 keys     :    4   3   2   1
 data     :    4   3   2   1
 Locate      : 0 exact
-Path        : 12, 8
+Path        : 16, 10
 """);
 
     final Find  n2 = t.next(n1);  ok(n2.key.value(),   2);
@@ -1473,7 +1473,7 @@ Path        : 12, 8
 
     ok(t.last(), """
 Find Key : 32
-Leaf     : 2 up: 7 index: null
+Leaf     : 2 up: 9 index: null
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1481,7 +1481,7 @@ usedRefs :    X   X   X   X
 keys     :   29  30  31  32
 data     :   29  30  31  32
 Locate      : 6 exact
-Path        : 7, 8
+Path        : 9, 10
 """);
 
 
