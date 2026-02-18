@@ -14,6 +14,7 @@ class Tree extends Test                                                         
   final Stack<Long>     freeChain = new Stack<>();                              // Unallocated leaves and branches
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
   final int numberOfNodes;                                                      // Maximum number of leaves plus branches in this tree
+  final int sizeOfNode;                                                         // The size of each node in the tree: a node may hold a branch or a leaf
   final ByteBuffer memory;                                                      // Memeory containing leaves and branches
   static boolean            debug = false;                                      // Debug if enabled
   long leaves = 0, branches = 0;                                                // Labels for the leaves and branches to assist in debugging
@@ -40,6 +41,7 @@ class Tree extends Test                                                         
     for (int i = numberOfNodes; i > 0; --i) freeChain.push(i-1l);               // Initial free chain
 
     memory = allocateMemory();
+    sizeOfNode = memory.capacity() / numberOfNodes;                             // Size of each node sufficient to hold a leaf or a branch
    }
 
   Tree(int LeafSize)                {this(LeafSize, LeafSize-1);}               // Create a test tree
@@ -66,13 +68,13 @@ class Tree extends Test                                                         
    }
 
   ByteBuffer allocateMemory()                                                   // Allocate the memory to be used by the tree
-   {final Slots sl = new Slots(maxLeafSize);
-    final Slots sb = new Slots(maxBranchSize);
-    final LeafMemoryPositions   l = new   LeafMemoryPositions();                                                                                //
-    final BranchMemoryPositions b = new BranchMemoryPositions();                                                                                //
-    final int L = sl.memory.size + l.size;                                                                                //
-    final int B = sb.memory.size + b.size;                                                                                //
-    return ByteBuffer.allocate(max(L, B) * numberOfNodes);
+   {final Slots sl = new Slots(maxLeafSize);                                    // Size of slots for leaf
+    final Slots sb = new Slots(maxBranchSize);                                  // Size of slots for branch
+    final LeafMemoryPositions   l = new   LeafMemoryPositions();                // Memory positions for leaves
+    final BranchMemoryPositions b = new BranchMemoryPositions();                // Memory positions for branches
+    final int L = sl.memory.size + l.size;                                      // Size of memory for a leaf
+    final int B = sb.memory.size + b.size;                                      // Size of memory for a branch
+    return ByteBuffer.allocate(max(L, B) * numberOfNodes);                      // Memory for tree assuming that each node can contain a branch or a leaf
    }
 
   long allocate()                                                               // Allocate a leaf or a branch
@@ -123,6 +125,8 @@ class Tree extends Test                                                         
       memory = new Memory();
       name(allocate());                                                         // Name the leaf
      }
+
+    static boolean ref(Slots L) {return L instanceof Leaf;}                     // Check whether we are referencing a leaf
 
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
     Data data(int I)             {return data[I];}                              // Get value of data field at index
@@ -306,6 +310,8 @@ class Tree extends Test                                                         
       name(allocate());                                                         // Name the branch
      }
 
+    static boolean ref(Slots B) {return B instanceof Branch;}                   // Check whether we are referencing a branch
+
     void free()                                                                 // Free the branch
      {Tree.this.free(name());                                                   // Add to free chain
       invalidate();                                                             // Invalidate slots
@@ -485,7 +491,7 @@ class Tree extends Test                                                         
      {if (!canStepLeft(Right)) return false;                                    // Cannot step left
       final Integer left = stepLeft(Right);                                     // Left sibling from right child
       final Slots L = data(left);                                               // Left sibling as slots
-      if (L instanceof Leaf)                                                    // Merging leaves
+      if (Leaf.ref(L))                                                          // Merging leaves
        {final Leaf r = (Leaf)(Right != null ? data(Right) : top);               // Right leaf sibling
         if (r.mergeFromLeft((Leaf)L))                                           // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
@@ -523,13 +529,13 @@ class Tree extends Test                                                         
       for  (int i = 0; i < S; i++)                                              // Each slot
        {if (usedSlots(i))                                                       // Active slot
          {final Slots s = data(i);
-          if      (s instanceof Leaf)   n += s.countUsed();
-          else if (s instanceof Branch) n += ((Branch)s).count();
+          if      (Leaf  .ref(s)) n += s.countUsed();
+          else if (Branch.ref(s)) n += ((Branch)s).count();
          }
        }
       final Slots s = top;                                                      // Count entries below top
-      if      (s instanceof Leaf)   n += s.countUsed();                         // Top is a leaf
-      else if (s instanceof Branch) n += ((Branch)s).count();                   // Top is a branch
+      if      (Leaf  .ref(s)) n += s.countUsed();                               // Top is a leaf
+      else if (Branch.ref(s)) n += ((Branch)s).count();                         // Top is a branch
       return n;                                                                 // Number below this branch
      }
 
@@ -590,17 +596,17 @@ class Tree extends Test                                                         
 
   void mergeRoot(Slots.Key Key)                                                 // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
-    if (root instanceof Leaf)                                                   // Leaf root
+    if (Leaf.ref(root))                                                         // Leaf root
      {final Leaf l = (Leaf)root;
       if (l.empty()) {l.free(); root = null;}                                   // Free leaf if it is empty
       return;
      }
 
     final Branch b = (Branch)root;                                              // Branch root
-    if (b.countUsed() == 0) {final Slots t = b.top; b.free(); root = t;}                                        // Root body is empty so collapse to top
+    if (b.countUsed() == 0) {final Slots t = b.top; b.free(); root = t;}        // Root body is empty so collapse to top
     if (b.countUsed() != 1) return;                                             // Root body too big to collapse
 
-    if (b.top instanceof Leaf)                                                  // Leaves for children
+    if (Leaf.ref(b.top))                                                        // Leaves for children
      {final Leaf    l = (Leaf)b.firstChild();
       final Leaf    r = (Leaf)b.top;
       final boolean m = l.mergeFromRight(r);
@@ -641,7 +647,7 @@ class Tree extends Test                                                         
 
   Find find(Slots.Key Key)
    {if (root == null) return null;                                              // Empty tree
-    if (root instanceof Leaf)                                                   // Leaf root
+    if (Leaf.ref(root))                                                         // Leaf root
      {final Leaf l = (Leaf)root;
       l.up = null; l.upIndex = null;                                            // Trace path taken to this leaf
       return new Find(Key, l);
@@ -655,7 +661,7 @@ class Tree extends Test                                                         
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
      {final Integer P = p.locateFirstGe(Key);
       final Slots   q = p.child(P);
-      if (q instanceof Leaf)                                                    // Step down to a leaf
+      if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf l = (Leaf)q;
         l.up = p; l.upIndex = P;                                                // Parent of leaf along find path
         return new Find(Key, l);
@@ -702,7 +708,7 @@ class Tree extends Test                                                         
        }
      }
 
-    if (root instanceof Leaf)                                                   // Leaf root
+    if (Leaf.ref(root))                                                         // Leaf root
      {final Leaf l = (Leaf)root;
       if (!l.full())                                                            // Still space in leaf root
        {l.insert(Key, Data);                                                    // Insert into leaf root
@@ -727,7 +733,7 @@ class Tree extends Test                                                         
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {final Slots q = p.stepDown(Key);                                          // Step down
-      if (q instanceof Leaf)                                                    // Step down to a leaf
+      if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf r = (Leaf)q;                                                 // We have reached a leaf
         if (r.full())                                                           // Split the leaf if it is full
          {final long sk = r.splittingKey();                                     // Splitting key
@@ -761,7 +767,7 @@ class Tree extends Test                                                         
 
   int count()                                                                   // Print the tree with and without details
    {if (root == null) return 0;                                                 // Empty tree
-    if (root instanceof Leaf) return root.countUsed();                          // Tree is a single leaf
+    if (Leaf.ref(root)) return root.countUsed();                                // Tree is a single leaf
     return ((Branch)root).count();                                              // Tree has one or more branches
    }
 
@@ -769,7 +775,7 @@ class Tree extends Test                                                         
 
   Find first()                                                                  // Find the position of the first key in the key
    {if (root == null) return null;                                              // Empty tree does not have a first key
-    if (root instanceof Leaf)
+    if (Leaf.ref(root))
      {final Leaf l = (Leaf)root;
       final int  i = l.locateFirstUsedSlot();
       l.up = null; l.upIndex = i;
@@ -785,7 +791,7 @@ class Tree extends Test                                                         
     for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
      {final int    P = p.locateFirstUsedSlot();
       final Slots  q = p.child(P);
-      if (q instanceof Leaf)                                                    // Step down to a leaf
+      if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf l = (Leaf)q;
         l.up = p; l.upIndex = P;
         final int       i = l.locateFirstUsedSlot();
@@ -801,7 +807,7 @@ class Tree extends Test                                                         
 
   Find last()                                                                   // Find the position of the last key in the tree
    {if (root == null) return null;                                              // Empty tree does not have a last key
-    if (root instanceof Leaf)
+    if (Leaf.ref(root))
      {final Leaf l = (Leaf)root;
       final int  i = l.locateLastUsedSlot();
       l.up = null; l.upIndex = null;
@@ -816,7 +822,7 @@ class Tree extends Test                                                         
 
     for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
      {final Slots q = p.top;
-      if (q instanceof Leaf)                                                    // Step down to a leaf
+      if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf l = (Leaf)q;
         final int  i = l.locateLastUsedSlot();
         l.up = p; l.upIndex = null;
@@ -923,7 +929,7 @@ class Tree extends Test                                                         
       for  (int i = 0; i < S; i++)
        {if (B.usedSlots(i))
          {final Slots   s = B.data(i);
-          final boolean l = s instanceof Leaf, b = s instanceof Branch;
+          final boolean l = Leaf.ref(s), b = Branch.ref(s);
 
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b) printBranch((Branch)s, P, level+1, Details, B, i);
@@ -941,7 +947,7 @@ class Tree extends Test                                                         
 
     if (Details) P.elementAt(L+2).append("{"+B.top.name()+"}");                 // Top of branch
 
-    final boolean l = B.top instanceof Leaf, b = B.top instanceof Branch;       // Print top leaf
+    final boolean l = Leaf.ref(B.top), b = Branch.ref(B.top);                   // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top, P, level+1, Details, B, null);
     else if (b) printBranch((Branch)B.top, P, level+1, Details, B, null);
 
@@ -984,8 +990,8 @@ class Tree extends Test                                                         
   String print(boolean Details)                                                 // Print the tree with and without details
    {final Stack<StringBuilder> P = new Stack<>();
     if (root == null) return "|\n";                                             // Empty tree
-    if (root instanceof Leaf) printLeaf  ((Leaf)  root, P, 0, Details, null, null); // Tree is a single leaf
-    else                      printBranch((Branch)root, P, 0, Details, null, null); // Tree has one or more branches
+    if (Leaf.ref(root)) printLeaf  ((Leaf)  root, P, 0, Details, null, null);   // Tree is a single leaf
+    else                printBranch((Branch)root, P, 0, Details, null, null);   // Tree has one or more branches
     return printCollapsed(P);                                                   // Remove blank lines and add right fence
    }
 
@@ -1000,7 +1006,7 @@ class Tree extends Test                                                         
       for  (int i = 0; i < S; i++)
        {if (B.usedSlots(i))
          {final Slots   s = B.data(i);
-          final boolean l = s instanceof Leaf, b = s instanceof Branch;
+          final boolean l = Leaf.ref(s), b = Branch.ref(s);
 
           if      (l)  leaves  .push((Leaf)  s);
           else if (b) {branches.push((Branch)s); scan((Branch)s);}
@@ -1008,14 +1014,14 @@ class Tree extends Test                                                         
        }
 
       final Slots s = B.top;
-      final boolean l = s instanceof Leaf, b = s instanceof Branch;
+      final boolean l = Leaf.ref(s), b = Branch.ref(s);
       if      (l)  leaves  .push((Leaf)  s);
       else if (b) {branches.push((Branch)s); scan((Branch)s);}
      }
 
     ListAll()
      {if (root == null) return;
-      final boolean l = root instanceof Leaf, b = root instanceof Branch;
+      final boolean l = Leaf.ref(root), b = Branch.ref(root);
       if      (l)  leaves  .push((Leaf)  root);
       else if (b) {branches.push((Branch)root); scan((Branch)root);}
      }
