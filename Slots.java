@@ -11,10 +11,6 @@ public class Slots extends Test                                                 
  {private final int      numberOfSlots;                                         // Number of slots
   private final int      numberOfRefs;                                          // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
   private final int      redistributionWidth;                                   // Redistribute if the next slot is further than this
-  private final int    []slots;                                                 // Key ordering
-  private final boolean[]usedSlots;                                             // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
-  private final boolean[]usedRefs;                                              // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
-  private final Key    []keys;                                                  // Keys
   final Memory    memory;                                                       // Memory used by the slots
   final String formatKey = "%3d";                                               // Format a key for dumping during testing
   private long   name;                                                          // Numeric name for these slots for debugging purposes
@@ -26,10 +22,6 @@ public class Slots extends Test                                                 
    {numberOfSlots       = NumberOfRefs * 2;                                     // The lots are narrow while the refs are wide so we having more slots reduces the amount of slot movement withouit greatly increasing memory requirements
     numberOfRefs        = NumberOfRefs;
     redistributionWidth = (int)java.lang.Math.sqrt(numberOfRefs);
-    slots               = new int    [numberOfSlots];
-    usedSlots           = new boolean[numberOfSlots];
-    usedRefs            = new boolean[numberOfRefs];
-    keys                = new Key    [numberOfRefs];
     memory              = new Memory();                                         // Memory used by the slots
     memory.numberOfRefs(numberOfRefs);                                          // Save the number of refs into memory
    }
