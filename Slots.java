@@ -47,7 +47,9 @@ public class Slots extends Test                                                 
    }
 
   Slots copy(Slots Source)                                                      // Copy the source slots
-   {memory.copy(Source.memory);
+   {final long n = name();
+    memory.copy(Source.memory);
+    name(n);
     return this;                                                                // The copied slots
    }
 
@@ -93,6 +95,9 @@ public class Slots extends Test                                                 
 
   protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
   protected void key(int I, Key Key) {memory.keys(I, Key.value());}             // Set the key directly
+
+  long name() {return   memory.name();}                                         // Get the name
+  void name(long Name) {memory.name(Name);}                                     // Set the name
 
 //D2 Refs                                                                       // Allocate and free references to keys
 
@@ -465,8 +470,8 @@ public class Slots extends Test                                                 
     final int posUsedSlots    = posSlots        + Integer.BYTES*numberOfSlots;
     final int posUsedRefs     = posUsedSlots    + numberOfSlots;
     final int posKeys         = posUsedRefs     + numberOfRefs;
-    final int posName         = posKeys         + Long   .BYTES*numberOfRefs;
-    final int size            = posName         + Integer.BYTES;
+    final int posName         = posKeys         + Long.BYTES*numberOfRefs;
+    final int size            = posName         + Long.BYTES;
     final ByteBuffer bytes    = ByteBuffer.allocate(size);
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
@@ -481,14 +486,14 @@ public class Slots extends Test                                                 
     boolean usedSlots   (int Index) {return bytes.get    (posUsedSlots    + Index                ) > 0 ? true : false;}
     boolean usedRefs    (int Index) {return bytes.get    (posUsedRefs     + Index                ) > 0 ? true : false;}
     long    keys        (int Index) {return bytes.getLong(posKeys         + Index * Long.BYTES   );}
-    int     name        (         ) {return bytes.getInt (posName                                );}
+    long    name        (         ) {return bytes.getLong(posName                                );}
 
     void    numberOfRefs(           int     Value) {bytes.putInt (posNumberOfRefs                        , Value);}
     void    slots       (int Index, int     Value) {bytes.putInt (posSlots        + Index * Integer.BYTES, Value);}
     void    usedSlots   (int Index, boolean Value) {bytes.put    (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
     void    usedRefs    (int Index, boolean Value) {bytes.put    (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
     void    keys        (int Index, long    Value) {bytes.putLong(posKeys         + Index * Long.BYTES   , Value);}
-    void    name        (           int     Value) {bytes.putInt (posName                                , Value);}
+    void    name        (           long    Value) {bytes.putLong(posName                                , Value);}
    }
 
 //D1 Tests                                                                      // Test the slots
