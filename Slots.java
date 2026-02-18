@@ -418,12 +418,12 @@ public class Slots extends Test                                                 
     return null;                                                                // Not found
    }
 
-  public Integer find(Key Key)                                                 // Find the index of the current key in the slots
+  public Integer find(Key Key)                                                  // Find the index of the current key in the slots
    {final Integer i = locate(Key);
     return i == null ? null : slots(i);
    }
 
-  public boolean delete(Key Key)                                               // Delete the specified key
+  public boolean delete(Key Key)                                                // Delete the specified key
    {final Integer i = locate(Key);                                              // Locate the search key
     if (i == null) return false;                                                // Their key is not in the slots
     clearSlotAndRef(i);                                                         // Delete key
