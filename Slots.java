@@ -9,12 +9,13 @@ import java.nio.*;
 
 public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
  {private final int      numberOfSlots;                                         // Number of slots
-  private final int      numberOfRefs;                                          // Number of references which shopuld be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
+  private final int      numberOfRefs;                                          // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
   private final int      redistributionWidth;                                   // Redistribute if the next slot is further than this
   private final int    []slots;                                                 // Key ordering
   private final boolean[]usedSlots;                                             // Slots in use. I could have used BitSet but this would hide implementation details. Writing the code makes the actions explicit.
   private final boolean[]usedRefs;                                              // Index of each key. This index is stable even when the slots are redistributed to make insertions faster.
   private final Key    []keys;                                                  // Keys
+  final Memory    memory;                                                       // Memory used by the slots
   final String formatKey = "%3d";                                               // Format a key for dumping during testing
   int            name;                                                          // Numeric name for these slots for debugging purposes
   static boolean debug = false;                                                 // Debug if true
@@ -29,6 +30,8 @@ public class Slots extends Test                                                 
     usedSlots           = new boolean[numberOfSlots];
     usedRefs            = new boolean[numberOfRefs];
     keys                = new Key    [numberOfRefs];
+    memory              = new Memory();                                         // Memory used by the slots
+    memory.numberOfRefs(numberOfRefs);                                          // Save the number of refs into memory
    }
 
   static Slots fake(int Name)                                                   // Slots used during testing to mock attached branches and leaves
@@ -37,28 +40,18 @@ public class Slots extends Test                                                 
     return s;
    }
 
-  private Slots duplicate()                                                     // Duplicate a set of slots
-   {final Slots s = new Slots(numberOfRefs);
-    s.copy(this);
-    return s;
-   }
-
-  protected void copy(Slots Source)                                             // Copy the source slots
-   {if (Source.numberOfSlots != numberOfSlots)
-     {stop("Different number of slots:", Source.numberOfSlots, numberOfSlots);
-     }
-    if (Source.numberOfRefs != numberOfRefs)
-     {stop("Different number of refs:", Source.numberOfRefs, numberOfRefs);
-     }
-    for (int i = 0; i < Source.numberOfSlots; i++)                              // Copy the slots from source to target
-     {slots    (i, Source.slots    (i));
-      usedSlots(i, Source.usedSlots(i));
+  protected Slots duplicate()                                                   // Copy the source slots
+   {final Slots t = new Slots(numberOfRefs);
+    for (int i = 0; i < numberOfSlots; i++)                                     // Copy the slots from source to target
+     {t.slots    (i, slots    (i));
+      t.usedSlots(i, usedSlots(i));
      }
 
     for (int i = 0; i < numberOfRefs; i++)                                      // Copy the references from source to target
-     {usedRefs(i, Source.usedRefs (i));
-      key(i, Source.key(i));
+     {t.usedRefs (i, usedRefs (i));
+      t.key      (i, key      (i));
      }
+    return t;                                                                   // The copied slots
    }
 
   int numberOfSlots() {return numberOfSlots;}
@@ -90,19 +83,19 @@ public class Slots extends Test                                                 
      }
    }
 
-  protected void clearSlotAndRef(int I) {freeRef(slots    [I]); clearSlots(I);} // Remove a key from the slots
-  protected int            slots(int I) {return  slots    [I];}                 // The indexed slot
-  protected boolean    usedSlots(int I) {return  usedSlots[I];}                 // The indexed slot usage indicator
-  protected boolean     usedRefs(int I) {return  usedRefs [I];}                 // The indexed reference usage indicator
-  Key                       keys(int I) {return keys[slots[I]];}                // The indexed key
+  protected void clearSlotAndRef(int I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
+  protected int            slots(int I) {return  memory.slots     (I);}         // The indexed slot
+  protected boolean    usedSlots(int I) {return  memory.usedSlots (I);}         // The indexed slot usage indicator
+  protected boolean     usedRefs(int I) {return  memory.usedRefs  (I);}         // The indexed reference usage indicator
+  Key                       keys(int I) {return  new Key(memory.keys(memory.slots(I)));} // The indexed key
 
-  protected void     slots(int I, int     Value) {slots     [I]  = Value;}      // The indexed slot
-  protected void usedSlots(int I, boolean Value) {usedSlots [I]  = Value;}      // The indexed slot usage indicator
-  protected void  usedRefs(int I, boolean Value) {usedRefs  [I]  = Value;}      // The indexed reference usage indicator
-            void      keys(int I, Key     Value) {keys[slots[I]] = Value;}      // The indexed key
+  protected void     slots(int I, int     Value) {memory.slots    (I, Value);}  // The indexed slot
+  protected void usedSlots(int I, boolean Value) {memory.usedSlots(I, Value);}  // The indexed slot usage indicator
+  protected void  usedRefs(int I, boolean Value) {memory.usedRefs (I, Value);}  // The indexed reference usage indicator
+            void      keys(int I, Key     Key)   {memory.keys(memory.slots(I), Key.value());} // The indexed key
 
-  protected Key  key(int I)            {return    keys[I];}                     // Get the key directly
-  protected void key(int I, Key Value) {keys[I] = Value;}                       // Set the key directly
+  protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
+  protected void key(int I, Key Key) {memory.keys(I, Key.value());}             // Set the key directly
 
 //D2 Refs                                                                       // Allocate and free references to keys
 
@@ -411,13 +404,13 @@ public class Slots extends Test                                                 
      }
    }
 
-  Integer locateFirstGe(Key Key)                                               // Locate the slot containing the first key greater than or equal to the search key
+  Integer locateFirstGe(Key Key)                                                // Locate the slot containing the first key greater than or equal to the search key
    {final Locate l = new Locate(Key);
     if (l.below) return l.at;
     return locateNextUsedSlot(l.at+1);
    }
 
-  public Integer locate(Key Key)                                               // Locate the slot containing the current search key if possible.
+  public Integer locate(Key Key)                                                // Locate the slot containing the current search key if possible.
    {final Locate l = new Locate(Key);                                           // Locate the search key
     if (l.exact()) return l.at;                                                 // Found
     return null;                                                                // Not found
@@ -477,61 +470,29 @@ public class Slots extends Test                                                 
     final int posKeys         = posUsedRefs     + numberOfRefs;
     final int posName         = posKeys         + Long   .BYTES*numberOfRefs;
     final int size            = posName         + Integer.BYTES;
-    final byte[]memory        = new byte[size];
+    final ByteBuffer memory   = ByteBuffer.allocate(size);
 
-    void write(ByteBuffer memory)                                               // Write a set of slots into a portion of memory
-     {int p = 0;
-      final ByteBuffer m = memory;
-      m.putInt(p, numberOfRefs);                                                                    p += Integer.BYTES;
-      for (int i = 0; i < numberOfSlots; i++) {m.putInt (p, slots[i]);                              p += Integer.BYTES;}
-      for (int i = 0; i < numberOfSlots; i++) {m.put(p, (byte)(usedSlots[i] ? 1 : 0));              p++;}
-      for (int i = 0; i < numberOfRefs;  i++) {m.put(p, (byte)(usedRefs [i] ? 1 : 0));              p++;}
-      for (int i = 0; i < numberOfRefs;  i++) {m.putLong(p, keys[i] != null ? keys[i].value() : 0); p += Long   .BYTES;}
-                                               m.putInt (p, name);                                  p += Integer.BYTES;
+    void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
+     {final int N = 8;
+      for (int i = 0; i < size; i++) memory.put(i, Memory.memory.get(i));
      }
 
-    Memory(ByteBuffer memory) {write(memory);}                                  // Write a set of slots into a portion of memory
-    Memory() {write(ByteBuffer.wrap(memory));}                                  // Load a set of slots into memory
+    Memory() {}                                                                 // Create an empty memory
+    Memory(Memory Memory) {copy(Memory);}                                       // Copy a specified memory
 
-    Slots read() {return read(ByteBuffer.wrap(memory));}                        // Reload a set of slots from memory
+    int     numberOfRefs(         ) {return memory.getInt (posNumberOfRefs                        );}
+    int     slots       (int Index) {return memory.getInt (posSlots        + Index * Integer.BYTES);}
+    boolean usedSlots   (int Index) {return memory.get    (posUsedSlots    + Index                ) > 0 ? true : false;}
+    boolean usedRefs    (int Index) {return memory.get    (posUsedRefs     + Index                ) > 0 ? true : false;}
+    long    keys        (int Index) {return memory.getLong(posKeys         + Index * Long.BYTES   );}
+    int     name        (         ) {return memory.getInt (posName                                );}
 
-    Slots read(ByteBuffer memory)                                               // Reload a set of slots from a portion of memory
-     {int p = 0;
-      final Slots s = new Slots(memory.getInt(p));                                                  p += Integer.BYTES;
-      for (int i = 0; i < s.numberOfSlots; i++) {s.    slots[i] = memory.getInt(p);                 p += Integer.BYTES;}
-      for (int i = 0; i < s.numberOfSlots; i++) {s.usedSlots[i] = memory.get(p) > 0 ? true : false; p++;}
-      for (int i = 0; i < s.numberOfRefs;  i++) {s.usedRefs [i] = memory.get(p) > 0 ? true : false; p++;}
-      for (int i = 0; i < s.numberOfRefs;  i++) {s.keys     [i] = Key(memory.getLong(p));           p += Long   .BYTES;}
-      s.name = memory.getInt(p);                                                                    p += Integer.BYTES;
-      return s;
-     }
-    int     numberOfRefs(ByteBuffer memory           ) {return memory.getInt (posNumberOfRefs                        );}
-    int     slots       (ByteBuffer memory, int Index) {return memory.getInt (posSlots        + Index * Integer.BYTES);}
-    boolean usedSlots   (ByteBuffer memory, int Index) {return memory.get    (posUsedSlots    + Index                ) > 0 ? true : false;}
-    boolean usedRefs    (ByteBuffer memory, int Index) {return memory.get    (posUsedRefs     + Index                ) > 0 ? true : false;}
-    long    keys        (ByteBuffer memory, int Index) {return memory.getLong(posKeys         + Index * Long.BYTES   );}
-    int     name        (ByteBuffer memory           ) {return memory.getInt (posName                                );}
-
-    void    numberOfRefs(ByteBuffer memory           , int     Value) {memory.putInt (posNumberOfRefs                        , Value);}
-    void    slots       (ByteBuffer memory, int Index, int     Value) {memory.putInt (posSlots        + Index * Integer.BYTES, Value);}
-    void    usedSlots   (ByteBuffer memory, int Index, boolean Value) {memory.put    (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
-    void    usedRefs    (ByteBuffer memory, int Index, boolean Value) {memory.put    (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
-    void    keys        (ByteBuffer memory, int Index, long    Value) {memory.putLong(posKeys         + Index * Long.BYTES   , Value);}
-    void    name        (ByteBuffer memory           , int     Value) {memory.putInt (posName                                , Value);}
-
-    int     numberOfRefs(         )         {return numberOfRefs(ByteBuffer.wrap(memory)       )       ;}
-    int     slots       (int Index)         {return slots       (ByteBuffer.wrap(memory), Index)       ;}
-    boolean usedSlots   (int Index)         {return usedSlots   (ByteBuffer.wrap(memory), Index)       ;}
-    boolean usedRefs    (int Index)         {return usedRefs    (ByteBuffer.wrap(memory), Index)       ;}
-    long    keys        (int Index)         {return keys        (ByteBuffer.wrap(memory), Index)       ;}
-    int     name        (         )         {return name        (ByteBuffer.wrap(memory)       )       ;}
-
-    void    numberOfRefs(           int     Value) {numberOfRefs(ByteBuffer.wrap(memory),        Value);}
-    void    slots       (int Index, int     Value) {slots       (ByteBuffer.wrap(memory), Index, Value);}
-    void    usedSlots   (int Index, boolean Value) {usedSlots   (ByteBuffer.wrap(memory), Index, Value);}
-    void    usedRefs    (int Index, boolean Value) {usedRefs    (ByteBuffer.wrap(memory), Index, Value);}
-    void    keys        (int Index, long    Value) {keys        (ByteBuffer.wrap(memory), Index, Value);}
-    void    name        (           int     Value) {name        (ByteBuffer.wrap(memory),        Value);}
+    void    numberOfRefs(           int     Value) {memory.putInt (posNumberOfRefs                        , Value);}
+    void    slots       (int Index, int     Value) {memory.putInt (posSlots        + Index * Integer.BYTES, Value);}
+    void    usedSlots   (int Index, boolean Value) {memory.put    (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
+    void    usedRefs    (int Index, boolean Value) {memory.put    (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
+    void    keys        (int Index, long    Value) {memory.putLong(posKeys         + Index * Long.BYTES   , Value);}
+    void    name        (           int     Value) {memory.putInt (posName                                , Value);}
    }
 
 //D1 Tests                                                                      // Test the slots
@@ -634,14 +595,14 @@ keys     :   14  13  16  15  18  17  12  11
     ok(b.locate(Key(10)), null);
     ok(b.locate(Key(20)), null);
 
-    ok(b.keys[b.find(Key(14))].value(), 14); ok(b.delete(Key(14)), true); ok(b, "11, 12, 13, 15, 16, 17, 18");
-    ok(b.keys[b.find(Key(12))].value(), 12); ok(b.delete(Key(12)), true); ok(b, "11, 13, 15, 16, 17, 18");
-    ok(b.keys[b.find(Key(13))].value(), 13); ok(b.delete(Key(13)), true); ok(b, "11, 15, 16, 17, 18");
-    ok(b.keys[b.find(Key(16))].value(), 16); ok(b.delete(Key(16)), true); ok(b, "11, 15, 17, 18");
-    ok(b.keys[b.find(Key(18))].value(), 18); ok(b.delete(Key(18)), true); ok(b, "11, 15, 17");
-    ok(b.keys[b.find(Key(11))].value(), 11); ok(b.delete(Key(11)), true); ok(b, "15, 17");
-    ok(b.keys[b.find(Key(17))].value(), 17); ok(b.delete(Key(17)), true); ok(b, "15");
-    ok(b.keys[b.find(Key(15))].value(), 15); ok(b.delete(Key(15)), true); ok(b, "");
+    ok(b.key(b.find(Key(14))).value(), 14); ok(b.delete(Key(14)), true); ok(b, "11, 12, 13, 15, 16, 17, 18");
+    ok(b.key(b.find(Key(12))).value(), 12); ok(b.delete(Key(12)), true); ok(b, "11, 13, 15, 16, 17, 18");
+    ok(b.key(b.find(Key(13))).value(), 13); ok(b.delete(Key(13)), true); ok(b, "11, 15, 16, 17, 18");
+    ok(b.key(b.find(Key(16))).value(), 16); ok(b.delete(Key(16)), true); ok(b, "11, 15, 17, 18");
+    ok(b.key(b.find(Key(18))).value(), 18); ok(b.delete(Key(18)), true); ok(b, "11, 15, 17");
+    ok(b.key(b.find(Key(11))).value(), 11); ok(b.delete(Key(11)), true); ok(b, "15, 17");
+    ok(b.key(b.find(Key(17))).value(), 17); ok(b.delete(Key(17)), true); ok(b, "15");
+    ok(b.key(b.find(Key(15))).value(), 15); ok(b.delete(Key(15)), true); ok(b, "");
 
     ok(b.locate(Key(10)), null); ok(b.delete(Key(10)), false);
    }
@@ -675,10 +636,10 @@ keys     :   14  13  16  15  18  17  12  11
 
   static void test_locateFirstGe()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots[ 1] = 7; b.usedRefs(7, true); b.keys[7] = Key(22);
-    b.usedSlots( 5, true); b.slots[ 5] = 4; b.usedRefs(4, true); b.keys[4] = Key(24);
-    b.usedSlots( 9, true); b.slots[ 9] = 2; b.usedRefs(2, true); b.keys[2] = Key(26);
-    b.usedSlots(14, true); b.slots[14] = 0; b.usedRefs(0, true); b.keys[0] = Key(28);
+    b.usedSlots( 1, true); b.slots( 1, 7); b.usedRefs(7, true); b.key(7, Key(22));
+    b.usedSlots( 5, true); b.slots( 5, 4); b.usedRefs(4, true); b.key(4, Key(24));
+    b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(26));
+    b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(28));
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -694,10 +655,10 @@ keys     :   28   0  26   0  24   0   0  22
 
   static void test_compactLeft()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots[ 1] = 7; b.usedRefs(7, true); b.keys[7] = Key(11);
-    b.usedSlots( 5, true); b.slots[ 5] = 4; b.usedRefs(4, true); b.keys[4] = Key(12);
-    b.usedSlots( 9, true); b.slots[ 9] = 2; b.usedRefs(2, true); b.keys[2] = Key(13);
-    b.usedSlots(14, true); b.slots[14] = 0; b.usedRefs(0, true); b.keys[0] = Key(14);
+    b.usedSlots( 1, true); b.slots( 1, 7); b.usedRefs(7, true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, 4); b.usedRefs(4, true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(14));
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -717,10 +678,10 @@ keys     :   11  12  13  14   0   0   0   0
 
   static void test_compactRight()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots[ 1] = 7; b.usedRefs(7, true); b.keys[7] = Key(11);
-    b.usedSlots( 5, true); b.slots[ 5] = 4; b.usedRefs(4, true); b.keys[4] = Key(12);
-    b.usedSlots( 9, true); b.slots[ 9] = 2; b.usedRefs(2, true); b.keys[2] = Key(13);
-    b.usedSlots(14, true); b.slots[14] = 0; b.usedRefs(0, true); b.keys[0] = Key(14);
+    b.usedSlots( 1, true); b.slots( 1, 7); b.usedRefs(7, true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, 4); b.usedRefs(4, true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(14));
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -743,10 +704,11 @@ keys     :    0   0   0   0  11  12  13  14
 
   static void test_memory()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots[ 1] = 7; b.usedRefs(7, true); b.keys[7] = Key(11);
-    b.usedSlots( 5, true); b.slots[ 5] = 4; b.usedRefs(4, true); b.keys[4] = Key(12);
-    b.usedSlots( 9, true); b.slots[ 9] = 2; b.usedRefs(2, true); b.keys[2] = Key(13);
-    b.usedSlots(14, true); b.slots[14] = 0; b.usedRefs(0, true); b.keys[0] = Key(14);
+
+    b.usedSlots( 1, true); b.slots( 1, 7); b.usedRefs(7, true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, 4); b.usedRefs(4, true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(14));
     ok(b.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -754,8 +716,9 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
-    final Slots.Memory m = b.new Memory();
-    final Slots        B = m.read();
+    final Slots        B = b.duplicate();
+    final Slots.Memory m = B.memory;
+
     ok(B.dump(), b.dump());
 
     ok(m.numberOfRefs(),  8);
@@ -793,7 +756,7 @@ keys     :   14   0  13   0  12   0   0  11
     m.usedRefs(  6, true);
     m.keys    (  6, 10);
 
-    ok(m.read().dump(), """
+    ok(B.dump(), """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   6   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   X   .
