@@ -37,8 +37,9 @@ class Tree extends Test                                                         
     maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
     numberOfNodes = NumberOfNodes;                                              // The maximum number of leaves and branches combined
-    for (int i = NumberOfNodes; i > 0; --i) freeChain.push(i-1l);               // Initial free chain
-    memory = null;
+    for (int i = numberOfNodes; i > 0; --i) freeChain.push(i-1l);               // Initial free chain
+
+    memory = allocateMemory();
    }
 
   Tree(int LeafSize)                {this(LeafSize, LeafSize-1);}               // Create a test tree
@@ -52,6 +53,27 @@ class Tree extends Test                                                         
   public record   Data(long value) {}                                           // A data value in a leaf
 
 //D1 Allocation                                                                 // Allocate or free a leaf or branch
+
+  class LeafMemoryPositions                                                     // Memory positions of fields
+   {final int posData = 0;
+    final int size    = posData + maxLeafSize() * Long.BYTES;
+   }
+
+  class BranchMemoryPositions                                                   // Memory positions of fields
+   {final int posTop  = 0;
+    final int posData = posTop  + Long.BYTES;
+    final int size    = posData + maxBranchSize() * Long.BYTES;
+   }
+
+  ByteBuffer allocateMemory()                                                   // Allocate the memory to be used by the tree
+   {final Slots sl = new Slots(maxLeafSize);
+    final Slots sb = new Slots(maxBranchSize);
+    final LeafMemoryPositions   l = new   LeafMemoryPositions();                                                                                //
+    final BranchMemoryPositions b = new BranchMemoryPositions();                                                                                //
+    final int L = sl.memory.size + l.size;                                                                                //
+    final int B = sb.memory.size + b.size;                                                                                //
+    return ByteBuffer.allocate(max(L, B) * numberOfNodes);
+   }
 
   long allocate()                                                               // Allocate a leaf or a branch
    {if (freeChain.size() == 0) stop("No more leaves or branches");
@@ -251,12 +273,7 @@ class Tree extends Test                                                         
       return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
 
-    class MemoryPositions                                                       // Memory positions of fields
-     {final int posData = 0;
-      final int size    = posData + numberOfRefs() * Long.BYTES;
-     }
-
-    class Memory extends MemoryPositions                                        // Memory required to hold bytes
+    class Memory extends LeafMemoryPositions                                    // Memory required to hold bytes
      {final ByteBuffer bytes = ByteBuffer.allocate(size);
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
@@ -516,13 +533,7 @@ class Tree extends Test                                                         
       return n;                                                                 // Number below this branch
      }
 
-    class MemoryPositions                                                       // Memory positions of fields
-     {final int posTop       = 0;
-      final int posData      = posTop  + Long.BYTES;
-      final int size         = posData + numberOfRefs() * Long.BYTES;
-     }
-
-    class Memory extends MemoryPositions                                        // Memory required to hold bytes
+    class Memory extends BranchMemoryPositions                                  // Memory required to hold bytes
      {final ByteBuffer bytes = ByteBuffer.allocate(size);
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
