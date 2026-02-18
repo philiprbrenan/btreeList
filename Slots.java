@@ -468,7 +468,7 @@ public class Slots extends Test                                                 
     final int size            = posName         + Long.BYTES;
    }
 
-  class Memory extends MemoryPositions                                          // Memory required to hold bytes
+  class Memory extends MemoryPositions                                           // Memory required to hold bytes
    {final ByteBuffer bytes    = ByteBuffer.allocate(size);
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
