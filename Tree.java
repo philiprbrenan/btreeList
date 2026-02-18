@@ -11,15 +11,15 @@ class Tree extends Test                                                         
  {final int           maxLeafSize;                                              // The maximum number of entries in a leaf
   final int         maxBranchSize;                                              // The maximum number of entries in a branch
   Slots                      root;                                              // The root of the tree
+  final Stack<Long>     freeChain = new Stack<>();                              // Unallocated leaves and branches
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
+  static final int NumberOfNodes  = 9999;                                        // Maximum number of leaves plus branches in this tree
   static boolean            debug = false;                                      // Debug if enabled
   long leaves = 0, branches = 0;                                                // Labels for the leaves and branches to assist in debugging
 
 //D1 Construction                                                               // Construct and layout a tree
 
-  Tree(int MaxLeafSize) {this(MaxLeafSize, MaxLeafSize-1);}                     // Create the tree
-
-  Tree(int MaxLeafSize, int MaxBranchSize)                                      // Create the tree
+  Tree(int MaxLeafSize, int MaxBranchSize, int NumberOfNodes)                   // Create the tree
    {final String m  = "The maximum ";
     final String m1 = m + "leaf size must be 2 or more, not: "   +MaxLeafSize;
     final String m2 = m + "branch size must be 3 or more, not: " +MaxBranchSize;
@@ -35,7 +35,11 @@ class Tree extends Test                                                         
 
     maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
+    for (int i = NumberOfNodes; i > 0; --i) freeChain.push(i-1l);               // Initial free chain
    }
+
+  Tree(int LeafSize)                {this(LeafSize, LeafSize-1);}               // Create a test tree
+  Tree(int LeafSize, int BranchSize){this(LeafSize, BranchSize, NumberOfNodes);}// Create a test tree
 
   int maxLeafSize  () {return maxLeafSize;}                                     // Maximum size of a leaf
   int maxBranchSize() {return maxBranchSize;}                                   // Maximum size of a branch
@@ -43,6 +47,15 @@ class Tree extends Test                                                         
 
   static Slots.Key Key(long Value) {return new Slots.Key(Value);}
   public record   Data(long value) {}                                           // A data value in a leaf
+
+//D1 Allocation                                                                 // Allocate or free a leaf or branch
+
+  long allocate()                                                               // Allocate aleaf or branch
+   {if (freeChain.size() == 0) stop("No more leaves or branches");
+    return freeChain.pop();
+   }
+
+  void freee(long Free) {freeChain.push(Free);}                                 // Free a leaf or branch
 
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
@@ -54,7 +67,7 @@ class Tree extends Test                                                         
     Leaf()                                                                      // Create a leaf
      {super(maxLeafSize);                                                       // Slots for leaf
       memory = new Memory();
-      name(leaves++);                                                           // Name the leaf to help in debugging
+      name(allocate());                                                         // Name the leaf
      }
 
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
@@ -216,7 +229,7 @@ class Tree extends Test                                                         
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
       memory = new Memory();
-      name(branches++);                                                         // Name the branch to help in debugging
+      name(allocate());                                                         // Name the branch
      }
 
     int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
@@ -1428,7 +1441,7 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
     ok(t.find(Key(10)), """
 Find Key : 10
-Leaf     : 3 up: 16 index: 0
+Leaf     : 4 up: 48 index: 0
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1436,12 +1449,12 @@ usedRefs :    X   X   X   X
 keys     :   11  12  13  14
 data     :   21  22  23  24
 Locate      :  0  below all
-Path        : 16, 10
+Path        : 48, 30
 """);
 
     ok(t.find(Key(23)), """
 Find Key : 23
-Leaf     : 21 up: 16 index: null
+Leaf     : 32 up: 48 index: null
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1449,7 +1462,7 @@ usedRefs :    X   X   X   X
 keys     :   23  24  25  26
 data     :   33  34  35  36
 Locate      : 0 exact
-Path        : 16, 10
+Path        : 48, 30
 """);
    }
 
@@ -1470,7 +1483,7 @@ Path        : 16, 10
     final Find n1 = t.first();
     ok(n1, """
 Find Key : 1
-Leaf     : 39 up: 16 index: 0
+Leaf     : 61 up: 48 index: 0
 positions:    0   1   2   3   4   5   6   7
 slots    :    3   0   2   0   1   0   0   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1478,7 +1491,7 @@ usedRefs :    X   X   X   X
 keys     :    4   3   2   1
 data     :    4   3   2   1
 Locate      : 0 exact
-Path        : 16, 10
+Path        : 48, 30
 """);
 
     final Find  n2 = t.next(n1);  ok(n2.key.value(),   2);
@@ -1516,7 +1529,7 @@ Path        : 16, 10
 
     ok(t.last(), """
 Find Key : 32
-Leaf     : 2 up: 9 index: null
+Leaf     : 2 up: 29 index: null
 positions:    0   1   2   3   4   5   6   7
 slots    :    0   0   1   0   2   0   3   0
 usedSlots:    X   .   X   .   X   .   X   .
@@ -1524,7 +1537,7 @@ usedRefs :    X   X   X   X
 keys     :   29  30  31  32
 data     :   29  30  31  32
 Locate      : 6 exact
-Path        : 9, 10
+Path        : 29, 30
 """);
 
 
