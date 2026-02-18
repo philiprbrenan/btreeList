@@ -181,7 +181,7 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++) d.add(String.format(formatKey, data(i) != null ? data(i).value() : 0));
-      final String U = " up: "   +(up      != null ? up.name : "null");
+      final String U = " up: "   +(up      != null ? up.name() : "null");
       final String I = " index: "+(upIndex != null ? upIndex : "null");
       return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
@@ -198,7 +198,7 @@ class Tree extends Test                                                         
       Memory() {}                                                               // Create an empty memory
       Memory(Memory Memory) {copy(Memory);}                                     // Copy a specified memory
 
-      long data(int Index) {return bytes.getLong(posData + Index * Long.BYTES);}
+      long data(int Index)      {return bytes.getLong(posData + Index * Long.BYTES);}
       void data(int Index, long Value) {bytes.putLong(posData + Index * Long.BYTES, Value);}
      }
    }
@@ -213,8 +213,8 @@ class Tree extends Test                                                         
 
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
-      name = branches++;                                                        // Name the branch to help in debugging
       memory = new Memory();
+      name(branches++);                                                         // Name the branch to help in debugging
      }
 
     int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
@@ -303,9 +303,9 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+data(i).name);}
+       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+data(i).name());}
        }
-      return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top.name+"\n";
+      return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top.name()+"\n";
      }
 
     protected String dump()                                                     // Dump a branch
@@ -313,10 +313,10 @@ class Tree extends Test                                                         
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++)
        {if (dataDirect(i) == null) d.add("  .");
-        else d.add(String.format(formatKey, dataDirect(i).name));
+        else d.add(String.format(formatKey, dataDirect(i).name()));
        }
-      return "Branch   : "+name+"\n"+super.dump() +
-             "data     :  "+d+"\ntop      :  "+String.format(formatKey, top.name)+"\n";
+      return "Branch   : "+name()+"\n"+super.dump() +
+             "data     :  "+d+"\ntop      :  "+String.format(formatKey, top.name())+"\n";
      }
 
     void compactLeft()                                                          // Compact the branch to the left
@@ -529,7 +529,7 @@ class Tree extends Test                                                         
       if (leaf    != null) s.append(leaf.dump());
       if (locate  != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
-      for(Branch p = leaf.up; p != null; p = p.up) j.add(""+p.name);
+      for(Branch p = leaf.up; p != null; p = p.up) j.add(""+p.name());
       if (leaf.up != null) s.append("Path        : "+j+"\n");
       return ""+s;
      }
@@ -793,9 +793,9 @@ class Tree extends Test                                                         
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
-    final String U = Leaf.up      != null ? ""+Leaf.up.name : "null";
+    final String U = Leaf.up      != null ? ""+Leaf.up.name() : "null";
     final String I = Leaf.upIndex != null ? ""+Leaf.upIndex : "null";
-    if (Details) P.elementAt(L+1).append("("+Leaf.name+", "+U+", "+I+")");
+    if (Details) P.elementAt(L+1).append("("+Leaf.name()+", "+U+", "+I+")");
     padStrings(P, level);
    }
 
@@ -818,16 +818,16 @@ class Tree extends Test                                                         
 
           P.elementAt(L+0).append(" "+B.keys(i).value());                       // Key
           if (Details)
-           {P.elementAt(L+1).append("["+Branch.name+"."+i+"]");                 // Branch, key, next pair
-            final String U = B.up      != null ? ""+B.up.name : "null";
+           {P.elementAt(L+1).append("["+Branch.name()+"."+i+"]");                 // Branch, key, next pair
+            final String U = B.up      != null ? ""+B.up.name() : "null";
             final String I = B.upIndex != null ? ""+B.upIndex : "null";
-            P.elementAt(L+2).append("("+s.name+", "+U+", "+I+")");              // Link to next level
+            P.elementAt(L+2).append("("+s.name()+", "+U+", "+I+")");              // Link to next level
            }
          }
        }
      }
 
-    if (Details) P.elementAt(L+2).append("{"+B.top.name+"}");                   // Top of branch
+    if (Details) P.elementAt(L+2).append("{"+B.top.name()+"}");                   // Top of branch
 
     final boolean l = B.top instanceof Leaf, b = B.top instanceof Branch;       // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top, P, level+1, Details);
