@@ -5,6 +5,7 @@
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
+import java.nio.*;
 
 class Tree extends Test                                                         // Manipulate a tree
  {final int           maxLeafSize;                                              // The maximum number of entries in a leaf
@@ -181,6 +182,21 @@ class Tree extends Test                                                         
       final String U = " up: "   +(up      != null ? up.name : "null");
       final String I = " index: "+(upIndex != null ? upIndex : "null");
       return "Leaf     : "+name+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
+     }
+
+    class Memory                                                                // Memory required to hold bytes
+     {final int size = numberOfSlots();
+      final ByteBuffer bytes = ByteBuffer.allocate(size * Long.BYTES);
+
+      void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
+       {final int N = 8;
+        for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+       }
+
+      Memory() {}                                                               // Create an empty memory
+      Memory(Memory Memory) {copy(Memory);}                                     // Copy a specified memory
+      long data(int Index)      {return bytes.getLong(Index * Long.BYTES);}
+      void data(int Index, long Value) {bytes.putLong(Index * Long.BYTES, Value);}
      }
    }
 
@@ -405,6 +421,27 @@ class Tree extends Test                                                         
       if      (s instanceof Leaf)   n += s.countUsed();                         // Top is a leaf
       else if (s instanceof Branch) n += ((Branch)s).count();                   // Top is a branch
       return n;                                                                 // Number below this branch
+     }
+
+    class Memory                                                                // Memory required to hold bytes
+     {final int posTop       = 0;
+      final int posData      = posTop  + Long.BYTES;
+      final int size         = posData + numberOfRefs() * Long.BYTES;
+      final ByteBuffer bytes = ByteBuffer.allocate(size);
+
+      void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
+       {final int N = 8;
+        for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+       }
+
+      Memory() {}                                                               // Create an empty memory
+      Memory(Memory Memory) {copy(Memory);}                                     // Copy a specified memory
+
+      long top ()          {return bytes.getLong(posTop);}
+      long keys(int Index) {return bytes.getLong(posData + Index * Long.BYTES);}
+
+      void top (           long Value) {bytes.putLong(posTop,                       Value);}
+      void keys(int Index, long Value) {bytes.putLong(posData + Index * Long.BYTES, Value);}
      }
    }
 
