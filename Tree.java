@@ -117,7 +117,6 @@ class Tree extends Test                                                         
 
   class Leaf extends Slots                                                      // Leaf
    {Branch up; Integer upIndex;                                                 // The branch above
-    final Data[]data = new Data[maxLeafSize()];                                 // Data corresponding to each key in the leaf
     final Memory memory;                                                        // Memory used by the slots
 
     Leaf()                                                                      // Create a leaf
@@ -126,11 +125,11 @@ class Tree extends Test                                                         
       name(allocate());                                                         // Name the leaf
      }
 
-    static boolean ref(Slots L) {return L instanceof Leaf;}                     // Check whether we are referencing a leaf
+    Data data(int I)             {return new Data(memory.data(I));}             // Get value of data field at index
+    void data(int I, Data Value) {memory.data(I, Value != null ? Value.value() : 0);} // Set value of data field at index
 
+    static boolean ref(Slots L)  {return L instanceof Leaf;}                    // Check whether we are referencing a leaf
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
-    Data data(int I)             {return data[I];}                              // Get value of data field at index
-    void data(int I, Data Value) {       data[I] = Value;}                      // Set value of data field at index
 
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
@@ -929,7 +928,7 @@ class Tree extends Test                                                         
       for  (int i = 0; i < S; i++)
        {if (B.usedSlots(i))
          {final Slots   s = B.data(i);
-          final boolean l = Leaf.ref(s), b = Branch.ref(s);
+          final boolean l = Leaf.ref(s), b = Tree.Branch.ref(s);
 
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b) printBranch((Branch)s, P, level+1, Details, B, i);
@@ -947,7 +946,7 @@ class Tree extends Test                                                         
 
     if (Details) P.elementAt(L+2).append("{"+B.top.name()+"}");                 // Top of branch
 
-    final boolean l = Leaf.ref(B.top), b = Branch.ref(B.top);                   // Print top leaf
+    final boolean l = Leaf.ref(B.top), b = Tree.Branch.ref(B.top);              // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top, P, level+1, Details, B, null);
     else if (b) printBranch((Branch)B.top, P, level+1, Details, B, null);
 
