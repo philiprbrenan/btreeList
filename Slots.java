@@ -40,18 +40,15 @@ public class Slots extends Test                                                 
     return s;
    }
 
-  protected Slots duplicate()                                                   // Copy the source slots
+  Slots duplicate()                                                             // Copy the source slots
    {final Slots t = new Slots(numberOfRefs);
-    for (int i = 0; i < numberOfSlots; i++)                                     // Copy the slots from source to target
-     {t.slots    (i, slots    (i));
-      t.usedSlots(i, usedSlots(i));
-     }
-
-    for (int i = 0; i < numberOfRefs; i++)                                      // Copy the references from source to target
-     {t.usedRefs (i, usedRefs (i));
-      t.key      (i, key      (i));
-     }
+    t.copy(this);
     return t;                                                                   // The copied slots
+   }
+
+  Slots copy(Slots Source)                                                      // Copy the source slots
+   {memory.copy(Source.memory);
+    return this;                                                                // The copied slots
    }
 
   int numberOfSlots() {return numberOfSlots;}
@@ -774,6 +771,7 @@ keys     :   14   0  13   0  12   0  10  11
     test_locateFirstGe();
     test_compactLeft();
     test_compactRight();
+    test_memory();
    }
 
   static void newTests()                                                        // Tests being worked on
