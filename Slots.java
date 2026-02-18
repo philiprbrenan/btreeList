@@ -470,8 +470,7 @@ public class Slots extends Test                                                 
     final ByteBuffer bytes    = ByteBuffer.allocate(size);
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
-     {final int N = 8;
-      for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+     {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
      }
 
     Memory() {}                                                                 // Create an empty memory
