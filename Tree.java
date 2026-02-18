@@ -335,7 +335,7 @@ class Tree extends Test                                                         
       for (int i = 0; i < R; i++) dataDirect(i, d[i]);
      }
 
-    void mergeData(Key Key, Branch Left, Branch Right)                         // Merge the data from the compacted left and right slots
+    void mergeData(Key Key, Branch Left, Branch Right)                          // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
       for (int i = 0; i < maxBranchSize; ++i)                                   // Each slot
        {if      (l.usedRefs(i)) dataDirect(i, l.data(i));                       // Merge from left first
@@ -514,7 +514,7 @@ class Tree extends Test                                                         
 
   class Find                                                                    // Find results
    {final Leaf leaf;                                                            // Leaf that should contain the key
-    final Slots.Key key;                                                             // Search key
+    final Slots.Key key;                                                        // Search key
     final Slots.Locate locate;                                                  // Location details for key
 
     Find(Slots.Key Key, Leaf Leaf)
@@ -587,8 +587,8 @@ class Tree extends Test                                                         
         final Leaf   r = F.leaf;
         final long  sk = r.splittingKey();
         final Leaf   l = r.splitLeft();
-        b.insert(Key(sk), l);                                                  // Insert new left leaf into leaf
-        if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);           // Insert new key, data pair into left leaf
+        b.insert(Key(sk), l);                                                   // Insert new left leaf into leaf
+        if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);   // Insert new key, data pair into left leaf
         final Integer K = b.locateFirstGe(Key);                                 // Position of leaf in parent
         b.mergeLeftSibling (K);                                                 // Merge left leaf into prior leaf if possible
         b.mergeRightSibling(K);                                                 // Merge left leaf into prior leaf if possible
@@ -621,8 +621,8 @@ class Tree extends Test                                                         
         if (r.full())                                                           // Split the leaf if it is full
          {final long sk = r.splittingKey();                                     // Splitting key
           final Leaf  l = r.splitLeft();                                        // Right leaf split out of the leaf
-          p.insert(Key(sk), l);                                                // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-          if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);         // Insert into left or right leaf which will now have space
+          p.insert(Key(sk), l);                                                 // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+          if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data); // Insert into left or right leaf which will now have space
          }
         else r.insert(Key, Data);                                               // Leaf has sufficient space
 
@@ -633,15 +633,15 @@ class Tree extends Test                                                         
       if (r.full())                                                             // Split the leaf if it is full
        {final long        sk = r.splittingKey();                                // Splitting key
         final Branch.Split s = r.splitLeft();                                   // Branch split out on right from
-        p.insert(Key(sk), s.left);                                                   // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-        if (Key.value() <= sk) p = s.left; else p = s.right;                            // Traverse left or right
+        p.insert(Key(sk), s.left);                                              // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+        if (Key.value() <= sk) p = s.left; else p = s.right;                    // Traverse left or right
        }
       else p = r;                                                               // Step down into non full branch
      }
     stop("Insert fell off the end of tree after this many searches:", mnl());
    }
 
-  void delete(Slots.Key Key)                                                         // Delete a key from the tree
+  void delete(Slots.Key Key)                                                    // Delete a key from the tree
    {if (root == null) return;                                                   // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
@@ -818,16 +818,16 @@ class Tree extends Test                                                         
 
           P.elementAt(L+0).append(" "+B.keys(i).value());                       // Key
           if (Details)
-           {P.elementAt(L+1).append("["+Branch.name()+"."+i+"]");                 // Branch, key, next pair
+           {P.elementAt(L+1).append("["+Branch.name()+"."+i+"]");               // Branch, key, next pair
             final String U = B.up      != null ? ""+B.up.name() : "null";
             final String I = B.upIndex != null ? ""+B.upIndex : "null";
-            P.elementAt(L+2).append("("+s.name()+", "+U+", "+I+")");              // Link to next level
+            P.elementAt(L+2).append("("+s.name()+", "+U+", "+I+")");            // Link to next level
            }
          }
        }
      }
 
-    if (Details) P.elementAt(L+2).append("{"+B.top.name()+"}");                   // Top of branch
+    if (Details) P.elementAt(L+2).append("{"+B.top.name()+"}");                 // Top of branch
 
     final boolean l = B.top instanceof Leaf, b = B.top instanceof Branch;       // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top, P, level+1, Details);
