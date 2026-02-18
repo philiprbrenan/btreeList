@@ -40,7 +40,7 @@ public class Slots extends Test                                                 
     return s;
    }
 
-  Slots duplicate()                                                             // Copy the source slots
+  Slots duplicateSlots()                                                        // Copy the source slots
    {final Slots t = new Slots(numberOfRefs);
     t.copy(this);
     return t;                                                                   // The copied slots
@@ -53,6 +53,7 @@ public class Slots extends Test                                                 
     return this;                                                                // The copied slots
    }
 
+  void invalidate()   {memory.invalidate();}                                    // Invalidate the slots in such away that they are unlikely to work well if subsequently used
   int numberOfSlots() {return numberOfSlots;}
   int numberOfRefs()  {return numberOfRefs;}
 
@@ -249,7 +250,8 @@ public class Slots extends Test                                                 
 
   void compactLeft()                                                            // Compact the used slots to the left end
    {if (empty()) return;                                                        // Nothing to compact
-    final Slots d = duplicate(); reset();
+    final Slots d = duplicateSlots();
+    reset();
     int p = 0;
     for (int i = 0; i < numberOfSlots; i++)                                     // Each slot
      {if (d.usedSlots(i))                                                       // Each used slot
@@ -263,7 +265,7 @@ public class Slots extends Test                                                 
 
   void compactRight()                                                           // Squeeze the used slots to the left end
    {if (empty()) return;                                                        // Nothing to squeeze
-    final Slots d = duplicate(); reset();
+    final Slots d = duplicateSlots(); reset();
     int p = numberOfRefs - 1;
     for (int i = numberOfSlots - 1; i >= 0; --i)
      {if (d.usedSlots(i))
@@ -297,7 +299,7 @@ public class Slots extends Test                                                 
 
   boolean mergeOnRight(Slots Right)                                             // Merge the specified slots from the right
    {if (countUsed() + Right.countUsed() > numberOfSlots) return false;
-    final Slots l = duplicate(), r = Right.duplicate();
+    final Slots l = duplicateSlots(), r = Right.duplicateSlots();
     l.compactLeft(); r.compactRight();
     mergeCompacted(l, r);
     return true;
@@ -305,7 +307,7 @@ public class Slots extends Test                                                 
 
   boolean mergeOnLeft(Slots Left)                                               // Merge the specified slots from the left
    {if (Left.countUsed() + countUsed() > numberOfSlots) return false;
-    final Slots l = Left.duplicate(), r = duplicate();
+    final Slots l = Left.duplicateSlots(), r = duplicateSlots();
     l.compactLeft(); r.compactRight();
     mergeCompacted(l, r);
     return true;
@@ -476,6 +478,10 @@ public class Slots extends Test                                                 
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
      {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+     }
+
+    void invalidate()                                                           // Invalidate the slots in such away that they are unlikely to work well if subsequently used
+     {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
      }
 
     Memory() {}                                                                 // Create an empty memory
@@ -717,7 +723,7 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
-    final Slots        B = b.duplicate();
+    final Slots        B = b.duplicateSlots();
     final Slots.Memory m = B.memory;
 
     ok(B.dump(), b.dump());
