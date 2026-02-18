@@ -14,6 +14,7 @@ class Tree extends Test                                                         
   final Stack<Long>     freeChain = new Stack<>();                              // Unallocated leaves and branches
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
   final int numberOfNodes;                                                      // Maximum number of leaves plus branches in this tree
+  final ByteBuffer memory;                                                      // Memeory containing leaves and branches
   static boolean            debug = false;                                      // Debug if enabled
   long leaves = 0, branches = 0;                                                // Labels for the leaves and branches to assist in debugging
 
@@ -37,6 +38,7 @@ class Tree extends Test                                                         
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
     numberOfNodes = NumberOfNodes;                                              // The maximum number of leaves and branches combined
     for (int i = NumberOfNodes; i > 0; --i) freeChain.push(i-1l);               // Initial free chain
+    memory = null;
    }
 
   Tree(int LeafSize)                {this(LeafSize, LeafSize-1);}               // Create a test tree
@@ -249,10 +251,13 @@ class Tree extends Test                                                         
       return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
 
-    class Memory                                                                // Memory required to hold bytes
-     {final int posData      = 0;
-      final int size         = posData + numberOfRefs() * Long.BYTES;
-      final ByteBuffer bytes = ByteBuffer.allocate(size);
+    class MemoryPositions                                                       // Memory positions of fields
+     {final int posData = 0;
+      final int size    = posData + numberOfRefs() * Long.BYTES;
+     }
+
+    class Memory extends MemoryPositions                                        // Memory required to hold bytes
+     {final ByteBuffer bytes = ByteBuffer.allocate(size);
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
        {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
@@ -465,21 +470,16 @@ class Tree extends Test                                                         
       final Slots L = data(left);                                               // Left sibling as slots
       if (L instanceof Leaf)                                                    // Merging leaves
        {final Leaf r = (Leaf)(Right != null ? data(Right) : top);               // Right leaf sibling
-freeCheck();
         if (r.mergeFromLeft((Leaf)L))                                           // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
-freeCheck();
           return true;
          }
        }
       else                                                                      // Children are branches
        {final Branch r = (Branch)(Right != null ? data(Right) : top);           // Right leaf sibling
-
-freeCheck();
         if (r.mergeFromLeft(keys(left), (Branch)L))                             // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
           ((Branch)L).free();
-freeCheck();
           return true;
          }
        }
@@ -516,11 +516,14 @@ freeCheck();
       return n;                                                                 // Number below this branch
      }
 
-    class Memory                                                                // Memory required to hold bytes
+    class MemoryPositions                                                       // Memory positions of fields
      {final int posTop       = 0;
       final int posData      = posTop  + Long.BYTES;
       final int size         = posData + numberOfRefs() * Long.BYTES;
-      final ByteBuffer bytes = ByteBuffer.allocate(size);
+     }
+
+    class Memory extends MemoryPositions                                        // Memory required to hold bytes
+     {final ByteBuffer bytes = ByteBuffer.allocate(size);
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
        {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
@@ -546,81 +549,58 @@ freeCheck();
   void mergeAlongPath(Slots.Key Key)                                            // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
     if (f == null) return;                                                      // Empty tree
-freeCheck();
     if (f.leaf.up != null)                                                      // Process path from leaf to root
      {for (Branch b = f.leaf.up; b != null; b = b.up)                           // Go up the tree merging as we go: only one merge is needed at each level
        {final Integer l = b.locateFirstGe(Key);                                 // Position of key
         if (b.mergeRightSibling(l)) continue;                                   // Merge right sibling of keyed child
-freeCheck();
-
         final Integer L = b.locateFirstGe(Key);                                 // Position of key
-freeCheck();
         if (b.mergeLeftSibling(L)) continue;                                    // Merge left sibling of keyed child
-freeCheck();
-
         final Integer k = b.locateFirstGe(Key);                                 // Look further left
         if (k != null)                                                          // Not top
          {final Integer K = b.locatePrevUsedSlot(k-1);
           if (K != null && b.mergeLeftSibling(K)) continue;                     // Merge further left sibling
-freeCheck();
          }
         else                                                                    // Top
          {final Integer K = b.locateLastUsedSlot();
           if (K != null && b.mergeLeftSibling(K)) continue;                     // Merge further left of top
-freeCheck();
          }
 
         final Integer m = b.locateFirstGe(Key);                                 // Look further right
         if (m != null)
          {final Integer M = b.locateNextUsedSlot(m+1);
           if (M != null && b.mergeRightSibling(M)) continue;                    // Merge further right sibling
-freeCheck();
          }
         b.mergeLeftSibling(null);                                               // Migrate into top
-freeCheck();
        }
      }
 
-freeCheck();
     mergeRoot(Key);                                                             // Merge the root if possible
-freeCheck();
    }
 
   void mergeRoot(Slots.Key Key)                                                 // Collapse the root if possible
    {if (root == null) return;                                                   // Empty tree
-freeCheck();
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
-freeCheck();
-      if (l.empty()) {l.free(); root = null;}                                               // Free leaf if it is empty
-freeCheck();
+      if (l.empty()) {l.free(); root = null;}                                   // Free leaf if it is empty
       return;
      }
 
     final Branch b = (Branch)root;                                              // Branch root
-freeCheck();
     if (b.countUsed() == 0) {final Slots t = b.top; b.free(); root = t;}                                        // Root body is empty so collapse to top
-freeCheck();
     if (b.countUsed() != 1) return;                                             // Root body too big to collapse
 
     if (b.top instanceof Leaf)                                                  // Leaves for children
      {final Leaf    l = (Leaf)b.firstChild();
       final Leaf    r = (Leaf)b.top;
-freeCheck();
       final boolean m = l.mergeFromRight(r);
-freeCheck();
-      if (m) {b.free(); r.free(); root = l;}                                                          // Update root if the leaves were successfully merged
-freeCheck();
+      if (m) {b.free(); r.free(); root = l;}                                    // Update root if the leaves were successfully merged
 
       return;
      }
     final Branch  l = (Branch)b.firstChild();                                   // Root has branches for children
     final Branch  r = (Branch)b.top;
-freeCheck();
     final boolean m = r.mergeFromLeft(b.firstKey(), l);
-freeCheck();
-      if (m) {b.free(); l.free(); root = r;}                                                          // Update root if the leaves were successfully merged
-freeCheck();
+    if (m) {b.free(); l.free(); root = r;}                                      // Update root if the leaves were successfully merged
    }
 
 //D1 High Level                                                                 // High level operations: insert, find, delete
@@ -703,63 +683,48 @@ freeCheck();
         b.insert(Key(sk), l);                                                   // Insert new left leaf into leaf
         if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);   // Insert new key, data pair into left leaf
         final Integer K = b.locateFirstGe(Key);                                 // Position of leaf in parent
-freeCheck();
         b.mergeLeftSibling (K);                                                 // Merge left leaf into prior leaf if possible
-freeCheck();
         b.mergeRightSibling(K);                                                 // Merge left leaf into prior leaf if possible
-freeCheck();
         if (b.canStepLeft  (K)) b.mergeLeftSibling (b.stepLeft (K));            // Merge right leaf into next leaf if possible
-freeCheck();
         if (b.canStepRight (K)) b.mergeRightSibling(b.stepRight(K));            // Merge right leaf into next leaf if possible
-freeCheck();
         return;
        }
      }
-freeCheck();
 
     if (root instanceof Leaf)                                                   // Leaf root
      {final Leaf l = (Leaf)root;
       if (!l.full())                                                            // Still space in leaf root
        {l.insert(Key, Data);                                                    // Insert into leaf root
-freeCheck();
         return;
        }
       else
        {freeCheck();
         root = l.split();                                                       // Split full leaf root
-freeCheck();
        }
      }
 
     Branch p = (Branch)root;                                                    // Start at root
-freeCheck();
     if (p.full())
      {final Branch P = p;
       root = p = p.split();
       P.free();
-     }                         // Split full root branch
-freeCheck();
+     }                                                                          // Split full root branch
 
     for (Branch q = find(Key).leaf.up, b = q.up; b != null; q = b, b = q.up)    // Path back from leaf to first full branch below a non full branch - the point at which we have to start splitting
      {if (!b.full()) {p = b; break;}
      }
 
-freeCheck();
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {final Slots q = p.stepDown(Key);                                          // Step down
       if (q instanceof Leaf)                                                    // Step down to a leaf
        {final Leaf r = (Leaf)q;                                                 // We have reached a leaf
         if (r.full())                                                           // Split the leaf if it is full
          {final long sk = r.splittingKey();                                     // Splitting key
-freeCheck();
           final Leaf  l = r.splitLeft();                                        // Right leaf split out of the leaf
           p.insert(Key(sk), l);                                                 // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-freeCheck();
           if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data); // Insert into left or right leaf which will now have space
          }
         else r.insert(Key, Data);                                               // Leaf has sufficient space
-
-freeCheck();
         mergeAlongPath(Key);                                                    // Merge along the path taken by the key to compress the tree
         return;
        }
