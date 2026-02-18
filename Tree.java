@@ -13,7 +13,7 @@ class Tree extends Test                                                         
   Slots                      root;                                              // The root of the tree
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
   static boolean            debug = false;                                      // Debug if enabled
-  int leaves = 0, branches = 0;                                                 // Labels for the leaves and branches to assist in debugging
+  long leaves = 0, branches = 0;                                                // Labels for the leaves and branches to assist in debugging
 
 //D1 Construction                                                               // Construct and layout a tree
 
@@ -47,10 +47,12 @@ class Tree extends Test                                                         
   class Leaf extends Slots                                                      // Leaf
    {Branch up; Integer upIndex;                                                 // The branch above
     final Data[]data = new Data[maxLeafSize()];                                 // Data corresponding to each key in the leaf
+    final Memory memory;                                                        // Memory used by the slots
 
     Leaf()                                                                      // Create a leaf
      {super(maxLeafSize);                                                       // Slots for leaf
-      name = leaves++;                                                          // Name the leaf to help in debugging
+      memory = new Memory();
+      name(leaves++);                                                           // Name the leaf to help in debugging
      }
 
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
@@ -181,12 +183,13 @@ class Tree extends Test                                                         
       for (int i = 0; i < N; i++) d.add(String.format(formatKey, data(i) != null ? data(i).value() : 0));
       final String U = " up: "   +(up      != null ? up.name : "null");
       final String I = " index: "+(upIndex != null ? upIndex : "null");
-      return "Leaf     : "+name+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
+      return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
 
     class Memory                                                                // Memory required to hold bytes
-     {final int size = numberOfSlots();
-      final ByteBuffer bytes = ByteBuffer.allocate(size * Long.BYTES);
+     {final int posData      = 0;
+      final int size         = posData + numberOfRefs() * Long.BYTES;
+      final ByteBuffer bytes = ByteBuffer.allocate(size);
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
        {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
@@ -194,8 +197,9 @@ class Tree extends Test                                                         
 
       Memory() {}                                                               // Create an empty memory
       Memory(Memory Memory) {copy(Memory);}                                     // Copy a specified memory
-      long data(int Index)      {return bytes.getLong(Index * Long.BYTES);}
-      void data(int Index, long Value) {bytes.putLong(Index * Long.BYTES, Value);}
+
+      long data(int Index) {return bytes.getLong(posData + Index * Long.BYTES);}
+      void data(int Index, long Value) {bytes.putLong(posData + Index * Long.BYTES, Value);}
      }
    }
 
@@ -205,10 +209,12 @@ class Tree extends Test                                                         
    {final Slots[]data = new Slots[maxBranchSize()];                             // Data corresponding to each key in the branch
     Slots top;                                                                  // Top most element
     Branch up; Integer upIndex;                                                 // The branch above
+    final Memory memory;                                                        // Memory used by the slots
 
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
       name = branches++;                                                        // Name the branch to help in debugging
+      memory = new Memory();
      }
 
     int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
@@ -436,10 +442,10 @@ class Tree extends Test                                                         
       Memory(Memory Memory) {copy(Memory);}                                     // Copy a specified memory
 
       long top ()          {return bytes.getLong(posTop);}
-      long keys(int Index) {return bytes.getLong(posData + Index * Long.BYTES);}
+      long data(int Index) {return bytes.getLong(posData + Index * Long.BYTES);}
 
       void top (           long Value) {bytes.putLong(posTop,                       Value);}
-      void keys(int Index, long Value) {bytes.putLong(posData + Index * Long.BYTES, Value);}
+      void data(int Index, long Value) {bytes.putLong(posData + Index * Long.BYTES, Value);}
      }
    }
 
