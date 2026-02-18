@@ -17,7 +17,7 @@ public class Slots extends Test                                                 
   private final Key    []keys;                                                  // Keys
   final Memory    memory;                                                       // Memory used by the slots
   final String formatKey = "%3d";                                               // Format a key for dumping during testing
-  int            name;                                                          // Numeric name for these slots for debugging purposes
+  long           name;                                                          // Numeric name for these slots for debugging purposes
   static boolean debug = false;                                                 // Debug if true
 
 //D1 Construction                                                               // Construct and layout the slots
