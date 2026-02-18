@@ -39,7 +39,7 @@ class Tree extends Test                                                         
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
   static Slots.Key Key(long Value) {return new Slots.Key(Value);}
-  public record Data(long value) {}                                             // A data value in a leaf
+  public record   Data(long value) {}                                           // A data value in a leaf
 
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
