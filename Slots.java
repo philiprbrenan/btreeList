@@ -47,9 +47,9 @@ public class Slots extends Test                                                 
    }
 
   Slots copy(Slots Source)                                                      // Copy the source slots
-   {final long n = name();
-    memory.copy(Source.memory);
-    name(n);
+   {final long n = name();                                                      // Save name of target
+    memory.copy(Source.memory);                                                 // Copy memory
+    name(n);                                                                    // Reload name of target
     return this;                                                                // The copied slots
    }
 
