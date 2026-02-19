@@ -23,7 +23,6 @@ public class Slots extends Test                                                 
     numberOfRefs        = NumberOfRefs;
     redistributionWidth = (int)java.lang.Math.sqrt(numberOfRefs);
     memory              = new Memory();                                         // Memory used by the slots
-    memory.numberOfRefs(numberOfRefs);                                          // Save the number of refs into memory
    }
 
   static Slots fake(int Name)                                                   // Slots used during testing to mock attached branches and leaves
@@ -91,6 +90,9 @@ public class Slots extends Test                                                 
 
   long name() {return   memory.name();}                                         // Get the name
   void name(long Name) {memory.name(Name);}                                     // Set the name
+
+  int  type()  {return memory.type();}                                          // Get the type
+  void type(int Type) {memory.type(Type);}                                      // Set the type
 
 //D2 Refs                                                                       // Allocate and free references to keys
 
@@ -435,6 +437,7 @@ public class Slots extends Test                                                 
   protected String dump()                                                       // Dump the slots
    {final StringBuilder s = new StringBuilder();
     final int N = numberOfSlots, R = numberOfRefs;
+    s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n", name(), type(), R));
     s.append("positions: ");
     for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
     s.append("\nslots    : ");
@@ -459,16 +462,16 @@ public class Slots extends Test                                                 
 //D1 Memory                                                                     // Read and write from an array of bytes
 
   class MemoryPositions                                                         // Positions of fields in memory
-   {final int posNumberOfRefs = 0;
-    final int posSlots        = posNumberOfRefs + Integer.BYTES;
-    final int posUsedSlots    = posSlots        + Integer.BYTES*numberOfSlots;
-    final int posUsedRefs     = posUsedSlots    + numberOfSlots;
-    final int posKeys         = posUsedRefs     + numberOfRefs;
-    final int posName         = posKeys         + Long.BYTES*numberOfRefs;
-    final int size            = posName         + Long.BYTES;
+   {final int posType         = 0;
+    final int posSlots        = posType      + Integer.BYTES;
+    final int posUsedSlots    = posSlots     + Integer.BYTES*numberOfSlots;
+    final int posUsedRefs     = posUsedSlots + numberOfSlots;
+    final int posKeys         = posUsedRefs  + numberOfRefs;
+    final int posName         = posKeys      + Long.BYTES*numberOfRefs;
+    final int size            = posName      + Long.BYTES;
    }
 
-  class Memory extends MemoryPositions                                           // Memory required to hold bytes
+  class Memory extends MemoryPositions                                          // Memory required to hold bytes
    {final ByteBuffer bytes    = ByteBuffer.allocate(size);
 
     void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
@@ -482,19 +485,22 @@ public class Slots extends Test                                                 
     Memory() {}                                                                 // Create an empty memory
     Memory(Memory Memory) {copy(Memory);}                                       // Copy a specified memory
 
-    int     numberOfRefs(         ) {return bytes.getInt (posNumberOfRefs                        );}
     int     slots       (int Index) {return bytes.getInt (posSlots        + Index * Integer.BYTES);}
     boolean usedSlots   (int Index) {return bytes.get    (posUsedSlots    + Index                ) > 0 ? true : false;}
     boolean usedRefs    (int Index) {return bytes.get    (posUsedRefs     + Index                ) > 0 ? true : false;}
     long    keys        (int Index) {return bytes.getLong(posKeys         + Index * Long.BYTES   );}
     long    name        (         ) {return bytes.getLong(posName                                );}
 
-    void    numberOfRefs(           int     Value) {bytes.putInt (posNumberOfRefs                        , Value);}
     void    slots       (int Index, int     Value) {bytes.putInt (posSlots        + Index * Integer.BYTES, Value);}
     void    usedSlots   (int Index, boolean Value) {bytes.put    (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
     void    usedRefs    (int Index, boolean Value) {bytes.put    (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
     void    keys        (int Index, long    Value) {bytes.putLong(posKeys         + Index * Long.BYTES   , Value);}
     void    name        (           long    Value) {bytes.putLong(posName                                , Value);}
+
+
+    void type(int Type) {       bytes.putInt(posType, Type);}                   // Type of object in which the slots are embedded
+    int  type()         {return bytes.getInt(posType);}
+
    }
 
 //D1 Tests                                                                      // Test the slots
@@ -580,6 +586,7 @@ public class Slots extends Test                                                 
     ok(b.empty(), false);
     ok(b.full(), true);
     ok(b.dump(), """
+Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
 usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
@@ -643,6 +650,7 @@ keys     :   14  13  16  15  18  17  12  11
     b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(26));
     b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(28));
     ok(b.dump(), """
+Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
@@ -662,6 +670,7 @@ keys     :   28   0  26   0  24   0   0  22
     b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(13));
     b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(14));
     ok(b.dump(), """
+Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
@@ -669,7 +678,9 @@ usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
     b.compactLeft();
+
     ok(b.dump(), """
+Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
@@ -685,6 +696,7 @@ keys     :   11  12  13  14   0   0   0   0
     b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(13));
     b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(14));
     ok(b.dump(), """
+Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
@@ -693,6 +705,7 @@ keys     :   14   0  13   0  12   0   0  11
 """);
     b.compactRight();
     ok(b.dump(), """
+Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
@@ -711,7 +724,9 @@ keys     :    0   0   0   0  11  12  13  14
     b.usedSlots( 5, true); b.slots( 5, 4); b.usedRefs(4, true); b.key(4, Key(12));
     b.usedSlots( 9, true); b.slots( 9, 2); b.usedRefs(2, true); b.key(2, Key(13));
     b.usedSlots(14, true); b.slots(14, 0); b.usedRefs(0, true); b.key(0, Key(14));
+    b.type     (11);
     ok(b.dump(), """
+Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
@@ -723,7 +738,6 @@ keys     :   14   0  13   0  12   0   0  11
 
     ok(B.dump(), b.dump());
 
-    ok(m.numberOfRefs(),  8);
     ok(m.slots       (0), 0);
     ok(m.slots       (1), 7);
     ok(m.slots       (2), 0);
@@ -759,12 +773,14 @@ keys     :   14   0  13   0  12   0   0  11
     m.keys    (  6, 10);
 
     ok(B.dump(), """
+Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   6   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   X   .
 usedRefs :    X   .   X   .   X   .   X   X
 keys     :   14   0  13   0  12   0  10  11
 """);
+    ok(B.type(), 11);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
