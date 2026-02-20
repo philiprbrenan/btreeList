@@ -198,8 +198,14 @@ public class Test                                                               
     return i;
    }
 
-  static int max(int n, int...rest)                                             // Maximum of some numbers
+  static int max(int n, int...rest)                                             // Maximum of some integers
    {int m = n;
+    for (int i = 0; i < rest.length; i++) m = m < rest[i] ? rest[i] : m;
+    return m;
+   }
+
+  static long max(long n, long...rest)                                          // Maximum of some longs
+   {long m = n;
     for (int i = 0; i < rest.length; i++) m = m < rest[i] ? rest[i] : m;
     return m;
    }
