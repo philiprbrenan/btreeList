@@ -134,9 +134,7 @@ class Tree extends Test                                                         
     final ByteBuffer bytes = ByteBuffer.allocate(size);
 
     int  root()   {return bytes.getInt(posRoot);}
-    void root(int Value) {
-
-      bytes.putInt(posRoot, Value);}
+    void root(int Value) {bytes.putInt(posRoot, Value);}
 
     int  maxLeafSize()         {return bytes.getInt(posMaxLeafSize);}
     void maxLeafSize(int MaxLeafSize) {bytes.putInt(posMaxLeafSize, MaxLeafSize);}
@@ -146,6 +144,19 @@ class Tree extends Test                                                         
 
     int  numberOfNodes()           {return bytes.getInt(posNumberOfNodes);}
     void numberOfNodes(int NumberOfNodes) {bytes.putInt(posNumberOfNodes, NumberOfNodes);}
+
+    public String toString()
+     {final StringBuilder s = new StringBuilder();
+      s.append(String.format("Tree memory:\n"));
+      s.append(String.format("Leaf   size: %4d\n", l));
+      s.append(String.format("Branch size: %4d\n", b));
+      s.append(String.format("Node   size: %4d\n", sizeOfNode));
+      s.append(String.format("Root       : %4d\n", root()));
+      s.append(String.format("MaxLeafSize: %4d\n", maxLeafSize()));
+      s.append(String.format("MaxBranchSz: %4d\n", maxBranchSize()));
+      s.append(String.format("NumberNodes: %4d\n", numberOfNodes()));
+      return ""+s;
+     }
    }
 
   ByteBuffer node(int Name)
@@ -195,7 +206,7 @@ class Tree extends Test                                                         
     void    upIndex(Integer Value) {memory.upIndex(Value);}                     // Set the index of this leaf in its parent
 
     Data data(int I)             {return new Data(memory.data(I));}             // Get value of data field at index
-    void data(int I, Data Value) {memory.data(I, Value != null ? Value.value() : -1);} // Set value of data field at index
+    void data(int I, Data Value) {memory.data(I, Value.value());}               // Set value of data field at index
 
     static boolean ref(Slots L)  {return L instanceof Leaf;}                    // Check whether we are referencing a leaf
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
@@ -259,12 +270,10 @@ class Tree extends Test                                                         
      {final int   sk = splittingKey();
       final Leaf   l = duplicate();
       final Leaf   r = l.splitRight();
-say("DDDD", dump(), l.dump(), r.dump());
       final Branch b = new Branch();
       b.insert(new Key(sk), l);
       b.top(r);
       free();
-stop("EEEE", b.dump(), l.dump(), r.dump());
       return b;
      }
 
@@ -343,7 +352,7 @@ stop("EEEE", b.dump(), l.dump(), r.dump());
     protected String dump()                                                     // Dump a leaf
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
-      for (int i = 0; i < N; i++) d.add(String.format(formatKey, data(i) != null ? data(i).value() : -1));
+      for (int i = 0; i < N; i++) d.add(String.format(formatKey, data(i).value()));
       final String U = " up: "   +(up()      != null ? up().name() : "null");
       final String I = " index: "+(upIndex() != null ? upIndex()   : "null");
       return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
@@ -362,14 +371,14 @@ stop("EEEE", b.dump(), l.dump(), r.dump());
 
       Memory(int Name) {bytes = node(Name);}                                    // Position in tree memory
 
-      Branch up()     {final int l = bytes.getInt(posUp); return l >= 0 ? new Branch(l) : null;}   // Reference to parent branch
-      void   up(Branch Branch)      {bytes.putInt(posUp, Branch != null ? Branch.name() : -1);}
+      Branch up() {final int l = bytes.getInt(posUp); return l > 0 ? new Branch(l) : null;}   // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
+      void   up(Branch Branch)  {bytes.putInt(posUp,  Branch != null ? Branch.name() : 0);}
 
-      Integer upIndex() {final int i = bytes.getInt(posUpIndex); return i >= 0 ? i : null;} // Index of leaf in its parent
-      void    upIndex(Integer Value)  {bytes.putInt(posUpIndex, Value != null ? Value : -1);}
+      Integer upIndex() {final int i = bytes.getInt(posUpIndex); return i >= 0 ? i : null;}   // Index of leaf in its parent
+      void    upIndex(Integer Value)  {bytes.putInt(posUpIndex, Value != null ? Value : -1);} // -1 used to indicate top
 
-      int  data(int Index)      {return bytes.getInt(posData + Index * Long.BYTES);}
-      void data(int Index, int  Value) {bytes.putInt(posData + Index * Long.BYTES, Value);}
+      int  data(int Index)      {return bytes.getInt(posData + Index * Integer.BYTES);}
+      void data(int Index, int  Value) {bytes.putInt(posData + Index * Integer.BYTES, Value);}
      }
    }
 
@@ -394,7 +403,8 @@ stop("EEEE", b.dump(), l.dump(), r.dump());
     Branch(int Name)                                                            // Reuse the branch at the indexed node in memory
      {super(maxBranchSize);                                                     // Slots for branch
       node = Name;
-      memory = new Memory(Name);                                                    // Memory for branch
+      memory = new Memory(node);                                                // Memory for branch
+      super.setMemory(memory.bytes);                                            // Share memeory with slots
       name(node);                                                               // Name of the branch
      }
 
@@ -524,7 +534,7 @@ stop("EEEE", b.dump(), l.dump(), r.dump());
         else d.add(String.format(formatKey, dataDirect(i).name()));
        }
       return "Branch   : "+name()+"\n"+super.dump() +
-             "data     :  "+d+"\ntop      :  "+String.format(formatKey, top().name())+"\n";
+             "data     :  "+d+"\ntop      :  "+String.format(formatKey, top() != null ? top().name() : 0)+"\n";
      }
 
     void compactLeft()                                                          // Compact the branch to the left
@@ -655,14 +665,14 @@ stop("EEEE", b.dump(), l.dump(), r.dump());
       //Memory(Memory Memory) {copy(Memory);}                                     // Copy a specified memory
 
       Branch up()              {final int l = bytes.getInt(posUp); return l >= 0 ? new Branch(l) : null;}                            // Parent branch
-      void   up(Branch Branch) {bytes.putInt(Branch != null ? Branch.name() : -1);}
+      void   up(Branch Branch) {bytes.putInt(Branch != null ? Branch.name() : 0);}
 
       Integer upIndex()              {final int i = bytes.getInt(posUpIndex); return i >= 0 ? i : null;} // Index of this leaf in its parent
-      void    upIndex(Integer Value) {bytes.putInt(posUpIndex, Value != null ? Value : -1);}                         // Set the index of this leaf in its parent
+      void    upIndex(Integer Value) {bytes.putInt(posUpIndex, Value != null ? Value : 0);}                         // Set the index of this leaf in its parent
 
       int  top ()  {return bytes.getInt(posTop);}
       void top (int Top)  {
-say("FFFF", posTop, Top);
+say("GGGG", posTop, Top);
 
         bytes.putInt(posTop, Top);}
 
@@ -763,8 +773,9 @@ say("FFFF", posTop, Top);
    {final Slots r = root();                                                     // Root of tree
     if (r == null) return null;                                                 // Empty tree
     if (Leaf.ref(r))                                                            // Leaf root
-     {final Leaf l = (Leaf)root();
-      l.up(null); l.upIndex(null);                                              // Trace path taken to this leaf
+     {final Leaf l = (Leaf)r;
+      l.up(null);
+      l.upIndex(null);                                                          // Trace path taken to this leaf
       return new Find(Key, l);
      }
     return find(Key, (Branch)r);                                                // Start search from root
@@ -790,7 +801,8 @@ say("FFFF", posTop, Top);
    }
 
   void insert(Slots.Key Key, Data Data)                                         // Insert a key, data pair or update key data pair in the tree
-   {if (root() == null)                                                         // Empty tree
+   {
+    if (root() == null)                                                         // Empty tree
      {final Leaf l = new Leaf(); root(l);                                       // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
       return;
@@ -830,8 +842,11 @@ say("FFFF", posTop, Top);
         return;
        }
       else
-       {final Branch b = l.split();                                                        // Split full leaf root
+       {
+        final Branch b = l.split();                                             // Split full leaf root
         root(b);                                                                // Split full leaf root
+say("BBBB11", b.dump(), dump());
+say("BBBB22", dump());
        }
      }
 
@@ -841,7 +856,6 @@ say("FFFF", posTop, Top);
       root(p = p.split());
       P.free();
      }                                                                          // Split full root branch
-
     for (Branch q = find(Key).leaf.up(), b = q.up(); b != null; q = b, b = q.up())// Path back from leaf to first full branch below a non full branch - the point at which we have to start splitting
      {if (!b.full()) {p = b; break;}
      }
@@ -1060,7 +1074,7 @@ say("FFFF", posTop, Top);
        }
      }
 
-    if (Details) P.elementAt(L+2).append("{"+B.top().name()+"}");               // Top of branch
+    if (Details) P.elementAt(L+2).append("{"+(B.top() != null ? B.top().name() : "null")+"}");               // Top of branch
 
     final boolean l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());          // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
@@ -1556,17 +1570,16 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
    {final Tree t = new Tree(2, 3);
     ok(t.count(), 0);
     t.insert(Key(1), new Data(1));
-say("AAAA", t.dump());
     ok(t, """
 1|
 """);
     t.insert(Key(2), new Data(2));
-say("AAAA", t.new Leaf(1).dump());
+say("AAAA22", t.dump());
     ok(t, """
 1,2|
 """);
     t.insert(Key(3), new Data(3));
-say("AAAA", t.dump());
+say("AAAA33", t.dump());
 stop();
     ok(t, """
 1,2,3|
