@@ -133,7 +133,9 @@ class Tree extends Test                                                         
     final int size         = sizeOfNode * (numberOfNodes + 1);                  // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node 0.;                                                    // Size of allocated memory
     final ByteBuffer bytes = ByteBuffer.allocate(size);
 
-    int  root()   {return bytes.getInt(posRoot);}
+    int  root()
+     {return bytes.getInt(posRoot);
+     }
     void root(int Value) {bytes.putInt(posRoot, Value);}
 
     int  maxLeafSize()         {return bytes.getInt(posMaxLeafSize);}
@@ -170,7 +172,8 @@ class Tree extends Test                                                         
    {final int r = memory.root(), s = sizeOfNode;                                // Root node location
     if (r == 0) return null;                                                    // Node zero contains the tree base so we can conveneioently use zero as a null pointer as no leaf or branch will occupy node zero.
     if (r < 0)  return new Leaf(-r);                                            // Leaf as negative
-    return new Branch(r);                                                       // Branhs as positive
+    final Branch b = new Branch(r);
+    return b;                                                       // Branhs as positive
    }
 
   void root(Leaf   Root) {memory.root(-Root.name());}                           // Set the root in memory with a negative address to show that it is a leaf
@@ -195,6 +198,7 @@ class Tree extends Test                                                         
      {super(maxLeafSize, node(Name));                                           // Slots for leaf
       node = Name;
       memory = new Memory(Name);                                                // Memory for leaf
+      super.setMemory(memory.bytes);                                            // Share memeory with slots
       name(node);                                                               // Name of the leaf
      }
 
@@ -271,8 +275,10 @@ class Tree extends Test                                                         
       final Leaf   l = duplicate();
       final Leaf   r = l.splitRight();
       final Branch b = new Branch();
+say("DDDD111");
       b.insert(new Key(sk), l);
       b.top(r);
+say("DDDD222", b.dump());
       free();
       return b;
      }
@@ -385,7 +391,7 @@ class Tree extends Test                                                         
 //D1 Branch                                                                     // Use the slots to model a branch
 
   class Branch extends Slots                                                    // Branch
-   {final Slots[]data = new Slots[maxBranchSize()];                             // Data corresponding to each key in the branch
+   {//final Slots[]data = new Slots[maxBranchSize()];                             // Data corresponding to each key in the branch
     final int    node;                                                          // The node holding this leaf
     //Slots        top;                                                                  // Top most element
     Branch up; Integer upIndex;                                                 // The branch above
@@ -431,10 +437,25 @@ class Tree extends Test                                                         
 
     int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
     Slots firstChild()          {return data(locateFirstUsedSlot());}           // First child assuming there is one
-    Slots data      (int Index) {return data[slots(Index)];}                    // Data at the indexed slot
-    Slots dataDirect(int Index) {return data[Index];}                           // Data directly
-    void data       (int Index, Slots Slots) {data[slots(Index)] = Slots;}      // Child slots via index
-    void dataDirect (int Index, Slots Slots) {data[Index]        = Slots;}      // Child slots directly
+
+    Slots data(int Index)
+     {return usedSlots(Index) ? dataDirect(slots(Index)) : null;
+     }
+
+    Slots dataDirect(int Index)
+     {final int i = memory.data(Index);
+      if (i == 0) return null;
+      if (i <  0) return new Leaf(-i);
+      return new Branch(i);
+     }
+
+    void data       (int Index, Slots Slots) {dataDirect(slots(Index), Slots);} // Child via indexed slot
+    void dataDirect (int Index, Slots Slots)                                    // Child directly
+     {final int i = Slots.name();
+      final int j = Slots instanceof Leaf ? -i : +i;
+      memory.data(Index, j);
+say("FFFF", i, j, dump());
+     }
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
@@ -512,6 +533,7 @@ class Tree extends Test                                                         
 
     Integer insert(Key Key, Slots Data)                                         // Insert a key data pair into a branch
      {final Integer i = insert(Key);
+say("EEEE", Key, i);
       if (i != null) dataDirect(i, Data);
       return i;
      }
@@ -844,9 +866,9 @@ say("GGGG", posTop, Top);
       else
        {
         final Branch b = l.split();                                             // Split full leaf root
-        root(b);                                                                // Split full leaf root
-say("BBBB11", b.dump(), dump());
-say("BBBB22", dump());
+        root(b);
+final Slots s = root();
+say("TTTT555", s.dump());
        }
      }
 
@@ -856,6 +878,7 @@ say("BBBB22", dump());
       root(p = p.split());
       P.free();
      }                                                                          // Split full root branch
+
     for (Branch q = find(Key).leaf.up(), b = q.up(); b != null; q = b, b = q.up())// Path back from leaf to first full branch below a non full branch - the point at which we have to start splitting
      {if (!b.full()) {p = b; break;}
      }
@@ -1058,6 +1081,7 @@ say("BBBB22", dump());
       for  (int i = 0; i < S; i++)
        {if (B.usedSlots(i))
          {final Slots   s = B.data(i);
+          if (s == null) continue;
           final boolean l = Leaf.ref(s), b = Tree.Branch.ref(s);
 
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
