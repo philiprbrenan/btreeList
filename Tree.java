@@ -202,15 +202,17 @@ class Tree extends Test                                                         
       name(node);                                                               // Name of the leaf
      }
 
-    Branch up()              {return memory.up();}                              // Parent branch
-    void   up(Branch Branch) {memory.up(Branch);}
-
+    Branch up()                                                                    // Parent branch
+     {final int u = memory.up();
+      return u > 0 ? new Branch(u) : null;
+     }
+    void   up(Branch Branch) {memory.up(Branch != null ? Branch.name() : 0);}
 
     Integer upIndex()              {return memory.upIndex();}                   // Index of this leaf in its parent
     void    upIndex(Integer Value) {memory.upIndex(Value);}                     // Set the index of this leaf in its parent
 
     Data data(int I)             {return new Data(memory.data(I));}             // Get value of data field at index
-    void data(int I, Data Value) {memory.data(I, Value.value());}               // Set value of data field at index
+    void data(int I, Data Value) {memory.data(I, Value != null ? Value.value() : 0);}               // Set value of data field at index
 
     static boolean ref(Slots L)  {return L instanceof Leaf;}                    // Check whether we are referencing a leaf
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
@@ -275,10 +277,8 @@ class Tree extends Test                                                         
       final Leaf   l = duplicate();
       final Leaf   r = l.splitRight();
       final Branch b = new Branch();
-say("DDDD111");
       b.insert(new Key(sk), l);
       b.top(r);
-say("DDDD222", b.dump());
       free();
       return b;
      }
@@ -359,7 +359,7 @@ say("DDDD222", b.dump());
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++) d.add(String.format(formatKey, data(i).value()));
-      final String U = " up: "   +(up()      != null ? up().name() : "null");
+      final String U = " up: "   +(up()      != null ? up().name() : "0");
       final String I = " index: "+(upIndex() != null ? upIndex()   : "null");
       return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
@@ -377,8 +377,8 @@ say("DDDD222", b.dump());
 
       Memory(int Name) {bytes = node(Name);}                                    // Position in tree memory
 
-      Branch up() {final int l = bytes.getInt(posUp); return l > 0 ? new Branch(l) : null;}   // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
-      void   up(Branch Branch)  {bytes.putInt(posUp,  Branch != null ? Branch.name() : 0);}
+      int  up()   {return bytes.getInt(posUp);}                                 // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
+      void up(int Index) {bytes.putInt(posUp, Index);}
 
       Integer upIndex() {final int i = bytes.getInt(posUpIndex); return i >= 0 ? i : null;}   // Index of leaf in its parent
       void    upIndex(Integer Value)  {bytes.putInt(posUpIndex, Value != null ? Value : -1);} // -1 used to indicate top
@@ -414,20 +414,29 @@ say("DDDD222", b.dump());
       name(node);                                                               // Name of the branch
      }
 
-    Branch up()                    {return memory.up();}                        // Parent branch
-    void   up(Branch Branch)       {memory.up(Branch);}
+    Branch up()
+     {final int i = memory.up();
+      return i > 0 ? new Branch(i) : null;
+     }
+    void up(Branch Branch) {memory.up(Branch != null ? Branch.name() : 0);}
 
     Integer upIndex()              {return memory.upIndex();}                   // Index of this branch in its parent
     void    upIndex(Integer Value) {memory.upIndex(Value);}                     // Set the index of this branch in its parent
 
-    Slots   top()                                                               // Index of this branch in its parent
-     {final int i = memory.top();
-      return i == 0 ? null :  i > 0 ? new Branch(i) : new Leaf(i);
+    static boolean ref(Slots B) {return B instanceof Branch;}                   // Check whether we are referencing a branch
+
+    int refSign(Slots Slots)                                                    // Set the sign of a reference according to whether it is a reference to a leaf or a branch
+     {if (Slots == null) return 0;
+      final int i = Slots.name();
+      return ref(Slots) ? +i : -i;
      }
 
-    void    top(Slots Value)       {memory.top(Value.name());}                  // Set the index of this branch in its parent
+    void top(Slots Value) {memory.top(refSign(Value));}                         // Set the top most element
 
-    static boolean ref(Slots B)    {return B instanceof Branch;}                // Check whether we are referencing a branch
+    Slots   top()                                                               // Top element of this branch
+     {final int i = memory.top();
+      return i == 0 ? null :  i > 0 ? new Branch(i) : new Leaf(-i);
+     }
 
     void free()                                                                 // Free the branch
      {Tree.this.free(name());                                                   // Add to free chain
@@ -449,13 +458,8 @@ say("DDDD222", b.dump());
       return new Branch(i);
      }
 
-    void data       (int Index, Slots Slots) {dataDirect(slots(Index), Slots);} // Child via indexed slot
-    void dataDirect (int Index, Slots Slots)                                    // Child directly
-     {final int i = Slots.name();
-      final int j = Slots instanceof Leaf ? -i : +i;
-      memory.data(Index, j);
-say("FFFF", i, j, dump());
-     }
+    void data      (int Index, Slots S) {dataDirect(slots(Index),   S);}        // Child via indexed slot
+    void dataDirect(int Index, Slots S) {memory.data(Index, refSign(S));}       // Child directly
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
@@ -533,7 +537,6 @@ say("FFFF", i, j, dump());
 
     Integer insert(Key Key, Slots Data)                                         // Insert a key data pair into a branch
      {final Integer i = insert(Key);
-say("EEEE", Key, i);
       if (i != null) dataDirect(i, Data);
       return i;
      }
@@ -555,8 +558,18 @@ say("EEEE", Key, i);
        {if (dataDirect(i) == null) d.add("  .");
         else d.add(String.format(formatKey, dataDirect(i).name()));
        }
-      return "Branch   : "+name()+"\n"+super.dump() +
-             "data     :  "+d+"\ntop      :  "+String.format(formatKey, top() != null ? top().name() : 0)+"\n";
+      final StringBuilder s = new StringBuilder();                              //
+
+      final Integer ui = upIndex();
+      final String  us = ui != null ? ""+ui : "null";
+      final int n = name();
+      final int u = memory.up();
+      final int i = memory.upIndex();
+      s.append(String.format("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
+      s.append(super.dump());
+      s.append("data     :  "+d+"\n");
+      s.append("top      :  "+String.format(formatKey, memory.top())+"\n");
+      return ""+s;
      }
 
     void compactLeft()                                                          // Compact the branch to the left
@@ -684,22 +697,21 @@ say("EEEE", Key, i);
        }
 
       Memory(int Name) {bytes = node(Name);}                                    // Position in tree memory
-      //Memory(Memory Memory) {copy(Memory);}                                     // Copy a specified memory
+      //Memory(Memory Memory) {copy(Memory);}                                   // Copy a specified memory
 
-      Branch up()              {final int l = bytes.getInt(posUp); return l >= 0 ? new Branch(l) : null;}                            // Parent branch
-      void   up(Branch Branch) {bytes.putInt(Branch != null ? Branch.name() : 0);}
+      int  up()   {return bytes.getInt(posUp);}                                 // Parent branch
+      void up(int Value) {bytes.putInt(Value);}
 
       Integer upIndex()              {final int i = bytes.getInt(posUpIndex); return i >= 0 ? i : null;} // Index of this leaf in its parent
       void    upIndex(Integer Value) {bytes.putInt(posUpIndex, Value != null ? Value : 0);}                         // Set the index of this leaf in its parent
 
       int  top ()  {return bytes.getInt(posTop);}
-      void top (int Top)  {
-say("GGGG", posTop, Top);
-
-        bytes.putInt(posTop, Top);}
+      void top (int Top)  {bytes.putInt(posTop, Top);}
 
       int  data(int Index)      {return bytes.getInt(posData + Index * Integer.BYTES);}
-      void data(int Index, int  Value) {bytes.putInt(posData + Index * Integer.BYTES, Value);}
+      void data(int Index, int  Value)
+       {bytes.putInt(posData + Index * Integer.BYTES, Value);
+       }
      }
    }
 
@@ -864,11 +876,8 @@ say("GGGG", posTop, Top);
         return;
        }
       else
-       {
-        final Branch b = l.split();                                             // Split full leaf root
+       {final Branch b = l.split();                                             // Split full leaf root
         root(b);
-final Slots s = root();
-say("TTTT555", s.dump());
        }
      }
 
@@ -1161,7 +1170,7 @@ say("TTTT555", s.dump());
       s.append(""+j+"\n");
       if (c >= N) break;
      }
-    return ""+s+"\n";
+    return ""+s;
    }
 
 //D1 List All                                                                   // Create lists of all leaves and branches in the tree
@@ -1206,12 +1215,17 @@ say("TTTT555", s.dump());
     ok(t.memory.maxLeafSize(),   2);
     ok(t.memory.maxBranchSize(), 3);
     ok(t.memory.numberOfNodes(), 4);
+    ok(t.memory.root(), 0);
     ok(t.dump(), """
 |
 """);
-    ok(t.memory.root(), 0);
+
     ok(t.db(), """
-0 2 3 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 2 0 0 0 3 0 0 0 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 """);
    }
 
@@ -1222,8 +1236,8 @@ say("TTTT555", s.dump());
     l.insert(Key(14), new Data(24));
     l.insert(Key(11), new Data(21));
     ok(l.dump(), """
-Leaf     : 0 up: 0 index: 0
-Slots    : name:  0, type:  0, refs:  8
+Leaf     : 1 up: 0 index: 0
+Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   X   .   .   .   .   .   .
@@ -1233,14 +1247,14 @@ data     :   23  22  24  21   0   0   0   0
 """);
     l.compactLeft();
     ok(l.dump(), """
-Leaf     : 0 up: 0 index: 0
-Slots    : name:  0, type:  0, refs:  8
+Leaf     : 1 up: 0 index: 0
+Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
 usedRefs :    X   X   X   X   .   .   .   .
 keys     :   11  12  13  14   0   0   0   0
-data     :   21  22  23  24  -1  -1  -1  -1
+data     :   21  22  23  24   0   0   0   0
 """);
    }
 
@@ -1250,9 +1264,11 @@ data     :   21  22  23  24  -1  -1  -1  -1
     l.insert(Key(12), new Data(22));
     l.insert(Key(14), new Data(24));
     l.insert(Key(11), new Data(21));
+
+  //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 0 up: 0 index: 0
-Slots    : name:  0, type:  0, refs:  8
+Leaf     : 1 up: 0 index: 0
+Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   X   .   .   .   .   .   .
@@ -1261,15 +1277,16 @@ keys     :   13  12  14  11   0   0   0   0
 data     :   23  22  24  21   0   0   0   0
 """);
     l.compactRight();
+  //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 0 up: 0 index: 0
-Slots    : name:  0, type:  0, refs:  8
+Leaf     : 1 up: 0 index: 0
+Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
 usedRefs :    .   .   .   .   X   X   X   X
 keys     :    0   0   0   0  11  12  13  14
-data     :   -1  -1  -1  -1  21  22  23  24
+data     :    0   0   0   0  21  22  23  24
 """);
    }
 
@@ -1279,29 +1296,31 @@ data     :   -1  -1  -1  -1  21  22  23  24
     b.insert(Key(11), Slots.fake(11));
     b.insert(Key(13), Slots.fake(13));
     b.top(Slots.fake(4));
+    //stop(b.dump());
     ok(b.dump(), """
-Branch   : 0
-Slots    : name:  0, type:  1, refs:  7
+Branch   :    1   up:    0  index:    0
+Slots    : name:  1, type:  1, refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   0   0   0   0   1   0   2   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   .   .   .   .   .
 usedRefs :    X   X   X   .   .   .   .
 keys     :   12  11  13   0   0   0   0
 data     :   12  11  13   .   .   .   .
-top      :    4
+top      :   -4
 """);
 
     b.compactLeft();
+    //stop(b.dump());
     ok(b.dump(), """
-Branch   : 0
-Slots    : name:  0, type:  1, refs:  7
+Branch   :    1   up:    0  index:    0
+Slots    : name:  1, type:  1, refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   1   2   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .
 usedRefs :    X   X   X   .   .   .   .
 keys     :   11  12  13   0   0   0   0
 data     :   11  12  13   .   .   .   .
-top      :    4
+top      :   -4
 """);
    }
 
@@ -1311,29 +1330,31 @@ top      :    4
     b.insert(Key(11), Slots.fake(11));
     b.insert(Key(13), Slots.fake(13));
     b.top(Slots.fake(4));
+    //stop(b.dump());
     ok(b.dump(), """
-Branch   : 0
-Slots    : name:  0, type:  1, refs:  7
+Branch   :    1   up:    0  index:    0
+Slots    : name:  1, type:  1, refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   0   0   0   0   1   0   2   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X   X   .   .   .   .   .
 usedRefs :    X   X   X   .   .   .   .
 keys     :   12  11  13   0   0   0   0
 data     :   12  11  13   .   .   .   .
-top      :    4
+top      :   -4
 """);
 
     b.compactRight();
+    //stop(b.dump());
     ok(b.dump(), """
-Branch   : 0
-Slots    : name:  0, type:  1, refs:  7
+Branch   :    1   up:    0  index:    0
+Slots    : name:  1, type:  1, refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slots    :    0   0   0   0   4   5   6   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   .   .   .   .   .   .   .
 usedRefs :    .   .   .   .   X   X   X
 keys     :    0   0   0   0  11  12  13
 data     :    .   .   .   .  11  12  13
-top      :    4
+top      :   -4
 """);
    }
 
@@ -1352,9 +1373,10 @@ top      :    4
 
   static void test_splitLeftLeafIntoRight()
    {final Leaf l = test_leaf();
+    //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 0 up: 0 index: 0
-Slots    : name:  0, type:  0, refs:  8
+Leaf     : 1 up: 0 index: 0
+Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    7   6   0   0   5   0   2   0   1   0   4   0   3   0   0   0
 usedSlots:    X   X   X   .   X   .   X   .   X   .   X   .   X   .   .   .
@@ -1363,9 +1385,10 @@ keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
     final Leaf r = l.splitRight();
+    //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 0 up: 0 index: 0
-Slots    : name:  0, type:  0, refs:  8
+Leaf     : 1 up: 0 index: 0
+Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   6   0   0   0   0   0   0   0   5   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
@@ -1373,9 +1396,10 @@ usedRefs :    X   .   .   .   .   X   X   X
 keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
+    //stop(r.dump());
     ok(r.dump(), """
-Leaf     : 1 up: 0 index: 0
-Slots    : name:  1, type:  0, refs:  8
+Leaf     : 2 up: 0 index: 0
+Slots    : name:  2, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   2   0   0   0   1   0   0   0   4   0   0   0   3   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
@@ -1592,25 +1616,144 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
   static void test_insert2()
    {final Tree t = new Tree(2, 3);
-    ok(t.count(), 0);
-    t.insert(Key(1), new Data(1));
-    ok(t, """
+    final int N = 32;
+    final StringBuilder s = new StringBuilder();
+    for (int i = 1; i <= N; ++i)
+     {t.insert(Key(i), new Data(i));
+      s.append("Insert: "+i+"\n"+t);
+     }
+    ok(s, """
+Insert: 1
 1|
-""");
-    t.insert(Key(2), new Data(2));
-say("AAAA22", t.dump());
-    ok(t, """
+Insert: 2
 1,2|
-""");
-    t.insert(Key(3), new Data(3));
-say("AAAA33", t.dump());
-stop();
-    ok(t, """
-1,2,3|
-""");
-    t.insert(Key(4), new Data(4));
-    ok(t, """
-1,2,3,4|
+Insert: 3
+  1   |
+1  2,3|
+Insert: 4
+    2   |
+1,2  3,4|
+Insert: 5
+    2  3   |
+1,2  3  4,5|
+Insert: 6
+    2    4   |
+1,2  3,4  5,6|
+Insert: 7
+    2    4  5   |
+1,2  3,4  5  6,7|
+Insert: 8
+    2    4    6   |
+1,2  3,4  5,6  7,8|
+Insert: 9
+         4           |
+    2         6  7   |
+1,2  3,4  5,6  7  8,9|
+Insert: 10
+         4              |
+    2         6    8    |
+1,2  3,4  5,6  7,8  9,10|
+Insert: 11
+         4                  |
+    2         6    8  9     |
+1,2  3,4  5,6  7,8  9  10,11|
+Insert: 12
+         4         8            |
+    2         6          10     |
+1,2  3,4  5,6  7,8  9,10   11,12|
+Insert: 13
+         4         8                 |
+    2         6          10   11     |
+1,2  3,4  5,6  7,8  9,10   11   12,13|
+Insert: 14
+         4         8                    |
+    2         6          10      12     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14|
+Insert: 15
+         4         8                         |
+    2         6          10      12   13     |
+1,2  3,4  5,6  7,8  9,10   11,12   13   14,15|
+Insert: 16
+         4         8             12             |
+    2         6          10              14     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16|
+Insert: 17
+         4         8             12                  |
+    2         6          10              14   15     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15   16,17|
+Insert: 18
+         4         8             12                     |
+    2         6          10              14      16     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18|
+Insert: 19
+         4         8             12                          |
+    2         6          10              14      16   17     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17   18,19|
+Insert: 20
+                   8                                            |
+         4                       12              16             |
+    2         6          10              14              18     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20|
+Insert: 21
+                   8                                                 |
+         4                       12              16                  |
+    2         6          10              14              18   19     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19   20,21|
+Insert: 22
+                   8                                                    |
+         4                       12              16                     |
+    2         6          10              14              18      20     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22|
+Insert: 23
+                   8                                                         |
+         4                       12              16                          |
+    2         6          10              14              18      20   21     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21   22,23|
+Insert: 24
+                   8                                                            |
+         4                       12              16              20             |
+    2         6          10              14              18              22     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24|
+Insert: 25
+                   8                                                                 |
+         4                       12              16              20                  |
+    2         6          10              14              18              22   23     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23   24,25|
+Insert: 26
+                   8                                                                    |
+         4                       12              16              20                     |
+    2         6          10              14              18              22      24     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26|
+Insert: 27
+                   8                                                                         |
+         4                       12              16              20                          |
+    2         6          10              14              18              22      24   25     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25   26,27|
+Insert: 28
+                   8                             16                                             |
+         4                       12                              20              24             |
+    2         6          10              14              18              22              26     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28|
+Insert: 29
+                   8                             16                                                  |
+         4                       12                              20              24                  |
+    2         6          10              14              18              22              26   27     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27   28,29|
+Insert: 30
+                   8                             16                                                     |
+         4                       12                              20              24                     |
+    2         6          10              14              18              22              26      28     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30|
+Insert: 31
+                   8                             16                                                          |
+         4                       12                              20              24                          |
+    2         6          10              14              18              22              26      28   29     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29   30,31|
+Insert: 32
+                   8                             16                                                             |
+         4                       12                              20              24              28             |
+    2         6          10              14              18              22              26              30     |
+1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32|
 """);
    }
 
@@ -2404,8 +2547,8 @@ Delete 22
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//oldTests();
-    test_insert2();
+   {oldTests();
+    //test_insert2();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
