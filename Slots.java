@@ -41,13 +41,13 @@ public class Slots extends Test                                                 
 
   Slots duplicateSlots()                                                        // Copy the source slots
    {final Slots t = new Slots(numberOfRefs);
-    t.copy(this);
+    t.copySlots(this);
     return t;                                                                   // The copied slots
    }
 
-  Slots copy(Slots Source)                                                      // Copy the source slots
-   {final int  n = name();                                                      // Save name of target
-    memory.copy(Source.memory);                                                 // Copy memory
+  Slots copySlots(Slots Source)                                                 // Copy the source slots
+   {final int n = name();                                                       // Save name of target
+    memory.copySlots(Source.memory);                                            // Copy memory
     name(n);                                                                    // Reload name of target
     return this;                                                                // The copied slots
    }
@@ -496,8 +496,11 @@ public class Slots extends Test                                                 
   class Memory extends SlotsMemoryPositions                                     // Memory required to hold bytes
    {final ByteBuffer bytes;                                                     // Bytes used by this set of slots
 
-    void copy(Memory Memory)                                                    // Copy a set of slots from the specified memory into this memory
-     {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+    void copySlots(Memory Memory)                                               // Copy a set of slots from the specified memory into this memory
+     {for (int i = 0; i < size; i++)
+       {final byte b = Memory.bytes.get(i);
+        bytes.put(i, b);
+       }
      }
 
     void invalidate()                                                           // Invalidate the slots in such away that they are unlikely to work well if subsequently used
