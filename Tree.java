@@ -10,7 +10,6 @@ import java.nio.ByteBuffer;
 class Tree extends Test                                                         // Manipulate a tree
  {final int           maxLeafSize;                                              // The maximum number of entries in a leaf
   final int         maxBranchSize;                                              // The maximum number of entries in a branch
-  //Slots                      root;                                              // The root of the tree
   final Stack<Integer> freeChain = new Stack<>();                               // Unallocated leaves and branches
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
   final int        numberOfNodes;                                               // Maximum number of leaves plus branches in this tree
@@ -138,8 +137,8 @@ class Tree extends Test                                                         
      }
     void root(int Value) {bytes.putInt(posRoot, Value);}
 
-    int  maxLeafSize()         {return bytes.getInt(posMaxLeafSize);}
-    void maxLeafSize(int MaxLeafSize) {bytes.putInt(posMaxLeafSize, MaxLeafSize);}
+    int  maxLeafSize()             {return bytes.getInt(posMaxLeafSize);}
+    void maxLeafSize(int MaxLeafSize)     {bytes.putInt(posMaxLeafSize, MaxLeafSize);}
 
     int  maxBranchSize()           {return bytes.getInt(posMaxBranchSize);}
     void maxBranchSize(int MaxBranchSize) {bytes.putInt(posMaxBranchSize, MaxBranchSize);}
@@ -174,8 +173,9 @@ class Tree extends Test                                                         
     return memory.bytes.slice(n * s, s);
    }
 
-  String getInt(int Name, int Field)                                               // Address the specified node of the tree
-   {return "Node: "+Name+" field: "+Field+" = "+memory.bytes.getInt(Name*sizeOfNode + Field);
+  String getInt(int Name, int Field)                                            // Address the specified node of the tree
+   {return "Node: "+Name+" field: "+
+      Field+" = "+memory.bytes.getInt(Name*sizeOfNode + Field);
    }
 
 //D1 Root                                                                       // The root of the tree is referenced from a known location which allows any node to act as the root if needed - which simplifes the logic for merging and splitting the root.
@@ -200,7 +200,7 @@ class Tree extends Test                                                         
     Leaf()                                                                      // Create a leaf
      {super(maxLeafSize);                                                       // Slots for leaf
       node = allocate();                                                        // Allocate the leaf
-      memory = new Memory(node);                                                    // Memory for leaf
+      memory = new Memory(node);                                                // Memory for leaf
       super.setMemory(memory.bytes);                                            // Share memeory with slots
       name(node);                                                               // Set this memory as a leaf
       type(NodeType.Leaf.ordinal());                                            // Set this memory as a leaf
@@ -214,18 +214,22 @@ class Tree extends Test                                                         
       name(node);                                                               // Name of the leaf
      }
 
-    Branch up()                                                                    // Parent branch
+    Branch up()                                                                 // Parent branch
      {final int u = memory.up();
       final Branch B = u > 0 ? new Branch(u) : null;
       return B;
      }
     void   up(Branch Branch) {memory.up(Branch != null ? Branch.name() : 0);}
 
-    Integer upIndex()              {final int i = memory.upIndex(); return i < 0 ? null : i;} // Index of this leaf in its parent
+    Integer upIndex()                                                           // Index of this leaf in its parent
+     {final int i = memory.upIndex(); return i < 0 ? null : i;
+     }
     void    upIndex(Integer Value) {memory.upIndex(Value);}                     // Set the index of this leaf in its parent
 
-    Data data(int I)             {return new Data(memory.data(I));}             // Get value of data field at index
-    void data(int I, Data Value) {memory.data(I, Value != null ? Value.value() : 0);}               // Set value of data field at index
+    Data data(int I) {return new Data(memory.data(I));}                         // Get value of data field at index
+    void data(int I, Data Value)                                                // Set value of data field at index
+     {memory.data(I, Value != null ? Value.value() : 0);
+     }
 
     static boolean ref(Slots L)  {return L instanceof Leaf;}                    // Check whether we are referencing a leaf
     int splitSize()              {return maxLeafSize / 2;}                      // Size of a split leaf
@@ -236,12 +240,6 @@ class Tree extends Test                                                         
       d.copySlots(this);                                                        // Copy slots
       final int R = numberOfRefs();
       for (int i = 0; i < R; i++) d.data(i, data(i));                           // Copy data associated with leaf keys
-//if (Tree.debug2) say("HHHH111", getInt(4, p));
-      //d.up(up());
-//if (Tree.debug2) say("HHHH222", getInt(4, p));
-      //d.upIndex(upIndex());
-//if (Tree.debug2) say("HHHH333", getInt(4, p));
-
       return d;
      }
 
@@ -343,20 +341,13 @@ class Tree extends Test                                                         
       l.compactLeft(); r.compactRight();
       mergeCompacted(l, r);
       mergeData(l, r);
-      //F Right.free();
-      //F l.free();
-      //F r.free();
       redistribute();
       return true;
      }
 
     boolean mergeFromLeft(Leaf Left)                                            // Merge the specified slots from the left
-     {
-      if (Left.countUsed() + countUsed() > maxLeafSize) return false;
-if (Tree.debug2) say("GGGG22", dump());
-Slots.debug = true;
+     {if (Left.countUsed() + countUsed() > maxLeafSize) return false;
       final Leaf l = Left.duplicate();
-if (Tree.debug2) say("GGGG33", dump());
       final Leaf r =      duplicate();
       l.compactLeft();
       r.compactRight();
@@ -415,10 +406,7 @@ if (Tree.debug2) say("GGGG33", dump());
 //D1 Branch                                                                     // Use the slots to model a branch
 
   class Branch extends Slots                                                    // Branch
-   {//final Slots[]data = new Slots[maxBranchSize()];                             // Data corresponding to each key in the branch
-    final int    node;                                                          // The node holding this leaf
-    //Slots        top;                                                                  // Top most element
-    //Branch up; Integer upIndex;                                                 // The branch above
+   {final int    node;                                                          // The node holding this leaf
     final Memory memory;                                                        // Memory used by the slots
 
     Branch()                                                                    // Create a branch
@@ -489,15 +477,13 @@ if (Tree.debug2) say("GGGG33", dump());
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
-      d.copySlots(this);                                                             // Copy slots
+      d.copySlots(this);                                                        // Copy slots
       final int R = numberOfRefs();
       for (int i = 0; i < R; i++)
-       {final int v = memory.data(i);                                   // Copy used data
-        d.memory.data(i, v);                                   // Copy used data
+       {final int v = memory.data(i);                                           // Copy used data
+        d.memory.data(i, v);                                                    // Copy used data
        }
       d.top(top());
-//    d.up(up());
-//    d.upIndex(upIndex());
       return d;
      }
 
@@ -689,7 +675,7 @@ if (Tree.debug2) say("GGGG33", dump());
      }
 
     Slots child(Integer Index)                                                  // The indexed child. The index must be valid or null - if null, top is returned
-     {if (Index == null) return top();                                            // A null index produces top
+     {if (Index == null) return top();                                          // A null index produces top
       if (!usedSlots(Index)) stop("Indexing unused slot:", Index);              // The slot must be valid
       return data(Index);                                                       // The indicated child
      }
@@ -707,7 +693,7 @@ if (Tree.debug2) say("GGGG33", dump());
           else if (Branch.ref(s)) n += ((Branch)s).count();
          }
        }
-      final Slots s = top();                                                      // Count entries below top
+      final Slots s = top();                                                    // Count entries below top
       if      (Leaf  .ref(s)) n += s.countUsed();                               // Top is a leaf
       else if (Branch.ref(s)) n += ((Branch)s).count();                         // Top is a branch
       return n;                                                                 // Number below this branch
@@ -725,7 +711,6 @@ if (Tree.debug2) say("GGGG33", dump());
        }
 
       Memory(int Name) {bytes = node(Name);}                                    // Position in tree memory
-      //Memory(Memory Memory) {copy(Memory);}                                   // Copy a specified memory
 
       int  up()   {return bytes.getInt(posUp);}                                 // Parent branch
       void up(int Value) {bytes.putInt(posUp, Value);}
@@ -746,8 +731,8 @@ if (Tree.debug2) say("GGGG33", dump());
   void mergeAlongPath(Slots.Key Key)                                            // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
     if (f == null) return;                                                      // Empty tree
-    if (f.leaf.up() != null)                                                      // Process path from leaf to root
-     {for (Branch b = f.leaf.up(); b != null; b = b.up())                           // Go up the tree merging as we go: only one merge is needed at each level
+    if (f.leaf.up() != null)                                                    // Process path from leaf to root
+     {for (Branch b = f.leaf.up(); b != null; b = b.up())                       // Go up the tree merging as we go: only one merge is needed at each level
        {final Integer l = b.locateFirstGe(Key);                                 // Position of key
         if (b.mergeRightSibling(l)) continue;                                   // Merge right sibling of keyed child
         final Integer L = b.locateFirstGe(Key);                                 // Position of key
@@ -774,33 +759,33 @@ if (Tree.debug2) say("GGGG33", dump());
    }
 
   void mergeRoot(Slots.Key Key)                                                 // Collapse the root if possible
-   {if (root() == null) return;                                                   // Empty tree
-    if (Leaf.ref(root()))                                                         // Leaf root
+   {if (root() == null) return;                                                 // Empty tree
+    if (Leaf.ref(root()))                                                       // Leaf root
      {final Leaf l = (Leaf)root();
-      if (l.empty()) {l.free(); root((Leaf)null);}                                     // Free leaf if it is empty
+      if (l.empty()) {l.free(); root((Leaf)null);}                              // Free leaf if it is empty
       return;
      }
 
-    final Branch b = (Branch)root();                                              // Branch root
-    if (b.countUsed() == 0)                                                    // Root body is empty so collapse to top
+    final Branch b = (Branch)root();                                            // Branch root
+    if (b.countUsed() == 0)                                                     // Root body is empty so collapse to top
      {final Slots t = b.top();
       b.free();
       if (Leaf.ref(t)) root((Leaf)t); else root((Branch)t);
      }
     if (b.countUsed() != 1) return;                                             // Root body too big to collapse
 
-    if (Leaf.ref(b.top()))                                                        // Leaves for children
+    if (Leaf.ref(b.top()))                                                      // Leaves for children
      {final Leaf    l = (Leaf)b.firstChild();
       final Leaf    r = (Leaf)b.top();
       final boolean m = l.mergeFromRight(r);
-      if (m) {b.free(); r.free(); root(l);}                                    // Update root if the leaves were successfully merged
+      if (m) {b.free(); r.free(); root(l);}                                     // Update root if the leaves were successfully merged
 
       return;
      }
     final Branch  l = (Branch)b.firstChild();                                   // Root has branches for children
     final Branch  r = (Branch)b.top();
     final boolean m = r.mergeFromLeft(b.firstKey(), l);
-    if (m) {b.free(); l.free(); root(r);}                                      // Update root if the leaves were successfully merged
+    if (m) {b.free(); l.free(); root(r);}                                       // Update root if the leaves were successfully merged
    }
 
 //D1 High Level                                                                 // High level operations: insert, find, delete
@@ -852,7 +837,7 @@ if (Tree.debug2) say("GGGG33", dump());
         return new Find(Key, l);
        }
       final Branch b = (Branch)q;
-      b.up(p); b.upIndex(P);                                                  // Record parent branch
+      b.up(p); b.upIndex(P);                                                    // Record parent branch
       p = b;                                                                    // Step down into non full branch
      }
     stop("Find fell off the end of tree after this many searches:", mnl());
@@ -877,8 +862,8 @@ if (Tree.debug2) say("GGGG33", dump());
         l.insert(Key, Data);                                                    // Insert key
         return;
        }
-      else if (F.leaf.up() != null && !F.leaf.up().full())                          // Leaf is full, parent branch is not full so we can split leaf
-       {final Branch b = F.leaf.up();                                             // Parent branch
+      else if (F.leaf.up() != null && !F.leaf.up().full())                      // Leaf is full, parent branch is not full so we can split leaf
+       {final Branch b = F.leaf.up();                                           // Parent branch
         final Leaf   r = F.leaf;
         final int   sk = r.splittingKey();
         final Leaf   l = r.splitLeft();
@@ -943,7 +928,7 @@ if (Tree.debug2) say("GGGG33", dump());
    }
 
   void delete(Slots.Key Key)                                                    // Delete a key from the tree
-   {if (root() == null) return;                                                   // The tree is empty tree so there is nothing to delete
+   {if (root() == null) return;                                                 // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
     f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
@@ -951,15 +936,15 @@ if (Tree.debug2) say("GGGG33", dump());
    }
 
   int count()                                                                   // Print the tree with and without details
-   {if (root() == null) return 0;                                                 // Empty tree
-    if (Leaf.ref(root())) return root().countUsed();                                // Tree is a single leaf
-    return ((Branch)root()).count();                                              // Tree has one or more branches
+   {if (root() == null) return 0;                                               // Empty tree
+    if (Leaf.ref(root())) return root().countUsed();                            // Tree is a single leaf
+    return ((Branch)root()).count();                                            // Tree has one or more branches
    }
 
 //D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
 
   Find first()                                                                  // Find the position of the first key in the key
-   {if (root() == null) return null;                                              // Empty tree does not have a first key
+   {if (root() == null) return null;                                            // Empty tree does not have a first key
     if (Leaf.ref(root()))
      {final Leaf l = (Leaf)root();
       final int  i = l.locateFirstUsedSlot();
@@ -967,7 +952,7 @@ if (Tree.debug2) say("GGGG33", dump());
       return new Find(l.keys(i), l);
      }
 
-    return goFirst((Branch)root());                                               // Start at root and go all the way first
+    return goFirst((Branch)root());                                             // Start at root and go all the way first
    }
 
   Find goFirst(Branch Start)                                                    // Go all the way first
@@ -991,7 +976,7 @@ if (Tree.debug2) say("GGGG33", dump());
    }
 
   Find last()                                                                   // Find the position of the last key in the tree
-   {if (root() == null) return null;                                              // Empty tree does not have a last key
+   {if (root() == null) return null;                                            // Empty tree does not have a last key
     if (Leaf.ref(root()))
      {final Leaf l = (Leaf)root();
       final int  i = l.locateLastUsedSlot();
@@ -999,7 +984,7 @@ if (Tree.debug2) say("GGGG33", dump());
       return new Find(l.keys(i), l);
      }
 
-    return goLast((Branch)root());                                                // Start at root and go all the way last
+    return goLast((Branch)root());                                              // Start at root and go all the way last
    }
 
   Find goLast(Branch Start)                                                     // Go all the way last from the specified position
@@ -1021,13 +1006,13 @@ if (Tree.debug2) say("GGGG33", dump());
    }
 
   Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming that the structure of the tree has not changed
-   {if (root() == null) return null;                                              // Empty tree does not have a next key
+   {if (root() == null) return null;                                            // Empty tree does not have a next key
     final Leaf l = Found.leaf;
-    if (l.up() == null) return null;                                              // Root is a leaf and we are at the end of it
+    if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
 
     final Integer i = l.locateNextUsedSlot(Found.locate.at+1);                  // Next slot in leaf
     if (i != null) return new Find(l.keys(i), l);
-    if (l.up().top().name() != l.name())                                                          // In the body of the parent branch of the leaf
+    if (l.up().top().name() != l.name())                                        // In the body of the parent branch of the leaf
      {final Integer I = l.up().locateNextUsedSlot(l.upIndex()+1);
       final Leaf    L = I != null ? (Leaf)l.up().data(I) : (Leaf)l.up().top();
       L.up(l.up()); L.upIndex(I);
@@ -1036,7 +1021,7 @@ if (Tree.debug2) say("GGGG33", dump());
     Branch p;                                                                   // Last point at which we went left
     Branch q = l.up();
     for(p = q.up(); p != null; q = p, p = q.up())
-     {if (p.top().name() != q.name())                                                           // In the body of the parent branch of the leaf
+     {if (p.top().name() != q.name())                                           // In the body of the parent branch of the leaf
        {final Integer I = p.locateNextUsedSlot(q.upIndex()+1);
         final Branch  b = I != null ? (Branch)p.data(I) : (Branch)p.top();
         b.up(p); b.upIndex(I);
@@ -1047,9 +1032,9 @@ if (Tree.debug2) say("GGGG33", dump());
    }
 
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
-   {if (root() == null) return null;                                              // Empty tree does not have a next key
+   {if (root() == null) return null;                                            // Empty tree does not have a next key
     final Leaf    l = Found.leaf;
-    if (l.up() == null) return null;                                              // Root is a leaf and we are at the end of it
+    if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
 
     final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);                  // Previous slot in leaf
     if (i != null) return new Find(l.keys(i), l);
@@ -1066,8 +1051,8 @@ if (Tree.debug2) say("GGGG33", dump());
       L.up(l.up()); L.upIndex(I);
       return new Find(L.lastKey(), L);
      }
-    for(Branch q = l.up(), p = q.up(); p != null; q = p, p = q.up())                  // Go up to the last point where we went left
-     {if (q.upIndex() == null)                                                    // In the body of the parent branch of the leaf
+    for(Branch q = l.up(), p = q.up(); p != null; q = p, p = q.up())            // Go up to the last point where we went left
+     {if (q.upIndex() == null)                                                  // In the body of the parent branch of the leaf
        {final Integer I = p.locateLastUsedSlot();
         final Branch  b = (Branch)p.data(I);
         b.up(p); b.upIndex(I);
@@ -1179,8 +1164,9 @@ if (Tree.debug2) say("GGGG33", dump());
   String print(boolean Details)                                                 // Print the tree with and without details
    {final Stack<StringBuilder> P = new Stack<>();
     if (root() == null) return "|\n";                                           // Empty tree
-    if (Leaf.ref(root())) printLeaf  ((Leaf)  root(), P, 0, Details, null, null); // Tree is a single leaf
-    else                  printBranch((Branch)root(), P, 0, Details, null, null); // Tree has one or more branches
+    final boolean lr = Leaf.ref(root());
+    if (lr) printLeaf  ((Leaf)  root(), P, 0, Details, null, null);             // Tree is a single leaf
+    else    printBranch((Branch)root(), P, 0, Details, null, null);             // Tree has one or more branches
     return printCollapsed(P);                                                   // Remove blank lines and add right fence
    }
 
