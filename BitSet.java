@@ -11,7 +11,7 @@ abstract public class BitSet extends Test                                       
 
   public BitSet(int BitSize)                                                    // Constructor specifying fixed size.
    {bitSize = BitSize;                                                          // Record size.
-    if (bitSize <= 0) stop("Size must be positive");                            // Validate size.
+    if (bitSize < 0) stop("Size must be zero or positive");                     // Validate size.
    }
 
   abstract void setByte(int Index, byte Value);                                 // Write byte to storage backend.
@@ -56,7 +56,7 @@ abstract public class BitSet extends Test                                       
 
   static BitSet test_bits()                                                     // Create test bitset.
    {final int N = 23;                                                           // Test size.
-    final byte[]bytes = new byte[(N>>3)+1];                                     // Allocate backing storage.
+    final byte[]bytes = new byte[BitSet.bytesNeeded(N)];                        // Allocate backing storage.
 
     final BitSet b = new BitSet(21)                                             // Instantiate anonymous implementation.
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
