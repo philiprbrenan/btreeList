@@ -17,7 +17,9 @@ abstract public class BitSet extends Test                                       
   abstract void setByte(int Index, byte Value);                                 // Write byte to storage backend.
   abstract byte getByte(int Index);                                             // Read byte from storage backend.
 
-  public  int size()                    {return bitSize;}                       // Return bit set size.
+  static public int bytesNeeded(int Size) {return 1 + Size/Byte.SIZE;}          // Number of bytes needed for a bit set of specified size
+
+  public  int size()                    {return bitSize;}                       // Bit set size.
   private int bitOffset(int bitIndex)   {return bitIndex & 7;}                  // Offset inside byte.
   private int byteIndex(int bitIndex)   {return bitIndex >>> 3;}                // Byte index in storage.
 
