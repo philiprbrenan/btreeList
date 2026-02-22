@@ -482,7 +482,7 @@ public class Slots extends Test                                                 
 
 //D1 Memory                                                                     // Read and write from an array of bytes
 
-  class SlotsMemoryPositions                                                         // Positions of fields in memory
+  class SlotsMemoryPositions                                                    // Positions of fields in memory
    {final int N = numberOfSlots(), R = numberOfRefs;
     final int posType         = 0;
     final int posSlots        = posType      + Integer.BYTES;
