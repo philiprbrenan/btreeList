@@ -487,14 +487,22 @@ public class Slots extends Test                                                 
     final int posType         = 0;
     final int posSlots        = posType      + Integer.BYTES;
     final int posUsedSlots    = posSlots     + Integer.BYTES * N;
-    final int posUsedRefs     = posUsedSlots + N;
-    final int posKeys         = posUsedRefs  + R;
+    final int posUsedRefs     = posUsedSlots + BitSet.bytesNeeded(N);           // Amount of space needed to store these bits in bytes
+    final int posKeys         = posUsedRefs  + BitSet.bytesNeeded(R);
     final int posName         = posKeys      + Integer.BYTES * R;
     final int size            = posName      + Integer.BYTES;
    }
 
   class Memory extends SlotsMemoryPositions                                     // Memory required to hold bytes
    {final ByteBuffer bytes;                                                     // Bytes used by this set of slots
+    final BitSet usedSlotsBits = new BitSet(numberOfSlots())                    // Bit storage for used slots
+     {void setByte(int Index, byte Value) {bytes.put(posUsedSlots+Index, Value);} // Save used slot bit
+      byte getByte(int Index)      {return bytes.get(posUsedSlots+Index);}        // Get used slot bit
+     };
+    final BitSet usedRefsBits  = new BitSet(numberOfRefs)                       // Bit storage for used refs
+     {void setByte(int Index, byte Value) {bytes.put(posUsedRefs+Index, Value);}// Save used ref bit
+      byte getByte(int Index)      {return bytes.get(posUsedRefs+Index);}       // Get used ref bit
+     };
 
     void copySlots(Memory Memory)                                               // Copy a set of slots from the specified memory into this memory
      {for (int i = 0; i < size; i++)
@@ -515,18 +523,17 @@ public class Slots extends Test                                                 
      {bytes = Bytes;
      }
 
-    int     slots       (int Index) {return bytes.getInt(posSlots        + Index * Integer.BYTES);}
-    boolean usedSlots   (int Index) {return bytes.get   (posUsedSlots    + Index                ) > 0 ? true : false;}
-    boolean usedRefs    (int Index) {return bytes.get   (posUsedRefs     + Index                ) > 0 ? true : false;}
-    int     keys        (int Index) {return bytes.getInt(posKeys         + Index * Integer.BYTES);}
-    int     name        (         ) {return bytes.getInt(posName                                );}
+    int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
+    boolean usedSlots   (int Index) {return usedSlotsBits.getBit(Index);}
+    boolean usedRefs    (int Index) {return usedRefsBits .getBit(Index);}
+    int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
+    int     name        (         ) {return bytes.getInt(posName);}
 
-    void    slots       (int Index, int     Value) {bytes.putInt(posSlots        + Index * Integer.BYTES, Value);}
-    void    usedSlots   (int Index, boolean Value) {bytes.put   (posUsedSlots    + Index                , Value ? (byte)1 : (byte)0);}
-    void    usedRefs    (int Index, boolean Value) {bytes.put   (posUsedRefs     + Index                , Value ? (byte)1 : (byte)0);}
-    void    keys        (int Index, int     Value) {bytes.putInt(posKeys         + Index * Integer.BYTES, Value);}
-    void    name        (           int     Value) {bytes.putInt(posName                                , Value);}
-
+    void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES, Value);}
+    void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(Index, Value);}
+    void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(Index, Value);}
+    void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES, Value);}
+    void    name        (           int     Value) {bytes.putInt(posName                         , Value);}
 
     void type(int Type) {       bytes.putInt(posType, Type);}                   // Type of object in which the slots are embedded
     int  type()         {return bytes.getInt(posType);}
@@ -769,7 +776,7 @@ usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
 
-    ok(memorySize(8), 128);
+    ok(memorySize(8), 109);
 
     final Slots        B = b.duplicateSlots();
     final Slots.Memory m = B.memory;
