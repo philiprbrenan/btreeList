@@ -92,7 +92,9 @@ class Tree extends Test                                                         
    }
 
   void free(int Free)                                                           // Free a leaf or a branch
-   {if (freeChain.contains(Free))
+   {if (Free <= 0) stop("Name of node to free must be positive not:", Free);
+    if (Free > numberOfNodes) stop("Name of node to free too big:", Free);
+    if (freeChain.contains(Free))
      {stop("Attempting to free a branch or leaf that has already been freed:", Free);
      }
     freeChain.push(Free);
@@ -128,7 +130,7 @@ class Tree extends Test                                                         
    {final int l            = new   LeafMemoryPositions().memorySize();          // Memory positions for leaves
     final int b            = new BranchMemoryPositions().memorySize();          // Memory positions for branches
     final int sizeOfNode   = max(l, b);                                         // Size of memory for a branch or a leaf or the base description of the tree - which is held in node 0.
-    final int size         = sizeOfNode * (numberOfNodes + 1);                  // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node 0.;                                                    // Size of allocated memory
+    final int size         = sizeOfNode * (numberOfNodes + 1);                  // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node zero
     final ByteBuffer bytes = ByteBuffer.allocate(size);                         // Memory occupied by tree
 
     int  root()                    {return bytes.getInt(posRoot);}
@@ -198,8 +200,9 @@ class Tree extends Test                                                         
      {super(maxLeafSize);                                                       // Slots for leaf
       node = allocate();                                                        // Allocate the leaf
       memory = new Memory(node);                                                // Memory for leaf
-      super.setMemory(memory.bytes);                                            // Share memeory with slots
-      name(node);                                                               // Set this memory as a leaf
+      super.setMemory(memory.bytes);                                            // Share memory with slots
+      super.memory.clear();                                                     // Clear the memory associated slots
+      name(node);                                                               // Save the name of the node in memory to assist debugging
       type(NodeType.Leaf.ordinal());                                            // Set this memory as a leaf
      }
 
@@ -409,9 +412,10 @@ class Tree extends Test                                                         
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
       node = allocate();                                                        // Name the branch
-      memory = new Memory(node);
-      super.setMemory(memory.bytes);                                            // Share memeory with slots
-      name(node);
+      memory = new Memory(node);                                                //
+      super.setMemory(memory.bytes);                                            // Share memory with slots
+      super.memory.clear();                                                     // Clear the memory associated slots
+      name(node);                                                               // Save the name of the node in memory to assist debugging
       type(NodeType.Branch.ordinal());                                          // Set the type to branch
      }
 
@@ -542,8 +546,8 @@ class Tree extends Test                                                         
       final Branch       l = duplicate();
       final Branch.Split s = l.splitRight();
       final Branch       b = new Branch();
-      b.insert(new Key(sk), s.left); b.top(s.right);
-      //F l.free();
+      b.insert(new Key(sk), s.left);
+      b.top(s.right);
       return b;
      }
 
@@ -656,10 +660,11 @@ class Tree extends Test                                                         
          }
        }
       else                                                                      // Children are branches
-       {final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
-        if (r.mergeFromLeft(keys(left), (Branch)L))                             // Merge left sibling into right
+       {final Branch l = (Branch)L;
+        final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
+        if (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
-          ((Branch)L).free();
+          l.free();
           return true;
          }
        }
@@ -819,7 +824,9 @@ class Tree extends Test                                                         
       l.upIndex(null);                                                          // Trace path taken to this leaf
       return new Find(Key, l);
      }
-    return find(Key, (Branch)r);                                                // Start search from root
+    final Branch R = (Branch)r;                                                 // Start search from root
+    R.up(null); R.upIndex(null);                                                // Show that there is nothing above the root
+    return find(Key, R);                                                        // Start search from root
    }
 
   Find find(Slots.Key Key, Branch Start)
@@ -890,7 +897,9 @@ class Tree extends Test                                                         
     Branch p = (Branch)root();                                                  // Start at root
     if (p.full())
      {final Branch P = p;
-      root(p = p.split());
+Tree.debug = true;
+      p = p.split();
+      root(p);
       P.free();
      }                                                                          // Split full root branch
 
@@ -1228,14 +1237,6 @@ class Tree extends Test                                                         
     ok(t.memory.root(), 0);
     ok(t.dump(), """
 |
-""");
-
-    ok(t.db(), """
-0 0 0 0 0 0 0 2 0 0 0 3 0 0 0 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 """);
    }
 
@@ -1705,6 +1706,7 @@ top : 8
     final StringBuilder s = new StringBuilder();
     for (int i = 1; i <= N; ++i)
      {t.insert(Key(i), new Data(i));
+      t.freeCheck();
       s.append("Insert: "+i+"\n"+t);
      }
     //stop(s);
@@ -2581,7 +2583,6 @@ Delete 22
     for (int i = 1; i <= N; ++i) {t.insert(Key(i), new Data(i)); t.freeCheck();}
     for (int i = 1; i <= N; ++i) {t.delete(Key(i));              t.freeCheck();}
     for (int i = 1; i <= N; ++i) {t.insert(Key(i), new Data(i)); t.freeCheck();}
-    //stop(t.dump());
     ok(t.dump(), """
                                                                                     8                                                                                                    16                                                                                             24                                                                                            |
                                                                                    [13.0]                                                                                               [13.2]                                                                                         [13.4]                                                                                         |
