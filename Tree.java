@@ -16,7 +16,6 @@ class Tree extends Test                                                         
   final int           sizeOfNode;                                               // The size of each node in the tree: a node may hold a branch or a leaf
   final Memory            memory;                                               // Memory containing the tree base followed by the leaves and branches of the tree
   static boolean           debug = false, debug2 = false;                       // Debug if enabled
-  int leaves = 0, branches = 0;                                                 // Labels for the leaves and branches to assist in debugging
 
 //D1 Construction                                                               // Construct and layout a tree
 
@@ -61,7 +60,7 @@ class Tree extends Test                                                         
 
   enum NodeType {Leaf, Branch}                                                  // Types of nodes
 
-  class TreeMemoryPositions                                                     // Memory positions of fields describing the tree
+  static class TreeMemoryPositions                                              // Memory positions of fields describing the tree
    {final int posRoot          = 0;
     final int posMaxLeafSize   = posRoot          + Integer.BYTES;              // The maximum number of entries in a leaf
     final int posMaxBranchSize = posMaxLeafSize   + Integer.BYTES;              // The maximum number of entries in a branch
@@ -99,7 +98,7 @@ class Tree extends Test                                                         
     freeChain.push(Free);
    }
 
-  void freeCheck()                                                              // Check that the free chain is accurate
+  void freeCheck()                                                              // Check that the free chain is accurate - useful during debugging
    {final ListAll      a = new ListAll();
     final Set<Integer> f = new TreeSet<>();
     final Set<Integer> u = new TreeSet<>();
@@ -130,12 +129,10 @@ class Tree extends Test                                                         
     final int b            = new BranchMemoryPositions().memorySize();          // Memory positions for branches
     final int sizeOfNode   = max(l, b);                                         // Size of memory for a branch or a leaf or the base description of the tree - which is held in node 0.
     final int size         = sizeOfNode * (numberOfNodes + 1);                  // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node 0.;                                                    // Size of allocated memory
-    final ByteBuffer bytes = ByteBuffer.allocate(size);
+    final ByteBuffer bytes = ByteBuffer.allocate(size);                         // Memory occupied by tree
 
-    int  root()
-     {return bytes.getInt(posRoot);
-     }
-    void root(int Value) {bytes.putInt(posRoot, Value);}
+    int  root()                    {return bytes.getInt(posRoot);}
+    void root(int Value)                  {bytes.putInt(posRoot, Value);}
 
     int  maxLeafSize()             {return bytes.getInt(posMaxLeafSize);}
     void maxLeafSize(int MaxLeafSize)     {bytes.putInt(posMaxLeafSize, MaxLeafSize);}
