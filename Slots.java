@@ -515,6 +515,10 @@ public class Slots extends Test                                                 
      {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
      }
 
+    void clear()                                                                // Clear all bytes in memory to zero which has the beneficial efefect of setting all slots to unused
+     {for (int i = 0; i < size; i++) bytes.put(i, (byte)0);
+     }
+
     Memory()                                                                    // Create our own memory for testing
      {bytes = ByteBuffer.allocate(size);
      }
@@ -533,7 +537,7 @@ public class Slots extends Test                                                 
     void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(Index, Value);}
     void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(Index, Value);}
     void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES, Value);}
-    void    name        (           int     Value) {bytes.putInt(posName                         , Value);}
+    void    name        (           int     Value) {bytes.putInt(posName                         , Value);} // Save the name of the node in memory to assist debugging
 
     void type(int Type) {       bytes.putInt(posType, Type);}                   // Type of object in which the slots are embedded
     int  type()         {return bytes.getInt(posType);}
@@ -842,7 +846,6 @@ keys     :   14   0  13   0  12   0  10  11
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
-    test_memory();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
