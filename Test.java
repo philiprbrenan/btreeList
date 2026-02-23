@@ -154,7 +154,7 @@ public class Test                                                               
    }
 
 // D1 BitSet                                                                    // Operations on BitSets
-
+/*
   static int bitSetToInt(BitSet B)                                              // Convert a bitset to an integer if possible
    {final long[]l = B.toLongArray();
     final int   L = l.length;
@@ -187,7 +187,7 @@ public class Test                                                               
     for (int i = 0; i < Integer.SIZE-1; i++) if (((1<<i) & N) > 0) b.set(i);    // Transfer bits from int to bitset
     return b;
    }
-
+*/
 //D2 Numeric routines                                                           // Numeric routines
 
   static int abs(int i) {return i >= 0 ? +i : -i;}                              // Absolute value of integer
@@ -1452,7 +1452,7 @@ a   aa    AAA
     ok(modZero(4, 4), 4);
     ok(modZero(5, 4), 8);
    }
-
+/*
   static void test_bitSetToHex()
    {if (true)
      {final BitSet b = new BitSet();
@@ -1477,7 +1477,7 @@ a   aa    AAA
       ok(bitSetToHex(b), "b");
      }
    }
-
+*/
   static void test_hextoInt()
    {ok(hexToInt("axxx"),  10);
     ok(hexToInt("x1zbx"), 27);
@@ -1502,7 +1502,7 @@ a   aa    AAA
     test_executed();
     test_squeezeVerticalSpaces();
     test_modZero();
-    test_bitSetToHex();
+//  test_bitSetToHex();
     test_hextoInt();
    }
 
