@@ -11,7 +11,7 @@ public class Slots extends Test                                                 
  {private final int numberOfRefs;                                               // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
   private final int redistributionWidth;                                        // Redistribute if the next slot is further than this
   protected Memory  memory;                                                     // Memory used by the slots
-  final String      formatKey = "%3d";                                          // Format a key for dumping during testing
+  final static String formatKey = "%3d";                                          // Format a key for dumping during testing
   static boolean    debug = false;                                              // Debug if true
 
 //D1 Construction                                                               // Construct and layout the slots
