@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
  {private final int numberOfRefs;                                               // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
   private final int redistributionWidth;                                        // Redistribute if the next slot is further than this
-  Memory            memory;                                                     // Memory used by the slots
+  protected Memory  memory;                                                     // Memory used by the slots
   final String      formatKey = "%3d";                                          // Format a key for dumping during testing
   private int       name;                                                       // Numeric name for these slots for debugging purposes
   static boolean    debug = false;                                              // Debug if true
@@ -164,8 +164,8 @@ public class Slots extends Test                                                 
     if (!usedSlots(Position)) return 0;                                         // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
     for (int i = 1; i < N; i++)
      {final int p = Position + i, q = Position - i;
-      if (q >= 0 && !usedSlots(q)) return -i;                                   // Look down preferentially to avoid moving the existing key if possible
-      if (p <  N && !usedSlots(p)) return +i;                                   // Look up
+      if (Integer.compare(q, 0) != -1 && !usedSlots(q)) return -i;              // Look down preferentially to avoid moving the existing key if possible
+      if (Integer.compare(p, N) == -1 && !usedSlots(p)) return +i;              // Look up
      }
     return null;                                                                // No free slot - this is not actually an error.
    }
@@ -862,3 +862,7 @@ keys     :   14   0  13   0  12   0  10  11
      }
    }
  }
+// Conversion Steps
+// 1 replace array accesses with subroutine calls to the greatest extent possible
+// 2 Convert to ByteBuffer memory
+// 3 Remove as many opewratror expressions as possible especially assignment.
