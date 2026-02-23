@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 public class Slots extends Test                                                 // Maintain key references in ascending order using distributed slots
  {private final int        numberOfRefs;                                        // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
   private final int redistributionWidth;                                        // Redistribute if the next slot is further than this
-  protected Memory               memory;                                        // Memory used by the slots
+  protected Memory               memory;                                        // Memory used by the slots. Cannot be final until we can call stuff before constructing super
   final static String         formatKey = "%3d";                                // Format a key for dumping during testing
   static boolean                  debug = false;                                // Debug if true
 
@@ -59,8 +59,8 @@ public class Slots extends Test                                                 
 
 //D2 Keys                                                                       // Define a key
 
-  public record Key(int  value) {}                                              // A key
-  static Key Key(int  Key) {return new Key(Key);}
+  public record Key(int value) {}                                               // A key
+  static Key    Key(int Key)   {return new Key(Key);}
 
 //D2 Slots                                                                      // Manage the slots
 
