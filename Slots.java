@@ -12,7 +12,6 @@ public class Slots extends Test                                                 
   private final int redistributionWidth;                                        // Redistribute if the next slot is further than this
   protected Memory  memory;                                                     // Memory used by the slots
   final String      formatKey = "%3d";                                          // Format a key for dumping during testing
-  private int       name;                                                       // Numeric name for these slots for debugging purposes
   static boolean    debug = false;                                              // Debug if true
 
 //D1 Construction                                                               // Construct and layout the slots
