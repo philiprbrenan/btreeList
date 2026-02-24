@@ -100,8 +100,8 @@ jobs:
     - name: Position files in package
       run: |
         mkdir -p $c
-        tree
         cp $J $c
+        tree
 
     - name: Java
       run: |
