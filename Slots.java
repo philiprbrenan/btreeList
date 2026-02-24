@@ -103,7 +103,7 @@ public class Slots extends Test                                                 
             void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
 
   protected Key  key(Slot I)         {return new Key(memory.keys(I.value()));}  // Get the key directly
-  protected void key(int I, Key Key) {memory.keys(I, Key.value());}             // Set the key directly
+  protected void key(Slot I, Key Key) {memory.keys(I.value(), Key.value());}             // Set the key directly
 
   Slot name() {return new Slot(memory.name());}                                 // Get the name
   void name(Slot Name) {memory.name(Name.value());}                             // Set the name
@@ -265,7 +265,7 @@ public class Slots extends Test                                                 
       usedSlots(I, false); slots(I, new Slot(0));
      }
     for (int i = 0; i < numberOfRefs; i++)
-     {usedRefs(new Slot(i), false); key(i, Key(0));
+     {usedRefs(new Slot(i), false); key(new Slot(i), Key(0));
      }
    }
 
@@ -344,7 +344,7 @@ public class Slots extends Test                                                 
    {final int N = numberOfSlots();
     if (full()) return null;                                                    // No slot available in which to insert a new key
     final int slot = allocRef();                                                // The location in which to store the search key
-    key(slot, Key);                                                             // Store the new key in the referenced location
+    key(new Slot(slot), Key);                                                             // Store the new key in the referenced location
     final Locate l = new Locate(Key);                                           // Search for the slot containing the key closest to their search key
     if ( l.above && l.below) {}                                                 // Found
     else if (!l.above && !l.below)                                              // Empty place the key in the middle
@@ -708,10 +708,10 @@ keys     :   14  13  16  15  18  17  12  11
 
   static void test_locateFirstGe()
    {final Slots b = new Slots(8);
-    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(22));
-    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(24));
-    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(26));
-    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(28));
+    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(new Slot(7), Key(22));
+    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(new Slot(4), Key(24));
+    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(new Slot(2), Key(26));
+    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(new Slot(0), Key(28));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -728,10 +728,10 @@ keys     :   28   0  26   0  24   0   0  22
 
   static void test_compactLeft()
    {final Slots b = new Slots(8);
-    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(11));
-    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(12));
-    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(13));
-    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(14));
+    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(new Slot(7), Key(11));
+    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(new Slot(4), Key(12));
+    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(new Slot(2), Key(13));
+    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(new Slot(0), Key(14));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -754,10 +754,10 @@ keys     :   11  12  13  14   0   0   0   0
 
   static void test_compactRight()
    {final Slots b = new Slots(8);
-    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(11));
-    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(12));
-    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(13));
-    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(14));
+    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(new Slot(7), Key(11));
+    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(new Slot(4), Key(12));
+    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(new Slot(2), Key(13));
+    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(new Slot(0), Key(14));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -783,10 +783,10 @@ keys     :    0   0   0   0  11  12  13  14
   static void test_memory()
    {final Slots      b = new Slots(8, ByteBuffer.allocate(200));
 
-    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(11));
-    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(12));
-    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(13));
-    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(14));
+    b.usedSlots(new Slot( 1), true); b.slots(new Slot( 1), new Slot(7)); b.usedRefs(new Slot(7), true); b.key(new Slot(7), Key(11));
+    b.usedSlots(new Slot( 5), true); b.slots(new Slot( 5), new Slot(4)); b.usedRefs(new Slot(4), true); b.key(new Slot(4), Key(12));
+    b.usedSlots(new Slot( 9), true); b.slots(new Slot( 9), new Slot(2)); b.usedRefs(new Slot(2), true); b.key(new Slot(2), Key(13));
+    b.usedSlots(new Slot(14), true); b.slots(new Slot(14), new Slot(0)); b.usedRefs(new Slot(0), true); b.key(new Slot(0), Key(14));
     b.type     (11);
     ok(b.dump(), """
 Slots    : name:  0, type: 11, refs:  8
