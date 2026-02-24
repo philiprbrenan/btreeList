@@ -84,7 +84,7 @@ public class Slots extends Test                                                 
   void clearFirstSlot()                                                         // Set the first used slot to not used
    {final int N = numberOfSlots();
     for (int i = 0; i < N; i++)
-     {if (usedSlots(i))
+     {if (usedSlots(new Slot(i)))
        {usedSlots(i, false);
         return;
        }
@@ -93,7 +93,7 @@ public class Slots extends Test                                                 
 
   protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
   protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}   // The indexed slot
-  protected boolean    usedSlots(int  I) {return  memory.usedSlots (I);}        // The indexed slot usage indicator
+  protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}        // The indexed slot usage indicator
   protected boolean     usedRefs(int  I) {return  memory.usedRefs  (I);}        // The indexed reference usage indicator
   Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));} // The indexed key
 
@@ -149,7 +149,7 @@ public class Slots extends Test                                                 
   int countUsed()                                                               // Number or slots in use. How can we do this quickly in parallel?
    {final int N = numberOfSlots();
     int n = 0;
-    for (int i = 0; i < N; i++) if (usedSlots(i)) ++n;
+    for (int i = 0; i < N; i++) if (usedSlots(new Slot(i))) ++n;
     return n;
    }
 
@@ -157,11 +157,11 @@ public class Slots extends Test                                                 
   boolean full()  {return countUsed() == numberOfRefs;}                         // All references are in use
 
   boolean adjacentUsedSlots(int Start, int Finish)                              // Checks wether two used slots are adjacent
-   {if (!usedSlots(Start))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
-    if (!usedSlots(Finish)) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
+   {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
+    if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
     if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
 
-    for (int i = Start+1; i < Finish; i++) if (usedSlots(i)) return false;      // From start to finish looking for an intermediate used slot
+    for (int i = Start+1; i < Finish; i++) if (usedSlots(new Slot(i))) return false;      // From start to finish looking for an intermediate used slot
     return true;
    }
 
@@ -169,56 +169,56 @@ public class Slots extends Test                                                 
 
   Integer locateNearestFreeSlot(Slot Position)                                  // Relative position of the nearest free slot to the indicated position if there is one.
    {final int N = numberOfSlots();
-    if (!usedSlots(Position.value())) return 0;                                 // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
+    if (!usedSlots(Position)) return 0;                                 // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
     for (int i = 1; i < N; i++)
      {final int p = Position.value() + i, q = Position.value() - i;
-      if (Integer.compare(q, 0) != -1 && !usedSlots(q)) return -i;              // Look down preferentially to avoid moving the existing key if possible
-      if (Integer.compare(p, N) == -1 && !usedSlots(p)) return +i;              // Look up
+      if (Integer.compare(q, 0) != -1 && !usedSlots(new Slot(q))) return -i;              // Look down preferentially to avoid moving the existing key if possible
+      if (Integer.compare(p, N) == -1 && !usedSlots(new Slot(p))) return +i;              // Look up
      }
     return null;                                                                // No free slot - this is not actually an error.
    }
 
   Slot locateFirstUsedSlot()                                                    // Absolute position of the first slot in use
    {final int N = numberOfSlots();
-    for (int i = 0; i < N; ++i)                  if ( usedSlots(i)) return new Slot(i);
+    for (int i = 0; i < N; ++i)                  if ( usedSlots(new Slot(i))) return new Slot(i);
     return null;                                                                // No free slot
    }
 
   Slot locateLastUsedSlot()                                                     // Absolute position of the last slot in use
-   {for (int i = numberOfSlots()-1; i >= 0; i--) if ( usedSlots(i)) return new Slot(i);
+   {for (int i = numberOfSlots()-1; i >= 0; i--) if ( usedSlots(new Slot(i))) return new Slot(i);
     return null;                                                                // No free slot
    }
 
   Integer locatePrevUsedSlot(Slot Position)                                     // Absolute position of this slot if it is in use or else the next lower used slot
-   {for (int i = Position.value(); i >= 0; i--)  if ( usedSlots(i)) return i;
+   {for (int i = Position.value(); i >= 0; i--)  if ( usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateNextUsedSlot(Slot Position)                                     // Absolute position of this slot if it is in use or else the next higher used slot
    {final int N = numberOfSlots();
-    for (int i = Position.value(); i < N; ++i)   if ( usedSlots(i)) return i;
+    for (int i = Position.value(); i < N; ++i)   if ( usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateFirstEmptySlot()                                                // Absolute position of the first free slot
    {final int N = numberOfSlots();
-    for (int i = 0; i < N; ++i)                  if (!usedSlots(i)) return i;
+    for (int i = 0; i < N; ++i)                  if (!usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateLastEmptySlot()                                                 // Absolute position of the last free slot
-   {for (int i = numberOfSlots()-1; i >= 0; i--) if (!usedSlots(i)) return i;
+   {for (int i = numberOfSlots()-1; i >= 0; i--) if (!usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
   Integer locatePrevEmptySlot(int Position)                                     // Absolute position of this slot if it is free or the nearest lower free slot before this position.
-   {for (int i = Position; i >= 0; i--)          if (!usedSlots(i)) return i;
+   {for (int i = Position; i >= 0; i--)          if (!usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateNextEmptySlot(int Position)                                     // Absolute position of this slot if it is in use or the nearest higher free slot after this position.
    {final int N = numberOfSlots();
-    for (int i = Position; i < N; ++i)           if (!usedSlots(i)) return i;
+    for (int i = Position; i < N; ++i)           if (!usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
@@ -247,7 +247,7 @@ public class Slots extends Test                                                 
     final boolean[]u = new boolean[N];                                          // New used slots distribution
     int p = remainder / 2;                                                      // Start position for first used slot
     for (int i = 0; i < N; ++i)                                                 // Redistribute slots
-     {if (usedSlots(i))                                                         // Redistribute active slots
+     {if (usedSlots(new Slot(i)))                                                         // Redistribute active slots
        {s[p] = slots(new Slot(i)).value(); u[p] = true; p += space+1;                     // Spread the used slots out
        }
      }
@@ -273,7 +273,7 @@ public class Slots extends Test                                                 
     reset();
     int p = 0;
     for (int i = 0; i < N; i++)                                                 // Each slot
-     {if (d.usedSlots(i))                                                       // Each used slot
+     {if (d.usedSlots(new Slot(i)))                                                       // Each used slot
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, new Slot(p));
              keys(new Slot(p), d.keys(new Slot(i)));
@@ -287,7 +287,7 @@ public class Slots extends Test                                                 
     final Slots d = duplicateSlots(); reset();
     int p = numberOfRefs - 1;
     for (int i = numberOfSlots() - 1; i >= 0; --i)
-     {if (d.usedSlots(i))
+     {if (d.usedSlots(new Slot(i)))
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, new Slot(p));
              keys(new Slot(p), d.keys(new Slot(i)));
@@ -300,15 +300,15 @@ public class Slots extends Test                                                 
    {final Slots l = Left, r = Right;
     reset();
     for (int i = 0; i < numberOfRefs; ++i)
-     {if (l.usedSlots(i))
+     {if (l.usedSlots(new Slot(i)))
        {    slots(i, l.    slots(new Slot(i)));
-        usedSlots(i, l.usedSlots(i));
+        usedSlots(i, l.usedSlots(new Slot(i)));
          usedRefs(i, l. usedRefs(i));
              keys(new Slot(i), l.     keys(new Slot(i)));
        }
-      else if (r.usedSlots(i))
+      else if (r.usedSlots(new Slot(i)))
        {    slots(i, r.    slots(new Slot(i)));
-        usedSlots(i, r.usedSlots(i));
+        usedSlots(i, r.usedSlots(new Slot(i)));
          usedRefs(i, r. usedRefs(i));
              keys(new Slot(i), r.     keys(new Slot(i)));
        }
@@ -460,7 +460,7 @@ public class Slots extends Test                                                 
   protected String printSlots()                                                 // Print the occupancy of each slot
    {final int N = numberOfSlots();
     final StringBuilder s = new StringBuilder();
-    for (int i = 0; i < N; i++) s.append(usedSlots(i) ? "X" : ".");
+    for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "X" : ".");
     return ""+s;
    }
 
@@ -474,9 +474,9 @@ public class Slots extends Test                                                 
     s.append("\nslots    : ");
     for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
     s.append("\nusedSlots: ");
-    for (int i = 0; i < N; i++) s.append(usedSlots(i) ? "   X" : "   .");
+    for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "   X" : "   .");
     s.append("\nusedRefs : ");
-    for (int i = 0; i < R; i++) s.append(usedRefs (i) ? "   X" : "   .");
+    for (int i = 0; i < R; i++) s.append(usedRefs (i)           ? "   X" : "   .");
     s.append("\nkeys     : ");
     for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(i) != null ? key(i).value() : 0));
     return ""+s+"\n";
@@ -486,7 +486,7 @@ public class Slots extends Test                                                 
    {final StringJoiner s = new StringJoiner(", ");
     final int N = numberOfSlots();
     for (int i = 0; i < N; i++)
-     {if (usedSlots(i)) s.add(""+keys(new Slot(i)).value());
+     {if (usedSlots(new Slot(i))) s.add(""+keys(new Slot(i)).value());
      }
     return ""+s;
    }
