@@ -115,8 +115,9 @@ public class Slots extends Test                                                 
 
   private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here because in hardware this will be done in parallel
    {for (int i = 0; i < numberOfRefs; i++)
-     {if (!usedRefs(new Slot(i)))
-       {usedRefs(new Slot(i), true);
+     {final Slot I = new Slot(i);
+      if (!usedRefs(I))
+       {usedRefs(I, true);
         return i;
        }
      }
