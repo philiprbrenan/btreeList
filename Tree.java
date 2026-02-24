@@ -875,7 +875,7 @@ class Tree extends Test                                                         
      {final Find F = find(Key);                                                 // See if key is already present
       if (F.locate.exact())                                                     // Key already present so update data associated with the key
        {final Leaf l = F.leaf;                                                  // Child leaf
-        l.data(F.locate.at, Data);                                              // Update data
+        l.data(F.locate.at.value(), Data);                                      // Update data
         return;
        }
       else if (!F.leaf.full())                                                  // Leaf not full so insert directly
@@ -954,7 +954,7 @@ Tree.debug = true;
    {if (root() == null) return;                                                 // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
-    f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
+    f.leaf.clearSlotAndRef(f.locate.at.value());                                // Delete key and data from leaf
     mergeAlongPath(Key);
    }
 
@@ -1033,7 +1033,7 @@ Tree.debug = true;
     final Leaf l = Found.leaf;
     if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
 
-    final Integer i = l.locateNextUsedSlot(Found.locate.at+1);                  // Next slot in leaf
+    final Integer i = l.locateNextUsedSlot(Found.locate.at.value()+1);          // Next slot in leaf
     if (i != null) return new Find(l.keys(i), l);
     if (l.up().top().name().value() != l.name().value())                        // In the body of the parent branch of the leaf
      {final Integer I = l.up().locateNextUsedSlot(l.upIndex()+1);
@@ -1059,7 +1059,7 @@ Tree.debug = true;
     final Leaf    l = Found.leaf;
     if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
 
-    final Integer i = l.locatePrevUsedSlot(Found.locate.at-1);                  // Previous slot in leaf
+    final Integer i = l.locatePrevUsedSlot(Found.locate.at.value()-1);          // Previous slot in leaf
     if (i != null) return new Find(l.keys(i), l);
 
     if (l.upIndex() == null)                                                    // Last leaf of parent
