@@ -32,7 +32,7 @@ public class Slots extends Test                                                 
 
   void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                // Set memory to be used
 
-  static Slots fake(ref Name)                                                   // Slots used during testing to mock attached branches and leaves
+  static Slots fake(Slot Name)                                                   // Slots used during testing to mock attached branches and leaves
    {final Slots s = new Slots(0);
     s.name(Name);
     return s;
@@ -45,7 +45,7 @@ public class Slots extends Test                                                 
    }
 
   Slots copySlots(Slots Source)                                                 // Copy the source slots
-   {final ref n = name();                                                       // Save name of target
+   {final Slot n = name();                                                      // Save name of target
     memory.copySlots(Source.memory);                                            // Copy memory
     name(n);                                                                    // Reload name of target
     return this;                                                                // The copied slots
@@ -55,7 +55,7 @@ public class Slots extends Test                                                 
   int numberOfRefs()  {return numberOfRefs;}
   int numberOfSlots() {return numberOfRefs() * 2;}                              // Number of slots from number of ref
 
-  public record ref(int value) {}                                               // A reference to slots
+  public record Slot(int value) {}                                              // A reference to slots
 
 //D2 Keys                                                                       // Define a key
 
@@ -83,12 +83,12 @@ public class Slots extends Test                                                 
    }
 
   protected void clearSlotAndRef(int I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
-  protected ref            slots(int I) {return  new ref(memory.slots(I));}         // The indexed slot
+  protected Slot           slots(int I) {return  new Slot(memory.slots(I));}         // The indexed slot
   protected boolean    usedSlots(int I) {return  memory.usedSlots (I);}         // The indexed slot usage indicator
   protected boolean     usedRefs(int I) {return  memory.usedRefs  (I);}         // The indexed reference usage indicator
   Key                       keys(int I) {return  new Key(memory.keys(memory.slots(I)));} // The indexed key
 
-  protected void     slots(int I, ref     Ref)   {memory.slots    (I, Ref.value());}  // The indexed slot
+  protected void     slots(int I, Slot    Ref)   {memory.slots    (I, Ref.value());}  // The indexed slot
   protected void usedSlots(int I, boolean Value) {memory.usedSlots(I, Value);}  // The indexed slot usage indicator
   protected void  usedRefs(int I, boolean Value) {memory.usedRefs (I, Value);}  // The indexed reference usage indicator
             void      keys(int I, Key     Key)   {memory.keys(memory.slots(I), Key.value());} // The indexed key
@@ -96,8 +96,8 @@ public class Slots extends Test                                                 
   protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
   protected void key(int I, Key Key) {memory.keys(I, Key.value());}             // Set the key directly
 
-  ref  name() {return  new ref(memory.name());}                                         // Get the name
-  void name(ref  Name) {memory.name(Name.value());}                                     // Set the name
+  Slot name() {return  new Slot(memory.name());}                                // Get the name
+  void name(Slot Name) {memory.name(Name.value());}                             // Set the name
 
   int  type()  {return memory.type();}                                          // Get the type
   void type(int Type) {memory.type(Type);}                                      // Set the type
@@ -243,14 +243,14 @@ public class Slots extends Test                                                 
        }
      }
     for(int i = 0; i < N; ++i)                                                  // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
-     {slots(i, new ref(s[i])); usedSlots(i, u[i]);
+     {slots(i, new Slot(s[i])); usedSlots(i, u[i]);
      }
    }
 
   void reset()                                                                  // Reset the slots
    {final int N = numberOfSlots();
     for (int i = 0; i < N; i++)
-     {usedSlots(i, false); slots(i, new ref(0));
+     {usedSlots(i, false); slots(i, new Slot(0));
      }
     for (int i = 0; i < numberOfRefs; i++)
      {usedRefs(i, false); key(i, Key(0));
@@ -266,7 +266,7 @@ public class Slots extends Test                                                 
     for (int i = 0; i < N; i++)                                                 // Each slot
      {if (d.usedSlots(i))                                                       // Each used slot
        {usedSlots(p, true); usedRefs(p, true);
-            slots(p, new ref(p));
+            slots(p, new Slot(p));
              keys(p, d.keys(i));
         ++p;
        }
@@ -280,7 +280,7 @@ public class Slots extends Test                                                 
     for (int i = numberOfSlots() - 1; i >= 0; --i)
      {if (d.usedSlots(i))
        {usedSlots(p, true); usedRefs(p, true);
-            slots(p, new ref(p));
+            slots(p, new Slot(p));
              keys(p, d.keys(i));
         --p;
        }
@@ -333,7 +333,7 @@ public class Slots extends Test                                                 
     final Locate l = new Locate(Key);                                           // Search for the slot containing the key closest to their search key
     if ( l.above && l.below) {}                                                 // Found
     else if (!l.above && !l.below)                                              // Empty place the key in the middle
-     {slots    (N/2, new ref(slot));
+     {slots    (N/2, new Slot(slot));
       usedSlots(N/2, true);
      }
     else if (l.above)                                                           // Insert their key above the found key
@@ -341,12 +341,12 @@ public class Slots extends Test                                                 
       final int w = locateNearestFreeSlot(i);                                   // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift    (i+1, w-1);                                                    // Liberate a slot at this point
-        slots    (i+1, new ref(slot));                                                   // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+        slots    (i+1, new Slot(slot));                                                   // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
         usedSlots(i+1, true);
        }
       else if (w < 0)                                                           // Liberate a slot below the current slot
        {shift(i, w);                                                            // Shift any intervening slots blocking the slot below
-        slots(i, new ref(slot));                                                         // Insert into the slot below
+        slots(i, new Slot(slot));                                                         // Insert into the slot below
        }
       if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();         // Redistribute if the used slots are densely packed
      }
@@ -355,11 +355,11 @@ public class Slots extends Test                                                 
       final int w = locateNearestFreeSlot(i);                                   // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift(i, w);                                                            // Liberate a slot at this point
-        slots(i, new ref(slot));                                                         // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+        slots(i, new Slot(slot));                                                         // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
        }
       else if (w < 0)                                                           // Liberate a slot below the current slot
        {shift    (i-1, w + 1);                                                  // Shift any intervening slots blocking the slot below
-        slots    (i-1, new ref(slot));                                                   // Insert into the slot below
+        slots    (i-1, new Slot(slot));                                                   // Insert into the slot below
         usedSlots(i-1, true);                                                   // Mark the free slot at the start of the range of occupied slots as now in use
        }
       if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();         // Redistribute if the used slots are densely packed
@@ -691,10 +691,10 @@ keys     :   14  13  16  15  18  17  12  11
 
   static void test_locateFirstGe()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots( 1, new ref(7)); b.usedRefs(7, true); b.key(7, Key(22));
-    b.usedSlots( 5, true); b.slots( 5, new ref(4)); b.usedRefs(4, true); b.key(4, Key(24));
-    b.usedSlots( 9, true); b.slots( 9, new ref(2)); b.usedRefs(2, true); b.key(2, Key(26));
-    b.usedSlots(14, true); b.slots(14, new ref(0)); b.usedRefs(0, true); b.key(0, Key(28));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(22));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(24));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(26));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(28));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -711,10 +711,10 @@ keys     :   28   0  26   0  24   0   0  22
 
   static void test_compactLeft()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots( 1, new ref(7)); b.usedRefs(7, true); b.key(7, Key(11));
-    b.usedSlots( 5, true); b.slots( 5, new ref(4)); b.usedRefs(4, true); b.key(4, Key(12));
-    b.usedSlots( 9, true); b.slots( 9, new ref(2)); b.usedRefs(2, true); b.key(2, Key(13));
-    b.usedSlots(14, true); b.slots(14, new ref(0)); b.usedRefs(0, true); b.key(0, Key(14));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(14));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -737,10 +737,10 @@ keys     :   11  12  13  14   0   0   0   0
 
   static void test_compactRight()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots( 1, new ref(7)); b.usedRefs(7, true); b.key(7, Key(11));
-    b.usedSlots( 5, true); b.slots( 5, new ref(4)); b.usedRefs(4, true); b.key(4, Key(12));
-    b.usedSlots( 9, true); b.slots( 9, new ref(2)); b.usedRefs(2, true); b.key(2, Key(13));
-    b.usedSlots(14, true); b.slots(14, new ref(0)); b.usedRefs(0, true); b.key(0, Key(14));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(14));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -766,10 +766,10 @@ keys     :    0   0   0   0  11  12  13  14
   static void test_memory()
    {final Slots      b = new Slots(8, ByteBuffer.allocate(200));
 
-    b.usedSlots( 1, true); b.slots( 1, new ref(7)); b.usedRefs(7, true); b.key(7, Key(11));
-    b.usedSlots( 5, true); b.slots( 5, new ref(4)); b.usedRefs(4, true); b.key(4, Key(12));
-    b.usedSlots( 9, true); b.slots( 9, new ref(2)); b.usedRefs(2, true); b.key(2, Key(13));
-    b.usedSlots(14, true); b.slots(14, new ref(0)); b.usedRefs(0, true); b.key(0, Key(14));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(14));
     b.type     (11);
     ok(b.dump(), """
 Slots    : name:  0, type: 11, refs:  8
