@@ -315,7 +315,7 @@ class Tree extends Test                                                         
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final Data[]d = new Data[R];
       int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(i).value());
+      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(new Slot(i)).value());
       super.compactLeft();
 
       for (int i = 0; i < R; i++) data(i, d[i]);
@@ -325,7 +325,7 @@ class Tree extends Test                                                         
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final Data[]d = new Data[R];
       int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(slots(i).value());
+      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(slots(new Slot(i)).value());
       super.compactRight();
       for (int i = 0; i < R; i++) data(i, d[i]);
      }
@@ -369,7 +369,11 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i)) {k.add(""+keys(new Slots.Slot(i)).value()); d.add(""+memory.data(slots(i).value()));}
+       {if (usedSlots(i))
+         {final Slot s = new Slot(i);
+          k.add(""+keys(s).value());
+          d.add(""+memory.data(slots(s).value()));
+         }
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -470,7 +474,7 @@ class Tree extends Test                                                         
     Slots firstChild()          {return data(locateFirstUsedSlot().value());}   // First child assuming there is one
 
     Slots data(int Index)
-     {return usedSlots(Index) ? dataDirect(slots(Index).value()) : null;
+     {return usedSlots(Index) ? dataDirect(slots(new Slot(Index)).value()) : null;
      }
 
     Slots dataDirect(int Index)
@@ -480,7 +484,7 @@ class Tree extends Test                                                         
       return new Branch(new Slots.Slot(i));
      }
 
-    void data      (int Index, Slots S) {dataDirect(slots(Index).value(), S);}  // Child via indexed slot
+    void data      (int Index, Slots S) {dataDirect(slots(new Slot(Index)).value(), S);}  // Child via indexed slot
     void dataDirect(int Index, Slots S) {memory.data(Index, refSign(S));}       // Child directly
 
     Branch duplicate()                                                          // Duplicate a branch
@@ -570,7 +574,8 @@ class Tree extends Test                                                         
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
        {if (usedSlots(i))
-         {k.add(""+keys(new Slots.Slot(i)).value()); d.add(""+memory.data(slots(i).value()));
+         {k.add(""+keys(new Slots.Slot(i)).value());
+          d.add(""+memory.data(slots(new Slot(i)).value()));
          }
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name().value()+"\n";
