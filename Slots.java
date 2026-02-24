@@ -91,19 +91,19 @@ public class Slots extends Test                                                 
      }
    }
 
-  protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
-  protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}    // The indexed slot
-  protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}         // The indexed slot usage indicator
-  protected boolean     usedRefs(Slot I) {return  memory.usedRefs  (I.value());}         // The indexed reference usage indicator
-  Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));} // The indexed key
+  protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);}               // Remove a key from the slots
+  protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}                  // The indexed slot
+  protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}                       // The indexed slot usage indicator
+  protected boolean     usedRefs(Slot I) {return  memory.usedRefs  (I.value());}                       // The indexed reference usage indicator
+  Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));}      // The indexed key
 
-  protected void     slots(Slot I, Slot    Ref)   {memory.slots    (I.value(), Ref.value());}    // The indexed slot
-  protected void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);} // The indexed slot usage indicator
-  protected void  usedRefs(Slot I, boolean Value) {memory.usedRefs (I.value(), Value);} // The indexed reference usage indicator
+  protected void     slots(Slot I, Slot    Ref)   {memory.slots    (I.value(), Ref.value());}          // The indexed slot
+  protected void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                // The indexed slot usage indicator
+  protected void  usedRefs(Slot I, boolean Value) {memory.usedRefs (I.value(), Value);}                // The indexed reference usage indicator
             void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
 
   protected Key  key(Slot I)         {return new Key(memory.keys(I.value()));}  // Get the key directly
-  protected void key(Slot I, Key Key) {memory.keys(I.value(), Key.value());}             // Set the key directly
+  protected void key(Slot I, Key Key) {memory.keys(I.value(), Key.value());}    // Set the key directly
 
   Slot name() {return new Slot(memory.name());}                                 // Get the name
   void name(Slot Name) {memory.name(Name.value());}                             // Set the name
@@ -161,7 +161,7 @@ public class Slots extends Test                                                 
     if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
     if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
 
-    for (int i = Start+1; i < Finish; i++) if (usedSlots(new Slot(i))) return false;      // From start to finish looking for an intermediate used slot
+    for (int i = Start+1; i < Finish; i++) if (usedSlots(new Slot(i))) return false; // From start to finish looking for an intermediate used slot
     return true;
    }
 
@@ -169,11 +169,11 @@ public class Slots extends Test                                                 
 
   Integer locateNearestFreeSlot(Slot Position)                                  // Relative position of the nearest free slot to the indicated position if there is one.
    {final int N = numberOfSlots();
-    if (!usedSlots(Position)) return 0;                                 // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
+    if (!usedSlots(Position)) return 0;                                         // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
     for (int i = 1; i < N; i++)
      {final int p = Position.value() + i, q = Position.value() - i;
-      if (Integer.compare(q, 0) != -1 && !usedSlots(new Slot(q))) return -i;              // Look down preferentially to avoid moving the existing key if possible
-      if (Integer.compare(p, N) == -1 && !usedSlots(new Slot(p))) return +i;              // Look up
+      if (Integer.compare(q, 0) != -1 && !usedSlots(new Slot(q))) return -i;    // Look down preferentially to avoid moving the existing key if possible
+      if (Integer.compare(p, N) == -1 && !usedSlots(new Slot(p))) return +i;    // Look up
      }
     return null;                                                                // No free slot - this is not actually an error.
    }
@@ -226,16 +226,16 @@ public class Slots extends Test                                                 
    {if (Width > 0)                                                              // Shift up including the current slot
      {for (int i = Width; i > 0; --i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
-        slots(new Slot(p), slots(new Slot(p-1)));                                                   // Move slot
+        slots(new Slot(p), slots(new Slot(p-1)));                               // Move slot
        }
-      usedSlots(new Slot(Position+Width), true);                                          // We only move occupied slots
+      usedSlots(new Slot(Position+Width), true);                                // We only move occupied slots
      }
     else if (Width < 0)                                                         // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
      {for (int i = Width; i < 0; ++i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
-        slots(new Slot(p), slots(new Slot(p+1)));                                                   // Move slot
+        slots(new Slot(p), slots(new Slot(p+1)));                               // Move slot
        }
-      usedSlots(new Slot(Position+Width), true);                                          // We only move occupied slots
+      usedSlots(new Slot(Position+Width), true);                                // We only move occupied slots
      }
    }
 
@@ -344,7 +344,7 @@ public class Slots extends Test                                                 
    {final int N = numberOfSlots();
     if (full()) return null;                                                    // No slot available in which to insert a new key
     final int slot = allocRef();                                                // The location in which to store the search key
-    key(new Slot(slot), Key);                                                             // Store the new key in the referenced location
+    key(new Slot(slot), Key);                                                   // Store the new key in the referenced location
     final Locate l = new Locate(Key);                                           // Search for the slot containing the key closest to their search key
     if ( l.above && l.below) {}                                                 // Found
     else if (!l.above && !l.below)                                              // Empty place the key in the middle
@@ -356,12 +356,12 @@ public class Slots extends Test                                                 
       final int w = locateNearestFreeSlot(l.at);                                // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift    (i+1, w-1);                                                    // Liberate a slot at this point
-        slots    (new Slot(i+1), new Slot(slot));                                         // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+        slots    (new Slot(i+1), new Slot(slot));                               // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
         usedSlots(new Slot(i+1), true);
        }
       else if (w < 0)                                                           // Liberate a slot below the current slot
        {shift(i, w);                                                            // Shift any intervening slots blocking the slot below
-        slots(new Slot(i), new Slot(slot));                                               // Insert into the slot below
+        slots(new Slot(i), new Slot(slot));                                     // Insert into the slot below
        }
       if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();         // Redistribute if the used slots are densely packed
      }
@@ -370,12 +370,12 @@ public class Slots extends Test                                                 
       final int w = locateNearestFreeSlot(l.at);                                // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift(i, w);                                                            // Liberate a slot at this point
-        slots(new Slot(i), new Slot(slot));                                               // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+        slots(l.at, new Slot(slot));                                            // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
        }
       else if (w < 0)                                                           // Liberate a slot below the current slot
        {shift    (i-1, w + 1);                                                  // Shift any intervening slots blocking the slot below
-        slots    (new Slot(i-1), new Slot(slot));                                         // Insert into the slot below
-        usedSlots(new Slot(i-1), true);                                                   // Mark the free slot at the start of the range of occupied slots as now in use
+        slots    (new Slot(i-1), new Slot(slot));                               // Insert into the slot below
+        usedSlots(new Slot(i-1), true);                                         // Mark the free slot at the start of the range of occupied slots as now in use
        }
       if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();         // Redistribute if the used slots are densely packed
      }
@@ -513,7 +513,7 @@ public class Slots extends Test                                                 
   class Memory extends SlotsMemoryPositions                                     // Memory required to hold bytes
    {final ByteBuffer bytes;                                                     // Bytes used by this set of slots
     final BitSet usedSlotsBits = new BitSet(numberOfSlots())                    // Bit storage for used slots
-     {void setByte(int Index, byte Value) {bytes.put(posUsedSlots+Index, Value);} // Save used slot bit
+     {void setByte(int Index, byte Value) {bytes.put(posUsedSlots+Index,Value);}// Save used slot bit
       byte getByte(int Index)      {return bytes.get(posUsedSlots+Index);}      // Get used slot bit
      };
     final BitSet usedRefsBits  = new BitSet(numberOfRefs)                       // Bit storage for used refs
