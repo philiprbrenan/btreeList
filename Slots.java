@@ -395,7 +395,7 @@ public class Slots extends Test                                                 
     Locate(Key Key)                                                             // Locate the slot containing the search key if possible.
      {final int N = numberOfSlots();
       if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
-      Integer a = locateNextUsedSlot(0), b = locateLastUsedSlot();              // Lower limit, upper limit
+      Integer a = locateFirstUsedSlot(), b = locateLastUsedSlot();              // Lower limit, upper limit
       if ( eq(Key, a)) {found(a); return;}                                      // Found at the start of the range
       if ( eq(Key, b)) {found(b); return;}                                      // Found at the end of the range
       if ( le(Key, a)) {below(a); all = true; return;}                          // Smaller than any key
