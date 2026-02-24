@@ -99,7 +99,7 @@ public class Slots extends Test                                                 
 
   protected void     slots(int  I, Slot    Ref)   {memory.slots    (I, Ref.value());}    // The indexed slot
   protected void usedSlots(int  I, boolean Value) {memory.usedSlots(I, Value);} // The indexed slot usage indicator
-  protected void  usedRefs(int  I, boolean Value) {memory.usedRefs (I, Value);} // The indexed reference usage indicator
+  protected void  usedRefs(Slot I, boolean Value) {memory.usedRefs (I.value(), Value);} // The indexed reference usage indicator
             void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
 
   protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
@@ -116,7 +116,7 @@ public class Slots extends Test                                                 
   private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here because in hardware this will be done in parallel
    {for (int i = 0; i < numberOfRefs; i++)
      {if (!usedRefs(new Slot(i)))
-       {usedRefs(i, true);
+       {usedRefs(new Slot(i), true);
         return i;
        }
      }
@@ -124,7 +124,7 @@ public class Slots extends Test                                                 
     return -1;
    }
 
-  private void freeRef(int Ref) {usedRefs(Ref, false);}                         // Free a reference to one of their keys - java checks for array bounds sdo no point in an explicit check.
+  private void freeRef(int Ref) {usedRefs(new Slot(Ref), false);}               // Free a reference to one of their keys - java checks for array bounds sdo no point in an explicit check.
 
 //D1 Keys                                                                       // Operations on keys
 
@@ -262,7 +262,7 @@ public class Slots extends Test                                                 
      {usedSlots(i, false); slots(i, new Slot(0));
      }
     for (int i = 0; i < numberOfRefs; i++)
-     {usedRefs(i, false); key(i, Key(0));
+     {usedRefs(new Slot(i), false); key(i, Key(0));
      }
    }
 
@@ -274,7 +274,7 @@ public class Slots extends Test                                                 
     int p = 0;
     for (int i = 0; i < N; i++)                                                 // Each slot
      {if (d.usedSlots(new Slot(i)))                                                       // Each used slot
-       {usedSlots(p, true); usedRefs(p, true);
+       {usedSlots(p, true); usedRefs(new Slot(p), true);
             slots(p, new Slot(p));
              keys(new Slot(p), d.keys(new Slot(i)));
         ++p;
@@ -288,7 +288,7 @@ public class Slots extends Test                                                 
     int p = numberOfRefs - 1;
     for (int i = numberOfSlots() - 1; i >= 0; --i)
      {if (d.usedSlots(new Slot(i)))
-       {usedSlots(p, true); usedRefs(p, true);
+       {usedSlots(p, true); usedRefs(new Slot(p), true);
             slots(p, new Slot(p));
              keys(new Slot(p), d.keys(new Slot(i)));
         --p;
@@ -303,16 +303,16 @@ public class Slots extends Test                                                 
      {if (l.usedSlots(new Slot(i)))
        {    slots(i, l.    slots(new Slot(i)));
         usedSlots(i, l.usedSlots(new Slot(i)));
-         usedRefs(i, l. usedRefs(new Slot(i)));
+         usedRefs(new Slot(i), l. usedRefs(new Slot(i)));
              keys(new Slot(i), l.     keys(new Slot(i)));
        }
       else if (r.usedSlots(new Slot(i)))
        {    slots(i, r.    slots(new Slot(i)));
         usedSlots(i, r.usedSlots(new Slot(i)));
-         usedRefs(i, r. usedRefs(new Slot(i)));
+         usedRefs(new Slot(i), r. usedRefs(new Slot(i)));
              keys(new Slot(i), r.     keys(new Slot(i)));
        }
-      else {usedSlots(i, false); usedRefs(i, false);}
+      else {usedSlots(i, false); usedRefs(new Slot(i), false);}
      }
    }
 
@@ -702,10 +702,10 @@ keys     :   14  13  16  15  18  17  12  11
 
   static void test_locateFirstGe()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(22));
-    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(24));
-    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(26));
-    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(28));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(22));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(24));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(26));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(28));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -722,10 +722,10 @@ keys     :   28   0  26   0  24   0   0  22
 
   static void test_compactLeft()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(11));
-    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(12));
-    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(13));
-    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(14));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(14));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -748,10 +748,10 @@ keys     :   11  12  13  14   0   0   0   0
 
   static void test_compactRight()
    {final Slots b = new Slots(8);
-    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(11));
-    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(12));
-    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(13));
-    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(14));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(14));
     ok(b.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -777,10 +777,10 @@ keys     :    0   0   0   0  11  12  13  14
   static void test_memory()
    {final Slots      b = new Slots(8, ByteBuffer.allocate(200));
 
-    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(7, true); b.key(7, Key(11));
-    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(4, true); b.key(4, Key(12));
-    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(2, true); b.key(2, Key(13));
-    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(0, true); b.key(0, Key(14));
+    b.usedSlots( 1, true); b.slots( 1, new Slot(7)); b.usedRefs(new Slot(7), true); b.key(7, Key(11));
+    b.usedSlots( 5, true); b.slots( 5, new Slot(4)); b.usedRefs(new Slot(4), true); b.key(4, Key(12));
+    b.usedSlots( 9, true); b.slots( 9, new Slot(2)); b.usedRefs(new Slot(2), true); b.key(2, Key(13));
+    b.usedSlots(14, true); b.slots(14, new Slot(0)); b.usedRefs(new Slot(0), true); b.key(0, Key(14));
     b.type     (11);
     ok(b.dump(), """
 Slots    : name:  0, type: 11, refs:  8
