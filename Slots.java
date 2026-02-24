@@ -102,7 +102,7 @@ public class Slots extends Test                                                 
   protected void  usedRefs(Slot I, boolean Value) {memory.usedRefs (I.value(), Value);} // The indexed reference usage indicator
             void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
 
-  protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
+  protected Key  key(Slot I)          {return new Key(memory.keys(I.value()));} // Get the key directly
   protected void key(int I, Key Key) {memory.keys(I, Key.value());}             // Set the key directly
 
   Slot name() {return  new Slot(memory.name());}                                // Get the name
@@ -484,7 +484,7 @@ public class Slots extends Test                                                 
     s.append("\nusedRefs : ");
     for (int i = 0; i < R; i++) s.append(usedRefs (new Slot(i)) ? "   X" : "   .");
     s.append("\nkeys     : ");
-    for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(i) != null ? key(i).value() : 0));
+    for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(new Slot(i)) != null ? key(new Slot(i)).value() : 0));
     return ""+s+"\n";
    }
 
@@ -667,14 +667,14 @@ keys     :   14  13  16  15  18  17  12  11
     ok(b.locate(Key(10)), null);
     ok(b.locate(Key(20)), null);
 
-    ok(b.key(b.find(Key(14))).value(), 14); ok(b.delete(Key(14)), true); ok(b, "11, 12, 13, 15, 16, 17, 18");
-    ok(b.key(b.find(Key(12))).value(), 12); ok(b.delete(Key(12)), true); ok(b, "11, 13, 15, 16, 17, 18");
-    ok(b.key(b.find(Key(13))).value(), 13); ok(b.delete(Key(13)), true); ok(b, "11, 15, 16, 17, 18");
-    ok(b.key(b.find(Key(16))).value(), 16); ok(b.delete(Key(16)), true); ok(b, "11, 15, 17, 18");
-    ok(b.key(b.find(Key(18))).value(), 18); ok(b.delete(Key(18)), true); ok(b, "11, 15, 17");
-    ok(b.key(b.find(Key(11))).value(), 11); ok(b.delete(Key(11)), true); ok(b, "15, 17");
-    ok(b.key(b.find(Key(17))).value(), 17); ok(b.delete(Key(17)), true); ok(b, "15");
-    ok(b.key(b.find(Key(15))).value(), 15); ok(b.delete(Key(15)), true); ok(b, "");
+    ok(b.key(new Slot(b.find(Key(14)))).value(), 14); ok(b.delete(Key(14)), true); ok(b, "11, 12, 13, 15, 16, 17, 18");
+    ok(b.key(new Slot(b.find(Key(12)))).value(), 12); ok(b.delete(Key(12)), true); ok(b, "11, 13, 15, 16, 17, 18");
+    ok(b.key(new Slot(b.find(Key(13)))).value(), 13); ok(b.delete(Key(13)), true); ok(b, "11, 15, 16, 17, 18");
+    ok(b.key(new Slot(b.find(Key(16)))).value(), 16); ok(b.delete(Key(16)), true); ok(b, "11, 15, 17, 18");
+    ok(b.key(new Slot(b.find(Key(18)))).value(), 18); ok(b.delete(Key(18)), true); ok(b, "11, 15, 17");
+    ok(b.key(new Slot(b.find(Key(11)))).value(), 11); ok(b.delete(Key(11)), true); ok(b, "15, 17");
+    ok(b.key(new Slot(b.find(Key(17)))).value(), 17); ok(b.delete(Key(17)), true); ok(b, "15");
+    ok(b.key(new Slot(b.find(Key(15)))).value(), 15); ok(b.delete(Key(15)), true); ok(b, "");
 
     ok(b.locate(Key(10)), null); ok(b.delete(Key(10)), false);
    }
