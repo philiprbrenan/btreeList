@@ -263,11 +263,12 @@ class Tree extends Test                                                         
      {if (!full()) return null;                                                 // Only full leaves can be split
       final int Count = splitSize();
       int s = 0;                                                                // Count slots used
-      final int S = numberOfSlots();
-      for (int i = 0; i < S; i++)                                               // Each slot
-       {if (usedSlots(new Slots.Slot(i)))                                                       // Slot is in use
-         {if (s++ < Count) Right.clearSlotAndRef(i);                            // Still in left leaf
-          else                   clearSlotAndRef(i);                            // Clear slot being used in right leaf
+      final int N = numberOfSlots();
+      for (int i = 0; i < N; i++)                                               // Each slot
+       {final Slot S = new Slots.Slot(i);
+        if (usedSlots(S))                                                       // Slot is in use
+         {if (s++ < Count) Right.clearSlotAndRef(S);                            // Still in left leaf
+          else                   clearSlotAndRef(S);                            // Clear slot being used in right leaf
          }
        }                                                                        // The new right leaf
       redistribute(); Right.redistribute();
@@ -516,19 +517,20 @@ class Tree extends Test                                                         
       Key  sk = null;                                                           // Splitting key
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Each slot
-       {if (usedSlots(new Slots.Slot(i)))                                                       // Slot is in use
+       {final Slots.Slot I = new Slots.Slot(i);                                 // Slot is in use
+        if (usedSlots(I))                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left branch
-           {Right.clearSlotAndRef(i);                                           // Free the entry from the right branch as it is being used in the left branch
+           {Right.clearSlotAndRef(I);                                           // Free the entry from the right branch as it is being used in the left branch
             s++;                                                                // Number of entries active in left branch
            }
           else if (s == Count)                                                  // Splitting key
-           {sk = keys(new Slots.Slot(i));
+           {sk = keys(I);
             top(data(i));
-                  clearSlotAndRef(i);
-            Right.clearSlotAndRef(i);
+                  clearSlotAndRef(I);
+            Right.clearSlotAndRef(I);
             s++;                                                                // Number of entries active in left branch
            }
-          else clearSlotAndRef(i);                                              // Clear slot being used in right branch
+          else clearSlotAndRef(I);                                              // Clear slot being used in right branch
          }
        }                                                                        // The new right branch
       redistribute(); Right.redistribute();
@@ -679,7 +681,7 @@ class Tree extends Test                                                         
        {final Leaf l = (Leaf)L;
         final Leaf r = (Leaf)(Right != null ? data(Right) : top());             // Right leaf sibling
         if (r.mergeFromLeft(l))                                                 // Merge left sibling into right
-         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
+         {clearSlotAndRef(new Slots.Slot(left));                                // Remove left sibling from parent now that it has been merged with its right sibling
           return true;
          }
        }
@@ -687,7 +689,7 @@ class Tree extends Test                                                         
        {final Branch l = (Branch)L;
         final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
         if (r.mergeFromLeft(keys(new Slots.Slot(left)), l))                     // Merge left sibling into right
-         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
+         {clearSlotAndRef(new Slots.Slot(left));                                // Remove left sibling from parent now that it has been merged with its right sibling
           l.free();
           return true;
          }
@@ -972,7 +974,7 @@ Tree.debug = true;
    {if (root() == null) return;                                                 // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
-    f.leaf.clearSlotAndRef(f.locate.at.value());                                // Delete key and data from leaf
+    f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
     mergeAlongPath(Key);
    }
 
