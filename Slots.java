@@ -59,7 +59,12 @@ public class Slots extends Test                                                 
 
 //D2 Keys                                                                       // Define a key
 
-  public record Key(int value) {}                                               // A key
+  public static final class Key
+   {final int value;
+    Key(  int Value) {value = Value;}                                           // A key
+    int value()       {return value;}
+   }
+
   static Key    Key(int Key)   {return new Key(Key);}
 
 //D2 Slots                                                                      // Manage the slots
