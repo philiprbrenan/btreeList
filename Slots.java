@@ -32,7 +32,7 @@ public class Slots extends Test                                                 
 
   void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                // Set memory to be used
 
-  static Slots fake(Slot Name)                                                   // Slots used during testing to mock attached branches and leaves
+  static Slots fake(Slot Name)                                                  // Slots used during testing to mock attached branches and leaves
    {final Slots s = new Slots(0);
     s.name(Name);
     return s;
@@ -55,14 +55,18 @@ public class Slots extends Test                                                 
   int numberOfRefs()  {return numberOfRefs;}
   int numberOfSlots() {return numberOfRefs() * 2;}                              // Number of slots from number of ref
 
-  public record Slot(int value) {}                                              // A reference to slots
+  public static final class Slot                                                // A reference to slots
+   {final int value;
+    Slot( int Value)  {value = Value;}                                           // A key
+    int       value() {return  value;}
+   }
 
 //D2 Keys                                                                       // Define a key
 
   public static final class Key
    {final int value;
-    Key(  int Value) {value = Value;}                                           // A key
-    int value()       {return value;}
+    Key(  int Value)  {value = Value;}                                           // A key
+    int       value() {return  value;}
    }
 
   static Key    Key(int Key)   {return new Key(Key);}
@@ -88,7 +92,7 @@ public class Slots extends Test                                                 
    }
 
   protected void clearSlotAndRef(int I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
-  protected Slot           slots(int I) {return  new Slot(memory.slots(I));}         // The indexed slot
+  protected Slot           slots(int I) {return  new Slot(memory.slots(I));}    // The indexed slot
   protected boolean    usedSlots(int I) {return  memory.usedSlots (I);}         // The indexed slot usage indicator
   protected boolean     usedRefs(int I) {return  memory.usedRefs  (I);}         // The indexed reference usage indicator
   Key                       keys(int I) {return  new Key(memory.keys(memory.slots(I)));} // The indexed key
