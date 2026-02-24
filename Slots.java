@@ -286,7 +286,8 @@ public class Slots extends Test                                                 
       usedSlots(I, false); slots(I, new Slot(0));
      }
     for (int i = 0; i < numberOfRefs; i++)
-     {usedRefs(new Slot(i), false); key(new Slot(i), Key(0));
+     {final Slot I = new Slot(i);
+      usedRefs(I, false); key(I, Key(0));
      }
    }
 
@@ -333,13 +334,13 @@ public class Slots extends Test                                                 
          usedRefs(I, l. usedRefs(I));
              keys(I, l.     keys(I));
        }
-      else if (r.usedSlots(new Slot(i)))
+      else if (r.usedSlots(I))
        {    slots(I, r.    slots(I));
         usedSlots(I, r.usedSlots(I));
          usedRefs(I, r. usedRefs(I));
              keys(I, r.     keys(I));
        }
-      else {usedSlots(new Slot(i), false); usedRefs(new Slot(i), false);}
+      else {usedSlots(I, false); usedRefs(I, false);}
      }
    }
 
