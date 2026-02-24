@@ -91,16 +91,16 @@ public class Slots extends Test                                                 
      }
    }
 
-  protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);}               // Remove a key from the slots
-  protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}                  // The indexed slot
-  protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}                       // The indexed slot usage indicator
-  protected boolean     usedRefs(Slot I) {return  memory.usedRefs  (I.value());}                       // The indexed reference usage indicator
-  Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));}      // The indexed key
+  protected void clearSlotAndRef(Slot I) {freeRef(memory.slots     (I.value())); clearSlots(I.value());}// Remove a key from the slots
+  protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}                   // The indexed slot
+  protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}                        // The indexed slot usage indicator
+  protected boolean     usedRefs(Slot I) {return  memory.usedRefs  (I.value());}                        // The indexed reference usage indicator
+  Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));}       // The indexed key
 
-  protected void     slots(Slot I, Slot    Ref)   {memory.slots    (I.value(), Ref.value());}          // The indexed slot
-  protected void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                // The indexed slot usage indicator
-  protected void  usedRefs(Slot I, boolean Value) {memory.usedRefs (I.value(), Value);}                // The indexed reference usage indicator
-            void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
+  protected void     slots(Slot I, Slot    Ref)   {memory.slots    (I.value(), Ref.value());}           // The indexed slot
+  protected void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                 // The indexed slot usage indicator
+  protected void  usedRefs(Slot I, boolean Value) {memory.usedRefs (I.value(), Value);}                 // The indexed reference usage indicator
+            void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());}  // The indexed key
 
   protected Key  key(Slot I)         {return new Key(memory.keys(I.value()));}  // Get the key directly
   protected void key(Slot I, Key Key) {memory.keys(I.value(), Key.value());}    // Set the key directly
@@ -479,7 +479,7 @@ public class Slots extends Test                                                 
   public boolean delete(Key Key)                                                // Delete the specified key
    {final Integer i = locate(Key);                                              // Locate the search key
     if (i == null) return false;                                                // Their key is not in the slots
-    clearSlotAndRef(i);                                                         // Delete key
+    clearSlotAndRef(new Slot(i));                                               // Delete key
     return true;                                                                // Indicate that the key was deleted
    }
 
