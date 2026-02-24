@@ -273,10 +273,11 @@ public class Slots extends Test                                                 
     reset();
     int p = 0;
     for (int i = 0; i < N; i++)                                                 // Each slot
-     {if (d.usedSlots(new Slot(i)))                                                       // Each used slot
-       {usedSlots(new Slot(p), true); usedRefs(new Slot(p), true);
-            slots(new Slot(p), new Slot(p));
-             keys(new Slot(p), d.keys(new Slot(i)));
+     {final Slot I = new Slot(i), P = new Slot(p);
+      if (d.usedSlots(I))                                                       // Each used slot
+       {usedSlots(P, true); usedRefs(P, true);
+            slots(P, P);
+             keys(P, d.keys(I));
         ++p;
        }
      }
@@ -287,10 +288,11 @@ public class Slots extends Test                                                 
     final Slots d = duplicateSlots(); reset();
     int p = numberOfRefs - 1;
     for (int i = numberOfSlots() - 1; i >= 0; --i)
-     {if (d.usedSlots(new Slot(i)))
-       {usedSlots(new Slot(p), true); usedRefs(new Slot(p), true);
-            slots(new Slot(p), new Slot(p));
-             keys(new Slot(p), d.keys(new Slot(i)));
+     {final Slot I = new Slot(i), P = new Slot(p);
+      if (d.usedSlots(I))
+       {usedSlots(P, true); usedRefs(P, true);
+            slots(P, P);
+             keys(P, d.keys(I));
         --p;
        }
      }
