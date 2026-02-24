@@ -92,7 +92,7 @@ public class Slots extends Test                                                 
    }
 
   protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
-  protected Slot           slots(int  I) {return  new Slot(memory.slots(I));}   // The indexed slot
+  protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}   // The indexed slot
   protected boolean    usedSlots(int  I) {return  memory.usedSlots (I);}        // The indexed slot usage indicator
   protected boolean     usedRefs(int  I) {return  memory.usedRefs  (I);}        // The indexed reference usage indicator
   Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));} // The indexed key
@@ -226,14 +226,14 @@ public class Slots extends Test                                                 
    {if (Width > 0)                                                              // Shift up including the current slot
      {for (int i = Width; i > 0; --i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
-        slots(p, slots(p-1));                                                   // Move slot
+        slots(p, slots(new Slot(p-1)));                                                   // Move slot
        }
       usedSlots(Position+Width, true);                                          // We only move occupied slots
      }
     else if (Width < 0)                                                         // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
      {for (int i = Width; i < 0; ++i)                                           // Move each slot
        {final int p = Position+i;                                               // Index of target
-        slots(p, slots(p+1));                                                   // Move slot
+        slots(p, slots(new Slot(p+1)));                                                   // Move slot
        }
       usedSlots(Position+Width, true);                                          // We only move occupied slots
      }
@@ -248,7 +248,7 @@ public class Slots extends Test                                                 
     int p = remainder / 2;                                                      // Start position for first used slot
     for (int i = 0; i < N; ++i)                                                 // Redistribute slots
      {if (usedSlots(i))                                                         // Redistribute active slots
-       {s[p] = slots(i).value(); u[p] = true; p += space+1;                     // Spread the used slots out
+       {s[p] = slots(new Slot(i)).value(); u[p] = true; p += space+1;                     // Spread the used slots out
        }
      }
     for(int i = 0; i < N; ++i)                                                  // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
@@ -301,13 +301,13 @@ public class Slots extends Test                                                 
     reset();
     for (int i = 0; i < numberOfRefs; ++i)
      {if (l.usedSlots(i))
-       {    slots(i, l.    slots(i));
+       {    slots(i, l.    slots(new Slot(i)));
         usedSlots(i, l.usedSlots(i));
          usedRefs(i, l. usedRefs(i));
              keys(new Slot(i), l.     keys(new Slot(i)));
        }
       else if (r.usedSlots(i))
-       {    slots(i, r.    slots(i));
+       {    slots(i, r.    slots(new Slot(i)));
         usedSlots(i, r.usedSlots(i));
          usedRefs(i, r. usedRefs(i));
              keys(new Slot(i), r.     keys(new Slot(i)));
@@ -445,7 +445,7 @@ public class Slots extends Test                                                 
 
   public Integer find(Key Key)                                                  // Find the index of the current key in the slots
    {final Integer i = locate(Key);
-    return i == null ? null : slots(i).value();
+    return i == null ? null : slots(new Slot(i)).value();
    }
 
   public boolean delete(Key Key)                                                // Delete the specified key
@@ -472,7 +472,7 @@ public class Slots extends Test                                                 
     s.append("positions: ");
     for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
     s.append("\nslots    : ");
-    for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(i).value()));
+    for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
     s.append("\nusedSlots: ");
     for (int i = 0; i < N; i++) s.append(usedSlots(i) ? "   X" : "   .");
     s.append("\nusedRefs : ");
