@@ -57,7 +57,7 @@ public class Slots extends Test                                                 
 
   public static final class Slot                                                // A reference to slots
    {final int value;
-    Slot( int Value)  {value = Value;}                                           // A key
+    Slot( int Value)  {value = Value;}                                          // A key
     int       value() {return  value;}
    }
 
@@ -65,7 +65,7 @@ public class Slots extends Test                                                 
 
   public static final class Key
    {final int value;
-    Key(  int Value)  {value = Value;}                                           // A key
+    Key(  int Value)  {value = Value;}                                          // A key
     int       value() {return  value;}
    }
 
@@ -92,14 +92,14 @@ public class Slots extends Test                                                 
    }
 
   protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
-  protected Slot           slots(int  I) {return  new Slot(memory.slots(I));}    // The indexed slot
-  protected boolean    usedSlots(int  I) {return  memory.usedSlots (I);}         // The indexed slot usage indicator
-  protected boolean     usedRefs(int  I) {return  memory.usedRefs  (I);}         // The indexed reference usage indicator
+  protected Slot           slots(int  I) {return  new Slot(memory.slots(I));}   // The indexed slot
+  protected boolean    usedSlots(int  I) {return  memory.usedSlots (I);}        // The indexed slot usage indicator
+  protected boolean     usedRefs(int  I) {return  memory.usedRefs  (I);}        // The indexed reference usage indicator
   Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));} // The indexed key
 
   protected void     slots(int  I, Slot    Ref)   {memory.slots    (I, Ref.value());}  // The indexed slot
-  protected void usedSlots(int  I, boolean Value) {memory.usedSlots(I, Value);}  // The indexed slot usage indicator
-  protected void  usedRefs(int  I, boolean Value) {memory.usedRefs (I, Value);}  // The indexed reference usage indicator
+  protected void usedSlots(int  I, boolean Value) {memory.usedSlots(I, Value);} // The indexed slot usage indicator
+  protected void  usedRefs(int  I, boolean Value) {memory.usedRefs (I, Value);} // The indexed reference usage indicator
             void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
 
   protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
@@ -178,13 +178,13 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot - this is not actually an error.
    }
 
-  Slot locateFirstUsedSlot()                                                 // Absolute position of the first slot in use
+  Slot locateFirstUsedSlot()                                                    // Absolute position of the first slot in use
    {final int N = numberOfSlots();
     for (int i = 0; i < N; ++i)                  if ( usedSlots(i)) return new Slot(i);
     return null;                                                                // No free slot
    }
 
-  Slot locateLastUsedSlot()                                                  // Absolute position of the last slot in use
+  Slot locateLastUsedSlot()                                                     // Absolute position of the last slot in use
    {for (int i = numberOfSlots()-1; i >= 0; i--) if ( usedSlots(i)) return new Slot(i);
     return null;                                                                // No free slot
    }
@@ -394,9 +394,9 @@ public class Slots extends Test                                                 
      {at = At; above = Above; below = Below;
      }
 
-    void above(Slot At) {pos(At, true, false);}                                  // Their search key is above this key
-    void below(Slot At) {pos(At, false, true);}                                  // Their search key is below this key
-    void found(Slot At) {pos(At, true,  true);}                                  // Found their search key
+    void above(Slot At) {pos(At, true, false);}                                 // Their search key is above this key
+    void below(Slot At) {pos(At, false, true);}                                 // Their search key is below this key
+    void found(Slot At) {pos(At, true,  true);}                                 // Found their search key
     void none ()       {}                                                       // Slots are empty
 
     boolean exact() {return above && below;}                                    // Oh America - my new found land.
@@ -404,14 +404,14 @@ public class Slots extends Test                                                 
     Locate(Key Key)                                                             // Locate the slot containing the search key if possible.
      {final int N = numberOfSlots();
       if (empty()) {none(); return;}                                            // Empty so their search key cannot be found
-      Slot a = locateFirstUsedSlot(), b = locateLastUsedSlot();              // Lower limit, upper limit
-      if ( eq(Key, a)) {found(a); return;}                            // Found at the start of the range
-      if ( eq(Key, b)) {found(b); return;}                            // Found at the end of the range
-      if ( le(Key, a)) {below(a); all = true; return;}                // Smaller than any key
-      if (!le(Key, b)) {above(b); all = true; return;}                // Greater than any key
+      Slot a = locateFirstUsedSlot(), b = locateLastUsedSlot();                 // Lower limit, upper limit
+      if ( eq(Key, a)) {found(a); return;}                                      // Found at the start of the range
+      if ( eq(Key, b)) {found(b); return;}                                      // Found at the end of the range
+      if ( le(Key, a)) {below(a); all = true; return;}                          // Smaller than any key
+      if (!le(Key, b)) {above(b); all = true; return;}                          // Greater than any key
 
       for(int i = 0; i < N; ++i)                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
-       {final Slot M = new Slot((a.value() + b.value()) / 2);                                   // Desired mid point - but there might not be a slot in use at this point
+       {final Slot M = new Slot((a.value() + b.value()) / 2);                   // Desired mid point - but there might not be a slot in use at this point
         final int ma = locatePrevUsedSlot(M);                                   // Occupied slot preceding mid point
         final int mb = locateNextUsedSlot(M);                                   // Occupied slot succeeding mid point
 
@@ -420,8 +420,8 @@ public class Slots extends Test                                                 
         else if (mb != a.value() && ge(Key, new Slot(mb))) a = new Slot(mb);
         else if (mb != b.value() && le(Key, new Slot(mb))) b = new Slot(mb);
         else                                                                    // The slots must be adjacent
-         {if (eq(Key, a)) {found(a); return;};                        // Found the search key at the lower end
-          if (eq(Key, b)) {found(b); return;};                        // Found the search key at the upper end
+         {if (eq(Key, a)) {found(a); return;};                                  // Found the search key at the lower end
+          if (eq(Key, b)) {found(b); return;};                                  // Found the search key at the upper end
           below(b);
           return;
          }                                                                      // New mid point
@@ -508,7 +508,7 @@ public class Slots extends Test                                                 
    {final ByteBuffer bytes;                                                     // Bytes used by this set of slots
     final BitSet usedSlotsBits = new BitSet(numberOfSlots())                    // Bit storage for used slots
      {void setByte(int Index, byte Value) {bytes.put(posUsedSlots+Index, Value);} // Save used slot bit
-      byte getByte(int Index)      {return bytes.get(posUsedSlots+Index);}        // Get used slot bit
+      byte getByte(int Index)      {return bytes.get(posUsedSlots+Index);}      // Get used slot bit
      };
     final BitSet usedRefsBits  = new BitSet(numberOfRefs)                       // Bit storage for used refs
      {void setByte(int Index, byte Value) {bytes.put(posUsedRefs+Index, Value);}// Save used ref bit
