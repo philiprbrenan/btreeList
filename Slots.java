@@ -92,12 +92,12 @@ public class Slots extends Test                                                 
    }
 
   protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
-  protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}   // The indexed slot
-  protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}        // The indexed slot usage indicator
-  protected boolean     usedRefs(int  I) {return  memory.usedRefs  (I);}        // The indexed reference usage indicator
+  protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}    // The indexed slot
+  protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}         // The indexed slot usage indicator
+  protected boolean     usedRefs(Slot I) {return  memory.usedRefs  (I.value());}         // The indexed reference usage indicator
   Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));} // The indexed key
 
-  protected void     slots(int  I, Slot    Ref)   {memory.slots    (I, Ref.value());}  // The indexed slot
+  protected void     slots(int  I, Slot    Ref)   {memory.slots    (I, Ref.value());}    // The indexed slot
   protected void usedSlots(int  I, boolean Value) {memory.usedSlots(I, Value);} // The indexed slot usage indicator
   protected void  usedRefs(int  I, boolean Value) {memory.usedRefs (I, Value);} // The indexed reference usage indicator
             void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
@@ -115,7 +115,7 @@ public class Slots extends Test                                                 
 
   private int allocRef()                                                        // Allocate a reference to one of their keys. A linear search is used here because in hardware this will be done in parallel
    {for (int i = 0; i < numberOfRefs; i++)
-     {if (!usedRefs(i))
+     {if (!usedRefs(new Slot(i)))
        {usedRefs(i, true);
         return i;
        }
@@ -303,13 +303,13 @@ public class Slots extends Test                                                 
      {if (l.usedSlots(new Slot(i)))
        {    slots(i, l.    slots(new Slot(i)));
         usedSlots(i, l.usedSlots(new Slot(i)));
-         usedRefs(i, l. usedRefs(i));
+         usedRefs(i, l. usedRefs(new Slot(i)));
              keys(new Slot(i), l.     keys(new Slot(i)));
        }
       else if (r.usedSlots(new Slot(i)))
        {    slots(i, r.    slots(new Slot(i)));
         usedSlots(i, r.usedSlots(new Slot(i)));
-         usedRefs(i, r. usedRefs(i));
+         usedRefs(i, r. usedRefs(new Slot(i)));
              keys(new Slot(i), r.     keys(new Slot(i)));
        }
       else {usedSlots(i, false); usedRefs(i, false);}
@@ -476,7 +476,7 @@ public class Slots extends Test                                                 
     s.append("\nusedSlots: ");
     for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "   X" : "   .");
     s.append("\nusedRefs : ");
-    for (int i = 0; i < R; i++) s.append(usedRefs (i)           ? "   X" : "   .");
+    for (int i = 0; i < R; i++) s.append(usedRefs (new Slot(i)) ? "   X" : "   .");
     s.append("\nkeys     : ");
     for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(i) != null ? key(i).value() : 0));
     return ""+s+"\n";
