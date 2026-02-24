@@ -59,14 +59,6 @@ public class Slots extends Test                                                 
    {final int value;
     Slot( int Value)  {value = Value;}                                          // A key
     int       value() {return  value;}
-    Slot left()                                                                 // Step left
-     {final int i = value();
-      return i == 0 ? null : new Slot(i-1);
-     }
-    Slot right(int NumberOfSlots)                                               // Step right
-     {final int i = value();
-      return i >= NumberOfSlots ? null : new Slot(i-1);
-     }
    }
 
 //D2 Keys                                                                       // Define a key
@@ -197,14 +189,14 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot
    }
 
-  Slot locatePrevUsedSlot(Slot Position)                                        // Absolute position of this slot if it is in use or else the next lower used slot
-   {for (int i = Position.value(); i >= 0; i--)  if ( usedSlots(new Slot(i))) return new Slot(i);
+  Integer locatePrevUsedSlot(Slot Position)                                     // Absolute position of this slot if it is in use or else the next lower used slot
+   {for (int i = Position.value(); i >= 0; i--)  if ( usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
-  Slot locateNextUsedSlot(Slot Position)                                        // Absolute position of this slot if it is in use or else the next higher used slot
+  Integer locateNextUsedSlot(Slot Position)                                     // Absolute position of this slot if it is in use or else the next higher used slot
    {final int N = numberOfSlots();
-    for (int i = Position.value(); i < N; ++i)   if ( usedSlots(new Slot(i))) return new Slot(i);
+    for (int i = Position.value(); i < N; ++i)   if ( usedSlots(new Slot(i))) return i;
     return null;                                                                // No free slot
    }
 
@@ -348,15 +340,15 @@ public class Slots extends Test                                                 
 
 //D1 High level operations                                                      // Find, insert, delete values in the slots
 
-  public Slot insert(Key Key)                                                // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
+  public Integer insert(Key Key)                                                // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
    {final int N = numberOfSlots();
     if (full()) return null;                                                    // No slot available in which to insert a new key
-    final Slot slot = new Slot(allocRef());                                     // The location in which to store the search key
-    key(slot, Key);                                                             // Store the new key in the referenced location
+    final int slot = allocRef();                                                // The location in which to store the search key
+    key(new Slot(slot), Key);                                                   // Store the new key in the referenced location
     final Locate l = new Locate(Key);                                           // Search for the slot containing the key closest to their search key
     if ( l.above && l.below) {}                                                 // Found
     else if (!l.above && !l.below)                                              // Empty place the key in the middle
-     {slots    (new Slot(N/2), slot);
+     {slots    (new Slot(N/2), new Slot(slot));
       usedSlots(new Slot(N/2), true);
      }
     else if (l.above)                                                           // Insert their key above the found key
@@ -364,12 +356,12 @@ public class Slots extends Test                                                 
       final int w = locateNearestFreeSlot(l.at);                                // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift    (i+1, w-1);                                                    // Liberate a slot at this point
-        slots    (new Slot(i+1), slot);                                         // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+        slots    (new Slot(i+1), new Slot(slot));                               // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
         usedSlots(new Slot(i+1), true);
        }
       else if (w < 0)                                                           // Liberate a slot below the current slot
        {shift(i, w);                                                            // Shift any intervening slots blocking the slot below
-        slots(new Slot(i), slot);                                               // Insert into the slot below
+        slots(new Slot(i), new Slot(slot));                                     // Insert into the slot below
        }
       if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();         // Redistribute if the used slots are densely packed
      }
@@ -378,11 +370,11 @@ public class Slots extends Test                                                 
       final int w = locateNearestFreeSlot(l.at);                                // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift(i, w);                                                            // Liberate a slot at this point
-        slots(l.at, slot);                                                      // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+        slots(l.at, new Slot(slot));                                            // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
        }
       else if (w < 0)                                                           // Liberate a slot below the current slot
        {shift    (i-1, w + 1);                                                  // Shift any intervening slots blocking the slot below
-        slots    (new Slot(i-1), slot);                                         // Insert into the slot below
+        slots    (new Slot(i-1), new Slot(slot));                               // Insert into the slot below
         usedSlots(new Slot(i-1), true);                                         // Mark the free slot at the start of the range of occupied slots as now in use
        }
       if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();         // Redistribute if the used slots are densely packed
@@ -426,13 +418,13 @@ public class Slots extends Test                                                 
 
       for(int i = 0; i < N; ++i)                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {final Slot M = new Slot((a.value() + b.value()) / 2);                   // Desired mid point - but there might not be a slot in use at this point
-        final Slot ma = locatePrevUsedSlot(M);                                   // Occupied slot preceding mid point
-        final Slot mb = locateNextUsedSlot(M);                                   // Occupied slot succeeding mid point
+        final int ma = locatePrevUsedSlot(M);                                   // Occupied slot preceding mid point
+        final int mb = locateNextUsedSlot(M);                                   // Occupied slot succeeding mid point
 
-        if      (ma.value() != a.value() && ge(Key, ma)) a = ma;
-        else if (ma.value() != b.value() && le(Key, ma)) b = ma;
-        else if (mb.value() != a.value() && ge(Key, mb)) a = mb;
-        else if (mb.value() != b.value() && le(Key, mb)) b = mb;
+        if      (ma != a.value() && ge(Key, new Slot(ma))) a = new Slot(ma);
+        else if (ma != b.value() && le(Key, new Slot(ma))) b = new Slot(ma);
+        else if (mb != a.value() && ge(Key, new Slot(mb))) a = new Slot(mb);
+        else if (mb != b.value() && le(Key, new Slot(mb))) b = new Slot(mb);
         else                                                                    // The slots must be adjacent
          {if (eq(Key, a)) {found(a); return;};                                  // Found the search key at the lower end
           if (eq(Key, b)) {found(b); return;};                                  // Found the search key at the upper end
@@ -448,8 +440,7 @@ public class Slots extends Test                                                 
    {final Locate l = new Locate(Key);
     if (l.at == null) return null;
     if (l.below) return l.at.value();
-    final Slot s = locateNextUsedSlot(new Slot(l.at.value()+1));
-    return s != null ? s.value() : null;
+    return locateNextUsedSlot(new Slot(l.at.value()+1));
    }
 
   public Integer locate(Key Key)                                                // Locate the slot containing the current search key if possible.
@@ -600,10 +591,10 @@ public class Slots extends Test                                                 
 
     ok(b.locateFirstUsedSlot().value(),      2);
     ok(b.locateLastUsedSlot ().value(),      13);
-    ok(b.locatePrevUsedSlot(new Slot( 9)).value(),     9);
-    ok(b.locatePrevUsedSlot(new Slot(10)).value(),     9);
-    ok(b.locateNextUsedSlot(new Slot(10)).value(),    11);
-    ok(b.locateNextUsedSlot(new Slot(11)).value(),    11);
+    ok(b.locatePrevUsedSlot(new Slot( 9)),     9);
+    ok(b.locatePrevUsedSlot(new Slot(10)),     9);
+    ok(b.locateNextUsedSlot(new Slot(10)),    11);
+    ok(b.locateNextUsedSlot(new Slot(11)),    11);
     ok(b.locateFirstEmptySlot(),     0);
     ok(b.locateLastEmptySlot(),     15);
     ok(b.locatePrevEmptySlot(4),     4);
@@ -611,8 +602,8 @@ public class Slots extends Test                                                 
     ok(b.locateNextEmptySlot(4),     4);
     ok(b.locateNextEmptySlot(5),     8);
 
-    ok(b.locatePrevUsedSlot (new Slot( 1)) == null, true);
-    ok(b.locateNextUsedSlot (new Slot(14)) == null, true);
+    ok(b.locatePrevUsedSlot (new Slot( 1)),   null);
+    ok(b.locateNextUsedSlot (new Slot(14)),   null);
 
     b.setSlots(0, 15);
     ok(b.locatePrevEmptySlot( 0),   null);
@@ -732,7 +723,7 @@ keys     :   28   0  26   0  24   0   0  22
     ok(b.locateFirstGe(Key(23)),    5);
     ok(b.locateFirstGe(Key(24)),    5);
     ok(b.locateFirstGe(Key(25)),    9);
-    ok(b.locateFirstGe(Key(30)) == null, true);
+    ok(b.locateFirstGe(Key(30)), null);
    }
 
   static void test_compactLeft()
