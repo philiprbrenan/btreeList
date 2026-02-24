@@ -185,14 +185,14 @@ class Tree extends Test                                                         
   Slots root()                                                                  // Slots repreenting the root of the tree held in memory
    {final Slots.ref r = memory.root();
     final int       s = sizeOfNode;                                             // Root node location
-    if (r.value() == 0) return null;                                                    // Node zero contains the tree base so we can conveneioently use zero as a null pointer as no leaf or branch will occupy node zero.
-    if (r.value() <  0)  return new Leaf(new Slots.ref(-r.value()));                             // Leaf as negative
+    if (r.value() == 0) return null;                                            // Node zero contains the tree base so we can conveneioently use zero as a null pointer as no leaf or branch will occupy node zero.
+    if (r.value() <  0)  return new Leaf(new Slots.ref(-r.value()));            // Leaf as negative
     final Branch b = new Branch(r);
     return b;                                                                   // Branches as positive
    }
 
-  void root(Leaf   Root) {memory.root(Root != null ? -Root.name().value() : 0);}        // Set the root in memory with a negative address to show that it is a leaf
-  void root(Branch Root) {memory.root(Root != null ?  Root.name().value() : 0);}        // Set the root in memory with a positive address to show that it is a branch
+  void root(Leaf   Root) {memory.root(Root != null ? -Root.name().value() : 0);}// Set the root in memory with a negative address to show that it is a leaf
+  void root(Branch Root) {memory.root(Root != null ?  Root.name().value() : 0);}// Set the root in memory with a positive address to show that it is a branch
 
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
@@ -437,7 +437,9 @@ class Tree extends Test                                                         
       return i > 0 ? new Branch(new Slots.ref(i)) : null;
      }
 
-    void up(Branch Branch) {memory.up(Branch != null ? Branch.name().value() : 0);}     // Set name of branch above to the indicated branch
+    void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
+     {memory.up(Branch != null ? Branch.name().value() : 0);
+     }
 
     Integer upIndex()              {return memory.upIndex();}                   // Index of this branch in its parent
     void    upIndex(Integer Value) {memory.upIndex(Value);}                     // Set the index of this branch in its parent
@@ -454,7 +456,8 @@ class Tree extends Test                                                         
 
     Slots   top()                                                               // Top element of this branch
      {final int i = memory.top();
-      return i == 0 ? null :  i > 0 ? new Branch(new Slots.ref(i)) : new Leaf(new Slots.ref(-i));
+      return i == 0 ? null :  i > 0 ? new Branch(new Slots.ref( i)):
+                                      new Leaf  (new Slots.ref(-i));
      }
 
     void free()                                                                 // Free the branch
@@ -721,14 +724,22 @@ class Tree extends Test                                                         
       int  up()   {return bytes.getInt(posUp);}                                 // Parent branch
       void up(int Value) {bytes.putInt(posUp, Value);}
 
-      Integer upIndex() {final int i = bytes.getInt(posUpIndex); return i < 0 ? null : i;}    // Index of this leaf in its parent
-      void    upIndex(Integer Value)  {bytes.putInt(posUpIndex, Value != null ? Value : -1);} // Set the index of this leaf in its parent
+      Integer upIndex()                                                         // Index of this leaf in its parent
+       {final int i = bytes.getInt(posUpIndex); return i < 0 ? null : i;
+       }
+      void    upIndex(Integer Value)                                            // Set the index of this leaf in its parent
+       {bytes.putInt(posUpIndex, Value != null ? Value : -1);
+       }
 
       int  top ()  {return bytes.getInt(posTop);}
       void top (int Top)  {bytes.putInt(posTop, Top);}
 
-      int  data(int Index)      {return bytes.getInt(posData + Index * Integer.BYTES);}
-      void data(int Index, int  Value) {bytes.putInt(posData + Index * Integer.BYTES, Value);}
+      int  data(int Index)
+       {return bytes.getInt(posData + Index * Integer.BYTES);
+       }
+      void data(int Index, int  Value)
+       {bytes.putInt(posData + Index * Integer.BYTES, Value);
+       }
      }
    }
 
@@ -907,7 +918,7 @@ Tree.debug = true;
       P.free();
      }                                                                          // Split full root branch
 
-    for (Branch q = find(Key).leaf.up(), b = q.up(); b != null; q = b, b = q.up())// Path back from leaf to first full branch below a non full branch - the point at which we have to start splitting
+    for (Branch q = find(Key).leaf.up(), b = q.up(); b!=null; q = b, b = q.up())// Path back from leaf to first full branch below a non full branch - the point at which we have to start splitting
      {if (!b.full()) {p = b; break;}
      }
 
@@ -1091,7 +1102,9 @@ Tree.debug = true;
     P.elementAt(L+0).append(s);
     final String U = Parent != null ? "" + Parent.name().value() : "*";
     final String I = Index  != null ? "" + Index                 : "*";
-    if (Details) P.elementAt(L+1).append("("+Leaf.name().value()+", "+U+", "+I+")");
+    if (Details)
+     {P.elementAt(L+1).append("("+Leaf.name().value()+", "+U+", "+I+")");
+     }
     padStrings(P, level);
    }
 
@@ -1129,8 +1142,10 @@ Tree.debug = true;
        }
      }
 
-    if (Details) P.elementAt(L+2).append("{"+(B.top() != null ? B.top().name().value() : "null")+"}");               // Top of branch
-
+    if (Details)                                                                // Top of branch
+     {P.elementAt(L+2).append
+       ("{"+(B.top() != null ? B.top().name().value() : "null")+"}");
+     }
     final boolean l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());          // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
     else if (b) printBranch((Branch)B.top(), P, level+1, Details, B, null);
