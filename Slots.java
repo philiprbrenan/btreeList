@@ -32,7 +32,7 @@ public class Slots extends Test                                                 
 
   void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                // Set memory to be used
 
-  static Slots fake(int Name)                                                   // Slots used during testing to mock attached branches and leaves
+  static Slots fake(ref Name)                                                   // Slots used during testing to mock attached branches and leaves
    {final Slots s = new Slots(0);
     s.name(Name);
     return s;
@@ -45,7 +45,7 @@ public class Slots extends Test                                                 
    }
 
   Slots copySlots(Slots Source)                                                 // Copy the source slots
-   {final int n = name();                                                       // Save name of target
+   {final ref n = name();                                                       // Save name of target
     memory.copySlots(Source.memory);                                            // Copy memory
     name(n);                                                                    // Reload name of target
     return this;                                                                // The copied slots
@@ -55,7 +55,8 @@ public class Slots extends Test                                                 
   int numberOfRefs()  {return numberOfRefs;}
   int numberOfSlots() {return numberOfRefs() * 2;}                              // Number of slots from number of ref
 
-  public record Slot(int  index) {}                                             // A slot
+  public record Slot(int index) {}                                              // A slot
+  public record ref (int value) {}                                              // Result of an allocation
 
 //D2 Keys                                                                       // Define a key
 
@@ -96,8 +97,8 @@ public class Slots extends Test                                                 
   protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
   protected void key(int I, Key Key) {memory.keys(I, Key.value());}             // Set the key directly
 
-  int  name() {return   memory.name();}                                         // Get the name
-  void name(int  Name) {memory.name(Name);}                                     // Set the name
+  ref  name() {return  new ref(memory.name());}                                         // Get the name
+  void name(ref  Name) {memory.name(Name.value());}                                     // Set the name
 
   int  type()  {return memory.type();}                                          // Get the type
   void type(int Type) {memory.type(Type);}                                      // Set the type
@@ -456,7 +457,8 @@ public class Slots extends Test                                                 
   protected String dump()                                                       // Dump the slots
    {final StringBuilder s = new StringBuilder();
     final int N = numberOfSlots(), R = numberOfRefs;
-    s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n", name(), type(), R));
+    s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n",      // Title line
+                            name().value(), type(), R));
     s.append("positions: ");
     for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
     s.append("\nslots    : ");
