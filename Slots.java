@@ -252,14 +252,16 @@ public class Slots extends Test                                                 
        }
      }
     for(int i = 0; i < N; ++i)                                                  // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
-     {slots(new Slot(i), new Slot(s[i])); usedSlots(new Slot(i), u[i]);
+     {final Slot I = new Slot(i);
+      slots(I, new Slot(s[i])); usedSlots(I, u[i]);
      }
    }
 
   void reset()                                                                  // Reset the slots
    {final int N = numberOfSlots();
     for (int i = 0; i < N; i++)
-     {usedSlots(new Slot(i), false); slots(new Slot(i), new Slot(0));
+     {final Slot I = new Slot(i);
+      usedSlots(I, false); slots(I, new Slot(0));
      }
     for (int i = 0; i < numberOfRefs; i++)
      {usedRefs(new Slot(i), false); key(i, Key(0));
