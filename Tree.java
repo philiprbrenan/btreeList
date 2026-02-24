@@ -306,13 +306,9 @@ class Tree extends Test                                                         
      }
 
     Integer insert(Key Key, Data Data)                                          // Insert a key data pair into a leaf
-     {final Slot s = insert(Key);
-      if (s != null)
-       {final Integer i = s.value();
-        if (i != null) data(i, Data);                                             // Save data in allocated reference
-        return i;
-       }
-      return null;
+     {final Integer i = insert(Key);
+      if (i != null) data(i, Data);                                             // Save data in allocated reference
+      return i;
      }
 
     void compactLeft()                                                          // Compact the leaf to the left
@@ -566,13 +562,10 @@ class Tree extends Test                                                         
       return b;
      }
 
-    Slot insert(Key Key, Slots Data)                                            // Insert a key data pair into a branch
-     {final Slot s = insert(Key);
-      if (s != null)
-       {dataDirect(s.value(), Data);
-        return s;
-       }
-      return null;
+    Integer insert(Key Key, Slots Data)                                         // Insert a key data pair into a branch
+     {final Integer i = insert(Key);
+      if (i != null) dataDirect(i, Data);
+      return i;
      }
 
     public String toString()                                                    // Print the values in the used slots
