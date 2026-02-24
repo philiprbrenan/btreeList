@@ -91,7 +91,7 @@ public class Slots extends Test                                                 
      }
    }
 
-  protected void clearSlotAndRef(Slot I) {freeRef(memory.slots     (I.value())); clearSlots(I.value());}// Remove a key from the slots
+  protected void clearSlotAndRef(Slot I) {freeRef(new Slot(memory.slots(I.value()))); clearSlots(I.value());}// Remove a key from the slots
   protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}                   // The indexed slot
   protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}                        // The indexed slot usage indicator
   protected boolean     usedRefs(Slot I) {return  memory.usedRefs  (I.value());}                        // The indexed reference usage indicator
@@ -125,7 +125,7 @@ public class Slots extends Test                                                 
     return -1;
    }
 
-  private void freeRef(int Ref) {usedRefs(new Slot(Ref), false);}               // Free a reference to one of their keys - java checks for array bounds sdo no point in an explicit check.
+  private void freeRef(Slot Ref) {usedRefs(Ref, false);}                        // Free a reference to one of their keys - java checks for array bounds sdo no point in an explicit check.
 
 //D1 Keys                                                                       // Operations on keys
 
