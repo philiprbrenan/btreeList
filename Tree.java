@@ -287,7 +287,7 @@ class Tree extends Test                                                         
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Scan for splitting keys
        {if (usedSlots(i))                                                       // Used slot
-         {if (p == splitSize()-1 || p == splitSize()) k += keys(i).value();     // Accumulate splitting key as last on left and first on right of split
+         {if (p == splitSize()-1 || p == splitSize()) k += keys(new Slots.Slot(i)).value();     // Accumulate splitting key as last on left and first on right of split
           ++p;                                                                  // Next position
          }
        }
@@ -369,7 +369,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+memory.data(slots(i).value()));}
+       {if (usedSlots(i)) {k.add(""+keys(new Slots.Slot(i)).value()); d.add(""+memory.data(slots(i).value()));}
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
      }
@@ -518,7 +518,7 @@ class Tree extends Test                                                         
             s++;                                                                // Number of entries active in left branch
            }
           else if (s == Count)                                                  // Splitting key
-           {sk = keys(i);
+           {sk = keys(new Slots.Slot(i));
             top(data(i));
                   clearSlotAndRef(i);
             Right.clearSlotAndRef(i);
@@ -543,7 +543,7 @@ class Tree extends Test                                                         
       int  k = 0;                                                               // Splitting key
       final int S = numberOfSlots();
       for (int i = 0, p = 0; i < S; i++)                                        // Scan for splitting keys
-       {if (usedSlots(i) && p++ == splitSize()) k += keys(i).value();           // Splitting key as last on left and first on right of split
+       {if (usedSlots(i) && p++ == splitSize()) k += keys(new Slots.Slot(i)).value();           // Splitting key as last on left and first on right of split
        }
       return k;                                                                 // Splitting key
      }
@@ -570,7 +570,7 @@ class Tree extends Test                                                         
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
        {if (usedSlots(i))
-         {k.add(""+keys(i).value()); d.add(""+memory.data(slots(i).value()));
+         {k.add(""+keys(new Slots.Slot(i)).value()); d.add(""+memory.data(slots(i).value()));
          }
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name().value()+"\n";
@@ -671,7 +671,7 @@ class Tree extends Test                                                         
       else                                                                      // Children are branches
        {final Branch l = (Branch)L;
         final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
-        if (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
+        if (r.mergeFromLeft(keys(new Slots.Slot(left)), l))                                     // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
           l.free();
           return true;
@@ -973,7 +973,7 @@ Tree.debug = true;
      {final Leaf l = (Leaf)root();
       final int  i = l.locateFirstUsedSlot().value();
       l.up(null); l.upIndex(i);
-      return new Find(l.keys(i), l);
+      return new Find(l.keys(new Slots.Slot(i)), l);
      }
 
     return goFirst((Branch)root());                                             // Start at root and go all the way first
@@ -989,7 +989,7 @@ Tree.debug = true;
        {final Leaf l = (Leaf)q;
         l.up(p); l.upIndex(P);
         final int       i = l.locateFirstUsedSlot().value();
-        return new Find(l.keys(i), l);
+        return new Find(l.keys(new Slots.Slot(i)), l);
        }
       final Branch b = (Branch)q;
           b.up(p); b.upIndex(P);                                                // Step down into non full branch
@@ -1005,7 +1005,7 @@ Tree.debug = true;
      {final Leaf l = (Leaf)root();
       final int  i = l.locateLastUsedSlot().value();
       l.up(null); l.upIndex(null);
-      return new Find(l.keys(i), l);
+      return new Find(l.keys(new Slots.Slot(i)), l);
      }
 
     return goLast((Branch)root());                                              // Start at root and go all the way last
@@ -1020,7 +1020,7 @@ Tree.debug = true;
        {final Leaf l = (Leaf)q;
         final int  i = l.locateLastUsedSlot().value();
         l.up(p); l.upIndex(null);
-        return new Find(l.keys(i), l);
+        return new Find(l.keys(new Slots.Slot(i)), l);
        }
          ((Branch)q).up(p);
       p = (Branch)q;                                                            // Step down into non full branch
@@ -1035,7 +1035,7 @@ Tree.debug = true;
     if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
 
     final Integer i = l.locateNextUsedSlot(new Slots.Slot(Found.locate.at.value()+1));          // Next slot in leaf
-    if (i != null) return new Find(l.keys(i), l);
+    if (i != null) return new Find(l.keys(new Slots.Slot(i)), l);
     if (l.up().top().name().value() != l.name().value())                        // In the body of the parent branch of the leaf
      {final Integer I = l.up().locateNextUsedSlot(new Slots.Slot(l.upIndex()+1));
       final Leaf    L = I != null ? (Leaf)l.up().data(I) : (Leaf)l.up().top();
@@ -1061,7 +1061,7 @@ Tree.debug = true;
     if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
 
     final Integer i = l.locatePrevUsedSlot(new Slots.Slot(Found.locate.at.value()-1));// Previous slot in leaf
-    if (i != null) return new Find(l.keys(i), l);
+    if (i != null) return new Find(l.keys(new Slots.Slot(i)), l);
 
     if (l.upIndex() == null)                                                    // Last leaf of parent
      {final Integer I = l.up().locateLastUsedSlot().value();
@@ -1099,7 +1099,7 @@ Tree.debug = true;
     final StringJoiner s = new StringJoiner(",");
     final int S = Leaf.numberOfSlots();
     for (int i = 0; i < S; i++)
-     {if (Leaf.usedSlots(i)) s.add(""+Leaf.keys(i).value());
+     {if (Leaf.usedSlots(i)) s.add(""+Leaf.keys(new Slots.Slot(i)).value());
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
@@ -1130,7 +1130,7 @@ Tree.debug = true;
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b) printBranch((Branch)s, P, level+1, Details, B, i);
 
-          P.elementAt(L+0).append(" "+B.keys(i).value());                       // Key
+          P.elementAt(L+0).append(" "+B.keys(new Slots.Slot(i)).value());                       // Key
           if (Details)
            {P.elementAt(L+1).append("["+Branch.name().value()+"."+i+"]");       // Branch, key, next pair
             final String U = Parent != null ? ""+Parent.name().value() : "*";   // Parent up from descent
