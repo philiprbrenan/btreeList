@@ -247,8 +247,9 @@ public class Slots extends Test                                                 
     final boolean[]u = new boolean[N];                                          // New used slots distribution
     int p = remainder / 2;                                                      // Start position for first used slot
     for (int i = 0; i < N; ++i)                                                 // Redistribute slots
-     {if (usedSlots(new Slot(i)))                                                         // Redistribute active slots
-       {s[p] = slots(new Slot(i)).value(); u[p] = true; p += space+1;                     // Spread the used slots out
+     {final Slot I = new Slot(i);
+      if (usedSlots(I))                                                         // Redistribute active slots
+       {s[p] = slots(I).value(); u[p] = true; p += space+1;                     // Spread the used slots out
        }
      }
     for(int i = 0; i < N; ++i)                                                  // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
