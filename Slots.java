@@ -213,14 +213,18 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot
    }
 
-  Integer locateFirstEmptySlot()                                                // Absolute position of the first free slot
+  Slot locateFirstEmptySlot()                                                   // Absolute position of the first free slot
    {final int N = numberOfSlots();
-    for (int i = 0; i < N; ++i)                  if (!usedSlots(new Slot(i))) return i;
+    for (int i = 0; i < N; ++i)
+     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
+     }
     return null;                                                                // No free slot
    }
 
-  Integer locateLastEmptySlot()                                                 // Absolute position of the last free slot
-   {for (int i = numberOfSlots()-1; i >= 0; i--) if (!usedSlots(new Slot(i))) return i;
+  Slot locateLastEmptySlot()                                                    // Absolute position of the last free slot
+   {for (int i = numberOfSlots()-1; i >= 0; i--)
+     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
+     }
     return null;                                                                // No free slot
    }
 
@@ -609,8 +613,8 @@ public class Slots extends Test                                                 
     ok(b.locatePrevUsedSlot(new Slot(10)).value(),     9);
     ok(b.locateNextUsedSlot(new Slot(10)).value(),    11);
     ok(b.locateNextUsedSlot(new Slot(11)).value(),    11);
-    ok(b.locateFirstEmptySlot(),     0);
-    ok(b.locateLastEmptySlot(),     15);
+    ok(b.locateFirstEmptySlot().value(),  0);
+    ok(b.locateLastEmptySlot() .value(), 15);
     ok(b.locatePrevEmptySlot(4),     4);
     ok(b.locatePrevEmptySlot(5),     4);
     ok(b.locateNextEmptySlot(4),     4);
