@@ -91,11 +91,11 @@ public class Slots extends Test                                                 
      }
    }
 
-  protected void clearSlotAndRef(int I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
-  protected Slot           slots(int I) {return  new Slot(memory.slots(I));}    // The indexed slot
-  protected boolean    usedSlots(int I) {return  memory.usedSlots (I);}         // The indexed slot usage indicator
-  protected boolean     usedRefs(int I) {return  memory.usedRefs  (I);}         // The indexed reference usage indicator
-  Key                       keys(int I) {return  new Key(memory.keys(memory.slots(I)));} // The indexed key
+  protected void clearSlotAndRef(int  I) {freeRef(memory.slots     (I)); clearSlots(I);} // Remove a key from the slots
+  protected Slot           slots(int  I) {return  new Slot(memory.slots(I));}    // The indexed slot
+  protected boolean    usedSlots(int  I) {return  memory.usedSlots (I);}         // The indexed slot usage indicator
+  protected boolean     usedRefs(int  I) {return  memory.usedRefs  (I);}         // The indexed reference usage indicator
+  Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));} // The indexed key
 
   protected void     slots(int I, Slot    Ref)   {memory.slots    (I, Ref.value());}  // The indexed slot
   protected void usedSlots(int I, boolean Value) {memory.usedSlots(I, Value);}  // The indexed slot usage indicator
@@ -128,20 +128,20 @@ public class Slots extends Test                                                 
 
 //D1 Keys                                                                       // Operations on keys
 
-  boolean eq(Key Key, Slot Slot) {return Key.value() == keys(Slot.value()).value();}     // Search key is equal to indexed key
-  boolean le(Key Key, Slot Slot) {return Key.value() <= keys(Slot.value()).value();}     // Search key is less than or equal to indexed key
-  boolean lt(Key Key, Slot Slot) {return !eq(Key, Slot) && le(Key, Slot);}       // Search key is less than or equal to indexed key
-  boolean ge(Key Key, Slot Slot) {return  eq(Key, Slot) || gt(Key, Slot);}       // Search key is less than or equal to indexed key
-  boolean gt(Key Key, Slot Slot) {return !le(Key, Slot);}                        // Search key is less than or equal to indexed key
+  boolean eq(Key Key, Slot Slot) {return Key.value() == keys(Slot).value();}    // Search key is equal to indexed key
+  boolean le(Key Key, Slot Slot) {return Key.value() <= keys(Slot).value();}    // Search key is less than or equal to indexed key
+  boolean lt(Key Key, Slot Slot) {return !eq(Key, Slot) && le(Key, Slot);}      // Search key is less than or equal to indexed key
+  boolean ge(Key Key, Slot Slot) {return  eq(Key, Slot) || gt(Key, Slot);}      // Search key is less than or equal to indexed key
+  boolean gt(Key Key, Slot Slot) {return !le(Key, Slot);}                       // Search key is less than or equal to indexed key
 
   Key firstKey()                                                                // First key in slots
    {if (empty()) stop("No first key in empty slots");                           // First key in slots if there is one
-    return keys(locateFirstUsedSlot().value());
+    return keys(locateFirstUsedSlot());
    }
 
   Key lastKey()                                                                 // Last key in slots
    {if (empty()) stop("No last key in empty slots");                            // Last key in slots if there is one
-    return keys(locateLastUsedSlot().value());
+    return keys(locateLastUsedSlot());
    }
 
 //D1 Statistics                                                                 // Query the state of the slots
@@ -276,7 +276,7 @@ public class Slots extends Test                                                 
      {if (d.usedSlots(i))                                                       // Each used slot
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, new Slot(p));
-             keys(p, d.keys(i));
+             keys(p, d.keys(new Slot(i)));
         ++p;
        }
      }
@@ -290,7 +290,7 @@ public class Slots extends Test                                                 
      {if (d.usedSlots(i))
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, new Slot(p));
-             keys(p, d.keys(i));
+             keys(p, d.keys(new Slot(i)));
         --p;
        }
      }
@@ -304,13 +304,13 @@ public class Slots extends Test                                                 
        {    slots(i, l.    slots(i));
         usedSlots(i, l.usedSlots(i));
          usedRefs(i, l. usedRefs(i));
-             keys(i, l.     keys(i));
+             keys(i, l.     keys(new Slot(i)));
        }
       else if (r.usedSlots(i))
        {    slots(i, r.    slots(i));
         usedSlots(i, r.usedSlots(i));
          usedRefs(i, r. usedRefs(i));
-             keys(i, r.     keys(i));
+             keys(i, r.     keys(new Slot(i)));
        }
       else {usedSlots(i, false); usedRefs(i, false);}
      }
@@ -486,7 +486,7 @@ public class Slots extends Test                                                 
    {final StringJoiner s = new StringJoiner(", ");
     final int N = numberOfSlots();
     for (int i = 0; i < N; i++)
-     {if (usedSlots(i)) s.add(""+keys(i).value());
+     {if (usedSlots(i)) s.add(""+keys(new Slot(i)).value());
      }
     return ""+s;
    }
