@@ -265,7 +265,7 @@ class Tree extends Test                                                         
       int s = 0;                                                                // Count slots used
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Each slot
-       {if (usedSlots(i))                                                       // Slot is in use
+       {if (usedSlots(new Slots.Slot(i)))                                                       // Slot is in use
          {if (s++ < Count) Right.clearSlotAndRef(i);                            // Still in left leaf
           else                   clearSlotAndRef(i);                            // Clear slot being used in right leaf
          }
@@ -286,7 +286,7 @@ class Tree extends Test                                                         
       int  p = 0;                                                               // Position in leaf
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Scan for splitting keys
-       {if (usedSlots(i))                                                       // Used slot
+       {if (usedSlots(new Slots.Slot(i)))                                                       // Used slot
          {if (p == splitSize()-1 || p == splitSize()) k += keys(new Slots.Slot(i)).value();     // Accumulate splitting key as last on left and first on right of split
           ++p;                                                                  // Next position
          }
@@ -315,7 +315,7 @@ class Tree extends Test                                                         
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final Data[]d = new Data[R];
       int p = 0;
-      for (int i = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(slots(new Slot(i)).value());
+      for (int i = 0; i < N; i++) if (usedSlots(new Slots.Slot(i))) d[p++] = data(slots(new Slot(i)).value());
       super.compactLeft();
 
       for (int i = 0; i < R; i++) data(i, d[i]);
@@ -325,7 +325,7 @@ class Tree extends Test                                                         
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final Data[]d = new Data[R];
       int p = R-1;
-      for (int i = N-1; i >= 0; --i) if (usedSlots(i)) d[p--] = data(slots(new Slot(i)).value());
+      for (int i = N-1; i >= 0; --i) if (usedSlots(new Slots.Slot(i))) d[p--] = data(slots(new Slot(i)).value());
       super.compactRight();
       for (int i = 0; i < R; i++) data(i, d[i]);
      }
@@ -369,7 +369,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i))
+       {if (usedSlots(new Slots.Slot(i)))
          {final Slot s = new Slot(i);
           k.add(""+keys(s).value());
           d.add(""+memory.data(slots(s).value()));
@@ -474,7 +474,7 @@ class Tree extends Test                                                         
     Slots firstChild()          {return data(locateFirstUsedSlot().value());}   // First child assuming there is one
 
     Slots data(int Index)
-     {return usedSlots(Index) ? dataDirect(slots(new Slot(Index)).value()) : null;
+     {return usedSlots(new Slot(Index)) ? dataDirect(slots(new Slot(Index)).value()) : null;
      }
 
     Slots dataDirect(int Index)
@@ -516,7 +516,7 @@ class Tree extends Test                                                         
       Key  sk = null;                                                           // Splitting key
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Each slot
-       {if (usedSlots(i))                                                       // Slot is in use
+       {if (usedSlots(new Slots.Slot(i)))                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left branch
            {Right.clearSlotAndRef(i);                                           // Free the entry from the right branch as it is being used in the left branch
             s++;                                                                // Number of entries active in left branch
@@ -547,7 +547,7 @@ class Tree extends Test                                                         
       int  k = 0;                                                               // Splitting key
       final int S = numberOfSlots();
       for (int i = 0, p = 0; i < S; i++)                                        // Scan for splitting keys
-       {if (usedSlots(i) && p++ == splitSize()) k += keys(new Slots.Slot(i)).value();           // Splitting key as last on left and first on right of split
+       {if (usedSlots(new Slots.Slot(i)) && p++ == splitSize()) k += keys(new Slots.Slot(i)).value();           // Splitting key as last on left and first on right of split
        }
       return k;                                                                 // Splitting key
      }
@@ -573,7 +573,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i))
+       {if (usedSlots(new Slots.Slot(i)))
          {k.add(""+keys(new Slots.Slot(i)).value());
           d.add(""+memory.data(slots(new Slot(i)).value()));
          }
@@ -605,7 +605,7 @@ class Tree extends Test                                                         
     void compactLeft()                                                          // Compact the branch to the left
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
-      for (int i = 0, p = 0; i < N; i++) if (usedSlots(i)) d[p++] = data(i);
+      for (int i = 0, p = 0; i < N; i++) if (usedSlots(new Slot(i))) d[p++] = data(i);
       super.compactLeft();
       for (int i = 0; i < R; i++) dataDirect(i, d[i]);
      }
@@ -613,7 +613,7 @@ class Tree extends Test                                                         
     void compactRight()                                                         // Compact the branch to the right
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
-      for (int i = N-1, p = R-1; i >= 0;--i) if (usedSlots(i)) d[p--] = data(i);
+      for (int i = N-1, p = R-1; i >= 0;--i) if (usedSlots(new Slot(i))) d[p--] = data(i);
       super.compactRight();
       for (int i = 0; i < R; i++) dataDirect(i, d[i]);
      }
@@ -692,7 +692,7 @@ class Tree extends Test                                                         
 
     Slots child(Integer Index)                                                  // The indexed child. The index must be valid or null - if null, top is returned
      {if (Index == null) return top();                                          // A null index produces top
-      if (!usedSlots(Index)) stop("Indexing unused slot:", Index);              // The slot must be valid
+      if (!usedSlots(new Slot(Index))) stop("Indexing unused slot:", Index);              // The slot must be valid
       return data(Index);                                                       // The indicated child
      }
 
@@ -703,7 +703,7 @@ class Tree extends Test                                                         
      {int n = 0;
       final int S = numberOfSlots();
       for  (int i = 0; i < S; i++)                                              // Each slot
-       {if (usedSlots(i))                                                       // Active slot
+       {if (usedSlots(new Slot(i)))                                                       // Active slot
          {final Slots s = data(i);
           if      (Leaf  .ref(s)) n += s.countUsed();
           else if (Branch.ref(s)) n += ((Branch)s).count();
@@ -1104,7 +1104,7 @@ Tree.debug = true;
     final StringJoiner s = new StringJoiner(",");
     final int S = Leaf.numberOfSlots();
     for (int i = 0; i < S; i++)
-     {if (Leaf.usedSlots(i)) s.add(""+Leaf.keys(new Slots.Slot(i)).value());
+     {if (Leaf.usedSlots(new Slots.Slot(i))) s.add(""+Leaf.keys(new Slots.Slot(i)).value());
      }
     final int L = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(L+0).append(s);
@@ -1127,7 +1127,7 @@ Tree.debug = true;
     if (K > 0)                                                                  // Branch has key, next pairs
      {final int S = B.numberOfSlots();
       for  (int i = 0; i < S; i++)
-       {if (B.usedSlots(i))
+       {if (B.usedSlots(new Slots.Slot(i)))
          {final Slots   s = B.data(i);
           if (s == null) continue;
           final boolean l = Leaf.ref(s), b = Tree.Branch.ref(s);
@@ -1228,7 +1228,7 @@ Tree.debug = true;
     void scan(Branch B)
      {final int S = B.numberOfSlots();
       for  (int i = 0; i < S; i++)
-       {if (B.usedSlots(i))
+       {if (B.usedSlots(new Slots.Slot(i)))
          {final Slots   s = B.data(i);
           final boolean l = Leaf.ref(s), b = Branch.ref(s);
 
