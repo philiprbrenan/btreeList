@@ -185,9 +185,9 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot
    }
 
-  Integer locateNextUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next higher used slot
+  Integer locateNextUsedSlot(Slot Position)                                     // Absolute position of this slot if it is in use or else the next higher used slot
    {final int N = numberOfSlots();
-    for (int i = Position; i < N; ++i)           if ( usedSlots(i)) return i;
+    for (int i = Position.value(); i < N; ++i)   if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
@@ -402,8 +402,8 @@ public class Slots extends Test                                                 
       if (!le(Key, b)) {above(b); all = true; return;}                          // Greater than any key
 
       for(int i = 0; i < N; ++i)                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
-       {final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
-        final int ma = locatePrevUsedSlot(new Slot(M));                         // Occupied slot preceding mid point
+       {final Slot M = new Slot((a + b) / 2);                                   // Desired mid point - but there might not be a slot in use at this point
+        final int ma = locatePrevUsedSlot(M);                                   // Occupied slot preceding mid point
         final int mb = locateNextUsedSlot(M);                                   // Occupied slot succeeding mid point
 
         if      (ma != a && ge(Key, ma)) a = ma;
@@ -425,7 +425,7 @@ public class Slots extends Test                                                 
    {final Locate l = new Locate(Key);
     if (l.at == null) return null;
     if (l.below) return l.at.value();
-    return locateNextUsedSlot(l.at.value()+1);
+    return locateNextUsedSlot(new Slot(l.at.value()+1));
    }
 
   public Integer locate(Key Key)                                                // Locate the slot containing the current search key if possible.
@@ -578,8 +578,8 @@ public class Slots extends Test                                                 
     ok(b.locateLastUsedSlot(),      13);
     ok(b.locatePrevUsedSlot(new Slot( 9)),     9);
     ok(b.locatePrevUsedSlot(new Slot(10)),     9);
-    ok(b.locateNextUsedSlot(10),    11);
-    ok(b.locateNextUsedSlot(11),    11);
+    ok(b.locateNextUsedSlot(new Slot(10)),    11);
+    ok(b.locateNextUsedSlot(new Slot(11)),    11);
     ok(b.locateFirstEmptySlot(),     0);
     ok(b.locateLastEmptySlot(),     15);
     ok(b.locatePrevEmptySlot(4),     4);
@@ -588,7 +588,7 @@ public class Slots extends Test                                                 
     ok(b.locateNextEmptySlot(5),     8);
 
     ok(b.locatePrevUsedSlot (new Slot( 1)),   null);
-    ok(b.locateNextUsedSlot (14),   null);
+    ok(b.locateNextUsedSlot (new Slot(14)),   null);
 
     b.setSlots(0, 15);
     ok(b.locatePrevEmptySlot( 0),   null);
