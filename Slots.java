@@ -300,17 +300,18 @@ public class Slots extends Test                                                 
    {final Slots l = Left, r = Right;
     reset();
     for (int i = 0; i < numberOfRefs; ++i)
-     {if (l.usedSlots(new Slot(i)))
-       {    slots(new Slot(i), l.    slots(new Slot(i)));
-        usedSlots(new Slot(i), l.usedSlots(new Slot(i)));
-         usedRefs(new Slot(i), l. usedRefs(new Slot(i)));
-             keys(new Slot(i), l.     keys(new Slot(i)));
+     {final Slot I = new Slot(i);
+       if (l.usedSlots(I))
+       {    slots(I, l.    slots(I));
+        usedSlots(I, l.usedSlots(I));
+         usedRefs(I, l. usedRefs(I));
+             keys(I, l.     keys(I));
        }
       else if (r.usedSlots(new Slot(i)))
-       {    slots(new Slot(i), r.    slots(new Slot(i)));
-        usedSlots(new Slot(i), r.usedSlots(new Slot(i)));
-         usedRefs(new Slot(i), r. usedRefs(new Slot(i)));
-             keys(new Slot(i), r.     keys(new Slot(i)));
+       {    slots(I, r.    slots(I));
+        usedSlots(I, r.usedSlots(I));
+         usedRefs(I, r. usedRefs(I));
+             keys(I, r.     keys(I));
        }
       else {usedSlots(new Slot(i), false); usedRefs(new Slot(i), false);}
      }
