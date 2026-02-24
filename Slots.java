@@ -97,10 +97,10 @@ public class Slots extends Test                                                 
   protected boolean     usedRefs(int  I) {return  memory.usedRefs  (I);}         // The indexed reference usage indicator
   Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));} // The indexed key
 
-  protected void     slots(int I, Slot    Ref)   {memory.slots    (I, Ref.value());}  // The indexed slot
-  protected void usedSlots(int I, boolean Value) {memory.usedSlots(I, Value);}  // The indexed slot usage indicator
-  protected void  usedRefs(int I, boolean Value) {memory.usedRefs (I, Value);}  // The indexed reference usage indicator
-            void      keys(int I, Key     Key)   {memory.keys(memory.slots(I), Key.value());} // The indexed key
+  protected void     slots(int  I, Slot    Ref)   {memory.slots    (I, Ref.value());}  // The indexed slot
+  protected void usedSlots(int  I, boolean Value) {memory.usedSlots(I, Value);}  // The indexed slot usage indicator
+  protected void  usedRefs(int  I, boolean Value) {memory.usedRefs (I, Value);}  // The indexed reference usage indicator
+            void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());} // The indexed key
 
   protected Key  key(int I)          {return new Key(memory.keys(I));}          // Get the key directly
   protected void key(int I, Key Key) {memory.keys(I, Key.value());}             // Set the key directly
@@ -276,7 +276,7 @@ public class Slots extends Test                                                 
      {if (d.usedSlots(i))                                                       // Each used slot
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, new Slot(p));
-             keys(p, d.keys(new Slot(i)));
+             keys(new Slot(p), d.keys(new Slot(i)));
         ++p;
        }
      }
@@ -290,7 +290,7 @@ public class Slots extends Test                                                 
      {if (d.usedSlots(i))
        {usedSlots(p, true); usedRefs(p, true);
             slots(p, new Slot(p));
-             keys(p, d.keys(new Slot(i)));
+             keys(new Slot(p), d.keys(new Slot(i)));
         --p;
        }
      }
@@ -304,13 +304,13 @@ public class Slots extends Test                                                 
        {    slots(i, l.    slots(i));
         usedSlots(i, l.usedSlots(i));
          usedRefs(i, l. usedRefs(i));
-             keys(i, l.     keys(new Slot(i)));
+             keys(new Slot(i), l.     keys(new Slot(i)));
        }
       else if (r.usedSlots(i))
        {    slots(i, r.    slots(i));
         usedSlots(i, r.usedSlots(i));
          usedRefs(i, r. usedRefs(i));
-             keys(i, r.     keys(new Slot(i)));
+             keys(new Slot(i), r.     keys(new Slot(i)));
        }
       else {usedSlots(i, false); usedRefs(i, false);}
      }
