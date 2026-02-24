@@ -59,6 +59,10 @@ public class Slots extends Test                                                 
    {final int value;
     Slot( int Value)  {value = Value;}                                          // A key
     int       value() {return  value;}
+    Slot left()
+     {final int i = value();
+      return i == 0 ? null : new Slot(i-1);
+     }
    }
 
 //D2 Keys                                                                       // Define a key
