@@ -1106,6 +1106,7 @@ Tree.debug = true;
       L.up(l.up()); L.upIndex(I);
       return new Find(L.lastKey(), L);
      }
+
     for(Branch q = l.up(), p = q.up(); p != null; q = p, p = q.up())            // Go up to the last point where we went left
      {if (q.upIndex() == null)                                                  // In the body of the parent branch of the leaf
        {final Integer I = p.locateLastUsedSlot().value();
@@ -1114,6 +1115,7 @@ Tree.debug = true;
         return goLast(b);
        }
      }
+
     return null;
    }
 
