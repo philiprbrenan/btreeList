@@ -56,13 +56,10 @@ writeFileUsingSavedToken($user, $repo, q(.config/MakeWithPerl.pm),              
 
 if (@java)                                                                      # Write workflow to test java files
  {my @j = map {fn $_} @java;                                                    # Java files
-  my $d = dateTimeStamp;
   my $c = q(com/AppaApps/Silicon);                                              # Package to classes folder
   my $j = join ', ', @j;                                                        # Java files without extension with separating commas
   my $J = join ' ', map {"$_.java"} @j;                                         # Java files with extension without separating commas
   my $y = <<"END";
-# Test $d
-
 name: Test
 run-name: $repo
 
