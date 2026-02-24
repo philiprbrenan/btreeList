@@ -36,7 +36,7 @@ class Tree extends Test                                                         
     maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
     numberOfNodes = NumberOfNodes;                                              // The maximum number of leaves and branches combined
-    for (int i = numberOfNodes; i > 0; --i) freeChain.push(new Slots.Slot(i));   // Initial free chain
+    for (int i = numberOfNodes; i > 0; --i) freeChain.push(new Slots.Slot(i));  // Initial free chain
 
     memory     = new Memory();
     sizeOfNode = memory.sizeOfNode;
@@ -671,7 +671,7 @@ class Tree extends Test                                                         
       else                                                                      // Children are branches
        {final Branch l = (Branch)L;
         final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
-        if (r.mergeFromLeft(keys(new Slots.Slot(left)), l))                                     // Merge left sibling into right
+        if (r.mergeFromLeft(keys(new Slots.Slot(left)), l))                     // Merge left sibling into right
          {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
           l.free();
           return true;
@@ -1069,7 +1069,7 @@ Tree.debug = true;
       L.up(l.up()); L.upIndex(I);
       return new Find(L.lastKey(), L);
      }
-    else if (l.upIndex() != l.locateFirstUsedSlot().value())                            // Not the first leaf of the parent branch
+    else if (l.upIndex() != l.locateFirstUsedSlot().value())                    // Not the first leaf of the parent branch
      {final Integer I = l.up().locatePrevUsedSlot(new Slots.Slot(l.upIndex()-1));
       final Leaf    L = I != null ? (Leaf)l.up().data(I) : (Leaf)l.up().top();
       L.up(l.up()); L.upIndex(I);
@@ -1130,7 +1130,7 @@ Tree.debug = true;
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b) printBranch((Branch)s, P, level+1, Details, B, i);
 
-          P.elementAt(L+0).append(" "+B.keys(new Slots.Slot(i)).value());                       // Key
+          P.elementAt(L+0).append(" "+B.keys(new Slots.Slot(i)).value());       // Key
           if (Details)
            {P.elementAt(L+1).append("["+Branch.name().value()+"."+i+"]");       // Branch, key, next pair
             final String U = Parent != null ? ""+Parent.name().value() : "*";   // Parent up from descent
