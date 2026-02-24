@@ -337,7 +337,7 @@ public class Slots extends Test                                                 
       usedSlots(N/2, true);
      }
     else if (l.above)                                                           // Insert their key above the found key
-     {final int i = l.at;
+     {final int i = l.at.value();
       final int w = locateNearestFreeSlot(i);                                   // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift    (i+1, w-1);                                                    // Liberate a slot at this point
@@ -351,7 +351,7 @@ public class Slots extends Test                                                 
       if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();         // Redistribute if the used slots are densely packed
      }
     else if (l.below)                                                           // Insert their key below the found key
-     {final int i = l.at;
+     {final int i = l.at.value();
       final int w = locateNearestFreeSlot(i);                                   // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
       if (w > 0)                                                                // Move up
        {shift(i, w);                                                            // Liberate a slot at this point
@@ -368,20 +368,21 @@ public class Slots extends Test                                                 
    }
 
   class Locate                                                                  // Locate the slot containing the search key if possible else the key immediately above or below the search key.
-   {int at;                                                                     // The point at which the closest key was found
+   {Slot at;                                                                     // The point at which the closest key was found
     boolean above;                                                              // The search key is above or equal to the found key
     boolean below;                                                              // The search key is below or equal to the found key
     boolean all;                                                                // Above all or below all if true
 
     public String toString()                                                    // Print the location
-     {if (exact()) return String.format("%d exact", at);
-      return String.format("%2d %s %s %s", at, above ? "above" : "",
-                                               below ? "below" : "",
-                                               all   ? "all"   : "");
+     {if (exact()) return String.format("%d exact", at.value());
+      return String.format("%2d %s %s %s", at.value(),
+                                           above ? "above" : "",
+                                           below ? "below" : "",
+                                           all   ? "all"   : "");
      }
 
     void pos(int At, boolean Above, boolean Below)                              // Specify the position of the location
-     {at = At; above = Above; below = Below;
+     {at = new Slot(At); above = Above; below = Below;
      }
 
     void above(int At) {pos(At, true, false);}                                  // Their search key is above this key
@@ -422,13 +423,14 @@ public class Slots extends Test                                                 
 
   Integer locateFirstGe(Key Key)                                                // Locate the slot containing the first key greater than or equal to the search key
    {final Locate l = new Locate(Key);
-    if (l.below) return l.at;
-    return locateNextUsedSlot(l.at+1);
+    if (l.at == null) return null;
+    if (l.below) return l.at.value();
+    return locateNextUsedSlot(l.at.value()+1);
    }
 
   public Integer locate(Key Key)                                                // Locate the slot containing the current search key if possible.
    {final Locate l = new Locate(Key);                                           // Locate the search key
-    if (l.exact()) return l.at;                                                 // Found
+    if (l.exact()) return l.at.value();                                         // Found
     return null;                                                                // Not found
    }
 
