@@ -654,7 +654,7 @@ class Tree extends Test                                                         
      {return Loc != null ? locatePrevUsedSlot(new Slot(Loc-1)) : locateLastUsedSlot();
      }
 
-    Integer stepRight(Integer Index) {return locateNextUsedSlot(Index+1);}      // Step right to next occupied slot assuming that such a step is possible
+    Integer stepRight(Integer Index) {return locateNextUsedSlot(new Slots.Slot(Index+1));}      // Step right to next occupied slot assuming that such a step is possible
 
     boolean mergeLeftSibling(Integer Right)                                     // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
      {if (!canStepLeft(Right)) return false;                                    // Cannot step left
@@ -768,7 +768,7 @@ class Tree extends Test                                                         
 
         final Integer m = b.locateFirstGe(Key);                                 // Look further right
         if (m != null)
-         {final Integer M = b.locateNextUsedSlot(m+1);
+         {final Integer M = b.locateNextUsedSlot(new Slots.Slot(m+1));
           if (M != null && b.mergeRightSibling(M)) continue;                    // Merge further right sibling
          }
         b.mergeLeftSibling(null);                                               // Migrate into top
@@ -1033,10 +1033,10 @@ Tree.debug = true;
     final Leaf l = Found.leaf;
     if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
 
-    final Integer i = l.locateNextUsedSlot(Found.locate.at.value()+1);          // Next slot in leaf
+    final Integer i = l.locateNextUsedSlot(new Slots.Slot(Found.locate.at.value()+1));          // Next slot in leaf
     if (i != null) return new Find(l.keys(i), l);
     if (l.up().top().name().value() != l.name().value())                        // In the body of the parent branch of the leaf
-     {final Integer I = l.up().locateNextUsedSlot(l.upIndex()+1);
+     {final Integer I = l.up().locateNextUsedSlot(new Slots.Slot(l.upIndex()+1));
       final Leaf    L = I != null ? (Leaf)l.up().data(I) : (Leaf)l.up().top();
       L.up(l.up()); L.upIndex(I);
       return new Find(L.firstKey(), L);
@@ -1045,7 +1045,7 @@ Tree.debug = true;
     Branch q = l.up();
     for(p = q.up(); p != null; q = p, p = q.up())
      {if (p.top().name().value() != q.name().value())                           // In the body of the parent branch of the leaf
-       {final Integer I = p.locateNextUsedSlot(q.upIndex()+1);
+       {final Integer I = p.locateNextUsedSlot(new Slots.Slot(q.upIndex()+1));
         final Branch  b = I != null ? (Branch)p.data(I) : (Branch)p.top();
         b.up(p); b.upIndex(I);
         return goFirst(b);
