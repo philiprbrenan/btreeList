@@ -333,8 +333,8 @@ class Tree extends Test                                                         
     void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
      {final Leaf l = Left, r = Right;
       for (int i = 0; i < maxLeafSize; ++i)
-       {if      (l.usedRefs(i)) data(i, l.data(i));
-        else if (r.usedRefs(i)) data(i, r.data(i));
+       {if      (l.usedRefs(new Slots.Slot(i))) data(i, l.data(i));
+        else if (r.usedRefs(new Slots.Slot(i))) data(i, r.data(i));
        }
      }
 
@@ -621,8 +621,8 @@ class Tree extends Test                                                         
     void mergeData(Key Key, Branch Left, Branch Right)                          // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
       for (int i = 0; i < maxBranchSize; ++i)                                   // Each slot
-       {if      (l.usedRefs(i)) memory.data(i, l.memory.data(i));               // Merge from left first
-        else if (r.usedRefs(i)) memory.data(i, r.memory.data(i));               // Merge from right last
+       {if      (l.usedRefs(new Slots.Slot(i))) memory.data(i, l.memory.data(i));               // Merge from left first
+        else if (r.usedRefs(new Slots.Slot(i))) memory.data(i, r.memory.data(i));               // Merge from right last
        }
       insert(Key, l.top()); top(r.top());                                       // Insert left top
      }
