@@ -171,7 +171,7 @@ public class Slots extends Test                                                 
 
   Integer locateFirstUsedSlot()                                                 // Absolute position of the first slot in use
    {final int N = numberOfSlots();
-    for (int i = 0; i < N; ++i) if ( usedSlots(i)) return i;
+    for (int i = 0; i < N; ++i)                  if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
@@ -181,35 +181,35 @@ public class Slots extends Test                                                 
    }
 
   Integer locatePrevUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next lower used slot
-   {for (int i = Position; i >= 0; i--)            if ( usedSlots(i)) return i;
+   {for (int i = Position; i >= 0; i--)          if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateNextUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next higher used slot
    {final int N = numberOfSlots();
-    for (int i = Position; i < N; ++i) if ( usedSlots(i)) return i;
+    for (int i = Position; i < N; ++i)           if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateFirstEmptySlot()                                                // Absolute position of the first free slot
    {final int N = numberOfSlots();
-    for (int i = 0; i < N; ++i)        if (!usedSlots(i)) return i;
+    for (int i = 0; i < N; ++i)                  if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateLastEmptySlot()                                                 // Absolute position of the last free slot
-   {for (int i = numberOfSlots()-1; i >= 0; i--)     if (!usedSlots(i)) return i;
+   {for (int i = numberOfSlots()-1; i >= 0; i--) if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locatePrevEmptySlot(int Position)                                     // Absolute position of this slot if it is free or the nearest lower free slot before this position.
-   {for (int i = Position; i >= 0; i--)            if (!usedSlots(i)) return i;
+   {for (int i = Position; i >= 0; i--)          if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
   Integer locateNextEmptySlot(int Position)                                     // Absolute position of this slot if it is in use or the nearest higher free slot after this position.
    {final int N = numberOfSlots();
-    for (int i = Position; i < N; ++i) if (!usedSlots(i)) return i;
+    for (int i = Position; i < N; ++i)           if (!usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
@@ -239,7 +239,7 @@ public class Slots extends Test                                                 
     int p = remainder / 2;                                                      // Start position for first used slot
     for (int i = 0; i < N; ++i)                                                 // Redistribute slots
      {if (usedSlots(i))                                                         // Redistribute active slots
-       {s[p] = slots(i).value(); u[p] = true; p += space+1;                             // Spread the used slots out
+       {s[p] = slots(i).value(); u[p] = true; p += space+1;                     // Spread the used slots out
        }
      }
     for(int i = 0; i < N; ++i)                                                  // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
