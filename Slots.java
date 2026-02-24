@@ -180,8 +180,8 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot
    }
 
-  Integer locatePrevUsedSlot(int Position)                                      // Absolute position of this slot if it is in use or else the next lower used slot
-   {for (int i = Position; i >= 0; i--)          if ( usedSlots(i)) return i;
+  Integer locatePrevUsedSlot(Slot Position)                                     // Absolute position of this slot if it is in use or else the next lower used slot
+   {for (int i = Position.value(); i >= 0; i--)  if ( usedSlots(i)) return i;
     return null;                                                                // No free slot
    }
 
@@ -403,7 +403,7 @@ public class Slots extends Test                                                 
 
       for(int i = 0; i < N; ++i)                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {final int M = (a + b) / 2;                                              // Desired mid point - but there might not be a slot in use at this point
-        final int ma = locatePrevUsedSlot(M);                                   // Occupied slot preceding mid point
+        final int ma = locatePrevUsedSlot(new Slot(M));                         // Occupied slot preceding mid point
         final int mb = locateNextUsedSlot(M);                                   // Occupied slot succeeding mid point
 
         if      (ma != a && ge(Key, ma)) a = ma;
@@ -576,8 +576,8 @@ public class Slots extends Test                                                 
 
     ok(b.locateFirstUsedSlot(),      2);
     ok(b.locateLastUsedSlot(),      13);
-    ok(b.locatePrevUsedSlot( 9),     9);
-    ok(b.locatePrevUsedSlot(10),     9);
+    ok(b.locatePrevUsedSlot(new Slot( 9)),     9);
+    ok(b.locatePrevUsedSlot(new Slot(10)),     9);
     ok(b.locateNextUsedSlot(10),    11);
     ok(b.locateNextUsedSlot(11),    11);
     ok(b.locateFirstEmptySlot(),     0);
@@ -587,7 +587,7 @@ public class Slots extends Test                                                 
     ok(b.locateNextEmptySlot(4),     4);
     ok(b.locateNextEmptySlot(5),     8);
 
-    ok(b.locatePrevUsedSlot ( 1),   null);
+    ok(b.locatePrevUsedSlot (new Slot( 1)),   null);
     ok(b.locateNextUsedSlot (14),   null);
 
     b.setSlots(0, 15);
