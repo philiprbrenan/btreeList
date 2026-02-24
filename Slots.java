@@ -228,14 +228,18 @@ public class Slots extends Test                                                 
     return null;                                                                // No free slot
    }
 
-  Integer locatePrevEmptySlot(int Position)                                     // Absolute position of this slot if it is free or the nearest lower free slot before this position.
-   {for (int i = Position; i >= 0; i--)          if (!usedSlots(new Slot(i))) return i;
+  Slot locatePrevEmptySlot(int Position)                                        // Absolute position of this slot if it is free or the nearest lower free slot before this position.
+   {for (int i = Position; i >= 0; i--)
+     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
+     }
     return null;                                                                // No free slot
    }
 
-  Integer locateNextEmptySlot(int Position)                                     // Absolute position of this slot if it is in use or the nearest higher free slot after this position.
+  Slot locateNextEmptySlot(int Position)                                        // Absolute position of this slot if it is in use or the nearest higher free slot after this position.
    {final int N = numberOfSlots();
-    for (int i = Position; i < N; ++i)           if (!usedSlots(new Slot(i))) return i;
+    for (int i = Position; i < N; ++i)
+     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
+     }
     return null;                                                                // No free slot
    }
 
@@ -615,17 +619,17 @@ public class Slots extends Test                                                 
     ok(b.locateNextUsedSlot(new Slot(11)).value(),    11);
     ok(b.locateFirstEmptySlot().value(),  0);
     ok(b.locateLastEmptySlot() .value(), 15);
-    ok(b.locatePrevEmptySlot(4),     4);
-    ok(b.locatePrevEmptySlot(5),     4);
-    ok(b.locateNextEmptySlot(4),     4);
-    ok(b.locateNextEmptySlot(5),     8);
+    ok(b.locatePrevEmptySlot(4).value(),  4);
+    ok(b.locatePrevEmptySlot(5).value(),  4);
+    ok(b.locateNextEmptySlot(4).value(),  4);
+    ok(b.locateNextEmptySlot(5).value(),  8);
 
     ok(b.locatePrevUsedSlot (new Slot( 1)) == null, true);
     ok(b.locateNextUsedSlot (new Slot(14)) == null, true);
 
     b.setSlots(0, 15);
-    ok(b.locatePrevEmptySlot( 0),   null);
-    ok(b.locateNextEmptySlot(15),   null);
+    ok(b.locatePrevEmptySlot( 0) == null, true);
+    ok(b.locateNextEmptySlot(15) == null, true);
    }
 
   static void test_redistribute()
