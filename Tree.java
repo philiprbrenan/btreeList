@@ -186,7 +186,7 @@ class Tree extends Test                                                         
    {final Slots.Slot r = memory.root();
     final int       s = sizeOfNode;                                             // Root node location
     if (r.value() == 0) return null;                                            // Node zero contains the tree base so we can conveneioently use zero as a null pointer as no leaf or branch will occupy node zero.
-    if (r.value() <  0)  return new Leaf(new Slots.Slot(-r.value()));            // Leaf as negative
+    if (r.value() <  0)  return new Leaf(new Slots.Slot(-r.value()));           // Leaf as negative
     final Branch b = new Branch(r);
     return b;                                                                   // Branches as positive
    }
@@ -394,7 +394,7 @@ class Tree extends Test                                                         
        {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
        }
 
-      Memory(Slots.Slot Name) {bytes = node(Name.value());}                      // Position in tree memory
+      Memory(Slots.Slot Name) {bytes = node(Name.value());}                     // Position in tree memory
 
       int  up()   {return bytes.getInt(posUp);}                                 // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
       void up(int Index) {bytes.putInt(posUp, Index);}
@@ -480,7 +480,7 @@ class Tree extends Test                                                         
       return new Branch(new Slots.Slot(i));
      }
 
-    void data      (int Index, Slots S) {dataDirect(slots(Index).value(),   S);}        // Child via indexed slot
+    void data      (int Index, Slots S) {dataDirect(slots(Index).value(), S);}  // Child via indexed slot
     void dataDirect(int Index, Slots S) {memory.data(Index, refSign(S));}       // Child directly
 
     Branch duplicate()                                                          // Duplicate a branch
@@ -569,7 +569,9 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {if (usedSlots(i)) {k.add(""+keys(i).value()); d.add(""+memory.data(slots(i).value()));}
+       {if (usedSlots(i))
+         {k.add(""+keys(i).value()); d.add(""+memory.data(slots(i).value()));
+         }
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name().value()+"\n";
      }
