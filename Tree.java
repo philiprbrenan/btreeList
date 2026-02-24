@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Btree with stucks implemented as distributed slots
+// Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
