@@ -53,7 +53,14 @@ class Tree extends Test                                                         
   int numberOfNodes() {return numberOfNodes;}                                   // Maximum number of nodes in tree
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
-  static Slots.Key Key(int  Value) {return new Slots.Key(Value);}               // A key in a slot
+  public static final class Key                                                 // A key
+   {final int value;
+    Key(  int Value)  {value = Value;}
+    int       value() {return  value;}
+   }
+
+  static Key Key(int  Value) {return new Key(Value);}                           // A key in a slot
+
   public record   Data(int  value) {}                                           // A data value in a leaf
 
 //D1 Allocation                                                                 // Allocate or free a leaf or branch
@@ -70,7 +77,7 @@ class Tree extends Test                                                         
    }
 
   class LeafMemoryPositions                                                     // Memory positions of fields
-   {final int posData    = getMemorySize(maxLeafSize);                       // Size of slots for a leaf
+   {final int posData    = getMemorySize(maxLeafSize);                          // Size of slots for a leaf
     final int posUp      = posData    + Integer.BYTES * maxLeafSize();
     final int posUpIndex = posUp      + Integer.BYTES;
     final int size       = posUpIndex + Integer.BYTES;
@@ -197,22 +204,14 @@ class Tree extends Test                                                         
          }
         return null;                                                            // No used slot to the left
        }
+    boolean eq(Key Key) {return Key.value() == keys(this).value();}  // Search key is equal to indexed key
      }
 
 //D2 Keys                                                                       // Define a key
 
-    public static final class Key
-     {final int value;
-      Key(  int Value)  {value = Value;}                                        // A key
-      int       value() {return  value;}
-     }
-
-    static Key Key(int Key) {return new Key(Key);}                              // Create a key
-
-    boolean eq(Key Key, Slot Slot) {return Key.value() == keys(Slot).value();}  // Search key is equal to indexed key
     boolean le(Key Key, Slot Slot) {return Key.value() <= keys(Slot).value();}  // Search key is less than or equal to indexed key
-    boolean lt(Key Key, Slot Slot) {return !eq(Key, Slot) && le(Key, Slot);}    // Search key is less than or equal to indexed key
-    boolean ge(Key Key, Slot Slot) {return  eq(Key, Slot) || gt(Key, Slot);}    // Search key is less than or equal to indexed key
+    boolean lt(Key Key, Slot Slot) {return !Slot.eq(Key) && le(Key, Slot);}    // Search key is less than or equal to indexed key
+    boolean ge(Key Key, Slot Slot) {return  Slot.eq(Key) || gt(Key, Slot);}    // Search key is less than or equal to indexed key
     boolean gt(Key Key, Slot Slot) {return !le(Key, Slot);}                     // Search key is less than or equal to indexed key
 
     Key firstKey()                                                              // First key in slots
@@ -539,8 +538,8 @@ class Tree extends Test                                                         
        {final int N = numberOfSlots();
         if (empty()) {none(); return;}                                          // Empty so their search key cannot be found
         Slot a = locateFirstUsedSlot(), b = locateLastUsedSlot();               // Lower limit, upper limit
-        if ( eq(Key, a)) {found(a); return;}                                    // Found at the start of the range
-        if ( eq(Key, b)) {found(b); return;}                                    // Found at the end of the range
+        if ( a.eq(Key)) {found(a); return;}                                    // Found at the start of the range
+        if ( b.eq(Key)) {found(b); return;}                                    // Found at the end of the range
         if ( le(Key, a)) {below(a); all = true; return;}                        // Smaller than any key
         if (!le(Key, b)) {above(b); all = true; return;}                        // Greater than any key
 
@@ -554,8 +553,8 @@ class Tree extends Test                                                         
           else if (mb.value() != a.value() && ge(Key, mb)) a = mb;
           else if (mb.value() != b.value() && le(Key, mb)) b = mb;
           else                                                                  // The slots must be adjacent
-           {if (eq(Key, a)) {found(a); return;};                                // Found the search key at the lower end
-            if (eq(Key, b)) {found(b); return;};                                // Found the search key at the upper end
+           {if (a.eq(Key)) {found(a); return;};                                // Found the search key at the lower end
+            if (b.eq(Key)) {found(b); return;};                                // Found the search key at the upper end
             below(b);
             return;
            }                                                                    // New mid point
@@ -1325,7 +1324,7 @@ class Tree extends Test                                                         
 
 //D1 Low Level                                                                  // Low level operations
 
-  void mergeAlongPath(Slots.Key Key)                                            // Merge along the path from the specified key to the root
+  void mergeAlongPath(Key Key)                                            // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
     if (f == null) return;                                                      // Empty tree
     if (f.leaf.up() != null)                                                    // Process path from leaf to root
@@ -1349,7 +1348,7 @@ class Tree extends Test                                                         
     mergeRoot(Key);                                                             // Merge the root if possible
    }
 
-  void mergeRoot(Slots.Key Key)                                                 // Collapse the root if possible
+  void mergeRoot(Key Key)                                                 // Collapse the root if possible
    {if (root() == null) return;                                                 // Empty tree
     if (Leaf.ref(root()))                                                       // Leaf root
      {final Leaf l = (Leaf)root();
@@ -1383,10 +1382,10 @@ class Tree extends Test                                                         
 
   class Find                                                                    // Find results
    {final Leaf leaf;                                                            // Leaf that should contain the key
-    final Slots.Key key;                                                        // Search key
+    final Key key;                                                        // Search key
     final Slots.Locate locate;                                                  // Location details for key
 
-    Find(Slots.Key Key, Leaf Leaf)
+    Find(Key Key, Leaf Leaf)
      {key    = Key;
       leaf   = Leaf;
       locate = Leaf.new Locate(Key);
@@ -1404,7 +1403,7 @@ class Tree extends Test                                                         
      }
    }
 
-  Find find(Slots.Key Key)
+  Find find(Key Key)
    {final Slots r = root();                                                     // Root of tree
     if (r == null) return null;                                                 // Empty tree
     if (Leaf.ref(r))                                                            // Leaf root
@@ -1418,7 +1417,7 @@ class Tree extends Test                                                         
     return find(Key, R);                                                        // Start search from root
    }
 
-  Find find(Slots.Key Key, Branch Start)
+  Find find(Key Key, Branch Start)
    {Branch p = Start;                                                           // Start at root
 
     for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
@@ -1437,7 +1436,7 @@ class Tree extends Test                                                         
     return null;
    }
 
-  void insert(Slots.Key Key, Data Data)                                         // Insert a key, data pair or update key data pair in the tree
+  void insert(Key Key, Data Data)                                         // Insert a key, data pair or update key data pair in the tree
    {if (root() == null)                                                         // Empty tree
      {final Leaf l = new Leaf(); root(l);                                       // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
@@ -1531,7 +1530,7 @@ class Tree extends Test                                                         
     stop("Insert fell off the end of tree after this many searches:", mnl());
    }
 
-  void delete(Slots.Key Key)                                                    // Delete a key from the tree
+  void delete(Key Key)                                                    // Delete a key from the tree
    {if (root() == null) return;                                                 // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
