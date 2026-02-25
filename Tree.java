@@ -2,7 +2,7 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Integer insert should return slot
+// repalce Integer with Slot or slot
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -812,9 +812,14 @@ class Tree extends Test                                                         
      {memory.upIndex(Slot != null ? Slot.value() : -1);                         // -1 represents null in the byte buffer for this index
      }
 
-    Data data(int I) {return new Data(memory.data(I));}                         // Get value of data field at index
-    void data(int I, Data Value)                                                // Set value of data field at index
-     {memory.data(I, Value != null ? Value.value() : 0);
+    Data data(Slot I) {return new Data(memory.data(slots(I).value()));}         // Get value of data field at index
+    void data(Slot I, Data Value)                                               // Set value of data field at index
+     {memory.data(slots(I).value(), Value != null ? Value.value() : 0);
+     }
+
+    Data data(slot I) {return new Data(memory.data(I.value()));}                // Get value of data field at the slot
+    void data(slot I, Data Value)                                               // Set value of data field at the slot
+     {memory.data(I.value(), Value != null ? Value.value() : 0);
      }
 
     static boolean ref(Slots L)  {return L instanceof Leaf;}                    // Check whether we are referencing a leaf
@@ -825,7 +830,10 @@ class Tree extends Test                                                         
       final int p = new SlotsMemoryPositions().posKeys + 1 * Integer.BYTES;
       d.copySlots(this);                                                        // Copy slots
       final int R = numberOfRefs();
-      for (int i = 0; i < R; i++) d.data(i, data(i));                           // Copy data associated with leaf keys
+      for (int i = 0; i < R; i++)                                               // Each reference
+       {final slot I = new slot(i);                                             // Copy data associated with leaf keys
+        d.data(I, data(I));                                                     // Copy data associated with leaf keys
+       }
       return d;
      }
 
@@ -892,7 +900,7 @@ class Tree extends Test                                                         
 
     slot insert(Key Key, Data Data)                                             // Insert a key data pair into a leaf
      {final slot i = insert(Key);
-      if (i != null) data(i.value(), Data);                                     // Save data in allocated reference
+      if (i != null) data(i, Data);                                     // Save data in allocated reference
       return i;
      }
 
@@ -902,11 +910,11 @@ class Tree extends Test                                                         
       int p = 0;
       for (int i = 0; i < N; i++)
        {final Slot I = new Slot(i);
-        if (usedSlots(I)) d[p++] = data(slots(I).value());
+        if (usedSlots(I)) d[p++] = data(slots(I));
        }
       super.compactLeft();
 
-      for (int i = 0; i < R; i++) data(i, d[i]);
+      for (int i = 0; i < R; i++) data(new slot(i), d[i]);
      }
 
     void compactRight()                                                         // Compact the leaf to the right
@@ -915,18 +923,18 @@ class Tree extends Test                                                         
       int p = R-1;
       for (int i = N-1; i >= 0; --i)
        {final Slot I = new Slot(i);
-        if (usedSlots(I)) d[p--] = data(slots(I).value());
+        if (usedSlots(I)) d[p--] = data(slots(I));
        }
       super.compactRight();
-      for (int i = 0; i < R; i++) data(i, d[i]);
+      for (int i = 0; i < R; i++) data(new slot(i), d[i]);
      }
 
     void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
      {final Leaf l = Left, r = Right;
       for (int i = 0; i < maxLeafSize; ++i)
        {final slot J = new slot(i);
-        if      (l.usedRefs(J)) data(i, l.data(i));
-        else if (r.usedRefs(J)) data(i, r.data(i));
+        if      (l.usedRefs(J)) data(J, l.data(J));
+        else if (r.usedRefs(J)) data(J, r.data(J));
        }
      }
 
@@ -1460,7 +1468,7 @@ class Tree extends Test                                                         
      {final Find F = find(Key);                                                 // See if key is already present
       if (F.locate.exact())                                                     // Key already present so update data associated with the key
        {final Leaf l = F.leaf;                                                  // Child leaf
-        l.data(F.locate.at.value(), Data);                                      // Update data
+        l.data(F.locate.at, Data);                                              // Update data
         return;
        }
       else if (!F.leaf.full())                                                  // Leaf not full so insert directly
