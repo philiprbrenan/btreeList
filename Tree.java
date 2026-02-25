@@ -61,7 +61,11 @@ class Tree extends Test                                                         
 
   static Key Key(int  Value) {return new Key(Value);}                           // A key in a slot
 
-  public record   Data(int  value) {}                                           // A data value in a leaf
+  public static final class Data                                                // An item of data associated with a key
+   {final int value;
+    Data(int Value)  {value = Value;}
+    int      value() {return  value;}
+   }
 
 //D1 Allocation                                                                 // Allocate or free a leaf or branch
 
@@ -181,6 +185,12 @@ class Tree extends Test                                                         
     int numberOfRefs()  {return numberOfRefs;}
     int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of ref
 
+    public final class slot                                                     // A reference to slots
+     {final int value;
+      slot( int Value)  {value = Value;}                                        // A key
+      int       value() {return  value;}
+     }
+
     public final class Slot                                                     // A reference to slots
      {final int value;
       Slot( int Value)  {value = Value;}                                        // A key
@@ -214,7 +224,6 @@ class Tree extends Test                                                         
 
 //D2 Keys                                                                       // Define a key
 
-
     Key firstKey()                                                              // First key in slots
      {if (empty()) stop("No first key in empty slots");                         // First key in slots if there is one
       return keys(locateFirstUsedSlot());
@@ -246,12 +255,12 @@ class Tree extends Test                                                         
      }
 
     protected void clearSlotAndRef(Slot I) {freeRef(new Slot(memory.slots(I.value()))); clearSlots(I.value());}// Remove a key from the slots
-    protected Slot           slots(Slot I) {return  new Slot(memory.slots(I.value()));}                   // The indexed slot
+    protected slot           slots(Slot I) {return  new slot(memory.slots(I.value()));}                   // The indexed slot
     protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}                        // The indexed slot usage indicator
     protected boolean     usedRefs(Slot I) {return  memory.usedRefs  (I.value());}                        // The indexed reference usage indicator
     Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));}       // The indexed key
 
-    protected void     slots(Slot I, Slot    Ref)   {memory.slots    (I.value(), Ref.value());}           // The indexed slot
+    protected void     slots(Slot I, slot    Ref)   {memory.slots    (I.value(), Ref.value());}           // The indexed slot
     protected void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                 // The indexed slot usage indicator
     protected void  usedRefs(Slot I, boolean Value) {memory.usedRefs (I.value(), Value);}                 // The indexed reference usage indicator
               void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());}  // The indexed key
@@ -381,7 +390,7 @@ class Tree extends Test                                                         
        }
       for(int i = 0; i < N; ++i)                                                // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
        {final Slot I = new Slot(i);
-        slots(I, new Slot(s[i])); usedSlots(I, u[i]);
+        slots(I, new slot(s[i])); usedSlots(I, u[i]);
        }
      }
 
@@ -389,7 +398,7 @@ class Tree extends Test                                                         
      {final int N = numberOfSlots();
       for (int i = 0; i < N; i++)
        {final Slot I = new Slot(i);
-        usedSlots(I, false); slots(I, new Slot(0));
+        usedSlots(I, false); slots(I, new slot(0));
        }
       for (int i = 0; i < numberOfRefs; i++)
        {final Slot I = new Slot(i);
@@ -407,7 +416,7 @@ class Tree extends Test                                                         
        {final Slot I = new Slot(i), P = new Slot(p);
         if (d.usedSlots(I))                                                     // Each used slot
          {usedSlots(P, true); usedRefs(P, true);
-              slots(P, P);
+              slots(P, new slot(p));
                keys(P, d.keys(I));
           ++p;
          }
@@ -422,7 +431,7 @@ class Tree extends Test                                                         
        {final Slot I = new Slot(i), P = new Slot(p);
         if (d.usedSlots(I))
          {usedSlots(P, true); usedRefs(P, true);
-              slots(P, P);
+              slots(P, new slot(p));
                keys(P, d.keys(I));
           --p;
          }
@@ -476,7 +485,7 @@ class Tree extends Test                                                         
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
       if ( l.above && l.below) {}                                               // Found
       else if (!l.above && !l.below)                                            // Empty place the key in the middle
-       {slots    (new Slot(N/2), new Slot(slot));
+       {slots    (new Slot(N/2), new slot(slot));
         usedSlots(new Slot(N/2), true);
        }
       else if (l.above)                                                         // Insert their key above the found key
@@ -484,12 +493,12 @@ class Tree extends Test                                                         
         final int w = locateNearestFreeSlot(l.at);                              // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
         if (w > 0)                                                              // Move up
          {shift    (i+1, w-1);                                                  // Liberate a slot at this point
-          slots    (new Slot(i+1), new Slot(slot));                             // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+          slots    (new Slot(i+1), new slot(slot));                             // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
           usedSlots(new Slot(i+1), true);
          }
         else if (w < 0)                                                         // Liberate a slot below the current slot
          {shift(i, w);                                                          // Shift any intervening slots blocking the slot below
-          slots(new Slot(i), new Slot(slot));                                   // Insert into the slot below
+          slots(new Slot(i), new slot(slot));                                   // Insert into the slot below
          }
         if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();       // Redistribute if the used slots are densely packed
        }
@@ -498,11 +507,11 @@ class Tree extends Test                                                         
         final int w = locateNearestFreeSlot(l.at);                              // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
         if (w > 0)                                                              // Move up
          {shift(i, w);                                                          // Liberate a slot at this point
-          slots(l.at, new Slot(slot));                                          // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+          slots(l.at, new slot(slot));                                          // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
          }
         else if (w < 0)                                                         // Liberate a slot below the current slot
          {shift    (i-1, w + 1);                                                // Shift any intervening slots blocking the slot below
-          slots    (new Slot(i-1), new Slot(slot));                             // Insert into the slot below
+          slots    (new Slot(i-1), new slot(slot));                             // Insert into the slot below
           usedSlots(new Slot(i-1), true);                                       // Mark the free slot at the start of the range of occupied slots as now in use
          }
         if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();       // Redistribute if the used slots are densely packed
@@ -554,8 +563,8 @@ class Tree extends Test                                                         
           else if (mb.value() != a.value() && mb.ge(Key)) a = mb;
           else if (mb.value() != b.value() && mb.le(Key)) b = mb;
           else                                                                  // The slots must be adjacent
-           {if (a.eq(Key)) {found(a); return;};                                // Found the search key at the lower end
-            if (b.eq(Key)) {found(b); return;};                                // Found the search key at the upper end
+           {if (a.eq(Key)) {found(a); return;};                                 // Found the search key at the lower end
+            if (b.eq(Key)) {found(b); return;};                                 // Found the search key at the upper end
             below(b);
             return;
            }                                                                    // New mid point
@@ -1983,10 +1992,10 @@ keys     :   14  13  16  15  18  17  12  11
    {final Tree t = new Tree(8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new Slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(22));
-    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new Slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(24));
-    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new Slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(26));
-    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new Slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(28));
+    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(22));
+    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(24));
+    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(26));
+    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(28));
     ok(s.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2005,10 +2014,10 @@ keys     :   28   0  26   0  24   0   0  22
    {final Tree t = new Tree(8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new Slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new Slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new Slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new Slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(11));
+    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(12));
+    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(13));
+    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(14));
     ok(s.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2033,10 +2042,10 @@ keys     :   11  12  13  14   0   0   0   0
    {final Tree t = new Tree(8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new Slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new Slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new Slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new Slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(11));
+    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(12));
+    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(13));
+    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(14));
     ok(s.dump(), """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2063,10 +2072,10 @@ keys     :    0   0   0   0  11  12  13  14
    {final Tree  t = new Tree(8);
     final Slots s = t.new Slots(8, ByteBuffer.allocate(200));
 
-    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new Slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new Slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new Slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new Slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new Slot(7), true); s.key(s.new Slot(7), Key(11));
+    s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new Slot(4), true); s.key(s.new Slot(4), Key(12));
+    s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new Slot(2), true); s.key(s.new Slot(2), Key(13));
+    s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new Slot(0), true); s.key(s.new Slot(0), Key(14));
     s.type     (11);
     ok(s.dump(), """
 Slots    : name:  0, type: 11, refs:  8
