@@ -9,10 +9,10 @@ import java.util.*;
 import java.nio.ByteBuffer;
 
 class Tree extends Test                                                         // Manipulate a tree
- {final int            maxLeafSize;                                             // The maximum number of entries in a leaf
-  final int          maxBranchSize;                                             // The maximum number of entries in a branch
-  final Stack<Integer>freeChain = new Stack<>();                                // Unallocated leaves and branches
-  final int  MaximumNumberOfLevels = 99;                                        // Maximum number of levels in tree
+ {final int           maxLeafSize;                                              // The maximum number of entries in a leaf
+  final int         maxBranchSize;                                              // The maximum number of entries in a branch
+  final Stack<Integer>  freeChain = new Stack<>();                              // Unallocated leaves and branches
+  final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
   final int         numberOfNodes;                                              // Maximum number of leaves plus branches in this tree
   final int            sizeOfNode;                                              // The size of each node in the tree: a node may hold a branch or a leaf
   final Memory             memory;                                              // Memory containing the tree base followed by the leaves and branches of the tree
@@ -805,7 +805,7 @@ class Tree extends Test                                                         
      }
     void   up(Branch Branch) {memory.up(Branch != null ? Branch.name() : 0);}
 
-    Integer upIndex()                                                           // Index of this leaf in its parent
+    Integer upIndex()                                                           // Index of this leaf in its parent. We have to returnb an Integer rather than a slt becuase we do not know which branch the slot is in
      {final int i = memory.upIndex(); return i < 0 ? null : i;
      }
     void upIndex(Slot Slot)                                                     // Set the index of this leaf in its parent
@@ -1325,10 +1325,10 @@ class Tree extends Test                                                         
       int  up()   {return bytes.getInt(posUp);}                                 // Parent branch
       void up(int Value) {bytes.putInt(posUp, Value);}
 
-      Integer upIndex()                                                         // Index of this leaf in its parent
+      Integer upIndex()                                                         // Index of this branch in its parent
        {final int i = bytes.getInt(posUpIndex); return i < 0 ? null : i;
        }
-      void    upIndex(Integer Value)                                            // Set the index of this leaf in its parent
+      void    upIndex(Integer Value)                                            // Set the index of this branch in its parent
        {bytes.putInt(posUpIndex, Value != null ? Value : -1);
        }
 
@@ -1639,8 +1639,9 @@ class Tree extends Test                                                         
     if (r != null) return new Find(l.keys(r), l);                               // There is a next slot to the right in the leaf so return it
 
     final Branch U = l.up();                                                    // Parent branch of the leaf
-    if (U.top().name() != l.name())                                             // In the body of the parent branch of the leaf but not at the top of the parent
-     {final Slots.Slot R = U.new Slot(l.upIndex()).stepRight();                 // Next sibling slot right
+    if (U.top().name()  != l.name())                                            // In the body of the parent branch of the leaf but not at the top of the parent
+     {final Integer    u = l.upIndex();                                         // Next sibling slot right
+      final Slots.Slot R = U.new Slot(u).stepRight();                           // Next sibling slot right
       final Leaf       L = (Leaf)(R != null ? U.data(R) : U.top());             // Next sibling leaf
       L.up(U); L.upIndex(R);
       return new Find(L.firstKey(), L);
@@ -1677,8 +1678,8 @@ class Tree extends Test                                                         
      }
     else if (l.upIndex() != l.locateFirstUsedSlot().value())                    // Not the first leaf of the parent branch
      {final Branch     p = l.up();
-      final Slots.Slot U = p.new Slot(l.upIndex());
-      final Slots.Slot u = U.stepLeft();
+      final Integer    U = l.upIndex();
+      final Slots.Slot u = p.new Slot(U).stepLeft();
       final Leaf       L = u != null ? (Leaf)p.data(u) : (Leaf)p.top();
       L.upIndex(u);
       return new Find(L.lastKey(), L);
@@ -3580,6 +3581,7 @@ Delete 22
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
+    //test_insert_reverse();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
