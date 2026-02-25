@@ -2184,7 +2184,7 @@ keys     :   14   0  13   0  12   0  10  11
     ok(t.memory.maxBranchSize(), 3);
     ok(t.memory.numberOfNodes(), 4);
     ok(t.memory.root(),          0);
-    ok(t.dump(), """
+    ok(t, """
 |
 """);
    }
