@@ -90,7 +90,25 @@ public class Slots extends Test                                                 
     int       value() {return  value;}
    }
 
-  static Key    Key(int Key)   {return new Key(Key);}
+  static Key Key(int Key) {return new Key(Key);}                                // Create a key
+
+//D1 Keys                                                                       // Operations on keys
+
+  boolean eq(Key Key, Slot Slot) {return Key.value() == keys(Slot).value();}    // Search key is equal to indexed key
+  boolean le(Key Key, Slot Slot) {return Key.value() <= keys(Slot).value();}    // Search key is less than or equal to indexed key
+  boolean lt(Key Key, Slot Slot) {return !eq(Key, Slot) && le(Key, Slot);}      // Search key is less than or equal to indexed key
+  boolean ge(Key Key, Slot Slot) {return  eq(Key, Slot) || gt(Key, Slot);}      // Search key is less than or equal to indexed key
+  boolean gt(Key Key, Slot Slot) {return !le(Key, Slot);}                       // Search key is less than or equal to indexed key
+
+  Key firstKey()                                                                // First key in slots
+   {if (empty()) stop("No first key in empty slots");                           // First key in slots if there is one
+    return keys(locateFirstUsedSlot());
+   }
+
+  Key lastKey()                                                                 // Last key in slots
+   {if (empty()) stop("No last key in empty slots");                            // Last key in slots if there is one
+    return keys(locateLastUsedSlot());
+   }
 
 //D2 Slots                                                                      // Manage the slots
 
@@ -147,24 +165,6 @@ public class Slots extends Test                                                 
    }
 
   private void freeRef(Slot Ref) {usedRefs(Ref, false);}                        // Free a reference to one of their keys - java checks for array bounds sdo no point in an explicit check.
-
-//D1 Keys                                                                       // Operations on keys
-
-  boolean eq(Key Key, Slot Slot) {return Key.value() == keys(Slot).value();}    // Search key is equal to indexed key
-  boolean le(Key Key, Slot Slot) {return Key.value() <= keys(Slot).value();}    // Search key is less than or equal to indexed key
-  boolean lt(Key Key, Slot Slot) {return !eq(Key, Slot) && le(Key, Slot);}      // Search key is less than or equal to indexed key
-  boolean ge(Key Key, Slot Slot) {return  eq(Key, Slot) || gt(Key, Slot);}      // Search key is less than or equal to indexed key
-  boolean gt(Key Key, Slot Slot) {return !le(Key, Slot);}                       // Search key is less than or equal to indexed key
-
-  Key firstKey()                                                                // First key in slots
-   {if (empty()) stop("No first key in empty slots");                           // First key in slots if there is one
-    return keys(locateFirstUsedSlot());
-   }
-
-  Key lastKey()                                                                 // Last key in slots
-   {if (empty()) stop("No last key in empty slots");                            // Last key in slots if there is one
-    return keys(locateLastUsedSlot());
-   }
 
 //D1 Statistics                                                                 // Query the state of the slots
 
@@ -230,36 +230,6 @@ public class Slots extends Test                                                 
     for (int i = Position.value(); i < N; ++i)
      {final Slot S = new Slot(i);
       if (usedSlots(S)) return S;
-     }
-    return null;                                                                // No free slot
-   }
-
-  Slot locateFirstEmptySlot()                                                   // Absolute position of the first free slot
-   {final int N = numberOfSlots();
-    for (int i = 0; i < N; ++i)
-     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
-     }
-    return null;                                                                // No free slot
-   }
-
-  Slot locateLastEmptySlot()                                                    // Absolute position of the last free slot
-   {for (int i = numberOfSlots()-1; i >= 0; i--)
-     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
-     }
-    return null;                                                                // No free slot
-   }
-
-  Slot locatePrevEmptySlot(int Position)                                        // Absolute position of this slot if it is free or the nearest lower free slot before this position.
-   {for (int i = Position; i >= 0; i--)
-     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
-     }
-    return null;                                                                // No free slot
-   }
-
-  Slot locateNextEmptySlot(int Position)                                        // Absolute position of this slot if it is in use or the nearest higher free slot after this position.
-   {final int N = numberOfSlots();
-    for (int i = Position; i < N; ++i)
-     {final Slot s = new Slot(i); if (!usedSlots(s)) return s;
      }
     return null;                                                                // No free slot
    }
@@ -638,19 +608,11 @@ public class Slots extends Test                                                 
     ok(b.locatePrevUsedSlot(b.new Slot(10)).value(),     9);
     ok(b.locateNextUsedSlot(b.new Slot(10)).value(),    11);
     ok(b.locateNextUsedSlot(b.new Slot(11)).value(),    11);
-    ok(b.locateFirstEmptySlot().value(),  0);
-    ok(b.locateLastEmptySlot() .value(), 15);
-    ok(b.locatePrevEmptySlot(4).value(),  4);
-    ok(b.locatePrevEmptySlot(5).value(),  4);
-    ok(b.locateNextEmptySlot(4).value(),  4);
-    ok(b.locateNextEmptySlot(5).value(),  8);
 
     ok(b.locatePrevUsedSlot (b.new Slot( 1)) == null, true);
     ok(b.locateNextUsedSlot (b.new Slot(14)) == null, true);
 
     b.setSlots(0, 15);
-    ok(b.locatePrevEmptySlot( 0) == null, true);
-    ok(b.locateNextEmptySlot(15) == null, true);
    }
 
   static void test_redistribute()
