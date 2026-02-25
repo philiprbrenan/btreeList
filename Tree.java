@@ -125,6 +125,12 @@ class Tree extends Test                                                         
      }
    }
 
+  class AAA
+   {class Memory
+     {                                                                                //
+     }                                                                                //
+   }
+
 //D1 Tree memory                                                                // Memory used to hold the root of the tree, its leaves and branches
 
   class Memory extends TreeMemoryPositions                                      // Memory used to hodl the root of the tre,required to hold bytes
