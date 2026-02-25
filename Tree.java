@@ -2,6 +2,7 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// Make slot() work
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -25,7 +26,7 @@ class Tree extends Test                                                         
     final String m2 = m + "branch size must be 3 or more, not: " +MaxBranchSize;
     final String m3 = m + "branch size must be odd, not: "       +MaxBranchSize;
 
-    final boolean b1 = MaxLeafSize      <  2,
+    final boolean b1 = MaxLeafSize      <  2,                                   // Size checks
                   b2 = MaxBranchSize    <  3,
                   b3 = MaxBranchSize %2 == 0;
 
@@ -38,8 +39,8 @@ class Tree extends Test                                                         
     numberOfNodes = NumberOfNodes;                                              // The maximum number of leaves and branches combined
     for (int i = numberOfNodes; i > 0; --i) freeChain.push(i);                  // Initial free chain
 
-    memory     = new Memory();
-    sizeOfNode = memory.sizeOfNode;
+    memory        = new Memory();
+    sizeOfNode    = memory.sizeOfNode;
     memory.maxLeafSize  (maxLeafSize);
     memory.maxBranchSize(maxBranchSize);
     memory.numberOfNodes(numberOfNodes);
@@ -89,7 +90,7 @@ class Tree extends Test                                                         
    }
 
   class BranchMemoryPositions                                                   // Memory positions of fields
-   {final int posTop     = getMemorySize(maxBranchSize);                     // Size of slots for a branch
+   {final int posTop     = getMemorySize(maxBranchSize);                        // Size of slots for a branch
     final int posData    = posTop     + Integer.BYTES;
     final int posUp      = posData    + Integer.BYTES * maxBranchSize();
     final int posUpIndex = posUp      + Integer.BYTES;
@@ -307,7 +308,9 @@ class Tree extends Test                                                         
       if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
       if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
 
-      for (int i = Start+1; i < Finish; i++) if (usedSlots(new Slot(i))) return false; // From start to finish looking for an intermediate used slot
+      for (int i = Start+1; i < Finish; i++)                                    // From start to finish looking for an intermediate used slot
+       {if (usedSlots(new Slot(i))) return false;
+       }
       return true;
      }
 
@@ -612,16 +615,11 @@ class Tree extends Test                                                         
       final int N = numberOfSlots(), R = numberOfRefs;
       s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n",    // Title line
                               name(), type(), R));
-      s.append("positions: ");
-      for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
-      s.append("\nslots    : ");
-      for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
-      s.append("\nusedSlots: ");
-      for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "   X" : "   .");
-      s.append("\nusedRefs : ");
-      for (int i = 0; i < R; i++) s.append(usedRefs (new Slot(i)) ? "   X" : "   .");
-      s.append("\nkeys     : ");
-      for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(new Slot(i)) != null ? key(new Slot(i)).value() : 0));
+      s.append("positions: ");   for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
+      s.append("\nslots    : "); for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
+      s.append("\nusedSlots: "); for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "   X" : "   .");
+      s.append("\nusedRefs : "); for (int i = 0; i < R; i++) s.append(usedRefs (new Slot(i)) ? "   X" : "   .");
+      s.append("\nkeys     : "); for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(new Slot(i)) != null ? key(new Slot(i)).value() : 0));
       return ""+s+"\n";
      }
 
@@ -688,14 +686,13 @@ class Tree extends Test                                                         
       int     name        (         ) {return bytes.getInt(posName);}
 
       void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES, Value);}
-      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(Index, Value);}
-      void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(Index, Value);}
+      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(Index,                    Value);}
+      void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(Index,                    Value);}
       void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES, Value);}
-      void    name        (           int     Value) {bytes.putInt(posName                         , Value);} // Save the name of the node in memory to assist debugging
+      void    name        (           int     Value) {bytes.putInt(posName,                          Value);} // Save the name of the node in memory to assist debugging
 
       void type(int Type) {       bytes.putInt(posType, Type);}                 // Type of object in which the slots are embedded
       int  type()         {return bytes.getInt(posType);}
-
      }
    }
 
@@ -1334,7 +1331,7 @@ class Tree extends Test                                                         
 
 //D1 Low Level                                                                  // Low level operations
 
-  void mergeAlongPath(Key Key)                                            // Merge along the path from the specified key to the root
+  void mergeAlongPath(Key Key)                                                  // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
     if (f == null) return;                                                      // Empty tree
     if (f.leaf.up() != null)                                                    // Process path from leaf to root
@@ -1358,7 +1355,7 @@ class Tree extends Test                                                         
     mergeRoot(Key);                                                             // Merge the root if possible
    }
 
-  void mergeRoot(Key Key)                                                 // Collapse the root if possible
+  void mergeRoot(Key Key)                                                       // Collapse the root if possible
    {if (root() == null) return;                                                 // Empty tree
     if (Leaf.ref(root()))                                                       // Leaf root
      {final Leaf l = (Leaf)root();
@@ -1392,7 +1389,7 @@ class Tree extends Test                                                         
 
   class Find                                                                    // Find results
    {final Leaf leaf;                                                            // Leaf that should contain the key
-    final Key key;                                                        // Search key
+    final Key key;                                                              // Search key
     final Slots.Locate locate;                                                  // Location details for key
 
     Find(Key Key, Leaf Leaf)
@@ -1446,7 +1443,7 @@ class Tree extends Test                                                         
     return null;
    }
 
-  void insert(Key Key, Data Data)                                         // Insert a key, data pair or update key data pair in the tree
+  void insert(Key Key, Data Data)                                               // Insert a key, data pair or update key data pair in the tree
    {if (root() == null)                                                         // Empty tree
      {final Leaf l = new Leaf(); root(l);                                       // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
@@ -1540,7 +1537,7 @@ class Tree extends Test                                                         
     stop("Insert fell off the end of tree after this many searches:", mnl());
    }
 
-  void delete(Key Key)                                                    // Delete a key from the tree
+  void delete(Key Key)                                                          // Delete a key from the tree
    {if (root() == null) return;                                                 // The tree is empty tree so there is nothing to delete
     final Find f = find(Key);                                                   // Locate the key in the tree
     if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
