@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 class Tree extends Test                                                         // Manipulate a tree
  {final int           maxLeafSize;                                              // The maximum number of entries in a leaf
   final int         maxBranchSize;                                              // The maximum number of entries in a branch
-  final Stack<Integer>  freeChain = new Stack<>();                              // Unallocated leaves and branches
+  final Stack<Allocation>  freeChain = new Stack<>();                           // Unallocated leaves and branches
   final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
   final int         numberOfNodes;                                              // Maximum number of leaves plus branches in this tree
   final int            sizeOfNode;                                              // The size of each node in the tree: a node may hold a branch or a leaf
@@ -37,7 +37,7 @@ class Tree extends Test                                                         
     maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
     numberOfNodes = NumberOfNodes;                                              // The maximum number of leaves and branches combined
-    for (int i = numberOfNodes; i > 0; --i) freeChain.push(i);                  // Initial free chain
+    for (int i = numberOfNodes; i > 0; --i) freeChain.push(new Allocation(i));  // Initial free chain
 
     memory        = new Memory();
     sizeOfNode    = memory.sizeOfNode;
@@ -98,13 +98,19 @@ class Tree extends Test                                                         
     int memorySize() {return size;}
    }
 
-  Integer allocate()                                                            // Allocate a leaf or a branch
+  class Allocation                                                              // An allocated node that could become a leaf or a branch or a tree base
+   {final int at;
+    Allocation(int At) {at = At;}
+    int at()           {return at;}
+   }
+
+  Allocation allocate()                                                         // Allocate a leaf or a branch
    {if (freeChain.size() == 0) stop("No more leaves or branches");
     return freeChain.pop();
    }
 
-  void free(int Free)                                                           // Free a leaf or a branch
-   {final int f = Free;
+  void free(Allocation Free)                                                    // Free a leaf or a branch
+   {final int f = Free.at();
     if (f <= 0) stop("Name of node to free must be positive not:", f);
     if (f > numberOfNodes) stop("Name of node to free too big:",   f);
     if (freeChain.contains(f))
@@ -119,17 +125,17 @@ class Tree extends Test                                                         
     final Set<Integer> f = new TreeSet<>();
     final Set<Integer> u = new TreeSet<>();
 
-    for(int i : freeChain) f.add(i);
+    for(Allocation i : freeChain) f.add(i.at());
 
     for(Leaf   l : a.leaves)
-     {final int  n = l.name();
-      if (freeChain.contains(n)) stop("Leaf on free chain and in tree:", n);
-      u.add(n);
+     {final Allocation  n = l.name();
+      if (freeChain.contains(n)) stop("Leaf on free chain and in tree:", n.at());
+      u.add(n.at());
      }
     for(Branch b : a.branches)
-     {final int  n = b.name();
+     {final Allocation  n = b.name();
       if (freeChain.contains(n)) stop("Branch on free chain and in tree:", n);
-      u.add(n);
+      u.add(n.at());
      }
     for (int i = 1; i < numberOfNodes; i++)                                     // Node 0 is the tree base so it is not a leaf or a branch
      {if ( u.contains(i) && !f.contains(i)) continue;
@@ -138,7 +144,7 @@ class Tree extends Test                                                         
      }
    }
 
-  Slots fake(int Name)                                                          // Slots used during testing to mock attached branches and leaves
+  Slots fake(Allocation Name)                                                   // Slots used during testing to mock attached branches and leaves
    {final Slots s = new Slots(0);
     s.name(Name);
     return s;
@@ -177,7 +183,7 @@ class Tree extends Test                                                         
      }
 
     Slots copySlots(Slots Source)                                               // Copy the source slots
-     {final int n = name();                                                     // Save name of target
+     {final Allocation n = name();                                              // Save name of target
       memory.copySlots(Source.memory);                                          // Copy memory
       name(n);                                                                  // Reload name of target
       return this;                                                              // The copied slots
@@ -274,15 +280,15 @@ class Tree extends Test                                                         
     protected Key  key(slot I)         {return new Key(memory.keys(I.value()));}// Get the key directly
     protected void key(slot I, Key Key) {memory.keys(I.value(), Key.value());}  // Set the key directly
 
-    int  name()  {return memory.name();}                                        // Get the name
-    void name(int Name) {memory.name(Name);}                                    // Set the name
+    Allocation  name()  {return new Allocation(memory.name());}                 // Get the name
+    void name(Allocation Name) {memory.name(Name.at());}                        // Set the name
 
     int  type()  {return memory.type();}                                        // Get the type
     void type(int Type) {memory.type(Type);}                                    // Set the type
 
 //D2 Refs                                                                       // Allocate and free references to keys
 
-    private slot allocRef()                                                      // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
+    private slot allocRef()                                                     // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
      {for (int i = 0; i < numberOfRefs; i++)
        {final slot I = new slot(i);
         if (!usedRefs(I))
@@ -620,7 +626,7 @@ class Tree extends Test                                                         
      {final StringBuilder s = new StringBuilder();
       final int N = numberOfSlots(), R = numberOfRefs;
       s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n",    // Title line
-                              name(), type(), R));
+                              name().at(), type(), R));
       s.append("positions: ");   for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
       s.append("\nslots    : "); for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
       s.append("\nusedSlots: "); for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "   X" : "   .");
@@ -744,15 +750,16 @@ class Tree extends Test                                                         
        {final int n = i * sizeOfNode;
         s.append(String.format("Node: %4d at %4d\n", i, n));
         final boolean leaf = bytes.getInt(n) == NodeType.Leaf.ordinal();
-        final String t = leaf ? new Leaf(i).dump() : new Branch(i).dump();
+        final String t = leaf ? new Leaf  (new Allocation(i)).dump() :
+                                new Branch(new Allocation(i)).dump();
         s.append(t);
        }
       return ""+s;
      }
    }
 
-  ByteBuffer node(int Name)                                                     // Address the specified node of the tree
-   {final int n = Name, s = sizeOfNode;
+  ByteBuffer node(Allocation Name)                                              // Address the specified node of the tree
+   {final int n = Name.at(), s = sizeOfNode;
     return memory.bytes.slice(n * s, s);
    }
 
@@ -767,18 +774,18 @@ class Tree extends Test                                                         
    {final int   r = memory.root();
     final int   s = sizeOfNode;                                                 // Root node location
     if (r == 0) return null;                                                    // Node zero contains the tree base so we can conveneioently use zero as a null pointer as no leaf or branch will occupy node zero.
-    if (r <  0) return new Leaf (-r);                                           // Leaf as negative
-    return             new Branch(r);
+    if (r <  0) return new Leaf  (new Allocation(-r));                          // Leaf as negative
+    return             new Branch(new Allocation( r));                          // Branch as positive
    }
 
-  void root(Leaf   Root) {memory.root(Root != null ? -Root.name() : 0);}        // Set the root in memory with a negative address to show that it is a leaf
-  void root(Branch Root) {memory.root(Root != null ?  Root.name() : 0);}        // Set the root in memory with a positive address to show that it is a branch
+  void root(Leaf   Root) {memory.root(Root != null ? -Root.name().at() : 0);}        // Set the root in memory with a negative address to show that it is a leaf
+  void root(Branch Root) {memory.root(Root != null ?  Root.name().at() : 0);}        // Set the root in memory with a positive address to show that it is a branch
 
 //D1 Leaf                                                                       // Use the slots to model a leaf
 
   class Leaf extends Slots                                                      // Leaf
    {final Memory memory;                                                        // Memory used by the leaf
-    final int    node;                                                          // The node holding this leaf
+    final Allocation node;                                                      // The node holding this leaf
 
     Leaf()                                                                      // Create a leaf
      {super(maxLeafSize);                                                       // Slots for leaf
@@ -790,7 +797,7 @@ class Tree extends Test                                                         
       type(NodeType.Leaf.ordinal());                                            // Set this memory as a leaf
      }
 
-    Leaf(int Name)                                                              // Reuse the leaf at the indexed node in memory
+    Leaf(Allocation Name)                                                       // Reuse the leaf at the indexed node in memory
      {super(maxLeafSize, node(Name));                                           // Slots for leaf
       node = Name;
       memory = new Memory(Name);                                                // Memory for leaf
@@ -800,10 +807,10 @@ class Tree extends Test                                                         
 
     Branch up()                                                                 // Parent branch
      {final int u = memory.up();
-      final Branch B = u > 0 ? new Branch(u) : null;
+      final Branch B = u > 0 ? new Branch(new Allocation(u)) : null;
       return B;
      }
-    void   up(Branch Branch) {memory.up(Branch != null ? Branch.name() : 0);}
+    void   up(Branch Branch) {memory.up(Branch != null ? Branch.name().at() : 0);}
 
     Slot upIndex(Branch Branch)                                                              // Index of this leaf in its parent. We have to returnb an Integer rather than a slt becuase we do not know which branch the slot is in
      {final int i = memory.upIndex(); return i < 0 ? null : Branch.new Slot(i);
@@ -982,9 +989,9 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++) d.add(String.format(formatKey, memory.data(i)));
-      final String U = " up: "   +(up() != null                          ? up() .name ()         : "null");
+      final String U = " up: "   +(up() != null                          ? up().name ().at()     : "null");
       final String I = " index: "+(up() != null && upIndex(up()) != null ? upIndex(up()).value() : "null");
-      return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
+      return "Leaf     : "+name().at()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
 
     class Memory extends LeafMemoryPositions                                    // Memory required to hold bytes
@@ -998,7 +1005,7 @@ class Tree extends Test                                                         
        {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
        }
 
-      Memory(int Name) {bytes = node(Name);}                                    // Position in tree memory
+      Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
 
       int  up()   {return bytes.getInt(posUp);}                                 // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
       void up(int Index) {bytes.putInt(posUp, Index);}
@@ -1014,8 +1021,8 @@ class Tree extends Test                                                         
 //D1 Branch                                                                     // Use the slots to model a branch
 
   class Branch extends Slots                                                    // Branch
-   {final int    node;                                                          // The node holding this leaf
-    final Memory memory;                                                        // Memory used by the slots
+   {final Allocation node;                                                      // The node holding this leaf
+    final Memory   memory;                                                        // Memory used by the slots
 
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
@@ -1027,7 +1034,7 @@ class Tree extends Test                                                         
       type(NodeType.Branch.ordinal());                                          // Set the type to branch
      }
 
-    Branch(int Name)                                                            // Reuse the branch at the indexed node in memory
+    Branch(Allocation Name)                                                     // Reuse the branch at the indexed node in memory
      {super(maxBranchSize);                                                     // Slots for branch
       node = Name;
       memory = new Memory(node);                                                // Memory for branch
@@ -1037,11 +1044,11 @@ class Tree extends Test                                                         
 
     Branch up()                                                                 // Name of branch above if any
      {final int i = memory.up();
-      return i > 0 ? new Branch(i) : null;
+      return i > 0 ? new Branch(new Allocation(i)) : null;
      }
 
     void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
-     {memory.up(Branch != null ? Branch.name() : 0);
+     {memory.up(Branch != null ? Branch.name().at() : 0);
      }
 
     Integer upIndex()              {return memory.upIndex();}                   // Index of this branch in its parent
@@ -1051,7 +1058,7 @@ class Tree extends Test                                                         
 
     int refSign(Slots Slots)                                                    // Set the sign of a reference according to whether it is a reference to a leaf or a branch
      {if (Slots == null) return 0;
-      final int i = Slots.name();
+      final int i = Slots.name().at();
       final int r = ref(Slots) ? +i : -i;
       return r;
      }
@@ -1060,7 +1067,8 @@ class Tree extends Test                                                         
 
     Slots   top()                                                               // Top element of this branch
      {final int i = memory.top();
-      return i == 0 ? null :  i > 0 ? new Branch( i): new Leaf  (-i);
+      return i == 0 ? null :  i > 0 ? new Branch(new Allocation( i)):
+                                      new Leaf  (new Allocation(-i));
      }
 
     void free()                                                                 // Free the branch
@@ -1078,7 +1086,7 @@ class Tree extends Test                                                         
 
     Slots dataDirect(int Index)
      {final int i = memory.data(Index);
-      return i == 0 ? null : i < 0 ? new Leaf(-i): new Branch(i);
+      return i == 0 ? null : i < 0 ? new Leaf(new Allocation(-i)): new Branch(new Allocation(i));
      }
 
     void data      (int Index, Slots S) {dataDirect(slots(new Slot(Index)).value(), S);}  // Child via indexed slot
@@ -1176,7 +1184,7 @@ class Tree extends Test                                                         
           d.add(""+memory.data(slots(new Slot(i)).value()));
          }
        }
-      return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name()+"\n";
+      return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name().at()+"\n";
      }
 
     protected String dump()                                                     // Dump a branch
@@ -1190,7 +1198,7 @@ class Tree extends Test                                                         
 
       final Integer ui = upIndex();
       final String  us = ui != null ? ""+ui : "null";
-      final int n = name();
+      final int n = name().at();
       final int u = memory.up();
       final int i = memory.upIndex() != null ? memory.upIndex() : -1;
       s.append(String.format("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
@@ -1320,7 +1328,7 @@ class Tree extends Test                                                         
        {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
        }
 
-      Memory(int Name) {bytes = node(Name);}                                    // Position in tree memory
+      Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
 
       int  up()   {return bytes.getInt(posUp);}                                 // Parent branch
       void up(int Value) {bytes.putInt(posUp, Value);}
@@ -1419,7 +1427,7 @@ class Tree extends Test                                                         
       if (leaf    != null) s.append(leaf.dump());
       if (locate  != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
-      for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
+      for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name().at());
       if (leaf.up() != null) s.append("Path        : "+j+"\n");
       return ""+s;
      }
@@ -1637,9 +1645,9 @@ class Tree extends Test                                                         
 
     final Slots.Slot r = Found.locate.at.stepRight();                           // Next slot to the right in the leaf
     if (r != null) return new Find(l.keys(r), l);                               // There is a next slot to the right in the leaf so return it
-
     final Branch U = l.up();                                                    // Parent branch of the leaf
-    if (U.top().name()  != l.name())                                            // In the body of the parent branch of the leaf but not at the top of the parent
+
+    if (U.top().name().at()  != l.name().at())                                  // In the body of the parent branch of the leaf but not at the top of the parent
      {final Slots.Slot u = l.upIndex(U);                                        // Next sibling slot right
       final Slots.Slot R = u != null ? u.stepRight() : null;                    // Next sibling slot right
       final Leaf       L = (Leaf)(R != null ? U.data(R) : U.top());             // Next sibling leaf
@@ -1651,7 +1659,7 @@ class Tree extends Test                                                         
     Branch q = l.up();                                                          // Child branch
 
     for(p = q.up(); p != null; q = p, p = q.up())                               // Step up to turning point
-     {if (p.top().name() != q.name())                                           // In the body of the parent branch of the leaf
+     {if (p.top().name().at() != q.name().at())                                 // In the body of the parent branch of the leaf
        {final Slots.Slot R = p.new Slot(q.upIndex()).stepRight();
         final Branch     b = R != null ? (Branch)p.data(R) : (Branch)p.top();
         b.up(p); b.upIndex(R != null ? R.value() : null);
@@ -1715,10 +1723,10 @@ class Tree extends Test                                                         
      }
     final int N = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(N+0).append(s);
-    final String U = Parent != null ? "" + Parent.name() : "*";
-    final String I = Index  != null ? "" + Index                 : "*";
+    final String U = Parent != null ? "" + Parent.name().at() : "*";
+    final String I = Index  != null ? "" + Index              : "*";
     if (Details)
-     {P.elementAt(N+1).append("("+L.name()+", "+U+", "+I+")");
+     {P.elementAt(N+1).append("("+L.name().at()+", "+U+", "+I+")");
      }
     padStrings(P, level);
    }
@@ -1744,14 +1752,14 @@ class Tree extends Test                                                         
 
           P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).value());           // Key
           if (Details)
-           {P.elementAt(L+1).append("["+B.name()+"."+i+"]");                    // Branch, key, next pair
-            final String U = Parent != null ? ""+Parent.name() : "*";           // Parent up from descent
-            final String I = Index  != null ? ""+Index                 : "*";   // Index in parent up
-            P.elementAt(L+2).append("("+s.name()+", "+U+", "+I+")");            // Link to next level
+           {P.elementAt(L+1).append("["+B.name().at()+"."+i+"]");                    // Branch, key, next pair
+            final String U = Parent != null ? ""+Parent.name().at() : "*";      // Parent up from descent
+            final String I = Index  != null ? ""+Index              : "*";      // Index in parent up
+            P.elementAt(L+2).append("("+s.name().at()+", "+U+", "+I+")");            // Link to next level
 
             final String um = ""+B.memory.up();                                 // Parent up as recorded
             final String im = ""+B.upIndex();                                   // Index in parent up as recorded
-            P.elementAt(L+3).append("("+s.name()+", "+um+", "+im+")");          // Link to next level
+            P.elementAt(L+3).append("("+s.name().at()+", "+um+", "+im+")");          // Link to next level
            }
          }
        }
@@ -1759,7 +1767,7 @@ class Tree extends Test                                                         
 
     if (Details)                                                                // Top of branch
      {P.elementAt(L+2).append
-       ("{"+(B.top() != null ? B.top().name() : "null")+"}");
+       ("{"+(B.top() != null ? B.top().name().at() : "null")+"}");
      }
     final boolean l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());          // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
@@ -2242,10 +2250,10 @@ data     :    0   0   0   0  21  22  23  24
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
 Tree.debug = true;
-    b.insert(Key(12), t.fake(22));
-    b.insert(Key(11), t.fake(21));
-    b.insert(Key(13), t.fake(23));
-    b.top(t.fake(4));
+    b.insert(Key(12), t.fake(t.new Allocation(22)));
+    b.insert(Key(11), t.fake(t.new Allocation(21)));
+    b.insert(Key(13), t.fake(t.new Allocation(23)));
+    b.top(t.fake(t.new Allocation(4)));
     //stop(b.dump());
     ok(b.dump(), """
 Branch   :    1   up:    0  index:    0
@@ -2277,10 +2285,10 @@ top      :   -4
   static void test_compactBranchRight()
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
-    b.insert(Key(12), t.fake(12));
-    b.insert(Key(11), t.fake(11));
-    b.insert(Key(13), t.fake(13));
-    b.top(t.fake(4));
+    b.insert(Key(12), t.fake(t.new Allocation(12)));
+    b.insert(Key(11), t.fake(t.new Allocation(11)));
+    b.insert(Key(13), t.fake(t.new Allocation(13)));
+    b.top(t.fake(t.new Allocation(4)));
     //stop(b.dump());
     ok(b.dump(), """
 Branch   :    1   up:    0  index:    0
@@ -2414,8 +2422,8 @@ data: 15, 16, 17, 18
 
     final int []k = new int [] {13, 16, 15, 17, 14, 12, 11};
     final int []d = new int [] {3,   6,  5,  7,  4,  2, 1};
-    for (int i = 0; i < d.length; i++) b.insert(Key(k[i]), t.fake(d[i]));
-    b.top(t.fake(8));
+    for (int i = 0; i < d.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
+    b.top(t.fake(t.new Allocation(8)));
     return b;
    }
 
@@ -2537,8 +2545,8 @@ data     :   11  12  13  14  15  16  17  18
 
     final int []k = new int []{13, 12, 11};
     final int []d = new int []{ 3,  2,  1};
-    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(d[i]));
-    b.top(t.fake(4));
+    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
+    b.top(t.fake(t.new Allocation(4)));
     return b;
    }
 
@@ -2548,8 +2556,8 @@ data     :   11  12  13  14  15  16  17  18
 
     final int []k = new int []{16, 15, 17};
     final int []d = new int[]{6, 5, 7};
-    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(d[i]));
-    b.top(t.fake(8));
+    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
+    b.top(t.fake(t.new Allocation(8)));
     return b;
    }
 
@@ -2629,17 +2637,17 @@ keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     final Branch b = B.split();
     final Tree   t = b.tree();
     t.root(b);
-    ok(t.new Branch(4), """
+    ok(t.new Branch(t.new Allocation(4)), """
 keys: 14
 data: 2
 top : 3
 """);
-    ok(t.new Branch(2), """
+    ok(t.new Branch(t.new Allocation(2)), """
 keys: 11, 12, 13
 data: -1, -2, -3
 top : 4
 """);
-    ok(t.new Branch(3), """
+    ok(t.new Branch(t.new Allocation(3)), """
 keys: 15, 16, 17
 data: -5, -6, -7
 top : 8
