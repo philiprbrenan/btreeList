@@ -805,8 +805,8 @@ class Tree extends Test                                                         
      }
     void   up(Branch Branch) {memory.up(Branch != null ? Branch.name() : 0);}
 
-    Integer upIndex()                                                           // Index of this leaf in its parent. We have to returnb an Integer rather than a slt becuase we do not know which branch the slot is in
-     {final int i = memory.upIndex(); return i < 0 ? null : i;
+    Slot upIndex(Branch Branch)                                                              // Index of this leaf in its parent. We have to returnb an Integer rather than a slt becuase we do not know which branch the slot is in
+     {final int i = memory.upIndex(); return i < 0 ? null : Branch.new Slot(i);
      }
     void upIndex(Slot Slot)                                                     // Set the index of this leaf in its parent
      {memory.upIndex(Slot != null ? Slot.value() : -1);                         // -1 represents null in the byte buffer for this index
@@ -982,8 +982,8 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++) d.add(String.format(formatKey, memory.data(i)));
-      final String U = " up: "   +(up()      != null ? up().name() : "0");
-      final String I = " index: "+(upIndex() != null ? upIndex()   : "null");
+      final String U = " up: "   +(up() != null                          ? up() .name ()         : "null");
+      final String I = " index: "+(up() != null && upIndex(up()) != null ? upIndex(up()).value() : "null");
       return "Leaf     : "+name()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
      }
 
@@ -1003,8 +1003,8 @@ class Tree extends Test                                                         
       int  up()   {return bytes.getInt(posUp);}                                 // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
       void up(int Index) {bytes.putInt(posUp, Index);}
 
-      Integer upIndex()       {return bytes.getInt(posUpIndex);}                // Index of leaf in its parent
-      void    upIndex(Integer Value) {bytes.putInt(posUpIndex, Value != null ? Value : -1);} // -1 used to indicate top
+      int  upIndex()       {return bytes.getInt(posUpIndex);}                   // Index of leaf in its parent
+      void upIndex(Integer Value) {bytes.putInt(posUpIndex, Value != null ? Value : -1);} // -1 used to indicate top
 
       int  data(int Index)      {return bytes.getInt(posData + Index * Integer.BYTES);}
       void data(int Index, int  Value) {bytes.putInt(posData + Index * Integer.BYTES, Value);}
@@ -1431,7 +1431,7 @@ class Tree extends Test                                                         
     if (Leaf.ref(r))                                                            // Leaf root
      {final Leaf l = (Leaf)r;
       l.up(null);
-      l.upIndex(null);                                                          // Trace path taken to this leaf
+      l.upIndex((Slots.Slot)null);                                              // Trace path taken to this leaf
       return new Find(Key, l);
      }
     final Branch R = (Branch)r;                                                 // Start search from root
@@ -1605,7 +1605,7 @@ class Tree extends Test                                                         
     if (Leaf.ref(root()))
      {final Leaf l = (Leaf)root();
       final int  i = l.locateLastUsedSlot().value();
-      l.up(null); l.upIndex(null);
+      l.up(null); l.upIndex((Slots.Slot)null);
       return new Find(l.keys(l. new Slot(i)), l);
      }
 
@@ -1620,7 +1620,7 @@ class Tree extends Test                                                         
       if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf l = (Leaf)q;
         final int  i = l.locateLastUsedSlot().value();
-        l.up(p); l.upIndex(null);
+        l.up(p); l.upIndex((Slots.Slot)null);
         return new Find(l.keys(l.new Slot(i)), l);
        }
          ((Branch)q).up(p);
@@ -1640,8 +1640,8 @@ class Tree extends Test                                                         
 
     final Branch U = l.up();                                                    // Parent branch of the leaf
     if (U.top().name()  != l.name())                                            // In the body of the parent branch of the leaf but not at the top of the parent
-     {final Integer    u = l.upIndex();                                         // Next sibling slot right
-      final Slots.Slot R = U.new Slot(u).stepRight();                           // Next sibling slot right
+     {final Slots.Slot u = l.upIndex(U);                                        // Next sibling slot right
+      final Slots.Slot R = u != null ? u.stepRight() : null;                    // Next sibling slot right
       final Leaf       L = (Leaf)(R != null ? U.data(R) : U.top());             // Next sibling leaf
       L.up(U); L.upIndex(R);
       return new Find(L.firstKey(), L);
@@ -1669,18 +1669,17 @@ class Tree extends Test                                                         
     final Slots.Slot s = Found.locate.at.stepLeft();                            // Previous slot in leaf
     if (s != null) return new Find(l.keys(s), l);
 
-    if (l.upIndex() == null)                                                    // Last leaf of parent
-     {final Branch     b = l.up();
-      final Slots.Slot I = b.locateLastUsedSlot();                              // Element prior to top
-      final Leaf       L = (Leaf)b.data(I);
+    final Branch P = l.up();                                                    // Parent
+    if (l.upIndex(P) == null)                                                   // Last leaf of parent
+     {final Slots.Slot I = P.locateLastUsedSlot();                              // Element prior to top
+      final Leaf       L = (Leaf)P.data(I);
       L.upIndex(I);
       return new Find(L.lastKey(), L);
      }
-    else if (l.upIndex() != l.locateFirstUsedSlot().value())                    // Not the first leaf of the parent branch
-     {final Branch     p = l.up();
-      final Integer    U = l.upIndex();
-      final Slots.Slot u = p.new Slot(U).stepLeft();
-      final Leaf       L = u != null ? (Leaf)p.data(u) : (Leaf)p.top();
+    else if (l.upIndex(P).value() != l.locateFirstUsedSlot().value())           // Not the first leaf of the parent branch
+     {final Slots.Slot U = l.upIndex(P);
+      final Slots.Slot u = U.stepLeft();
+      final Leaf       L = u != null ? (Leaf)P.data(u) : (Leaf)P.top();
       L.upIndex(u);
       return new Find(L.lastKey(), L);
      }
@@ -2185,7 +2184,7 @@ keys     :   14   0  13   0  12   0  10  11
     l.insert(Key(14), new Data(24));
     l.insert(Key(11), new Data(21));
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
@@ -2196,7 +2195,7 @@ data     :   23  22  24  21   0   0   0   0
 """);
     l.compactLeft();
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
@@ -2216,7 +2215,7 @@ data     :   21  22  23  24   0   0   0   0
 
   //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   3   1   0   2   0   0   0   0   0   0
@@ -2228,7 +2227,7 @@ data     :   23  22  24  21   0   0   0   0
     l.compactRight();
   //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
@@ -2328,7 +2327,7 @@ top      :   -4
     final Leaf L = l.duplicate();
     //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    7   6   0   0   5   0   2   0   1   0   4   0   3   0   0   0
@@ -2339,7 +2338,7 @@ data     :   13  16  15  18  17  14  12  11
 """);
     //stop(L.dump());
     ok(L.dump(), """
-Leaf     : 2 up: 0 index: 0
+Leaf     : 2 up: null index: null
 Slots    : name:  2, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    7   6   0   0   5   0   2   0   1   0   4   0   3   0   0   0
@@ -2354,7 +2353,7 @@ data     :   13  16  15  18  17  14  12  11
    {final Leaf l = test_leaf();
     //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    7   6   0   0   5   0   2   0   1   0   4   0   3   0   0   0
@@ -2366,7 +2365,7 @@ data     :   13  16  15  18  17  14  12  11
     final Leaf r = l.splitRight();
     //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   6   0   0   0   0   0   0   0   5   0   0
@@ -2377,7 +2376,7 @@ data     :   13  16  15  18  17  14  12  11
 """);
     //stop(r.dump());
     ok(r.dump(), """
-Leaf     : 2 up: 0 index: 0
+Leaf     : 2 up: null index: null
 Slots    : name:  2, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   2   0   0   0   1   0   0   0   4   0   0   0   3   0   0
@@ -2504,7 +2503,7 @@ top : 8
     l.mergeFromRight(r);
     //stop(l.dump());
     ok(l.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
@@ -2521,7 +2520,7 @@ data     :   11  12  13  14  15  16  17  18
     r.mergeFromLeft(l);
     //stop(r.dump());
     ok(r.dump(), """
-Leaf     : 1 up: 0 index: 0
+Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
@@ -3581,7 +3580,6 @@ Delete 22
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
-    //test_insert_reverse();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
