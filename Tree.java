@@ -486,11 +486,11 @@ class Tree extends Test                                                         
 
 //D2 High level operations                                                      // Find, insert, delete values in the slots
 
-    public Integer insert(Key Key)                                              // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
+    public slot insert(Key Key)                                                 // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
      {final int N = numberOfSlots();
       if (full()) return null;                                                  // No slot available in which to insert a new key
-      final slot alloc = allocRef();                                                // The location in which to store the search key
-      key(alloc, Key);                                                              // Store the new key in the referenced location
+      final slot alloc = allocRef();                                            // The location in which to store the search key
+      key(alloc, Key);                                                          // Store the new key in the referenced location
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
       if ( l.above && l.below) {}                                               // Found
       else if (!l.above && !l.below)                                            // Empty place the key in the middle
@@ -525,7 +525,7 @@ class Tree extends Test                                                         
          }
         if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();       // Redistribute if the used slots are densely packed
        }
-      return alloc.value();                                                     // The index of the reference to the key
+      return alloc;                                                             // The index of the reference to the key
      }
 
     class Locate                                                                // Locate the slot containing the search key if possible else the key immediately above or below the search key.
@@ -890,9 +890,9 @@ class Tree extends Test                                                         
       return b;
      }
 
-    Integer insert(Key Key, Data Data)                                          // Insert a key data pair into a leaf
-     {final Integer i = insert(Key);
-      if (i != null) data(i, Data);                                             // Save data in allocated reference
+    slot insert(Key Key, Data Data)                                             // Insert a key data pair into a leaf
+     {final slot i = insert(Key);
+      if (i != null) data(i.value(), Data);                                     // Save data in allocated reference
       return i;
      }
 
@@ -1152,9 +1152,9 @@ class Tree extends Test                                                         
       return b;
      }
 
-    Integer insert(Key Key, Slots Data)                                         // Insert a key data pair into a branch
-     {final Integer i = insert(Key);
-      if (i != null) dataDirect(i, Data);
+    slot insert(Key Key, Slots Data)                                         // Insert a key data pair into a branch
+     {final slot i = insert(Key);
+      if (i != null) dataDirect(i.value(), Data);
       return i;
      }
 
