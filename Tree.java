@@ -57,7 +57,7 @@ class Tree extends Test                                                         
   int numberOfNodes() {return numberOfNodes;}                                   // Maximum number of nodes in tree
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
-  public static final class Key                                                 // A key
+  static final class Key                                                        // A key
    {final int value;
     Key(  int Value)  {value = Value;}
     int       value() {return  value;}
@@ -65,7 +65,7 @@ class Tree extends Test                                                         
 
   static Key Key(int  Value) {return new Key(Value);}                           // A key in a slot
 
-  public static final class Data                                                // An item of data associated with a key
+  static final class Data                                                       // An item of data associated with a key
    {final int value;
     Data(int Value)  {value = Value;}
     int      value() {return  value;}
@@ -156,9 +156,9 @@ class Tree extends Test                                                         
 //D1 Slots                                                                      // Slots are used to describe leaves and branches in the tree
 
   class Slots                                                                   // Maintain key references in ascending order using distributed slots
-   {private final int        numberOfRefs;                                      // Number of references which should be equal to or smaller than the number of slots as slots are narrow and references are wide allowing us to use more slots effectively
-    private final int redistributionWidth;                                      // Redistribute if the next slot is further than this
-    protected Memory               memory;                                      // Memory used by the slots. Cannot be final until we can call stuff before constructing super
+   {final int        numberOfRefs;                                              // Number of references which should be equal to or smaller than the number of slots as slots are narrow and references are wide allowing us to use more slots effectively
+    final int redistributionWidth;                                              // Redistribute if the next slot is further than this
+    Memory                 memory;                                              // Memory used by the slots. Cannot be final until we can call stuff before constructing super
 
 //D2 Construction                                                               // Construct and layout the slots
 
@@ -168,9 +168,9 @@ class Tree extends Test                                                         
       memory = Bytes == null ? new Memory() : new Memory(Bytes);                // Memory used by the slots
      }
 
-    public Slots(int NumberOfRefs) {this(NumberOfRefs, null);}                  // Create the slots and some memory to hold them
+    Slots(int NumberOfRefs) {this(NumberOfRefs, null);}                         // Create the slots and some memory to hold them
 
-    private Slots(int NumberOfRefs, boolean usable)                             // Create the slots just to find out how big they will be
+    Slots(int NumberOfRefs, boolean usable)                                     // Create the slots just to find out how big they will be
      {numberOfRefs        = NumberOfRefs;                                       // Number of slots referenced
       redistributionWidth = 0;
       memory              = new Memory();
@@ -195,13 +195,13 @@ class Tree extends Test                                                         
     int numberOfRefs () {return numberOfRefs;}
     int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of refs
 
-    public final class slot                                                     // A dereferenced slot
+    final class slot                                                            // A dereferenced slot
      {final int value;
       slot( int Value)  {value = Value;}                                        // A key
       int       value() {return  value;}
      }
 
-    public final class Slot                                                     // A reference to slots
+    final class Slot                                                            // A reference to a slot
      {final int value;
       Slot( int Value)  {value = Value;}                                        // A key
       int       value() {return  value;}
@@ -268,29 +268,29 @@ class Tree extends Test                                                         
        }
      }
 
-    protected void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots(I.value()))); clearSlots(I.value());}// Remove a key from the slots
-    protected slot           slots(Slot I) {return  new slot(memory.slots(I.value()));}                        // The indexed slot
-    protected boolean    usedSlots(Slot I) {return  memory.usedSlots (I.value());}                             // The indexed slot usage indicator
-    protected boolean     usedRefs(slot I) {return  memory.usedRefs  (I.value());}                             // The indexed reference usage indicator
-    Key                       keys(Slot I) {return  new Key(memory.keys(memory.slots(I.value())));}            // The indexed key
+    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I.value()))); clearSlots(I.value());} // Remove a key from the slots
+    slot           slots(Slot I) {return  new slot(memory.slots    (I.value()));}                         // The indexed slot
+    boolean    usedSlots(Slot I) {return           memory.usedSlots(I.value());}                          // The indexed slot usage indicator
+    boolean     usedRefs(slot I) {return           memory.usedRefs (I.value());}                          // The indexed reference usage indicator
+    Key                       keys(Slot I) {return   new Key(memory.keys(memory.slots(I.value())));}      // The indexed key
 
-    protected void     slots(Slot I, slot    Ref)   {memory.slots    (I.value(), Ref.value());}                // The indexed slot
-    protected void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                      // The indexed slot usage indicator
-    protected void  usedRefs(slot I, boolean Value) {memory.usedRefs (I.value(), Value);}                      // The indexed reference usage indicator
-              void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());}       // The indexed key
+    void     slots(Slot I, slot    Ref)   {memory.slots    (I.value(), Ref.value());}                     // The indexed slot
+    void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                           // The indexed slot usage indicator
+    void  usedRefs(slot I, boolean Value) {memory.usedRefs (I.value(), Value);}                           // The indexed reference usage indicator
+    void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());}            // The indexed key
 
-    protected Key  key(slot I)         {return new Key(memory.keys(I.value()));}// Get the key directly
-    protected void key(slot I, Key Key) {memory.keys(I.value(), Key.value());}  // Set the key directly
+    Key  key(slot I) {return new Key(memory.keys(I.value()));}                  // Get the key directly
+    void key(slot I, Key Key)       {memory.keys(I.value(), Key.value());}      // Set the key directly
 
-    Allocation  name()  {return new Allocation(memory.name());}                 // Get the name
-    void name(Allocation Name) {memory.name(Name.at());}                        // Set the name
+    Allocation name() {return new Allocation(memory.name());}                   // Get the name
+    void name(Allocation Name)              {memory.name(Name.at());}           // Set the name
 
     int  type()  {return memory.type();}                                        // Get the type
     void type(int Type) {memory.type(Type);}                                    // Set the type
 
 //D2 Refs                                                                       // Allocate and free references to keys
 
-    private slot allocRef()                                                     // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
+    slot allocRef()                                                             // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
      {for (int i = 0; i < numberOfRefs; i++)
        {final slot I = new slot(i);
         if (!usedRefs(I))
@@ -302,7 +302,7 @@ class Tree extends Test                                                         
       return null;
      }
 
-    private void freeRef(slot Ref) {usedRefs(Ref, false);}                      // Free a reference to one of the keys in the slots
+    void freeRef(slot Ref) {usedRefs(Ref, false);}                              // Free a reference to one of the keys in the slots
 
 //D2 Statistics                                                                 // Query the state of the slots
 
@@ -391,7 +391,7 @@ class Tree extends Test                                                         
        }
      }
 
-    protected void redistribute()                                               // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
+    void redistribute()                                                         // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
      {if (empty()) return;                                                      // Nothing to redistribute
       final int      N = numberOfSlots(), c = countUsed(), space = (N - c) / c, // Space between used slots
                  cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);      // Covered space from first used slot to last used slot, uncovered remainder
@@ -620,7 +620,7 @@ class Tree extends Test                                                         
 
 //D2 Print                                                                      // Print the slots
 
-    protected String printSlots()                                               // Print the occupancy of each slot
+    String printSlots()                                                         // Print the occupancy of each slot
      {final StringBuilder s = new StringBuilder();
       final int N = numberOfSlots();
       for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "X" : ".");
@@ -640,7 +640,7 @@ class Tree extends Test                                                         
       return ""+s+"\n";
      }
 
-    public String printInOrder()                                                // Print the values in the used slots in order
+    String printInOrder()                                                       // Print the values in the used slots in order
      {final StringJoiner s = new StringJoiner(", ");
       final int N = numberOfSlots();
       for (int i = 0; i < N; i++)
@@ -999,7 +999,7 @@ class Tree extends Test                                                         
 
 //D2 Print                                                                      // Print the leaf
 
-    public String printInOrder()                                                // Print the values in the used slots in order
+    String printInOrder()                                                       // Print the values in the used slots in order
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
@@ -1275,10 +1275,10 @@ class Tree extends Test                                                         
       return data(Index);                                                       // The indicated child
      }
 
-    Tree tree()                     {return Tree.this;}                         // Containing tree
-    private Slots stepDown(Key Key) {return child(locateFirstGe(Key));}         // Step down from this branch
+    Tree tree()             {return Tree.this;}                                 // Containing tree
+    Slots stepDown(Key Key) {return child(locateFirstGe(Key));}                 // Step down from this branch
 
-    private int count()                                                         // Count the number of entries under this branch
+    int count()                                                                 // Count the number of entries under this branch
      {int n = 0;
       final int S = numberOfSlots();
       for  (int i = 0; i < S; i++)                                              // Each slot
@@ -1333,7 +1333,7 @@ class Tree extends Test                                                         
 
 //D2 Print                                                                      // Print a branch
 
-    public String printInOrder()                                                // Print the values in the used slots in order
+    String printInOrder()                                                       // Print the values in the used slots in order
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
@@ -1722,10 +1722,10 @@ class Tree extends Test                                                         
 
 //D1 Print                                                                      // Print the tree horizontally
 
-  private final int linesToPrintABranch = 4;                                    // The number of lines required to print a branch
-  private final int maxPrintLevels      = 3;                                    // The maximum number of levels to print - this avoids endless print loops when something goes wrong
+  final int linesToPrintABranch = 4;                                            // The number of lines required to print a branch
+  final int maxPrintLevels      = 3;                                            // The maximum number of levels to print - this avoids endless print loops when something goes wrong
 
-  private void printLeaf                                                        // Print leaf horizontally
+  void printLeaf                                                                // Print leaf horizontally
    (Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details,
     Branch Parent, Integer Index)
    {final Leaf L = Leaf;
@@ -1747,7 +1747,7 @@ class Tree extends Test                                                         
     padStrings(P, level);
    }
 
-  private void printBranch                                                      // Print branch horizontally
+  void printBranch                                                              // Print branch horizontally
    (Branch Branch, Stack<StringBuilder>P, int level, boolean Details,
     Branch Parent, Integer Index)                                               // Details of parent which might differ from what is actually stored in the tree
    {if (level > maxPrintLevels) return;
@@ -1792,7 +1792,7 @@ class Tree extends Test                                                         
     padStrings(P, level);                                                       // Equalize the strings used to print the tree
    }
 
- private String printBoxed()                                                    // Print a tree in a box
+ String printBoxed()                                                            // Print a tree in a box
   {final String  s = ""+this;
    final int     n = longestLine(s)-1;
    final String[]L = s.split("\n");
@@ -1803,7 +1803,7 @@ class Tree extends Test                                                         
    return ""+t;
   }
 
-  private void padStrings(Stack<StringBuilder> S, int level)                    // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
+  void padStrings(Stack<StringBuilder> S, int level)                            // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
    {final int N = level * linesToPrintABranch + maxLeafSize;                    // Number of lines we might want
     for (int i = S.size(); i <= N; ++i) S.push(new StringBuilder());            // Make sure we have a full deck of strings
     int m = 0;                                                                  // Maximum length
@@ -1813,7 +1813,7 @@ class Tree extends Test                                                         
      }
    }
 
-  private String printCollapsed(Stack<StringBuilder> S)                         // Collapse horizontal representation into a string
+  String printCollapsed(Stack<StringBuilder> S)                                 // Collapse horizontal representation into a string
    {final StringBuilder t = new StringBuilder();                                // Print the lines of the tree that are not blank
     for  (StringBuilder s : S)
      {final String l = ""+s;
