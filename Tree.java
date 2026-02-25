@@ -8,15 +8,15 @@ import java.util.*;
 import java.nio.ByteBuffer;
 
 class Tree extends Test                                                         // Manipulate a tree
- {final int           maxLeafSize;                                              // The maximum number of entries in a leaf
-  final int         maxBranchSize;                                              // The maximum number of entries in a branch
-  final Stack<Allocation>  freeChain = new Stack<>();                           // Unallocated leaves and branches
-  final int MaximumNumberOfLevels = 99;                                         // Maximum number of levels in tree
-  final int         numberOfNodes;                                              // Maximum number of leaves plus branches in this tree
-  final int            sizeOfNode;                                              // The size of each node in the tree: a node may hold a branch or a leaf
-  final Memory             memory;                                              // Memory containing the tree base followed by the leaves and branches of the tree
-  final static String   formatKey = "%3d";                                      // Format a key for dumping during testing
-  static boolean            debug = false, debug2 = false;                      // Debug if enabled
+ {final int             maxLeafSize;                                            // The maximum number of entries in a leaf
+  final int           maxBranchSize;                                            // The maximum number of entries in a branch
+  final Stack<Allocation> freeChain = new Stack<>();                            // Unallocated leaves and branches
+  final int   MaximumNumberOfLevels = 99;                                       // Maximum number of levels in tree
+  final int           numberOfNodes;                                            // Maximum number of leaves plus branches in this tree
+  final int              sizeOfNode;                                            // The size of each node in the tree: a node may hold a branch or a leaf
+  final Memory               memory;                                            // Memory containing the tree base followed by the leaves and branches of the tree
+  final static String     formatKey = "%3d";                                    // Format a key for dumping during testing
+  static boolean              debug = false, debug2 = false;                    // Debug if enabled
 
 //D1 Construction                                                               // Construct and layout a tree
 
