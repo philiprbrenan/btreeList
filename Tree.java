@@ -600,7 +600,7 @@ class Tree extends Test                                                         
 
     public Slot locate(Key Key)                                                 // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
-      return l.exact() ? l.at < null;                                           // Found if exact match
+      return l.exact() ? l.at : null;                                           // Found if exact match
      }
 
     public slot find(Key Key)                                                   // Find the index of the current key in the slots
