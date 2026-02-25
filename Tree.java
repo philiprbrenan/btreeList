@@ -589,21 +589,21 @@ class Tree extends Test                                                         
       return locateNextUsedSlot(l.at.right());
      }
 
-    public Integer locate(Key Key)                                              // Locate the slot containing the current search key if possible.
+    public Slot locate(Key Key)                                                 // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
-      if (l.exact()) return l.at.value();                                       // Found
+      if (l.exact()) return l.at;                                               // Found
       return null;                                                              // Not found
      }
 
-    public Integer find(Key Key)                                                // Find the index of the current key in the slots
-     {final Integer i = locate(Key);
-      return i == null ? null : slots(new Slot(i)).value();
+    public slot find(Key Key)                                                   // Find the index of the current key in the slots
+     {final Slot i = locate(Key);
+      return i == null ? null : slots(i);
      }
 
     public boolean delete(Key Key)                                              // Delete the specified key
-     {final Integer i = locate(Key);                                            // Locate the search key
+     {final Slot i = locate(Key);                                               // Locate the search key
       if (i == null) return false;                                              // Their key is not in the slots
-      clearSlotAndRef(new Slot(i));                                             // Delete key
+      clearSlotAndRef(i);                                                       // Delete key
       return true;                                                              // Indicate that the key was deleted
      }
 
@@ -1947,27 +1947,27 @@ usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
 usedRefs :    X   X   X   X   X   X   X   X
 keys     :   14  13  16  15  18  17  12  11
 """);
-    ok(s.locate(Key(11)),  5);
-    ok(s.locate(Key(12)),  6);
-    ok(s.locate(Key(13)),  7);
-    ok(s.locate(Key(14)),  8);
-    ok(s.locate(Key(15)),  9);
-    ok(s.locate(Key(16)), 10);
-    ok(s.locate(Key(17)), 11);
-    ok(s.locate(Key(18)), 12);
-    ok(s.locate(Key(10)), null);
-    ok(s.locate(Key(20)), null);
+    ok(s.locate(Key(11)).value(),  5);
+    ok(s.locate(Key(12)).value(),  6);
+    ok(s.locate(Key(13)).value(),  7);
+    ok(s.locate(Key(14)).value(),  8);
+    ok(s.locate(Key(15)).value(),  9);
+    ok(s.locate(Key(16)).value(), 10);
+    ok(s.locate(Key(17)).value(), 11);
+    ok(s.locate(Key(18)).value(), 12);
+    ok(s.locate(Key(10)) == null, true);
+    ok(s.locate(Key(20)) == null, true);
 
-    ok(s.key(s.new slot(s.find(Key(14)))).value(), 14); ok(s.delete(Key(14)), true); ok(s, "11, 12, 13, 15, 16, 17, 18");
-    ok(s.key(s.new slot(s.find(Key(12)))).value(), 12); ok(s.delete(Key(12)), true); ok(s, "11, 13, 15, 16, 17, 18");
-    ok(s.key(s.new slot(s.find(Key(13)))).value(), 13); ok(s.delete(Key(13)), true); ok(s, "11, 15, 16, 17, 18");
-    ok(s.key(s.new slot(s.find(Key(16)))).value(), 16); ok(s.delete(Key(16)), true); ok(s, "11, 15, 17, 18");
-    ok(s.key(s.new slot(s.find(Key(18)))).value(), 18); ok(s.delete(Key(18)), true); ok(s, "11, 15, 17");
-    ok(s.key(s.new slot(s.find(Key(11)))).value(), 11); ok(s.delete(Key(11)), true); ok(s, "15, 17");
-    ok(s.key(s.new slot(s.find(Key(17)))).value(), 17); ok(s.delete(Key(17)), true); ok(s, "15");
-    ok(s.key(s.new slot(s.find(Key(15)))).value(), 15); ok(s.delete(Key(15)), true); ok(s, "");
+    ok(s.key(s.find(Key(14))).value(), 14); ok(s.delete(Key(14)), true); ok(s, "11, 12, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(12))).value(), 12); ok(s.delete(Key(12)), true); ok(s, "11, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(13))).value(), 13); ok(s.delete(Key(13)), true); ok(s, "11, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(16))).value(), 16); ok(s.delete(Key(16)), true); ok(s, "11, 15, 17, 18");
+    ok(s.key(s.find(Key(18))).value(), 18); ok(s.delete(Key(18)), true); ok(s, "11, 15, 17");
+    ok(s.key(s.find(Key(11))).value(), 11); ok(s.delete(Key(11)), true); ok(s, "15, 17");
+    ok(s.key(s.find(Key(17))).value(), 17); ok(s.delete(Key(17)), true); ok(s, "15");
+    ok(s.key(s.find(Key(15))).value(), 15); ok(s.delete(Key(15)), true); ok(s, "");
 
-    ok(s.locate(Key(10)), null); ok(s.delete(Key(10)), false);
+    ok(s.locate(Key(10))== null, true); ok(s.delete(Key(10)), false);
    }
 
   static void test_idn()                                                        // Repeated inserts and deletes
@@ -1996,7 +1996,7 @@ keys     :   14  13  16  15  18  17  12  11
 
     s.insert(Key(10));
     s.insert(Key(20));
-    ok(s.find(Key(15)), null);
+    ok(s.find(Key(15)) == null, true);
    }
 
   static void test_locateFirstGeKey()
