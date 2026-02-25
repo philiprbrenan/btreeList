@@ -204,15 +204,16 @@ class Tree extends Test                                                         
          }
         return null;                                                            // No used slot to the left
        }
-    boolean eq(Key Key) {return Key.value() == keys(this).value();}  // Search key is equal to indexed key
+
+      boolean eq(Key Key) {return Key.value() == keys(this).value();}           // Search key is equal to indexed key
+      boolean le(Key Key) {return Key.value() <= keys(this).value();}           // Search key is less than or equal to indexed key
+      boolean lt(Key Key) {return !eq(Key) && le(Key);}                         // Search key is less than or equal to indexed key
+      boolean ge(Key Key) {return  eq(Key) || gt(Key);}                         // Search key is less than or equal to indexed key
+      boolean gt(Key Key) {return !le(Key);}                                    // Search key is less than or equal to indexed key
      }
 
 //D2 Keys                                                                       // Define a key
 
-    boolean le(Key Key, Slot Slot) {return Key.value() <= keys(Slot).value();}  // Search key is less than or equal to indexed key
-    boolean lt(Key Key, Slot Slot) {return !Slot.eq(Key) && le(Key, Slot);}    // Search key is less than or equal to indexed key
-    boolean ge(Key Key, Slot Slot) {return  Slot.eq(Key) || gt(Key, Slot);}    // Search key is less than or equal to indexed key
-    boolean gt(Key Key, Slot Slot) {return !le(Key, Slot);}                     // Search key is less than or equal to indexed key
 
     Key firstKey()                                                              // First key in slots
      {if (empty()) stop("No first key in empty slots");                         // First key in slots if there is one
@@ -538,20 +539,20 @@ class Tree extends Test                                                         
        {final int N = numberOfSlots();
         if (empty()) {none(); return;}                                          // Empty so their search key cannot be found
         Slot a = locateFirstUsedSlot(), b = locateLastUsedSlot();               // Lower limit, upper limit
-        if ( a.eq(Key)) {found(a); return;}                                    // Found at the start of the range
-        if ( b.eq(Key)) {found(b); return;}                                    // Found at the end of the range
-        if ( le(Key, a)) {below(a); all = true; return;}                        // Smaller than any key
-        if (!le(Key, b)) {above(b); all = true; return;}                        // Greater than any key
+        if ( a.eq(Key)) {found(a); return;}                                     // Found at the start of the range
+        if ( b.eq(Key)) {found(b); return;}                                     // Found at the end of the range
+        if ( a.le(Key)) {below(a); all = true; return;}                         // Smaller than any key
+        if (!b.le(Key)) {above(b); all = true; return;}                         // Greater than any key
 
         for(int i = 0; i < N; ++i)                                              // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
          {final Slot M = new Slot((a.value() + b.value()) / 2);                 // Desired mid point - but there might not be a slot in use at this point
           final Slot ma = locatePrevUsedSlot(M);                                // Occupied slot preceding mid point
           final Slot mb = locateNextUsedSlot(M);                                // Occupied slot succeeding mid point
 
-          if      (ma.value() != a.value() && ge(Key, ma)) a = ma;
-          else if (ma.value() != b.value() && le(Key, ma)) b = ma;
-          else if (mb.value() != a.value() && ge(Key, mb)) a = mb;
-          else if (mb.value() != b.value() && le(Key, mb)) b = mb;
+          if      (ma.value() != a.value() && ma.ge(Key)) a = ma;
+          else if (ma.value() != b.value() && ma.le(Key)) b = ma;
+          else if (mb.value() != a.value() && mb.ge(Key)) a = mb;
+          else if (mb.value() != b.value() && mb.le(Key)) b = mb;
           else                                                                  // The slots must be adjacent
            {if (a.eq(Key)) {found(a); return;};                                // Found the search key at the lower end
             if (b.eq(Key)) {found(b); return;};                                // Found the search key at the upper end
