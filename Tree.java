@@ -316,7 +316,7 @@ class Tree extends Test                                                         
     boolean adjacentUsedSlots(int Start, int Finish)                            // Checks wether two used slots are adjacent
      {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
       if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
-      if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
+      if (Start >= Finish)              stop("Start must precede finish:", Start, Finish);
 
       for (int i = Start+1; i < Finish; i++)                                    // From start to finish looking for an intermediate used slot
        {if (usedSlots(new Slot(i))) return false;
@@ -634,7 +634,7 @@ class Tree extends Test                                                         
       return ""+s+"\n";
      }
 
-    public String toString()                                                    // Print the values in the used slots
+    public String printInOrder()                                                // Print the values in the used slots in order
      {final StringJoiner s = new StringJoiner(", ");
       final int N = numberOfSlots();
       for (int i = 0; i < N; i++)
@@ -1942,7 +1942,7 @@ class Tree extends Test                                                         
     s.insert(Key(17));
     s.insert(Key(12));
     s.insert(Key(11));
-    ok(s, "11, 12, 13, 14, 15, 16, 17, 18");
+    ok(s.printInOrder(), "11, 12, 13, 14, 15, 16, 17, 18");
     ok(s.empty(), false);
     ok(s.full(), true);
     ok(s.dump(), """
@@ -1964,14 +1964,14 @@ keys     :   14  13  16  15  18  17  12  11
     ok(s.locate(Key(10)) == null, true);
     ok(s.locate(Key(20)) == null, true);
 
-    ok(s.key(s.find(Key(14))).value(), 14); ok(s.delete(Key(14)), true); ok(s, "11, 12, 13, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(12))).value(), 12); ok(s.delete(Key(12)), true); ok(s, "11, 13, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(13))).value(), 13); ok(s.delete(Key(13)), true); ok(s, "11, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(16))).value(), 16); ok(s.delete(Key(16)), true); ok(s, "11, 15, 17, 18");
-    ok(s.key(s.find(Key(18))).value(), 18); ok(s.delete(Key(18)), true); ok(s, "11, 15, 17");
-    ok(s.key(s.find(Key(11))).value(), 11); ok(s.delete(Key(11)), true); ok(s, "15, 17");
-    ok(s.key(s.find(Key(17))).value(), 17); ok(s.delete(Key(17)), true); ok(s, "15");
-    ok(s.key(s.find(Key(15))).value(), 15); ok(s.delete(Key(15)), true); ok(s, "");
+    ok(s.key(s.find(Key(14))).value(), 14); ok(s.delete(Key(14)), true); ok(s.printInOrder(), "11, 12, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(12))).value(), 12); ok(s.delete(Key(12)), true); ok(s.printInOrder(), "11, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(13))).value(), 13); ok(s.delete(Key(13)), true); ok(s.printInOrder(), "11, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(16))).value(), 16); ok(s.delete(Key(16)), true); ok(s.printInOrder(), "11, 15, 17, 18");
+    ok(s.key(s.find(Key(18))).value(), 18); ok(s.delete(Key(18)), true); ok(s.printInOrder(), "11, 15, 17");
+    ok(s.key(s.find(Key(11))).value(), 11); ok(s.delete(Key(11)), true); ok(s.printInOrder(), "15, 17");
+    ok(s.key(s.find(Key(17))).value(), 17); ok(s.delete(Key(17)), true); ok(s.printInOrder(), "15");
+    ok(s.key(s.find(Key(15))).value(), 15); ok(s.delete(Key(15)), true); ok(s.printInOrder(), "");
 
     ok(s.locate(Key(10))== null, true); ok(s.delete(Key(10)), false);
    }
@@ -1985,13 +1985,13 @@ keys     :   14  13  16  15  18  17  12  11
       s.insert(Key(13)); s.redistribute();
       s.insert(Key(16)); s.redistribute();
       s.insert(Key(15)); s.redistribute();
-      ok(s, "13, 14, 15, 16");
+      ok(s.printInOrder(), "13, 14, 15, 16");
       ok(s.countUsed(), 4);
       s.delete(Key(14)); s.redistribute();
       s.delete(Key(13)); s.redistribute();
       s.delete(Key(16)); s.redistribute();
       s.delete(Key(15)); s.redistribute();
-      ok(s, "");
+      ok(s.printInOrder(), "");
       ok(s.countUsed(), 0);
      }
    }
