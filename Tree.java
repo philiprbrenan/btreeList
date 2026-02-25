@@ -802,7 +802,7 @@ class Tree extends Test                                                         
     Integer upIndex()                                                           // Index of this leaf in its parent
      {final int i = memory.upIndex(); return i < 0 ? null : i;
      }
-    void upIndex(Slots.Slot Slot)                                               // Set the index of this leaf in its parent
+    void upIndex(Slot Slot)                                                     // Set the index of this leaf in its parent
      {memory.upIndex(Slot != null ? Slot.value() : -1);                         // -1 represents null in the byte buffer for this index
      }
 
@@ -895,7 +895,7 @@ class Tree extends Test                                                         
       final Data[]d = new Data[R];
       int p = 0;
       for (int i = 0; i < N; i++)
-       {final Slots.Slot I = new Slot(i);
+       {final Slot I = new Slot(i);
         if (usedSlots(I)) d[p++] = data(slots(I).value());
        }
       super.compactLeft();
@@ -908,7 +908,7 @@ class Tree extends Test                                                         
       final Data[]d = new Data[R];
       int p = R-1;
       for (int i = N-1; i >= 0; --i)
-       {final Slots.Slot I = new Slot(i);
+       {final Slot I = new Slot(i);
         if (usedSlots(I)) d[p--] = data(slots(I).value());
        }
       super.compactRight();
@@ -955,7 +955,7 @@ class Tree extends Test                                                         
       final StringJoiner d = new StringJoiner(", ");
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)
-       {final Slots.Slot I = new Slot(i);
+       {final Slot I = new Slot(i);
         if (usedSlots(I))
          {k.add(""+keys(I).value());
           d.add(""+memory.data(slots(I).value()));
@@ -1099,7 +1099,7 @@ class Tree extends Test                                                         
       Key  sk = null;                                                           // Splitting key
       final int S = numberOfSlots();
       for (int i = 0; i < S; i++)                                               // Each slot
-       {final Slots.Slot I = new Slot(i);                                       // Slot is in use
+       {final Slot I = new Slot(i);                                             // Slot is in use
         if (usedSlots(I))                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left branch
            {Right.clearSlotAndRef(I);                                           // Free the entry from the right branch as it is being used in the left branch
@@ -1130,7 +1130,7 @@ class Tree extends Test                                                         
       int  k = 0;                                                               // Splitting key
       final int S = numberOfSlots();
       for (int i = 0, p = 0; i < S; i++)                                        // Scan for splitting keys
-       {final Slots.Slot I = new Slot(i);
+       {final Slot I = new Slot(i);
         if (usedSlots(I) && p++ == splitSize()) k += keys(I).value();           // Splitting key as last on left and first on right of split
        }
       return k;                                                                 // Splitting key
@@ -1190,7 +1190,7 @@ class Tree extends Test                                                         
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       for (int i = 0, p = 0; i < N; i++)
-       {final Slots.Slot I = new Slot(i);
+       {final Slot I = new Slot(i);
         if (usedSlots(I)) d[p++] = data(I);
        }
       super.compactLeft();
@@ -1201,7 +1201,7 @@ class Tree extends Test                                                         
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
       for (int i = N-1, p = R-1; i >= 0;--i)
-       {final Slots.Slot I = new Slot(i);
+       {final Slot I = new Slot(i);
         if (usedSlots(I)) d[p--] = data(I);
        }
       super.compactRight();
@@ -1239,7 +1239,7 @@ class Tree extends Test                                                         
       return true;
      }
 
-    boolean mergeLeftSibling(Slots.Slot Right)                                  // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
+    boolean mergeLeftSibling(Slot Right)                                        // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
      {final Slots.Slot left = Right != null ? Right.stepLeft() :                // Left sibling from right child
                                               locateLastUsedSlot();             // Sibling prior to top
       if (left == null) return false;                                           // No left sibling
@@ -1269,7 +1269,7 @@ class Tree extends Test                                                         
       return mergeLeftSibling(Left.stepRight());                                // Recast as a merge from the left
      }
 
-    Slots child(Slots.Slot Index)                                               // The indexed child. The index must be valid or null - if null, top is returned
+    Slots child(Slot Index)                                                     // The indexed child. The index must be valid or null - if null, top is returned
      {if (Index == null) return top();                                          // A null index produces top
       if (!usedSlots(Index)) stop("Indexing unused slot:", Index.value());      // The slot must be valid
       return data(Index);                                                       // The indicated child
@@ -1282,7 +1282,7 @@ class Tree extends Test                                                         
      {int n = 0;
       final int S = numberOfSlots();
       for  (int i = 0; i < S; i++)                                              // Each slot
-       {final Slots.Slot I = new Slot(i);
+       {final Slot I = new Slot(i);
         if (usedSlots(I))                                                       // Active slot
          {final Slots s = data(I);
           if      (Leaf  .ref(s)) n += s.countUsed();
