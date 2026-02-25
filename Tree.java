@@ -621,7 +621,7 @@ class Tree extends Test                                                         
       return ""+s;
      }
 
-    protected String dump()                                                     // Dump the slots
+    public String toString()                                                    // Dump the slots
      {final StringBuilder s = new StringBuilder();
       final int N = numberOfSlots(), R = numberOfRefs;
       s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n",    // Title line
@@ -749,8 +749,8 @@ class Tree extends Test                                                         
        {final int n = i * sizeOfNode;
         s.append(String.format("Node: %4d at %4d\n", i, n));
         final boolean leaf = bytes.getInt(n) == NodeType.Leaf.ordinal();
-        final String t = leaf ? new Leaf  (new Allocation(i)).dump() :
-                                new Branch(new Allocation(i)).dump();
+        final String t = leaf ? new Leaf  (new Allocation(i)).toString() :
+                                new Branch(new Allocation(i)).toString();
         s.append(t);
        }
       return ""+s;
@@ -989,7 +989,7 @@ class Tree extends Test                                                         
       for (int i = 0; i < N; i++) d.add(String.format(formatKey, memory.data(i)));
       final String U = " up: "   +(up() != null                          ? up().name ().at()     : "null");
       final String I = " index: "+(up() != null && upIndex(up()) != null ? upIndex(up()).value() : "null");
-      return "Leaf     : "+name().at()+U+I+"\n"+super.dump() + "data     :  "+d+"\n";
+      return "Leaf     : "+name().at()+U+I+"\n"+super.toString() + "data     :  "+d+"\n";
      }
 
     class Memory extends LeafMemoryPositions                                    // Memory required to hold bytes
@@ -1005,14 +1005,20 @@ class Tree extends Test                                                         
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
 
-      int  up()   {return bytes.getInt(posUp);}                                 // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
-      void up(int Index) {bytes.putInt(posUp, Index);}
+      int  up()     {return bytes.getInt(posUp);}                               // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
+      void up(int Index)   {bytes.putInt(posUp, Index);}                        // Save address of parent branch into memory
 
-      int  upIndex()       {return bytes.getInt(posUpIndex);}                   // Index of leaf in its parent
-      void upIndex(Integer Value) {bytes.putInt(posUpIndex, Value != null ? Value : -1);} // -1 used to indicate top
+      int  upIndex(){return bytes.getInt(posUpIndex);}                          // Get index of leaf in its parent from memory
+      void upIndex(Integer Value)                                               // Save index of this leaf in its parent branch
+       {bytes.putInt(posUpIndex, Value != null ? Value : -1);                   // -1 used to indicate top
+       }
 
-      int  data(int Index)      {return bytes.getInt(posData + Index * Integer.BYTES);}
-      void data(int Index, int  Value) {bytes.putInt(posData + Index * Integer.BYTES, Value);}
+      int  data(int Index)                                                      // Get the index of the leaf in its parent branch from memory
+       {return bytes.getInt(posData + Index * Integer.BYTES);
+       }
+      void data(int Index, int  Value)                                          // Put the index of the leaf in itas parent branch into memory
+       {bytes.putInt(posData + Index * Integer.BYTES, Value);
+       }
      }
    }
 
@@ -1020,7 +1026,7 @@ class Tree extends Test                                                         
 
   class Branch extends Slots                                                    // Branch
    {final Allocation node;                                                      // The node holding this leaf
-    final Memory   memory;                                                        // Memory used by the slots
+    final Memory   memory;                                                      // Memory used by the slots
 
     Branch()                                                                    // Create a branch
      {super(maxBranchSize);                                                     // Slots for branch
@@ -1200,7 +1206,7 @@ class Tree extends Test                                                         
       final int u = memory.up();
       final int i = memory.upIndex() != null ? memory.upIndex() : -1;
       s.append(String.format("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
-      s.append(super.dump());
+      s.append(super.toString());
       s.append("data     :  "+d+"\n");
       s.append("top      :  "+String.format(formatKey, memory.top())+"\n");
       return ""+s;
@@ -1945,7 +1951,7 @@ class Tree extends Test                                                         
     ok(s.printInOrder(), "11, 12, 13, 14, 15, 16, 17, 18");
     ok(s.empty(), false);
     ok(s.full(), true);
-    ok(s.dump(), """
+    ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
@@ -2013,7 +2019,7 @@ keys     :   14  13  16  15  18  17  12  11
     s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), true); s.key(s.new slot(4), Key(24));
     s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), true); s.key(s.new slot(2), Key(26));
     s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), true); s.key(s.new slot(0), Key(28));
-    ok(s.dump(), """
+    ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -2035,7 +2041,7 @@ keys     :   28   0  26   0  24   0   0  22
     s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), true); s.key(s.new slot(4), Key(12));
     s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), true); s.key(s.new slot(2), Key(13));
     s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), true); s.key(s.new slot(0), Key(14));
-    ok(s.dump(), """
+    ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -2045,7 +2051,7 @@ keys     :   14   0  13   0  12   0   0  11
 """);
     s.compactLeft();
 
-    ok(s.dump(), """
+    ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
@@ -2063,7 +2069,7 @@ keys     :   11  12  13  14   0   0   0   0
     s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), true); s.key(s.new slot(4), Key(12));
     s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), true); s.key(s.new slot(2), Key(13));
     s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), true); s.key(s.new slot(0), Key(14));
-    ok(s.dump(), """
+    ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -2072,7 +2078,7 @@ usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
     s.compactRight();
-    ok(s.dump(), """
+    ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
@@ -2094,7 +2100,7 @@ keys     :    0   0   0   0  11  12  13  14
     s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), true); s.key(s.new slot(2), Key(13));
     s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), true); s.key(s.new slot(0), Key(14));
     s.type     (11);
-    ok(s.dump(), """
+    ok(s, """
 Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
@@ -2108,7 +2114,7 @@ keys     :   14   0  13   0  12   0   0  11
     final Slots        B = s.duplicateSlots();
     final Slots.Memory m = B.memory;
 
-    ok(B.dump(), s.dump());
+    ok(B, s);
 
     ok(m.slots       (0), 0);
     ok(m.slots       (1), 7);
@@ -2144,7 +2150,7 @@ keys     :   14   0  13   0  12   0   0  11
     m.usedRefs(  6, true);
     m.keys    (  6, 10);
 
-    ok(B.dump(), """
+    ok(B, """
 Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   6   0   0
@@ -2155,7 +2161,7 @@ keys     :   14   0  13   0  12   0  10  11
     ok(B.type(), 11);
    }
 
-  static void test_slots()                                                       // Tests thought to be in good shape
+  static void test_slots()                                                      // Tests thought to be in good shape
    {test_locateNearestFreeSlot();
     test_redistribute();
     test_ifd();
