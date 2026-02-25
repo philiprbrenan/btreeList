@@ -153,13 +153,13 @@ class Tree extends Test                                                         
 //D1 Slots                                                                      // Slots are used to describe leaves and branches in the tree
 
   class Slots                                                                   // Maintain key references in ascending order using distributed slots
-   {private final int        numberOfRefs;                                      // Number of references which should be equal to or smaller than the numnber of slots as slots are narrow and refences are wide allowing us to use more slots effectively
+   {private final int        numberOfRefs;                                      // Number of references which should be equal to or smaller than the number of slots as slots are narrow and references are wide allowing us to use more slots effectively
     private final int redistributionWidth;                                      // Redistribute if the next slot is further than this
     protected Memory               memory;                                      // Memory used by the slots. Cannot be final until we can call stuff before constructing super
 
 //D2 Construction                                                               // Construct and layout the slots
 
-    Slots(int NumberOfRefs, ByteBuffer Bytes)                                   // Create the slots using the specified memeory
+    Slots(int NumberOfRefs, ByteBuffer Bytes)                                   // Create the slots using the specified memory
      {numberOfRefs        = NumberOfRefs;                                       // Number of slots referenced
       redistributionWidth = (int)java.lang.Math.sqrt(numberOfRefs);             // Redistribute the slots if we see a run of more than these that are all occupied to make insertion easier.
       memory = Bytes == null ? new Memory() : new Memory(Bytes);                // Memory used by the slots
@@ -188,9 +188,9 @@ class Tree extends Test                                                         
       return this;                                                              // The copied slots
      }
 
-    void invalidate  () {memory.invalidate();}                                  // Invalidate the slots in such away that they are unlikely to work well if subsequently used
+    void invalidate  () {memory.invalidate();}                                  // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
     int numberOfRefs () {return numberOfRefs;}
-    int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of ref
+    int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of refs
 
     public final class slot                                                     // A dereferenced slot
      {final int value;
@@ -303,7 +303,7 @@ class Tree extends Test                                                         
 
 //D2 Statistics                                                                 // Query the state of the slots
 
-    int countUsed()                                                             // Number or slots in use. How can we do this quickly in parallel?
+    int countUsed()                                                             // Number of slots in use. How can we do this quickly in parallel?
      {final int N = numberOfSlots();
       int n = 0;
       for (int i = 0; i < N; i++) if (usedSlots(new Slot(i))) ++n;
@@ -313,7 +313,7 @@ class Tree extends Test                                                         
     boolean empty() {return countUsed() == 0;}                                  // All references are unused
     boolean full()  {return countUsed() == numberOfRefs;}                       // All references are in use
 
-    boolean adjacentUsedSlots(int Start, int Finish)                            // Checks wether two used slots are adjacent
+    boolean adjacentUsedSlots(int Start, int Finish)                            // Checks whether two used slots are adjacent
      {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
       if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
       if (Start >= Finish)              stop("Start must precede finish:", Start, Finish);
@@ -427,24 +427,28 @@ class Tree extends Test                                                         
       int p = 0;
       for (int i = 0; i < N; i++)                                               // Each slot
        {final Slot I = new Slot(i), P = new Slot(p);
+        final slot Q = new slot(p);
         if (d.usedSlots(I))                                                     // Each used slot
-         {usedSlots(P, true); usedRefs(new slot(p), true);
-              slots(P, new slot(p));
+         {usedSlots(P, true);
+           usedRefs(Q, true);
+              slots(P, Q);
                keys(P, d.keys(I));
           ++p;
          }
        }
      }
 
-    void compactRight()                                                         // Squeeze the used slots to the left end
+    void compactRight()                                                         // Compact the used slots to the left end
      {if (empty()) return;                                                      // Nothing to squeeze
       final Slots d = duplicateSlots(); reset();
       int p = numberOfRefs - 1;
       for (int i = numberOfSlots() - 1; i >= 0; --i)
        {final Slot I = new Slot(i), P = new Slot(p);
+        final slot Q = new slot(p);
         if (d.usedSlots(I))
-         {usedSlots(P, true); usedRefs(new slot(p), true);
-              slots(P, new slot(p));
+         {usedSlots(P, true);
+           usedRefs(Q, true);
+              slots(P, Q);
                keys(P, d.keys(I));
           --p;
          }
@@ -496,7 +500,7 @@ class Tree extends Test                                                         
       final slot alloc = allocRef();                                            // The location in which to store the search key
       key(alloc, Key);                                                          // Store the new key in the referenced location
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
-      if ( l.above && l.below) {}                                               // Found
+      if      ( l.above &&  l.below) {}                                         // Found
       else if (!l.above && !l.below)                                            // Empty place the key in the middle
        {final int N = numberOfSlots();
         slots    (new Slot(N/2), alloc);
@@ -596,8 +600,7 @@ class Tree extends Test                                                         
 
     public Slot locate(Key Key)                                                 // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
-      if (l.exact()) return l.at;                                               // Found
-      return null;                                                              // Not found
+      return l.exact() ? l.at < null;                                           // Found if exact match
      }
 
     public slot find(Key Key)                                                   // Find the index of the current key in the slots
@@ -674,11 +677,11 @@ class Tree extends Test                                                         
          }
        }
 
-      void invalidate()                                                         // Invalidate the slots in such away that they are unlikely to work well if subsequently used
+      void invalidate()                                                         // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
        {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
        }
 
-      void clear()                                                              // Clear all bytes in memory to zero which has the beneficial efefect of setting all slots to unused
+      void clear()                                                              // Clear all bytes in memory to zero which has the beneficial effect of setting all slots to unused
        {for (int i = 0; i < size; i++) bytes.put(i, (byte)0);
        }
 
@@ -713,7 +716,7 @@ class Tree extends Test                                                         
 
 //D1 Tree memory                                                                // Memory used to hold the root of the tree, its leaves and branches
 
-  class Memory extends TreeMemoryPositions                                      // Memory used to hodl the root of the tre,required to hold bytes
+  class Memory extends TreeMemoryPositions                                      // Memory used to hold the bytes of the
    {final int l            = new   LeafMemoryPositions().memorySize();          // Memory positions for leaves
     final int b            = new BranchMemoryPositions().memorySize();          // Memory positions for branches
     final int sizeOfNode   = max(l, b);                                         // Size of memory for a branch or a leaf or the base description of the tree - which is held in node 0.
@@ -766,11 +769,11 @@ class Tree extends Test                                                         
       Field+" = "+memory.bytes.getInt(Name*sizeOfNode + Field);
    }
 
-//D1 Root                                                                       // The root of the tree is referenced from a known location which allows any node to act as the root if needed - which simplifes the logic for merging and splitting the root.
+//D1 Root                                                                       // The root of the tree is referenced from a known location which allows any node to act as the root if needed - which simplifies the logic for merging and splitting the root.
 
-  Slots root()                                                                  // Slots repreenting the root of the tree held in memory
-   {final int r = memory.root();                                                // Current node containg root
-    if (r == 0) return null;                                                    // Node zero contains the tree base so we can conveneioently use zero as a null pointer as no leaf or branch will occupy node zero.
+  Slots root()                                                                  // Slots representing the root of the tree held in memory
+   {final int r = memory.root();                                                // Current node containing root
+    if (r == 0) return null;                                                    // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
     if (r <  0) return new Leaf  (new Allocation(-r));                          // Leaf as negative
     return             new Branch(new Allocation( r));                          // Branch as positive
    }
@@ -809,7 +812,7 @@ class Tree extends Test                                                         
      }
     void up(Branch Branch) {memory.up(Branch != null ? Branch.name().at() : 0);}// Set parent branch
 
-    Slot upIndex(Branch Branch)                                                 // Index of this leaf in its parent. We have to returnb an Integer rather than a slt becuase we do not know which branch the slot is in
+    Slot upIndex(Branch Branch)                                                 // Index of this leaf in its parent. We have to return an Integer rather than a slot because we do not know which branch the slot is in
      {final int i = memory.upIndex(); return i < 0 ? null : Branch.new Slot(i);
      }
     void upIndex(Slot Slot)                                                     // Set the index of this leaf in its parent
@@ -847,7 +850,7 @@ class Tree extends Test                                                         
       memory.invalidate();                                                      // Invalidate leaf data
      }
 
-    Leaf splitRight()                                                           // Split out the right hand siode of a full leaf
+    Leaf splitRight()                                                           // Split out the right hand side of a full leaf
      {final Leaf l = duplicate();
       final Leaf r = splitRight(l);
       return r;
@@ -977,13 +980,13 @@ class Tree extends Test                                                         
        {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
        }
 
-      void invalidate()                                                         // Invalidate the leaf in such away that it is unlikely to work well if subsequently used
+      void invalidate()                                                         // Invalidate the leaf in such a way that it is unlikely to work well if subsequently used
        {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
        }
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
 
-      int  up()     {return bytes.getInt(posUp);}                               // Reference to parent branch. The zero node contains the tree abse so zero can beused as a representation of null for references to branches and leaves
+      int  up()     {return bytes.getInt(posUp);}                               // Reference to parent branch. The zero node contains the tree base so zero can be used as a representation of null for references to branches and leaves
       void up(int Index)   {bytes.putInt(posUp, Index);}                        // Save address of parent branch into memory
 
       int  upIndex(){return bytes.getInt(posUpIndex);}                          // Get index of leaf in its parent from memory
@@ -994,7 +997,7 @@ class Tree extends Test                                                         
       int  data(int Index)                                                      // Get the index of the leaf in its parent branch from memory
        {return bytes.getInt(posData + Index * Integer.BYTES);
        }
-      void data(int Index, int  Value)                                          // Put the index of the leaf in itas parent branch into memory
+      void data(int Index, int  Value)                                          // Put the index of the leaf in its parent branch into memory
        {bytes.putInt(posData + Index * Integer.BYTES, Value);
        }
      }
@@ -1045,7 +1048,7 @@ class Tree extends Test                                                         
      {super(maxBranchSize);                                                     // Slots for branch
       node   = Name;                                                            // Node containing branch
       memory = new Memory(node);                                                // Memory for branch
-      super.setMemory(memory.bytes);                                            // Share memeory with slots
+      super.setMemory(memory.bytes);                                            // Share memory with slots
       name(node);                                                               // Name of the branch
      }
 
@@ -1299,7 +1302,7 @@ class Tree extends Test                                                         
        {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
        }
 
-      void invalidate()                                                         // Invalidate the branch in such away that it is unlikely to work well if subsequently used
+      void invalidate()                                                         // Invalidate the branch in such a way that it is unlikely to work well if subsequently used
        {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
        }
 
