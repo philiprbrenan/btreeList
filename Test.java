@@ -33,6 +33,10 @@ public class Test                                                               
 
 //D2 String routines                                                            // String routines
 
+  public static String f(String format, Object...args)                          // Alias for String.format
+   {return String.format(format, args);
+   }
+
   static String binaryString(int n, int width)                                  // Convert a integer to a binary string of specified width
    {final String b = "0".repeat(width)+Long.toBinaryString(n);
     return b.substring(b.length() - width);
@@ -291,6 +295,12 @@ public class Test                                                               
    }
 
 //D2 Array routines                                                             // Routines operating on arrays
+
+   int[]range(int Limit)                                                        // Range of integers
+    {final int[]r = new int[Limit];
+     for (int i = 0; i < Limit; i++) r[i] = i;
+     return r;
+    }
 
    static void reverseArray(Object[] array)                                     // Reverse an array in situ
     {final int N = array.length;
