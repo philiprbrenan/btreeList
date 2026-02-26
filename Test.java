@@ -296,9 +296,15 @@ public class Test                                                               
 
 //D2 Array routines                                                             // Routines operating on arrays
 
-   int[]range(int Limit)                                                        // Range of integers
+   static int[]range(int Limit)                                                        // Range of integers
     {final int[]r = new int[Limit];
-     for (int i = 0; i < Limit; i++) r[i] = i;
+     for (int i = 0; i < r.length; i++) r[i] = i;
+     return r;
+    }
+
+   static int[]range(int Start, int Limit)                                                        // Range of integers
+    {final int[]r = new int[Limit - Start];
+     for (int i = 0, j = Start; i < r.length; i++) r[i] = j++;
      return r;
     }
 
