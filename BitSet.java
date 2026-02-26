@@ -53,7 +53,7 @@ abstract public class BitSet extends Test                                       
   public void setPath(int Index)                                                // Set bits along path to index
    {int b = Index, p = 0, r = bitSize;
     for(int i : range(bitSize))                                                 // Much more than necessary
-     {setBit(p+b, value);                                                         // Validate index.
+     {setBit(p+b, true);                                                        // Validate index.
       p += r;
       r >>>= 1; if (r == 0) break;
       b >>>= 1;
@@ -68,16 +68,16 @@ abstract public class BitSet extends Test                                       
 
   public String toString()                                                      // Clear all bits.
    {final StringBuilder s = new StringBuilder();                                      // Compute number of bytes.
-    int b = Index, p = 0, r = bitSize;
+    int p = 0, r = bitSize;
 
-    for   (int i : range(1, BitSize))
+    for   (int i : range(1, bitSize))
      {s.append(f("%4d", i));                                                                                //
       for (int j : range(r)) s.append(f(" %1d", getBit(p + j)));                                                                                //
       s.append("\n");
       p += r; r >>>= 1;
       if (r == 0) break;
      }
-    ""+s;
+    return ""+s;
    }
 
 //D1 Tests                                                                      // Tests
