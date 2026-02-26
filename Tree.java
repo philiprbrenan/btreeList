@@ -1848,7 +1848,7 @@ class Tree extends Test                                                         
     final Stack<Leaf>  leaves   = new Stack<>();
 
     void scan(Branch B)
-     {for  (int i : range(B.numberOfSlots()))
+     {for (int i : range(B.numberOfSlots()))
        {final Slots.Slot S = B.new Slot(i);
          if (B.usedSlots(S))
          {final Slots    s = B.data(S);
@@ -1913,9 +1913,9 @@ class Tree extends Test                                                         
    }
 
   static void test_redistribute()
-   {final Tree t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
-    for (int i = 0; i < s.numberOfSlots(); i++) s.setSlots(i);
+    for (int i : range(s.numberOfSlots())) s.setSlots(i);
                                                             //0123456789012345
                                           ok(s.printSlots(), "XXXXXXXXXXXXXXXX");
                         s.redistribute(); ok(s.printSlots(), "XXXXXXXXXXXXXXXX");
@@ -1938,7 +1938,7 @@ class Tree extends Test                                                         
    }
 
   static void test_ifd()
-   {final Tree t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
                    ok(s.empty(), true);  ok(s.full(), false);
@@ -1985,7 +1985,7 @@ keys     :   14  13  16  15  18  17  12  11
    }
 
   static void test_idn()                                                        // Repeated inserts and deletes
-   {final Tree t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
     for (int i = 0; i < s.numberOfSlots()*10; i++)
@@ -2005,7 +2005,7 @@ keys     :   14  13  16  15  18  17  12  11
    }
 
   static void test_tooManySearches()
-   {final Tree t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
     s.insert(Key(10));
@@ -2014,7 +2014,7 @@ keys     :   14  13  16  15  18  17  12  11
    }
 
   static void test_locateFirstGeKey()
-   {final Tree t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
     s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), true); s.key(s.new slot(7), Key(22));
@@ -2036,7 +2036,7 @@ keys     :   28   0  26   0  24   0   0  22
    }
 
   static void test_compactLeft()
-   {final Tree t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
     s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), true); s.key(s.new slot(7), Key(11));
@@ -2064,7 +2064,7 @@ keys     :   11  12  13  14   0   0   0   0
    }
 
   static void test_compactRight()
-   {final Tree t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
     s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), true); s.key(s.new slot(7), Key(11));
@@ -2094,7 +2094,7 @@ keys     :    0   0   0   0  11  12  13  14
    }
 
   static void test_memory()
-   {final Tree  t = new Tree(8);
+   {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8, ByteBuffer.allocate(200));
 
     s.usedSlots(s.new Slot( 1), true); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), true); s.key(s.new slot(7), Key(11));
