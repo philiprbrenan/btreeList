@@ -140,7 +140,7 @@ class Tree extends Test                                                         
       if (freeChain.contains(n)) stop("Branch on free chain and in tree:", n);
       u.add(n.at());
      }
-    for (int i = 1; i < numberOfNodes; i++)                                     // Node 0 is the tree base so it is not a leaf or a branch
+    for (int i : range(1, numberOfNodes))                                     // Node 0 is the tree base so it is not a leaf or a branch
      {if ( u.contains(i) && !f.contains(i)) continue;
       if (!u.contains(i) &&  f.contains(i)) continue;
       stop("Leaf or branch not in tree and not on free chain:", i);
@@ -218,7 +218,7 @@ class Tree extends Test                                                         
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final int N = numberOfSlots();
-        for (int i = value+1; i < N; ++i)
+        for (int i : range(value+1, N))
          {final Slot S = new Slot(i);
           if (usedSlots(S)) return S;
          }
@@ -317,7 +317,7 @@ class Tree extends Test                                                         
       if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
       if (Start >= Finish)              stop("Start must precede finish:", Start, Finish);
 
-      for (int i = Start+1; i < Finish; i++)                                    // From start to finish looking for an intermediate used slot
+      for (int i : range(Start+1, Finish))                                      // From start to finish looking for an intermediate used slot
        {if (usedSlots(new Slot(i))) return false;
        }
       return true;
@@ -363,7 +363,7 @@ class Tree extends Test                                                         
 
     Slot locateNextUsedSlot(Slot Position)                                      // Absolute position of this slot if it is in use or else the next higher used slot
      {final int N = numberOfSlots();
-      for (int i = Position.value(); i < N; ++i)
+      for (int i : range(Position.value(), N))
        {final Slot S = new Slot(i);
         if (usedSlots(S)) return S;
        }
@@ -615,8 +615,9 @@ class Tree extends Test                                                         
 
     String printSlots()                                                         // Print the occupancy of each slot
      {final StringBuilder s = new StringBuilder();
-      final int N = numberOfSlots();
-      for (int i : range(N)) s.append(usedSlots(new Slot(i)) ? "X" : ".");
+      for (int i : range(numberOfSlots()))
+       {s.append(usedSlots(new Slot(i)) ? "X" : ".");
+       }
       return ""+s;
      }
 
@@ -635,8 +636,8 @@ class Tree extends Test                                                         
 
     String printInOrder()                                                       // Print the values in the used slots in order
      {final StringJoiner s = new StringJoiner(", ");
-      final int N = numberOfSlots();
-      for (int i = 0; i < N; i++)
+
+      for (int i : range(numberOfSlots()))
        {if (usedSlots(new Slot(i))) s.add(""+keys(new Slot(i)).value());
        }
       return ""+s;
@@ -1183,7 +1184,7 @@ class Tree extends Test                                                         
         if (usedSlots(I)) d[p++] = data(I);
        }
       super.compactLeft();
-      for (int i = 0; i < R; i++) dataDirect(i, d[i]);
+      for (int i : range(R)) dataDirect(i, d[i]);
      }
 
     void compactRight()                                                         // Compact the branch to the right
@@ -1745,9 +1746,9 @@ class Tree extends Test                                                         
    {if (level > maxPrintLevels) return;
     padStrings(P, level);
     final Branch B = Branch;
-    final int L = level * linesToPrintABranch, K = B.countUsed();               // Size of branch
+    final int L = level * linesToPrintABranch;                                  // Size of branch
 
-    if (K > 0)                                                                  // Branch has key, next pairs
+    if (B.countUsed() > 0)                                                      // Branch has key, next pairs
      {for (int i : range(B.numberOfSlots()))
        {if (B.usedSlots(B.new Slot(i)))
          {final Slots s = B.data(B.new Slot(i));
