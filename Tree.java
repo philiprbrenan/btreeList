@@ -247,20 +247,16 @@ class Tree extends Test                                                         
 //D2 Slots                                                                      // Manage the slots
 
     void setSlots(int...Slots)                                                  // Set slots as used
-     {for (int i = 0; i < Slots.length; i++)
-       {usedSlots(new Slot(Slots[i]), true);
-       }
+     {for (int i : range(Slots.length)) usedSlots(new Slot(Slots[i]), true);
      }
 
     void clearSlots(int...Slots)                                                // Set slots as not being used
-     {for (int i = 0; i < Slots.length; i++)
-       {usedSlots(new Slot(Slots[i]), false);
-       }
+     {for (int i : range(Slots.length)) usedSlots(new Slot(Slots[i]), false);
      }
 
     void clearFirstSlot()                                                       // Set the first used slot to not used
      {final int N = numberOfSlots();
-      for (int i = 0; i < N; i++)
+      for (int i : range(N))
        {if (usedSlots(new Slot(i)))
          {usedSlots(new Slot(i), false);
           return;
@@ -291,7 +287,7 @@ class Tree extends Test                                                         
 //D2 Refs                                                                       // Allocate and free references to keys
 
     slot allocRef()                                                             // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
-     {for (int i = 0; i < numberOfRefs; i++)
+     {for (int i : range(numberOfRefs))
        {final slot I = new slot(i);
         if (!usedRefs(I))
          {usedRefs(I, true);
@@ -309,7 +305,7 @@ class Tree extends Test                                                         
     int countUsed()                                                             // Number of slots in use. How can we do this quickly in parallel?
      {final int N = numberOfSlots();
       int n = 0;
-      for (int i = 0; i < N; i++) if (usedSlots(new Slot(i))) ++n;
+      for (int i : range(N)) if (usedSlots(new Slot(i))) ++n;
       return n;
      }
 
@@ -342,7 +338,7 @@ class Tree extends Test                                                         
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of the first slot in use
      {final int N = numberOfSlots();
-      for (int i = 0; i < N; ++i)
+      for (int i : range(N))
        {final Slot S = new Slot(i);
         if (usedSlots(S)) return S;
        }
@@ -398,25 +394,24 @@ class Tree extends Test                                                         
       final int    []s = new int    [N];                                        // New slots distribution
       final boolean[]u = new boolean[N];                                        // New used slots distribution
       int p = remainder / 2;                                                    // Start position for first used slot
-      for (int i = 0; i < N; ++i)                                               // Redistribute slots
+      for (int i : range(N))                                                    // Redistribute slots
        {final Slot I = new Slot(i);
         if (usedSlots(I))                                                       // Redistribute active slots
          {s[p] = slots(I).value(); u[p] = true; p += space+1;                   // Spread the used slots out
          }
        }
-      for(int i = 0; i < N; ++i)                                                // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
+      for (int i : range(N))                                                    // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
        {final Slot I = new Slot(i);
         slots(I, new slot(s[i])); usedSlots(I, u[i]);
        }
      }
 
     void reset()                                                                // Reset the slots
-     {final int N = numberOfSlots();
-      for (int i = 0; i < N; i++)
+     {for (int i : range(numberOfSlots()))
        {final Slot I = new Slot(i);
         usedSlots(I, false); slots(I, new slot(0));
        }
-      for (int i = 0; i < numberOfRefs; i++)
+      for (int i : range(numberOfRefs))
        {final slot s = new slot(i);
          usedRefs(s, false); key(s, Key(0));
        }
@@ -513,12 +508,12 @@ class Tree extends Test                                                         
        {final int i = l.at.value();
         final int w = locateNearestFreeSlot(l.at);                              // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
         if (w > 0)                                                              // Move up
-         {shift    (i+1, w-1);                                                  // Liberate a slot at this point
+         {shift             (i+1,  w-1);                                        // Liberate a slot at this point
           slots    (new Slot(i+1), alloc);                                      // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
           usedSlots(new Slot(i+1), true);
          }
         else if (w < 0)                                                         // Liberate a slot below the current slot
-         {shift(i, w);                                                          // Shift any intervening slots blocking the slot below
+         {shift(         i,  w);                                                // Shift any intervening slots blocking the slot below
           slots(new Slot(i), alloc);                                            // Insert into the slot below
          }
         if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();       // Redistribute if the used slots are densely packed
@@ -527,11 +522,11 @@ class Tree extends Test                                                         
        {final int i = l.at.value();
         final int w = locateNearestFreeSlot(l.at);                              // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
         if (w > 0)                                                              // Move up
-         {shift(i, w);                                                          // Liberate a slot at this point
+         {shift(i,    w);                                                       // Liberate a slot at this point
           slots(l.at, alloc);                                                   // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
          }
         else if (w < 0)                                                         // Liberate a slot below the current slot
-         {shift    (i-1, w + 1);                                                // Shift any intervening slots blocking the slot below
+         {shift             (i-1,  w + 1);                                      // Shift any intervening slots blocking the slot below
           slots    (new Slot(i-1), alloc);                                      // Insert into the slot below
           usedSlots(new Slot(i-1), true);                                       // Mark the free slot at the start of the range of occupied slots as now in use
          }
@@ -547,11 +542,11 @@ class Tree extends Test                                                         
       boolean all;                                                              // Above all or below all if true
 
       public String toString()                                                  // Print the location
-       {if (exact()) return String.format("%d exact", at.value());
-        return String.format("%2d %s %s %s", at.value(),
-                                             above ? "above" : "",
-                                             below ? "below" : "",
-                                             all   ? "all"   : "");
+       {if (exact()) return f("%d exact", at.value());
+        return f("%2d %s %s %s", at.value(),
+                                 above ? "above" : "",
+                                 below ? "below" : "",
+                                 all   ? "all"   : "");
        }
 
       void pos(Slot At, boolean Above, boolean Below)                           // Specify the position of the location
@@ -576,13 +571,13 @@ class Tree extends Test                                                         
 
         for(int i = 0; i < N; ++i)                                              // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
          {final Slot M = new Slot((a.value() + b.value()) / 2);                 // Desired mid point - but there might not be a slot in use at this point
-          final Slot ma = locatePrevUsedSlot(M);                                // Occupied slot preceding mid point
-          final Slot mb = locateNextUsedSlot(M);                                // Occupied slot succeeding mid point
+          final Slot A = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
+          final Slot B = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
 
-          if      (ma.value() != a.value() && ma.ge(Key)) a = ma;
-          else if (ma.value() != b.value() && ma.le(Key)) b = ma;
-          else if (mb.value() != a.value() && mb.ge(Key)) a = mb;
-          else if (mb.value() != b.value() && mb.le(Key)) b = mb;
+          if      (A.value() != a.value() && A.ge(Key)) a = A;
+          else if (A.value() != b.value() && A.le(Key)) b = A;
+          else if (B.value() != a.value() && B.ge(Key)) a = B;
+          else if (B.value() != b.value() && B.le(Key)) b = B;
           else                                                                  // The slots must be adjacent
            {if (a.eq(Key)) {found(a); return;};                                 // Found the search key at the lower end
             if (b.eq(Key)) {found(b); return;};                                 // Found the search key at the upper end
@@ -623,20 +618,20 @@ class Tree extends Test                                                         
     String printSlots()                                                         // Print the occupancy of each slot
      {final StringBuilder s = new StringBuilder();
       final int N = numberOfSlots();
-      for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "X" : ".");
+      for (int i:range(N)) s.append(usedSlots(new Slot(i)) ? "X" : ".");
       return ""+s;
      }
 
     public String toString()                                                    // Dump the slots
      {final StringBuilder s = new StringBuilder();
       final int N = numberOfSlots(), R = numberOfRefs;
-      s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n",    // Title line
+      s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",    // Title line
                               name().at(), type(), R));
-      s.append("positions: ");   for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
-      s.append("\nslots    : "); for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
-      s.append("\nusedSlots: "); for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "   X" : "   .");
-      s.append("\nusedRefs : "); for (int i = 0; i < R; i++) s.append(usedRefs (new slot(i)) ? "   X" : "   .");
-      s.append("\nkeys     : "); for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(new slot(i)) != null ? key(new slot(i)).value() : 0));
+      s.append("positions: ");   for (int i = 0; i < N; i++) s.append(f(" "+formatKey, i));
+      s.append("\nslots    : "); for (int i = 0; i < N; i++) s.append(f(" "+formatKey, slots(new Slot(i)).value()));
+      s.append("\nusedSlots: "); for (int i = 0; i < N; i++) s.append(             usedSlots(new Slot(i)) ? "   X" : "   .");
+      s.append("\nusedRefs : "); for (int i = 0; i < R; i++) s.append(             usedRefs (new slot(i)) ? "   X" : "   .");
+      s.append("\nkeys     : "); for (int i = 0; i < R; i++) s.append(f(" "+formatKey,   key(new slot(i)) != null ? key(new slot(i)).value() : 0));
       return ""+s+"\n";
      }
 
@@ -732,19 +727,19 @@ class Tree extends Test                                                         
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
-      s.append(String.format("Tree memory:\n"));
-      s.append(String.format("Leaf   size: %4d\n", l));
-      s.append(String.format("Branch size: %4d\n", b));
-      s.append(String.format("Node   size: %4d\n", sizeOfNode));
-      s.append(String.format("Root       : %4d\n", root()));
-      s.append(String.format("MaxLeafSize: %4d\n", maxLeafSize()));
-      s.append(String.format("MaxBranchSz: %4d\n", maxBranchSize()));
-      s.append(String.format("NumberNodes: %4d\n", numberOfNodes()));
+      s.append(f("Tree memory:\n"));
+      s.append(f("Leaf   size: %4d\n", l));
+      s.append(f("Branch size: %4d\n", b));
+      s.append(f("Node   size: %4d\n", sizeOfNode));
+      s.append(f("Root       : %4d\n", root()));
+      s.append(f("MaxLeafSize: %4d\n", maxLeafSize()));
+      s.append(f("MaxBranchSz: %4d\n", maxBranchSize()));
+      s.append(f("NumberNodes: %4d\n", numberOfNodes()));
 
       final int N = min(numberOfNodes, 20);
       for (int i = 1; i < N; i++)
        {final int n = i * sizeOfNode;
-        s.append(String.format("Node: %4d at %4d\n", i, n));
+        s.append(f("Node: %4d at %4d\n", i, n));
         final boolean    l = bytes.getInt(n) == NodeType.Leaf.ordinal();
         final Allocation a = new Allocation(i);
         final String t = l ? new Leaf(a).toString() : new Branch(a).toString();
@@ -1017,7 +1012,7 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++)
-       {d.add(String.format(formatKey, memory.data(i)));
+       {d.add(f(formatKey, memory.data(i)));
        }
       final Branch     P = up();                                                // Containing branch
       final Slots.Slot Q = P != null ? upIndex(P) : null;
@@ -1316,6 +1311,7 @@ class Tree extends Test                                                         
       Integer upIndex()                                                         // Index of this branch in its parent
        {final int i = bytes.getInt(posUpIndex); return i < 0 ? null : i;
        }
+
       void    upIndex(Integer Value)                                            // Set the index of this branch in its parent
        {bytes.putInt(posUpIndex, Value != null ? Value : -1);
        }
@@ -1351,7 +1347,7 @@ class Tree extends Test                                                         
       final int N = numberOfRefs();
       for (int i = 0; i < N; i++)
        {if (memory.data(i) == 0) d.add("  .");
-        else d.add(String.format(formatKey, memory.data(i)));
+        else d.add(f(formatKey, memory.data(i)));
        }
       final StringBuilder s = new StringBuilder();
 
@@ -1360,10 +1356,10 @@ class Tree extends Test                                                         
       final int n = name().at();
       final int u = memory.up();
       final int i = memory.upIndex() != null ? memory.upIndex() : -1;
-      s.append(String.format("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
+      s.append(f("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
       s.append(super.toString());
       s.append("data     :  "+d+"\n");
-      s.append("top      :  "+String.format(formatKey, memory.top())+"\n");
+      s.append("top      :  "+f(formatKey, memory.top())+"\n");
       return ""+s;
      }
    }
@@ -1373,12 +1369,15 @@ class Tree extends Test                                                         
   void mergeAlongPath(Key Key)                                                  // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
     if (f == null) return;                                                      // Empty tree
+
     if (f.leaf.up() != null)                                                    // Process path from leaf to root
      {for (Branch b = f.leaf.up(); b != null; b = b.up())                       // Go up the tree merging as we go: only one merge is needed at each level
        {final Slots.Slot l = b.locateFirstGe(Key);                              // Position of key
         if (l != null && b.mergeRightSibling(l)) continue;                      // Merge right sibling of keyed child
+
         final Slots.Slot L = b.locateFirstGe(Key);                              // Position of key
         if (L != null && b.mergeLeftSibling(L))  continue;                      // Merge left sibling of keyed child
+
         final Slots.Slot k = b.locateFirstGe(Key);                              // Look further left
         if (k != null && b.mergeLeftSibling(k.stepLeft())) continue;            // Merge further left sibling
         else                                                                    // Top
