@@ -418,12 +418,11 @@ class Tree extends Test                                                         
      }
 
     void compactLeft()                                                          // Compact the used slots to the left end
-     {final int N = numberOfSlots();
-      if (empty()) return;                                                      // Nothing to compact
+     {if (empty()) return;                                                      // Nothing to compact
       final Slots d = duplicateSlots();
       reset();
       int p = 0;
-      for (int i = 0; i < N; i++)                                               // Each slot
+      for (int i : range(numberOfSlots()))                                      // Each slot
        {final Slot I = new Slot(i), P = new Slot(p);
         final slot Q = new slot(p);
         if (d.usedSlots(I))                                                     // Each used slot
@@ -456,7 +455,7 @@ class Tree extends Test                                                         
     void mergeCompacted(Slots Left, Slots Right)                                // Merge left and right compacted slots into the current slots
      {final Slots l = Left, r = Right;
       reset();
-      for (int i = 0; i < numberOfRefs; ++i)                                    // Each reference
+      for (int i : range(numberOfRefs))                                         // Each reference
        {final Slot I = new Slot(i);                                             // The input slots have been compacted so this Slot will match the corresponding slot
         final slot J = new slot(i);
          if (l.usedSlots(I))                                                    // Merge on left
@@ -561,15 +560,14 @@ class Tree extends Test                                                         
       boolean exact() {return above && below;}                                  // Oh America - my new found land.
 
       Locate(Key Key)                                                           // Locate the slot containing the search key if possible.
-       {final int N = numberOfSlots();
-        if (empty()) {none(); return;}                                          // Empty so their search key cannot be found
+       {if (empty()) {none(); return;}                                          // Empty so their search key cannot be found
         Slot a = locateFirstUsedSlot(), b = locateLastUsedSlot();               // Lower limit, upper limit
         if ( a.eq(Key)) {found(a); return;}                                     // Found at the start of the range
         if ( b.eq(Key)) {found(b); return;}                                     // Found at the end of the range
         if ( a.le(Key)) {below(a); all = true; return;}                         // Smaller than any key
         if (!b.le(Key)) {above(b); all = true; return;}                         // Greater than any key
 
-        for(int i = 0; i < N; ++i)                                              // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
+        for (int i : range(numberOfSlots()))                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
          {final Slot M = new Slot((a.value() + b.value()) / 2);                 // Desired mid point - but there might not be a slot in use at this point
           final Slot A = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
           final Slot B = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
@@ -585,7 +583,7 @@ class Tree extends Test                                                         
             return;
            }                                                                    // New mid point
          }
-        stop("Searched more than the maximum number of times:", N);
+        stop("Searched more than the maximum number of times:",numberOfSlots());
        }
      }
 
@@ -618,7 +616,7 @@ class Tree extends Test                                                         
     String printSlots()                                                         // Print the occupancy of each slot
      {final StringBuilder s = new StringBuilder();
       final int N = numberOfSlots();
-      for (int i:range(N)) s.append(usedSlots(new Slot(i)) ? "X" : ".");
+      for (int i : range(N)) s.append(usedSlots(new Slot(i)) ? "X" : ".");
       return ""+s;
      }
 
@@ -627,11 +625,11 @@ class Tree extends Test                                                         
       final int N = numberOfSlots(), R = numberOfRefs;
       s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",    // Title line
                               name().at(), type(), R));
-      s.append("positions: ");   for (int i = 0; i < N; i++) s.append(f(" "+formatKey, i));
-      s.append("\nslots    : "); for (int i = 0; i < N; i++) s.append(f(" "+formatKey, slots(new Slot(i)).value()));
-      s.append("\nusedSlots: "); for (int i = 0; i < N; i++) s.append(             usedSlots(new Slot(i)) ? "   X" : "   .");
-      s.append("\nusedRefs : "); for (int i = 0; i < R; i++) s.append(             usedRefs (new slot(i)) ? "   X" : "   .");
-      s.append("\nkeys     : "); for (int i = 0; i < R; i++) s.append(f(" "+formatKey,   key(new slot(i)) != null ? key(new slot(i)).value() : 0));
+      s.append("positions: ");   for (int i : range(N)) s.append(f(" "+formatKey, i));
+      s.append("\nslots    : "); for (int i : range(N)) s.append(f(" "+formatKey, slots(new Slot(i)).value()));
+      s.append("\nusedSlots: "); for (int i : range(N)) s.append(             usedSlots(new Slot(i)) ? "   X" : "   .");
+      s.append("\nusedRefs : "); for (int i : range(R)) s.append(             usedRefs (new slot(i)) ? "   X" : "   .");
+      s.append("\nkeys     : "); for (int i : range(R)) s.append(f(" "+formatKey,   key(new slot(i)) != null ? key(new slot(i)).value() : 0));
       return ""+s+"\n";
      }
 
@@ -669,15 +667,15 @@ class Tree extends Test                                                         
        };
 
       void copySlots(Memory Memory)                                             // Copy a set of slots from the specified memory into this memory
-       {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+       {for (int i : range(size)) bytes.put(i, Memory.bytes.get(i));
        }
 
       void invalidate()                                                         // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-       {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
+       {for (int i : range(size)) bytes.put(i, (byte)-1);
        }
 
       void clear()                                                              // Clear all bytes in memory to zero which has the beneficial effect of setting all slots to unused
-       {for (int i = 0; i < size; i++) bytes.put(i, (byte)0);
+       {for (int i : range(size)) bytes.put(i, (byte)0);
        }
 
       Memory() {bytes = ByteBuffer.allocate(size);}                             // Create our own memory for testing
@@ -737,7 +735,7 @@ class Tree extends Test                                                         
       s.append(f("NumberNodes: %4d\n", numberOfNodes()));
 
       final int N = min(numberOfNodes, 20);
-      for (int i = 1; i < N; i++)
+      for (int i : range(N))
        {final int n = i * sizeOfNode;
         s.append(f("Node: %4d at %4d\n", i, n));
         final boolean    l = bytes.getInt(n) == NodeType.Leaf.ordinal();
@@ -826,8 +824,7 @@ class Tree extends Test                                                         
      {final Leaf d = new Leaf();
       final int p = new SlotsMemoryPositions().posKeys + 1 * Integer.BYTES;
       d.copySlots(this);                                                        // Copy slots
-      final int R = numberOfRefs();
-      for (int i = 0; i < R; i++)                                               // Each reference
+      for (int i : range(numberOfRefs()))                                       // Each reference
        {final slot I = new slot(i);                                             // Copy data associated with leaf keys
         d.data(I, data(I));                                                     // Copy data associated with leaf keys
        }
@@ -851,7 +848,7 @@ class Tree extends Test                                                         
       final int Count = splitSize();
       int s = 0;                                                                // Count slots used
       final int N = numberOfSlots();
-      for (int i = 0; i < N; i++)                                               // Each slot
+      for (int i : range(N))                                                    // Each slot
        {final Slot S = new Slot(i);
         if (usedSlots(S))                                                       // Slot is in use
          {if (s++ < Count) Right.clearSlotAndRef(S);                            // Still in left leaf
@@ -873,7 +870,7 @@ class Tree extends Test                                                         
       int  k = 0;                                                               // Splitting key
       int  p = 0;                                                               // Position in leaf
       final int S = numberOfSlots();
-      for (int i = 0; i < S; i++)                                               // Scan for splitting keys
+      for (int i : range(S))                                                    // Scan for splitting keys
        {if (usedSlots(new Slot(i)))                                             // Used slot
          {if (p == splitSize()-1 || p == splitSize())                           // Accumulate splitting key as last on left and first on right of split
            {k += keys(new Slot(i)).value();
@@ -902,16 +899,15 @@ class Tree extends Test                                                         
      }
 
     void compactLeft()                                                          // Compact the leaf to the left
-     {final int   N = numberOfSlots(), R = numberOfRefs();
-      final Data[]d = new Data[R];
+     {final Data[]d = new Data[numberOfRefs()];
       int p = 0;
-      for (int i = 0; i < N; i++)
+      for (int i : range(numberOfSlots()))
        {final Slot I = new Slot(i);
         if (usedSlots(I)) d[p++] = data(slots(I));
        }
       super.compactLeft();
 
-      for (int i = 0; i < R; i++) data(new slot(i), d[i]);
+      for (int i : range(numberOfRefs())) data(new slot(i), d[i]);
      }
 
     void compactRight()                                                         // Compact the leaf to the right
@@ -923,12 +919,12 @@ class Tree extends Test                                                         
         if (usedSlots(I)) d[p--] = data(slots(I));
        }
       super.compactRight();
-      for (int i = 0; i < R; i++) data(new slot(i), d[i]);
+      for (int i : range(R)) data(new slot(i), d[i]);
      }
 
     void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
      {final Leaf l = Left, r = Right;
-      for (int i = 0; i < maxLeafSize; ++i)
+      for (int i : range(maxLeafSize))
        {final slot J = new slot(i);
         if      (l.usedRefs(J)) data(J, l.data(J));
         else if (r.usedRefs(J)) data(J, r.data(J));
@@ -967,11 +963,11 @@ class Tree extends Test                                                         
      {final ByteBuffer bytes;                                                   // Byte buffer holding memory of this leaf
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
-       {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+       {for (int i : range(size)) bytes.put(i, Memory.bytes.get(i));
        }
 
       void invalidate()                                                         // Invalidate the leaf in such a way that it is unlikely to work well if subsequently used
-       {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
+       {for (int i : range(size)) bytes.put(i, (byte)-1);
        }
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
@@ -997,8 +993,7 @@ class Tree extends Test                                                         
     String printInOrder()                                                       // Print the values in the used slots in order
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
-      final int S = numberOfSlots();
-      for (int i = 0; i < S; i++)
+      for (int i : range(numberOfSlots()))
        {final Slot I = new Slot(i);
         if (usedSlots(I))
          {k.add(""+keys(I).value());
@@ -1010,8 +1005,7 @@ class Tree extends Test                                                         
 
     public String toString()                                                    // Print a leaf
      {final StringJoiner d = new StringJoiner(" ");
-      final int N = numberOfRefs();
-      for (int i = 0; i < N; i++)
+      for (int i : range(numberOfRefs()))
        {d.add(f(formatKey, memory.data(i)));
        }
       final Branch     P = up();                                                // Containing branch
@@ -1103,7 +1097,7 @@ class Tree extends Test                                                         
      {final Branch d = new Branch();
       d.copySlots(this);                                                        // Copy slots
       final int R = numberOfRefs();
-      for (int i = 0; i < R; i++)
+      for (int i : range(R))
        {final int v = memory.data(i);                                           // Copy used data
         d.memory.data(i, v);                                                    // Copy used data
        }
@@ -1126,8 +1120,8 @@ class Tree extends Test                                                         
       final int Count = splitSize();
       int  s  = 0;                                                              // Count slots used
       Key  sk = null;                                                           // Splitting key
-      final int S = numberOfSlots();
-      for (int i = 0; i < S; i++)                                               // Each slot
+
+      for (int i : range(numberOfSlots()))                                      // Each slot
        {final Slot I = new Slot(i);                                             // Slot is in use
         if (usedSlots(I))                                                       // Slot is in use
          {if (s < Count)                                                        // Still in left branch
@@ -1205,7 +1199,7 @@ class Tree extends Test                                                         
 
     void mergeData(Key Key, Branch Left, Branch Right)                          // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
-      for (int i = 0; i < maxBranchSize; ++i)                                   // Each slot
+      for (int i : range(maxBranchSize))                                        // Each slot
        {final slot J = new slot(i);
         if      (l.usedRefs(J)) memory.data(i, l.memory.data(i));               // Merge from left first
         else if (r.usedRefs(J)) memory.data(i, r.memory.data(i));               // Merge from right last
@@ -1275,8 +1269,8 @@ class Tree extends Test                                                         
 
     int count()                                                                 // Count the number of entries under this branch
      {int n = 0;
-      final int S = numberOfSlots();
-      for  (int i = 0; i < S; i++)                                              // Each slot
+
+      for  (int i : range(numberOfSlots()))                                     // Each slot
        {final Slot I = new Slot(i);
         if (usedSlots(I))                                                       // Active slot
          {final Slots s = data(I);
@@ -1296,11 +1290,11 @@ class Tree extends Test                                                         
      {final ByteBuffer bytes;
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
-       {for (int i = 0; i < size; i++) bytes.put(i, Memory.bytes.get(i));
+       {for (int i : range(size)) bytes.put(i, Memory.bytes.get(i));
        }
 
       void invalidate()                                                         // Invalidate the branch in such a way that it is unlikely to work well if subsequently used
-       {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
+       {for (int i : range(size)) bytes.put(i, (byte)-1);
        }
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
@@ -1332,8 +1326,8 @@ class Tree extends Test                                                         
     String printInOrder()                                                       // Print the values in the used slots in order
      {final StringJoiner k = new StringJoiner(", ");
       final StringJoiner d = new StringJoiner(", ");
-      final int S = numberOfSlots();
-      for (int i = 0; i < S; i++)
+
+      for (int i : range(numberOfSlots()))
        {if (usedSlots(new Slot(i)))
          {k.add(""+keys(new Slot(i)).value());
           d.add(""+memory.data(slots(new Slot(i)).value()));
@@ -1344,8 +1338,8 @@ class Tree extends Test                                                         
 
     public String toString()                                                    // Print a branch
      {final StringJoiner d = new StringJoiner(" ");
-      final int N = numberOfRefs();
-      for (int i = 0; i < N; i++)
+
+      for (int i : range(numberOfRefs()))
        {if (memory.data(i) == 0) d.add("  .");
         else d.add(f(formatKey, memory.data(i)));
        }
@@ -1465,7 +1459,7 @@ class Tree extends Test                                                         
   Find find(Key Key, Branch Start)
    {Branch p = Start;                                                           // Start at root
 
-    for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down from branch splitting as we go
+    for (int i : range(MaximumNumberOfLevels))                                  // Step down from branch splitting as we go
      {final Slots.Slot P = p.locateFirstGe(Key);
       final Slots      q = p.child(P);
       if (Leaf.ref(q))                                                          // Step down to a leaf
@@ -1549,7 +1543,7 @@ class Tree extends Test                                                         
      {if (!b.full()) {p = b; break;}
      }
 
-    for (int i = 0; i < MaximumNumberOfLevels; i++)                             // Step down through the tree from branch to branch splitting as we go until we reach a leaf
+    for (int i : range(MaximumNumberOfLevels))                                  // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {final Slots q = p.stepDown(Key);                                          // Step down
       if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf r = (Leaf)q;                                                 // We have reached a leaf
@@ -1606,7 +1600,7 @@ class Tree extends Test                                                         
   Find goFirst(Branch Start)                                                    // Go all the way first
    {Branch p = Start;                                                           // Start
 
-    for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
+    for (int j : range(MaximumNumberOfLevels))                                  // Step down from branch splitting as we go
      {final Slots.Slot P = p.locateFirstUsedSlot();
       final Slots      q = p.child(P);
       if (Leaf.ref(q))                                                          // Step down to a leaf
@@ -1638,7 +1632,7 @@ class Tree extends Test                                                         
   Find goLast(Branch Start)                                                     // Go all the way last from the specified position
    {Branch p = Start;                                                           // Start
 
-    for (int j = 0; j < MaximumNumberOfLevels; j++)                             // Step down from branch splitting as we go
+    for (int j : range(MaximumNumberOfLevels))                                  // Step down from branch splitting as we go
      {final Slots q = p.top();
       if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf l = (Leaf)q;
@@ -1731,8 +1725,7 @@ class Tree extends Test                                                         
     padStrings(P, level);
 
     final StringJoiner s = new StringJoiner(",");
-    final int S = L.numberOfSlots();
-    for (int i = 0; i < S; i++)
+    for (int i : range(L.numberOfSlots()))
      {final Slots.Slot l = L.new Slot(i);
       if (L.usedSlots(l)) s.add(""+L.keys(l).value());
      }
@@ -1755,8 +1748,7 @@ class Tree extends Test                                                         
     final int L = level * linesToPrintABranch, K = B.countUsed();               // Size of branch
 
     if (K > 0)                                                                  // Branch has key, next pairs
-     {final int S = B.numberOfSlots();
-      for  (int i = 0; i < S; i++)
+     {for (int i : range(B.numberOfSlots()))
        {if (B.usedSlots(B.new Slot(i)))
          {final Slots s = B.data(B.new Slot(i));
           if (s == null) continue;
@@ -1839,7 +1831,7 @@ class Tree extends Test                                                         
     final int N = b.capacity();
     for (int l = 0, c = 0; l < 10; ++l)                                         // Print first few nodes one per line
      {final StringJoiner j = new StringJoiner(" ");
-      for (int i = 0; i < sizeOfNode; i++)
+      for (int i : range(sizeOfNode))
        {if (c++ >= N) break;
         j.add(""+b.get(l * sizeOfNode + i));
        }
@@ -1856,8 +1848,7 @@ class Tree extends Test                                                         
     final Stack<Leaf>  leaves   = new Stack<>();
 
     void scan(Branch B)
-     {final int N = B.numberOfSlots();
-      for  (int i = 0; i < N; i++)
+     {for  (int i : range(B.numberOfSlots()))
        {final Slots.Slot S = B.new Slot(i);
          if (B.usedSlots(S))
          {final Slots    s = B.data(S);
