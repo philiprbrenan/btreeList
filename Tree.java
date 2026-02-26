@@ -712,19 +712,19 @@ class Tree extends Test                                                         
     final int size         = sizeOfNode * (numberOfNodes + 1);                  // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node zero
     final ByteBuffer bytes = ByteBuffer.allocate(size);                         // Memory occupied by tree
 
-    int root()              {return bytes.getInt(posRoot);}
-    void root(int Value)           {bytes.putInt(posRoot,          Value);}
+    int  root()             {return bytes.getInt(posRoot);}                     // Get index of node containing root
+    void root(int Value)           {bytes.putInt(posRoot,          Value);}     // Set index of node containing root
 
-    int  maxLeafSize()      {return bytes.getInt(posMaxLeafSize);}
-    void maxLeafSize(int Max)      {bytes.putInt(posMaxLeafSize,   Max);}
+    int  maxLeafSize()      {return bytes.getInt(posMaxLeafSize);}              // Get maximum leaf size for the tree
+    void maxLeafSize(int Max)      {bytes.putInt(posMaxLeafSize,   Max);}       // Set max leaf size for the tree
 
-    int  maxBranchSize()    {return bytes.getInt(posMaxBranchSize);}
-    void maxBranchSize(int Max)    {bytes.putInt(posMaxBranchSize, Max);}
+    int  maxBranchSize()    {return bytes.getInt(posMaxBranchSize);}            // Get maximum branch size for the tree
+    void maxBranchSize(int Max)    {bytes.putInt(posMaxBranchSize, Max);}       // Set max branch size for the tree
 
-    int  numberOfNodes()    {return bytes.getInt(posNumberOfNodes);}
-    void numberOfNodes(int Number) {bytes.putInt(posNumberOfNodes, Number);}
+    int  numberOfNodes()    {return bytes.getInt(posNumberOfNodes);}            // Get maximum number of nodes in the tree
+    void numberOfNodes(int Number) {bytes.putInt(posNumberOfNodes, Number);}    // Set maximum number of nodes in the tree
 
-    public String toString()
+    public String toString()                                                    // Print memory
      {final StringBuilder s = new StringBuilder();
       s.append(f("Tree memory:\n"));
       s.append(f("Leaf   size: %4d\n", l));
@@ -886,9 +886,9 @@ class Tree extends Test                                                         
      {final int   sk = splittingKey();
       final Leaf   l = duplicate();
       final Leaf   r = l.splitRight();
-      final Branch b = new Branch();
-      b.insert(new Key(sk), l);
-      b.top(r);
+      final Branch b = new Branch();                                            // Branch into which the leaves will be inserted
+      b.insert(new Key(sk), l);                                                 // Insert left
+      b.top(r);                                                                 // Right goes to to
       free();
       return b;
      }
@@ -1056,7 +1056,7 @@ class Tree extends Test                                                         
 
     static boolean ref(Slots B)    {return B instanceof Branch;}                // Check whether we are referencing a branch
 
-    int refSign(Slots Slots)                                                    // Set the sign of a reference according to whether it is a reference to a leaf or a branch
+    int refSign(Slots Slots)                                                    // The sign of a reference according to whether it is a reference to a leaf or a branch
      {if (Slots == null) return 0;
       final int i = Slots.name().at();
       final int r = ref(Slots) ? +i : -i;
@@ -2114,7 +2114,7 @@ usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
 
-    ok(t.getMemorySize(8), 109);
+    ok(t.getMemorySize(8), 110);
 
     final Slots        B = s.duplicateSlots();
     final Slots.Memory m = B.memory;
