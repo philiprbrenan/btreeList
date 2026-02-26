@@ -204,9 +204,9 @@ class Tree extends Test                                                         
     final class Slot                                                            // A reference to a slot
      {final int value;
       Slot( int Value)  {value = Value;}                                        // A key
-      int       value() {return  value;}
-      Slot right() {return new Slot(value+1);}                                  // Step right
-      Slot  left() {return new Slot(value-1);}                                  // Step left
+      int       value() {return  value;}                                        // The value of the key
+      Slot      right() {return new Slot(value+1);}                             // Step right
+      Slot       left() {return new Slot(value-1);}                             // Step left
 
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {for (int i = value-1; i >= 0; i--)
@@ -223,6 +223,23 @@ class Tree extends Test                                                         
           if (usedSlots(S)) return S;
          }
         return null;                                                            // No used slot to the left
+       }
+
+      Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
+       {for (int i = value(); i >= 0; i--)
+         {final Slot S = new Slot(i);
+          if (usedSlots(S)) return S;
+         }
+        return null;                                                            // No free slot
+       }
+
+      Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next higher used slot
+       {final int N = numberOfSlots();
+        for (int i : range(value(), N))
+         {final Slot S = new Slot(i);
+          if (usedSlots(S)) return S;
+         }
+        return null;                                                            // No free slot
        }
 
       boolean eq(Key Key) {return Key.value() == keys(this).value();}           // Search key is equal to indexed key
@@ -353,23 +370,6 @@ class Tree extends Test                                                         
       return null;                                                              // No free slot
      }
 
-    Slot locatePrevUsedSlot(Slot Position)                                      // Absolute position of this slot if it is in use or else the next lower used slot
-     {for (int i = Position.value(); i >= 0; i--)
-       {final Slot S = new Slot(i);
-        if (usedSlots(S)) return S;
-       }
-      return null;                                                              // No free slot
-     }
-
-    Slot locateNextUsedSlot(Slot Position)                                      // Absolute position of this slot if it is in use or else the next higher used slot
-     {final int N = numberOfSlots();
-      for (int i : range(Position.value(), N))
-       {final Slot S = new Slot(i);
-        if (usedSlots(S)) return S;
-       }
-      return null;                                                              // No free slot
-     }
-
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
      {if (Width > 0)                                                            // Shift up including the current slot
        {for (int i = Width; i > 0; --i)                                         // Move each slot
@@ -413,7 +413,7 @@ class Tree extends Test                                                         
        }
       for (int i : range(numberOfRefs))
        {final slot s = new slot(i);
-         usedRefs(s, false); key(s, Key(0));
+        usedRefs(s, false); key(s, Key(0));
        }
      }
 
@@ -555,7 +555,7 @@ class Tree extends Test                                                         
       void above(Slot At) {pos(At, true, false);}                               // Their search key is above this key
       void below(Slot At) {pos(At, false, true);}                               // Their search key is below this key
       void found(Slot At) {pos(At, true,  true);}                               // Found their search key
-      void none ()       {}                                                     // Slots are empty
+      void none ()        {}                                                    // Slots are empty
 
       boolean exact() {return above && below;}                                  // Oh America - my new found land.
 
@@ -569,8 +569,8 @@ class Tree extends Test                                                         
 
         for (int i : range(numberOfSlots()))                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
          {final Slot M = new Slot((a.value() + b.value()) / 2);                 // Desired mid point - but there might not be a slot in use at this point
-          final Slot A = locatePrevUsedSlot(M);                                 // Occupied slot preceding mid point
-          final Slot B = locateNextUsedSlot(M);                                 // Occupied slot succeeding mid point
+          final Slot A = M.locatePrevUsedSlot();                                // Occupied slot on or preceding mid point
+          final Slot B = M.locateNextUsedSlot();                                // Occupied slot on or succeeding mid point
 
           if      (A.value() != a.value() && A.ge(Key)) a = A;
           else if (A.value() != b.value() && A.le(Key)) b = A;
@@ -591,7 +591,7 @@ class Tree extends Test                                                         
      {final Locate l = new Locate(Key);
       if (l.at == null) return null;
       if (l.below) return l.at;
-      return locateNextUsedSlot(l.at.right());
+      return l.at.right().locateNextUsedSlot();
      }
 
     public Slot locate(Key Key)                                                 // Locate the slot containing the current search key if possible.
@@ -1743,10 +1743,11 @@ class Tree extends Test                                                         
   void printBranch                                                              // Print branch horizontally
    (Branch Branch, Stack<StringBuilder>P, int level, boolean Details,
     Branch Parent, Integer Index)                                               // Details of parent which might differ from what is actually stored in the tree
-   {if (level > maxPrintLevels) return;
-    padStrings(P, level);
-    final Branch B = Branch;
+   {final Branch B = Branch;
     final int L = level * linesToPrintABranch;                                  // Size of branch
+
+    if (level > maxPrintLevels) return;
+    padStrings(P, level);
 
     if (B.countUsed() > 0)                                                      // Branch has key, next pairs
      {for (int i : range(B.numberOfSlots()))
@@ -1758,7 +1759,7 @@ class Tree extends Test                                                         
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b) printBranch((Branch)s, P, level+1, Details, B, i);
 
-          P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).value());           // Key
+            P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).value());         // Key
           if (Details)
            {P.elementAt(L+1).append("["+B.name().at()+"."+i+"]");               // Branch, key, next pair
             final String U = Parent != null ? ""+Parent.name().at() : "*";      // Parent up from descent
@@ -1777,6 +1778,7 @@ class Tree extends Test                                                         
      {P.elementAt(L+2).append
        ("{"+(B.top() != null ? B.top().name().at() : "null")+"}");
      }
+
     final boolean l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());          // Print top leaf
     if      (l) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
     else if (b) printBranch((Branch)B.top(), P, level+1, Details, B, null);
@@ -1784,16 +1786,16 @@ class Tree extends Test                                                         
     padStrings(P, level);                                                       // Equalize the strings used to print the tree
    }
 
- String printBoxed()                                                            // Print a tree in a box
-  {final String  s = ""+this;
-   final int     n = longestLine(s)-1;
-   final String[]L = s.split("\n");
-   final StringJoiner t = new StringJoiner("\n",  "", "\n");
-   t.add("+"+("-".repeat(n))+"+");
-   for(String l : L) t.add("| "+l);
-   t.add("+"+("-".repeat(n))+"+");
-   return ""+t;
-  }
+  String printBoxed()                                                           // Print a tree in a box
+   {final String  s = ""+this;
+    final int     n = longestLine(s)-1;
+    final String[]L = s.split("\n");
+    final StringJoiner t = new StringJoiner("\n",  "", "\n");
+    t.add("+"+("-".repeat(n))+"+");
+    for(String l : L) t.add("| "+l);
+    t.add("+"+("-".repeat(n))+"+");
+    return ""+t;
+   }
 
   void padStrings(Stack<StringBuilder> S, int level)                            // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
    {final int N = level * linesToPrintABranch + maxLeafSize;                    // Number of lines we might want
@@ -1902,13 +1904,13 @@ class Tree extends Test                                                         
 
     ok(s.locateFirstUsedSlot().value(),      2);
     ok(s.locateLastUsedSlot ().value(),      13);
-    ok(s.locatePrevUsedSlot(s.new Slot( 9)).value(),     9);
-    ok(s.locatePrevUsedSlot(s.new Slot(10)).value(),     9);
-    ok(s.locateNextUsedSlot(s.new Slot(10)).value(),    11);
-    ok(s.locateNextUsedSlot(s.new Slot(11)).value(),    11);
+    ok(s.new Slot( 9).locatePrevUsedSlot().value(),     9);
+    ok(s.new Slot(10).locatePrevUsedSlot().value(),     9);
+    ok(s.new Slot(10).locateNextUsedSlot().value(),    11);
+    ok(s.new Slot(11).locateNextUsedSlot().value(),    11);
 
-    ok(s.locatePrevUsedSlot (s.new Slot( 1)) == null, true);
-    ok(s.locateNextUsedSlot (s.new Slot(14)) == null, true);
+    ok(s.new Slot( 1).locatePrevUsedSlot() == null, true);
+    ok(s.new Slot(14).locateNextUsedSlot() == null, true);
 
     s.setSlots(0, 15);
    }
