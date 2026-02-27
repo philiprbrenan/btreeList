@@ -296,13 +296,13 @@ public class Test                                                               
 
 //D2 Array routines                                                             // Routines operating on arrays
 
-   static int[]range(int Limit)                                                        // Range of integers
+   static int[]range(int Limit)                                                 // Range of integers
     {final int[]r = new int[Limit];
      for (int i = 0; i < r.length; i++) r[i] = i;
      return r;
     }
 
-   static int[]range(int Start, int Limit)                                                        // Range of integers
+   static int[]range(int Start, int Limit)                                      // Range of integers
     {final int[]r = new int[Limit - Start];
      for (int i = 0, j = Start; i < r.length; i++) r[i] = j++;
      return r;
@@ -1111,8 +1111,8 @@ public class Test                                                               
               say(b, r);                                                        // Write the difference lines bracketed with rulers
               say(b, sg[k]);                                                    // What we got
               //say(b, dg);
-              say(b, de); say(b, dm);                               // Difference markers
-              //say(b, error); say(b, r);                                         // Error detail
+              say(b, de); say(b, dm);                                           // Difference markers
+              //say(b, error); say(b, r);                                       // Error detail
              }
            }
           else say(b, sg[k]);                                                   // Line that is not the first error line
