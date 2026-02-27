@@ -43,13 +43,9 @@ abstract public class BitSet extends Test                                       
    }
 
   public void setPath(int Index)                                                // Set bits along the path from the indexed bit to the root of the bit tree
-   {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index outof range
-     int b = Index, p = 0, w = nextPowerOfTwo(bitSize);                         // Start at the leaves of the bit tree
-    for(int i : range(bitSize))                                                 // Much more than necessary
+   {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index out of range
+    for(int b = Index, p = 0, w = bitSize; w > 0; p += w, w >>>= 1, b >>>= 1)   // Step from root to leaf
      {setBit(p+b, true);                                                        // Set bit along path to root
-      p += w;                                                                   // Address next level of bits in tree
-      w >>>= 1; if (w == 0) break;                                              // If we have reached level 0 we are finished
-      b >>>= 1;                                                                 // Index in next level
      }
    }
 
@@ -77,7 +73,7 @@ abstract public class BitSet extends Test                                       
 
     for(int i : range(bitSize))                                                 // Much more than necessary
      {int B = b-1;                                                              // Is there a path down from the next bit?
-      if (b > 0 && getBit(p+B))                                                 // Found next up bit
+      if (b > 0 && getBit(p+B))                                                 // Found next down bit
        {for(int j : range(i))                                                   // Step down to the leaves
          {w <<= 1;                                                              // Width of next level
           B   = 2 * B + (getBit(p-w+B+B) ? 0 : 1);                              // Follow path as high as possible
@@ -97,11 +93,11 @@ abstract public class BitSet extends Test                                       
     for (int i : range(bytes)) setByte(i, (byte) 0);                            // Zero storage.
    }
 
-  public String toString()                                                      // Clear all bits.
-   {final StringBuilder s = new StringBuilder();                                // Compute number of bytes.
+  public String toString()                                                      // Print levels in bit tree
+   {final StringBuilder s = new StringBuilder();
     int p = 0, r = bitSize;
 
-    s.append("BitSet        ");
+    s.append("BitSet        ");                                                 // Title
     for   (int i : range(bitSize)) s.append(f(" %2d", i));                      // Positions of bits
     s.append("\n");
 
@@ -122,7 +118,7 @@ abstract public class BitSet extends Test                                       
    {final int N = 23;                                                           // Test size.
     final byte[]bytes = new byte[BitSet.bytesNeeded(N)];                        // Allocate backing storage.
 
-    final BitSet b = new BitSet(N)                                              // Instantiate anonymous implementation.
+    final BitSet b = new BitSet(N)                                              // Create a bit set
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
@@ -177,7 +173,7 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
    {final int N = 1;                                                            // Test size.
     final byte[]bytes = new byte[BitSet.bytesNeeded(N)];                        // Allocate backing storage.
 
-    final BitSet b = new BitSet(N)                                              // Instantiate anonymous implementation.
+    final BitSet b = new BitSet(N)                                              // Create a bit set using the backing storage
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
@@ -196,7 +192,7 @@ BitSet          0
    {final int N = 2;                                                            // Test size.
     final byte[]bytes = new byte[BitSet.bytesNeeded(N)];                        // Allocate backing storage.
 
-    final BitSet b = new BitSet(N)                                              // Instantiate anonymous implementation.
+    final BitSet b = new BitSet(N)                                              // Create a bit set using the backing storage
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
