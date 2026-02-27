@@ -43,7 +43,8 @@ abstract public class BitSet extends Test                                       
    }
 
   public void setPath(int Index)                                                // Set bits along the path from the indexed bit to the root of the bit tree
-   {int b = Index, p = 0, w = nextPowerOfTwo(bitSize);                          // Start at the leaves of the bit tree
+   {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index outof range
+     int b = Index, p = 0, w = nextPowerOfTwo(bitSize);                         // Start at the leaves of the bit tree
     for(int i : range(bitSize))                                                 // Much more than necessary
      {setBit(p+b, true);                                                        // Set bit along path to root
       p += w;                                                                   // Address next level of bits in tree
@@ -182,16 +183,13 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
      };
 
     b.clearAll();
-    b.setPath(1);
+    b.setPath(0);
     ok(b, """
 BitSet          0
 """);
 
     ok(b.pathLt(0) == null);
-    ok(b.pathLt(1) == null);
-
     ok(b.pathGt(0) == null);
-    ok(b.pathGt(1) == null);
    }
 
   static void test_two()
