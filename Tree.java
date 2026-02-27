@@ -196,13 +196,13 @@ class Tree extends Test                                                         
     int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of refs
 
     final class slot                                                            // A dereferenced slot
-     {final int value;
+     {final int value;                                                          // The index of the slot
       slot( int Value)  {value = Value;}                                        // A key
       int       value() {return  value;}
      }
 
     final class Slot                                                            // A reference to a slot
-     {final int value;
+     {final int value;                                                          // The index of the slot
       Slot( int Value)  {value = Value;}                                        // A key
       int       value() {return  value;}                                        // The value of the key
       Slot      right() {return new Slot(value+1);}                             // Step right
@@ -226,12 +226,19 @@ class Tree extends Test                                                         
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {for (int i = value(); i >= 0; i--)
-         {final Slot S = new Slot(i);
-          if (usedSlots(S)) return S;
-         }
-        return null;                                                            // No free slot
+       {if (usedSlots(this)) return this;
+         final Integer i = memory.usedSlotsBits.prev(value());
+say("AAAA", value(), i, memory.usedSlotsBits);
+        return i != null ? new Slot(i) : null;
        }
+
+//    Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
+//     {for (int i = value(); i >= 0; i--)
+//       {final Slot S = new Slot(i);
+//        if (usedSlots(S)) return S;
+//       }
+//      return null;                                                            // No free slot
+//     }
 
       Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next higher used slot
        {final int N = numberOfSlots();
@@ -689,8 +696,8 @@ class Tree extends Test                                                         
       int     name        (         ) {return bytes.getInt(posName);}
 
       void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES, Value);}
-      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(Index,                    Value);}
-      void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(Index,                    Value);}
+      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.path(Index,                      Value);}
+      void    usedRefs    (int Index, boolean Value) {usedRefsBits .path(Index,                      Value);}
       void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES, Value);}
       void    name        (           int     Value) {bytes.putInt(posName,                          Value);} // Save the name of the node in memory to assist debugging
 
