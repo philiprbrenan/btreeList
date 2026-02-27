@@ -2,6 +2,8 @@
 // Fixed size bit set which can locate occupied bits in log N time
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// first/last next/prev ought to return a Bit rather than an Integer
+// first/last next/prev not set
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                             // Standard utility library.
@@ -23,9 +25,9 @@ abstract public class BitSet extends Test                                       
    {return (Byte.SIZE - 1 + 2 * nextPowerOfTwo(Size)) / Byte.SIZE;
    }
 
-  int size()                  {return bitSize;}                                 // Bit set size.
-  int bitOffset(int bitIndex) {return bitIndex & 7;}                            // Offset inside byte.
-  int byteIndex(int bitIndex) {return bitIndex >>> 3;}                          // Byte index in storage.
+  public  int size()                  {return bitSize;}                         // Bit set size.
+  private int bitOffset(int bitIndex) {return bitIndex & 7;}                    // Offset inside byte.
+  private int byteIndex(int bitIndex) {return bitIndex >>> 3;}                  // Byte index in storage.
 
   public boolean getBit(int Index)                                              // Get bit value.
    {final int bIndex = byteIndex(Index);                                        // Compute byte position.
@@ -35,17 +37,31 @@ abstract public class BitSet extends Test                                       
     return ((b >>> offset) & 1) != 0;                                           // Extract bit.
    }
 
-  public void setBit(int Index, boolean Value)                                  // Set bit value.
+  private void setBit(int Index, boolean Value)                                 // Set bit value.
    {final int bIndex = byteIndex(Index);                                        // Compute byte position.
     final int offset = bitOffset(Index);                                        // Compute bit offset.
     final byte b = getByte(bIndex);                                             // Load byte.
     setByte(bIndex, (byte) (Value ? b | (1 << offset) : b & ~(1 << offset)));   // Modify bit.
    }
 
+  public void path(int Index, boolean Value)                                    // Set or clear bits along the path from the indexed bit to the root of the bit tree preserving the tree structure on clear
+   {if (Value) setPath(Index); else clearPath(Index);
+   }
+
   public void setPath(int Index)                                                // Set bits along the path from the indexed bit to the root of the bit tree
    {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index out of range
     for(int b = Index, p = 0, w = bitSize; w > 0; p += w, w >>>= 1, b >>>= 1)   // Step from root to leaf
      {setBit(p+b, true);                                                        // Set bit along path to root
+     }
+   }
+
+  public void clearPath(int Index)                                              // Clear bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
+   {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index out of range
+err("CCCC");
+    setBit(Index, false);                                                       // clear the actual bnit
+    for(int b = Index, p = 0, w = bitSize; w > 0; p += w, w >>>= 1, b >>>= 1)   // Step from root to leaf
+     {final int q = p + w + (b>>>1);
+      if (b+1 < w && !getBit(p+b) && !getBit(p+b+1)) setBit(q, false);          // Set bit along path to root
      }
    }
 
@@ -71,7 +87,7 @@ abstract public class BitSet extends Test                                       
     return null;
    }
 
-  public Integer prev(int Index)                                              // Find the index of the previous set bit below the specified bit
+  public Integer prev(int Index)                                                // Find the index of the previous set bit below the specified bit
    {int b = Index, p = 0, w = nextPowerOfTwo(bitSize);
 
     for(int i : range(bitSize))                                                 // Much more than necessary
@@ -79,7 +95,7 @@ abstract public class BitSet extends Test                                       
       if (b > 0 && getBit(p+B))                                                 // Found next down bit
        {for(int j : range(i))                                                   // Step down to the leaves
          {w <<= 1;                                                              // Width of next level
-          B   = 2 * B + (getBit(p-w+B+B) ? 0 : 1);                              // Follow path as high as possible
+          B   = 2 * B + (getBit(p-w+B+B+1) ? 1 : 0);                              // Follow path as high as possible
           p  -= w;                                                              // Position of next level in tree
          }
         return B;
@@ -117,9 +133,8 @@ abstract public class BitSet extends Test                                       
 
 //D1 Tests                                                                      // Tests
 
-  static BitSet test_bits()                                                     // Create test bitset.
-   {final int N = 23;                                                           // Test size.
-    final byte[]bytes = new byte[BitSet.bytesNeeded(N)];                        // Allocate backing storage.
+  static BitSet test_bits(int N)                                                // Create test bitset.
+   {final byte[]bytes = new byte[BitSet.bytesNeeded(N)];                        // Allocate backing storage.
 
     final BitSet b = new BitSet(N)                                              // Create a bit set
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
@@ -129,7 +144,7 @@ abstract public class BitSet extends Test                                       
    }
 
   static void test_bitSet()                                                     // Test bit manipulation.
-   {final BitSet b = test_bits();                                               // Get test bitset.
+   {final BitSet b = test_bits(23);                                             // Get test bitset.
     final int N = b.size();                                                     // Get logical size.
 
     for (int i = 0; i < N; i++) b.setBit(i, i % 2 == 0);                        // Set alternating bits.
@@ -139,7 +154,7 @@ abstract public class BitSet extends Test                                       
    }
 
   static void test_bitTree()                                                    // Test tree of bits
-   {final BitSet b = test_bits();
+   {final BitSet b = test_bits(23);
 
     b.clearAll();
     b.setPath(13);
@@ -153,6 +168,26 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
    6   62    1  1
 """);
     b.setPath(19);
+    ok(b, """
+BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+   1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0
+   2   32   16  0  0  0  0  0  0  1  0  0  1  0  0  0  0  0  0
+   3   48    8  0  0  0  1  1  0  0  0
+   4   56    4  0  1  1  0
+   5   60    2  1  1
+   6   62    1  1
+""");
+    b.setPath(16);
+    ok(b, """
+BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+   1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  1  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0
+   2   32   16  0  0  0  0  0  0  1  0  1  1  0  0  0  0  0  0
+   3   48    8  0  0  0  1  1  0  0  0
+   4   56    4  0  1  1  0
+   5   60    2  1  1
+   6   62    1  1
+""");
+    b.clearPath(16);
     ok(b, """
 BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0
@@ -180,7 +215,57 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
     ok(b.prev(19),  13);
     ok(b.prev(18),  13);
     ok(b.prev(13) == null);
+   }
 
+  static void test_step()                                                       // Test tree of bits
+   {final BitSet b = test_bits(23);
+
+    b.clearAll();
+    b.setPath(2); b.setPath(3); b.setPath(5); b.setPath(6); b.setPath(7); b.setPath(9); b.setPath(11); b.setPath(13);
+    ok(b, """
+BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+   1    0   32  0  0  1  1  0  1  1  1  0  1  0  1  0  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+   2   32   16  0  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0
+   3   48    8  1  1  1  1  0  0  0  0
+   4   56    4  1  1  0  0
+   5   60    2  1  0
+   6   62    1  1
+""");
+    ok(b.first(), 2);  ok(b.last(), 13);
+    ok(b.prev( 0) == null);   ok(b.next( 0),  2);
+    ok(b.prev( 1) == null);   ok(b.next( 1),  2);
+    ok(b.prev( 2) == null);   ok(b.next( 2),  3);
+    ok(b.prev( 3), 2);        ok(b.next( 3),  5);
+    ok(b.prev( 4), 3);        ok(b.next( 4),  5);
+    ok(b.prev( 5), 3);        ok(b.next( 5),  6);
+    ok(b.prev( 6), 5);        ok(b.next( 6),  7);
+    ok(b.prev( 7), 6);        ok(b.next( 7),  9);
+    ok(b.prev( 8), 7);        ok(b.next( 8),  9);
+    ok(b.prev( 9), 7);        ok(b.next( 9), 11);
+    ok(b.prev(10), 9);        ok(b.next(10), 11);
+    ok(b.prev(11), 9);        ok(b.next(11), 13);
+    ok(b.prev(12), 11);       ok(b.next(12), 13);
+    ok(b.prev(13), 11);       ok(b.next(13) == null);
+    ok(b.prev(14), 13);       ok(b.next(14) == null);
+   }
+
+  static void test_step_zero()                                                  // Test tree of bits
+   {final BitSet b = test_bits(7);
+
+    b.clearAll();
+    b.setPath(0); b.setPath(4);
+    ok(b, """
+BitSet          0  1  2  3  4  5  6  7
+   1    0    8  1  0  0  0  1  0  0  0
+   2    8    4  1  0  1  0
+   3   12    2  1  1
+   4   14    1  1
+""");
+    ok(b.first(), 0);
+    ok(b.last(),  4);
+    ok(b.prev( 0), null);
+    ok(b.prev( 1), 0);
+    ok(b.prev( 2), 0);
    }
 
   static void test_one()
@@ -230,6 +315,8 @@ BitSet          0  1
     test_bitTree();
     test_one();
     test_two();
+    test_step();
+    test_step_zero();
    }
 
   static void newTests()                                                        // Tests under development.
