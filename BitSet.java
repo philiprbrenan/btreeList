@@ -49,7 +49,10 @@ abstract public class BitSet extends Test                                       
      }
    }
 
-  public Integer pathGt(int Index)                                              // Find the index of the next set bit above the specified bit
+  public Integer first() {return getBit(0)         ? 0 : next(0);}              // Find the index of the first set bit
+  public Integer  last() {return getBit(bitSize-1) ? 0 : prev(bitSize-1);}      // Find the index of the last set bit
+
+  public Integer next(int Index)                                                // Find the index of the next set bit above the specified bit
    {int b = Index, p = 0, w = nextPowerOfTwo(bitSize);
     for(int i : range(bitSize))                                                 // Much more than necessary
      {int B = b+1;                                                              // Is there a path down from the next bit?
@@ -68,7 +71,7 @@ abstract public class BitSet extends Test                                       
     return null;
    }
 
-  public Integer pathLt(int Index)                                              // Find the index of the previous set bit below the specified bit
+  public Integer prev(int Index)                                              // Find the index of the previous set bit below the specified bit
    {int b = Index, p = 0, w = nextPowerOfTwo(bitSize);
 
     for(int i : range(bitSize))                                                 // Much more than necessary
@@ -160,13 +163,24 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
    6   62    1  1
 """);
 
-    for (int i : range(14))     ok(b.pathLt(i) == null);
-    for (int i : range(14, 20)) ok(b.pathLt(i), 13);
-    for (int i : range(20, 32)) ok(b.pathLt(i), 19);
+    for (int i : range(14))     ok(b.prev(i) == null);
+    for (int i : range(14, 20)) ok(b.prev(i), 13);
+    for (int i : range(20, 32)) ok(b.prev(i), 19);
 
-    for (int i : range(13))     ok(b.pathGt(i), 13);
-    for (int i : range(13, 19)) ok(b.pathGt(i), 19);
-    for (int i : range(19, 32)) ok(b.pathGt(i) == null);
+    for (int i : range(13))     ok(b.next(i), 13);
+    for (int i : range(13, 19)) ok(b.next(i), 19);
+    for (int i : range(19, 32)) ok(b.next(i) == null);
+
+    ok(b.first(),   13);
+    ok(b.next(1),   13);
+    ok(b.next(13),  19);
+    ok(b.next(19) == null);
+
+    ok(b.last(),    19);
+    ok(b.prev(19),  13);
+    ok(b.prev(18),  13);
+    ok(b.prev(13) == null);
+
    }
 
   static void test_one()
@@ -184,8 +198,8 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
 BitSet          0
 """);
 
-    ok(b.pathLt(0) == null);
-    ok(b.pathGt(0) == null);
+    ok(b.prev(0) == null);
+    ok(b.next(0) == null);
    }
 
   static void test_two()
@@ -204,11 +218,11 @@ BitSet          0  1
    1    0    2  0  1
 """);
 
-    ok(b.pathLt(0) == null, true);
-    ok(b.pathLt(1) == null, true);
+    ok(b.prev(0) == null, true);
+    ok(b.prev(1) == null, true);
 
-    ok(b.pathGt(0), 1);
-    ok(b.pathGt(1) == null, true);
+    ok(b.next(0), 1);
+    ok(b.next(1) == null, true);
    }
 
   static void oldTests()                                                        // Tests thought to be stable.
