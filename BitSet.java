@@ -11,6 +11,7 @@ import java.util.*;                                                             
 abstract public class BitSet extends Test                                       // Abstract fixed-size bit set using byte-level storage.
  {final int bitSize;                                                            // Number of bits in the bit set.
   final int byteSize;                                                           // Number of bytes in the bit set.
+  static boolean debug;
 
   public BitSet(int BitSize)                                                    // Constructor specifying fixed size.
    {bitSize = nextPowerOfTwo(BitSize);                                          // Record size.
@@ -57,11 +58,17 @@ abstract public class BitSet extends Test                                       
 
   public void clearPath(int Index)                                              // Clear bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
    {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index out of range
-err("CCCC");
-    setBit(Index, false);                                                       // clear the actual bnit
-    for(int b = Index, p = 0, w = bitSize; w > 0; p += w, w >>>= 1, b >>>= 1)   // Step from root to leaf
-     {final int q = p + w + (b>>>1);
-      if (b+1 < w && !getBit(p+b) && !getBit(p+b+1)) setBit(q, false);          // Set bit along path to root
+    if (!getBit(Index)) return;                                                  // Bit already not set so nothing to do
+
+    setBit(Index, false);                                                       // Clear the actual bit
+    for(int i = 0, b = Index, p = 0, w = bitSize; w > 0; ++i)                   // Step from leaf to root
+     {final int B = b>>>1, q = p + w + B;
+
+      if (B+B+1 < w && !getBit(p+B+B) && !getBit(p+B+B+1))                      // Check both bits in the previous row are off
+       {if (!getBit(q)) return;                                                 // Bit is already correctly set so there is nothing more to do
+        setBit(q, false);                                                       // Clear set bit along path to root
+       }
+      p += w; w >>>= 1; b >>>= 1;                                               // Next layer
      }
    }
 
@@ -108,8 +115,30 @@ err("CCCC");
    }
 
   public void clearAll()                                                        // Clear all bits.
-   {final int bytes = (bitSize + 7) >>> 3;                                      // Compute number of bytes.
-    for (int i : range(bytes)) setByte(i, (byte) 0);                            // Zero storage.
+   {for (int i : range(byteSize)) setByte(i, (byte) 0);                         // Zero storage.
+   }
+
+  public boolean integrity() {return integrity(true);}                          // Do an integrity check on the bitset to detect corruption
+
+  public boolean integrity(boolean Stop)                                        // Do an integrity check on the bitset to detect corruption and stop on failures unless specified otherwise
+   {final byte[]bytes = new byte[BitSet.bytesNeeded(bitSize)];                  // Allocate backing storage.
+    final BitSet b = new BitSet(bitSize)
+     {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
+      byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
+     };
+
+    for   (int i : range(bitSize)) if (getBit(i)) b.setPath(i);
+    final String g = toString(), e = ""+b;
+    if (!g.equals(e))                                                           // Check that the current bit tree matches the expected bit tree
+     {if (Stop)                                                                 // Normally we woudl stop and complain
+       {ok(g, e);
+        stop("Integrity failed in bit set:\n",
+      "Got\n"     +  toString(),
+      "Expected\n"+b.toString());
+       }
+      return false;
+     }
+    return true;
    }
 
   public String toString()                                                      // Print levels in bit tree
@@ -219,9 +248,10 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
 
   static void test_step()                                                       // Test tree of bits
    {final BitSet b = test_bits(23);
+    final int[]  n = new int[]{2, 3, 5, 6, 7, 9, 11, 13};
 
     b.clearAll();
-    b.setPath(2); b.setPath(3); b.setPath(5); b.setPath(6); b.setPath(7); b.setPath(9); b.setPath(11); b.setPath(13);
+    for (int i : range(n.length)) b.setPath(n[i]);
     ok(b, """
 BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32  0  0  1  1  0  1  1  1  0  1  0  1  0  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
@@ -247,6 +277,11 @@ BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21
     ok(b.prev(12), 11);       ok(b.next(12), 13);
     ok(b.prev(13), 11);       ok(b.next(13) == null);
     ok(b.prev(14), 13);       ok(b.next(14) == null);
+
+    for (int i : range(n.length))
+     {b.clearPath(n[i]);
+      b.integrity();
+     }
    }
 
   static void test_step_zero()                                                  // Test tree of bits
@@ -310,6 +345,31 @@ BitSet          0  1
     ok(b.next(1) == null, true);
    }
 
+  static void test_integrity()
+   {final int N = 8;                                                            // Test size.
+    final byte[]bytes = new byte[BitSet.bytesNeeded(N)];                        // Allocate backing storage.
+
+    final BitSet b = new BitSet(N)                                              // Create a bit set using the backing storage
+     {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
+      byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
+     };
+
+    b.clearAll();
+    b.setPath(1); b.setPath(3);
+    ok(b.integrity());
+    b.setBit(7, true);
+    ok(!b.integrity(false));
+   }
+
+  static void test_clearAll()
+   {final BitSet b = test_bits(8);
+
+    b.setPath(1); b.setPath(3);
+    ok(b.integrity());
+    b.clearAll();
+    ok(b.integrity());
+   }
+
   static void oldTests()                                                        // Tests thought to be stable.
    {test_bitSet();
     test_bitTree();
@@ -317,6 +377,8 @@ BitSet          0  1
     test_two();
     test_step();
     test_step_zero();
+    test_integrity();
+    test_clearAll();
    }
 
   static void newTests()                                                        // Tests under development.
