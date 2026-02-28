@@ -359,14 +359,16 @@ class Tree extends Test                                                         
      {if (Width > 0)                                                            // Shift up including the current slot
        {for (int i = Width; i > 0; --i)                                         // Move each slot
          {final int p = Position+i;                                             // Index of target
-          slots(new Slot(p), slots(new Slot(p-1)));                             // Move slot
+          final Slot P = new Slot(p);
+          slots(P, slots(P.left()));                                            // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
       else if (Width < 0)                                                       // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
        {for (int i = Width; i < 0; ++i)                                         // Move each slot
          {final int p = Position+i;                                             // Index of target
-          slots(new Slot(p), slots(new Slot(p+1)));                             // Move slot
+          final Slot P = new Slot(p);
+          slots(P, slots(P.right()));                                           // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
