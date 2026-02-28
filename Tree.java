@@ -2,8 +2,7 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// stepLeft and stepRight to bitSet
-// investiagte list all introducing errors
+// investigate listAll introducing errors
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.Stack;
@@ -146,10 +145,10 @@ class Tree extends Test                                                         
       ((Slots)b).memory.usedSlotsBits.integrity();
       ((Slots)b).memory.usedRefsBits .integrity();
      }
-    for (int i : range(1, numberOfNodes))                                     // Node 0 is the tree base so it is not a leaf or a branch
+    for (int i : range(1, numberOfNodes))                                       // Node 0 is the tree base so it is not a leaf or a branch
      {if ( u.contains(i) && !f.contains(i)) continue;
       if (!u.contains(i) &&  f.contains(i)) continue;
-      //stop("Leaf or branch not in tree and not on free chain:", i);
+      stop("Leaf or branch not in tree and not on free chain:", i);
      }
    }
 
@@ -215,12 +214,16 @@ class Tree extends Test                                                         
       Slot       left() {return new Slot(value-1);}                             // Step left
 
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
-       {final Integer i = memory.usedSlotsBits.prev(value());
+       {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
+        final BitSet.Pos p = memory.usedSlotsBits.prev(q);
+        final Integer i = p != null ? p.position() : null;
         return i != null ? new Slot(i) : null;
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
-       {final Integer i = memory.usedSlotsBits.next(value());
+       {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
+        final BitSet.Pos p = memory.usedSlotsBits.next(q);
+        final Integer i = p != null ? p.position() : null;
         return i != null ? new Slot(i) : null;
        }
 
@@ -346,13 +349,13 @@ class Tree extends Test                                                         
      }
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
-     {final Integer i = memory.usedSlotsBits.first();
-      return i != null ? new Slot(i) : null;
+     {final BitSet.Pos p = memory.usedSlotsBits.first();
+      return p != null ? new Slot(p.position()) : null;
      }
 
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
-     {final Integer i = memory.usedSlotsBits.last();
-      return i != null ? new Slot(i) : null;
+     {final BitSet.Pos p = memory.usedSlotsBits.last();
+      return p != null ? new Slot(p.position()) : null;
      }
 
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
@@ -670,16 +673,16 @@ class Tree extends Test                                                         
       Memory(ByteBuffer Bytes) {bytes = Bytes;}                                 // Use a specified memory
 
       int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
-      boolean usedSlots   (int Index) {return usedSlotsBits.getBit(Index);}
-      boolean usedRefs    (int Index) {return usedRefsBits .getBit(Index);}
+      boolean usedSlots   (int Index) {return usedSlotsBits.getBit(usedSlotsBits.new Pos(Index));}
+      boolean usedRefs    (int Index) {return usedRefsBits .getBit(usedRefsBits .new Pos(Index));}
       int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
       int     name        (         ) {return bytes.getInt(posName);}
 
-      void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES, Value);}
-      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.path(Index,                      Value);}
-      void    usedRefs    (int Index, boolean Value) {usedRefsBits .path(Index,                      Value);}
-      void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES, Value);}
-      void    name        (           int     Value) {bytes.putInt(posName,                          Value);} // Save the name of the node in memory to assist debugging
+      void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES,   Value);}
+      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.path(usedSlotsBits.new Pos(Index), Value);}
+      void    usedRefs    (int Index, boolean Value) {usedRefsBits .path(usedRefsBits .new Pos(Index), Value);}
+      void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES,   Value);}
+      void    name        (           int     Value) {bytes.putInt(posName,                            Value);} // Save the name of the node in memory to assist debugging
 
       void type(int Type) {       bytes.putInt(posType, Type);}                 // Type of object in which the slots are embedded
       int  type()         {return bytes.getInt(posType);}
@@ -901,8 +904,8 @@ class Tree extends Test                                                         
     void compactRight()                                                         // Compact the leaf to the right
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final Data[]d = new Data[R];
-      int p = R-1;
-      for (int i = N-1; i >= 0; --i)
+      int p = R-1;                                                              // Start at the last slot
+      for (int i = N-1; i >= 0; --i)                                            // Compact each slot to the right
        {final Slot I = new Slot(i);
         if (usedSlots(I)) d[p--] = data(slots(I));
        }
@@ -1295,7 +1298,7 @@ class Tree extends Test                                                         
        }
 
       void    upIndex(Integer Value)                                            // Set the index of this branch in its parent
-       {bytes.putInt(posUpIndex, Value != null ? Value : -1);
+       {bytes.putInt(posUpIndex, Value != null ? Value : -1);                   // Have to use -1 to represent null as 0 is a valid position
        }
 
       int  top ()  {return bytes.getInt(posTop);}
@@ -1337,7 +1340,7 @@ class Tree extends Test                                                         
       final String  us = ui != null ? ""+ui : "null";
       final int n = name().at();
       final int u = memory.up();
-      final int i = memory.upIndex() != null ? memory.upIndex() : -1;
+      final int i = memory.upIndex() != null ? memory.upIndex() : -1;           // -1 represents null
       s.append(f("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
       s.append(super.toString());
       s.append("data     :  "+d+"\n");
