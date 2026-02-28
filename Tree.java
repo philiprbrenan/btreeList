@@ -237,6 +237,12 @@ class Tree extends Test                                                         
         return i != null ? new Slot(i) : null;
        }
 
+      Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
+       {if (usedSlots(this)) return this;
+        final Integer i = memory.usedSlotsBits.next(value());
+        return i != null ? new Slot(i) : null;
+       }
+
 //    Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
 //     {for (int i = value(); i >= 0; i--)
 //       {final Slot S = new Slot(i);
@@ -245,14 +251,14 @@ class Tree extends Test                                                         
 //      return null;                                                            // No free slot
 //     }
 
-      Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next higher used slot
-       {final int N = numberOfSlots();
-        for (int i : range(value(), N))
-         {final Slot S = new Slot(i);
-          if (usedSlots(S)) return S;
-         }
-        return null;                                                            // No free slot
-       }
+//    Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next higher used slot
+//     {final int N = numberOfSlots();
+//      for (int i : range(value(), N))
+//       {final Slot S = new Slot(i);
+//        if (usedSlots(S)) return S;
+//       }
+//      return null;                                                            // No free slot
+//     }
 
       boolean eq(Key Key) {return Key.value() == keys(this).value();}           // Search key is equal to indexed key
       boolean le(Key Key) {return Key.value() <= keys(this).value();}           // Search key is less than or equal to indexed key
