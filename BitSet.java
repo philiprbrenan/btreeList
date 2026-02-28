@@ -72,8 +72,13 @@ abstract public class BitSet extends Test                                       
      }
    }
 
-  public Integer first() {return getBit(0)         ? 0 : next(0);}              // Find the index of the first set bit
-  public Integer  last() {return getBit(bitSize-1) ? 0 : prev(bitSize-1);}      // Find the index of the last set bit
+  public Integer first() {return getBit(0) ? 0 : next(0);}                      // Find the index of the first set bit
+
+  public Integer last()                                                         // Find the index of the last set bit
+   {final int l = bitSize-1;
+    if (getBit(l)) return l;
+    return prev(l);
+   }
 
   public Integer next(int Index)                                                // Find the index of the next set bit above the specified bit
    {int b = Index, p = 0, w = nextPowerOfTwo(bitSize);
