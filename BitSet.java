@@ -52,13 +52,13 @@ abstract public class BitSet extends Test                                       
   public void setPath(int Index)                                                // Set bits along the path from the indexed bit to the root of the bit tree
    {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index out of range
     for(int b = Index, p = 0, w = bitSize; w > 0; p += w, w >>>= 1, b >>>= 1)   // Step from root to leaf
-     {setBit(p+b, true);                                                        // Set bit along path to root
+     {if (getBit(p+b)) return; else setBit(p+b, true);                          // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
      }
    }
 
   public void clearPath(int Index)                                              // Clear bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
    {if (Index < 0 || Index >= bitSize) stop("Index out of range:", Index);      // Index out of range
-    if (!getBit(Index)) return;                                                  // Bit already not set so nothing to do
+    if (!getBit(Index)) return;                                                 // Bit already nnot set so teh rest of the path will be correct as no  changes at thos level
 
     setBit(Index, false);                                                       // Clear the actual bit
     for(int i = 0, b = Index, p = 0, w = bitSize; w > 0; ++i)                   // Step from leaf to root
