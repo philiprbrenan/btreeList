@@ -2,7 +2,6 @@
 // Fixed size bit set which can locate occupied bits in log N time
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// first/last next/prev ought to return a Bit rather than an Integer
 // first/last next/prev not set
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
