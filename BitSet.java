@@ -38,7 +38,7 @@ abstract public class BitSet extends Test                                       
     return ((b >>> offset) & 1) != 0;                                           // Extract bit.
    }
 
-  private void setBit(int Index, boolean Value)                                 // Set bit value.
+  void setBit(int Index, boolean Value)                                         // Set bit value.
    {final int bIndex = byteIndex(Index);                                        // Compute byte position.
     final int offset = bitOffset(Index);                                        // Compute bit offset.
     final byte b = getByte(bIndex);                                             // Load byte.
