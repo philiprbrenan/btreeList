@@ -233,7 +233,7 @@ class Tree extends Test                                                         
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
        {if (usedSlots(this)) return this;
-         final Integer i = memory.usedSlotsBits.prev(value());
+        final Integer i = memory.usedSlotsBits.prev(value());
         return i != null ? new Slot(i) : null;
        }
 
@@ -242,23 +242,6 @@ class Tree extends Test                                                         
         final Integer i = memory.usedSlotsBits.next(value());
         return i != null ? new Slot(i) : null;
        }
-
-//    Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-//     {for (int i = value(); i >= 0; i--)
-//       {final Slot S = new Slot(i);
-//        if (usedSlots(S)) return S;
-//       }
-//      return null;                                                            // No free slot
-//     }
-
-//    Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next higher used slot
-//     {final int N = numberOfSlots();
-//      for (int i : range(value(), N))
-//       {final Slot S = new Slot(i);
-//        if (usedSlots(S)) return S;
-//       }
-//      return null;                                                            // No free slot
-//     }
 
       boolean eq(Key Key) {return Key.value() == keys(this).value();}           // Search key is equal to indexed key
       boolean le(Key Key) {return Key.value() <= keys(this).value();}           // Search key is less than or equal to indexed key
@@ -371,35 +354,30 @@ class Tree extends Test                                                         
       return null;                                                              // No free slot - this is not actually an error.
      }
 
-    Slot locateFirstUsedSlot()                                                  // Absolute position of the first slot in use
-     {final int N = numberOfSlots();
-      for (int i : range(N))
-       {final Slot S = new Slot(i);
-        if (usedSlots(S)) return S;
-       }
-      return null;                                                              // No free slot
+    Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
+     {final Integer i = memory.usedSlotsBits.first();
+      return i != null ? new Slot(i) : null;
      }
 
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
-     {for (int i = numberOfSlots()-1; i >= 0; i--)
-       {final Slot S = new Slot(i);
-        if (usedSlots(S)) return S;
-       }
-      return null;                                                              // No free slot
+     {final Integer i = memory.usedSlotsBits.last();
+      return i != null ? new Slot(i) : null;
      }
 
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
      {if (Width > 0)                                                            // Shift up including the current slot
        {for (int i = Width; i > 0; --i)                                         // Move each slot
          {final int p = Position+i;                                             // Index of target
-          slots(new Slot(p), slots(new Slot(p-1)));                             // Move slot
+          final Slot P = new Slot(p);
+          slots(P, slots(P.stepLeft()));                                        // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
       else if (Width < 0)                                                       // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
        {for (int i = Width; i < 0; ++i)                                         // Move each slot
          {final int p = Position+i;                                             // Index of target
-          slots(new Slot(p), slots(new Slot(p+1)));                             // Move slot
+          final Slot P = new Slot(p);
+          slots(P, slots(P.stepRight()));                                       // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
