@@ -38,8 +38,8 @@ abstract public class BitSet extends Test                                       
    }
 
   public boolean getBit(Pos Index)                                              // Get bit value.
-   {final int bIndex = byteIndex(Index.position());                                        // Compute byte position.
-    final int offset = bitOffset(Index.position());                                        // Compute bit offset.
+   {final int bIndex = byteIndex(Index.position());                             // Compute byte position.
+    final int offset = bitOffset(Index.position());                             // Compute bit offset.
 
     final byte b = getByte(bIndex);                                             // Load byte.
     return ((b >>> offset) & 1) != 0;                                           // Extract bit.
@@ -82,12 +82,11 @@ abstract public class BitSet extends Test                                       
      }
    }
 
-  public Pos first() {return getBit(new Pos(0)) ? new Pos(0) : next(new Pos(0));}        // Find the index of the first set bit
+  public Pos first() {return getBit(new Pos(0)) ? new Pos(0):next(new Pos(0));} // Find the index of the first set bit
 
   public Pos last()                                                             // Find the index of the last set bit
    {final int l = bitSize-1;
-    if (getBit(new Pos(l))) return new Pos(l);
-    return prev(new Pos(l));
+    return getBit(new Pos(l)) ? new Pos(l) : prev(new Pos(l));
    }
 
   public Pos next(Pos Index)                                                    // Find the index of the next set bit above the specified bit
@@ -129,20 +128,22 @@ abstract public class BitSet extends Test                                       
     return null;
    }
 
-  public void clearAll()                                                        // Clear all bits.
-   {for (int i : range(byteSize)) setByte(i, (byte) 0);                         // Zero storage.
-   }
+  public void clearAll() {for (int i : range(byteSize)) setByte(i, (byte) 0);}  // Clear all bits.
 
   public boolean integrity() {return integrity(true);}                          // Do an integrity check on the bitset to detect corruption
 
   public boolean integrity(boolean Stop)                                        // Do an integrity check on the bitset to detect corruption and stop on failures unless specified otherwise
    {final byte[]bytes = new byte[BitSet.bytesNeeded(bitSize)];                  // Allocate backing storage.
+
     final BitSet b = new BitSet(bitSize)
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
 
-    for   (int i : range(bitSize)) if (getBit(new Pos(i))) b.setPath(new Pos(i));
+    for   (int i : range(bitSize))
+     {if (getBit(new Pos(i))) b.setPath(new Pos(i));
+     }
+
     final String g = toString(), e = ""+b;
     if (!g.equals(e))                                                           // Check that the current bit tree matches the expected bit tree
      {if (Stop)                                                                 // Normally we woudl stop and complain
@@ -166,7 +167,9 @@ abstract public class BitSet extends Test                                       
 
     for   (int i : range(1, bitSize))                                           // Each level
      {s.append(f("%4d %4d %4d", i, p, r));
-      for (int j : range(r)) s.append(f("  %1d", getBit(new Pos(p + j)) ? 1 : 0));       // Bits in level
+      for (int j : range(r))                                                    // Bits in level
+       {s.append(f("  %1d", getBit(new Pos(p + j)) ? 1 : 0));
+       }
       s.append("\n");
       p += r;
       r >>>= 1;
@@ -191,10 +194,10 @@ abstract public class BitSet extends Test                                       
    {final BitSet b = test_bits(23);                                             // Get test bitset.
     final int N = b.size();                                                     // Get logical size.
 
-    for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), i % 2 == 0);                        // Set alternating bits.
+    for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), i % 2 == 0);             // Set alternating bits.
 
-    ok(b.getBit(b.new Pos(4)), true);                                                      // Verify bit 4.
-    ok(b.getBit(b.new Pos(5)), false);                                                     // Verify bit 5.
+    ok(b.getBit(b.new Pos(4)), true);                                           // Verify bit 4.
+    ok(b.getBit(b.new Pos(5)), false);                                          // Verify bit 5.
    }
 
   static void test_bitTree()                                                    // Test tree of bits
