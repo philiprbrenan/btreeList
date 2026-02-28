@@ -3,8 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 // Add random inserts/deletes to stress locate/insert/delete
-// Check which of locate*() methods are actually needed
-// Slot and slot
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 import java.util.*;
 import java.nio.ByteBuffer;
@@ -183,7 +181,9 @@ public class Slots extends Test                                                 
     if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
     if (Start >= Finish)    stop("Start must precede finish:", Start, Finish);
 
-    for (int i = Start+1; i < Finish; i++) if (usedSlots(new Slot(i))) return false; // From start to finish looking for an intermediate used slot
+    for (int i = Start+1; i < Finish; i++)                                      // From start to finish looking for an intermediate used slot
+     {if (usedSlots(new Slot(i))) return false;
+     }
     return true;
    }
 
@@ -431,8 +431,8 @@ public class Slots extends Test                                                 
 
       for(int i = 0; i < N; ++i)                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
        {final Slot M = new Slot((a.value() + b.value()) / 2);                   // Desired mid point - but there might not be a slot in use at this point
-        final Slot ma = locatePrevUsedSlot(M);                                   // Occupied slot preceding mid point
-        final Slot mb = locateNextUsedSlot(M);                                   // Occupied slot succeeding mid point
+        final Slot ma = locatePrevUsedSlot(M);                                  // Occupied slot preceding mid point
+        final Slot mb = locateNextUsedSlot(M);                                  // Occupied slot succeeding mid point
 
         if      (ma.value() != a.value() && ge(Key, ma)) a = ma;
         else if (ma.value() != b.value() && le(Key, ma)) b = ma;
@@ -488,16 +488,11 @@ public class Slots extends Test                                                 
     final int N = numberOfSlots(), R = numberOfRefs;
     s.append(String.format("Slots    : name: %2d, type: %2d, refs: %2d\n",      // Title line
                             name(), type(), R));
-    s.append("positions: ");
-    for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
-    s.append("\nslots    : ");
-    for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
-    s.append("\nusedSlots: ");
-    for (int i = 0; i < N; i++) s.append(usedSlots(new Slot(i)) ? "   X" : "   .");
-    s.append("\nusedRefs : ");
-    for (int i = 0; i < R; i++) s.append(usedRefs (new Slot(i)) ? "   X" : "   .");
-    s.append("\nkeys     : ");
-    for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(new Slot(i)) != null ? key(new Slot(i)).value() : 0));
+    s.append("positions: ");   for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, i));
+    s.append("\nslots    : "); for (int i = 0; i < N; i++) s.append(String.format(" "+formatKey, slots(new Slot(i)).value()));
+    s.append("\nusedSlots: "); for (int i = 0; i < N; i++) s.append(usedSlots(                         new Slot(i)) ? "   X" : "   .");
+    s.append("\nusedRefs : "); for (int i = 0; i < R; i++) s.append(usedRefs (                         new Slot(i)) ? "   X" : "   .");
+    s.append("\nkeys     : "); for (int i = 0; i < R; i++) s.append(String.format(" "+formatKey, key(  new Slot(i)) != null ? key(new Slot(i)).value() : 0));
     return ""+s+"\n";
    }
 
@@ -514,13 +509,13 @@ public class Slots extends Test                                                 
 
   class SlotsMemoryPositions                                                    // Positions of fields in memory
    {final int N = numberOfSlots(), R = numberOfRefs;
-    final int posType         = 0;
-    final int posSlots        = posType      + Integer.BYTES;
-    final int posUsedSlots    = posSlots     + Integer.BYTES * N;
-    final int posUsedRefs     = posUsedSlots + BitSet.bytesNeeded(N);           // Amount of space needed to store these bits in bytes
-    final int posKeys         = posUsedRefs  + BitSet.bytesNeeded(R);
-    final int posName         = posKeys      + Integer.BYTES * R;
-    final int size            = posName      + Integer.BYTES;
+    final int posType      = 0;
+    final int posSlots     = posType      + Integer.BYTES;
+    final int posUsedSlots = posSlots     + Integer.BYTES * N;
+    final int posUsedRefs  = posUsedSlots + BitSet.bytesNeeded(N);              // Amount of space needed to store these bits in bytes
+    final int posKeys      = posUsedRefs  + BitSet.bytesNeeded(R);
+    final int posName      = posKeys      + Integer.BYTES * R;
+    final int size         = posName      + Integer.BYTES;
    }
 
   class Memory extends SlotsMemoryPositions                                     // Memory required to hold bytes
@@ -541,21 +536,11 @@ public class Slots extends Test                                                 
        }
      }
 
-    void invalidate()                                                           // Invalidate the slots in such away that they are unlikely to work well if subsequently used
-     {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);
-     }
+    void invalidate() {for (int i = 0; i < size; i++) bytes.put(i, (byte)-1);}  // Invalidate the slots in such away that they are unlikely to work well if subsequently used
+    void clear     () {for (int i = 0; i < size; i++) bytes.put(i, (byte) 0);}  // Clear all bytes in memory to zero which has the beneficial efefect of setting all slots to unused
+    Memory()                {bytes = ByteBuffer.allocate(size);}                // Create our own memory for testing
+    Memory(ByteBuffer Bytes){bytes = Bytes;}                                    // Use a specified memory
 
-    void clear()                                                                // Clear all bytes in memory to zero which has the beneficial efefect of setting all slots to unused
-     {for (int i = 0; i < size; i++) bytes.put(i, (byte)0);
-     }
-
-    Memory()                                                                    // Create our own memory for testing
-     {bytes = ByteBuffer.allocate(size);
-     }
-
-    Memory(ByteBuffer Bytes)                                                    // Use a specified memory
-     {bytes = Bytes;
-     }
 
     int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
     boolean usedSlots   (int Index) {return usedSlotsBits.getBit(usedSlotsBits.new Pos(Index));}
@@ -563,15 +548,14 @@ public class Slots extends Test                                                 
     int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
     int     name        (         ) {return bytes.getInt(posName);}
 
-    void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES, Value);}
+    void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES,     Value);}
     void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(usedSlotsBits.new Pos(Index), Value);}
     void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(usedRefsBits .new Pos(Index), Value);}
-    void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES, Value);}
-    void    name        (           int     Value) {bytes.putInt(posName                         , Value);} // Save the name of the node in memory to assist debugging
+    void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES,     Value);}
+    void    name        (           int     Value) {bytes.putInt(posName                         ,     Value);} // Save the name of the node in memory to assist debugging
 
     void type(int Type) {       bytes.putInt(posType, Type);}                   // Type of object in which the slots are embedded
     int  type()         {return bytes.getInt(posType);}
-
    }
 
   static int memorySize(int NumberOfRefs)                                       // Size of memory for a specified number of references
