@@ -558,14 +558,14 @@ public class Slots extends Test                                                 
      }
 
     int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
-    boolean usedSlots   (int Index) {return usedSlotsBits.getBit(Index);}
-    boolean usedRefs    (int Index) {return usedRefsBits .getBit(Index);}
+    boolean usedSlots   (int Index) {return usedSlotsBits.getBit(usedSlotsBits.new Pos(Index));}
+    boolean usedRefs    (int Index) {return usedRefsBits .getBit(usedRefsBits .new Pos(Index));}
     int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
     int     name        (         ) {return bytes.getInt(posName);}
 
     void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES, Value);}
-    void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(Index, Value);}
-    void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(Index, Value);}
+    void    usedSlots   (int Index, boolean Value) {usedSlotsBits.setBit(usedSlotsBits.new Pos(Index), Value);}
+    void    usedRefs    (int Index, boolean Value) {usedRefsBits .setBit(usedRefsBits .new Pos(Index), Value);}
     void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES, Value);}
     void    name        (           int     Value) {bytes.putInt(posName                         , Value);} // Save the name of the node in memory to assist debugging
 
