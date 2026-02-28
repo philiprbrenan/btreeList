@@ -3,6 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 // stepLeft and stepRight to bitSet
+// investiagte list all introducing errors
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.Stack;
@@ -505,7 +506,6 @@ class Tree extends Test                                                         
 
     public slot insert(Key Key)                                                 // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
      {if (full()) return null;                                                  // No slot available in which to insert a new key
-if (Tree.debug) freeCheck();
       final slot alloc = allocRef();                                            // The location in which to store the search key
       key(alloc, Key);                                                          // Store the new key in the referenced location
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
@@ -527,9 +527,7 @@ if (Tree.debug) freeCheck();
          {shift(         i,  w);                                                // Shift any intervening slots blocking the slot below
           slots(new Slot(i), alloc);                                            // Insert into the slot below
          }
-if (Tree.debug) freeCheck();
         if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();       // Redistribute if the used slots are densely packed
-if (Tree.debug) freeCheck();
        }
       else if (l.below)                                                         // Insert their key below the found key
        {final int i = l.at.value();
@@ -876,10 +874,7 @@ if (Tree.debug) freeCheck();
 
     Leaf splitLeft()                                                            // Split a right leaf into a new left leaf
      {final Leaf l = duplicate();
-if (Tree.debug) freeCheck();
-
       l.splitRight(this);
-if (Tree.debug) freeCheck();
       return l;
      }
 
@@ -1139,8 +1134,6 @@ if (Tree.debug) freeCheck();
       int  s  = 0;                                                              // Count slots used
       Key  sk = null;                                                           // Splitting key
 
-say("SSSS1111", this, Right);
-
       for (int i : range(numberOfSlots()))                                      // Each slot
        {final Slot I = new Slot(i);                                             // Slot is in use
         if (usedSlots(I))                                                       // Slot is in use
@@ -1159,7 +1152,6 @@ say("SSSS1111", this, Right);
          }
        }                                                                        // The new right branch
       redistribute(); Right.redistribute();
-say("SSSS2222", this, Right);
       return new Split(sk, this, Right);
      }
 
@@ -1191,10 +1183,7 @@ say("SSSS2222", this, Right);
      }
 
     slot insert(Key Key, Slots Data)                                            // Insert a key data pair into a branch
-     {
-if (Tree.debug) freeCheck();
-      final slot i = insert(Key);
-if (Tree.debug) freeCheck();
+     {final slot i = insert(Key);
       if (i != null) dataDirect(i.value(), Data);
       return i;
      }
@@ -1522,9 +1511,7 @@ if (Tree.debug) freeCheck();
         final Leaf   r = F.leaf;
         final int   sk = r.splittingKey();
         final Leaf   l = r.splitLeft();
-if (Tree.debug) freeCheck();
         b.insert(Key(sk), l);                                                   // Insert new left leaf into leaf
-if (Tree.debug) freeCheck();
         if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);   // Insert new key, data pair into left leaf or right leaf depending on key
         final Slots.Slot K = b.locateFirstGe(Key);                              // Position of leaf in parent
         if (b.mergeLeftSibling (K)) return;                                     // Merge inserted leaf into prior leaf if possible
@@ -1567,13 +1554,11 @@ if (Tree.debug) freeCheck();
     for (Branch q = find(Key).leaf.up(), b = q.up(); b!=null; q = b, b = q.up())// Path back from leaf to first full branch below a non full branch - the point at which we have to start splitting
      {if (!b.full()) {p = b; break;}
      }
-if (debug) say("MMMM1111", dump());
 
     for (int i : range(MaximumNumberOfLevels))                                  // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {final Slots q = p.stepDown(Key);                                          // Step down
       if (Leaf.ref(q))                                                          // Step down to a leaf
        {final Leaf r = (Leaf)q;                                                 // We have reached a leaf
-if (debug) say("MMMM2222", dump());
 
         if (r.full())                                                           // Split the leaf if it is full
          {final int  sk = r.splittingKey();                                     // Splitting key
@@ -1590,11 +1575,8 @@ if (debug) say("MMMM2222", dump());
       final Branch r = (Branch)q;
       if (r.full())                                                             // Split the leaf if it is full
        {final int         sk = r.splittingKey();                                // Splitting key
-if (debug) say("MMMM4444", dump());
         final Branch.Split s = r.splitLeft();                                   // Branch split out on right from
-if (debug) say("MMMM5555", dump(), sk, s.left, s.right);
         p.insert(Key(sk), s.left);                                              // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-if (debug) say("MMMM6666", Key.value(), dump());
         if (Key.value() <= sk) p = s.left; else p = s.right;                    // Traverse left or right
        }
       else p = r;                                                               // Step down into non full branch
@@ -1885,7 +1867,7 @@ if (debug) say("MMMM6666", Key.value(), dump());
     void scan(Branch B)
      {for (int i : range(B.numberOfSlots()))
        {final Slots.Slot S = B.new Slot(i);
-         if (B.usedSlots(S))
+        if (B.usedSlots(S))
          {final Slots    s = B.data(S);
           final boolean  l = Leaf.ref(s), b = Branch.ref(s);
 
@@ -3041,13 +3023,9 @@ Path        : 7, 9
    {final Tree t = new Tree(4, 3);
     final int N = 32;
     for (int i = N; i > 0; i--)
-     {
-Tree.debug = i <= 3;
-      t.insert(Key(i), new Data(i));
+     {t.insert(Key(i), new Data(i));
       ok(t.count(), N-i+1);
-if (Tree.debug) say("AAAA", i, t);
      }
-stop();
     ok(t, """
                                            16                                                     |
         4        8           12                          20            24            28           |
@@ -3634,8 +3612,8 @@ Delete 22
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//oldTests();
-    test_insert_reverse();
+   {oldTests();
+    test_deep();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
