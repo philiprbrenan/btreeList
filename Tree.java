@@ -495,8 +495,8 @@ class Tree extends Test                                                         
         final int w = locateNearestFreeSlot(l.at);                              // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
         if (w > 0)                                                              // Move up
          {shift             (i+1,  w-1);                                        // Liberate a slot at this point
-          slots    (new Slot(i+1), alloc);                                      // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
-          usedSlots(new Slot(i+1), true);
+          slots    (new Slot(i).right(), alloc);                                // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+          usedSlots(new Slot(i).right(), true);
          }
         else if (w < 0)                                                         // Liberate a slot below the current slot
          {shift(         i,  w);                                                // Shift any intervening slots blocking the slot below
@@ -513,8 +513,8 @@ class Tree extends Test                                                         
          }
         else if (w < 0)                                                         // Liberate a slot below the current slot
          {shift             (i-1,  w + 1);                                      // Shift any intervening slots blocking the slot below
-          slots    (new Slot(i-1), alloc);                                      // Insert into the slot below
-          usedSlots(new Slot(i-1), true);                                       // Mark the free slot at the start of the range of occupied slots as now in use
+          slots    (new Slot(i).left(), alloc);                                 // Insert into the slot below
+          usedSlots(new Slot(i).left(), true);                                  // Mark the free slot at the start of the range of occupied slots as now in use
          }
         if (java.lang.Math.abs(w) >= redistributionWidth) redistribute();       // Redistribute if the used slots are densely packed
        }
