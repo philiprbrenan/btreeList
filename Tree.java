@@ -215,32 +215,23 @@ class Tree extends Test                                                         
       Slot       left() {return new Slot(value-1);}                             // Step left
 
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
-       {for (int i = value-1; i >= 0; i--)
-         {final Slot S = new Slot(i);
-          if (usedSlots(S)) return S;
-         }
-        return null;                                                            // No used slot to the left
+       {final Integer i = memory.usedSlotsBits.prev(value());
+        return i != null ? new Slot(i) : null;
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
-       {final int N = numberOfSlots();
-        for (int i : range(value+1, N))
-         {final Slot S = new Slot(i);
-          if (usedSlots(S)) return S;
-         }
-        return null;                                                            // No used slot to the left
+       {final Integer i = memory.usedSlotsBits.next(value());
+        return i != null ? new Slot(i) : null;
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
        {if (usedSlots(this)) return this;
-        final Integer i = memory.usedSlotsBits.prev(value());
-        return i != null ? new Slot(i) : null;
+        return stepLeft();
        }
 
       Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
        {if (usedSlots(this)) return this;
-        final Integer i = memory.usedSlotsBits.next(value());
-        return i != null ? new Slot(i) : null;
+        return stepRight();
        }
 
       boolean eq(Key Key) {return Key.value() == keys(this).value();}           // Search key is equal to indexed key
@@ -368,16 +359,14 @@ class Tree extends Test                                                         
      {if (Width > 0)                                                            // Shift up including the current slot
        {for (int i = Width; i > 0; --i)                                         // Move each slot
          {final int p = Position+i;                                             // Index of target
-          final Slot P = new Slot(p);
-          slots(P, slots(P.stepLeft()));                                        // Move slot
+          slots(new Slot(p), slots(new Slot(p-1)));                             // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
       else if (Width < 0)                                                       // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
        {for (int i = Width; i < 0; ++i)                                         // Move each slot
          {final int p = Position+i;                                             // Index of target
-          final Slot P = new Slot(p);
-          slots(P, slots(P.stepRight()));                                       // Move slot
+          slots(new Slot(p), slots(new Slot(p+1)));                             // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
