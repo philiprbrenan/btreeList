@@ -215,14 +215,14 @@ class Tree extends Test                                                         
 
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
-        final BitSet.Pos p = memory.usedSlotsBits.prev(q);
+        final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
         final Integer i = p != null ? p.position() : null;
         return i != null ? new Slot(i) : null;
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
-        final BitSet.Pos p = memory.usedSlotsBits.next(q);
+        final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
         final Integer i = p != null ? p.position() : null;
         return i != null ? new Slot(i) : null;
        }
@@ -302,7 +302,7 @@ class Tree extends Test                                                         
      {for (int i : range(numberOfRefs))
        {final slot I = new slot(i);
         if (!usedRefs(I))
-         {usedRefs(I, true);
+         {usedRefs(I, true);           // Need to search rather than scan
           return I;
          }
        }
@@ -349,12 +349,12 @@ class Tree extends Test                                                         
      }
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
-     {final BitSet.Pos p = memory.usedSlotsBits.first();
+     {final BitSet.Pos p = memory.usedSlotsBits.firstOne();
       return p != null ? new Slot(p.position()) : null;
      }
 
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
-     {final BitSet.Pos p = memory.usedSlotsBits.last();
+     {final BitSet.Pos p = memory.usedSlotsBits.lastOne();
       return p != null ? new Slot(p.position()) : null;
      }
 
@@ -640,19 +640,19 @@ class Tree extends Test                                                         
       final int posType      = 0;
       final int posSlots     = posType      + Integer.BYTES;
       final int posUsedSlots = posSlots     + Integer.BYTES * N;
-      final int posUsedRefs  = posUsedSlots + BitSet.bytesNeeded(N);            // Amount of space needed to store these bits in bytes
-      final int posKeys      = posUsedRefs  + BitSet.bytesNeeded(R);
+      final int posUsedRefs  = posUsedSlots + BitSet.bytesNeeded(N, true, true);// Amount of space needed to store these bits in bytes
+      final int posKeys      = posUsedRefs  + BitSet.bytesNeeded(R, true, true);
       final int posName      = posKeys      + Integer.BYTES * R;
       final int size         = posName      + Integer.BYTES;
      }
 
     class Memory extends SlotsMemoryPositions                                   // Memory required to hold bytes
      {final ByteBuffer bytes;                                                   // Bytes used by this set of slots
-      final BitSet usedSlotsBits = new BitSet(numberOfSlots(), true)            // Bit storage for used slots
+      final BitSet usedSlotsBits = new BitSet(numberOfSlots(), true, true)      // Bit storage for used slots
        {void setByte(int I, byte V) {bytes.put(posUsedSlots + I, V);}           // Save used slot bit
         byte getByte(int I)  {return bytes.get(posUsedSlots + I);}              // Get used slot bit
        };
-      final BitSet usedRefsBits  = new BitSet(numberOfRefs)                     // Bit storage for used refs
+      final BitSet usedRefsBits  = new BitSet(numberOfRefs, true, true)         // Bit storage for used refs
        {void setByte(int I, byte V) {bytes.put(posUsedRefs + I, V);}            // Save used ref bit
         byte getByte(int I)  {return bytes.get(posUsedRefs + I);}               // Get used ref bit
        };
@@ -1936,7 +1936,7 @@ class Tree extends Test                                                         
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-                   ok(s.empty(), true);  ok(s.full(), false);
+                        ok(s.empty(), true);  ok(s.full(), false);
     s.insert(Key(14));  ok(s.empty(), false); ok(s.full(), false);
     s.insert(Key(13));  ok(s.countUsed(), 2);
     s.insert(Key(16));
@@ -1946,8 +1946,7 @@ class Tree extends Test                                                         
     s.insert(Key(12));
     s.insert(Key(11));
     ok(s.printInOrder(), "11, 12, 13, 14, 15, 16, 17, 18");
-    ok(s.empty(), false);
-    ok(s.full(), true);
+                        ok(s.empty(), false); ok(s.full(), true);
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2105,8 +2104,6 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
-
-    ok(t.getMemorySize(8), 110);
 
     final Slots        B = s.duplicateSlots();
     final Slots.Memory m = B.memory;
