@@ -646,15 +646,15 @@ class Tree extends Test                                                         
       final int size         = posName      + Integer.BYTES;
      }
 
-    class Memory extends SlotsMemoryPositions                                     // Memory required to hold bytes
-     {final ByteBuffer bytes;                                                     // Bytes used by this set of slots
-      final BitSet usedSlotsBits = new BitSet(numberOfSlots())                    // Bit storage for used slots
-       {void setByte(int Index, byte Value) {bytes.put(posUsedSlots+Index,Value);}// Save used slot bit
-        byte getByte(int Index)      {return bytes.get(posUsedSlots+Index);}      // Get used slot bit
+    class Memory extends SlotsMemoryPositions                                   // Memory required to hold bytes
+     {final ByteBuffer bytes;                                                   // Bytes used by this set of slots
+      final BitSet usedSlotsBits = new BitSet(numberOfSlots(), true)            // Bit storage for used slots
+       {void setByte(int I, byte V) {bytes.put(posUsedSlots + I, V);}           // Save used slot bit
+        byte getByte(int I)  {return bytes.get(posUsedSlots + I);}              // Get used slot bit
        };
-      final BitSet usedRefsBits  = new BitSet(numberOfRefs)                       // Bit storage for used refs
-       {void setByte(int Index, byte Value) {bytes.put(posUsedRefs+Index, Value);}// Save used ref bit
-        byte getByte(int Index)      {return bytes.get(posUsedRefs+Index);}       // Get used ref bit
+      final BitSet usedRefsBits  = new BitSet(numberOfRefs)                     // Bit storage for used refs
+       {void setByte(int I, byte V) {bytes.put(posUsedRefs + I, V);}            // Save used ref bit
+        byte getByte(int I)  {return bytes.get(posUsedRefs + I);}               // Get used ref bit
        };
 
       void copySlots(Memory Memory)                                             // Copy a set of slots from the specified memory into this memory
