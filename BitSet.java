@@ -2,7 +2,7 @@
 // Fixed size bit set which can locate occupied bits in log N time
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// first/last next/prev not set
+// first/last next/prev not set so we can allocate new slots quickly
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                             // Standard utility library.
@@ -10,19 +10,26 @@ import java.util.*;                                                             
 abstract public class BitSet extends Test                                       // Abstract fixed-size bit set using byte-level storage.
  {final int bitSize;                                                            // Number of bits in the bit set.
   final int byteSize;                                                           // Number of bytes in the bit set.
+  final boolean zero, one;                                                      // Locate zeroes, locate ones if set.
   static boolean debug;
 
-  public BitSet(int BitSize)                                                    // Constructor specifying fixed size.
+  public BitSet(int BitSize, boolean One, boolean Zero)                         // Constructor specifying fixed size.
    {bitSize = nextPowerOfTwo(BitSize);                                          // Record size.
     if (bitSize < 0) stop("Size must be zero or positive");                     // Validate size.
+    zero = Zero;                                                                // Locate zeroes efficiently
+    one  = One;                                                                 // Locate ones efficiently
     byteSize = bytesNeeded(BitSize);                                            // A tree of bits
    }
+
+  public BitSet(int BitSize)              {this(BitSize, false, false);}        // Constructor specifying fixed size without zeroes or ones location
+  public BitSet(int BitSize, boolean One) {this(BitSize, One,   false);}        // Constructor specifying fixed size with ones location if requested
 
   abstract void setByte(int Index, byte Value);                                 // Write byte to storage backend.
   abstract byte getByte(int Index);                                             // Read byte from storage backend.
 
   public static int bytesNeeded(int Size)                                       // Number of bytes needed for a bit set of specified size. Need twice as many bits as specified to construct a tree of bits.
-   {return (Byte.SIZE - 1 + 2 * nextPowerOfTwo(Size)) / Byte.SIZE;
+   {int s = 1; if (zero) s++; if (one) s++;                                     // The number of clocks of bits required.  Need teh base leyer plus blocks for ones or zeroes location.
+     return (Byte.SIZE - 1 + s * nextPowerOfTwo(Size)) / Byte.SIZE;
    }
 
   public  int size()                  {return bitSize;}                         // Bit set size.
