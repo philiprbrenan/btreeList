@@ -589,11 +589,13 @@ class Tree extends Test                                                         
          {final Slot M = new Slot((a.value() + b.value()) / 2);                 // Desired mid point - but there might not be a slot in use at this point
           final Slot A = M.locatePrevUsedSlot();                                // Occupied slot on or preceding mid point
           final Slot B = M.locateNextUsedSlot();                                // Occupied slot on or succeeding mid point
+          final int Av = A.value(), av = a.value(),
+                    Bv = B.value(), bv = b.value();
 
-          if      (A.value() != a.value() && A.ge(Key)) a = A;
-          else if (A.value() != b.value() && A.le(Key)) b = A;
-          else if (B.value() != a.value() && B.ge(Key)) a = B;
-          else if (B.value() != b.value() && B.le(Key)) b = B;
+          if      (Av != av && A.ge(Key)) a = A;                                // Make sure that the new range is tighter than the existing one
+          else if (Av != bv && A.le(Key)) b = A;
+          else if (Bv != av && B.ge(Key)) a = B;
+          else if (Bv != bv && B.le(Key)) b = B;
           else                                                                  // The slots must be adjacent
            {if (a.eq(Key)) {found(a); return;};                                 // Found the search key at the lower end
             if (b.eq(Key)) {found(b); return;};                                 // Found the search key at the upper end
