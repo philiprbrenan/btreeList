@@ -171,7 +171,11 @@ class Tree extends Test                                                         
     Slots(int NumberOfRefs, ByteBuffer Bytes)                                   // Create the slots using the specified memory
      {numberOfRefs        = NumberOfRefs;                                       // Number of slots referenced
       redistributionWidth = (int)java.lang.Math.sqrt(numberOfRefs);             // Redistribute the slots if we see a run of more than these that are all occupied to make insertion easier.
-      memory = Bytes == null ? new Memory() : new Memory(Bytes);                // Memory used by the slots
+      if (Bytes == null)                                                        // Memory used by the slots
+       {memory = new Memory();                                                  // Create memory used by the slots
+        initialize();                                                           // Initialize memory
+       }
+      else memory = new Memory(Bytes);                                          // Memory used by the slots
      }
 
     Slots(int NumberOfRefs) {this(NumberOfRefs, null);}                         // Create the slots and some memory to hold them
@@ -180,6 +184,7 @@ class Tree extends Test                                                         
      {numberOfRefs        = NumberOfRefs;                                       // Number of slots referenced
       redistributionWidth = 0;
       memory              = new Memory();
+      initialize();
      }
 
     void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}              // Set memory to be used
@@ -200,6 +205,11 @@ class Tree extends Test                                                         
     void invalidate  () {memory.invalidate();}                                  // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
     int numberOfRefs () {return numberOfRefs;}
     int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of refs
+
+    void initialize()                                                             // Clear all the slots
+     {memory.usedSlotsBits.initialize();
+      memory.usedRefsBits .initialize();
+     }
 
     final class slot                                                            // A dereferenced slot
      {final int value;                                                          // The index of the slot
@@ -294,6 +304,7 @@ class Tree extends Test                                                         
 
     slot allocRef()                                                             // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
      {final slot I = locateFirstEmptyRef();
+
       if (I != null)
        {usedRefs(I, true);
         return I;
@@ -313,8 +324,8 @@ class Tree extends Test                                                         
       return n;
      }
 
-    boolean empty() {return memory.usedRefsBits.empty();}                       // All references are unused
-    boolean full()  {return memory.usedRefsBits.full ();}                       // All references are in use
+    boolean empty() {return countUsed() == 0;}                                  // All references are unused
+    boolean full()  {return countUsed() == numberOfRefs;}                       // All references are in use
 
     boolean adjacentUsedSlots(int Start, int Finish)                            // Checks whether two used slots are adjacent
      {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
@@ -392,7 +403,7 @@ class Tree extends Test                                                         
          }
        }
 
-      memory.usedSlotsBits.clearAll();                                          // Clear the existing tree bits - faster than deleting each path in turn
+      memory.usedSlotsBits.initialize();                                          // Clear the existing tree bits - faster than deleting each path in turn
 
       for (int i : range(N))                                                    // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
        {final Slot I = new Slot(i);
@@ -404,8 +415,7 @@ class Tree extends Test                                                         
      {for (int i : range(numberOfSlots())) slots(new Slot(i), new slot(0));
       for (int i : range(numberOfRefs))      key(new slot(i), Key(0));
 
-      memory.usedSlotsBits.clearAll();                                          // Clear the existing tree bits - faster than deleting each path in turn
-      memory.usedRefsBits .clearAll();                                          // Clear the existing tree bits - faster than deleting each path in turn
+      initialize();                                                             // Clear the existing tree bits - faster than deleting each path in turn
      }
 
     void compactLeft()                                                          // Compact the used slots to the left end
@@ -670,7 +680,7 @@ class Tree extends Test                                                         
        {for (int i : range(size)) bytes.put(i, (byte)0);
        }
 
-      Memory() {bytes = ByteBuffer.allocate(size);}                             // Create our own memory for testing
+      Memory() {bytes = ByteBuffer.allocate(size);}                             // Create memory
       Memory(ByteBuffer Bytes) {bytes = Bytes;}                                 // Use a specified memory
 
       int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
@@ -773,6 +783,7 @@ class Tree extends Test                                                         
       memory = new Memory(node);                                                // Memory for leaf
       super.setMemory(memory.bytes);                                            // Share memory with slots
       super.memory.clear();                                                     // Clear the memory associated slots
+      super.initialize();                                                       // Create path bit trees for slots
       name(node);                                                               // Save the name of the node in memory to assist debugging
       type(NodeType.Leaf.ordinal());                                            // Set this memory as a leaf
      }
@@ -1020,7 +1031,8 @@ class Tree extends Test                                                         
       node   = allocate();                                                      // Name the branch
       memory = new Memory(node);                                                // Memory for branch
       super.setMemory(memory.bytes);                                            // Share memory with slots
-      super.memory.clear();                                                     // Clear the memory associated slots
+      super.memory.clear();                                                     // Clear the memory associated with the slots
+      super.initialize();                                                         // Create path bit trees for slots
       name(node);                                                               // Save the name of the node in memory to assist debugging
       type(NodeType.Branch.ordinal());                                          // Set the type to branch
      }
@@ -1936,8 +1948,7 @@ class Tree extends Test                                                         
   static void test_ifd()
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
-    s.memory.usedSlotsBits.clearAll();
-    s.memory.usedRefsBits .clearAll();
+    s.initialize();
                         ok(s.empty(), true);  ok(s.full(), false);
     s.insert(Key(14));  ok(s.empty(), false); ok(s.full(), false);
     s.insert(Key(13));  ok(s.countUsed(), 2);
@@ -1983,8 +1994,6 @@ keys     :   14  13  16  15  18  17  12  11
   static void test_idn()                                                        // Repeated inserts and deletes
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
-    s.memory.usedSlotsBits.clearAll();
-    s.memory.usedRefsBits .clearAll();
 
     for (int i = 0; i < s.numberOfSlots()*10; i++)
      {s.insert(Key(14)); s.redistribute();
