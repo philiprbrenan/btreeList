@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Fixed size bit set which can locate occupied bits in log N time
+// Fixed size bit set which can locate set or cleared bits in log N time
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
@@ -168,7 +168,8 @@ abstract public class BitSet extends Test                                       
   private void clearZeroPath(Pos Index)                                         // Clear the target bit and set bits along the path from the indexed bit to the root of the bit tree
    {checkZero();
     int p = addressZeroTree();                                                  // Address zero bit tree
-    for(int b = Index.position()>>>1, w = bitSize>>>1; w > 0; p += w, w >>>= 1, b >>>= 1)      // Step from root to leaf
+    final int P = Index.position()>>>1, W = bitSize>>>1;                        // Starting position and starting width
+    for(int b = P, w = W; w > 0; p += w, w >>>= 1, b >>>= 1)                    // Step from root to leaf
      {final Pos q = new Pos(p+b);
       if (getBitNC(q)) return; else setBitNC(q, true);                          // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
      }
