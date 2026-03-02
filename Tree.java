@@ -866,6 +866,12 @@ class Tree extends Test                                                         
       return r;
      }
 
+    Leaf splitLeft()                                                            // Split a right leaf into a new left leaf
+     {final Leaf l = duplicate();
+      l.splitRight(this);
+      return l;
+     }
+
     Leaf splitRight(Leaf Right)                                                 // Split a left leaf into an existing right leaf
      {if (!full()) return null;                                                 // Only full leaves can be split
       final int Count = splitSize();
@@ -880,12 +886,6 @@ class Tree extends Test                                                         
        }                                                                        // The new right leaf
       redistribute(); Right.redistribute();
       return Right;
-     }
-
-    Leaf splitLeft()                                                            // Split a right leaf into a new left leaf
-     {final Leaf l = duplicate();
-      l.splitRight(this);
-      return l;
      }
 
     int  splittingKey()                                                         // Splitting key from a leaf
@@ -929,7 +929,6 @@ class Tree extends Test                                                         
         if (usedSlots(I)) d[p++] = data(slots(I));
        }
       super.compactLeft();
-
       for (int i : range(numberOfRefs())) data(new slot(i), d[i]);
      }
 
@@ -942,7 +941,7 @@ class Tree extends Test                                                         
         if (usedSlots(I)) d[p--] = data(slots(I));
        }
       super.compactRight();
-      for (int i : range(R)) data(new slot(i), d[i]);
+      for (int i : range(numberOfRefs())) data(new slot(i), d[i]);
      }
 
     void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
@@ -954,14 +953,17 @@ class Tree extends Test                                                         
        }
      }
 
+    void mergeNode(Leaf Left, Leaf Right)                                       // Merge the specified slots from the right
+     {Left.compactLeft ();
+      Right.compactRight();
+      mergeCompacted(Left, Right);
+      mergeData     (Left, Right);
+      redistribute();
+     }
+
     boolean mergeFromRight(Leaf Right)                                          // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() > maxLeafSize) return false;
-      final Leaf l =       duplicate();
-      final Leaf r = Right.duplicate();
-      l.compactLeft(); r.compactRight();
-      mergeCompacted(l, r);
-      mergeData(l, r);
-      redistribute();
+      mergeNode(duplicate(), Right.duplicate());
       return true;
      }
 
@@ -969,14 +971,10 @@ class Tree extends Test                                                         
      {if (Left.countUsed() + countUsed() > maxLeafSize) return false;
       final Leaf l = Left.duplicate();
       final Leaf r =      duplicate();
-      l.compactLeft();
-      r.compactRight();
-      mergeCompacted(l, r);
-      mergeData(l, r);
+      mergeNode(l, r);
       Left.free();
       l.free();
       r.free();
-      redistribute();
       return true;
      }
 
@@ -1144,8 +1142,8 @@ class Tree extends Test                                                         
     Split splitRight(Branch Right)                                              // Split a left branch into an existing right branch
      {if (!full()) return null;                                                 // Only full branches can be split
       final int Count = splitSize();
-      int  s  = 0;                                                              // Count slots used
-      Key  sk = null;                                                           // Splitting key
+      int s  = 0;                                                               // Count slots used
+      Key sk = null;                                                            // Splitting key
 
       for (int i : range(numberOfSlots()))                                      // Each slot
        {final Slot I = new Slot(i);                                             // Slot is in use
