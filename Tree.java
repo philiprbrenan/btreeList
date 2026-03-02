@@ -415,7 +415,7 @@ class Tree extends Test                                                         
          }
        }
 
-      memory.usedSlotsBits.initialize();                                          // Clear the existing tree bits - faster than deleting each path in turn
+      memory.usedSlotsBits.initialize();                                        // Clear the existing tree bits - faster than deleting each path in turn
 
       for (int i : range(N))                                                    // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
        {final Slot I = new Slot(i);
@@ -677,10 +677,12 @@ class Tree extends Test                                                         
 
     class Memory extends SlotsMemoryPositions                                   // Memory required to hold bytes
      {final ByteBuffer bytes;                                                   // Bytes used by this set of slots
+
       final BitSet usedSlotsBits = new BitSet(us)                               // Bit storage for used slots
        {void setByte(int I, byte V) {bytes.put(posUsedSlots + I, V);}           // Save used slot bit
         byte getByte(int I)  {return bytes.get(posUsedSlots + I);}              // Get used slot bit
        };
+
       final BitSet usedRefsBits  = new BitSet(ur)                               // Bit storage for used refs
        {void setByte(int I, byte V) {bytes.put(posUsedRefs + I, V);}            // Save used ref bit
         byte getByte(int I)  {return bytes.get(posUsedRefs + I);}               // Get used ref bit
@@ -701,17 +703,21 @@ class Tree extends Test                                                         
       Memory() {bytes = ByteBuffer.allocate(size);}                             // Create memory
       Memory(ByteBuffer Bytes) {bytes = Bytes;}                                 // Use a specified memory
 
-      boolean usedSlots   (int Index) {return usedSlotsBits.getBit(usedSlotsBits.new Pos(Index));}
-      boolean usedRefs    (int Index) {return usedRefsBits .getBit(usedRefsBits .new Pos(Index));}
-      int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
-      int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
-      int     name        (         ) {return bytes.getInt(posName);}
+      BitSet.Pos us(int I) {return usedSlotsBits.new Pos(I);}                   // A slot position in the used slots
+      BitSet.Pos ur(int I) {return usedRefsBits .new Pos(I);}                   // A slot position in the references
+      int        nb(int I) {return I * Integer.BYTES;}                          // Number of bytes
 
-      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.set(usedSlotsBits.new Pos(Index), Value);}
-      void    usedRefs    (int Index, boolean Value) {usedRefsBits .set(usedRefsBits .new Pos(Index), Value);}
-      void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES,  Value);}
-      void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES,  Value);}
-      void    name        (           int     Value) {bytes.putInt(posName,                           Value);} // Save the name of the node in memory to assist debugging
+      boolean usedSlots (int I) {return usedSlotsBits.getBit(us(I));}           // Value of indexed used slot
+      boolean usedRefs  (int I) {return usedRefsBits .getBit(ur(I));}           // Value of indexed used referene
+      int     slots     (int I) {return bytes.getInt(posSlots + nb(I));}        // Value of indexed slot
+      int     keys      (int I) {return bytes.getInt(posKeys  + nb(I));}        // Value of key via indexed reference
+      int     name      (     ) {return bytes.getInt(posName);}
+
+      void    usedSlots (int I, boolean V) {usedSlotsBits.set(      us(I), V);} // set value of indexed used slot
+      void    usedRefs  (int I, boolean V) {usedRefsBits .set(      ur(I), V);} // set value of indexed used referene
+      void    slots     (int I, int     V) {bytes.putInt(posSlots + nb(I), V);} // set value of indexed slot
+      void    keys      (int I, int     V) {bytes.putInt(posKeys  + nb(I), V);} // set value of key via indexed reference
+      void    name      (       int     V) {bytes.putInt(posName,          V);} // Save the name of the node in memory to assist debugging
 
       void type(int Type) {       bytes.putInt(posType, Type);}                 // Type of object in which the slots are embedded
       int  type()         {return bytes.getInt(posType);}
