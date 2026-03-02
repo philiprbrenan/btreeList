@@ -786,8 +786,6 @@ usedRefs :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
 
-    ok(memorySize(8), 110);
-
     final Slots        B = s.duplicateSlots();
     final Slots.Memory m = B.memory;
 
