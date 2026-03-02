@@ -13,6 +13,8 @@ abstract public class BitSet extends Test                                       
   final boolean zero, one;                                                      // Able to locate zeros and ones via a tree of bits if set
   static boolean debug;
 
+//D1 Constructors                                                               // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
+
   public BitSet(int BitSize, boolean One, boolean Zero)                         // Constructor specifying fixed size.
    {bitSize = nextPowerOfTwo(BitSize);                                          // Record size.
     if (bitSize < 0) stop("Size must be zero or positive");                     // Validate size.
@@ -71,6 +73,8 @@ abstract public class BitSet extends Test                                       
      {stop("This bitset does not have the ability to search for zeroes");
      }
    }
+
+// D2 Get and Set                                                               // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
   public boolean getBit(Pos Index)                                              // Get bit value at an index after checking that the index is valid
    {checkIndex(Index.position());
@@ -169,19 +173,34 @@ abstract public class BitSet extends Test                                       
      }
    }
 
+  public void clearAll()                                                        // Clear all bits.
+   {for (int i : range(byteSize)) setByte(i, (byte)0);
+    if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
+     {for (int p = addressZeroTree(), j = 0; j < bitSize; j++)
+       {setBitNC(new Pos(p+j), true);
+       }
+     }
+   }
+
+//D2 Locate Ones                                                                // Find the first, last, next, previous bit set to one
+
   public Pos firstOne()                                                         // Find the index of the first set bit
-   {return getBit(new Pos(0)) ? new Pos(0):nextOne(new Pos(0));
+   {checkOne();
+    return getBit(new Pos(0)) ? new Pos(0):nextOne(new Pos(0));
    }
 
   public Pos lastOne()                                                          // Find the index of the last set bit
-   {final int l = bitSize-1;
+   {checkOne();
+    final int l = bitSize-1;
     return getBit(new Pos(l)) ? new Pos(l) : prevOne(new Pos(l));
    }
 
   public Pos nextOne(Pos Index)                                                 // Find the index of the next set bit above the specified bit
-   {checkIndex(Index.position());
-    int b = Index.position(), p = 0, w = nextPowerOfTwo(bitSize);
-    for(int i : range(bitSize))                                                 // Much more than necessary
+   {checkOne();
+    checkIndex(Index.position());
+    int b = Index.position(), p = 0, w = bitSize;
+    if (b == w-1) return null;                                                  // At the end so no next bit
+    for(int i : range(bitSize))                                                 // Traverse down through the tree
      {int B = b+1;                                                              // Is there a path down from the next bit?
       if (B < w && getBitNC(new Pos(p+B)))                                      // Found next up bit
        {for(int j : range(i))                                                   // Step down to the leaves
@@ -199,8 +218,10 @@ abstract public class BitSet extends Test                                       
    }
 
   public Pos prevOne(Pos Index)                                                 // Find the index of the previous set bit below the specified bit
-   {checkIndex(Index.position());
-    int b = Index.position(), p = 0, w = nextPowerOfTwo(bitSize);
+   {checkOne();
+    checkIndex(Index.position());
+    int b = Index.position(), p = 0, w = bitSize;
+    if (b == 0) return null;                                                    // At the start so no previous bit
 
     for(int i : range(bitSize))                                                 // Much more than necessary
      {int B = b-1;                                                              // Is there a path down from the next bit?
@@ -219,14 +240,75 @@ abstract public class BitSet extends Test                                       
     return null;
    }
 
-  public void clearAll()                                                        // Clear all bits.
-   {for (int i : range(byteSize)) setByte(i, (byte)0);
-    if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
-     {for (int p = addressZeroTree(), j = 0; j < bitSize; j++)
-       {setBitNC(new Pos(p+j), true);
-       }
-     }
+//D2 Locate Zeros                                                               // Find the first, last, next, previous bit set to zero
+
+  public Pos firstZero()                                                        // Find the index of the first set bit
+   {checkZero();
+    return !getBit(new Pos(0)) ? new Pos(0) : nextZero(new Pos(0));
    }
+
+  public Pos lastZero()                                                         // Find the index of the last set bit
+   {checkZero();
+    final int l = bitSize-1;
+    return !getBit(new Pos(l)) ? new Pos(l) : prevZero(new Pos(l));
+   }
+
+  public Pos nextZero(Pos Index)                                                // Find the index of the next set bit above the specified bit
+   {checkZero();
+    checkIndex(Index.position());
+    int b = Index.position();
+    if (b == bitSize-1) return null;                                            // Last bit so no next bit
+    if (!getBit(new Pos(b+1))) return new Pos(b+1);                             // Next bit is zero
+    if (bitSize == 2) return null;                                              // No more bits to check
+    int w = bitSize>>>1, p = addressZeroTree(); b >>>= 1;                       // First layer of zero tree bits
+
+    for(int i : range(bitSize))                                                 // Search down through the zero bit tree
+     {int B = b+1;                                                              // Is there a path down from the next bit?
+      if (B >= w) return null;                                                  // Nothing beyond to search so no next zero
+      if (getBitNC(new Pos(p+B)))                                               // Found next up bit
+       {for(int j : range(i))                                                   // Step down to the leaves
+         {B   = 2 * B + (getBitNC(new Pos(p-w-w+B+B)) ? 0 : 1);                 // Follow path as low as possible
+          w <<= 1;
+          p  -= w;                                                              // Position of next level in tree
+         }
+        return new Pos(B+B+(getBit(new Pos(B+B)) ? 1 : 0));                     // Next zero bit from actual bits
+       }
+      p += w;                                                                   // Address next level of bits in tree
+      w >>>= 1; if (w == 0) break;                                              // If we have reached level 0 we are finished
+      b >>>= 1;                                                                 // Index in next level
+     }
+    return null;
+   }
+
+  public Pos prevZero(Pos Index)                                                // Find the index of the previous set bit below the specified bit
+   {checkZero();
+    checkIndex(Index.position());
+    int b = Index.position();
+    if (b == 0) return null;                                                    // First bit so no prev bit
+    if (!getBit(new Pos(b-1))) return new Pos(b-1);                             // Prev bit is zero
+    if (bitSize == 2) return null;                                              // No more bits to check
+    int w = bitSize>>>1, p = addressZeroTree(); b >>>= 1;                       // First layer of zero tree bits
+
+    for(int i : range(bitSize))                                                 // Search down through the zero bit tree
+     {int B = b-1;                                                              // Is there a path down from the next bit?
+      if (B < 0) return null;                                                   // Nothing prior to search so no prev zero
+      if (getBitNC(new Pos(p+B)))                                               // Found next up bit
+       {for(int j : range(i))                                                   // Step down to the leaves
+         {B   = 2 * B + (getBitNC(new Pos(p-w-w+b+b)) ? 0 : +1);                // Follow path as high as possible
+          w <<= 1;
+          p  -= w;
+          b <<= 1;                                                              // Position of next level in tree
+         }
+        return new Pos(B+B+(!getBit(new Pos(B+B+1)) ? 1 : 0));                     // Next zerro bit from actual bits
+       }
+      p += w;                                                                   // Address next level of bits in tree
+      w >>>= 1; if (w == 0) break;                                              // If we have reached level 0 we are finished
+      b >>>= 1;                                                                 // Index in next level
+     }
+    return null;
+   }
+
+//D2 Integrity                                                                  // Check that the bit trees match the actual bnits
 
   public boolean integrity() {return integrity(true);}                          // Do an integrity check on the bitset to detect corruption
 
@@ -253,6 +335,8 @@ abstract public class BitSet extends Test                                       
      }
     return true;
    }
+
+//D2 Print                                                                      // Print the bit set
 
   public String toString()                                                      // Print levels in bit tree
    {final StringBuilder s = new StringBuilder();
@@ -342,23 +426,140 @@ Zero:
    4   91    2 |  1  1
    5   93    1 |  1
 """);
-    for (int i : range(14))     ok(b.prevOne(b.new Pos(i)) == null);
-    for (int i : range(14, 20)) ok(b.prevOne(b.new Pos(i)).position(), 13);
-    for (int i : range(20, 24)) ok(b.prevOne(b.new Pos(i)).position(), 19);
-    for (int i : range(25, 29)) ok(b.prevOne(b.new Pos(i)).position(), i-1);
-    ok(b.prevOne(b.new Pos(30)).position(), 28);
-    ok(b.prevOne(b.new Pos(31)).position(), 30);
 
     for (int i : range(13))     ok(b.nextOne(b.new Pos(i)).position(), 13);
     for (int i : range(13, 19)) ok(b.nextOne(b.new Pos(i)).position(), 19);
     for (int i : range(19, 24)) ok(b.nextOne(b.new Pos(i)).position(), 24);
     for (int i : range(23, 28)) ok(b.nextOne(b.new Pos(i)).position(), i+1);
-    ok(b.nextOne(b.new Pos(28)).position(), 30);
-    for (int i : range(29, 31)) ok(b.nextOne(b.new Pos(i)).position(), i+1);
-    ok(b.nextOne(b.new Pos(31)) == null);
+                                ok(b.nextOne(b.new Pos(28)).position(), 30);
+                                ok(b.nextOne(b.new Pos(29)).position(), 30);
+                                ok(b.nextOne(b.new Pos(30)).position(), 31);
+                                ok(b.nextOne(b.new Pos(31)) == null);
 
+    for (int i : range(14))     ok(b.prevOne(b.new Pos(i)) == null);
+    for (int i : range(14, 20)) ok(b.prevOne(b.new Pos(i)).position(), 13);
+    for (int i : range(20, 24)) ok(b.prevOne(b.new Pos(i)).position(), 19);
+    for (int i : range(25, 29)) ok(b.prevOne(b.new Pos(i)).position(), i-1);
+                                ok(b.prevOne(b.new Pos(30)).position(), 28);
+                                ok(b.prevOne(b.new Pos(31)).position(), 30);
     ok(b.firstOne().position(),   13);
     ok(b.lastOne().position(),    31);
+
+    for (int i : range(12))     ok(b.nextZero(b.new Pos( i)).position(), i+1);
+                                ok(b.nextZero(b.new Pos(12)).position(), 14);
+    for (int i : range(13, 18)) ok(b.nextZero(b.new Pos( i)).position(), i+1);
+    for (int i : range(19, 23)) ok(b.nextZero(b.new Pos( i)).position(), i+1);
+    for (int i : range(23, 28)) ok(b.nextZero(b.new Pos( i)).position(), 29);
+    for (int i : range(29, 32)) ok(b.nextZero(b.new Pos( i)) == null);
+
+                                ok(b.prevZero(b.new Pos(0)) == null);
+    for (int i : range( 1, 14)) ok(b.prevZero(b.new Pos( i)).position(), i-1);
+                                ok(b.prevZero(b.new Pos(14)).position(), 12);
+    for (int i : range(15, 19)) ok(b.prevZero(b.new Pos( i)).position(), i-1);
+                                ok(b.prevZero(b.new Pos(20)).position(), 18);
+    for (int i : range(21, 24)) ok(b.prevZero(b.new Pos( i)).position(), i-1);
+    for (int i : range(24, 30)) ok(b.prevZero(b.new Pos( i)).position(), 23);
+    for (int i : range(30, 32)) ok(b.prevZero(b.new Pos( i)).position(), 29);
+
+    ok(b.firstZero().position(),  0);
+    ok(b.lastZero() .position(), 29);
+   }
+
+  static void test_prevNext01()                                                 // Test tree of searchable one bits
+   {final int N = 16;
+    final BitSet b = test_bits(N, true, true);
+    b.clearAll();
+    for (int i : range(N)) b.set(b.new Pos(i), (i / 4) % 2 == 0);
+
+    //stop(b);
+    ok(b, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  1  1  1  1  0  0  0  0  1  1  1  1  0  0  0  0
+One:
+   2   16    8 |  1  1  0  0  1  1  0  0
+   3   24    4 |  1  0  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  0  0  1  1  0  0  1  1
+   2   39    4 |  0  1  0  1
+   3   43    2 |  1  1
+   4   45    1 |  1
+""");
+
+    for (int i : range( 3))     ok(b.nextOne(b.new Pos(i)).position(), i+1);
+    for (int i : range( 4,  8)) ok(b.nextOne(b.new Pos(i)).position(), 8);
+    for (int i : range( 7, 11)) ok(b.nextOne(b.new Pos(i)).position(), i+1);
+    for (int i : range(11, 16)) ok(b.nextOne(b.new Pos(i)) == null);
+
+                                ok(b.prevOne(b.new Pos(0)) == null);
+    for (int i : range( 1,  5)) ok(b.prevOne(b.new Pos(i)).position(), i-1);
+    for (int i : range( 4,  9)) ok(b.prevOne(b.new Pos(i)).position(), 3);
+    for (int i : range( 9, 12)) ok(b.prevOne(b.new Pos(i)).position(), i-1);
+    for (int i : range(12, 16)) ok(b.prevOne(b.new Pos(i)).position(), 11);
+    ok(b.firstOne().position(),   0);
+    ok(b.lastOne().position(),    11);
+
+    for (int i : range( 3))     ok(b.nextZero(b.new Pos( i)).position(), 4);
+    for (int i : range( 3,  7)) ok(b.nextZero(b.new Pos( i)).position(), i+1);
+    for (int i : range( 7, 11)) ok(b.nextZero(b.new Pos( i)).position(), 12);
+    for (int i : range(11, 15)) ok(b.nextZero(b.new Pos( i)).position(), i+1);
+                                ok(b.nextZero(b.new Pos(15)) == null);
+
+    for (int i : range( 5))     ok(b.prevZero(b.new Pos( 0)) == null);
+    for (int i : range( 5,  9)) ok(b.prevZero(b.new Pos( i)).position(), i-1);
+    for (int i : range( 8, 12)) ok(b.prevZero(b.new Pos( i)).position(), 7);
+    for (int i : range(13, 16)) ok(b.prevZero(b.new Pos( i)).position(), i-1);
+    ok(b.firstZero().position(),  4);
+    ok(b.lastZero ().position(), 15);
+   }
+
+  static void test_prevNext10()                                                 // Test tree of searchable one bits
+   {final int N = 16;
+     final BitSet b = test_bits(N, true, true);
+    b.clearAll();
+    for (int i : range(N)) b.set(b.new Pos(i), (i / 4) % 2 == 1);
+
+    //stop(b);
+
+    for (int i : range( 3))     ok(b.nextZero(b.new Pos(i)).position(), i+1);
+    for (int i : range( 3, 8))  ok(b.nextZero(b.new Pos(i)).position(), 8);
+    for (int i : range( 7, 11)) ok(b.nextZero(b.new Pos(i)).position(), i+1);
+    for (int i : range(11, 16)) ok(b.nextZero(b.new Pos(i)) == null);
+
+                                ok(b.prevZero(b.new Pos(0)) == null);
+    for (int i : range( 1,  5)) ok(b.prevZero(b.new Pos(i)).position(), i-1);
+    for (int i : range( 4,  8)) ok(b.prevZero(b.new Pos(i)).position(), 3);
+    for (int i : range( 9, 13)) ok(b.prevZero(b.new Pos(i)).position(), i-1);
+    for (int i : range(12, 16)) ok(b.prevZero(b.new Pos(i)).position(), 11);
+
+    ok(b, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  0  0  0  0  1  1  1  1  0  0  0  0  1  1  1  1
+One:
+   2   16    8 |  0  0  1  1  0  0  1  1
+   3   24    4 |  0  1  0  1
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  1  1  0  0  1  1  0  0
+   2   39    4 |  1  0  1  0
+   3   43    2 |  1  1
+   4   45    1 |  1
+""");
+
+    for (int i : range( 4))     ok(b.nextOne(b.new Pos( i)).position(), 4);
+    for (int i : range( 3,  7)) ok(b.nextOne(b.new Pos( i)).position(), i+1);
+    for (int i : range( 7, 12)) ok(b.nextOne(b.new Pos( i)).position(), 12);
+    for (int i : range(11, 15)) ok(b.nextOne(b.new Pos( i)).position(), i+1);
+                                ok(b.nextOne(b.new Pos(15)) == null);
+
+    for (int i : range( 5))     ok(b.prevOne(b.new Pos( i)) == null);
+    for (int i : range( 5,  8)) ok(b.prevOne(b.new Pos( i)).position(), i-1);
+    for (int i : range( 8, 13)) ok(b.prevOne(b.new Pos( i)).position(), 7);
+    for (int i : range(13, 16)) ok(b.prevOne(b.new Pos( i)).position(), i-1);
+    ok(b.firstOne().position(),   4);
+    ok(b.lastOne().position(),    15);
    }
 
   static void test_integrity()
@@ -503,15 +704,17 @@ Zero:
 
   static void oldTests()                                                        // Tests thought to be stable.
    {test_bitSet();
+    test_prevNext01();
     test_prevNext();
     test_integrity();
     test_clearAll();
     test_oneZero();
+    test_prevNext01();
+    test_prevNext10();
    }
 
   static void newTests()                                                        // Tests under development.
    {oldTests();                                                                 // Run baseline tests.
-    test_oneZero();
    }
 
   public static void main(String[] args)                                        // Program entry point for testing.
