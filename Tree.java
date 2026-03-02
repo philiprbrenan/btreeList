@@ -209,7 +209,7 @@ class Tree extends Test                                                         
     int numberOfRefs () {return numberOfRefs;}
     int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of refs
 
-    void initialize()                                                             // Clear all the slots
+    id initialize()                                                             // Clear all the slots
      {memory.usedSlotsBits.initialize();
       memory.usedRefsBits .initialize();
      }
@@ -1107,19 +1107,21 @@ class Tree extends Test                                                         
     int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
     Slots firstChild()          {return data(locateFirstUsedSlot());}           // First child assuming there is one
 
-    Slots data(Slot Index)
+    Slots data(Slot Index)                                                      // Step down via indexed slot to the branch or leaf below
      {return usedSlots(Index) ? dataDirect(slots(Index).value()) : null;
      }
 
-    Slots dataDirect(int Index)
+    Slots dataDirect(int Index)                                                 // Step down directly through to the branch or leaf below
      {final int i = memory.data(Index);
-      return i == 0 ? null : i < 0 ? new Leaf(new Allocation(-i)): new Branch(new Allocation(i));
+      return i == 0 ? null : i < 0 ? new Leaf(new Allocation(-i)):
+                                     new Branch(new Allocation(i));
      }
 
-    void data(int Index, Slots S)                                               // Child via indexed slot
+    void data(int Index, Slots S)                                               // Set child leaf or branch via the indexed slot
      {dataDirect(slots(new Slot(Index)).value(), S);
      }
-    void dataDirect(int Index, Slots S) {memory.data(Index, refSign(S));}       // Child directly
+
+    void dataDirect(int Index, Slots S) {memory.data(Index, refSign(S));}       // Set child leaf or branch directly at the indexed location
 
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
