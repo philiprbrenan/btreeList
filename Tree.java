@@ -665,22 +665,26 @@ class Tree extends Test                                                         
 
     class SlotsMemoryPositions                                                  // Positions of fields in memory
      {final int N = numberOfSlots(), R = numberOfRefs;
+
+      final BitSet.Spec us = new BitSet.Spec(N, true, true);                    // Specification of bit set for used slots
+      final BitSet.Spec ur = new BitSet.Spec(R, true, true);                    // Specification of bit set for references
+
       final int posType      = 0;
       final int posSlots     = posType      + Integer.BYTES;
       final int posUsedSlots = posSlots     + Integer.BYTES * N;
-      final int posUsedRefs  = posUsedSlots + BitSet.bytesNeeded(N, true, true);// Amount of space needed to store these bits in bytes
-      final int posKeys      = posUsedRefs  + BitSet.bytesNeeded(R, true, true);
+      final int posUsedRefs  = posUsedSlots + us.byteSize();
+      final int posKeys      = posUsedRefs  + ur.byteSize();
       final int posName      = posKeys      + Integer.BYTES * R;
       final int size         = posName      + Integer.BYTES;
      }
 
     class Memory extends SlotsMemoryPositions                                   // Memory required to hold bytes
      {final ByteBuffer bytes;                                                   // Bytes used by this set of slots
-      final BitSet usedSlotsBits = new BitSet(numberOfSlots(), true, true)      // Bit storage for used slots
+      final BitSet usedSlotsBits = new BitSet(us)                               // Bit storage for used slots
        {void setByte(int I, byte V) {bytes.put(posUsedSlots + I, V);}           // Save used slot bit
         byte getByte(int I)  {return bytes.get(posUsedSlots + I);}              // Get used slot bit
        };
-      final BitSet usedRefsBits  = new BitSet(numberOfRefs(),  true, true)      // Bit storage for used refs
+      final BitSet usedRefsBits  = new BitSet(ur)                               // Bit storage for used refs
        {void setByte(int I, byte V) {bytes.put(posUsedRefs + I, V);}            // Save used ref bit
         byte getByte(int I)  {return bytes.get(posUsedRefs + I);}               // Get used ref bit
        };
