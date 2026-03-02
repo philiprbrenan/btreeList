@@ -41,7 +41,7 @@ class Tree extends Test                                                         
     for (int i = numberOfNodes; i > 0; --i) freeChain.push(new Allocation(i));  // Initial free chain. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
 
     memory        = new Memory();                                               // Memory for the tree
-    sizeOfNode    = memory.sizeOfNode;                                          // Size a node in th tree to be able to contain a leaf or a branch whcih makes it importantto choose the number of slots in each so that they have about the same size
+    sizeOfNode    = memory.sizeOfNode;                                          // Size a node in the tree to be able to contain a leaf or a branch which makes it important to choose the number of slots in each so that they have about the same size
     memory.maxLeafSize  (maxLeafSize);                                          // Record the sizes of a leaf or a branch
     memory.maxBranchSize(maxBranchSize);
     memory.numberOfNodes(numberOfNodes);
@@ -64,7 +64,7 @@ class Tree extends Test                                                         
      }
    }
 
-  static Key Key(int Value) {return new Key(Value);}                            // Create a key with teh specified value
+  static Key Key(int Value) {return new Key(Value);}                            // Create a key with the specified value
 
   static final class Data                                                       // An item of data associated with a key
    {final int value;                                                            // The value of the data item
@@ -83,7 +83,7 @@ class Tree extends Test                                                         
    {final int posRoot          = 0;
     final int posMaxLeafSize   = posRoot          + Integer.BYTES;              // The maximum number of entries in a leaf
     final int posMaxBranchSize = posMaxLeafSize   + Integer.BYTES;              // The maximum number of entries in a branch
-    final int posNumberOfNodes = posMaxBranchSize + Integer.BYTES;              // Maximum nunber of nodes in the tree
+    final int posNumberOfNodes = posMaxBranchSize + Integer.BYTES;              // Maximum number of nodes in the tree
     final int size             = posNumberOfNodes + Integer.BYTES;              // Size of memory in bytes
     int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
@@ -209,7 +209,7 @@ class Tree extends Test                                                         
     int numberOfRefs () {return numberOfRefs;}
     int numberOfSlots() {return numberOfRefs() * 2;}                            // Number of slots from number of refs
 
-    id initialize()                                                             // Clear all the slots
+    void initialize()                                                           // Clear all the slots
      {memory.usedSlotsBits.initialize();
       memory.usedRefsBits .initialize();
      }
@@ -334,8 +334,8 @@ class Tree extends Test                                                         
       return n;
      }
 
-    boolean empty() {return memory.usedSlotsBits.empty();}                      // All bits in teh corresponding bitset are unused so the Slots must be empty
-    boolean full () {return countUsed() == numberOfRefs;}                       // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneosuly full
+    boolean empty() {return memory.usedSlotsBits.empty();}                      // All bits in the corresponding bitset are unused so the Slots must be empty
+    boolean full () {return countUsed() == numberOfRefs;}                       // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
 
     boolean adjacentUsedSlots(int Start, int Finish)                            // Checks whether two used slots are adjacent
      {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
@@ -359,7 +359,7 @@ class Tree extends Test                                                         
       if (p == null && n == null) stop("No more free slots");
       if (p == null && n != null) return n.position()-Q;                        // Next free slot because no prev free slot
       if (p != null && n == null) return p.position()-Q;                        // Prev free slot because no next free slot
-      final int P = p.position() - Q, N = n.position() - Q;                     // Relative psoitions
+      final int P = p.position() - Q, N = n.position() - Q;                     // Relative positions
       return -P <= N ? P : N;                                                   // Choose nearest slow favoring lower slot if they are both the same distance away
      }
 
@@ -430,6 +430,13 @@ class Tree extends Test                                                         
       initialize();                                                             // Clear the existing tree bits - faster than deleting each path in turn
      }
 
+    void compactSlot(Slot P, slot Q, Key K)                                     // Compact a slot
+     {usedSlots(P, true);
+       usedRefs(Q, true);
+          slots(P, Q);
+           keys(P, K);
+     }
+
     void compactLeft()                                                          // Compact the used slots to the left end
      {if (empty()) return;                                                      // Nothing to compact
       final Slots d = duplicateSlots();
@@ -438,13 +445,7 @@ class Tree extends Test                                                         
       for (int i : range(numberOfSlots()))                                      // Each slot
        {final Slot I = new Slot(i), P = new Slot(p);
         final slot Q = new slot(p);
-        if (d.usedSlots(I))                                                     // Each used slot
-         {usedSlots(P, true);
-           usedRefs(Q, true);
-              slots(P, Q);
-               keys(P, d.keys(I));
-          ++p;
-         }
+        if (d.usedSlots(I)) {compactSlot(P, Q, d.keys(I)); ++p;}                // Each used slot
        }
      }
 
@@ -455,13 +456,7 @@ class Tree extends Test                                                         
       for (int i = numberOfSlots() - 1; i >= 0; --i)
        {final Slot I = new Slot(i), P = new Slot(p);
         final slot Q = new slot(p);
-        if (d.usedSlots(I))
-         {usedSlots(P, true);
-           usedRefs(Q, true);
-              slots(P, Q);
-               keys(P, d.keys(I));
-          --p;
-         }
+        if (d.usedSlots(I)) {compactSlot(P, Q, d.keys(I)); --p;}                // Each used slot
        }
      }
 
@@ -708,13 +703,13 @@ class Tree extends Test                                                         
       int        nb(int I) {return I * Integer.BYTES;}                          // Number of bytes
 
       boolean usedSlots (int I) {return usedSlotsBits.getBit(us(I));}           // Value of indexed used slot
-      boolean usedRefs  (int I) {return usedRefsBits .getBit(ur(I));}           // Value of indexed used referene
+      boolean usedRefs  (int I) {return usedRefsBits .getBit(ur(I));}           // Value of indexed used reference
       int     slots     (int I) {return bytes.getInt(posSlots + nb(I));}        // Value of indexed slot
       int     keys      (int I) {return bytes.getInt(posKeys  + nb(I));}        // Value of key via indexed reference
       int     name      (     ) {return bytes.getInt(posName);}
 
       void    usedSlots (int I, boolean V) {usedSlotsBits.set(      us(I), V);} // set value of indexed used slot
-      void    usedRefs  (int I, boolean V) {usedRefsBits .set(      ur(I), V);} // set value of indexed used referene
+      void    usedRefs  (int I, boolean V) {usedRefsBits .set(      ur(I), V);} // set value of indexed used reference
       void    slots     (int I, int     V) {bytes.putInt(posSlots + nb(I), V);} // set value of indexed slot
       void    keys      (int I, int     V) {bytes.putInt(posKeys  + nb(I), V);} // set value of key via indexed reference
       void    name      (       int     V) {bytes.putInt(posName,          V);} // Save the name of the node in memory to assist debugging
