@@ -1231,23 +1231,24 @@ class Tree extends Test                                                         
       insert(Key, l.top()); top(r.top());                                       // Insert left top
      }
 
+    void mergeNode(Key Key, Branch Left, Branch Right)                          // Merge into the current branch from the specified left and right branches
+     {Left .compactLeft();
+      Right.compactRight();
+      mergeCompacted(Left, Right);
+      mergeData(Key, Left, Right);
+      redistribute();
+     }
+
     boolean mergeFromRight(Key Key, Branch Right)                               // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
-      final Branch l = duplicate(), r = Right.duplicate();
-      l.compactLeft(); r.compactRight();
-      mergeCompacted(l, r);
-      mergeData(Key, l, r);
-      redistribute();
+      mergeNode(Key, duplicate(), Right.duplicate());
       return true;
      }
 
     boolean mergeFromLeft(Key Key, Branch Left)                                 // Merge the specified slots from the right
      {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
       final Branch l = Left.duplicate(), r = duplicate();
-      l.compactLeft(); r.compactRight();
-      mergeCompacted(l, r);
-      mergeData(Key, l, r);
-      redistribute();
+      mergeNode(Key, l, r);
       l.free(); r.free();
       return true;
      }
