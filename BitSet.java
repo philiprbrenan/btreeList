@@ -2,7 +2,6 @@
 // Fixed size bit set which can locate occupied bits in log N time
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Pregenerate a tree specification so that the same specification can be used to create the backing storage as well as the tree it self
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                             // Standard utility library.
