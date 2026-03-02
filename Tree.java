@@ -953,7 +953,7 @@ class Tree extends Test                                                         
        }
      }
 
-    void mergeNode(Leaf Left, Leaf Right)                                       // Merge the specified slots from the right
+    void mergeLeaves(Leaf Left, Leaf Right)                                     // Merge the specified leaves into the current leaf
      {Left.compactLeft ();
       Right.compactRight();
       mergeCompacted(Left, Right);
@@ -963,7 +963,7 @@ class Tree extends Test                                                         
 
     boolean mergeFromRight(Leaf Right)                                          // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() > maxLeafSize) return false;
-      mergeNode(duplicate(), Right.duplicate());
+      mergeLeaves(duplicate(), Right.duplicate());
       return true;
      }
 
@@ -971,7 +971,7 @@ class Tree extends Test                                                         
      {if (Left.countUsed() + countUsed() > maxLeafSize) return false;
       final Leaf l = Left.duplicate();
       final Leaf r =      duplicate();
-      mergeNode(l, r);
+      mergeLeaves(l, r);
       Left.free();
       l.free();
       r.free();
@@ -1231,7 +1231,7 @@ class Tree extends Test                                                         
       insert(Key, l.top()); top(r.top());                                       // Insert left top
      }
 
-    void mergeNode(Key Key, Branch Left, Branch Right)                          // Merge into the current branch from the specified left and right branches
+    void mergeBranches(Key Key, Branch Left, Branch Right)                      // Merge into the current branch from the specified left and right branches
      {Left .compactLeft();
       Right.compactRight();
       mergeCompacted(Left, Right);
@@ -1241,14 +1241,14 @@ class Tree extends Test                                                         
 
     boolean mergeFromRight(Key Key, Branch Right)                               // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
-      mergeNode(Key, duplicate(), Right.duplicate());
+      mergeBranches(Key, duplicate(), Right.duplicate());
       return true;
      }
 
     boolean mergeFromLeft(Key Key, Branch Left)                                 // Merge the specified slots from the right
      {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
       final Branch l = Left.duplicate(), r = duplicate();
-      mergeNode(Key, l, r);
+      mergeBranches(Key, l, r);
       l.free(); r.free();
       return true;
      }
