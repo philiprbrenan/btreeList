@@ -2,7 +2,9 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// investigate listAll introducing errors
+// Make empty() and full() use slotRefsBits
+// locateNearestFreeSlot should use unusedSlotsBits.nextZero() etc.
+// Investigate listAll introducing errors
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.Stack;
@@ -62,6 +64,9 @@ class Tree extends Test                                                         
    {final int value;                                                            // The value of the key
     Key(  int Value)  {value = Value;}
     int       value() {return  value;}
+    public String toString()
+     {return "Key : "+value;
+     }
    }
 
   static Key Key(int Value) {return new Key(Value);}                            // Create a key with teh specified value
@@ -70,6 +75,9 @@ class Tree extends Test                                                         
    {final int value;                                                            // The value of the data item
     Data(int Value)  {value = Value;}
     int      value() {return  value;}
+    public String toString()
+     {return "Data: "+value;
+     }
    }
 
 //D1 Allocation                                                                 // Allocate or free a leaf or branch
@@ -215,6 +223,9 @@ class Tree extends Test                                                         
      {final int value;                                                          // The index of the slot
       slot( int Value)  {value = Value;}                                        // A key
       int       value() {return  value;}
+      public String toString()
+       {return "slot: "+value;
+       }
      }
 
     final class Slot                                                            // A reference to a slot
@@ -251,6 +262,10 @@ class Tree extends Test                                                         
       boolean lt(Key Key) {return !eq(Key) && le(Key);}                         // Search key is less than or equal to indexed key
       boolean ge(Key Key) {return  eq(Key) || gt(Key);}                         // Search key is less than or equal to indexed key
       boolean gt(Key Key) {return !le(Key);}                                    // Search key is less than or equal to indexed key
+
+      public String toString()
+       {return "Slot: "+value;
+       }
      }
 
 //D2 Keys                                                                       // Define a key
@@ -342,13 +357,15 @@ class Tree extends Test                                                         
 
     Integer locateNearestFreeSlot(Slot Position)                                // Relative position of the nearest free slot to the indicated position if there is one.
      {if (!usedSlots(Position)) return 0;                                       // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
-      final int N = numberOfSlots();
-      for (int i = 1; i < N; i++)
-       {final int p = Position.value() + i, q = Position.value() - i;
-        if (Integer.compare(q, 0) != -1 && !usedSlots(new Slot(q))) return -i;  // Look down preferentially to avoid moving the existing key if possible
-        if (Integer.compare(p, N) == -1 && !usedSlots(new Slot(p))) return +i;  // Look up
-       }
-      return null;                                                              // No free slot - this is not actually an error.
+      final int Q = Position.value();
+      final BitSet     s = memory.usedSlotsBits;
+      final BitSet.Pos p = s.prevZero(s.new Pos(Q));                            // Prev free slot
+      final BitSet.Pos n = s.nextZero(s.new Pos(Q));                            // Next free slot
+      if (p == null && n == null) stop("No more free slots");
+      if (p == null && n != null) return n.position()-Q;                        // Next free slot because no prev free slot
+      if (p != null && n == null) return p.position()-Q;                        // Prev free slot because no next free slot
+      final int P = p.position() - Q, N = n.position() - Q;                     // Relative psoitions
+      return -P <= N ? P : N;                                                   // Choose nearest slow favoring lower slot if they are both the same distance away
      }
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
