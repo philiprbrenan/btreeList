@@ -416,7 +416,8 @@ class Tree extends Test                                                         
       memory.usedSlotsBits.initialize();                                        // Clear the existing tree bits - faster than deleting each path in turn
 
       for (int i : range(N))                                                    // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
-       {slots(new Slot(i), new slot(s[i])); usedSlots(new Slot(i), u[i]);
+       {final Slot I = new Slot(i);
+        slots(I, new slot(s[i])); usedSlots(I, u[i]);
        }
      }
 
