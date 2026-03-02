@@ -266,13 +266,8 @@ class Tree extends Test                                                         
      }
 
     void clearFirstSlot()                                                       // Set the first used slot to not used
-     {final int N = numberOfSlots();
-      for (int i : range(N))
-       {if (usedSlots(new Slot(i)))
-         {usedSlots(new Slot(i), false);
-          return;
-         }
-       }
+     {final Slots.Slot f = locateFirstUsedSlot();
+      if (f != null) usedSlots(f, false);
      }
 
     void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I.value()))); clearSlots(I.value());} // Remove a key from the slots
