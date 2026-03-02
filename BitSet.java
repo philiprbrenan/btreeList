@@ -174,7 +174,7 @@ abstract public class BitSet extends Test                                       
      }
    }
 
-  public void clearAll()                                                        // Clear all bits.
+  public void initialize()                                                        // Clear all bits.
    {for (int i : range(byteSize)) setByte(i, (byte)0);
     if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
      {for (int p = addressZeroTree(), j = 0; j < bitSize; j++)
@@ -326,7 +326,7 @@ abstract public class BitSet extends Test                                       
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
 
-    b.clearAll();
+    b.initialize();
     for (int i : range(bitSize)) b.set(new Pos(i), getBit(new Pos(i)));         // Load bit set
 
     final String g = toString(), e = ""+b;
@@ -410,7 +410,7 @@ abstract public class BitSet extends Test                                       
 
   static void test_prevNext()                                                   // Test tree of searchable one bits
    {final BitSet b = test_bits(32, true, true);
-    b.clearAll();
+    b.initialize();
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
     for (int i : s) b.set(b.new Pos(i), true);
@@ -474,7 +474,7 @@ Zero:
   static void test_prevNext01()                                                 // Test tree of searchable one bits
    {final int N = 16;
     final BitSet b = test_bits(N, true, true);
-    b.clearAll();
+    b.initialize();
     for (int i : range(N)) b.set(b.new Pos(i), (i / 4) % 2 == 0);
 
     //stop(b);
@@ -523,7 +523,7 @@ Zero:
   static void test_prevNext10()                                                 // Test tree of searchable one bits
    {final int N = 16;
      final BitSet b = test_bits(N, true, true);
-    b.clearAll();
+    b.initialize();
     for (int i : range(N)) b.set(b.new Pos(i), (i / 4) % 2 == 1);
 
     //stop(b);
@@ -577,26 +577,26 @@ Zero:
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
 
-    b.clearAll();
+    b.initialize();
     b.set(b.new Pos(1), true); b.set(b.new Pos(3), true);
     ok(b.integrity());
     b.setBit(b.new Pos(7), true);
     ok(!b.integrity(false));
    }
 
-  static void test_clearAll()
+  static void test_initialize()
    {final BitSet b = test_bits(8, true, false);
 
     b.set(b.new Pos(1), true); b.set(b.new Pos(3), true);
     ok(b.integrity());
-    b.clearAll();
+    b.initialize();
     ok(b.integrity());
    }
 
   static void test_oneZero()
    {final int N = 8;
     final BitSet b = test_bits(N, true, true);
-    b.clearAll();
+    b.initialize();
     final StringBuilder s = new StringBuilder();
     s.append("Start:\n"+b);
 
@@ -711,7 +711,7 @@ Zero:
   static void test_fullEmpty()
    {final int N = 16;
     final BitSet b = test_bits(N, true, true);
-    b.clearAll();
+    b.initialize();
     ok(b.empty());
     for (int i : range(N))
      {ok(!b.full());
@@ -726,7 +726,7 @@ Zero:
     test_prevNext01();
     test_prevNext();
     test_integrity();
-    test_clearAll();
+    test_initialize();
     test_oneZero();
     test_prevNext01();
     test_prevNext10();
