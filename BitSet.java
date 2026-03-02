@@ -3,6 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 // Pregenerate a tree specification so that the same specification can be used to create the backing storage as well as the tree it self
+// full and empty
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                             // Standard utility library.
@@ -308,7 +309,12 @@ abstract public class BitSet extends Test                                       
     return null;
    }
 
-//D2 Integrity                                                                  // Check that the bit trees match the actual bnits
+//D2 Full or empty                                                              // Check whether a bit set is full or empty
+
+  public boolean  full() {return firstZero() == null;}                          // If there are no zero bits then the bit set must be full
+  public boolean empty() {return firstOne () == null;}                          // If there are no one bits then the bit set must be empty
+
+//D2 Integrity                                                                  // Check that the bit trees match the actual bits
 
   public boolean integrity() {return integrity(true);}                          // Do an integrity check on the bitset to detect corruption
 
@@ -702,6 +708,19 @@ Zero:
 """);
    }
 
+  static void test_fullEmpty()
+   {final int N = 16;
+    final BitSet b = test_bits(N, true, true);
+    b.clearAll();
+    ok(b.empty());
+    for (int i : range(N))
+     {ok(!b.full());
+      b.set(b.new Pos(i), true);
+      ok(!b.empty());
+     }
+    ok(b.full());
+   }
+
   static void oldTests()                                                        // Tests thought to be stable.
    {test_bitSet();
     test_prevNext01();
@@ -711,6 +730,7 @@ Zero:
     test_oneZero();
     test_prevNext01();
     test_prevNext10();
+    test_fullEmpty();
    }
 
   static void newTests()                                                        // Tests under development.
