@@ -443,9 +443,10 @@ class Tree extends Test                                                         
       reset();
       int p = 0;
       for (int i : range(numberOfSlots()))                                      // Each slot
-       {final Slot I = new Slot(i), P = new Slot(p);
-        final slot Q = new slot(p);
-        if (d.usedSlots(I)) {compactSlot(P, Q, d.keys(I)); ++p;}                // Each used slot
+       {final Slot I = new Slot(i);
+        if (d.usedSlots(I))                                                     // Each used slot
+         {compactSlot(new Slot(p), new slot(p), d.keys(I)); ++p;
+         }
        }
      }
 
@@ -454,9 +455,10 @@ class Tree extends Test                                                         
       final Slots d = duplicateSlots(); reset();
       int p = numberOfRefs - 1;
       for (int i = numberOfSlots() - 1; i >= 0; --i)
-       {final Slot I = new Slot(i), P = new Slot(p);
-        final slot Q = new slot(p);
-        if (d.usedSlots(I)) {compactSlot(P, Q, d.keys(I)); --p;}                // Each used slot
+       {final Slot I = new Slot(i);
+        if (d.usedSlots(I))                                                     // Each used slot
+         {compactSlot(new Slot(p), new slot(p), d.keys(I)); --p;
+         }
        }
      }
 
