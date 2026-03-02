@@ -3,7 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 // Pregenerate a tree specification so that the same specification can be used to create the backing storage as well as the tree it self
-// full and empty
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                             // Standard utility library.
@@ -16,12 +15,16 @@ abstract public class BitSet extends Test                                       
 
 //D1 Constructors                                                               // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
-  public BitSet(int BitSize, boolean One, boolean Zero)                         // Constructor specifying fixed size.
+  public BitSet(int BitSize, boolean One, boolean Zero)                         // Constructor
    {bitSize = nextPowerOfTwo(BitSize);                                          // Record size.
     if (bitSize < 0) stop("Size must be zero or positive");                     // Validate size.
     zero = Zero;                                                                // Locate zeroes efficiently
     one = One;                                                                  // Locate ones efficiently
     byteSize = bytesNeeded(BitSize, one, zero);                                 // A tree of bits
+   }
+
+  public BitSet(Spec Spec)                                                      // Constructor using s specification
+   {this(Spec.bitSize(), Spec.one(), Spec.zero());                              // Record size.
    }
 
   public BitSet(int BitSize)              {this(BitSize, false, false);}        // Constructor to create a bitset without the ability locate zeroes or ones
@@ -73,6 +76,27 @@ abstract public class BitSet extends Test                                       
    {if (!zero)
      {stop("This bitset does not have the ability to search for zeroes");
      }
+   }
+
+  static class Spec                                                             // Specification of a bitset
+   {private final int  bitSize;                                                 // Number of bits in the bit set.
+    private final int byteSize;                                                 // Number of bytes in the bit set.
+    private final boolean zero;                                                 // Able to locate zeros via a tree of bits if set
+    private final boolean  one;                                                 // Able to locate ones via a tree of bits if set
+
+    public Spec(int Size, boolean One, boolean Zero)
+     { bitSize = Size;
+      byteSize = bytesNeeded(Size, One, Zero);                                  // Number of bytes needed for a bit set of specified size with or without the ability to locate zeroes and ones
+          zero = Zero;
+           one = One;
+     }
+    public Spec(int Size, boolean One) {this(Size, One,   false);}
+    public Spec(int Size)              {this(Size, false, false);}
+
+    public int bitSize () {return bitSize;}
+    public int byteSize() {return byteSize;}
+    public boolean zero() {return zero;}
+    public boolean one () {return one;}
    }
 
 // D2 Get and Set                                                               // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
@@ -319,9 +343,10 @@ abstract public class BitSet extends Test                                       
   public boolean integrity() {return integrity(true);}                          // Do an integrity check on the bitset to detect corruption
 
   public boolean integrity(boolean Stop)                                        // Do an integrity check on the bitset to detect corruption and stop on failures unless specified otherwise
-   {final byte[]bytes = new byte[BitSet.bytesNeeded(bitSize, one, zero)];       // Allocate backing storage.
+   {final BitSet.Spec spec = new BitSet.Spec(bitSize, one, zero);               // Specify bit set
+    final byte[]bytes = new byte[spec.byteSize()];                              // Allocate backing storage.
 
-    final BitSet b = new BitSet(bitSize, one, zero)                             // Create an identical bitset
+    final BitSet b = new BitSet(spec)                                           // Create an identical bitset
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
@@ -389,9 +414,10 @@ abstract public class BitSet extends Test                                       
 //D1 Tests                                                                      // Tests
 
   static BitSet test_bits(int N, boolean One, boolean Zero)                     // Create test bitset.
-   {final byte[]bytes = new byte[BitSet.bytesNeeded(N, One, Zero)];             // Allocate backing storage.
+   {final BitSet.Spec spec = new BitSet.Spec(N, One, Zero);                     // Allocate backing storage.
+    final byte[]bytes = new byte[spec.byteSize()];                              // Allocate backing storage.
 
-    final BitSet b = new BitSet(N, One, Zero)                                   // Create a bit set
+    final BitSet b = new BitSet(spec)                                           // Create a bit set
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
@@ -570,9 +596,10 @@ Zero:
 
   static void test_integrity()
    {final int N = 8;                                                            // Test size.
-    final byte[]bytes = new byte[BitSet.bytesNeeded(N, true)];                  // Allocate backing storage.
+    final BitSet.Spec spec = new BitSet.Spec(N, true);                          // Allocate backing storage.
+    final byte[]bytes = new byte[spec.byteSize()];                              // Allocate backing storage.
 
-    final BitSet b = new BitSet(N, true)                                        // Create a bit set using the backing storage
+    final BitSet b = new BitSet(spec)                                           // Create a bit set using the backing storage
      {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
