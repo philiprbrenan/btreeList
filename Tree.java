@@ -313,8 +313,8 @@ class Tree extends Test                                                         
       return n;
      }
 
-    boolean empty() {return countUsed() == 0;}                                  // All references are unused
-    boolean full()  {return countUsed() == numberOfRefs;}                       // All references are in use
+    boolean empty() {return memory.usedRefsBits.empty();}                       // All references are unused
+    boolean full()  {return memory.usedRefsBits.full ();}                       // All references are in use
 
     boolean adjacentUsedSlots(int Start, int Finish)                            // Checks whether two used slots are adjacent
      {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
