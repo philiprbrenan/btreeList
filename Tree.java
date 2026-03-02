@@ -2,8 +2,6 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Make empty() and full() use slotRefsBits
-// locateNearestFreeSlot should use unusedSlotsBits.nextZero() etc.
 // Investigate listAll introducing errors
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
@@ -339,8 +337,8 @@ class Tree extends Test                                                         
       return n;
      }
 
-    boolean empty() {return countUsed() == 0;}                                  // All references are unused
-    boolean full()  {return countUsed() == numberOfRefs;}                       // All references are in use
+    boolean empty() {return memory.usedSlotsBits.empty();}                      // All bits in teh corresponding bitset are unused so the Slots must be empty
+    boolean full () {return countUsed() == numberOfRefs;}                       // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneosuly full
 
     boolean adjacentUsedSlots(int Start, int Finish)                            // Checks whether two used slots are adjacent
      {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
@@ -589,13 +587,13 @@ class Tree extends Test                                                         
          {final Slot M = new Slot((a.value() + b.value()) / 2);                 // Desired mid point - but there might not be a slot in use at this point
           final Slot A = M.locatePrevUsedSlot();                                // Occupied slot on or preceding mid point
           final Slot B = M.locateNextUsedSlot();                                // Occupied slot on or succeeding mid point
-          final int Av = A.value(), av = a.value(),
-                    Bv = B.value(), bv = b.value();
+          final int Ap = A.value(), ap = a.value(),                             // New and current limits of range
+                    Bp = B.value(), bp = b.value();
 
-          if      (Av != av && A.ge(Key)) a = A;                                // Make sure that the new range is tighter than the existing one
-          else if (Av != bv && A.le(Key)) b = A;
-          else if (Bv != av && B.ge(Key)) a = B;
-          else if (Bv != bv && B.le(Key)) b = B;
+          if      (Ap != ap && A.ge(Key)) a = A;                                // Make sure that the new range is tighter than the existing one
+          else if (Ap != bp && A.le(Key)) b = A;
+          else if (Bp != ap && B.ge(Key)) a = B;
+          else if (Bp != bp && B.le(Key)) b = B;
           else                                                                  // The slots must be adjacent
            {if (a.eq(Key)) {found(a); return;};                                 // Found the search key at the lower end
             if (b.eq(Key)) {found(b); return;};                                 // Found the search key at the upper end
@@ -614,17 +612,17 @@ class Tree extends Test                                                         
       return l.at.right().locateNextUsedSlot();
      }
 
-    public Slot locate(Key Key)                                                 // Locate the slot containing the current search key if possible.
+    Slot locate(Key Key)                                                        // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
       return l.exact() ? l.at : null;                                           // Found if exact match
      }
 
-    public slot find(Key Key)                                                   // Find the index of the current key in the slots
+    slot find(Key Key)                                                          // Find the index of the current key in the slots
      {final Slot i = locate(Key);
       return i == null ? null : slots(i);
      }
 
-    public boolean delete(Key Key)                                              // Delete the specified key from the slots
+    boolean delete(Key Key)                                                     // Delete the specified key from the slots
      {final Slot i = locate(Key);                                               // Locate the search key
       if (i == null) return false;                                              // The key is not in the slots
       clearSlotAndRef(i);                                                       // Delete found key
@@ -644,7 +642,7 @@ class Tree extends Test                                                         
     public String toString()                                                    // Dump the slots
      {final StringBuilder s = new StringBuilder();
       final int N = numberOfSlots(), R = numberOfRefs;
-      s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",    // Title line
+      s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",                // Title line
                               name().at(), type(), R));
       s.append("positions: ");   for (int i : range(N)) s.append(f(" "+formatKey, i));
       s.append("\nslots    : "); for (int i : range(N)) s.append(f(" "+formatKey, slots(new Slot(i)).value()));
@@ -702,15 +700,15 @@ class Tree extends Test                                                         
       Memory() {bytes = ByteBuffer.allocate(size);}                             // Create memory
       Memory(ByteBuffer Bytes) {bytes = Bytes;}                                 // Use a specified memory
 
-      int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
       boolean usedSlots   (int Index) {return usedSlotsBits.getBit(usedSlotsBits.new Pos(Index));}
       boolean usedRefs    (int Index) {return usedRefsBits .getBit(usedRefsBits .new Pos(Index));}
+      int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
       int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
       int     name        (         ) {return bytes.getInt(posName);}
 
-      void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES,  Value);}
       void    usedSlots   (int Index, boolean Value) {usedSlotsBits.set(usedSlotsBits.new Pos(Index), Value);}
       void    usedRefs    (int Index, boolean Value) {usedRefsBits .set(usedRefsBits .new Pos(Index), Value);}
+      void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES,  Value);}
       void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES,  Value);}
       void    name        (           int     Value) {bytes.putInt(posName,                           Value);} // Save the name of the node in memory to assist debugging
 
@@ -1051,7 +1049,7 @@ class Tree extends Test                                                         
       memory = new Memory(node);                                                // Memory for branch
       super.setMemory(memory.bytes);                                            // Share memory with slots
       super.memory.clear();                                                     // Clear the memory associated with the slots
-      super.initialize();                                                         // Create path bit trees for slots
+      super.initialize();                                                       // Create path bit trees for slots
       name(node);                                                               // Save the name of the node in memory to assist debugging
       type(NodeType.Branch.ordinal());                                          // Set the type to branch
      }
@@ -1942,7 +1940,7 @@ class Tree extends Test                                                         
   static void test_redistribute()
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
-    for (int i : range(s.numberOfSlots())) s.setSlots(i);
+    for (int i : range(s.numberOfSlots())) {s.usedSlots(s.new Slot(i)); s.setSlots(i);}
                                                             //0123456789012345
                                           ok(s.printSlots(), "XXXXXXXXXXXXXXXX");
                         s.redistribute(); ok(s.printSlots(), "XXXXXXXXXXXXXXXX");
@@ -3620,7 +3618,6 @@ Delete 22
 
   static void newTests()                                                        // Tests being worked on
    {oldTests();
-    test_deep();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
