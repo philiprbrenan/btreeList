@@ -198,7 +198,7 @@ abstract public class BitSet extends Test                                       
      }
    }
 
-  public void initialize()                                                        // Clear all bits.
+  public void initialize()                                                      // Clear all bits.
    {for (int i : range(byteSize)) setByte(i, (byte)0);
     if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
      {for (int p = addressZeroTree(), j = 0; j < bitSize; j++)
@@ -324,7 +324,7 @@ abstract public class BitSet extends Test                                       
           p  -= w;
           b <<= 1;                                                              // Position of next level in tree
          }
-        return new Pos(B+B+(!getBit(new Pos(B+B+1)) ? 1 : 0));                     // Next zerro bit from actual bits
+        return new Pos(B+B+(!getBit(new Pos(B+B+1)) ? 1 : 0));                  // Next zerro bit from actual bits
        }
       p += w;                                                                   // Address next level of bits in tree
       w >>>= 1; if (w == 0) break;                                              // If we have reached level 0 we are finished
