@@ -11,11 +11,11 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.nio.ByteBuffer;
 
-class Tree extends Test                                                         // Manipulate a tree
+class Tree extends Test                                                         // A tree that translates keys into values
  {final int             maxLeafSize;                                            // The maximum number of entries in a leaf
   final int           maxBranchSize;                                            // The maximum number of entries in a branch
   final Stack<Allocation> freeChain = new Stack<>();                            // Unallocated leaves and branches
-  final int   MaximumNumberOfLevels = 99;                                       // Maximum number of levels in tree
+  final int   MaximumNumberOfLevels = 99;                                       // Maximum number of levels in tree to prevent runaways while debugging
   final int           numberOfNodes;                                            // Maximum number of leaves plus branches in this tree
   final int              sizeOfNode;                                            // The size of each node in the tree: a node may hold a branch or a leaf
   final Memory               memory;                                            // Memory containing the tree base followed by the leaves and branches of the tree
@@ -41,11 +41,11 @@ class Tree extends Test                                                         
     maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
     maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
     numberOfNodes = NumberOfNodes;                                              // The maximum number of leaves and branches combined
-    for (int i = numberOfNodes; i > 0; --i) freeChain.push(new Allocation(i));  // Initial free chain
+    for (int i = numberOfNodes; i > 0; --i) freeChain.push(new Allocation(i));  // Initial free chain. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
 
-    memory        = new Memory();
-    sizeOfNode    = memory.sizeOfNode;
-    memory.maxLeafSize  (maxLeafSize);
+    memory        = new Memory();                                               // Memory for the tree
+    sizeOfNode    = memory.sizeOfNode;                                          // Size a node in th tree to be able to contain a leaf or a branch whcih makes it importantto choose the number of slots in each so that they have about the same size
+    memory.maxLeafSize  (maxLeafSize);                                          // Record the sizes of a leaf or a branch
     memory.maxBranchSize(maxBranchSize);
     memory.numberOfNodes(numberOfNodes);
    }
@@ -59,15 +59,15 @@ class Tree extends Test                                                         
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
   static final class Key                                                        // A key
-   {final int value;
+   {final int value;                                                            // The value of the key
     Key(  int Value)  {value = Value;}
     int       value() {return  value;}
    }
 
-  static Key Key(int  Value) {return new Key(Value);}                           // A key in a slot
+  static Key Key(int Value) {return new Key(Value);}                            // Create a key with teh specified value
 
   static final class Data                                                       // An item of data associated with a key
-   {final int value;
+   {final int value;                                                            // The value of the data item
     Data(int Value)  {value = Value;}
     int      value() {return  value;}
    }
@@ -80,26 +80,26 @@ class Tree extends Test                                                         
    {final int posRoot          = 0;
     final int posMaxLeafSize   = posRoot          + Integer.BYTES;              // The maximum number of entries in a leaf
     final int posMaxBranchSize = posMaxLeafSize   + Integer.BYTES;              // The maximum number of entries in a branch
-    final int posNumberOfNodes = posMaxBranchSize + Integer.BYTES;
-    final int size             = posNumberOfNodes + Integer.BYTES;
-    int memorySize() {return size;}
+    final int posNumberOfNodes = posMaxBranchSize + Integer.BYTES;              // Maximum nunber of nodes in the tree
+    final int size             = posNumberOfNodes + Integer.BYTES;              // Size of memory in bytes
+    int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
 
   class LeafMemoryPositions                                                     // Memory positions of fields
    {final int posData    = getMemorySize(maxLeafSize);                          // Size of slots for a leaf
-    final int posUp      = posData    + Integer.BYTES * maxLeafSize();
-    final int posUpIndex = posUp      + Integer.BYTES;
-    final int size       = posUpIndex + Integer.BYTES;
-    int memorySize() {return size;}
+    final int posUp      = posData    + Integer.BYTES * maxLeafSize();          // Reference to a parent branch if there is one
+    final int posUpIndex = posUp      + Integer.BYTES;                          // Position of the reference to this leaf in the parent branch if there is one, or null if this is the top of the branch
+    final int size       = posUpIndex + Integer.BYTES;                          // Size of the memory
+    int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
 
   class BranchMemoryPositions                                                   // Memory positions of fields
    {final int posTop     = getMemorySize(maxBranchSize);                        // Size of slots for a branch
-    final int posData    = posTop     + Integer.BYTES;
-    final int posUp      = posData    + Integer.BYTES * maxBranchSize();
-    final int posUpIndex = posUp      + Integer.BYTES;
-    final int size       = posUpIndex + Integer.BYTES;
-    int memorySize() {return size;}
+    final int posData    = posTop     + Integer.BYTES;                          // Position of references to leaves in this branch
+    final int posUp      = posData    + Integer.BYTES * maxBranchSize();        // Reference to a parent branch if there is one
+    final int posUpIndex = posUp      + Integer.BYTES;                          // Position of the reference to this leaf in the parent branch if there is one, or null if this is the top of the branch
+    final int size       = posUpIndex + Integer.BYTES;                          // Size of the memory
+    int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
 
   class Allocation                                                              // An allocated node that could become a leaf or a branch or a tree base
