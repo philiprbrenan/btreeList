@@ -1121,10 +1121,7 @@ class Tree extends Test                                                         
      {final Branch d = new Branch();
       d.copySlots(this);                                                        // Copy slots
       final int R = numberOfRefs();
-      for (int i : range(R))
-       {final int v = memory.data(i);                                           // Copy used data
-        d.memory.data(i, v);                                                    // Copy used data
-       }
+      for (int i : range(R)) d.memory.data(i, memory.data(i));                  // Copy used data
       d.top(top());
       return d;
      }
@@ -1292,21 +1289,17 @@ class Tree extends Test                                                         
     Tree tree()             {return Tree.this;}                                 // Containing tree
     Slots stepDown(Key Key) {return child(locateFirstGe(Key));}                 // Step down from this branch
 
+    int count(Slots s)                                                          // Count the number of entries under this branch
+     {return Leaf.ref(s) ? s.countUsed() : ((Branch)s).count();
+     }
+
     int count()                                                                 // Count the number of entries under this branch
      {int n = 0;
-
       for  (int i : range(numberOfSlots()))                                     // Each slot
        {final Slot I = new Slot(i);
-        if (usedSlots(I))                                                       // Active slot
-         {final Slots s = data(I);
-          if      (Leaf  .ref(s)) n += s.countUsed();
-          else if (Branch.ref(s)) n += ((Branch)s).count();
-         }
+        if (usedSlots(I)) n += count(data(I));
        }
-      final Slots s = top();                                                    // Count entries below top
-      if      (Leaf  .ref(s)) n += s.countUsed();                               // Top is a leaf
-      else if (Branch.ref(s)) n += ((Branch)s).count();                         // Top is a branch
-      return n;                                                                 // Number below this branch
+      return n + count(top());                                                  // Count entries below top
      }
 
 //D2 Memory                                                                     // Memory for a branch
