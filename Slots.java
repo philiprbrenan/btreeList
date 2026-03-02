@@ -55,7 +55,7 @@ public class Slots extends Test                                                 
   int numberOfRefs()  {return numberOfRefs;}
   int numberOfSlots() {return numberOfRefs() * 2;}                              // Number of slots from number of ref
 
-  void initialize()                                                               // Clear all the slots
+  void initialize()                                                             // Clear all the slots
    {memory.usedSlotsBits.initialize();
     memory.usedRefsBits .initialize();
    }
