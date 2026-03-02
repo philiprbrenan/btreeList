@@ -217,15 +217,13 @@ class Tree extends Test                                                         
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-        final Integer i = p != null ? p.position() : null;
-        return i != null ? new Slot(i) : null;
+        return p != null ? new Slot(p.position()) : null;
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-        final Integer i = p != null ? p.position() : null;
-        return i != null ? new Slot(i) : null;
+        return p != null ? new Slot(p.position()) : null;
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
