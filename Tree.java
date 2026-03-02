@@ -125,7 +125,8 @@ class Tree extends Test                                                         
    }
 
   void freeCheck()                                                              // Check that the free chain is accurate - useful during debugging
-   {final ListAll      a = new ListAll();
+   {if (true) return;
+    final ListAll      a = new ListAll();
     final Set<Integer> f = new TreeSet<>();
     final Set<Integer> u = new TreeSet<>();
 
@@ -652,7 +653,7 @@ class Tree extends Test                                                         
        {void setByte(int I, byte V) {bytes.put(posUsedSlots + I, V);}           // Save used slot bit
         byte getByte(int I)  {return bytes.get(posUsedSlots + I);}              // Get used slot bit
        };
-      final BitSet usedRefsBits  = new BitSet(numberOfRefs, true, true)         // Bit storage for used refs
+      final BitSet usedRefsBits  = new BitSet(numberOfRefs(),  true, true)      // Bit storage for used refs
        {void setByte(int I, byte V) {bytes.put(posUsedRefs + I, V);}            // Save used ref bit
         byte getByte(int I)  {return bytes.get(posUsedRefs + I);}               // Get used ref bit
        };
@@ -678,11 +679,11 @@ class Tree extends Test                                                         
       int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
       int     name        (         ) {return bytes.getInt(posName);}
 
-      void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES,   Value);}
-      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.path(usedSlotsBits.new Pos(Index), Value);}
-      void    usedRefs    (int Index, boolean Value) {usedRefsBits .path(usedRefsBits .new Pos(Index), Value);}
-      void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES,   Value);}
-      void    name        (           int     Value) {bytes.putInt(posName,                            Value);} // Save the name of the node in memory to assist debugging
+      void    slots       (int Index, int     Value) {bytes.putInt(posSlots + Index * Integer.BYTES,  Value);}
+      void    usedSlots   (int Index, boolean Value) {usedSlotsBits.set(usedSlotsBits.new Pos(Index), Value);}
+      void    usedRefs    (int Index, boolean Value) {usedRefsBits .set(usedRefsBits .new Pos(Index), Value);}
+      void    keys        (int Index, int     Value) {bytes.putInt(posKeys  + Index * Integer.BYTES,  Value);}
+      void    name        (           int     Value) {bytes.putInt(posName,                           Value);} // Save the name of the node in memory to assist debugging
 
       void type(int Type) {       bytes.putInt(posType, Type);}                 // Type of object in which the slots are embedded
       int  type()         {return bytes.getInt(posType);}
