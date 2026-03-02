@@ -385,16 +385,14 @@ class Tree extends Test                                                         
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
      {if (Width > 0)                                                            // Shift up including the current slot
        {for (int i = Width; i > 0; --i)                                         // Move each slot
-         {final int p = Position+i;                                             // Index of target
-          final Slot P = new Slot(p);
+         {final Slot P = new Slot(Position+i);
           slots(P, slots(P.left()));                                            // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
       else if (Width < 0)                                                       // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
        {for (int i = Width; i < 0; ++i)                                         // Move each slot
-         {final int p = Position+i;                                             // Index of target
-          final Slot P = new Slot(p);
+         {final Slot P = new Slot(Position+i);
           slots(P, slots(P.right()));                                           // Move slot
          }
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
@@ -418,8 +416,7 @@ class Tree extends Test                                                         
       memory.usedSlotsBits.initialize();                                        // Clear the existing tree bits - faster than deleting each path in turn
 
       for (int i : range(N))                                                    // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
-       {final Slot I = new Slot(i);
-        slots(I, new slot(s[i])); usedSlots(I, u[i]);
+       {slots(new Slot(i), new slot(s[i])); usedSlots(new Slot(i), u[i]);
        }
      }
 
