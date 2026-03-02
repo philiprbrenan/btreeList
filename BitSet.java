@@ -13,14 +13,12 @@ abstract public class BitSet extends Test                                       
   final boolean zero, one;                                                      // Able to locate zeros and ones via a tree of bits if set
   static boolean debug;
 
-  @SuppressWarnings("this-escape")
   public BitSet(int BitSize, boolean One, boolean Zero)                         // Constructor specifying fixed size.
    {bitSize = nextPowerOfTwo(BitSize);                                          // Record size.
     if (bitSize < 0) stop("Size must be zero or positive");                     // Validate size.
     zero = Zero;                                                                // Locate zeroes efficiently
     one = One;                                                                  // Locate ones efficiently
     byteSize = bytesNeeded(BitSize, one, zero);                                 // A tree of bits
-    clearAll();                                                                 // Clear backing storage
    }
 
   public BitSet(int BitSize)              {this(BitSize, false, false);}        // Constructor to create a bitset without the ability locate zeroes or ones
@@ -99,8 +97,14 @@ abstract public class BitSet extends Test                                       
     setByte(bIndex, (byte) (Value ? b | (1 << offset) : b & ~(1 << offset)));   // Modify bit.
    }
 
-  public void path(Pos Index, boolean Value)                                    // Set or clear bits along the path from the indexed bit to the root of the bit tree
+  public void clear(Pos Index) {set(Index, false);}                             // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void set  (Pos Index) {set(Index, true );}                             // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
+
+  public void set  (Pos Index, boolean Value)                                   // Set or clear bits along the path from the indexed bit to the root of the bit tree
    {if (!one && !zero) stop("Cannot use path unless One or Zero paths chosen");
+    if (getBit(Index) == Value) return;                                         // Already set to the correct value so nothing changes
+    setBitNC(Index, Value);                                                     // Set the bit
+    if (bitSize < 2) return;                                                    // The One and Zero trees would have no entries
     if (one)  {if (Value) setOnePath (Index); else clearOnePath (Index);}
     if (zero) {if (Value) setZeroPath(Index); else clearZeroPath(Index);}
    }
@@ -108,21 +112,16 @@ abstract public class BitSet extends Test                                       
   private void setOnePath(Pos Index)                                            // Set bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
     final int x = Index.position();
-    checkIndex(x);
     for(int b = x, p = 0, w = bitSize; w > 0; p += w, w >>>= 1, b >>>= 1)       // Step from root to leaf
-     {final Pos q = new Pos(p+b);
+     {if (p == 0) continue;                                                     // Skip the actual bits
+      final Pos q = new Pos(p+b);
       if (getBitNC(q)) return; else setBitNC(q, true);                          // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
      }
    }
 
   private void clearOnePath(Pos Index)                                          // Clear bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
-    final int x = Index.position();
-    checkIndex(x);
-    if (!getBit(Index)) return;                                                 // Bit already not set so the rest of the path will be correct as no changes at this level
-
-    setBitNC(Index, false);                                                     // Clear the actual bit
-    for(int i = 0, b = x, p = 0, w = bitSize; w > 0; ++i)                       // Step from leaf to root
+    for(int i = 0, b = Index.position(), p = 0, w = bitSize; w > 0; ++i)        // Step from leaf to root
      {final int B = b>>>1, q = p + w + B;
 
       if (B+B+1 < w && !getBitNC(new Pos(p+B+B)) && !getBitNC(new Pos(p+B+B+1)))// Check both bits in the previous row are off
@@ -133,51 +132,40 @@ abstract public class BitSet extends Test                                       
      }
    }
 
-  private int addressZeroTree()                                                 // The zeeo tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {int p = bitSize; if (one) p += bitSize;                                     // Address last bit tree if needed
+  private int addressZeroTree()                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
+   {int p = bitSize; if (one) p += bitSize-1;                                   // Address first bit of zero bit tree
     return p;
    }
 
   private void clearZeroPath(Pos Index)                                         // Clear the target bit and set bits along the path from the indexed bit to the root of the bit tree
    {checkZero();
-    final int x = Index.position();
-    checkIndex(x);
-    if (!getBitNC(Index)) return; else setBitNC(Index, false);                  // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
     int p = addressZeroTree();                                                  // Address zero bit tree
-    for(int b = x>>>1, w = bitSize>>>1; w > 0; p += w, w >>>= 1, b >>>= 1)      // Step from root to leaf
+    for(int b = Index.position()>>>1, w = bitSize>>>1; w > 0; p += w, w >>>= 1, b >>>= 1)      // Step from root to leaf
      {final Pos q = new Pos(p+b);
       if (getBitNC(q)) return; else setBitNC(q, true);                          // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
      }
    }
 
   private void setZeroPath(Pos Index)                                           // Set bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
-   {checkZero();
-    final int x = Index.position();
-    checkIndex(x);
-    if (getBit(Index)) return;                                                  // Bit already set so the rest of the path will be correct as no changes were made at this level
-    if (bitSize < 2) return;                                                    // No bit tree for such a small bit set
+   {int P = 0;                                                                  // Position in the parent layer
+    int W = bitSize;                                                            // Width of parent layer
+    int p = addressZeroTree();                                                  // First child layer is the first layer of the zero bit tree
+    int w = W >>> 1;                                                            // Width of child layer
+    int b = Index.position() >>> 1;                                             // Index of bit in child layer
 
-    setBitNC(Index, true);                                                      // Set the actual bit
-    int P = 0;
-    int W = bitSize;
-    int p = addressZeroTree();                                                  // Address zero bit tree
-    int w = W >>> 1;
-    int b = x >>> 1;
-    final boolean BothOn = getBitNC(new Pos(P+b+b)) && getBitNC(new Pos(P+b+b+1));         // Check there is a zero
-    if (!BothOn) return;                                                        // There is a zero so no need to clear the path that already indiocates that there is a zero there
+    if (!getBitNC(new Pos(P+b+b)) || !getBitNC(new Pos(P+b+b+1))) return;       // Check there is a zero
     if (!getBitNC(new Pos(p+b))) return;                                        // Bit is already correctly set to show no path so there is nothing more to do
-         setBitNC(new Pos(p+b), false);                                              // Clear set bit along path to root to show no path
+         setBitNC(new Pos(p+b),  false);                                        // Clear set bit along path to root to show no path
 
-    for(int i = 0; w > 0; ++i)                                                  // Step from leaf to root
-     {P  = p;
-      W  = w;
-      p += w;
-      w >>>= 1;
-      b  = b >>> 1;
-      final boolean bothOff = !getBitNC(new Pos(P+b+b)) && !getBitNC(new Pos(P+b+b+1)); // Check there is a zero
-    if (!bothOff) return;                                                       // There is a zero so no need to clear the path that already indiocates that there is a zero there
-    if (!getBitNC(new Pos(p+b))) return;                                       // Bit is already correctly set so there is nothing more to do
-         setBitNC(new Pos(p+b), false);                                      // Clear set bit along path to root
+    for(int i = 0; w > 0; ++i)                                                  // Step from first row of tree to root
+     {P    = p;                                                                 // Child layer becomes parent layer
+      W    = w;                                                                 // Width of parent layer
+      p   += w;                                                                 // New child layer
+      w >>>= 1;                                                                 // Child layer width
+      b    = b >>> 1;                                                           // Index of bit in child layer
+      if ( getBitNC(new Pos(P+b+b)) || getBitNC(new Pos(P+b+b+1))) return;      // There is a one n the upper row so we do not need to clear further down
+      if (!getBitNC(new Pos(p+b))) return;                                      // Bit is already correctly set so there is nothing more to do
+           setBitNC(new Pos(p+b),  false);                                      // Clear set bit along path to root
      }
    }
 
@@ -234,8 +222,8 @@ abstract public class BitSet extends Test                                       
   public void clearAll()                                                        // Clear all bits.
    {for (int i : range(byteSize)) setByte(i, (byte)0);
     if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
-     {for (int p = addressZeroTree(), i = 0; i < bitSize; i++)
-       {setBitNC(new Pos(p+i), true);
+     {for (int p = addressZeroTree(), j = 0; j < bitSize; j++)
+       {setBitNC(new Pos(p+j), true);
        }
      }
    }
@@ -250,9 +238,8 @@ abstract public class BitSet extends Test                                       
       byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
      };
 
-    for   (int i : range(bitSize))
-     {if (getBit(new Pos(i))) b.setOnePath(new Pos(i));
-     }
+    b.clearAll();
+    for (int i : range(bitSize)) b.set(new Pos(i), getBit(new Pos(i)));         // Load bit set
 
     final String g = toString(), e = ""+b;
     if (!g.equals(e))                                                           // Check that the current bit tree matches the expected bit tree
@@ -271,26 +258,31 @@ abstract public class BitSet extends Test                                       
    {final StringBuilder s = new StringBuilder();
     int p = 0, r = bitSize;
 
-    s.append("BitSet        ");                                                 // Title
+    s.append("BitSet          ");                                               // Title
     for   (int i : range(bitSize)) s.append(f(" %2d", i));                      // Positions of bits
     s.append("\n");
 
-    for   (int i : range(1, bitSize))                                           // Print the first line and the first bit tree of present
-     {s.append(f("%4d %4d %4d", i, p, r));
+    for   (int i : range(1, bitSize))                                           // Print the first line and the first bit tree if present
+     {s.append(f("%4d %4d %4d |", i, p, r));
       for (int j : range(r))                                                    // Bits in level
        {s.append(f("  %1d", getBitNC(new Pos(p + j)) ? 1 : 0));
         if (!one && !zero) break;                                               // Only print the first line if there are no tree bits
        }
       s.append("\n");
+      if (i == 1)                                                               // The first line is the actual bits
+       {if      (one)  s.append("One:\n");                                      // One tree present so it comes next
+        else if (zero) s.append("Zero:\n");                                     // Zero tree present and no One tree present so the zero tree comes next
+       }
       p += r;
       r >>>= 1;
       if (r == 0) break;                                                        // Reached the leaves
      }
 
     if (one && zero)                                                            // Print zero search tree block if both one and zero bit trees are present
-     {r = bitSize;
+     {r = bitSize>>>1;
+      s.append("Zero:\n");
       for   (int i : range(1, bitSize))                                         // Each level
-       {s.append(f("%4d %4d %4d", i, p, r));
+       {s.append(f("%4d %4d %4d |", i, p, r));
         for (int j : range(r))                                                  // Bits in level
          {s.append(f("  %1d", getBitNC(new Pos(p + j)) ? 1 : 0));
           if (!one && !zero) break;                                             // Only print the first line if there are no tree bits
@@ -326,700 +318,47 @@ abstract public class BitSet extends Test                                       
     ok(b.getBit(b.new Pos(5)), false);                                          // Verify bit 5.
    }
 
-  static void test_oneBitTree()                                                 // Test tree of searchable one bits
-   {final BitSet b = test_bits(23, true, false);
+  static void test_prevNext()                                                   // Test tree of searchable one bits
+   {final BitSet b = test_bits(32, true, true);
     b.clearAll();
-    b.setOnePath(b.new Pos(13));
-    ok(b, """
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0
-   3   48    8  0  0  0  1  0  0  0  0
-   4   56    4  0  1  0  0
-   5   60    2  1  0
-   6   62    1  1
-""");
-    b.setOnePath(b.new Pos(19));
-    ok(b, """
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  1  0  0  1  0  0  0  0  0  0
-   3   48    8  0  0  0  1  1  0  0  0
-   4   56    4  0  1  1  0
-   5   60    2  1  1
-   6   62    1  1
-""");
-    b.setOnePath(b.new Pos(16));
-    ok(b, """
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  1  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  1  0  1  1  0  0  0  0  0  0
-   3   48    8  0  0  0  1  1  0  0  0
-   4   56    4  0  1  1  0
-   5   60    2  1  1
-   6   62    1  1
-""");
-    b.clearOnePath(b.new Pos(16));
-    ok(b, """
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  1  0  0  1  0  0  0  0  0  0
-   3   48    8  0  0  0  1  1  0  0  0
-   4   56    4  0  1  1  0
-   5   60    2  1  1
-   6   62    1  1
-""");
+    final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
+    for (int i : s) b.set(b.new Pos(i), true);
+
+    //stop(b);
+    ok(b, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+   1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
+One:
+   2   32   16 |  0  0  0  0  0  0  1  0  0  1  0  0  1  1  1  1
+   3   48    8 |  0  0  0  1  1  0  1  1
+   4   56    4 |  0  1  1  1
+   5   60    2 |  1  1
+   6   62    1 |  1
+Zero:
+   1   63   16 |  1  1  1  1  1  1  1  1  1  1  1  1  0  0  1  0
+   2   79    8 |  1  1  1  1  1  1  0  1
+   3   87    4 |  1  1  1  1
+   4   91    2 |  1  1
+   5   93    1 |  1
+""");
     for (int i : range(14))     ok(b.prevOne(b.new Pos(i)) == null);
     for (int i : range(14, 20)) ok(b.prevOne(b.new Pos(i)).position(), 13);
-    for (int i : range(20, 32)) ok(b.prevOne(b.new Pos(i)).position(), 19);
+    for (int i : range(20, 24)) ok(b.prevOne(b.new Pos(i)).position(), 19);
+    for (int i : range(25, 29)) ok(b.prevOne(b.new Pos(i)).position(), i-1);
+    ok(b.prevOne(b.new Pos(30)).position(), 28);
+    ok(b.prevOne(b.new Pos(31)).position(), 30);
 
     for (int i : range(13))     ok(b.nextOne(b.new Pos(i)).position(), 13);
     for (int i : range(13, 19)) ok(b.nextOne(b.new Pos(i)).position(), 19);
-    for (int i : range(19, 32)) ok(b.nextOne(b.new Pos(i)) == null);
+    for (int i : range(19, 24)) ok(b.nextOne(b.new Pos(i)).position(), 24);
+    for (int i : range(23, 28)) ok(b.nextOne(b.new Pos(i)).position(), i+1);
+    ok(b.nextOne(b.new Pos(28)).position(), 30);
+    for (int i : range(29, 31)) ok(b.nextOne(b.new Pos(i)).position(), i+1);
+    ok(b.nextOne(b.new Pos(31)) == null);
 
     ok(b.firstOne().position(),   13);
-    ok(b.nextOne(b.new Pos( 1)).position(),   13);
-    ok(b.nextOne(b.new Pos(13)).position(),  19);
-    ok(b.nextOne(b.new Pos(19)) == null);
-
-    ok(b.lastOne().position(),   19);
-    ok(b.prevOne(b.new Pos(19)).position(),  13);
-    ok(b.prevOne(b.new Pos(18)).position(),  13);
-    ok(b.prevOne(b.new Pos(13)) == null);
-   }
-
-  static void test_allOneBitTree()                                                 // Test tree of searchable zero bits
-   {final BitSet b = test_bits(14, true, false);
-    final StringBuilder s = new StringBuilder();
-    b.clearAll();
-    s.append("Start:\n"+b);
-
-    for (int i : range(b.bitSize))
-     {b.setOnePath(b.new Pos(i));
-      s.append("At: "+i+"\n"+b);
-     }
-    //stop(s);
-    ok(s, """
-Start:
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   16    8  0  0  0  0  0  0  0  0
-   3   24    4  0  0  0  0
-   4   28    2  0  0
-   5   30    1  0
-At: 0
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   16    8  1  0  0  0  0  0  0  0
-   3   24    4  1  0  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 1
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   16    8  1  0  0  0  0  0  0  0
-   3   24    4  1  0  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 2
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   16    8  1  1  0  0  0  0  0  0
-   3   24    4  1  0  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 3
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0
-   2   16    8  1  1  0  0  0  0  0  0
-   3   24    4  1  0  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 4
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0
-   2   16    8  1  1  1  0  0  0  0  0
-   3   24    4  1  1  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 5
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0
-   2   16    8  1  1  1  0  0  0  0  0
-   3   24    4  1  1  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 6
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0
-   2   16    8  1  1  1  1  0  0  0  0
-   3   24    4  1  1  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 7
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0
-   2   16    8  1  1  1  1  0  0  0  0
-   3   24    4  1  1  0  0
-   4   28    2  1  0
-   5   30    1  1
-At: 8
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0
-   2   16    8  1  1  1  1  1  0  0  0
-   3   24    4  1  1  1  0
-   4   28    2  1  1
-   5   30    1  1
-At: 9
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0
-   2   16    8  1  1  1  1  1  0  0  0
-   3   24    4  1  1  1  0
-   4   28    2  1  1
-   5   30    1  1
-At: 10
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0
-   2   16    8  1  1  1  1  1  1  0  0
-   3   24    4  1  1  1  0
-   4   28    2  1  1
-   5   30    1  1
-At: 11
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0
-   2   16    8  1  1  1  1  1  1  0  0
-   3   24    4  1  1  1  0
-   4   28    2  1  1
-   5   30    1  1
-At: 12
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0
-   2   16    8  1  1  1  1  1  1  1  0
-   3   24    4  1  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-At: 13
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
-   2   16    8  1  1  1  1  1  1  1  0
-   3   24    4  1  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-At: 14
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0
-   2   16    8  1  1  1  1  1  1  1  1
-   3   24    4  1  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-At: 15
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   2   16    8  1  1  1  1  1  1  1  1
-   3   24    4  1  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-""");
-
-    final StringBuilder S = new StringBuilder();                                    // a
-    for (int i : range(b.bitSize))
-     {b.clearOnePath(b.new Pos(i));
-      S.append("Clear: "+i+"\n"+b);
-     }
-    //stop(S);
-    ok(S, """
-Clear: 0
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   2   16    8  1  1  1  1  1  1  1  1
-   3   24    4  1  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-Clear: 1
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   2   16    8  0  1  1  1  1  1  1  1
-   3   24    4  1  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-Clear: 2
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1
-   2   16    8  0  1  1  1  1  1  1  1
-   3   24    4  1  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-Clear: 3
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1
-   2   16    8  0  0  1  1  1  1  1  1
-   3   24    4  0  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-Clear: 4
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1
-   2   16    8  0  0  1  1  1  1  1  1
-   3   24    4  0  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-Clear: 5
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1
-   2   16    8  0  0  0  1  1  1  1  1
-   3   24    4  0  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-Clear: 6
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1
-   2   16    8  0  0  0  1  1  1  1  1
-   3   24    4  0  1  1  1
-   4   28    2  1  1
-   5   30    1  1
-Clear: 7
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1
-   2   16    8  0  0  0  0  1  1  1  1
-   3   24    4  0  0  1  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 8
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1
-   2   16    8  0  0  0  0  1  1  1  1
-   3   24    4  0  0  1  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 9
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1
-   2   16    8  0  0  0  0  0  1  1  1
-   3   24    4  0  0  1  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 10
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1
-   2   16    8  0  0  0  0  0  1  1  1
-   3   24    4  0  0  1  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 11
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1
-   2   16    8  0  0  0  0  0  0  1  1
-   3   24    4  0  0  0  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 12
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1
-   2   16    8  0  0  0  0  0  0  1  1
-   3   24    4  0  0  0  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 13
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1
-   2   16    8  0  0  0  0  0  0  0  1
-   3   24    4  0  0  0  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 14
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1
-   2   16    8  0  0  0  0  0  0  0  1
-   3   24    4  0  0  0  1
-   4   28    2  0  1
-   5   30    1  1
-Clear: 15
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   16    8  0  0  0  0  0  0  0  0
-   3   24    4  0  0  0  0
-   4   28    2  0  0
-   5   30    1  0
-""");
-   }
-
-  static void test_allZeroBitTree()                                                // Test tree of searchable zero bits
-   {final BitSet b = test_bits(23, false, true);
-    final StringBuilder s = new StringBuilder();
-    b.clearAll();
-    s.append("Start:\n"+b);
-
-    for (int i : range(b.bitSize))
-     {b.setZeroPath(b.new Pos(i));
-      s.append("At: "+i+"\n"+b);
-     }
-    //stop(s);
-    ok(s, """
-Start:
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  1  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 0
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  1  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 1
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  1  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 2
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  1  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 3
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 4
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 5
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 6
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  1  1  1  1  1  1  1
-   4   56    4  1  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 7
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  1  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 8
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  1  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 9
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  1  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 10
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  1  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 11
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  0  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 12
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  0  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 13
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  0  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 14
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1
-   3   48    8  0  0  0  1  1  1  1  1
-   4   56    4  0  1  1  1
-   5   60    2  1  1
-   6   62    1  1
-At: 15
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1
-   3   48    8  0  0  0  0  1  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 16
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1
-   3   48    8  0  0  0  0  1  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 17
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1
-   3   48    8  0  0  0  0  1  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 18
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1
-   3   48    8  0  0  0  0  1  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 19
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1
-   3   48    8  0  0  0  0  0  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 20
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1
-   3   48    8  0  0  0  0  0  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 21
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1
-   3   48    8  0  0  0  0  0  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 22
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1
-   3   48    8  0  0  0  0  0  1  1  1
-   4   56    4  0  0  1  1
-   5   60    2  0  1
-   6   62    1  1
-At: 23
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1
-   3   48    8  0  0  0  0  0  0  1  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 24
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  1
-   3   48    8  0  0  0  0  0  0  1  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 25
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1
-   3   48    8  0  0  0  0  0  0  1  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 26
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1  1
-   3   48    8  0  0  0  0  0  0  1  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 27
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1
-   3   48    8  0  0  0  0  0  0  0  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 28
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1  1
-   3   48    8  0  0  0  0  0  0  0  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 29
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1
-   3   48    8  0  0  0  0  0  0  0  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 30
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  0
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  1
-   3   48    8  0  0  0  0  0  0  0  1
-   4   56    4  0  0  0  1
-   5   60    2  0  1
-   6   62    1  1
-At: 31
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1
-   2   32   16  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   3   48    8  0  0  0  0  0  0  0  0
-   4   56    4  0  0  0  0
-   5   60    2  0  0
-   6   62    1  0
-""");
-   }
-
-  static void test_step()                                                       // Test tree of bits
-   {final BitSet b = test_bits(23, true, false);
-    final int[]  n = new int[]{2, 3, 5, 6, 7, 9, 11, 13};
-
-    b.clearAll();
-    for (int i : range(n.length)) b.setOnePath(b.new Pos(n[i]));
-    ok(b, """
-BitSet          0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32  0  0  1  1  0  1  1  1  0  1  0  1  0  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-   2   32   16  0  1  1  1  1  1  1  0  0  0  0  0  0  0  0  0
-   3   48    8  1  1  1  1  0  0  0  0
-   4   56    4  1  1  0  0
-   5   60    2  1  0
-   6   62    1  1
-""");
-    ok(b.firstOne().position(), 2);  ok(b.lastOne().position(), 13);
-    ok(b.prevOne(b.new Pos( 0)) == null);         ok(b.nextOne(b.new Pos( 0)).position(),  2);
-    ok(b.prevOne(b.new Pos( 1)) == null);         ok(b.nextOne(b.new Pos( 1)).position(),  2);
-    ok(b.prevOne(b.new Pos( 2)) == null);         ok(b.nextOne(b.new Pos( 2)).position(),  3);
-    ok(b.prevOne(b.new Pos( 3)).position(), 2);   ok(b.nextOne(b.new Pos( 3)).position(),  5);
-    ok(b.prevOne(b.new Pos( 4)).position(), 3);   ok(b.nextOne(b.new Pos( 4)).position(),  5);
-    ok(b.prevOne(b.new Pos( 5)).position(), 3);   ok(b.nextOne(b.new Pos( 5)).position(),  6);
-    ok(b.prevOne(b.new Pos( 6)).position(), 5);   ok(b.nextOne(b.new Pos( 6)).position(),  7);
-    ok(b.prevOne(b.new Pos( 7)).position(), 6);   ok(b.nextOne(b.new Pos( 7)).position(),  9);
-    ok(b.prevOne(b.new Pos( 8)).position(), 7);   ok(b.nextOne(b.new Pos( 8)).position(),  9);
-    ok(b.prevOne(b.new Pos( 9)).position(), 7);   ok(b.nextOne(b.new Pos( 9)).position(), 11);
-    ok(b.prevOne(b.new Pos(10)).position(), 9);   ok(b.nextOne(b.new Pos(10)).position(), 11);
-    ok(b.prevOne(b.new Pos(11)).position(), 9);   ok(b.nextOne(b.new Pos(11)).position(), 13);
-    ok(b.prevOne(b.new Pos(12)).position(), 11);  ok(b.nextOne(b.new Pos(12)).position(), 13);
-    ok(b.prevOne(b.new Pos(13)).position(), 11);  ok(b.nextOne(b.new Pos(13)) == null);
-    ok(b.prevOne(b.new Pos(14)).position(), 13);  ok(b.nextOne(b.new Pos(14)) == null);
-
-    for (int i : range(n.length))
-     {b.clearOnePath(b.new Pos(n[i]));
-      b.integrity();
-     }
-   }
-
-  static void test_step_zero()                                                  // Test tree of bits
-   {final BitSet b = test_bits(7, true, false);
-
-    b.clearAll();
-    b.setOnePath(b.new Pos(0)); b.setOnePath(b.new Pos(4));
-    ok(b, """
-BitSet          0  1  2  3  4  5  6  7
-   1    0    8  1  0  0  0  1  0  0  0
-   2    8    4  1  0  1  0
-   3   12    2  1  1
-   4   14    1  1
-""");
-    ok(b.firstOne().position(), 0);
-    ok(b.lastOne() .position(),  4);
-    ok(b.prevOne(b.new Pos( 0)) == null);
-    ok(b.prevOne(b.new Pos( 1)).position(), 0);
-    ok(b.prevOne(b.new Pos( 2)).position(), 0);
-   }
-
-  static void test_one()
-   {final int N = 1;                                                            // Test size.
-    final byte[]bytes = new byte[BitSet.bytesNeeded(N, true)];                  // Allocate backing storage.
-
-    final BitSet b = new BitSet(N, true)                                        // Create a bit set using the backing storage
-     {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
-      byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
-     };
-
-    b.clearAll();
-    b.setOnePath(b.new Pos(0));
-    ok(b, """
-BitSet          0
-""");
-
-    ok(b.prevOne(b.new Pos(0)) == null);
-    ok(b.nextOne(b.new Pos(0)) == null);
-   }
-
-  static void test_two()
-   {final int N = 2;                                                            // Test size.
-    final byte[]bytes = new byte[BitSet.bytesNeeded(N, true)];                  // Allocate backing storage.
-
-    final BitSet b = new BitSet(N, true)                                        // Create a bit set using the backing storage
-     {void setByte(int Index, byte Value) {bytes[Index] = Value;}               // Backend write.
-      byte getByte(int Index)      {return bytes[Index];}                       // Backend read.
-     };
-
-    b.clearAll();
-    b.setOnePath(b.new Pos(1));
-    ok(b, """
-BitSet          0  1
-   1    0    2  0  1
-""");
-
-    ok(b.prevOne(b.new Pos(0)) == null, true);
-    ok(b.prevOne(b.new Pos(1)) == null, true);
-
-    ok(b.nextOne(b.new Pos(0)).position(), 1);
-    ok(b.nextOne(b.new Pos(1)) == null, true);
+    ok(b.lastOne().position(),    31);
    }
 
   static void test_integrity()
@@ -1032,7 +371,7 @@ BitSet          0  1
      };
 
     b.clearAll();
-    b.setOnePath(b.new Pos(1)); b.setOnePath(b.new Pos(3));
+    b.set(b.new Pos(1), true); b.set(b.new Pos(3), true);
     ok(b.integrity());
     b.setBit(b.new Pos(7), true);
     ok(!b.integrity(false));
@@ -1041,27 +380,138 @@ BitSet          0  1
   static void test_clearAll()
    {final BitSet b = test_bits(8, true, false);
 
-    b.setOnePath(b.new Pos(1)); b.setOnePath(b.new Pos(3));
+    b.set(b.new Pos(1), true); b.set(b.new Pos(3), true);
     ok(b.integrity());
     b.clearAll();
     ok(b.integrity());
    }
 
+  static void test_oneZero()
+   {final int N = 8;
+    final BitSet b = test_bits(N, true, true);
+    b.clearAll();
+    final StringBuilder s = new StringBuilder();
+    s.append("Start:\n"+b);
+
+    for (int i : range(N))
+     {b.set(b.new Pos(i), true);
+      s.append("Set: "+i+"\n"+b);
+     }
+    //stop(s);
+    ok(s, """
+Start:
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  0  0  0  0  0  0  0  0
+One:
+   2    8    4 |  0  0  0  0
+   3   12    2 |  0  0
+   4   14    1 |  0
+Zero:
+   1   15    4 |  1  1  1  1
+   2   19    2 |  1  1
+   3   21    1 |  1
+Set: 0
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  0  0  0  0  0  0  0
+One:
+   2    8    4 |  1  0  0  0
+   3   12    2 |  1  0
+   4   14    1 |  1
+Zero:
+   1   15    4 |  1  1  1  1
+   2   19    2 |  1  1
+   3   21    1 |  1
+Set: 1
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  1  0  0  0  0  0  0
+One:
+   2    8    4 |  1  0  0  0
+   3   12    2 |  1  0
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  1  1  1
+   2   19    2 |  1  1
+   3   21    1 |  1
+Set: 2
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  1  1  0  0  0  0  0
+One:
+   2    8    4 |  1  1  0  0
+   3   12    2 |  1  0
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  1  1  1
+   2   19    2 |  1  1
+   3   21    1 |  1
+Set: 3
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  1  1  1  0  0  0  0
+One:
+   2    8    4 |  1  1  0  0
+   3   12    2 |  1  0
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  0  1  1
+   2   19    2 |  0  1
+   3   21    1 |  1
+Set: 4
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  1  1  1  1  0  0  0
+One:
+   2    8    4 |  1  1  1  0
+   3   12    2 |  1  1
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  0  1  1
+   2   19    2 |  0  1
+   3   21    1 |  1
+Set: 5
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  1  1  1  1  1  0  0
+One:
+   2    8    4 |  1  1  1  0
+   3   12    2 |  1  1
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  0  0  1
+   2   19    2 |  0  1
+   3   21    1 |  1
+Set: 6
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  1  1  1  1  1  1  0
+One:
+   2    8    4 |  1  1  1  1
+   3   12    2 |  1  1
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  0  0  1
+   2   19    2 |  0  1
+   3   21    1 |  1
+Set: 7
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  1  1  1  1  1  1  1  1
+One:
+   2    8    4 |  1  1  1  1
+   3   12    2 |  1  1
+   4   14    1 |  1
+Zero:
+   1   15    4 |  0  0  0  0
+   2   19    2 |  0  0
+   3   21    1 |  0
+""");
+   }
+
   static void oldTests()                                                        // Tests thought to be stable.
    {test_bitSet();
-    test_oneBitTree();
-    test_allOneBitTree();
-    test_allZeroBitTree();
-    test_one();
-    test_two();
-    test_step();
-    test_step_zero();
+    test_prevNext();
     test_integrity();
     test_clearAll();
+    test_oneZero();
    }
 
   static void newTests()                                                        // Tests under development.
    {oldTests();                                                                 // Run baseline tests.
+    test_oneZero();
    }
 
   public static void main(String[] args)                                        // Program entry point for testing.
