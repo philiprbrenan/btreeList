@@ -460,42 +460,43 @@ class Tree extends Test                                                         
        }
      }
 
+    boolean mergeSlot(Slots S, Slot I, slot J)                                  // Merge a slot
+     {if (S.usedSlots(I))
+       {    slots(I, S.    slots(I));
+        usedSlots(I, S.usedSlots(I));
+         usedRefs(J, S. usedRefs(J));
+             keys(I, S.     keys(I));
+        return true;
+       }
+      return false;
+     }
+
     void mergeCompacted(Slots Left, Slots Right)                                // Merge left and right compacted slots into the current slots
      {final Slots l = Left, r = Right;
       reset();
       for (int i : range(numberOfRefs))                                         // Each reference
        {final Slot I = new Slot(i);                                             // The input slots have been compacted so this Slot will match the corresponding slot
         final slot J = new slot(i);
-         if (l.usedSlots(I))                                                    // Merge on left
-         {    slots(I, l.    slots(I));
-          usedSlots(I, l.usedSlots(I));
-           usedRefs(J, l. usedRefs(J));
-               keys(I, l.     keys(I));
-         }
-        else if (r.usedSlots(I))                                                // Merge on right
-         {    slots(I, r.    slots(I));
-          usedSlots(I, r.usedSlots(I));
-           usedRefs(J, r. usedRefs(J));
-               keys(I, r.     keys(I));
-         }
+        if      (mergeSlot(l, I, J)) {}                                         // Merge on left
+        else if (mergeSlot(r, I, J)) {}                                         // Merge on right
         else {usedSlots(I, false); usedRefs(J, false);}                         // Reset center
        }
      }
 
+    boolean mergeBack(Slots Left, Slots Right)                                  // Merge the specified slots back into the current set of slots
+     {Left.compactLeft(); Right.compactRight();
+      mergeCompacted(Left, Right);
+      return true;
+     }
+
     boolean mergeOnRight(Slots Right)                                           // Merge the specified slots from the right
      {if (countUsed() + Right.countUsed() > numberOfSlots()) return false;
-      final Slots l = duplicateSlots(), r = Right.duplicateSlots();
-      l.compactLeft(); r.compactRight();
-      mergeCompacted(l, r);
-      return true;
+      return mergeBack(duplicateSlots(), Right.duplicateSlots());
      }
 
     boolean mergeOnLeft(Slots Left)                                             // Merge the specified slots from the left
      {if (Left.countUsed() + countUsed() > numberOfSlots()) return false;
-      final Slots l = Left.duplicateSlots(), r = duplicateSlots();
-      l.compactLeft(); r.compactRight();
-      mergeCompacted(l, r);
-      return true;
+      return mergeBack(Left.duplicateSlots(), duplicateSlots());
      }
 
 //D2 High level operations                                                      // Find, insert, delete values in the slots
