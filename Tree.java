@@ -293,12 +293,10 @@ class Tree extends Test                                                         
 //D2 Refs                                                                       // Allocate and free references to keys
 
     slot allocRef()                                                             // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
-     {for (int i : range(numberOfRefs))
-       {final slot I = new slot(i);
-        if (!usedRefs(I))
-         {usedRefs(I, true);           // Need to search rather than scan
-          return I;
-         }
+     {final slot I = locateFirstEmptyRef();
+      if (I != null)
+       {usedRefs(I, true);
+        return I;
        }
       stop("No more slots available in this set of slots");
       return null;
@@ -350,6 +348,15 @@ class Tree extends Test                                                         
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
      {final BitSet.Pos p = memory.usedSlotsBits.lastOne();
       return p != null ? new Slot(p.position()) : null;
+     }
+
+    slot locateFirstEmptyRef()                                                  // Absolute position of the first empty reference
+     {final BitSet.Pos p = memory.usedRefsBits.firstZero();
+      if (p != null)
+       {final slot s = new slot(p.position());
+        return s;
+       }
+      return null;
      }
 
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
@@ -1929,7 +1936,8 @@ class Tree extends Test                                                         
   static void test_ifd()
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
-
+    s.memory.usedSlotsBits.clearAll();
+    s.memory.usedRefsBits .clearAll();
                         ok(s.empty(), true);  ok(s.full(), false);
     s.insert(Key(14));  ok(s.empty(), false); ok(s.full(), false);
     s.insert(Key(13));  ok(s.countUsed(), 2);
@@ -1975,6 +1983,8 @@ keys     :   14  13  16  15  18  17  12  11
   static void test_idn()                                                        // Repeated inserts and deletes
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
+    s.memory.usedSlotsBits.clearAll();
+    s.memory.usedRefsBits .clearAll();
 
     for (int i = 0; i < s.numberOfSlots()*10; i++)
      {s.insert(Key(14)); s.redistribute();
