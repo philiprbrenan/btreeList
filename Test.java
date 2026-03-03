@@ -1040,6 +1040,27 @@ public class Test                                                               
      }
    }
 
+//D1 Programming                                                                // Program structures
+
+  abstract static class For                                                     // For loop
+   {For(int Start, int End)                                                     // Execute the loop the specified number of times
+     {for(int i : range(Start, End)) if (!body(i)) break;
+     }
+
+    For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
+
+    boolean body(int Index) { return false;}                                    // Body of the for loop: return flse to terminate execution of the loop
+   }
+
+  abstract static class If                                                      // If statement
+   {If (boolean condition)
+     {if (condition) Then(); else Else();
+     }
+
+    void Then() {}                                                              // Then clause
+    void Else() {}                                                              // Else clause
+   }
+
 //D1 Testing                                                                    // Test expected output against got output
 
   static int testsPassed = 0, testsFailed = 0;                                  // Number of tests passed and failed
@@ -1500,6 +1521,28 @@ a   aa    AAA
     ok(decToInt("1x1xx"), 11);
    }
 
+  static void test_programming()
+   {class test_programming
+     {int  i = 0;
+      int  i()      {return i;}
+      void i(int I) {i = I;}
+
+      test_programming(int N, int R)
+       {new For(N)
+         {boolean body(int Index)
+           {new If (Index % 2 == 0)
+             {void Then() {i(i()+Index);}
+              void Else() {i(i()-Index);}
+             };
+            return true;
+           }
+         };
+        ok(i, R);
+       }
+     }
+    new test_programming(11, 5);
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
@@ -1520,6 +1563,7 @@ a   aa    AAA
     test_modZero();
 //  test_bitSetToHex();
     test_hextoInt();
+    test_programming();
    }
 
   static void newTests()                                                        // Tests being worked on
