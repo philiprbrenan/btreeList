@@ -79,29 +79,32 @@ class Tree extends Test                                                         
 
   enum NodeType {Leaf, Branch}                                                  // Types of nodes
 
+  static int ib()      {return     Integer.BYTES;}                              // Number of bytes in an integer
+  static int ib(int I) {return I * Integer.BYTES;}                              // Number of bytes in a number of integers
+
   static class TreeMemoryPositions                                              // Memory positions of fields describing the tree
    {final int posRoot          = 0;
-    final int posMaxLeafSize   = posRoot          + Integer.BYTES;              // The maximum number of entries in a leaf
-    final int posMaxBranchSize = posMaxLeafSize   + Integer.BYTES;              // The maximum number of entries in a branch
-    final int posNumberOfNodes = posMaxBranchSize + Integer.BYTES;              // Maximum number of nodes in the tree
-    final int size             = posNumberOfNodes + Integer.BYTES;              // Size of memory in bytes
+    final int posMaxLeafSize   = posRoot          + ib();                       // The maximum number of entries in a leaf
+    final int posMaxBranchSize = posMaxLeafSize   + ib();                       // The maximum number of entries in a branch
+    final int posNumberOfNodes = posMaxBranchSize + ib();                       // Maximum number of nodes in the tree
+    final int size             = posNumberOfNodes + ib();                       // Size of memory in bytes
     int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
 
   class LeafMemoryPositions                                                     // Memory positions of fields
    {final int posData    = getMemorySize(maxLeafSize);                          // Size of slots for a leaf
-    final int posUp      = posData    + Integer.BYTES * maxLeafSize();          // Reference to a parent branch if there is one
-    final int posUpIndex = posUp      + Integer.BYTES;                          // Position of the reference to this leaf in the parent branch if there is one, or null if this is the top of the branch
-    final int size       = posUpIndex + Integer.BYTES;                          // Size of the memory
+    final int posUp      = posData    + ib(maxLeafSize());                      // Reference to a parent branch if there is one
+    final int posUpIndex = posUp      + ib();                                   // Position of the reference to this leaf in the parent branch if there is one, or null if this is the top of the branch
+    final int size       = posUpIndex + ib();                                   // Size of the memory
     int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
 
   class BranchMemoryPositions                                                   // Memory positions of fields
    {final int posTop     = getMemorySize(maxBranchSize);                        // Size of slots for a branch
-    final int posData    = posTop     + Integer.BYTES;                          // Position of references to leaves in this branch
-    final int posUp      = posData    + Integer.BYTES * maxBranchSize();        // Reference to a parent branch if there is one
-    final int posUpIndex = posUp      + Integer.BYTES;                          // Position of the reference to this leaf in the parent branch if there is one, or null if this is the top of the branch
-    final int size       = posUpIndex + Integer.BYTES;                          // Size of the memory
+    final int posData    = posTop     + ib();                                   // Position of references to leaves in this branch
+    final int posUp      = posData    + ib(maxBranchSize);                      // Reference to a parent branch if there is one
+    final int posUpIndex = posUp      + ib();                                   // Position of the reference to this leaf in the parent branch if there is one, or null if this is the top of the branch
+    final int size       = posUpIndex + ib();                                   // Size of the memory
     int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
 
@@ -294,7 +297,7 @@ class Tree extends Test                                                         
     slot           slots(Slot I) {return  new slot(memory.slots    (I.value()));}                         // The indexed slot
     boolean    usedSlots(Slot I) {return           memory.usedSlots(I.value());}                          // The indexed slot usage indicator
     boolean     usedRefs(slot I) {return           memory.usedRefs (I.value());}                          // The indexed reference usage indicator
-    Key                       keys(Slot I) {return   new Key(memory.keys(memory.slots(I.value())));}      // The indexed key
+    Key             keys(Slot I) {return   new Key(memory.keys(memory.slots(I.value())));}                // The indexed key
 
     void     slots(Slot I, slot    Ref)   {memory.slots    (I.value(), Ref.value());}                     // The indexed slot
     void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                           // The indexed slot usage indicator
@@ -701,18 +704,17 @@ class Tree extends Test                                                         
 
       BitSet.Pos us(int I) {return usedSlotsBits.new Pos(I);}                   // A slot position in the used slots
       BitSet.Pos ur(int I) {return usedRefsBits .new Pos(I);}                   // A slot position in the references
-      int        nb(int I) {return I * Integer.BYTES;}                          // Number of bytes
 
       boolean usedSlots (int I) {return usedSlotsBits.getBit(us(I));}           // Value of indexed used slot
       boolean usedRefs  (int I) {return usedRefsBits .getBit(ur(I));}           // Value of indexed used reference
-      int     slots     (int I) {return bytes.getInt(posSlots + nb(I));}        // Value of indexed slot
-      int     keys      (int I) {return bytes.getInt(posKeys  + nb(I));}        // Value of key via indexed reference
+      int     slots     (int I) {return bytes.getInt(posSlots + ib(I));}        // Value of indexed slot
+      int     keys      (int I) {return bytes.getInt(posKeys  + ib(I));}        // Value of key via indexed reference
       int     name      (     ) {return bytes.getInt(posName);}
 
       void    usedSlots (int I, boolean V) {usedSlotsBits.set(      us(I), V);} // set value of indexed used slot
       void    usedRefs  (int I, boolean V) {usedRefsBits .set(      ur(I), V);} // set value of indexed used reference
-      void    slots     (int I, int     V) {bytes.putInt(posSlots + nb(I), V);} // set value of indexed slot
-      void    keys      (int I, int     V) {bytes.putInt(posKeys  + nb(I), V);} // set value of key via indexed reference
+      void    slots     (int I, int     V) {bytes.putInt(posSlots + ib(I), V);} // set value of indexed slot
+      void    keys      (int I, int     V) {bytes.putInt(posKeys  + ib(I), V);} // set value of key via indexed reference
       void    name      (       int     V) {bytes.putInt(posName,          V);} // Save the name of the node in memory to assist debugging
 
       void type(int Type) {       bytes.putInt(posType, Type);}                 // Type of object in which the slots are embedded
