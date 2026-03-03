@@ -236,7 +236,7 @@ abstract public class BitSet extends Test                                       
        }
       p += w; w >>>= 1; if (w == 0) break; b >>>= 1;                            // Address next level of bits in tree
      }
-    return null;
+    return null;                                                                // No alternate path down
    }
 
   public Pos prevOne(Pos Index)                                                 // Find the index of the previous set bit below the specified bit
@@ -256,7 +256,7 @@ abstract public class BitSet extends Test                                       
        }
       p += w; w >>>= 1; if (w == 0) break; b >>>= 1;                            // Address next level of bits in tree
      }
-    return null;
+    return null;                                                                // No alternate path down
    }
 
 //D2 Locate Zeros                                                               // Find the first, last, next, previous bit set to zero
@@ -293,16 +293,18 @@ abstract public class BitSet extends Test                                       
        }
       p += w; w >>>= 1; if (w == 0) break; b >>>= 1;                            // Address next level of bits in tree
      }
-    return null;
+    return null;                                                                // No alternate path down
    }
 
   public Pos prevZero(Pos Index)                                                // Find the index of the previous set bit below the specified bit
    {checkZero();
     checkIndex(Index.position());
+
     int b = Index.position();
     if (b == 0)                return null;                                     // First bit so no prev bit
     if (!getBit(new Pos(b-1))) return new Pos(b-1);                             // Prev bit is zero
     if (bitSize == 2)          return null;                                     // No more bits to check
+
     int w = bitSize>>>1, p = addressZeroTree(); b >>>= 1;                       // First layer of zero tree bits
 
     for(int i : range(bitSize))                                                 // Search down through the zero bit tree
@@ -314,11 +316,11 @@ abstract public class BitSet extends Test                                       
           w <<= 1; p -= w; B <<= 1;
           B  += getBitNC(new Pos(p+b)) ? 0 : 1;                                 // Follow path as high as possible
          }
-        return new Pos(B+B+(!getBit(new Pos(B+B+1)) ? 1 : 0));                  // Next zerro bit from actual bits
+        return new Pos(B+B+(!getBit(new Pos(B+B+1)) ? 1 : 0));                  // Next zero bit from actual bits
        }
       p += w; w >>>= 1; if (w == 0) break; b >>>= 1;                            // Address next level of bits in tree
      }
-    return null;
+    return null;                                                                // No alternate path down
    }
 
 //D2 Full or empty                                                              // Check whether a bit set is full or empty
