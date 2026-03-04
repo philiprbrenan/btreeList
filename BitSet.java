@@ -255,31 +255,20 @@ abstract public class BitSet extends Test                                       
    }
 
   public void initialize()                                                      // Clear all bits.
-   {class initializeBytes                                                          // For loop to set bits along path in One tree to actual bit
-     {initializeBytes()
-       {new For(byteSize)                                                      // Step from root to leaf
-         {boolean body(int i)
-           {setByte(i, (byte)0);
-            return true;
-           }
-         };
+   {new For(byteSize)                                                       // Step from root to leaf
+     {boolean body(int i)
+       {setByte(i, (byte)0);
+        return true;
        }
-     }
-    new initializeBytes();                                                      // For loop to set bits along path in One tree to actual bit
+     };
 
     if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
-     {class initialize                                                          // For loop to set bits along path in One tree to actual bit
-       {int p = addressZeroTree();                                              // Position in level, level, width
-
-        initialize()
-         {new For(bitSize)                                                      // Step from root to leaf
-           {boolean body(int i)
-             {setBitNC(new Pos(p+i), true); return true;
-             }
-           };
+     {final int p = addressZeroTree();                                              // Position in level, level, width
+      new For(bitSize)                                                          // For loop to set bits along path in One tree to actual bit
+       {boolean body(int i)
+         {setBitNC(new Pos(p+i), true); return true;
          }
-       }
-      new initialize();
+       };
      }
    }
 
