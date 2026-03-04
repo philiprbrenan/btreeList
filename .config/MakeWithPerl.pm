@@ -14,7 +14,6 @@ use Data::Table::Text qw(:all);
 use Getopt::Long;
 use Time::HiRes qw(time);
 use utf8;
-
 sub mwpl {qq(makeWithPerlLocally.pl)}                                           # Make with Perl locally
 
 my $javaHome;                                                                   # Location of java files
@@ -462,19 +461,25 @@ if ($file =~ m(\.adblog\Z))                                                     
 if ($file =~ m(\.java\Z))                                                       # Java
  {my  $name   = fn $file;                                                       # Parse file name
   !$javaHome and confess "Specify --javaHome keyword to specify the folder where class files are to go.";
-  my $package = &getPackageNameFromFile($file);                                 # Get package name
-  my $cp      = fpd($javaHome, qw(Classes));                                    # Folder containing java classes.
-     $cp      = fpd($javaHome, qw(../Classes))       unless -e $cp;
-     $cp      = fpd($javaHome, qw(../../Classes))    unless -e $cp;
-     $cp      = fpd($javaHome, qw(../../../Classes)) unless -e $cp;
 
-  if (!-d $cp)                                                                  # Make a local classes folder if none is present above this folder
-   {$cp = fpd($javaHome, qw(Classes));                                          # Folder containing java classes.
-    makePath $cp;
+  my $package = &getPackageNameFromFile($file);                                 # Get package name
+  my $d       = fpd($javaHome, qw(Classes));                                    # Folder containing java classes.
+     $d       = fpd($javaHome, qw(../Classes))       unless -e $d;
+     $d       = fpd($javaHome, qw(../../Classes))    unless -e $d;
+     $d       = fpd($javaHome, qw(../../../Classes)) unless -e $d;
+
+  if (!-d $d)                                                                   # Make a local classes folder if none is present above this folder
+   {$d = fpd($javaHome, qw(Classes));                                           # Folder containing java classes.
+    makePath $d;
    }
 
+  my @jars = readFile($file) =~ m{^//jar\s+(\S+\.jar)}mg;                       # Get jar files mentioned in source code
+  my $jars = join ":", @jars;
+
+  my $cp = $d; $cp = "$d:$jars" if @jars;                                       # Class path needs the classes created by this compile and any mentioned jar files
+
   if ($compile)                                                                 # Compile
-   {my $c = "javac -g -d $cp -cp $cp -Xlint -Xdiags:verbose $file -Xmaxerrs 9"; # Syntax check Java
+   {my $c = "javac -g -d $d -cp $cp -Xlint -Xdiags:verbose $file -Xmaxerrs 9";  # Syntax check Java
     say STDERR $c;
     print STDERR qx($c);
    }
@@ -484,7 +489,7 @@ if ($file =~ m(\.java\Z))                                                       
     my $class = $package ? "$package.$Name" : $Name;                            # Class location
     my $p = join ' ', @ARGV;                                                    # Collect the remaining parameters and pass them to the java application
     my $f = profile($file);
-    my $c = "javac -g -d $cp -cp $cp $f && java -XX:+UseZGC -ea -cp $cp $class $p";         # Run java
+    my $c = "javac -g -d $d -cp $cp $f && java -XX:+UseZGC -ea -cp $cp $class $p";
     say STDERR $c;
 
     runTests($file, $c);
