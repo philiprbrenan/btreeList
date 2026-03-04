@@ -1523,16 +1523,14 @@ a   aa    AAA
 
   static void test_programming()
    {class test_programming
-     {int  i = 0;
-      int  i()      {return i;}
-      void i(int I) {i = I;}
+     {int i = 0;
 
       test_programming(int N, int R)
        {new For(N)
          {boolean body(int Index)
            {new If (Index % 2 == 0)
-             {void Then() {i(i()+Index);}
-              void Else() {i(i()-Index);}
+             {void Then() {i += Index;}
+              void Else() {i -= Index;}
              };
             return true;
            }
