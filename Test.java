@@ -1061,6 +1061,42 @@ public class Test                                                               
     void Else() {}                                                              // Else clause
    }
 
+  static class Int                                                              // An integer that can be passed as a parameter to a method and modified there-in
+   {private int     i = 0;                                                      // Value of the integer
+    private boolean v = false;                                                  // Whether the current value of the integer is valid or not
+    boolean valid()  {return v;}
+    Int      (int I) {i = I;   v = true;}
+    Int      (Int I) {i = I.i; v = I.v;}
+    Int      ()      {}
+    void x   ()      {if (!v) stop("Int has not been set yet");}
+    void X   ()      {v = true;}
+    int  i   ()      {          x();       return i;}
+    Int  i   (int I) {i    = I;      X();  return this;}
+    Int  i   (Int I) {i    = I.i; v = I.v; return this;}
+    Int  add (int I) {i   += I; x(); X();  return this;}
+    Int  add (Int I) {        I.x();       return add(I.i());}
+    Int  sub (int I) {i   -= I; x(); X();  return this;}
+    Int  sub (Int I) {        I.x();       return sub(I.i());}
+    Int  up  ()      {i  <<= 1; x();       return this;}
+    Int  down()      {i >>>= 1; x();       return this;}
+
+    boolean eq(int e){          x();       return i == e;}
+    boolean ne(int e){          x();       return i != e;}
+    boolean le(int e){          x();       return i <= e;}
+    boolean lt(int e){          x();       return i <  e;}
+    boolean ge(int e){          x();       return i >= e;}
+    boolean gt(int e){          x();       return i >  e;}
+
+    boolean eq(Int e){        e.x();       return eq(e.i);}
+    boolean ne(Int e){        e.x();       return ne(e.i);}
+    boolean le(Int e){        e.x();       return le(e.i);}
+    boolean lt(Int e){        e.x();       return lt(e.i);}
+    boolean ge(Int e){        e.x();       return ge(e.i);}
+    boolean gt(Int e){        e.x();       return gt(e.i);}
+
+    public String toString()              {return ""+i;}
+   }
+
 //D1 Testing                                                                    // Test expected output against got output
 
   static int testsPassed = 0, testsFailed = 0;                                  // Number of tests passed and failed
@@ -1522,23 +1558,23 @@ a   aa    AAA
    }
 
   static void test_programming()
-   {class test_programming
-     {int i = 0;
-
-      test_programming(int N, int R)
+   {final Int i = new Int(0);
+    class test_programming
+     {test_programming(int N)
        {new For(N)
          {boolean body(int Index)
            {new If (Index % 2 == 0)
-             {void Then() {i += Index;}
-              void Else() {i -= Index;}
+             {void Then() {i.add(Index);}
+              void Else() {i.sub(Index);}
              };
             return true;
            }
          };
-        ok(i, R);
        }
      }
-    new test_programming(11, 5);
+    new test_programming(11);
+    ok(i, 5);
+    ok(i.valid());
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
