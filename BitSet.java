@@ -288,20 +288,29 @@ abstract public class BitSet extends Test                                       
   public Pos nextOne(Pos Index)                                                 // Find the index of the next set bit above the specified bit
    {checkOne();
     checkIndex(Index.position());
-    int b = Index.position(), p = 0, w = bitSize;
-    if (b == w-1) return null;                                                  // At the end so no next bit
-    for(int i : range(bitSize))                                                 // Traverse down through the tree
-     {int B = b+1;                                                              // Is there a path down from the next bit?
-      if (B < w && getBitNC(new Pos(p+B)))                                      // Found next up bit
-       {for(int j : range(i))                                                   // Step down to the leaves
-         {w <<= 1; p -= w; B <<= 1;
-          B  += getBitNC(new Pos(p+B)) ? 0 : 1;                                 // Follow path as low as possible
+    Int b = new Int(Index.position()), w = new Int(bitSize);
+    if (b.eq(new Int(w).sub(1))) return null;                                   // At the end so no next bit
+    final Int n = new Int(), p = new Int(0);                                    // The next element if it exists
+    new For(bitSize)                                                            // Traverse down through the tree
+     {boolean body(int i)                                                       // Traverse down through the tree
+       {Int c = new Int(b).add(1);                                              // Is there a path down from the next bit?
+        if (c.lt(w) && getBitNC(new Pos(new Int(p).add(c).i())))                // Found next up bit
+         {new For(i)                                                            // Step down to the leaves
+           {boolean body(int j)                                                 // Step down to the leaves
+             {w.up(); p.sub(w); c.up();
+              c.add(getBitNC(new Pos(new Int(p).add(c).i())) ? 0 : 1);          // Follow path as low as possible
+              return true;                                                      // Continue the loop
+             }
+           };
+          n.i(c); return false;                                                 // Found the next element
          }
-        return new Pos(B);
+        else
+         {p.add(w); w.down(); if (w.eq(0)) return false; b.down();              // Address next level of bits in tree
+         }
+        return true;                                                            // Continue the loop
        }
-      p += w; w >>>= 1; if (w == 0) break; b >>>= 1;                            // Address next level of bits in tree
-     }
-    return null;                                                                // No alternate path down
+     };
+    return n.valid() ? new Pos(n.i()) : null;                                   // No alternate path down
    }
 
   public Pos prevOne(Pos Index)                                                 // Find the index of the previous set bit below the specified bit
