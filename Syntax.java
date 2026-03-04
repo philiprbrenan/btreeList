@@ -1,3 +1,4 @@
+//jar maven/target/javaparser-1.0.0.jar
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.io.File;
@@ -6,12 +7,13 @@ import com.sun.source.util.*;
 import com.sun.source.tree.*;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreeScanner;
+import java.util.Random;
 
 public class Syntax extends Test
  {public static void parse() throws Exception
    {JavaCompiler                       compiler    = ToolProvider.getSystemJavaCompiler();
     StandardJavaFileManager            fileManager = compiler.getStandardFileManager(null, null, null);
-    Iterable<? extends JavaFileObject> files       = fileManager.getJavaFileObjects(new File("Syntax.java"));
+    Iterable<? extends JavaFileObject> files       = fileManager.getJavaFileObjects(new File("BitSet.java"));
 
     JavacTask task = (JavacTask) compiler.getTask(null, fileManager, null, null, null, files);
 
@@ -60,5 +62,7 @@ public class Syntax extends Test
      {parse();
      }
     catch(Exception e) {say(e);}
+    Random r = new Random();
+    int a = r.nextInt(), b = r.nextInt(), c = a + b;
    }
  }
