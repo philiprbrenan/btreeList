@@ -35,9 +35,9 @@ abstract public class BitSet extends Test                                       
   abstract byte getByte(Int Index);                                             // Read byte from storage backend.
 
   public static Int bytesNeeded(Int Size, boolean One, boolean Zero)            // Number of bytes needed for a bit set of specified size with or without the ability to locate zeroes and ones
-   {final Int s = new Int(1); if (Zero) s.inc(); if (One) s.inc();              // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
-    final int b = Byte.SIZE;
-    return new Int((b - 1 + s.i() * nextPowerOfTwo(Size.i())) / b);
+   {final int b = Byte.SIZE;
+          int s = 1; if (Zero) s++; if (One) s++;                               // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
+    return new Int((b - 1 + s * nextPowerOfTwo(Size.i())) / b);
    }
 
   public static Int bytesNeeded(Int Size)                                       // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
@@ -149,6 +149,8 @@ abstract public class BitSet extends Test                                       
     if (zero) {if (Value) setZeroPath(Index); else clearZeroPath(Index);}
    }
 
+  private void nextLayerDown(Int b, Int p, Int w){b.down(); p.add(w); w.down();}// Next layer down in a bit tree
+
   private void setOnePath(Pos Index)                                            // Set bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
     if (bitSize.eq(0)) return;                                                  // Tree with no entries
@@ -163,7 +165,7 @@ abstract public class BitSet extends Test                                       
              {final Pos q = new Pos(p.Add(b));                                  // Position in One tree
               if (getBitNC(q)) return false; else setBitNC(q, true);            // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
              }
-            b.down(); p.add(w); w.down();                                       // Next level up
+            nextLayerDown(b, p, w);                                             // Next level up
             return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
@@ -189,9 +191,9 @@ abstract public class BitSet extends Test                                       
                 !getBitNC(new Pos(Q.Inc())))
              {final Pos r = new Pos(q);
               if (!getBitNC(r)) return false;                                   // Bit is already correctly set so there is nothing more to do
-                   setBitNC(r, false);                                          // Clear set bit along path to root
+                   setBitNC(r,         false);                                  // Clear set bit along path to root
              }
-            b.down(); p.add(w); w.down();                                       // Next layer
+            nextLayerDown(b, p, w);                                             // Next layer
             return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
@@ -218,7 +220,7 @@ abstract public class BitSet extends Test                                       
          {boolean body(int Index)
            {final Pos q = new Pos(p.Add(b));
             if (getBitNC(q)) return false; else setBitNC(q, true);              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-            b.down(); p.add(w); w.down();                                       // Next layer
+            nextLayerDown(b, p, w);                                       // Next layer
             return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
@@ -245,7 +247,7 @@ abstract public class BitSet extends Test                                       
         new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
            {final Int P = p.dup();                                              // Child layer becomes parent layer
-            b.down(); p.add(w); w.down();                                       // Index of bit in child layer, position in child layer, width of child layer
+            nextLayerDown(b, p, w);                                       // Index of bit in child layer, position in child layer, width of child layer
             Int Q = P.Add(b).add(b);
             if ( getBitNC(new Pos(Q)) ||
                  getBitNC(new Pos(Q.Inc()))) return false;                      // There is a one in the upper row so we do not need to clear further down
@@ -295,7 +297,7 @@ abstract public class BitSet extends Test                                       
    {checkOne();
     checkIndex(Index.position());
 
-    final Int b = Index.position();                                    // Position in layer
+    final Int b = Index.position();                                             // Position in layer
     final Int w = bitSize.dup();                                                // Width of layer
     final Int p = new Int(0);                                                   // Offset of layer
     final Int n = new Int();                                                    // The next element if it exists, offset of layer
@@ -316,7 +318,7 @@ abstract public class BitSet extends Test                                       
           n.i(c); return false;                                                 // Found the next element
          }
         else
-         {p.add(w); w.down(); if (w.eq(0)) return false; b.down();              // Address next level of bits further down in One tree
+         {nextLayerDown(b, p, w); if (w.eq(0)) return false;                    // Address next level of bits further down in One tree
          }
         return true;                                                            // Continue the loop
        }
@@ -331,15 +333,15 @@ abstract public class BitSet extends Test                                       
     if (b.eq(0)) return null;                                                   // At the start so no previous bit
 
     for(int i : range(bitSize))                                                 // Much more than necessary
-     {Int B = b.Dec();                                                 // Is there a path down from the next bit?
-      if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                      // Found next down bit
+     {Int B = b.Dec();                                                          // Is there a path down from the next bit?
+      if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                               // Found next down bit
        {for(int j : range(i))                                                   // Step down to the leaves
          {w.up(); p.sub(w); B.up();
-          B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);            // Follow path as high as possible
+          B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                     // Follow path as high as possible
          }
         return new Pos(B);
        }
-      p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
+      nextLayerDown(b, p, w); if (w.eq(0)) break;                               // Address next level of bits in tree
      }
     return null;                                                                // No alternate path down
    }
@@ -365,22 +367,22 @@ abstract public class BitSet extends Test                                       
     final Int b = Index.position();
     final Int w = bitSize.Down();
     final Int p = addressZeroTree();
-    if (b.eq(bitSize.Dec())) return null;                              // Last bit so no next bit
+    if (b.eq(bitSize.Dec())) return null;                                       // Last bit so no next bit
     final Pos q = new Pos(b.Inc());
     if (!getBit(q))    return q;                                                // Next bit is zero
     if (bitSize.eq(2)) return null;                                             // No more bits to check
     b.down();                                                                   // First layer of zero tree bits
 
     for(int i : range(bitSize))                                                 // Search down through the zero bit tree
-     {Int B = b.Inc();                                                    // Is there a path down from the next bit?
+     {Int B = b.Inc();                                                          // Is there a path down from the next bit?
       if (B.ge(w)) return null;                                                 // Nothing beyond to search so no next zero
-      if (getBitNC(new Pos(p.Add(B))))                                    // Found next up bit
+      if (getBitNC(new Pos(p.Add(B))))                                          // Found next up bit
        {for(int j : range(i))                                                   // Step down to the leaves
          {w.up(); p.sub(w); B.up();
-          B.add(getBitNC(new Pos(p.Add(B))) ? 0 : 1);                     // Follow path as low as possible
+          B.add(getBitNC(new Pos(p.Add(B))) ? 0 : 1);                           // Follow path as low as possible
          }
         final Int C = B.Add(B);
-        return new Pos(C.Add(getBit(new Pos(C)) ? 1 : 0));                // Next zero bit from actual bits
+        return new Pos(C.Add(getBit(new Pos(C)) ? 1 : 0));                      // Next zero bit from actual bits
        }
       p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
      }
@@ -393,7 +395,7 @@ abstract public class BitSet extends Test                                       
 
     Int b = Index.position();
     if (b.eq(0))                return null;                                    // First bit so no prev bit
-    if (!getBit(new Pos(b.Dec()))) return new Pos(b.Dec());   // Prev bit is zero
+    if (!getBit(new Pos(b.Dec()))) return new Pos(b.Dec());                     // Prev bit is zero
     if (bitSize.eq(2))          return null;                                    // No more bits to check
 
     Int w = bitSize.Down(), p = addressZeroTree(); b.down();                    // First layer of zero tree bits
@@ -497,7 +499,7 @@ abstract public class BitSet extends Test                                       
 
   static BitSet test_bits(Int N, boolean One, boolean Zero)                     // Create test bitset.
    {final BitSet.Spec spec = new BitSet.Spec(N, One, Zero);                     // Allocate backing storage.
-    final byte[]     bytes = new byte[spec.byteSize().i()];                          // Allocate backing storage.
+    final byte[]     bytes = new byte[spec.byteSize().i()];                     // Allocate backing storage.
 
     final BitSet b = new BitSet(spec)                                           // Create a bit set
      {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}           // Backend write.
@@ -699,8 +701,8 @@ Zero:
     final byte[]bytes = new byte[spec.byteSize().i()];                          // Allocate backing storage.
 
     final BitSet b = new BitSet(spec)                                           // Create a bit set using the backing storage
-     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}               // Backend write.
-      byte getByte(Int Index)      {return bytes[Index.i()];}                       // Backend read.
+     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}           // Backend write.
+      byte getByte(Int Index)      {return bytes[Index.i()];}                   // Backend read.
      };
 
     b.initialize();
