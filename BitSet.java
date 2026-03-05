@@ -398,16 +398,16 @@ abstract public class BitSet extends Test                                       
     if (!getBit(new Pos(b.Dec()))) return new Pos(b.Dec());   // Prev bit is zero
     if (bitSize.eq(2))          return null;                                    // No more bits to check
 
-    Int w = bitSize.Down(), p = addressZeroTree(); b.down();           // First layer of zero tree bits
+    Int w = bitSize.Down(), p = addressZeroTree(); b.down();                    // First layer of zero tree bits
 
     for(int i : range(bitSize))                                                 // Search down through the zero bit tree
-     {Int B = b.Dec();                                                 // Is there a path down from the next bit?
+     {Int B = b.Dec();                                                          // Is there a path down from the next bit?
       if (B.lt(0)) return null;                                                 // Nothing prior to search so no prev zero
-      if (getBitNC(new Pos(p.Add(B))))                                 // Found next up bit
+      if (getBitNC(new Pos(p.Add(B))))                                          // Found next up bit
        {for(int j : range(i))                                                   // Step down to the leaves
          {b.up();                                                               // Position of next level in tree
           w.up(); p.sub(w); B.up();
-          B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                  // Follow path as high as possible
+          B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                           // Follow path as high as possible
          }
         final Int BB = B.Add(B), CC = BB.dup();
         return new Pos(BB.add(!getBit(new Pos(CC.inc())) ? 1 : 0));             // Next zero bit from actual bits
@@ -428,7 +428,7 @@ abstract public class BitSet extends Test                                       
 
   public boolean integrity(boolean Stop)                                        // Do an integrity check on the bitset to detect corruption and stop on failures unless specified otherwise
    {final BitSet.Spec spec = new BitSet.Spec(bitSize, one, zero);               // Specify bit set
-    final byte[]bytes = new byte[spec.byteSize().i()];                          // Allocate backing storage.
+    final byte[]     bytes = new byte[spec.byteSize().i()];                     // Allocate backing storage.
 
     final BitSet b = new BitSet(spec)                                           // Create an identical bitset
      {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}           // Backend write.
@@ -499,7 +499,7 @@ abstract public class BitSet extends Test                                       
 
   static BitSet test_bits(Int N, boolean One, boolean Zero)                     // Create test bitset.
    {final BitSet.Spec spec = new BitSet.Spec(N, One, Zero);                     // Allocate backing storage.
-    final byte[]bytes = new byte[spec.byteSize().i()];                          // Allocate backing storage.
+    final byte[]     bytes = new byte[spec.byteSize().i()];                          // Allocate backing storage.
 
     final BitSet b = new BitSet(spec)                                           // Create a bit set
      {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}           // Backend write.
