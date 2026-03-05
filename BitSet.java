@@ -335,12 +335,12 @@ abstract public class BitSet extends Test                                       
     final Int R = new Int();                                                    // Result
     new For(bitSize)                                                            // Much more than necessary
      {boolean body(int i)                                                       // Much more than necessary
-       {final Int B = b.Dec();                                                        // Is there a path down from the next bit?
+       {final Int B = b.Dec();                                                  // Is there a path down from the next bit?
         if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                             // Found next down bit
-         {new For(i)                                                 // Step down to the leaves
+         {new For(i)                                                            // Step down to the leaves
            {boolean body(int j)                                                 // Step down to the leaves
              {w.up(); p.sub(w); B.up();
-              B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                   // Follow path as high as possible
+              B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                 // Follow path as high as possible
               return true;
              }
            };
@@ -381,20 +381,26 @@ abstract public class BitSet extends Test                                       
     b.down();                                                                   // First layer of zero tree bits
 
     final Int R = new Int();                                                    // Result
-    for(int i : range(bitSize))                                                 // Search down through the zero bit tree
-     {Int B = b.Inc();                                                          // Is there a path down from the next bit?
-      if (B.ge(w)) break;                                                       // Nothing beyond to search so no next zero
-      if (getBitNC(new Pos(p.Add(B))))                                          // Found next up bit
-       {for(int j : range(i))                                                   // Step down to the leaves
-         {w.up(); p.sub(w); B.up();
-          B.add(getBitNC(new Pos(p.Add(B))) ? 0 : 1);                           // Follow path as low as possible
+    new For(bitSize)                                                            // Search down through the zero bit tree
+     {boolean body(int i)                                                       // Search down through the zero bit tree
+       {Int B = b.Inc();                                                        // Is there a path down from the next bit?
+        if (B.ge(w)) return false;                                              // Nothing beyond to search so no next zero
+        if (getBitNC(new Pos(p.Add(B))))                                        // Found next up bit
+         {new For(i)                                                            // Step down to the leaves
+           {boolean body(int j)                                                 // Step down to the leaves
+             {w.up(); p.sub(w); B.up();
+              B.add(getBitNC(new Pos(p.Add(B))) ? 0 : 1);                       // Follow path as low as possible
+              return true;
+             }
+           };
+          final Int C = B.Add(B);
+          R.i(C.Add(getBit(new Pos(C)) ? 1 : 0));                               // Next zero bit from actual bits
+          return false;                                                         // Next zero bit from actual bits
          }
-        final Int C = B.Add(B);
-        R.i(C.Add(getBit(new Pos(C)) ? 1 : 0));                                 // Next zero bit from actual bits
-        break;                                                                  // Next zero bit from actual bits
+        p.add(w); w.down(); if (w.eq(0)) return false; b.down();                // Address next level of bits in tree
+        return true;
        }
-      p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
-     }
+     };
     return R.valid() ? new Pos(R) : null;                                       // Result if found
    }
 
