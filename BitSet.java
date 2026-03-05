@@ -16,7 +16,9 @@ abstract public class BitSet extends Test                                       
 
   public BitSet(Int BitSize, boolean One, boolean Zero)                         // Constructor
    {bitSize = new Int(nextPowerOfTwo(BitSize.i()));                             // Record size.
-    new If (bitSize.lt(0)) {void Then() {stop("Size must be zero or positive");}};// Validate size.
+    new If (bitSize.lt(0))                                                      // Validate size.
+     {void Then() {stop("Size must be zero or positive");}
+     };
     zero = Zero;                                                                // Locate zeroes efficiently
     one = One;                                                                  // Locate ones efficiently
     byteSize = bytesNeeded(BitSize, one, zero);                                 // A tree of bits
@@ -584,7 +586,7 @@ Zero:
    4   45    1 |  1
 """);
     for (int i : range(N))
-     {b.set(b.new Pos(i), (i / 4) % 2 == 0);
+     { b.set(b.new Pos(i), (i / 4) % 2 == 0);
      }
 
     //stop(b);
