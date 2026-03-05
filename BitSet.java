@@ -329,20 +329,24 @@ abstract public class BitSet extends Test                                       
   public Pos prevOne(Pos Index)                                                 // Find the index of the previous set bit below the specified bit
    {checkOne();
     checkIndex(Index.position());
-    Int b = Index.position(), p = new Int(0), w = bitSize.dup();
+    final Int b = Index.position(), p = new Int(0), w = bitSize.dup();
     if (b.eq(0)) return null;                                                   // At the start so no previous bit
+
     final Int R = new Int();                                                    // Result
-    for(int i : range(bitSize))                                                 // Much more than necessary
-     {Int B = b.Dec();                                                          // Is there a path down from the next bit?
-      if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                               // Found next down bit
-       {for(int j : range(i))                                                   // Step down to the leaves
-         {w.up(); p.sub(w); B.up();
-          B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                     // Follow path as high as possible
+    new For(bitSize)                                                            // Much more than necessary
+     {boolean body(int i)                                                       // Much more than necessary
+       {final Int B = b.Dec();                                                        // Is there a path down from the next bit?
+        if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                             // Found next down bit
+         {for(int j : range(i))                                                 // Step down to the leaves
+           {w.up(); p.sub(w); B.up();
+            B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                   // Follow path as high as possible
+           }
+          R.i(B); return false;                                                 // Save the result and exit
          }
-        R.i(B); break;                                                          // Save the result and exit
+        nextLayerDown(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
+        return true;
        }
-      nextLayerDown(b, p, w); if (w.eq(0)) break;                               // Address next level of bits in tree
-     }
+     };
     return R.valid() ? new Pos(R) : null;                                       // Result if found
    }
 
@@ -412,8 +416,8 @@ abstract public class BitSet extends Test                                       
           w.up(); p.sub(w); B.up();
           B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                           // Follow path as high as possible
          }
-        final Int BB = B.Add(B), CC = BB.dup();
-        R.i(BB.add(!getBit(new Pos(CC.inc())) ? 1 : 0));                        // Next zero bit from actual bits
+        final Int BB = B.Add(B), CC = BB.dup().inc();
+        R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));                              // Next zero bit from actual bits
         break;                                                                  // Next zero bit from actual bits
        }
       p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
