@@ -679,13 +679,13 @@ class Tree extends Test                                                         
      {final ByteBuffer bytes;                                                   // Bytes used by this set of slots
 
       final BitSet usedSlotsBits = new BitSet(us)                               // Bit storage for used slots
-       {void setByte(Int I, byte V) {bytes.put(posUsedSlots + I.i(), V);}           // Save used slot bit
-        byte getByte(Int I)  {return bytes.get(posUsedSlots + I.i());}              // Get used slot bit
+       {void setByte(Int I, byte V) {bytes.put(posUsedSlots + I.i(), V);}       // Save used slot bit
+        byte getByte(Int I)  {return bytes.get(posUsedSlots + I.i());}          // Get used slot bit
        };
 
       final BitSet usedRefsBits  = new BitSet(ur)                               // Bit storage for used refs
-       {void setByte(Int I, byte V) {bytes.put(posUsedRefs + I.i(), V);}            // Save used ref bit
-        byte getByte(Int I)  {return bytes.get(posUsedRefs + I.i());}               // Get used ref bit
+       {void setByte(Int I, byte V) {bytes.put(posUsedRefs + I.i(), V);}        // Save used ref bit
+        byte getByte(Int I)  {return bytes.get(posUsedRefs + I.i());}           // Get used ref bit
        };
 
       void copySlots(Memory Memory)                                             // Copy a set of slots from the specified memory into this memory
