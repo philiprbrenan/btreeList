@@ -302,6 +302,8 @@ public class Test                                                               
      return r;
     }
 
+   static int[]range(Int Limit) {return range(Limit.i());}                      // Range of integers
+
    static int[]range(int Start, int Limit)                                      // Range of integers
     {final int[]r = new int[Limit - Start];
      for (int i = 0, j = Start; i < r.length; i++) r[i] = j++;
@@ -1048,6 +1050,7 @@ public class Test                                                               
      }
 
     For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
+    For(Int End) {this(0, End.i());}                                            // Execute the loop the specified number of times as long as it returns true
 
     boolean body(int Index) { return false;}                                    // Body of the for loop: return flse to terminate execution of the loop
    }
@@ -1083,6 +1086,8 @@ public class Test                                                               
     Int  add (Int I) {        I.x();       return add(I.i());}
     Int  sub (int I) {i   -= I; x(); X();  return this;}
     Int  sub (Int I) {        I.x();       return sub(I.i());}
+    Int  inc ()      {          x();       return add(1);}
+    Int  dec ()      {          x();       return sub(1);}
     Int  up  ()      {i  <<= 1; x();       return this;}
     Int  down()      {i >>>= 1; x();       return this;}
 
