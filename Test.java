@@ -1064,9 +1064,15 @@ public class Test                                                               
   static class Int                                                              // An integer that can be passed as a parameter to a method and modified there-in
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
+    private String  n = null;                                                   // An optional name for this variable
     boolean valid()  {return v;}
-    Int      (int I) {i = I;   v = true;}
-    Int      (Int I) {i = I.i; v = I.v;}
+
+    Int           (int I) {       i = I;   v = true;}
+    Int           (Int I) {       i = I.i; v = I.v;}
+    Int (String N)        {n = N;}
+    Int (String N, int I) {n = N; i = I;   v = true;}
+    Int (String N, Int I) {n = N; i = I.i; v = I.v;}
+
     Int      ()      {}
     void x   ()      {if (!v) stop("Int has not been set yet");}
     void X   ()      {v = true;}
@@ -1094,7 +1100,9 @@ public class Test                                                               
     boolean ge(Int e){        e.x();       return ge(e.i);}
     boolean gt(Int e){        e.x();       return gt(e.i);}
 
-    public String toString()              {return ""+i;}
+    public String toString()
+     {return (n == null ? "" : n+"=")+i;
+     }
    }
 
 //D1 Testing                                                                    // Test expected output against got output
