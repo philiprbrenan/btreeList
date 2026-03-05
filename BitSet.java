@@ -402,9 +402,10 @@ abstract public class BitSet extends Test                                       
 
     Int w = bitSize.Down(), p = addressZeroTree(); b.down();                    // First layer of zero tree bits
 
+    final Int R = new Int();                                                    // Result
     for(int i : range(bitSize))                                                 // Search down through the zero bit tree
      {Int B = b.Dec();                                                          // Is there a path down from the next bit?
-      if (B.lt(0)) return null;                                                 // Nothing prior to search so no prev zero
+      if (B.lt(0)) break;                                                       // Nothing prior to search so no prev zero
       if (getBitNC(new Pos(p.Add(B))))                                          // Found next up bit
        {for(int j : range(i))                                                   // Step down to the leaves
          {b.up();                                                               // Position of next level in tree
@@ -412,11 +413,12 @@ abstract public class BitSet extends Test                                       
           B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                           // Follow path as high as possible
          }
         final Int BB = B.Add(B), CC = BB.dup();
-        return new Pos(BB.add(!getBit(new Pos(CC.inc())) ? 1 : 0));             // Next zero bit from actual bits
+        R.i(BB.add(!getBit(new Pos(CC.inc())) ? 1 : 0));                        // Next zero bit from actual bits
+        break;                                                                  // Next zero bit from actual bits
        }
       p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
      }
-    return null;                                                                // No alternate path down
+    return R.valid() ? new Pos(R) : null;                                       // Result if found
    }
 
 //D2 Full or empty                                                              // Check whether a bit set is full or empty
