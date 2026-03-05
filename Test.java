@@ -1078,7 +1078,7 @@ public class Test                                                               
 
     Int      ()      {}
     void x   ()      {if (!v) stop("Int has not been set yet");}
-    void X   ()      {v = true;}
+    Int  X   ()      {v = true; return this;}
     int  i   ()      {          x();       return i;}
     Int  i   (int I) {i    = I;      X();  return this;}
     Int  i   (Int I) {i    = I.i; v = I.v; return this;}
@@ -1091,6 +1091,16 @@ public class Test                                                               
     Int  dec ()      {          x();       return sub(1);}
     Int  up  ()      {i  <<= 1; x();       return this;}
     Int  down()      {i >>>= 1; x();       return this;}
+
+    Int  Add (int I) {return dup().add(I);}
+    Int  Add (Int I) {return dup().add(I);}
+    Int  Add2(Int I) {return dup().add2(I);}
+    Int  Sub (int I) {return dup().sub(I);}
+    Int  Sub (Int I) {return dup().sub(I);}
+    Int  Inc ()      {return dup().add(1);}
+    Int  Dec ()      {return dup().sub(1);}
+    Int  Up  ()      {return dup().up();}
+    Int  Down()      {return dup().down();}
 
     boolean eq(int e){          x();       return i == e;}
     boolean ne(int e){          x();       return i != e;}
