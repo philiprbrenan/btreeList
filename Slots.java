@@ -517,21 +517,21 @@ public class Slots extends Test                                                 
     final int posType      = 0;
     final int posSlots     = posType      + Integer.BYTES;
     final int posUsedSlots = posSlots     + Integer.BYTES * N;
-    final int posUsedRefs  = posUsedSlots + BitSet.bytesNeeded(N);              // Amount of space needed to store these bits in bytes
-    final int posKeys      = posUsedRefs  + BitSet.bytesNeeded(R);
+    final int posUsedRefs  = posUsedSlots + BitSet.bytesNeeded(new Int(N)).i(); // Amount of space needed to store these bits in bytes
+    final int posKeys      = posUsedRefs  + BitSet.bytesNeeded(new Int(R)).i();
     final int posName      = posKeys      + Integer.BYTES * R;
     final int size         = posName      + Integer.BYTES;
    }
 
   class Memory extends SlotsMemoryPositions                                     // Memory required to hold bytes
    {final ByteBuffer bytes;                                                     // Bytes used by this set of slots
-    final BitSet usedSlotsBits = new BitSet(numberOfSlots())                    // Bit storage for used slots
-     {void setByte(int Index, byte Value) {bytes.put(posUsedSlots+Index,Value);}// Save used slot bit
-      byte getByte(int Index)      {return bytes.get(posUsedSlots+Index);}      // Get used slot bit
+    final BitSet usedSlotsBits = new BitSet(new Int(numberOfSlots()))                    // Bit storage for used slots
+     {void setByte(Int Index, byte Value) {bytes.put(posUsedSlots+Index.i(),Value);}// Save used slot bit
+      byte getByte(Int Index)      {return bytes.get(posUsedSlots+Index.i());}      // Get used slot bit
      };
-    final BitSet usedRefsBits  = new BitSet(numberOfRefs)                       // Bit storage for used refs
-     {void setByte(int Index, byte Value) {bytes.put(posUsedRefs+Index, Value);}// Save used ref bit
-      byte getByte(int Index)      {return bytes.get(posUsedRefs+Index);}       // Get used ref bit
+    final BitSet usedRefsBits  = new BitSet(new Int(numberOfRefs))                       // Bit storage for used refs
+     {void setByte(Int Index, byte Value) {bytes.put(posUsedRefs+Index.i(), Value);}// Save used ref bit
+      byte getByte(Int Index)      {return bytes.get(posUsedRefs+Index.i());}       // Get used ref bit
      };
 
     void copySlots(Memory Memory)                                               // Copy a set of slots from the specified memory into this memory
