@@ -310,7 +310,7 @@ abstract public class BitSet extends Test                                       
         if (c.lt(w) && getBitNC(new Pos(p.Add(c))))                             // Found next up bit
          {new For(i)                                                            // Step down to the leaves
            {boolean body(int j)                                                 // Step down to the leaves
-             {w.up(); p.sub(w); c.up();                                         // Move up to next layer
+             {moveUpOneLayer(c, p, w);                                          // Move up to next layer
               c.add(getBitNC(new Pos(p.Add(c))) ? 0 : 1);                       // Follow path as low as possible
               return true;                                                      // Continue the loop
              }
