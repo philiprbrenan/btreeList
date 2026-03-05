@@ -475,7 +475,7 @@ abstract public class BitSet extends Test                                       
        }
       p.add(r);
       r.down();
-      if (r.eq(0)) break;                                                        // Reached the leaves
+      if (r.eq(0)) break;                                                       // Reached the leaves
      }
 
     if (one && zero)                                                            // Print zero search tree block if both one and zero bit trees are present
