@@ -1102,19 +1102,19 @@ public class Test                                                               
     Int  Up  ()      {return dup().up();}
     Int  Down()      {return dup().down();}
 
-    boolean eq(int e){          x();       return i == e;}
-    boolean ne(int e){          x();       return i != e;}
-    boolean le(int e){          x();       return i <= e;}
-    boolean lt(int e){          x();       return i <  e;}
-    boolean ge(int e){          x();       return i >= e;}
-    boolean gt(int e){          x();       return i >  e;}
+    boolean eq(int e){  x(); return i == e;}
+    boolean ne(int e){  x(); return i != e;}
+    boolean le(int e){  x(); return i <= e;}
+    boolean lt(int e){  x(); return i <  e;}
+    boolean ge(int e){  x(); return i >= e;}
+    boolean gt(int e){  x(); return i >  e;}
 
-    boolean eq(Int e){        e.x();       return eq(e.i);}
-    boolean ne(Int e){        e.x();       return ne(e.i);}
-    boolean le(Int e){        e.x();       return le(e.i);}
-    boolean lt(Int e){        e.x();       return lt(e.i);}
-    boolean ge(Int e){        e.x();       return ge(e.i);}
-    boolean gt(Int e){        e.x();       return gt(e.i);}
+    boolean eq(Int e){e.x(); return eq(e.i);}
+    boolean ne(Int e){e.x(); return ne(e.i);}
+    boolean le(Int e){e.x(); return le(e.i);}
+    boolean lt(Int e){e.x(); return lt(e.i);}
+    boolean ge(Int e){e.x(); return ge(e.i);}
+    boolean gt(Int e){e.x(); return gt(e.i);}
 
     Int dup() {final Int I = new Int(i); I.n = n;      return I;}
     Int zero(){final Int I = new Int(0); I.n = "zero"; return I;}
