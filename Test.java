@@ -1116,8 +1116,7 @@ public class Test                                                               
     boolean ge(Int e){e.x(); return ge(e.i);}
     boolean gt(Int e){e.x(); return gt(e.i);}
 
-    Int dup() {final Int I = new Int(i); I.n = n;      return I;}
-    Int zero(){final Int I = new Int(0); I.n = "zero"; return I;}
+    Int dup() {final Int I = new Int(i); I.n = n; return I;}
 
     public String toString()
      {return (n == null ? "" : n+"=")+i;
