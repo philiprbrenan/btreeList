@@ -339,7 +339,7 @@ abstract public class BitSet extends Test                                       
         if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                             // Found next down bit
          {new For(i)                                                            // Step down to the leaves
            {boolean body(int j)                                                 // Step down to the leaves
-             {w.up(); p.sub(w); B.up();
+             {moveUpOneLayer(B, p, w);
               B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                 // Follow path as high as possible
               return true;
              }
