@@ -186,7 +186,7 @@ abstract public class BitSet extends Test                                       
             final Int Q = p.Add2(B);
             if (B.Up().inc().lt(w) &&                                  // Check both bits in the previous row are off
                 !getBitNC(new Pos(Q)) &&
-                !getBitNC(new Pos(new Int(Q).inc())))
+                !getBitNC(new Pos(Q.Inc())))
              {final Pos r = new Pos(q);
               if (!getBitNC(r)) return false;                                   // Bit is already correctly set so there is nothing more to do
                    setBitNC(r, false);                                          // Clear set bit along path to root
@@ -210,8 +210,8 @@ abstract public class BitSet extends Test                                       
 
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
      {final Int p = addressZeroTree();                                          // Address zero bit tree
-      final Int b = new Int(Index.position()).down();                           // Position in layer
-      final Int w = new Int(bitSize         ).down();                           // Width of this layer
+      final Int b = Index.position().Down();                                    // Position in layer
+      final Int w = bitSize         .Down();                                    // Width of this layer
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
@@ -283,8 +283,8 @@ abstract public class BitSet extends Test                                       
 
   public Pos firstOne()                                                         // Find the index of the first set bit
    {checkOne();
-    return getBit(new Pos(new Int(0))) ? new Pos(new Int(0)) :
-                                 nextOne(new Pos(new Int(0)));
+    final Pos p = new Pos(new Int(0));
+    return getBit(p) ? p : nextOne(p);
    }
 
   public Pos lastOne()                                                          // Find the index of the last set bit
@@ -364,7 +364,7 @@ abstract public class BitSet extends Test                                       
   public Pos nextZero(Pos Index)                                                // Find the index of the next set bit above the specified bit
    {checkZero();
     checkIndex(Index.position());
-    final Int b = new Int(Index.position());
+    final Int b = Index.position();
     final Int w = bitSize.Down();
     final Int p = addressZeroTree();
     if (b.eq(bitSize.Dec())) return null;                              // Last bit so no next bit
@@ -455,7 +455,7 @@ abstract public class BitSet extends Test                                       
 
   public String toString()                                                      // Print levels in bit tree
    {final StringBuilder s = new StringBuilder();
-    Int p = new Int(0), r = new Int(bitSize);
+    Int p = new Int(0), r = bitSize.dup();
 
     s.append("BitSet          ");                                               // Title
     for   (int i : range(bitSize)) s.append(f(" %2d", i));                      // Positions of bits
