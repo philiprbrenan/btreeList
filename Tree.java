@@ -236,13 +236,13 @@ class Tree extends Test                                                         
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-        return p != null ? new Slot(p.position()) : null;
+        return p != null ? new Slot(p.position().i()) : null;
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-        return p != null ? new Slot(p.position()) : null;
+        return p != null ? new Slot(p.position().i()) : null;
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
@@ -360,26 +360,26 @@ class Tree extends Test                                                         
       final BitSet.Pos p = s.prevZero(s.new Pos(Q));                            // Prev free slot
       final BitSet.Pos n = s.nextZero(s.new Pos(Q));                            // Next free slot
       if (p == null && n == null) stop("No more free slots");
-      if (p == null && n != null) return n.position()-Q;                        // Next free slot because no prev free slot
-      if (p != null && n == null) return p.position()-Q;                        // Prev free slot because no next free slot
-      final int P = p.position() - Q, N = n.position() - Q;                     // Relative positions
+      if (p == null && n != null) return n.position().i()-Q;                    // Next free slot because no prev free slot
+      if (p != null && n == null) return p.position().i()-Q;                    // Prev free slot because no next free slot
+      final int P = p.position().i() - Q, N = n.position().i() - Q;             // Relative positions
       return -P <= N ? P : N;                                                   // Choose nearest slow favoring lower slot if they are both the same distance away
      }
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
      {final BitSet.Pos p = memory.usedSlotsBits.firstOne();
-      return p != null ? new Slot(p.position()) : null;
+      return p != null ? new Slot(p.position().i()) : null;
      }
 
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
      {final BitSet.Pos p = memory.usedSlotsBits.lastOne();
-      return p != null ? new Slot(p.position()) : null;
+      return p != null ? new Slot(p.position().i()) : null;
      }
 
     slot locateFirstEmptyRef()                                                  // Absolute position of the first empty reference
      {final BitSet.Pos p = memory.usedRefsBits.firstZero();
       if (p != null)
-       {final slot s = new slot(p.position());
+       {final slot s = new slot(p.position().i());
         return s;
        }
       return null;
@@ -662,14 +662,14 @@ class Tree extends Test                                                         
     class SlotsMemoryPositions                                                  // Positions of fields in memory
      {final int N = numberOfSlots(), R = numberOfRefs;
 
-      final BitSet.Spec us = new BitSet.Spec(N, true, true);                    // Specification of bit set for used slots
-      final BitSet.Spec ur = new BitSet.Spec(R, true, true);                    // Specification of bit set for references
+      final BitSet.Spec us = new BitSet.Spec(new Int(N), true, true);           // Specification of bit set for used slots
+      final BitSet.Spec ur = new BitSet.Spec(new Int(R), true, true);           // Specification of bit set for references
 
       final int posType      = 0;
       final int posSlots     = posType      + Integer.BYTES;
       final int posUsedSlots = posSlots     + Integer.BYTES * N;
-      final int posUsedRefs  = posUsedSlots + us.byteSize();
-      final int posKeys      = posUsedRefs  + ur.byteSize();
+      final int posUsedRefs  = posUsedSlots + us.byteSize().i();
+      final int posKeys      = posUsedRefs  + ur.byteSize().i();
       final int posName      = posKeys      + Integer.BYTES * R;
       final int size         = posName      + Integer.BYTES;
      }
@@ -678,13 +678,13 @@ class Tree extends Test                                                         
      {final ByteBuffer bytes;                                                   // Bytes used by this set of slots
 
       final BitSet usedSlotsBits = new BitSet(us)                               // Bit storage for used slots
-       {void setByte(int I, byte V) {bytes.put(posUsedSlots + I, V);}           // Save used slot bit
-        byte getByte(int I)  {return bytes.get(posUsedSlots + I);}              // Get used slot bit
+       {void setByte(Int I, byte V) {bytes.put(posUsedSlots + I.i(), V);}           // Save used slot bit
+        byte getByte(Int I)  {return bytes.get(posUsedSlots + I.i());}              // Get used slot bit
        };
 
       final BitSet usedRefsBits  = new BitSet(ur)                               // Bit storage for used refs
-       {void setByte(int I, byte V) {bytes.put(posUsedRefs + I, V);}            // Save used ref bit
-        byte getByte(int I)  {return bytes.get(posUsedRefs + I);}               // Get used ref bit
+       {void setByte(Int I, byte V) {bytes.put(posUsedRefs + I.i(), V);}            // Save used ref bit
+        byte getByte(Int I)  {return bytes.get(posUsedRefs + I.i());}               // Get used ref bit
        };
 
       void copySlots(Memory Memory)                                             // Copy a set of slots from the specified memory into this memory
