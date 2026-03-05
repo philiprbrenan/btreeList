@@ -184,7 +184,7 @@ abstract public class BitSet extends Test                                       
            {final Int B = b.Down();
             final Int q = p.Add(w).add(B);
             final Int Q = p.Add2(B);
-            if (B.Up().inc().lt(w) &&                                  // Check both bits in the previous row are off
+            if (B.Up().inc().lt(w) &&                                           // Check both bits in the previous row are off
                 !getBitNC(new Pos(Q)) &&
                 !getBitNC(new Pos(Q.Inc())))
              {final Pos r = new Pos(q);
@@ -200,7 +200,7 @@ abstract public class BitSet extends Test                                       
    }
 
   private Int addressZeroTree()                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {final Int p = bitSize.dup(); if (one) p.add(bitSize).dec();              // Address first bit of zero bit tree
+   {final Int p = bitSize.dup(); if (one) p.add(bitSize).dec();                 // Address first bit of zero bit tree
     return p;
    }
 
@@ -231,26 +231,24 @@ abstract public class BitSet extends Test                                       
 
     new Runnable()                                                              // Set bits along the path to the actual bit in the One tree
      {final Int p = addressZeroTree();                                          // First child layer is the first layer of the zero bit tree
-      final Int w = bitSize.Down();                                       // Width of child layer
-      final Int b = Index.position().Down();                              // Index of bit in child layer
-      final Int B = b.Up();                                               // Position in layer above
+      final Int w = bitSize.Down();                                             // Width of child layer
+      final Int b = Index.position().Down();                                    // Index of bit in child layer
+      final Int B = b.Up();                                                     // Position in layer above
 
       public void run()
        {if (!getBitNC(new Pos(B)) ||
-            !getBitNC(new Pos(B.Inc()))) return;                          // Check there is a zero
-        final Pos r = new Pos(p.Add(b));                                  // Position in first layer of Zero tree
+            !getBitNC(new Pos(B.Inc()))) return;                                // Check there is a zero
+        final Pos r = new Pos(p.Add(b));                                        // Position in first layer of Zero tree
         if (!getBitNC(r)) return;                                               // Bit is already correctly set to show no path so there is nothing more to do
              setBitNC(r,  false);                                               // Clear set bit along path to root to show no path
 
         new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
-           {final Int P = p.dup();                                           // Child layer becomes parent layer
-            b.down();                                                           // Index of bit in child layer
-            p.add(w);                                                           // New child layer
-            w.down();                                                           // Child layer width
+           {final Int P = p.dup();                                              // Child layer becomes parent layer
+            b.down(); p.add(w); w.down();                                       // Index of bit in child layer, position in child layer, width of child layer
             Int Q = P.Add(b).add(b);
             if ( getBitNC(new Pos(Q)) ||
-                 getBitNC(new Pos(Q.Inc()))) return false;             // There is a one in the upper row so we do not need to clear further down
+                 getBitNC(new Pos(Q.Inc()))) return false;                      // There is a one in the upper row so we do not need to clear further down
             final Pos r = new Pos(p.Add(b));
             if (!getBitNC(r)) return false;                                     // Bit is already correctly set so there is nothing more to do
                  setBitNC(r,  false);                                           // Clear set bit along path to root
@@ -297,21 +295,21 @@ abstract public class BitSet extends Test                                       
    {checkOne();
     checkIndex(Index.position());
 
-    final Int b = new Int(Index.position());                                    // Position in layer
-    final Int w = bitSize.dup();                                             // Width of layer
+    final Int b = Index.position();                                    // Position in layer
+    final Int w = bitSize.dup();                                                // Width of layer
     final Int p = new Int(0);                                                   // Offset of layer
     final Int n = new Int();                                                    // The next element if it exists, offset of layer
 
-    if (b.eq(w.Sub(1))) return null;                                   // At the end so no next bit
+    if (b.eq(w.Sub(1))) return null;                                            // At the end so no next bit
 
     new For(bitSize)                                                            // Traverse down through the tree
      {boolean body(int i)                                                       // Traverse down through the tree
-       {final Int c = b.Add(1);                                        // Is there a path down from the next bit?
-        if (c.lt(w) && getBitNC(new Pos(p.Add(c))))                    // Found next up bit
+       {final Int c = b.Add(1);                                                 // Is there a path down from the next bit?
+        if (c.lt(w) && getBitNC(new Pos(p.Add(c))))                             // Found next up bit
          {new For(i)                                                            // Step down to the leaves
            {boolean body(int j)                                                 // Step down to the leaves
              {w.up(); p.sub(w); c.up();                                         // Move up to next layer
-              c.add(getBitNC(new Pos(p.Add(c))) ? 0 : 1);              // Follow path as low as possible
+              c.add(getBitNC(new Pos(p.Add(c))) ? 0 : 1);                       // Follow path as low as possible
               return true;                                                      // Continue the loop
              }
            };
