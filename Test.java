@@ -1084,6 +1084,7 @@ public class Test                                                               
     Int  i   (Int I) {i    = I.i; v = I.v; return this;}
     Int  add (int I) {i   += I; x(); X();  return this;}
     Int  add (Int I) {        I.x();       return add(I.i());}
+    Int  add2(Int I) {        I.x();       return add(I.i()*2);}
     Int  sub (int I) {i   -= I; x(); X();  return this;}
     Int  sub (Int I) {        I.x();       return sub(I.i());}
     Int  inc ()      {          x();       return add(1);}
@@ -1104,6 +1105,8 @@ public class Test                                                               
     boolean lt(Int e){        e.x();       return lt(e.i);}
     boolean ge(Int e){        e.x();       return ge(e.i);}
     boolean gt(Int e){        e.x();       return gt(e.i);}
+
+    Int dup() {final Int I = new Int(); I.n = n; I.i = i; I.v = v; return I;}
 
     public String toString()
      {return (n == null ? "" : n+"=")+i;
