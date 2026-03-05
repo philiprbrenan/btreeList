@@ -368,6 +368,8 @@ abstract public class BitSet extends Test                                       
     return !getBit(p) ? p : prevZero(p);
    }
 
+  void moveUpOneLayer(Int B, Int p, Int w) {w.up(); p.sub(w); B.up();}          // Move up one layer in the bit tree
+
   public Pos nextZero(Pos Index)                                                // Find the index of the next set bit above the specified bit
    {checkZero();
     checkIndex(Index.position());
@@ -388,7 +390,7 @@ abstract public class BitSet extends Test                                       
         if (getBitNC(new Pos(p.Add(B))))                                        // Found next up bit
          {new For(i)                                                            // Step down to the leaves
            {boolean body(int j)                                                 // Step down to the leaves
-             {w.up(); p.sub(w); B.up();
+             {moveUpOneLayer(B, p, w);                                          // Move up one layer
               B.add(getBitNC(new Pos(p.Add(B))) ? 0 : 1);                       // Follow path as low as possible
               return true;
              }
@@ -423,8 +425,7 @@ abstract public class BitSet extends Test                                       
         if (getBitNC(new Pos(p.Add(B))))                                        // Found next up bit
          {new For(i)                                                            // Step down to the leaves
            {boolean body(int j)                                                 // Step down to the leaves
-             {b.up();                                                           // Position of next level in tree
-              w.up(); p.sub(w); B.up();
+             {b.up(); moveUpOneLayer(B, p, w);                                  // Move up one layer
               B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                       // Follow path as high as possible
               return true;
              }
