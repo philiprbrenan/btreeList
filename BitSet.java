@@ -337,10 +337,13 @@ abstract public class BitSet extends Test                                       
      {boolean body(int i)                                                       // Much more than necessary
        {final Int B = b.Dec();                                                        // Is there a path down from the next bit?
         if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                             // Found next down bit
-         {for(int j : range(i))                                                 // Step down to the leaves
-           {w.up(); p.sub(w); B.up();
-            B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                   // Follow path as high as possible
-           }
+         {new For(i)                                                 // Step down to the leaves
+           {boolean body(int j)                                                 // Step down to the leaves
+             {w.up(); p.sub(w); B.up();
+              B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                   // Follow path as high as possible
+              return true;
+             }
+           };
           R.i(B); return false;                                                 // Save the result and exit
          }
         nextLayerDown(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
