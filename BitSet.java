@@ -368,10 +368,10 @@ abstract public class BitSet extends Test                                       
     final Int b = new Int(Index.position());
     final Int w = new Int(bitSize).down();
     final Int p = addressZeroTree();
-    if (b.eq(new Int(bitSize).dec()))       return null;                        // Last bit so no next bit
+    if (b.eq(new Int(bitSize).dec())) return null;                              // Last bit so no next bit
     final Pos q = new Pos(new Int(b).inc());
-    if (!getBit(q)) return q;                                                   // Next bit is zero
-    if (bitSize.eq(2))          return null;                                    // No more bits to check
+    if (!getBit(q))    return q;                                                // Next bit is zero
+    if (bitSize.eq(2)) return null;                                             // No more bits to check
     b.down();                                                                   // First layer of zero tree bits
 
     for(int i : range(bitSize))                                                 // Search down through the zero bit tree
@@ -382,9 +382,10 @@ abstract public class BitSet extends Test                                       
          {w.up(); p.sub(w); B.up();
           B.add(getBitNC(new Pos(new Int(p).add(B))) ? 0 : 1);                  // Follow path as low as possible
          }
-        return new Pos(new Int(B).add(B).add(getBit(new Pos(new Int(B).add(B))) ? 1 : 0));                     // Next zero bit from actual bits
+        final Int BB = new Int(B).add(B);
+        return new Pos(new Int(BB).add(getBit(new Pos(BB)) ? 1 : 0));           // Next zero bit from actual bits
        }
-      p.add(w); w.down(); if (w.eq(0)) break; b.down();                            // Address next level of bits in tree
+      p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
      }
     return null;                                                                // No alternate path down
    }
@@ -402,14 +403,15 @@ abstract public class BitSet extends Test                                       
 
     for(int i : range(bitSize))                                                 // Search down through the zero bit tree
      {Int B = new Int(b).dec();                                                 // Is there a path down from the next bit?
-      if (B.lt(0)) return null;                                                   // Nothing prior to search so no prev zero
+      if (B.lt(0)) return null;                                                 // Nothing prior to search so no prev zero
       if (getBitNC(new Pos(new Int(p).add(B))))                                 // Found next up bit
        {for(int j : range(i))                                                   // Step down to the leaves
-         {b.up();                                                              // Position of next level in tree
+         {b.up();                                                               // Position of next level in tree
           w.up(); p.sub(w); B.up();
           B.add(getBitNC(new Pos(new Int(p).add(b))) ? 0 : 1);                  // Follow path as high as possible
          }
-        return new Pos(new Int(B).add(B).add(!getBit(new Pos(new Int(B).add(B).inc())) ? 1 : 0));                  // Next zero bit from actual bits
+        final Int BB = new Int(B).add(B), CC = new Int(BB);
+        return new Pos(BB.add(!getBit(new Pos(CC.inc())) ? 1 : 0));             // Next zero bit from actual bits
        }
       p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
      }
@@ -427,11 +429,11 @@ abstract public class BitSet extends Test                                       
 
   public boolean integrity(boolean Stop)                                        // Do an integrity check on the bitset to detect corruption and stop on failures unless specified otherwise
    {final BitSet.Spec spec = new BitSet.Spec(bitSize, one, zero);               // Specify bit set
-    final byte[]bytes = new byte[spec.byteSize().i()];                              // Allocate backing storage.
+    final byte[]bytes = new byte[spec.byteSize().i()];                          // Allocate backing storage.
 
     final BitSet b = new BitSet(spec)                                           // Create an identical bitset
-     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}               // Backend write.
-      byte getByte(Int Index)      {return bytes[Index.i()];}                       // Backend read.
+     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}           // Backend write.
+      byte getByte(Int Index)      {return bytes[Index.i()];}                   // Backend read.
      };
 
     b.initialize();
@@ -488,7 +490,7 @@ abstract public class BitSet extends Test                                       
         s.append("\n");
         p.add(r);
         r.down();
-        if (r.eq(0)) break;                                                      // Reached the leaves
+        if (r.eq(0)) break;                                                     // Reached the leaves
        }
      }
     return ""+s;
@@ -501,20 +503,20 @@ abstract public class BitSet extends Test                                       
     final byte[]bytes = new byte[spec.byteSize().i()];                          // Allocate backing storage.
 
     final BitSet b = new BitSet(spec)                                           // Create a bit set
-     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}               // Backend write.
-      byte getByte(Int Index)      {return bytes[Index.i()];}                       // Backend read.
+     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}           // Backend write.
+      byte getByte(Int Index)      {return bytes[Index.i()];}                   // Backend read.
      };
     return b;                                                                   // Return test bitset.
    }
 
   static void test_bitSet()                                                     // Test bit manipulation.
-   {final BitSet b = test_bits(new Int(23), true, false);                                // Get test bitset.
+   {final BitSet b = test_bits(new Int(23), true, false);                       // Get test bitset.
     final Int N = b.size();                                                     // Get logical size.
 
-    for (int i = 0; i < N.i(); i++) b.setBit(b.new Pos(new Int(i)), i % 2 == 0);             // Set alternating bits.
+    for (int i = 0; i < N.i(); i++) b.setBit(b.new Pos(new Int(i)), i % 2 == 0);// Set alternating bits.
 
-    ok(b.getBit(b.new Pos(new Int(4))), true);                                           // Verify bit 4.
-    ok(b.getBit(b.new Pos(new Int(5))), false);                                          // Verify bit 5.
+    ok(b.getBit(b.new Pos(new Int(4))), true);                                  // Verify bit 4.
+    ok(b.getBit(b.new Pos(new Int(5))), false);                                 // Verify bit 5.
    }
 
   static void test_prevNext()                                                   // Test tree of searchable one bits
