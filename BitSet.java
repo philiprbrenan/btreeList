@@ -149,7 +149,8 @@ abstract public class BitSet extends Test                                       
     if (zero) {if (Value) setZeroPath(Index); else clearZeroPath(Index);}
    }
 
-  private void nextLayerDown(Int b, Int p, Int w){b.down(); p.add(w); w.down();}// Next layer down in a bit tree
+  private void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();} // Next layer down in a bit tree
+  private void moveUpOneLayer  (Int B, Int p, Int w) {w.up();   p.sub(w); B.up()  ;} // Move up one layer in the bit tree
 
   private void setOnePath(Pos Index)                                            // Set bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
@@ -165,7 +166,7 @@ abstract public class BitSet extends Test                                       
              {final Pos q = new Pos(p.Add(b));                                  // Position in One tree
               if (getBitNC(q)) return false; else setBitNC(q, true);            // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
              }
-            nextLayerDown(b, p, w);                                             // Next level up
+            moveDownOneLayer(b, p, w);                                             // Next level up
             return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
@@ -193,7 +194,7 @@ abstract public class BitSet extends Test                                       
               if (!getBitNC(r)) return false;                                   // Bit is already correctly set so there is nothing more to do
                    setBitNC(r,         false);                                  // Clear set bit along path to root
              }
-            nextLayerDown(b, p, w);                                             // Next layer
+            moveDownOneLayer(b, p, w);                                             // Next layer
             return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
@@ -220,7 +221,7 @@ abstract public class BitSet extends Test                                       
          {boolean body(int Index)
            {final Pos q = new Pos(p.Add(b));
             if (getBitNC(q)) return false; else setBitNC(q, true);              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-            nextLayerDown(b, p, w);                                             // Next layer
+            moveDownOneLayer(b, p, w);                                             // Next layer
             return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
@@ -247,7 +248,7 @@ abstract public class BitSet extends Test                                       
         new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
            {final Int P = p.dup();                                              // Child layer becomes parent layer
-            nextLayerDown(b, p, w);                                             // Index of bit in child layer, position in child layer, width of child layer
+            moveDownOneLayer(b, p, w);                                             // Index of bit in child layer, position in child layer, width of child layer
             Int Q = P.Add(b).add(b);
             if ( getBitNC(new Pos(Q)) ||
                  getBitNC(new Pos(Q.Inc()))) return false;                      // There is a one in the upper row so we do not need to clear further down
@@ -318,7 +319,7 @@ abstract public class BitSet extends Test                                       
           n.i(c); return false;                                                 // Found the next element
          }
         else
-         {nextLayerDown(b, p, w); if (w.eq(0)) return false;                    // Address next level of bits further down in One tree
+         {moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                    // Address next level of bits further down in One tree
          }
         return true;                                                            // Continue the loop
        }
@@ -346,7 +347,7 @@ abstract public class BitSet extends Test                                       
            };
           R.i(B); return false;                                                 // Save the result and exit
          }
-        nextLayerDown(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
+        moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
         return true;
        }
      };
@@ -367,8 +368,6 @@ abstract public class BitSet extends Test                                       
     final Pos p = new Pos(l);
     return !getBit(p) ? p : prevZero(p);
    }
-
-  void moveUpOneLayer(Int B, Int p, Int w) {w.up(); p.sub(w); B.up();}          // Move up one layer in the bit tree
 
   public Pos nextZero(Pos Index)                                                // Find the index of the next set bit above the specified bit
    {checkZero();
@@ -399,7 +398,7 @@ abstract public class BitSet extends Test                                       
           R.i(C.Add(getBit(new Pos(C)) ? 1 : 0));                               // Next zero bit from actual bits
           return false;                                                         // Next zero bit from actual bits
          }
-        nextLayerDown(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
+        moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                   // Address next level of bits in tree
         return true;
        }
      };
@@ -434,7 +433,7 @@ abstract public class BitSet extends Test                                       
           R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));                            // Next zero bit from actual bits
           return false;                                                         // Next zero bit from actual bits
          }
-        nextLayerDown(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
+        moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
         return true;
        }
      };
