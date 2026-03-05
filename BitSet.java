@@ -35,8 +35,9 @@ abstract public class BitSet extends Test                                       
   abstract byte getByte(Int Index);                                             // Read byte from storage backend.
 
   public static Int bytesNeeded(Int Size, boolean One, boolean Zero)            // Number of bytes needed for a bit set of specified size with or without the ability to locate zeroes and ones
-   {Int s = new Int(1); if (Zero) s.inc(); if (One) s.inc();                                     // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
-    return new Int((Byte.SIZE - 1 + s.i() * nextPowerOfTwo(Size.i())) / Byte.SIZE);
+   {final Int s = new Int(1); if (Zero) s.inc(); if (One) s.inc();              // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
+    final int b = Byte.SIZE;
+    return new Int((b - 1 + s.i() * nextPowerOfTwo(Size.i())) / b);
    }
 
   public static Int bytesNeeded(Int Size)                                       // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
@@ -57,7 +58,8 @@ abstract public class BitSet extends Test                                       
      };
     new If(Index.ge(bitSize))
      {void Then()
-       {stop("BitSet index cannot be greater than or equal to:", Index, bitSize);
+       {stop("BitSet index cannot be greater than or equal to:",
+             Index, bitSize);
        }
      };
    }
@@ -121,7 +123,7 @@ abstract public class BitSet extends Test                                       
     final Int offset = bitOffset(Index.position());                             // Compute bit offset.
 
     final byte b = getByte(bIndex);                                             // Load byte.
-    return ((b >>> offset.i()) & 1) != 0;                                           // Extract bit.
+    return ((b >>> offset.i()) & 1) != 0;                                       // Extract bit.
    }
 
   void setBit(Pos Index, boolean Value)                                         // Set bit value.
@@ -154,7 +156,7 @@ abstract public class BitSet extends Test                                       
     if (bitSize.eq(0)) return;                                                  // Tree with no entries
 
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
-     {Int b = Index.position(), p = new Int(0), w = new Int(bitSize);                    // Position in level, level, width
+     {final Int b = Index.position(), p = new Int(0), w = new Int(bitSize);     // Position in level, level, width
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
@@ -173,22 +175,26 @@ abstract public class BitSet extends Test                                       
 
   private void clearOnePath(Pos Index)                                          // Clear bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
-    if (bitSize.eq(0)) return;                                                   // Tree with no entries
+    if (bitSize.eq(0)) return;                                                  // Tree with no entries
 
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
-     {Int b = Index.position(), p = new Int(0), w = new Int(bitSize);                             // Position in level, level, width
+     {final Int b = Index.position(), p = new Int(0), w = new Int(bitSize);     // Position in level, level, width
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
-           {final Int B = new Int(b).down(), q = new Int(p).add(w).add(B), Q = new Int(p).add(B).add(B);
-            if (new Int(B).add(B).inc().lt(w) && !getBitNC(new Pos(Q)) && !getBitNC(new Pos(new Int(Q).inc())))  // Check both bits in the previous row are off
+           {final Int B = new Int(b).down();
+            final Int q = new Int(p).add(w).add(B);
+            final Int Q = new Int(p).add(B).add(B);
+            if (new Int(B).add(B).inc().lt(w) &&                                // Check both bits in the previous row are off
+                !getBitNC(new Pos(Q)) &&
+                !getBitNC(new Pos(new Int(Q).inc())))
              {final Pos r = new Pos(q);
               if (!getBitNC(r)) return false;                                   // Bit is already correctly set so there is nothing more to do
                    setBitNC(r, false);                                          // Clear set bit along path to root
              }
-            b.down(); p.add(w); w.down();                                         // Next layer
-            return w.gt(0);                                                       // As long as we are in a valid level
+            b.down(); p.add(w); w.down();                                       // Next layer
+            return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
        }
@@ -196,7 +202,7 @@ abstract public class BitSet extends Test                                       
    }
 
   private Int addressZeroTree()                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {Int p = new Int(bitSize); if (one) p.add(bitSize).dec();                                   // Address first bit of zero bit tree
+   {final Int p = new Int(bitSize); if (one) p.add(bitSize).dec();              // Address first bit of zero bit tree
     return p;
    }
 
@@ -205,17 +211,17 @@ abstract public class BitSet extends Test                                       
     if (bitSize.eq(0)) return;                                                  // Tree with no entries
 
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
-     {Int p = addressZeroTree();                                                // Address zero bit tree
-      Int b = new Int(Index.position()).down();                                 // Position in layer
-      Int w = new Int(bitSize         ).down();                                 // Width of this layer
+     {final Int p = addressZeroTree();                                          // Address zero bit tree
+      final Int b = new Int(Index.position()).down();                           // Position in layer
+      final Int w = new Int(bitSize         ).down();                           // Width of this layer
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
            {final Pos q = new Pos(new Int(p).add(b));
             if (getBitNC(q)) return false; else setBitNC(q, true);              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-            b.down(); p.add(w); w.down();                                         // Next layer
-            return w.gt(0);                                                       // As long as we are in a valid level
+            b.down(); p.add(w); w.down();                                       // Next layer
+            return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
        }
@@ -226,28 +232,30 @@ abstract public class BitSet extends Test                                       
    {if (bitSize.eq(0)) return;                                                  // Tree with no entries
 
     new Runnable()                                                              // Set bits along the path to the actual bit in the One tree
-     {Int p = addressZeroTree();                                                // First child layer is the first layer of the zero bit tree
-      Int w = new Int(bitSize).down();                                          // Width of child layer
-      Int b = new Int(Index.position()).down();                                 // Index of bit in child layer
+     {final Int p = addressZeroTree();                                          // First child layer is the first layer of the zero bit tree
+      final Int w = new Int(bitSize).down();                                    // Width of child layer
+      final Int b = new Int(Index.position()).down();                           // Index of bit in child layer
 
       public void run()
-       {if (!getBitNC(new Pos(new Int(b).add(b))) || !getBitNC(new Pos(new Int(b).add(b).inc()))) return;       // Check there is a zero
-        final Pos r = new Pos(new Int(p).add(b));                                             // Position in first layer of Zero tree
+       {if (!getBitNC(new Pos(new Int(b).add(b))) ||
+            !getBitNC(new Pos(new Int(b).add(b).inc()))) return;                // Check there is a zero
+        final Pos r = new Pos(new Int(p).add(b));                               // Position in first layer of Zero tree
         if (!getBitNC(r)) return;                                               // Bit is already correctly set to show no path so there is nothing more to do
              setBitNC(r,  false);                                               // Clear set bit along path to root to show no path
 
         new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
-           {Int P = new Int(p);                                                          // Child layer becomes parent layer
-            b.down();                                                          // Index of bit in child layer
-            p.add(w);                                                          // New child layer
+           {final Int P = new Int(p);                                           // Child layer becomes parent layer
+            b.down();                                                           // Index of bit in child layer
+            p.add(w);                                                           // New child layer
             w.down();                                                           // Child layer width
             Int Q = new Int(P).add(b).add(b);
-            if ( getBitNC(new Pos(Q)) || getBitNC(new Pos(new Int(Q).inc()))) return false;  // There is a one in the upper row so we do not need to clear further down
+            if ( getBitNC(new Pos(Q)) ||
+                 getBitNC(new Pos(new Int(Q).inc()))) return false;             // There is a one in the upper row so we do not need to clear further down
             final Pos r = new Pos(new Int(p).add(b));
             if (!getBitNC(r)) return false;                                     // Bit is already correctly set so there is nothing more to do
                  setBitNC(r,  false);                                           // Clear set bit along path to root
-            return w.gt(0);                                                       // As long as we are in a valid level
+            return w.gt(0);                                                     // As long as we are in a valid level
            }
          };
        }
@@ -263,7 +271,7 @@ abstract public class BitSet extends Test                                       
      };
 
     if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
-     {final Int p = addressZeroTree();                                              // Position in level, level, width
+     {final Int p = addressZeroTree();                                          // Position in level, level, width
       new For(bitSize)                                                          // For loop to set bits along path in One tree to actual bit
        {boolean body(int i)
          {setBitNC(new Pos(new Int(p).add(i)), true); return true;
@@ -276,7 +284,8 @@ abstract public class BitSet extends Test                                       
 
   public Pos firstOne()                                                         // Find the index of the first set bit
    {checkOne();
-    return getBit(new Pos(new Int(0))) ? new Pos(new Int(0)) : nextOne(new Pos(new Int(0)));
+    return getBit(new Pos(new Int(0))) ? new Pos(new Int(0)) :
+                                 nextOne(new Pos(new Int(0)));
    }
 
   public Pos lastOne()                                                          // Find the index of the last set bit
@@ -322,18 +331,18 @@ abstract public class BitSet extends Test                                       
    {checkOne();
     checkIndex(Index.position());
     Int b = Index.position(), p = new Int(0), w = new Int(bitSize);
-    if (b.eq(0)) return null;                                                    // At the start so no previous bit
+    if (b.eq(0)) return null;                                                   // At the start so no previous bit
 
     for(int i : range(bitSize))                                                 // Much more than necessary
-     {Int B = new Int(b).dec();                                                              // Is there a path down from the next bit?
-      if (b.gt(0) && getBitNC(new Pos(new Int(p).add(B))))                                      // Found next down bit
+     {Int B = new Int(b).dec();                                                 // Is there a path down from the next bit?
+      if (b.gt(0) && getBitNC(new Pos(new Int(p).add(B))))                      // Found next down bit
        {for(int j : range(i))                                                   // Step down to the leaves
          {w.up(); p.sub(w); B.up();
-          B.add(getBitNC(new Pos(new Int(p).add(B).inc())) ? 1 : 0);                               // Follow path as high as possible
+          B.add(getBitNC(new Pos(new Int(p).add(B).inc())) ? 1 : 0);            // Follow path as high as possible
          }
         return new Pos(B);
        }
-      p.add(w); w.down(); if (w.eq(0)) break; b.down();                            // Address next level of bits in tree
+      p.add(w); w.down(); if (w.eq(0)) break; b.down();                         // Address next level of bits in tree
      }
     return null;                                                                // No alternate path down
    }
@@ -342,21 +351,26 @@ abstract public class BitSet extends Test                                       
 
   public Pos firstZero()                                                        // Find the index of the first set bit
    {checkZero();
-    return !getBit(new Pos(new Int(0))) ? new Pos(new Int(0)) : nextZero(new Pos(new Int(0)));
+    final Pos p = new Pos(new Int(0));
+    return !getBit(p) ? p : nextZero(p);
    }
 
   public Pos lastZero()                                                         // Find the index of the last set bit
    {checkZero();
     final Int l = new Int(bitSize).dec();
-    return !getBit(new Pos(l)) ? new Pos(l) : prevZero(new Pos(l));
+    final Pos p = new Pos(l);
+    return !getBit(p) ? p : prevZero(p);
    }
 
   public Pos nextZero(Pos Index)                                                // Find the index of the next set bit above the specified bit
    {checkZero();
     checkIndex(Index.position());
-    Int b = new Int(Index.position()), w = new Int(bitSize).down(), p = addressZeroTree();
+    final Int b = new Int(Index.position());
+    final Int w = new Int(bitSize).down();
+    final Int p = addressZeroTree();
     if (b.eq(new Int(bitSize).dec()))       return null;                        // Last bit so no next bit
-    if (!getBit(new Pos(new Int(b).inc()))) return new Pos(new Int(b).inc());   // Next bit is zero
+    final Pos q = new Pos(new Int(b).inc());
+    if (!getBit(q)) return q;                                                   // Next bit is zero
     if (bitSize.eq(2))          return null;                                    // No more bits to check
     b.down();                                                                   // First layer of zero tree bits
 
