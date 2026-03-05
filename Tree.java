@@ -637,14 +637,15 @@ class Tree extends Test                                                         
 
     public String toString()                                                    // Dump the slots
      {final StringBuilder s = new StringBuilder();
-      final int N = numberOfSlots(), R = numberOfRefs;
+      final int[]N = range(numberOfSlots());
+      final int[]R = range(numberOfRefs);
       s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",                // Title line
-                              name().at(), type(), R));
-      s.append("positions: ");   for (int i : range(N)) s.append(f(" "+formatKey, i));
-      s.append("\nslots    : "); for (int i : range(N)) s.append(f(" "+formatKey, slots(new Slot(i)).value()));
-      s.append("\nusedSlots: "); for (int i : range(N)) s.append(             usedSlots(new Slot(i)) ? "   X" : "   .");
-      s.append("\nusedRefs : "); for (int i : range(R)) s.append(             usedRefs (new slot(i)) ? "   X" : "   .");
-      s.append("\nkeys     : "); for (int i : range(R)) s.append(f(" "+formatKey,   key(new slot(i)) != null ? key(new slot(i)).value() : 0));
+                              name().at(), type(), numberOfRefs));
+      s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
+      s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, slots(new Slot(i)).value()));
+      s.append("\nusedSlots: "); for (int i : N) s.append(             usedSlots(new Slot(i)) ? "   X" : "   .");
+      s.append("\nusedRefs : "); for (int i : R) s.append(             usedRefs (new slot(i)) ? "   X" : "   .");
+      s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey,   key(new slot(i)) != null ? key(new slot(i)).value() : 0));
       return ""+s+"\n";
      }
 
