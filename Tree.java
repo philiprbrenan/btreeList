@@ -1276,7 +1276,7 @@ class Tree extends Test                                                         
          }
        };
       super.compactRight();
-      for (int i = 0; i < R; i++) dataDirect(i, d[i]);
+      new For(R) {boolean body(int i) {dataDirect(i, d[i]); return true;}};
      }
 
     void mergeData(Key Key, Branch Left, Branch Right)                          // Merge the data from the compacted left and right slots
