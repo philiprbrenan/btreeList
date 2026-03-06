@@ -55,23 +55,21 @@ class Tree extends Test                                                         
   int numberOfNodes() {return numberOfNodes;}                                   // Maximum number of nodes in tree
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
-  static final class Key                                                        // A key
-   {final int value;                                                            // The value of the key
-    Key(  int Value)  {value = Value;}
-    int       value() {return  value;}
+  static final class Key extends Int                                            // A key
+   {Key(  int Value)  {i(Value);}
+    int       value() {return i();}
     public String toString()
-     {return "Key : "+value;
+     {return "Key : "+value();
      }
    }
 
   static Key Key(int Value) {return new Key(Value);}                            // Create a key with the specified value
 
-  static final class Data                                                       // An item of data associated with a key
-   {final int value;                                                            // The value of the data item
-    Data(int Value)  {value = Value;}
-    int      value() {return  value;}
+  static final class Data extends Int                                           // An item of data associated with a key
+   {Data(int Value) {i(Value);}
+    int     value() {return i();}
     public String toString()
-     {return "Data: "+value;
+     {return "Data: "+value();
      }
    }
 
