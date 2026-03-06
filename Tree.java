@@ -1046,11 +1046,21 @@ class Tree extends Test                                                         
      {final ByteBuffer bytes;                                                   // Byte buffer holding memory of this leaf
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
-       {for (int i : range(size)) bytes.put(i, Memory.bytes.get(i));
+       {new For(size)
+         {boolean body(int i)
+           {bytes.put(i, Memory.bytes.get(i));
+            return true;
+           }
+         };
        }
 
       void invalidate()                                                         // Invalidate the leaf in such a way that it is unlikely to work well if subsequently used
-       {for (int i : range(size)) bytes.put(i, (byte)-1);
+       {new For(size)
+         {boolean body(int i)
+           {bytes.put(i, (byte)-1);
+            return true;
+           }
+         };
        }
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
