@@ -289,14 +289,16 @@ abstract public class BitSet extends Test                                       
        }
      };
 
-    if (zero)                                                                   // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
-     {final Int p = addressZeroTree();                                          // Position in level, level, width
-      new For(bitSize)                                                          // For loop to set bits along path in One tree to actual bit
-       {boolean body(int i)
-         {setBitNC(new Pos(p.Add(i)), true); return true;
-         }
-       };
-     }
+    new If (zero)                                                               // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
+     {void Then()
+       {final Int p = addressZeroTree();                                        // Position in level, level, width
+        new For(bitSize)                                                        // For loop to set bits along path in One tree to actual bit
+         {boolean body(int i)
+           {setBitNC(new Pos(p.Add(i)), true); return true;
+           }
+         };
+       }
+     };
    }
 
 //D2 Locate Ones                                                                // Find the first, last, next, previous bit set to one
