@@ -1217,9 +1217,8 @@ class Tree extends Test                                                         
     int splittingKey()                                                          // Splitting key from a branch
      {if (!full()) stop("Branch not full");                                     // The branch must be full if we are going to split it
       final Int k = new Int(0);                                                 // Splitting key
-      final int S = numberOfSlots();
       final Int p = new Int(0);                                                 // Find the splitting key
-      new For(S)                                                                // Scan for splitting keys
+      new For(numberOfSlots())                                                  // Scan for splitting keys
        {boolean body(int i)
          {final Slot I = new Slot(i);
           if (usedSlots(I))
