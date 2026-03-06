@@ -162,12 +162,16 @@ abstract public class BitSet extends Test                                       
           public void run()                                                     // Set bits along the path to the actual bit in the One tree
            {new For(bitSize)                                                    // Step from root to leaf
              {boolean body(int Index)
-               {if (p.ne(0))                                                    // Not on the actual bits
+               {final Int d = new Int();                                        // Complete early if we found a bit that does not need setting
+                if (p.ne(0))                                                    // Not on the actual bits
                  {final Pos q = new Pos(p.Add(b));                              // Position in One tree
-                  if (getBitNC(q)) return false; else setBitNC(q, true);        // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+                  new If (getBitNC(q))                                          // Is the bit already set
+                   {void Then() {d.i(1);}                                       // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+                    void Else() {setBitNC(q, true);}                            // Flip the bit and continue
+                   };
                  }
                 moveDownOneLayer(b, p, w);                                      // Next level up
-                return w.gt(0);                                                 // As long as we are in a valid level
+                return !d.valid() && w.gt(0);                                   // As long as we are in a valid level
                }
              };
            }
@@ -192,15 +196,17 @@ abstract public class BitSet extends Test                                       
                 final Int q = p.Add(w).add(B);
                 final Int Q = p.Add2(B);
                 final Int d = new Int();                                        // Cannot return across serbeal methodsNo forther action required after
-                if (B.Up().inc().lt(w) &&                                       // Check both bits in the previous row are off
+                new If (B.Up().inc().lt(w) &&                                   // Check both bits in the previous row are off
                     !getBitNC(new Pos(Q)) &&
                     !getBitNC(new Pos(Q.Inc())))
-                 {final Pos r = new Pos(q);
-                  new If (!getBitNC(r))
-                   {void Then() {d.i(1);}                                       // Bit is already correctly set so there is nothing more to do
-                    void Else() {setBitNC(r, false);}                           // Clear set bit along path to root
-                   };
-                 }
+                 {void Then()
+                   {final Pos r = new Pos(q);
+                    new If (!getBitNC(r))
+                     {void Then() {d.i(1);}                                     // Bit is already correctly set so there is nothing more to do
+                      void Else() {setBitNC(r, false);}                         // Clear set bit along path to root
+                     };
+                   }
+                 };
                 moveDownOneLayer(b, p, w);                                      // Next layer
                 return !d.valid()&& w.gt(0);                                    // As long as we are in a valid level
                }
