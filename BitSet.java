@@ -212,7 +212,8 @@ abstract public class BitSet extends Test                                       
    }
 
   private Int addressZeroTree()                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {final Int p = bitSize.dup(); if (one) p.add(bitSize).dec();                 // Address first bit of zero bit tree
+   {final Int p = bitSize.dup();
+    new If (one) {void Then() {p.add(bitSize).dec();}};                         // Address first bit of zero bit tree
     return p;
    }
 
@@ -330,6 +331,7 @@ abstract public class BitSet extends Test                                       
     new For(bitSize)                                                            // Traverse down through the tree
      {boolean body(int i)                                                       // Traverse down through the tree
        {final Int c = b.Add(1);                                                 // Is there a path down from the next bit?
+        final Int d = new Int();                                                // Whether we are done yet
         if (c.lt(w) && getBitNC(new Pos(p.Add(c))))                             // Found next up bit
          {new For(i)                                                            // Step down to the leaves
            {boolean body(int j)                                                 // Step down to the leaves
@@ -338,12 +340,12 @@ abstract public class BitSet extends Test                                       
               return true;                                                      // Continue the loop
              }
            };
-          n.i(c); return false;                                                 // Found the next element
+          n.i(c); d.i(1);                                                       // Found the next element
          }
         else
-         {moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                    // Address next level of bits further down in One tree
+         {moveDownOneLayer(b, p, w); if (w.eq(0)) d.i(1);                       // Address next level of bits further down in One tree
          }
-        return true;                                                            // Continue the loop
+        return !d.valid();                                                            // Continue the loop
        }
      };
     return n.valid() ? new Pos(n) : null;                                       // No alternate path down
