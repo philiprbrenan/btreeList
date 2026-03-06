@@ -270,13 +270,14 @@ abstract public class BitSet extends Test                                       
          {boolean body(int Index)
            {final Int P = p.dup();                                              // Child layer becomes parent layer
             moveDownOneLayer(b, p, w);                                          // Index of bit in child layer, position in child layer, width of child layer
-            final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
             Int Q = P.Add(b).add(b);
+
+            final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
             new  If ( getBitNC(new Pos(Q)) ||
-                 getBitNC(new Pos(Q.Inc())))
+                      getBitNC(new Pos(Q.Inc())))
              {void Then() {d.i(1);}                                             // There is a one in the upper row so we do not need to clear further down
-              void Else()
-               {final Pos r = new Pos(p.Add(b));
+              void Else()                                                       // Need to show that there are no ones in the upper row
+               {final Pos r = new Pos(p.Add(b));                                // Bit to set
                 new If (!getBitNC(r))
                  {void Then() {d.i(1);}                                         // Bit is already correctly set so there is nothing more to do
                   void Else() {setBitNC(r,  false);}                            // Clear set bit along path to root
