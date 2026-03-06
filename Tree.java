@@ -1157,8 +1157,12 @@ class Tree extends Test                                                         
     Branch duplicate()                                                          // Duplicate a branch
      {final Branch d = new Branch();
       d.copySlots(this);                                                        // Copy slots
-      final int R = numberOfRefs();
-      for (int i : range(R)) d.memory.data(i, memory.data(i));                  // Copy used data
+      new For(numberOfRefs())                                                   // Copy used data
+       {boolean body(int i)
+         {d.memory.data(i, memory.data(i));
+          return true;
+         }
+       };
       d.top(top());
       return d;
      }
@@ -1176,28 +1180,31 @@ class Tree extends Test                                                         
     Split splitRight(Branch Right)                                              // Split a left branch into an existing right branch
      {if (!full()) return null;                                                 // Only full branches can be split
       final int Count = splitSize();
-      int s  = 0;                                                               // Count slots used
-      Key sk = null;                                                            // Splitting key
+      final Int s     = new Int(0);                                             // Count slots used
+      Ref<Key>  sk    = new Ref<>();                                            // Splitting key
 
-      for (int i : range(numberOfSlots()))                                      // Each slot
-       {final Slot I = new Slot(i);                                             // Slot is in use
-        if (usedSlots(I))                                                       // Slot is in use
-         {if (s < Count)                                                        // Still in left branch
-           {Right.clearSlotAndRef(I);                                           // Free the entry from the right branch as it is being used in the left branch
-            s++;                                                                // Number of entries active in left branch
+      new For (numberOfSlots())                                                 // Each slot
+       {boolean body(int i)
+         {final Slot I = new Slot(i);                                           // Slot is in use
+          if (usedSlots(I))                                                     // Slot is in use
+           {if (s.lt(Count))                                                    // Still in left branch
+             {Right.clearSlotAndRef(I);                                         // Free the entry from the right branch as it is being used in the left branch
+              s.inc();                                                          // Number of entries active in left branch
+             }
+            else if (s.eq(Count))                                               // Splitting key
+             {sk.set(keys(I));
+              top(data(I));
+                    clearSlotAndRef(I);
+              Right.clearSlotAndRef(I);
+              s.inc();                                                          // Number of entries active in left branch
+             }
+            else clearSlotAndRef(I);                                            // Clear slot being used in right branch
            }
-          else if (s == Count)                                                  // Splitting key
-           {sk = keys(I);
-            top(data(I));
-                  clearSlotAndRef(I);
-            Right.clearSlotAndRef(I);
-            s++;                                                                // Number of entries active in left branch
-           }
-          else clearSlotAndRef(I);                                              // Clear slot being used in right branch
+          return true;
          }
-       }                                                                        // The new right branch
+       };                                                                        // The new right branch
       redistribute(); Right.redistribute();
-      return new Split(sk, this, Right);
+      return new Split(sk.get(), this, Right);
      }
 
     Split splitLeft()                                                           // Split a right branch into a new left branch
