@@ -1277,11 +1277,14 @@ class Tree extends Test                                                         
 
     void mergeData(Key Key, Branch Left, Branch Right)                          // Merge the data from the compacted left and right slots
      {final Branch l = Left, r = Right;
-      for (int i : range(maxBranchSize))                                        // Each slot
-       {final slot J = new slot(i);
-        if      (l.usedRefs(J)) memory.data(i, l.memory.data(i));               // Merge from left first
-        else if (r.usedRefs(J)) memory.data(i, r.memory.data(i));               // Merge from right last
-       }
+      new For(maxBranchSize)                                                    // Each slot
+       {boolean body(int i)
+         {final slot J = new slot(i);
+          if      (l.usedRefs(J)) memory.data(i, l.memory.data(i));             // Merge from left first
+          else if (r.usedRefs(J)) memory.data(i, r.memory.data(i));             // Merge from right last
+          return true;
+         }
+       };
       insert(Key, l.top()); top(r.top());                                       // Insert left top
      }
 
