@@ -1358,12 +1358,15 @@ class Tree extends Test                                                         
      }
 
     int count()                                                                 // Count the number of entries under this branch
-     {int n = 0;
-      for  (int i : range(numberOfSlots()))                                     // Each slot
-       {final Slot I = new Slot(i);
-        if (usedSlots(I)) n += count(data(I));
-       }
-      return n + count(top());                                                  // Count entries below top
+     {final Int n = new Int(0);
+      new For (numberOfSlots())                                                 // Each slot
+       {boolean body(int i)
+         {final Slot I = new Slot(i);
+          if (usedSlots(I)) n.add(count(data(I)));
+          return true;
+         }
+       };
+      return n.i() + count(top());                                              // Count entries below top
      }
 
 //D2 Memory                                                                     // Memory for a branch
