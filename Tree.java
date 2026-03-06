@@ -584,27 +584,28 @@ class Tree extends Test                                                         
 
       Locate(Key Key)                                                           // Locate the slot containing the search key if possible.
        {if (empty()) {none(); return;}                                          // Empty so their search key cannot be found
-        Slot a = locateFirstUsedSlot(), b = locateLastUsedSlot();               // Lower limit, upper limit
-        if ( a.eq(Key)) {found(a); return;}                                     // Found at the start of the range
-        if ( b.eq(Key)) {found(b); return;}                                     // Found at the end of the range
-        if ( a.le(Key)) {below(a); all = true; return;}                         // Smaller than any key
-        if (!b.le(Key)) {above(b); all = true; return;}                         // Greater than any key
+        final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                   // Lower limit
+        final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                   // Upper limit
+        if ( a.get().eq(Key)) {found(a.get()); return;}                         // Found at the start of the range
+        if ( b.get().eq(Key)) {found(b.get()); return;}                         // Found at the end of the range
+        if ( a.get().le(Key)) {below(a.get()); all = true; return;}             // Smaller than any key
+        if (!b.get().le(Key)) {above(b.get()); all = true; return;}             // Greater than any key
 
         for (int i : range(numberOfSlots()))                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
-         {final Slot M = new Slot((a.value() + b.value()) / 2);                 // Desired mid point - but there might not be a slot in use at this point
+         {final Slot M = new Slot((a.get().value() + b.get().value()) / 2);     // Desired mid point - but there might not be a slot in use at this point
           final Slot A = M.locatePrevUsedSlot();                                // Occupied slot on or preceding mid point
           final Slot B = M.locateNextUsedSlot();                                // Occupied slot on or succeeding mid point
-          final int Ap = A.value(), ap = a.value(),                             // New and current limits of range
-                    Bp = B.value(), bp = b.value();
+          final int Ap = A.value(), ap = a.get().value(),                             // New and current limits of range
+                    Bp = B.value(), bp = b.get().value();
 
-          if      (Ap != ap && A.ge(Key)) a = A;                                // Make sure that the new range is tighter than the existing one
-          else if (Ap != bp && A.le(Key)) b = A;
-          else if (Bp != ap && B.ge(Key)) a = B;
-          else if (Bp != bp && B.le(Key)) b = B;
+          if      (Ap != ap && A.ge(Key)) a.set(A);                                // Make sure that the new range is tighter than the existing one
+          else if (Ap != bp && A.le(Key)) b.set(A);
+          else if (Bp != ap && B.ge(Key)) a.set(B);
+          else if (Bp != bp && B.le(Key)) b.set(B);
           else                                                                  // The slots must be adjacent
-           {if (a.eq(Key)) {found(a); return;};                                 // Found the search key at the lower end
-            if (b.eq(Key)) {found(b); return;};                                 // Found the search key at the upper end
-            below(b);
+           {if (a.get().eq(Key)) {found(a.get()); return;};                                 // Found the search key at the lower end
+            if (b.get().eq(Key)) {found(b.get()); return;};                                 // Found the search key at the upper end
+            below(b.get());
             return;
            }                                                                    // New mid point
          }
