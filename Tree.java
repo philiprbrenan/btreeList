@@ -1250,14 +1250,18 @@ class Tree extends Test                                                         
      }
 
     void compactLeft()                                                          // Compact the branch to the left
-     {final int    N = numberOfSlots(), R = numberOfRefs();
+     {final int R = numberOfRefs();
       final Slots[]d = new Slots[R];
-      for (int i = 0, p = 0; i < N; i++)
-       {final Slot I = new Slot(i);
-        if (usedSlots(I)) d[p++] = data(I);
-       }
+      final Int p = new Int(0);
+      new For(numberOfSlots())
+       {boolean body(int i)
+         {final Slot I = new Slot(i);
+          if (usedSlots(I)) {d[p.i()] = data(I); p.inc();}
+          return true;
+         }
+       };
       super.compactLeft();
-      for (int i : range(R)) dataDirect(i, d[i]);
+      new For(R) {boolean body(int i) {dataDirect(i, d[i]); return true;}};
      }
 
     void compactRight()                                                         // Compact the branch to the right
