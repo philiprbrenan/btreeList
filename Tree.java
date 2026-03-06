@@ -971,15 +971,21 @@ class Tree extends Test                                                         
     void compactLeft()                                                          // Compact the leaf to the left
      {final Data[]d = new Data[numberOfRefs()];
       final Int p = new Int(0);
-      new For(numberOfSlots())
+      new For(numberOfSlots())                                                  // Copy leaf data
        {boolean body(int i)
          {final Slot I = new Slot(i);
           if (usedSlots(I)) {d[p.i()] = data(slots(I)); p.inc();}
           return true;
          }
        };
-      super.compactLeft();
-      for (int i : range(numberOfRefs())) data(new slot(i), d[i]);
+      super.compactLeft();                                                      // Compact slots
+
+      new For(numberOfRefs())                                                   // Copy compacted leaf data
+       {boolean body(int i)
+         {data(new slot(i), d[i]);
+          return true;
+         }
+       };
      }
 
     void compactRight()                                                         // Compact the leaf to the right
@@ -990,8 +996,8 @@ class Tree extends Test                                                         
        {final Slot I = new Slot(i);
         if (usedSlots(I)) d[p--] = data(slots(I));
        }
-      super.compactRight();
-      for (int i : range(numberOfRefs())) data(new slot(i), d[i]);
+      super.compactRight();                                                     // Compact slots
+      new For(R) {boolean body(int i) {data(new slot(i), d[i]); return true;}}; // Copy compacted leaf data
      }
 
     void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
