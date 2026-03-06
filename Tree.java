@@ -288,16 +288,16 @@ class Tree extends Test                                                         
       if (f != null) usedSlots(f, false);
      }
 
-    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I.value()))); clearSlots(I.value());} // Remove a key from the slots
-    slot           slots(Slot I) {return  new slot(memory.slots    (I.value()));}                         // The indexed slot
-    boolean    usedSlots(Slot I) {return           memory.usedSlots(I.value());}                          // The indexed slot usage indicator
-    boolean     usedRefs(slot I) {return           memory.usedRefs (I.value());}                          // The indexed reference usage indicator
-    Key             keys(Slot I) {return   new Key(memory.keys(memory.slots(I.value())));}                // The indexed key
+    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I.i()))); clearSlots(I.i());} // Remove a key from the slots
+    slot           slots(Slot I) {return  new slot(memory.slots    (I.i()));}                     // The indexed slot
+    boolean    usedSlots(Slot I) {return           memory.usedSlots(I.i());}                      // The indexed slot usage indicator
+    boolean     usedRefs(slot I) {return           memory.usedRefs (I.i());}                      // The indexed reference usage indicator
+    Key             keys(Slot I) {return   new Key(memory.keys(memory.slots(I.i())));}            // The indexed key
 
-    void     slots(Slot I, slot    Ref)   {memory.slots    (I.value(), Ref.value());}                     // The indexed slot
-    void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.value(), Value);}                           // The indexed slot usage indicator
-    void  usedRefs(slot I, boolean Value) {memory.usedRefs (I.value(), Value);}                           // The indexed reference usage indicator
-    void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.value()), Key.value());}            // The indexed key
+    void     slots(Slot I, slot    Ref)   {memory.slots    (I.i(), Ref.value());}                 // The indexed slot
+    void usedSlots(Slot I, boolean Value) {memory.usedSlots(I.i(), Value);}                       // The indexed slot usage indicator
+    void  usedRefs(slot I, boolean Value) {memory.usedRefs (I.i(), Value);}                       // The indexed reference usage indicator
+    void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.i()), Key.i());}            // The indexed key
 
     Key  key(slot I) {return new Key(memory.keys(I.value()));}                  // Get the key directly
     void key(slot I, Key Key)       {memory.keys(I.value(), Key.value());}      // Set the key directly
