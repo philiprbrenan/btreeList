@@ -591,26 +591,31 @@ class Tree extends Test                                                         
         if ( a.get().le(Key)) {below(a.get()); all = true; return;}             // Smaller than any key
         if (!b.get().le(Key)) {above(b.get()); all = true; return;}             // Greater than any key
 
-        for (int i : range(numberOfSlots()))                                    // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
-         {final Slot M = new Slot((a.get().value() + b.get().value()) / 2);     // Desired mid point - but there might not be a slot in use at this point
-          final Slot A = M.locatePrevUsedSlot();                                // Occupied slot on or preceding mid point
-          final Slot B = M.locateNextUsedSlot();                                // Occupied slot on or succeeding mid point
-          final int Ap = A.value(), ap = a.get().value(),                       // New and current limits of range
-                    Bp = B.value(), bp = b.get().value();
+        final Int d = new Int();                                                // Set when the search is complete
+        new For(numberOfSlots())                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
+         {boolean body(int i)
+           {final Slot M = new Slot((a.get().value() + b.get().value()) / 2); // Desired mid point - but there might not be a slot in use at this point
+            final Slot A = M.locatePrevUsedSlot();                            // Occupied slot on or preceding mid point
+            final Slot B = M.locateNextUsedSlot();                            // Occupied slot on or succeeding mid point
+            final int Ap = A.value(), ap = a.get().value(),                   // New and current limits of range
+                      Bp = B.value(), bp = b.get().value();
 
-          final Int d = new Int();
-          if      (Ap != ap && A.ge(Key)) a.set(A);                             // Make sure that the new range is tighter than the existing one
-          else if (Ap != bp && A.le(Key)) b.set(A);
-          else if (Bp != ap && B.ge(Key)) a.set(B);
-          else if (Bp != bp && B.le(Key)) b.set(B);
-          else                                                                  // The slots must be adjacent
-           {if      (a.get().eq(Key)) found(a.get());                           // Found the search key at the lower end
-            else if (b.get().eq(Key)) found(b.get());                           // Found the search key at the upper end
-            else                      below(b.get());
-            return;
-           }                                                                    // New mid point
+            if      (Ap != ap && A.ge(Key)) a.set(A);                         // Make sure that the new range is tighter than the existing one
+            else if (Ap != bp && A.le(Key)) b.set(A);
+            else if (Bp != ap && B.ge(Key)) a.set(B);
+            else if (Bp != bp && B.le(Key)) b.set(B);
+            else                                                              // The slots must be adjacent
+             {if      (a.get().eq(Key)) found(a.get());                       // Found the search key at the lower end
+              else if (b.get().eq(Key)) found(b.get());                       // Found the search key at the upper end
+              else                      below(b.get());
+              d.i(1); return false;
+             }
+            return true;                                                      // Continue search with new range
+           }
+         };
+        if (!d.valid())                                                         // Incomplete search
+         {stop("Searched more than the maximum number of times:", numberOfSlots());
          }
-        stop("Searched more than the maximum number of times:",numberOfSlots());
        }
      }
 
