@@ -241,13 +241,11 @@ class Tree extends Test                                                         
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {if (usedSlots(this)) return this;
-        return stepLeft();
+       {return usedSlots(this) ? this : stepLeft();
        }
 
       Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {if (usedSlots(this)) return this;
-        return stepRight();
+       {return usedSlots(this) ? this : stepRight();
        }
 
       boolean eq(Key Key) {return Key.value() == keys(this).value();}           // Search key is equal to indexed key
@@ -285,7 +283,7 @@ class Tree extends Test                                                         
 
     void clearFirstSlot()                                                       // Set the first used slot to not used
      {final Slots.Slot f = locateFirstUsedSlot();
-      if (f != null) usedSlots(f, false);
+      new If (f != null) {void Then() {usedSlots(f, false);}};
      }
 
     void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I.i()))); clearSlots(I.i());} // Remove a key from the slots
@@ -329,7 +327,7 @@ class Tree extends Test                                                         
      {final Int n = new Int(0);
       new For(numberOfSlots())
        {boolean body(int i)
-         {if (usedSlots(new Slot(i))) n.inc();
+         {new If (usedSlots(new Slot(i))) {void Then(){n.inc();}};
           return true;
          }
        };
@@ -353,16 +351,19 @@ class Tree extends Test                                                         
 //D2 Low level operations                                                       // Low level operations on slots
 
     Integer locateNearestFreeSlot(Slot Position)                                // Relative position of the nearest free slot to the indicated position if there is one.
-     {if (!usedSlots(Position)) return 0;                                       // The slot is free already. If it is not free we do at least get an error if the specified position is invalid
-      final int Q = Position.value();
-      final BitSet     s = memory.usedSlotsBits;
-      final BitSet.Pos p = s.prevZero(s.new Pos(Q));                            // Prev free slot
-      final BitSet.Pos n = s.nextZero(s.new Pos(Q));                            // Next free slot
-      if (p == null && n == null) stop("No more free slots");
-      if (p == null && n != null) return n.position().i()-Q;                    // Next free slot because no prev free slot
-      if (p != null && n == null) return p.position().i()-Q;                    // Prev free slot because no next free slot
-      final int P = p.position().i() - Q, N = n.position().i() - Q;             // Relative positions
-      return -P <= N ? P : N;                                                   // Choose nearest slow favoring lower slot if they are both the same distance away
+     {final Int r = new Int(0);
+      if (usedSlots(Position))                                                  // The slot is not free already. If it is not free we do at least get an error if the specified position is invalid
+       {final int Q = Position.value();
+        final BitSet     s = memory.usedSlotsBits;
+        final BitSet.Pos p = s.prevZero(s.new Pos(Q));                          // Prev free slot
+        final BitSet.Pos n = s.nextZero(s.new Pos(Q));                          // Next free slot
+        if (p == null && n == null) stop("No more free slots");
+        if (p == null && n != null) return n.position().i()-Q;                  // Next free slot because no prev free slot
+        if (p != null && n == null) return p.position().i()-Q;                  // Prev free slot because no next free slot
+        final int P = p.position().i() - Q, N = n.position().i() - Q;           // Relative positions
+        r.i(-P <= N ? P : N);                                                   // Choose nearest slow favoring lower slot if they are both the same distance away
+       }
+      return r.i();
      }
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
