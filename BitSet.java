@@ -163,13 +163,15 @@ abstract public class BitSet extends Test                                       
            {new For(bitSize)                                                    // Step from root to leaf
              {boolean body(int Index)
                {final Int d = new Int();                                        // Complete early if we found a bit that does not need setting
-                if (p.ne(0))                                                    // Not on the actual bits
-                 {final Pos q = new Pos(p.Add(b));                              // Position in One tree
-                  new If (getBitNC(q))                                          // Is the bit already set
-                   {void Then() {d.i(1);}                                       // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-                    void Else() {setBitNC(q, true);}                            // Flip the bit and continue
-                   };
-                 }
+                new If (p.ne(0))                                                // Not on the actual bits
+                 {void Then()                                                   // Not on the actual bits
+                   {final Pos q = new Pos(p.Add(b));                              // Position in One tree
+                    new If (getBitNC(q))                                          // Is the bit already set
+                     {void Then() {d.i(1);}                                       // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+                      void Else() {setBitNC(q, true);}                            // Flip the bit and continue
+                     };
+                   }
+                 };
                 moveDownOneLayer(b, p, w);                                      // Next level up
                 return !d.valid() && w.gt(0);                                   // As long as we are in a valid level
                }
