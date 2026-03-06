@@ -106,10 +106,9 @@ class Tree extends Test                                                         
     int memorySize() {return size;}                                             // Get the size of memory in bytes
    }
 
-  class Allocation                                                              // An allocated node that could become a leaf or a branch or a tree base
-   {final int at;
-    Allocation(int At) {at = At;}
-    int at()           {return at;}
+  class Allocation extends Int                                                  // An allocated node that could become a leaf or a branch or a tree base
+   {Allocation(int At) {i(At);}
+    int at()           {return i();}
    }
 
   Allocation allocate()                                                         // Allocate a leaf or a branch
@@ -215,21 +214,19 @@ class Tree extends Test                                                         
       memory.usedRefsBits .initialize();
      }
 
-    final class slot                                                            // A dereferenced slot
-     {final int value;                                                          // The index of the slot
-      slot( int Value)  {value = Value;}                                        // A key
-      int       value() {return  value;}
+    final class slot extends Int                                                // A dereferenced slot
+     {slot( int Value)  {i(Value);}                                             // A key
+      int       value() {return i();}
       public String toString()
-       {return "slot: "+value;
+       {return "slot: "+value();
        }
      }
 
-    final class Slot                                                            // A reference to a slot
-     {final int value;                                                          // The index of the slot
-      Slot( int Value)  {value = Value;}                                        // A key
-      int       value() {return  value;}                                        // The value of the key
-      Slot      right() {return new Slot(value+1);}                             // Step right
-      Slot       left() {return new Slot(value-1);}                             // Step left
+    final class Slot extends Int                                                // A reference to a slot
+     {Slot( int Value)  {i(Value);}                                             // A key
+      int       value() {return i();}                                           // The value of the key
+      Slot      right() {return new Slot(i()+1);}                               // Step right
+      Slot       left() {return new Slot(i()-1);}                               // Step left
 
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
@@ -260,7 +257,7 @@ class Tree extends Test                                                         
       boolean gt(Key Key) {return !le(Key);}                                    // Search key is less than or equal to indexed key
 
       public String toString()
-       {return "Slot: "+value;
+       {return "Slot: "+i();
        }
      }
 
