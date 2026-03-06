@@ -980,11 +980,14 @@ class Tree extends Test                                                         
 
     void mergeData(Leaf Left, Leaf Right)                                       // Merge the data from the compacted left and right slots
      {final Leaf l = Left, r = Right;
-      for (int i : range(maxLeafSize))
-       {final slot J = new slot(i);
-        if      (l.usedRefs(J)) data(J, l.data(J));
-        else if (r.usedRefs(J)) data(J, r.data(J));
-       }
+      new For(maxLeafSize)
+       {boolean body(int i)
+         {final slot J = new slot(i);
+          if      (l.usedRefs(J)) data(J, l.data(J));
+          else if (r.usedRefs(J)) data(J, r.data(J));
+          return true;
+         }
+       };
      }
 
     void mergeLeaves(Leaf Left, Leaf Right)                                     // Merge the specified leaves into the current leaf
