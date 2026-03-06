@@ -991,11 +991,14 @@ class Tree extends Test                                                         
     void compactRight()                                                         // Compact the leaf to the right
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final Data[]d = new Data[R];
-      int p = R-1;                                                              // Start at the last slot
-      for (int i = 0; i < N; ++i)                                               // Compact each slot to the right
-       {final Slot I = new Slot(N-i-1);
-        if (usedSlots(I)) d[p--] = data(slots(I));
-       }
+      final Int   p = new Int(R-1);                                             // Start at the last slot
+      new For(N)                                                                // Compact each slot to the right
+       {boolean body(int i)
+         {final Slot I = new Slot(N-i-1);
+          if (usedSlots(I)) {d[p.i()] = data(slots(I)); p.dec();}
+          return true;
+         }
+       };
       super.compactRight();                                                     // Compact slots
       new For(R) {boolean body(int i) {data(new slot(i), d[i]); return true;}}; // Copy compacted leaf data
      }
