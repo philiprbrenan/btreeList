@@ -332,22 +332,23 @@ abstract public class BitSet extends Test                                       
      {boolean body(int i)                                                       // Traverse down through the tree
        {final Int c = b.Add(1);                                                 // Is there a path down from the next bit?
         final Int d = new Int();                                                // Whether we are done yet
-        new If (c.lt(w) && getBitNC(new Pos(p.Add(c))))                             // Found next up bit
+        new If (c.lt(w) && getBitNC(new Pos(p.Add(c))))                         // Found next up bit
          {void Then()
-           {new For(i)                                                            // Step down to the leaves
-             {boolean body(int j)                                                 // Step down to the leaves
-               {moveUpOneLayer(c, p, w);                                          // Move up to next layer
-                c.add(getBitNC(new Pos(p.Add(c))) ? 0 : 1);                       // Follow path as low as possible
-                return true;                                                      // Continue the loop
+           {new For(i)                                                          // Step down to the leaves
+             {boolean body(int j)                                               // Step down to the leaves
+               {moveUpOneLayer(c, p, w);                                        // Move up to next layer
+                c.add(getBitNC(new Pos(p.Add(c))) ? 0 : 1);                     // Follow path as low as possible
+                return true;                                                    // Continue the loop
                }
              };
-            n.i(c); d.i(1);                                                       // Found the next element
+            n.i(c); d.i(1);                                                     // Found the next element
            }
           void Else()
-           {moveDownOneLayer(b, p, w); if (w.eq(0)) d.i(1);                       // Address next level of bits further down in One tree
+           {moveDownOneLayer(b, p, w);
+            new If (w.eq(0)) {void Then() {d.i(1);}};                           // Address next level of bits further down in One tree
            }
          };
-        return !d.valid();                                                            // Continue the loop
+        return !d.valid();                                                      // Continue the loop
        }
      };
     return n.valid() ? new Pos(n) : null;                                       // No alternate path down
@@ -357,26 +358,30 @@ abstract public class BitSet extends Test                                       
    {checkOne();
     checkIndex(Index.position());
     final Int b = Index.position(), p = new Int(0), w = bitSize.dup();
-    if (b.eq(0)) return null;                                                   // At the start so no previous bit
-
     final Int R = new Int();                                                    // Result
-    new For(bitSize)                                                            // Much more than necessary
-     {boolean body(int i)                                                       // Much more than necessary
-       {final Int B = b.Dec();                                                  // Is there a path down from the next bit?
-        if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                             // Found next down bit
-         {new For(i)                                                            // Step down to the leaves
-           {boolean body(int j)                                                 // Step down to the leaves
-             {moveUpOneLayer(B, p, w);
-              B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                 // Follow path as high as possible
-              return true;
-             }
-           };
-          R.i(B); return false;                                                 // Save the result and exit
+
+    if (b.ne(0))                                                                // At the start so no previous bit
+     {new For(bitSize)                                                            // Step up throgh One bits
+       {boolean body(int i)
+         {final Int B = b.Dec();                                                  // Is there a path down from the next bit?
+          if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                             // Found next down bit
+           {new For(i)                                                            // Step down to the leaves
+             {boolean body(int j)
+               {moveUpOneLayer(B, p, w);
+                B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                 // Follow path to actual bits
+                return true;
+               }
+             };
+            R.i(B);                                                               // Save the result
+            return false;                                                         // Finish the loop
+           }
+          else
+           {moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                 // Address next level of bits in tree
+            return true;
+           }
          }
-        moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                      // Address next level of bits in tree
-        return true;
-       }
-     };
+       };
+     }
     return R.valid() ? new Pos(R) : null;                                       // Result if found
    }
 
