@@ -1678,21 +1678,28 @@ class Tree extends Test                                                         
    }
 
   Find goFirst(Branch Start)                                                    // Go all the way first
-   {Branch p = Start;                                                           // Start
-
-    for (int j : range(MaximumNumberOfLevels))                                  // Step down from branch splitting as we go
-     {final Slots.Slot P = p.locateFirstUsedSlot();
-      final Slots      q = p.child(P);
-      if (Leaf.ref(q))                                                          // Step down to a leaf
-       {final Leaf l = (Leaf)q;
-        l.up(p); l.upIndex(P);
-        final int       i = l.locateFirstUsedSlot().value();
-        return new Find(l.keys(l.new Slot(i)), l);
+   {Ref<Branch> p = new Ref<>(Start);                                           // Start
+    Ref<Find>   f = new Ref<>();
+    new For(MaximumNumberOfLevels)                                              // Step down from branch splitting as we go
+     {boolean body(int I)
+       {final Slots.Slot P = p.get().locateFirstUsedSlot();
+        final Slots      q = p.get().child(P);
+        if (Leaf.ref(q))                                                        // Step down to a leaf
+         {final Leaf l = (Leaf)q;
+          l.up(p.get()); l.upIndex(P);
+          final int i = l.locateFirstUsedSlot().value();
+          f.set(new Find(l.keys(l.new Slot(i)), l));                            // Reached a leaf
+          return false;
+         }
+        else
+         {final Branch b = (Branch)q;
+          b.up(p.get()); b.upIndex(P.value());                                  // Step down into non full branch
+          p.set(b);
+          return true;
+         }
        }
-      final Branch b = (Branch)q;
-          b.up(p); b.upIndex(P.value());                                        // Step down into non full branch
-      p = b;                                                                    // Step down into non full branch
-     }
+     };
+    if (f.valid()) return f.get();
     stop("First fell off the end of tree after this many searches:", mnl());
     return null;
    }
