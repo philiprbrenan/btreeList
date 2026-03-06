@@ -2,7 +2,6 @@
 // Fixed size bit set which can locate set or cleared bits in log N time
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Insist that bitsets have at least two bits to simplify edge cases
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                             // Standard utility library.
@@ -252,29 +251,29 @@ abstract public class BitSet extends Test                                       
        {new If (getBitNC(new Pos(B)) &&
                 getBitNC(new Pos(B.Inc())))                                     // Check there is a zero
          {void Then()
-           {final Pos r = new Pos(p.Add(b));                                        // Position in first layer of Zero tree
-            new If (getBitNC(r))                                                    // Bit is not already correctly set to show no path so there is nothing more to do
+           {final Pos r = new Pos(p.Add(b));                                    // Position in first layer of Zero tree
+            new If (getBitNC(r))                                                // Bit is not already correctly set to show no path so there is nothing more to do
              {void Then()
-               {setBitNC(r, false);                                                 // Clear set bit along path to root to show no path
+               {setBitNC(r, false);                                             // Clear set bit along path to root to show no path
 
-                new For(bitSize)                                                    // Step from root to leaf
+                new For(bitSize)                                                // Step from root to leaf
                  {boolean body(int Index)
-                   {final Int P = p.dup();                                          // Child layer becomes parent layer
-                    moveDownOneLayer(b, p, w);                                      // Index of bit in child layer, position in child layer, width of child layer
+                   {final Int P = p.dup();                                      // Child layer becomes parent layer
+                    moveDownOneLayer(b, p, w);                                  // Index of bit in child layer, position in child layer, width of child layer
                     final Int Q = P.Add(b).add(b);
-                    final Int d = new Int();                                        // Complete early if we found a bit that does not need setting
+                    final Int d = new Int();                                    // Complete early if we found a bit that does not need setting
                     new If (getBitNC(new Pos(Q)) ||
                             getBitNC(new Pos(Q.Inc())))
-                     {void Then() {d.i(1);}                                         // There is a one in the upper row so we do not need to clear further down
-                      void Else()                                                   // Need to show that there are no ones in the upper row
-                       {final Pos r = new Pos(p.Add(b));                            // Bit to set
+                     {void Then() {d.i(1);}                                     // There is a one in the upper row so we do not need to clear further down
+                      void Else()                                               // Need to show that there are no ones in the upper row
+                       {final Pos r = new Pos(p.Add(b));                        // Bit to set
                         new If (!getBitNC(r))
-                         {void Then() {d.i(1);}                                     // Bit is already correctly set so there is nothing more to do
-                          void Else() {setBitNC(r, false);}                         // Clear set bit along path to root
+                         {void Then() {d.i(1);}                                 // Bit is already correctly set so there is nothing more to do
+                          void Else() {setBitNC(r, false);}                     // Clear set bit along path to root
                          };
                        }
                      };
-                    return !d.valid() && w.gt(0);                                   // As long as we are in a valid level
+                    return !d.valid() && w.gt(0);                               // As long as we are in a valid level
                    }
                  };
                }
@@ -423,29 +422,29 @@ abstract public class BitSet extends Test                                       
     final Int R = new Int();                                                    // Result
     new For(bitSize)                                                            // Search down through the zero bit tree
      {boolean body(int i)                                                       // Search down through the zero bit tree
-       {Int B = b.Inc();                                                        // Is there a path down from the next bit?
+       {final Int B = b.Inc();                                                  // Is there a path down from the next bit?
         final Int d = new Int();                                                // Whether we have arrived at a bit that is already correctly set
         new If (B.ge(w))
          {void Then()
-           {d.i(1);                                                            // Nothing beyond to search so no next zero
+           {d.i(1);                                                             // Nothing beyond to search so no next zero
            }
           void Else()
-           {new If (getBitNC(new Pos(p.Add(B))))                                  // Found next up bit
+           {new If (getBitNC(new Pos(p.Add(B))))                                // Found next up bit
              {void Then()
-               {new For(i)                                                        // Step down to the leaves
-                 {boolean body(int j)                                             // Step down to the leaves
-                   {moveUpOneLayer(B, p, w);                                      // Move up one layer
-                    B.add(getBitNC(new Pos(p.Add(B))) ? 0 : 1);                   // Follow path as low as possible
+               {new For(i)                                                      // Step down to the leaves
+                 {boolean body(int j)                                           // Step down to the leaves
+                   {moveUpOneLayer(B, p, w);                                    // Move up one layer
+                    B.add(getBitNC(new Pos(p.Add(B))) ? 0 : 1);                 // Follow path as low as possible
                     return true;
                    }
                  };
                 final Int C = B.Add(B);
-                R.i(C.Add(getBit(new Pos(C)) ? 1 : 0));                           // Next zero bit from actual bits
+                R.i(C.Add(getBit(new Pos(C)) ? 1 : 0));                         // Next zero bit from actual bits
                 d.i(1);
                }
               void Else()
-               {moveDownOneLayer(b, p, w);                                        // Address next level of bits in tree
-                new If (w.eq(0)) {void Then() {d.i(1);}};                         // Address next level of bits in tree
+               {moveDownOneLayer(b, p, w);                                      // Address next level of bits in tree
+                new If (w.eq(0)) {void Then() {d.i(1);}};                       // Address next level of bits in tree
                }
              };
            }
@@ -461,9 +460,9 @@ abstract public class BitSet extends Test                                       
     checkIndex(Index.position());
 
     final Int b = Index.position();
-    if (b.eq(0))                return null;                                    // First bit so no prev bit
+    if (b.eq(0))                   return null;                                 // First bit so no prev bit
     if (!getBit(new Pos(b.Dec()))) return new Pos(b.Dec());                     // Prev bit is zero
-    if (bitSize.eq(2))          return null;                                    // No more bits to check
+    if (bitSize.eq(2))             return null;                                 // No more bits to check
 
     final Int w = bitSize.Down(), p = addressZeroTree(); b.down();              // First layer of zero tree bits
 
