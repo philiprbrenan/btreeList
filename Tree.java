@@ -386,10 +386,10 @@ class Tree extends Test                                                         
 
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
      {if (Width != 0)                                                           // Shift up including the current slot
-       {new For(Width > 0 ? Width : -Width)                                     // Move each slot
+       {final boolean p = Width > 0;
+        new For(Width > 0 ? Width : -Width)                                     // Move each slot
          {boolean body(int i)
-           {final boolean p = Width > 0;
-            final Slot P = new Slot(Position+Width+(p ? -i : +i));
+           {final Slot P = new Slot(Position+Width+(p ? -i : +i));
             slots(P, slots(p ? P.left() :  P.right()));                         // Move slot
             return true;
            }
