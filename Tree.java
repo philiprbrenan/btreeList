@@ -1267,10 +1267,14 @@ class Tree extends Test                                                         
     void compactRight()                                                         // Compact the branch to the right
      {final int    N = numberOfSlots(), R = numberOfRefs();
       final Slots[]d = new Slots[R];
-      for (int i = N-1, p = R-1; i >= 0;--i)
-       {final Slot I = new Slot(i);
-        if (usedSlots(I)) d[p--] = data(I);
-       }
+      final Int    p = new Int(R-1);
+      new For(N)
+       {boolean body(int i)
+         {final Slot I = new Slot(N-i-1);
+          if (usedSlots(I)) {d[p.i()] = data(I); p.dec();}
+          return true;
+         }
+       };
       super.compactRight();
       for (int i = 0; i < R; i++) dataDirect(i, d[i]);
      }
