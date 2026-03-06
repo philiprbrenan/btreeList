@@ -1569,22 +1569,30 @@ class Tree extends Test                                                         
    }
 
   Find find(Key Key, Branch Start)
-   {Branch p = Start;                                                           // Start at root
+   {final Ref<Branch> p = new Ref<>(Start);                                     // Start at root
+    final Ref<Find>   f = new Ref<>();                                          // Find the Key
 
-    for (int i : range(MaximumNumberOfLevels))                                  // Step down from branch splitting as we go
-     {final Slots.Slot P = p.locateFirstGe(Key);
-      final Slots      q = p.child(P);
-      if (Leaf.ref(q))                                                          // Step down to a leaf
-       {final Leaf l = (Leaf)q;
-        l.up(p); l.upIndex(P);                                                  // Parent of leaf along find path
-        return new Find(Key, l);
+    new For(MaximumNumberOfLevels)                                              // Step down from branch splitting as we go
+     {boolean body(int i)
+       {final Slots.Slot Q = p.get().locateFirstGe(Key);
+        final Slots      q = p.get().child(Q);
+        if (Leaf.ref(q))                                                          // Step down to a leaf
+         {final Leaf l = (Leaf)q;
+          l.up(p.get()); l.upIndex(Q);                                                  // Parent of leaf along find path
+          f.set(new Find(Key, l));
+         }
+        else
+         {final Branch b = (Branch)q;
+          b.up(p.get()); b.upIndex(Q != null ? Q.value() : null);                       // Record parent branch
+          p.set(b);                                                                     // Step down into non full branch
+         }
+        return !f.valid();
        }
-      final Branch b = (Branch)q;
-      b.up(p); b.upIndex(P != null ? P.value() : null);                         // Record parent branch
-      p = b;                                                                    // Step down into non full branch
+     };
+    if (!f.valid())
+     {stop("Find fell off the end of tree after this many searches:", mnl());
      }
-    stop("Find fell off the end of tree after this many searches:", mnl());
-    return null;
+    return f.get();
    }
 
   void insert(Key Key, Data Data)                                               // Insert a key, data pair or update key data pair in the tree
