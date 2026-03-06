@@ -160,7 +160,7 @@ class Tree extends Test                                                         
    }
 
   Slots fake(Allocation Name)                                                   // Slots used during testing to mock attached branches and leaves
-   {final Slots s = new Slots(0);
+   {final Slots s = new Slots(2);
     s.name(Name);
     return s;
    }
