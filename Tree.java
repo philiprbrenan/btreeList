@@ -1375,11 +1375,21 @@ class Tree extends Test                                                         
      {final ByteBuffer bytes;
 
       void copy(Memory Memory)                                                  // Copy a set of slots from the specified memory into this memory
-       {for (int i : range(size)) bytes.put(i, Memory.bytes.get(i));
+       {new For(size)
+         {boolean body(int i)
+           {bytes.put(i,Memory.bytes.get(i));
+            return true;
+           }
+         };
        }
 
       void invalidate()                                                         // Invalidate the branch in such a way that it is unlikely to work well if subsequently used
-       {for (int i : range(size)) bytes.put(i, (byte)-1);
+       {new For(size)
+         {boolean body(int i)
+           {bytes.put(i, (byte)-1);
+            return true;
+           }
+         };
        }
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
@@ -1450,24 +1460,41 @@ class Tree extends Test                                                         
     if (f == null) return;                                                      // Empty tree
 
     if (f.leaf.up() != null)                                                    // Process path from leaf to root
-     {for (Branch b = f.leaf.up(); b != null; b = b.up())                       // Go up the tree merging as we go: only one merge is needed at each level
-       {final Slots.Slot l = b.locateFirstGe(Key);                              // Position of key
-        if (l != null && b.mergeRightSibling(l)) continue;                      // Merge right sibling of keyed child
+     {final Ref<Branch> B = new Ref<>(f.leaf.up());                             // First branch
+      new For(numberOfNodes)                                                    // Go up the tree merging as we go: only one merge is needed at each level
+       {boolean body(int i)
+         {final Branch b = B.get();
+          boolean m = false;                                                    // Whether we have merged anything yet
 
-        final Slots.Slot L = b.locateFirstGe(Key);                              // Position of key
-        if (L != null && b.mergeLeftSibling(L))  continue;                      // Merge left sibling of keyed child
+          if (!m)
+           {final Slots.Slot l = b.locateFirstGe(Key);                          // Position of key
+            m = l != null && b.mergeRightSibling(l);                            // Merge right sibling of keyed child
+           }
 
-        final Slots.Slot k = b.locateFirstGe(Key);                              // Look further left
-        if (k != null && b.mergeLeftSibling(k.stepLeft())) continue;            // Merge further left sibling
-        else                                                                    // Top
-         {final Slots.Slot S = b.locateLastUsedSlot();
-          if (b.mergeLeftSibling(S)) continue;                                  // Merge further left of top
+          if (!m)
+           {final Slots.Slot L = b.locateFirstGe(Key);                          // Position of key
+            m = L != null && b.mergeLeftSibling(L);                             // Merge left sibling of keyed child
+           }
+
+          if (!m)
+           {final Slots.Slot k = b.locateFirstGe(Key);                          // Look further left
+            m = k != null && b.mergeLeftSibling(k.stepLeft());                  // Merge further left sibling
+            if (!m)                                                             // Top
+             {final Slots.Slot S = b.locateLastUsedSlot();
+              m = S != null && b.mergeLeftSibling(S);                           // Merge further left of top
+             }
+           }
+
+          if (!m)
+           {final Slots.Slot r = b.locateFirstGe(Key);                          // Look further right
+            if (r != null && b.mergeRightSibling(r.stepRight())) m = true;      // Merge further right sibling
+           }
+
+          if (!m) b.mergeLeftSibling(null);                                     // Migrate into top
+          B.set(b.up());                                                        // Go up the tree merging as we go: only one merge is needed at each level
+          return B.valid();
          }
-
-        final Slots.Slot r = b.locateFirstGe(Key);                              // Look further right
-        if (r != null && b.mergeRightSibling(r.stepRight())) continue;          // Merge further right sibling
-        b.mergeLeftSibling(null);                                               // Migrate into top
-       }
+       };
      }
     mergeRoot(Key);                                                             // Merge the root if possible
    }
