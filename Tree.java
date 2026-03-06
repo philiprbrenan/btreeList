@@ -992,8 +992,8 @@ class Tree extends Test                                                         
      {final int   N = numberOfSlots(), R = numberOfRefs();
       final Data[]d = new Data[R];
       int p = R-1;                                                              // Start at the last slot
-      for (int i = N-1; i >= 0; --i)                                            // Compact each slot to the right
-       {final Slot I = new Slot(i);
+      for (int i = 0; i < N; ++i)                                               // Compact each slot to the right
+       {final Slot I = new Slot(N-i-1);
         if (usedSlots(I)) d[p--] = data(slots(I));
        }
       super.compactRight();                                                     // Compact slots
