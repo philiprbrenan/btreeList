@@ -269,14 +269,21 @@ abstract public class BitSet extends Test                                       
         new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
            {final Int P = p.dup();                                              // Child layer becomes parent layer
-            moveDownOneLayer(b, p, w);                                             // Index of bit in child layer, position in child layer, width of child layer
+            moveDownOneLayer(b, p, w);                                          // Index of bit in child layer, position in child layer, width of child layer
+            final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
             Int Q = P.Add(b).add(b);
-            if ( getBitNC(new Pos(Q)) ||
-                 getBitNC(new Pos(Q.Inc()))) return false;                      // There is a one in the upper row so we do not need to clear further down
-            final Pos r = new Pos(p.Add(b));
-            if (!getBitNC(r)) return false;                                     // Bit is already correctly set so there is nothing more to do
-                 setBitNC(r,  false);                                           // Clear set bit along path to root
-            return w.gt(0);                                                     // As long as we are in a valid level
+            new  If ( getBitNC(new Pos(Q)) ||
+                 getBitNC(new Pos(Q.Inc())))
+             {void Then() {d.i(1);}                                             // There is a one in the upper row so we do not need to clear further down
+              void Else()
+               {final Pos r = new Pos(p.Add(b));
+                new If (!getBitNC(r))
+                 {void Then() {d.i(1);}                                         // Bit is already correctly set so there is nothing more to do
+                  void Else() {setBitNC(r,  false);}                            // Clear set bit along path to root
+                 };
+               }
+             };
+            return !d.valid() && w.gt(0);                                       // As long as we are in a valid level
            }
          };
        }
