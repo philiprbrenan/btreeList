@@ -1717,21 +1717,29 @@ class Tree extends Test                                                         
    }
 
   Find goLast(Branch Start)                                                     // Go all the way last from the specified position
-   {Branch p = Start;                                                           // Start
+   {final Ref<Branch> p = new Ref<>(Start);                                     // Start
+    final Ref<Find>   f = new Ref<>();
 
-    for (int j : range(MaximumNumberOfLevels))                                  // Step down from branch splitting as we go
-     {final Slots q = p.top();
-      if (Leaf.ref(q))                                                          // Step down to a leaf
-       {final Leaf l = (Leaf)q;
-        final int  i = l.locateLastUsedSlot().value();
-        l.up(p); l.upIndex((Slots.Slot)null);
-        return new Find(l.keys(l.new Slot(i)), l);
-       }
-         ((Branch)q).up(p);
-      p = (Branch)q;                                                            // Step down into non full branch
+    new For(MaximumNumberOfLevels)                                              // Step down from branch splitting as we go
+     {boolean body(int i)
+       {final Slots q = p.get().top();
+        if (Leaf.ref(q))                                                        // Step down to a leaf
+         {final Leaf l = (Leaf)q;
+          l.up(p.get()); l.upIndex((Slots.Slot)null);
+          f.set(new Find(l.keys(l.new Slot(l.locateLastUsedSlot().value())), l));
+         }
+        else
+         {final Branch b = (Branch)q;
+          b.up(p.get());                                                        // Reference parent
+          p.set(b);                                                             // Step down into non full branch
+         }
+        return !f.valid();
+       };
+     };
+    if (!f.valid())                                                             // Unable to find tehlat element
+     {stop("Last fell off the end of tree after this many searches:", mnl());
      }
-    stop("Last fell off the end of tree after this many searches:", mnl());
-    return null;
+    return f.get();
    }
 
   Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming that the structure of the tree has not changed
