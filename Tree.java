@@ -1822,18 +1822,28 @@ class Tree extends Test                                                         
       return new Find(L.firstKey(), L);
      }
 
-    Branch p;                                                                   // Last point at which we went left
-    Branch q = l.up();                                                          // Child branch
+    final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
+    final Ref<Branch> p = new Ref<>(q.get().up());                              // Last point at which we went left
+    final Ref<Find>   f = new Ref<>();                                          // Find details of first leaf
 
-    for(p = q.up(); p != null; q = p, p = q.up())                               // Step up to turning point
-     {if (p.top().name().at() != q.name().at())                                 // In the body of the parent branch of the leaf
-       {final Slots.Slot R = p.new Slot(q.upIndex()).stepRight();
-        final Branch     b = R != null ? (Branch)p.data(R) : (Branch)p.top();
-        b.up(p); b.upIndex(R != null ? R.value() : null);
-        return goFirst(b);
-       }
+    if (p.get() != null)
+     {new For(numberOfNodes)                                                    // Step up to turning point
+       {boolean body(int i)
+         {if (p.get().top().name().at() != q.get().name().at())                 // In the body of the parent branch of the leaf
+           {final Slots.Slot R = p.get().new Slot(q.get().upIndex()).stepRight();
+            final Branch     b = R != null ? (Branch)p.get().data(R) : (Branch)p.get().top();
+            b.up(p.get()); b.upIndex(R != null ? R.value() : null);
+            f.set(goFirst(b));
+           }
+          else                                                                  // Go up one more level
+           {q.set(p);
+            p.set(q.get().up());
+           }
+          return !f.valid() && p.valid();                                       // Continue until we find the first leaf
+         }
+       };
      }
-    return null;
+    return f.get();
    }
 
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
