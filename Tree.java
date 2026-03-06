@@ -378,11 +378,7 @@ class Tree extends Test                                                         
 
     slot locateFirstEmptyRef()                                                  // Absolute position of the first empty reference
      {final BitSet.Pos p = memory.usedRefsBits.firstZero();
-      if (p != null)
-       {final slot s = new slot(p.position().i());
-        return s;
-       }
-      return null;
+      return p != null ? new slot(p.position().i()) : null;
      }
 
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
