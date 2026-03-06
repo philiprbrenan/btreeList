@@ -954,11 +954,14 @@ class Tree extends Test                                                         
 
     void compactLeft()                                                          // Compact the leaf to the left
      {final Data[]d = new Data[numberOfRefs()];
-      int p = 0;
-      for (int i : range(numberOfSlots()))
-       {final Slot I = new Slot(i);
-        if (usedSlots(I)) d[p++] = data(slots(I));
-       }
+      final Int p = new Int(0);
+      new For(numberOfSlots())
+       {boolean body(int i)
+         {final Slot I = new Slot(i);
+          if (usedSlots(I)) {d[p.i()] = data(slots(I)); p.inc();}
+          return true;
+         }
+       };
       super.compactLeft();
       for (int i : range(numberOfRefs())) data(new slot(i), d[i]);
      }
