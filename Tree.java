@@ -299,8 +299,8 @@ class Tree extends Test                                                         
     void  usedRefs(slot I, boolean Value) {memory.usedRefs (I.i(), Value);}                       // The indexed reference usage indicator
     void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I.i()), Key.i());}            // The indexed key
 
-    Key  key(slot I) {return new Key(memory.keys(I.value()));}                  // Get the key directly
-    void key(slot I, Key Key)       {memory.keys(I.value(), Key.value());}      // Set the key directly
+    Key  key(slot I) {return new Key(memory.keys(I.i()));}                      // Get the key directly
+    void key(slot I, Key Key)       {memory.keys(I.i(), Key.i());}              // Set the key directly
 
     Allocation name() {return new Allocation(memory.name());}                   // Get the name
     void name(Allocation Name)              {memory.name(Name.at());}           // Set the name
@@ -326,10 +326,14 @@ class Tree extends Test                                                         
 //D2 Statistics                                                                 // Query the state of the slots
 
     int countUsed()                                                             // Number of slots in use. How can we do this quickly in parallel?
-     {final int N = numberOfSlots();
-      int n = 0;
-      for (int i : range(N)) if (usedSlots(new Slot(i))) ++n;
-      return n;
+     {final Int n = new Int(0);
+      new For(numberOfSlots())
+       {boolean body(int i)
+         {if (usedSlots(new Slot(i))) n.inc();
+          return true;
+         }
+       };
+      return n.i();
      }
 
     boolean empty() {return memory.usedSlotsBits.empty();}                      // All bits in the corresponding bitset are unused so the Slots must be empty
@@ -403,20 +407,26 @@ class Tree extends Test                                                         
                  cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);      // Covered space from first used slot to last used slot, uncovered remainder
       final int    []s = new int    [N];                                        // New slots distribution
       final boolean[]u = new boolean[N];                                        // New used slots distribution
-      int p = remainder / 2;                                                    // Start position for first used slot
-      for (int i : range(N))                                                    // Redistribute slots
-       {final Slot I = new Slot(i);
-        if (usedSlots(I))                                                       // Redistribute active slots
-         {s[p] = slots(I).value(); u[p] = true; p += space+1;                   // Spread the used slots out
+      final Int p = new Int(remainder / 2);                                     // Start position for first used slot
+      new For(N)                                                                // Redistribute slots
+       {boolean body(int i)
+         {final Slot I = new Slot(i);
+          if (usedSlots(I))                                                     // Redistribute active slots
+           {s[p.i()] = slots(I).value(); u[p.i()] = true; p.add(space+1);       // Spread the used slots out
+           }
+          return true;
          }
-       }
+       };
 
       memory.usedSlotsBits.initialize();                                        // Clear the existing tree bits - faster than deleting each path in turn
 
-      for (int i : range(N))                                                    // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
-       {final Slot I = new Slot(i);
-        slots(I, new slot(s[i])); usedSlots(I, u[i]);
-       }
+      new For(N)                                                                // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
+       {boolean body(int i)
+         {final Slot I = new Slot(i);
+          slots(I, new slot(s[i])); usedSlots(I, u[i]);
+          return true;
+         }
+       };
      }
 
     void reset()                                                                // Reset the slots
