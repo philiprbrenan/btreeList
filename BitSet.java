@@ -224,28 +224,30 @@ abstract public class BitSet extends Test                                       
 
   private void clearZeroPath(Pos Index)                                         // Clear the target bit and set bits along the path from the indexed bit to the root of the bit tree
    {checkZero();
-    if (bitSize.eq(0)) return;                                                  // Tree with no entries
+    new If (bitSize.ne(0))                                                      // Non trivial bitset
+     {void Then()
+       {new Runnable()                                                            // For loop to set bits along path in One tree to actual bit
+         {final Int p = addressZeroTree();                                        // Address zero bit tree
+          final Int b = Index.position().Down();                                  // Position in layer
+          final Int w = bitSize         .Down();                                  // Width of this layer
 
-    new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
-     {final Int p = addressZeroTree();                                          // Address zero bit tree
-      final Int b = Index.position().Down();                                    // Position in layer
-      final Int w = bitSize         .Down();                                    // Width of this layer
-
-      public void run()                                                         // Set bits along the path to the actual bit in the One tree
-       {new For(bitSize)                                                        // Step from root to leaf
-         {boolean body(int Index)
-           {final Pos q = new Pos(p.Add(b));
-            final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
-            new If (getBitNC(q))                                                // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-             {void Then() {d.i(1);}
-              void Else() {setBitNC(q, true);}
+          public void run()                                                       // Set bits along the path to the actual bit in the One tree
+           {new For(bitSize)                                                      // Step from root to leaf
+             {boolean body(int Index)
+               {final Pos q = new Pos(p.Add(b));
+                final Int d = new Int();                                          // Complete early if we found a bit that does not need setting
+                new If (getBitNC(q))                                              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+                 {void Then() {d.i(1);}
+                  void Else() {setBitNC(q, true);}
+                 };
+                moveDownOneLayer(b, p, w);                                        // Next layer
+                return !d.valid() && w.gt(0);                                     // As long as we are in a valid level
+               }
              };
-            moveDownOneLayer(b, p, w);                                          // Next layer
-            return !d.valid() && w.gt(0);                                       // As long as we are in a valid level
            }
-         };
+         }.run();
        }
-     }.run();
+     };
    }
 
   private void setZeroPath(Pos Index)                                           // Set bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
