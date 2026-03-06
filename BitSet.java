@@ -16,7 +16,7 @@ abstract public class BitSet extends Test                                       
 
   public BitSet(Int BitSize, boolean One, boolean Zero)                         // Constructor
    {bitSize = new Int(nextPowerOfTwo(BitSize.i()));                             // Record size.
-    new If (bitSize.lt(2))                                                      // Validate size.
+    new If (bitSize.lt(2))                                                      // There is not much point in bit sets with sizes of less than two.
      {void Then() {stop("Size must be two or more");}
      };
     zero = Zero;                                                                // Locate zeroes efficiently
@@ -132,8 +132,8 @@ abstract public class BitSet extends Test                                       
   private void setBitNC(Pos Index, boolean Value)                               // Set bit value without checking index
    {final Int bIndex = byteIndex(Index.position());                             // Compute byte position.
     final Int offset = bitOffset(Index.position());                             // Compute bit offset.
-    final byte b = getByte(bIndex);                                             // Load byte.
-    final int  i = offset.i();                                                  // Offset within byte
+    final byte     b = getByte(bIndex);                                         // Load byte.
+    final int      i = offset.i();                                              // Offset within byte
     setByte(bIndex, (byte) (Value ? b | (1 << i) : b & ~(1 << i)));             // Modify bit.
    }
 
@@ -192,7 +192,7 @@ abstract public class BitSet extends Test                                       
             final Int Q = p.Add2(B);
             final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
             new If (B.Up().inc().lt(w) &&                                       // Check both bits in the previous row are off
-                !getBitNC(new Pos(Q)) &&
+                !getBitNC(new Pos(Q))  &&
                 !getBitNC(new Pos(Q.Inc())))
              {void Then()
                {final Pos r = new Pos(q);
@@ -381,7 +381,7 @@ abstract public class BitSet extends Test                                       
                }
               void Else()
                {moveDownOneLayer(b, p, w);                                      // Address next level of bits in tree
-                new If (w.eq(0)) {void then() {d.i(i);}};
+                new If (w.eq(0)) {void Then() {d.i(i);}};
                }
              };
             return !d.valid();
