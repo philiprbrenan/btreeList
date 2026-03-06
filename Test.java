@@ -1123,6 +1123,13 @@ public class Test                                                               
      }
    }
 
+  static class Ref<T>                                                           // A reference to an object
+   {private T i;                                                                // Value of the object
+    Ref(T I)      {i = I;}                                                      // Create a reference to the object
+    void set(T I) {i = I;}                                                      // Set the refernce
+    T    get()    {return i;}                                                   // Derefernce the reference
+   }
+
 //D1 Testing                                                                    // Test expected output against got output
 
   static int testsPassed = 0, testsFailed = 0;                                  // Number of tests passed and failed
