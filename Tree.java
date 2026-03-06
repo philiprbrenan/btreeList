@@ -485,13 +485,16 @@ class Tree extends Test                                                         
     void mergeCompacted(Slots Left, Slots Right)                                // Merge left and right compacted slots into the current slots
      {final Slots l = Left, r = Right;
       reset();
-      for (int i : range(numberOfRefs))                                         // Each reference
-       {final Slot I = new Slot(i);                                             // The input slots have been compacted so this Slot will match the corresponding slot
-        final slot J = new slot(i);
-        if      (mergeSlot(l, I, J)) {}                                         // Merge on left
-        else if (mergeSlot(r, I, J)) {}                                         // Merge on right
-        else {usedSlots(I, false); usedRefs(J, false);}                         // Reset center
-       }
+      new For(numberOfRefs)                                                     // Each reference
+       {boolean body(int i)
+         {final Slot I = new Slot(i);                                           // The input slots have been compacted so this Slot will match the corresponding slot
+          final slot J = new slot(i);
+          if      (mergeSlot(l, I, J)) {}                                       // Merge on left
+          else if (mergeSlot(r, I, J)) {}                                       // Merge on right
+          else {usedSlots(I, false); usedRefs(J, false);}                       // Reset center
+          return true;
+         }
+       };
      }
 
     boolean mergeBack(Slots Left, Slots Right)                                  // Merge the specified slots back into the current set of slots
