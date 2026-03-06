@@ -709,15 +709,30 @@ class Tree extends Test                                                         
        };
 
       void copySlots(Memory Memory)                                             // Copy a set of slots from the specified memory into this memory
-       {for (int i : range(size)) bytes.put(i, Memory.bytes.get(i));
+       {new For(size)
+         {boolean body(int i)
+           {bytes.put(i, Memory.bytes.get(i));
+            return true;
+           }
+         };
        }
 
       void invalidate()                                                         // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-       {for (int i : range(size)) bytes.put(i, (byte)-1);
+       {new For(size)
+         {boolean body(int i)
+           {bytes.put(i, (byte)-1);
+            return true;
+           }
+         };
        }
 
       void clear()                                                              // Clear all bytes in memory to zero which has the beneficial effect of setting all slots to unused
-       {for (int i : range(size)) bytes.put(i, (byte)0);
+       {new For(size)
+         {boolean body(int i)
+           {bytes.put(i, (byte)0);
+            return true;
+           }
+         };
        }
 
       Memory() {bytes = ByteBuffer.allocate(size);}                             // Create memory
