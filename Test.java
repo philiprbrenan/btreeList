@@ -1125,6 +1125,7 @@ public class Test                                                               
 
   static class Ref<T>                                                           // A reference to an object
    {private T i;                                                                // Value of the object
+    Ref()         {i = null;}                                                   // Create a null reference
     Ref(T I)      {i = I;}                                                      // Create a reference to the object
     void set(T I) {i = I;}                                                      // Set the refernce
     T    get()    {return i;}                                                   // Derefernce the reference
