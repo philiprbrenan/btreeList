@@ -142,11 +142,13 @@ abstract public class BitSet extends Test                                       
   public void set  (Pos Index) {set(Index, true );}                             // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
 
   public void set  (Pos Index, boolean Value)                                   // Set or clear bits along the path from the indexed bit to the root of the bit tree
-   {if (!one && !zero) stop("Cannot use path unless One or Zero paths chosen");
-    if (getBit(Index) == Value) return;                                         // Already set to the correct value so nothing changes
-    setBitNC(Index, Value);                                                     // Set the bit
-    new If (one)  {void Then() {new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};}};
-    new If (zero) {void Then() {new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};}};
+   {new If (getBit(Index) != Value)                                             // Bit not already set to the correct value
+     {void Then()
+       {setBitNC(Index, Value);                                                 // Set the bit
+        new If (one)  {void Then() {new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};}};
+        new If (zero) {void Then() {new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};}};
+       }
+     };
    }
 
   private void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();} // Next layer down in a bit tree
