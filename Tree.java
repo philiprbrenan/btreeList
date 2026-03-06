@@ -1720,9 +1720,10 @@ class Tree extends Test                                                         
    }
 
   int count()                                                                   // Print the tree with and without details
-   {if (root() == null) return 0;                                               // Empty tree
-    if (Leaf.ref(root())) return root().countUsed();                            // Tree is a single leaf
-    return ((Branch)root()).count();                                            // Tree has one or more branches
+   {final Slots r = root();
+    if (r == null)   return 0;                                                  // Empty tree
+    if (Leaf.ref(r)) return r.countUsed();                                      // Tree is a single leaf
+                     return ((Branch)r).count();                                // Tree has one or more branches
    }
 
 //D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
