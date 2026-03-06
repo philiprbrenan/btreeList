@@ -595,17 +595,18 @@ class Tree extends Test                                                         
          {final Slot M = new Slot((a.get().value() + b.get().value()) / 2);     // Desired mid point - but there might not be a slot in use at this point
           final Slot A = M.locatePrevUsedSlot();                                // Occupied slot on or preceding mid point
           final Slot B = M.locateNextUsedSlot();                                // Occupied slot on or succeeding mid point
-          final int Ap = A.value(), ap = a.get().value(),                             // New and current limits of range
+          final int Ap = A.value(), ap = a.get().value(),                       // New and current limits of range
                     Bp = B.value(), bp = b.get().value();
 
-          if      (Ap != ap && A.ge(Key)) a.set(A);                                // Make sure that the new range is tighter than the existing one
+          final Int d = new Int();
+          if      (Ap != ap && A.ge(Key)) a.set(A);                             // Make sure that the new range is tighter than the existing one
           else if (Ap != bp && A.le(Key)) b.set(A);
           else if (Bp != ap && B.ge(Key)) a.set(B);
           else if (Bp != bp && B.le(Key)) b.set(B);
           else                                                                  // The slots must be adjacent
-           {if (a.get().eq(Key)) {found(a.get()); return;};                                 // Found the search key at the lower end
-            if (b.get().eq(Key)) {found(b.get()); return;};                                 // Found the search key at the upper end
-            below(b.get());
+           {if      (a.get().eq(Key)) found(a.get());                           // Found the search key at the lower end
+            else if (b.get().eq(Key)) found(b.get());                           // Found the search key at the upper end
+            else                      below(b.get());
             return;
            }                                                                    // New mid point
          }
