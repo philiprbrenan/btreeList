@@ -382,19 +382,19 @@ class Tree extends Test                                                         
      }
 
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
-     {new If (Width != 0)
+     {new If (Width != 0)                                                       // Non zero shift
        {void Then()
          {final boolean p = Width > 0;
-          new For(Width > 0 ? Width : -Width)                                     // Move each slot
+          new For(p ? Width : -Width)                                           // Move each slot
            {boolean body(int i)
              {final Slot P = new Slot(Position+Width+(p ? -i : +i));
-              slots(P, slots(p ? P.left() :  P.right()));                         // Move slot
+              slots(P, slots(p ? P.left() :  P.right()));                       // Move slot
               return true;
              }
            };
-          usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
+          usedSlots(new Slot(Position+Width), true);                            // We only move occupied slots
          }
-       };                                                           // Shift up including the current slot
+       };
      }
 
     void redistribute()                                                         // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
