@@ -1125,11 +1125,12 @@ public class Test                                                               
 
   static class Ref<T>                                                           // A reference to an object
    {private T i;                                                                // Value of the object
-    Ref()            {i = null;}                                                // Create a null reference
-    Ref(T I)         {i = I;}                                                   // Create a reference to the object
-    void    set(T I) {i = I;}                                                   // Set the refernce
-    T       get()    {return i;}                                                // Dereference the reference
-    boolean valid()  {return i != null;}                                        // Check that the refence is valid
+    Ref()              {i = null;}                                              // Create a null reference
+    Ref(T I)           {i = I;}                                                 // Create a reference to the object
+    void set(T I)      {i = I;}                                                 // Set the refernce
+    void set(Ref<T> I) {i = I.get();}                                           // Set the refernce
+    T    get()         {return i;}                                              // Dereference the reference
+    boolean valid()    {return i != null;}                                      // Check that the refence is valid
    }
 
 //D1 Testing                                                                    // Test expected output against got output
