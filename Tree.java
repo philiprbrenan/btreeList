@@ -447,13 +447,16 @@ class Tree extends Test                                                         
      {if (empty()) return;                                                      // Nothing to compact
       final Slots d = duplicateSlots();
       reset();
-      int p = 0;
-      for (int i : range(numberOfSlots()))                                      // Each slot
-       {final Slot I = new Slot(i);
-        if (d.usedSlots(I))                                                     // Each used slot
-         {compactSlot(new Slot(p), new slot(p), d.keys(I)); ++p;
+      final Int p = new Int(0);
+      new For(numberOfSlots())                                                  // Each slot
+       {boolean body(int i)
+         {final Slot I = new Slot(i);
+          if (d.usedSlots(I))                                                   // Each used slot
+           {compactSlot(new Slot(p.i()), new slot(p.i()), d.keys(I)); p.inc();
+           }
+          return true;
          }
-       }
+       };
      }
 
     void compactRight()                                                         // Compact the used slots to the left end
