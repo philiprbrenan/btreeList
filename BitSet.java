@@ -360,28 +360,34 @@ abstract public class BitSet extends Test                                       
     final Int b = Index.position(), p = new Int(0), w = bitSize.dup();
     final Int R = new Int();                                                    // Result
 
-    if (b.ne(0))                                                                // At the start so no previous bit
-     {new For(bitSize)                                                            // Step up throgh One bits
-       {boolean body(int i)
-         {final Int B = b.Dec();                                                  // Is there a path down from the next bit?
-          if (b.gt(0) && getBitNC(new Pos(p.Add(B))))                             // Found next down bit
-           {new For(i)                                                            // Step down to the leaves
-             {boolean body(int j)
-               {moveUpOneLayer(B, p, w);
-                B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                 // Follow path to actual bits
-                return true;
+    new If (b.ne(0))                                                                // At the start so no previous bit
+     {void Then()
+       {new For(bitSize)                                                            // Step up throgh One bits
+         {boolean body(int i)
+           {final Int B = b.Dec();                                                  // Is there a path down from the next bit?
+            final Int d = new Int();                                                // Whether we have arrived at a bit tahtis already correctly set
+            new If (b.gt(0) && getBitNC(new Pos(p.Add(B))))                         // Found next down bit
+             {void Then()
+               {new For(i)                                                            // Step down to the leaves
+                 {boolean body(int j)
+                   {moveUpOneLayer(B, p, w);
+                    B.add(getBitNC(new Pos(p.Add(B).inc())) ? 1 : 0);                 // Follow path to actual bits
+                    return true;
+                   }
+                 };
+                R.i(B);                                                             // Save the result
+                d.i(i);                                                             // Finish the loop
+               }
+              void Else()
+               {moveDownOneLayer(b, p, w);                                          // Address next level of bits in tree
+                new If (w.eq(0)) {void then() {d.i(i);}};
                }
              };
-            R.i(B);                                                               // Save the result
-            return false;                                                         // Finish the loop
+            return !d.valid();
            }
-          else
-           {moveDownOneLayer(b, p, w); if (w.eq(0)) return false;                 // Address next level of bits in tree
-            return true;
-           }
-         }
-       };
-     }
+         };
+       }
+     };
     return R.valid() ? new Pos(R) : null;                                       // Result if found
    }
 
