@@ -191,15 +191,18 @@ abstract public class BitSet extends Test                                       
                {final Int B = b.Down();
                 final Int q = p.Add(w).add(B);
                 final Int Q = p.Add2(B);
+                final Int d = new Int();                                        // Cannot return across serbeal methodsNo forther action required after
                 if (B.Up().inc().lt(w) &&                                       // Check both bits in the previous row are off
                     !getBitNC(new Pos(Q)) &&
                     !getBitNC(new Pos(Q.Inc())))
                  {final Pos r = new Pos(q);
-                  if (!getBitNC(r)) return false;                               // Bit is already correctly set so there is nothing more to do
-                       setBitNC(r,         false);                              // Clear set bit along path to root
+                  new If (!getBitNC(r))
+                   {void Then() {d.i(1);}                                       // Bit is already correctly set so there is nothing more to do
+                    void Else() {setBitNC(r, false);}                           // Clear set bit along path to root
+                   };
                  }
-                moveDownOneLayer(b, p, w);                                         // Next layer
-                return w.gt(0);                                                 // As long as we are in a valid level
+                moveDownOneLayer(b, p, w);                                      // Next layer
+                return !d.valid()&& w.gt(0);                                    // As long as we are in a valid level
                }
              };
            }
