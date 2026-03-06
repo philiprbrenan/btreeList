@@ -249,31 +249,34 @@ abstract public class BitSet extends Test                                       
       final Int B = b.Up();                                                     // Position in layer above
 
       public void run()
-       {if (!getBitNC(new Pos(B)) ||
-            !getBitNC(new Pos(B.Inc()))) return;                                // Check there is a zero
-        final Pos r = new Pos(p.Add(b));                                        // Position in first layer of Zero tree
-        new If (getBitNC(r))                                                    // Bit is not already correctly set to show no path so there is nothing more to do
+       {new If (getBitNC(new Pos(B)) &&
+                getBitNC(new Pos(B.Inc())))                                     // Check there is a zero
          {void Then()
-           {setBitNC(r, false);                                                 // Clear set bit along path to root to show no path
+           {final Pos r = new Pos(p.Add(b));                                        // Position in first layer of Zero tree
+            new If (getBitNC(r))                                                    // Bit is not already correctly set to show no path so there is nothing more to do
+             {void Then()
+               {setBitNC(r, false);                                                 // Clear set bit along path to root to show no path
 
-            new For(bitSize)                                                    // Step from root to leaf
-             {boolean body(int Index)
-               {final Int P = p.dup();                                          // Child layer becomes parent layer
-                moveDownOneLayer(b, p, w);                                      // Index of bit in child layer, position in child layer, width of child layer
-                final Int Q = P.Add(b).add(b);
-                final Int d = new Int();                                        // Complete early if we found a bit that does not need setting
-                new  If ( getBitNC(new Pos(Q)) ||
-                          getBitNC(new Pos(Q.Inc())))
-                 {void Then() {d.i(1);}                                         // There is a one in the upper row so we do not need to clear further down
-                  void Else()                                                   // Need to show that there are no ones in the upper row
-                   {final Pos r = new Pos(p.Add(b));                            // Bit to set
-                    new If (!getBitNC(r))
-                     {void Then() {d.i(1);}                                     // Bit is already correctly set so there is nothing more to do
-                      void Else() {setBitNC(r, false);}                         // Clear set bit along path to root
+                new For(bitSize)                                                    // Step from root to leaf
+                 {boolean body(int Index)
+                   {final Int P = p.dup();                                          // Child layer becomes parent layer
+                    moveDownOneLayer(b, p, w);                                      // Index of bit in child layer, position in child layer, width of child layer
+                    final Int Q = P.Add(b).add(b);
+                    final Int d = new Int();                                        // Complete early if we found a bit that does not need setting
+                    new If (getBitNC(new Pos(Q)) ||
+                            getBitNC(new Pos(Q.Inc())))
+                     {void Then() {d.i(1);}                                         // There is a one in the upper row so we do not need to clear further down
+                      void Else()                                                   // Need to show that there are no ones in the upper row
+                       {final Pos r = new Pos(p.Add(b));                            // Bit to set
+                        new If (!getBitNC(r))
+                         {void Then() {d.i(1);}                                     // Bit is already correctly set so there is nothing more to do
+                          void Else() {setBitNC(r, false);}                         // Clear set bit along path to root
+                         };
+                       }
                      };
+                    return !d.valid() && w.gt(0);                                   // As long as we are in a valid level
                    }
                  };
-                return !d.valid() && w.gt(0);                                   // As long as we are in a valid level
                }
              };
            }
