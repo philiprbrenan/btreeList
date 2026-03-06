@@ -197,7 +197,7 @@ abstract public class BitSet extends Test                                       
                {final Int B = b.Down();
                 final Int q = p.Add(w).add(B);
                 final Int Q = p.Add2(B);
-                final Int d = new Int();                                        // Cannot return across serbeal methodsNo forther action required after
+                final Int d = new Int();                                        // Complete early if we found a bit that does not need setting
                 new If (B.Up().inc().lt(w) &&                                   // Check both bits in the previous row are off
                     !getBitNC(new Pos(Q)) &&
                     !getBitNC(new Pos(Q.Inc())))
@@ -237,9 +237,13 @@ abstract public class BitSet extends Test                                       
        {new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
            {final Pos q = new Pos(p.Add(b));
-            if (getBitNC(q)) return false; else setBitNC(q, true);              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-            moveDownOneLayer(b, p, w);                                             // Next layer
-            return w.gt(0);                                                     // As long as we are in a valid level
+            final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
+            new If (getBitNC(q))                                                // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+             {void Then() {d.i(1);}
+              void Else() {setBitNC(q, true);}
+             };
+            moveDownOneLayer(b, p, w);                                          // Next layer
+            return !d.valid() && w.gt(0);                                       // As long as we are in a valid level
            }
          };
        }
