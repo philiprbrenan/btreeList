@@ -430,8 +430,8 @@ class Tree extends Test                                                         
      }
 
     void reset()                                                                // Reset the slots
-     {for (int i : range(numberOfSlots())) slots(new Slot(i), new slot(0));
-      for (int i : range(numberOfRefs))      key(new slot(i), Key(0));
+     {new For(numberOfSlots()) {boolean body(int i) {slots(new Slot(i), new slot(0)); return true;}};
+      new For(numberOfRefs   ) {boolean body(int i) {  key(new slot(i), Key(0));      return true;}};
 
       initialize();                                                             // Clear the existing tree bits - faster than deleting each path in turn
      }
