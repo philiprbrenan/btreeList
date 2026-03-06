@@ -594,27 +594,28 @@ class Tree extends Test                                                         
         final Int d = new Int();                                                // Set when the search is complete
         new For(numberOfSlots())                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
          {boolean body(int i)
-           {final Slot M = new Slot((a.get().value() + b.get().value()) / 2); // Desired mid point - but there might not be a slot in use at this point
-            final Slot A = M.locatePrevUsedSlot();                            // Occupied slot on or preceding mid point
-            final Slot B = M.locateNextUsedSlot();                            // Occupied slot on or succeeding mid point
-            final int Ap = A.value(), ap = a.get().value(),                   // New and current limits of range
+           {final Slot M = new Slot((a.get().value() + b.get().value()) / 2);   // Desired mid point - but there might not be a slot in use at this point
+            final Slot A = M.locatePrevUsedSlot();                              // Occupied slot on or preceding mid point
+            final Slot B = M.locateNextUsedSlot();                              // Occupied slot on or succeeding mid point
+            final int Ap = A.value(), ap = a.get().value(),                     // New and current limits of range
                       Bp = B.value(), bp = b.get().value();
 
-            if      (Ap != ap && A.ge(Key)) a.set(A);                         // Make sure that the new range is tighter than the existing one
+            if      (Ap != ap && A.ge(Key)) a.set(A);                           // Make sure that the new range is tighter than the existing one
             else if (Ap != bp && A.le(Key)) b.set(A);
             else if (Bp != ap && B.ge(Key)) a.set(B);
             else if (Bp != bp && B.le(Key)) b.set(B);
-            else                                                              // The slots must be adjacent
-             {if      (a.get().eq(Key)) found(a.get());                       // Found the search key at the lower end
-              else if (b.get().eq(Key)) found(b.get());                       // Found the search key at the upper end
+            else                                                                // The slots must be adjacent
+             {if      (a.get().eq(Key)) found(a.get());                         // Found the search key at the lower end
+              else if (b.get().eq(Key)) found(b.get());                         // Found the search key at the upper end
               else                      below(b.get());
               d.i(1); return false;
              }
-            return true;                                                      // Continue search with new range
+            return true;                                                        // Continue search with new range
            }
          };
         if (!d.valid())                                                         // Incomplete search
-         {stop("Searched more than the maximum number of times:", numberOfSlots());
+         {stop("Searched unsuccessfully more than the maximum number of times:",
+            numberOfSlots());
          }
        }
      }
@@ -868,10 +869,13 @@ class Tree extends Test                                                         
      {final Leaf d = new Leaf();
       final int p = new SlotsMemoryPositions().posKeys + 1 * Integer.BYTES;
       d.copySlots(this);                                                        // Copy slots
-      for (int i : range(numberOfRefs()))                                       // Each reference
-       {final slot I = new slot(i);                                             // Copy data associated with leaf keys
-        d.data(I, data(I));                                                     // Copy data associated with leaf keys
-       }
+      new For(numberOfRefs())                                                   // Each reference
+       {boolean body(int i)                                                     // Each reference
+         {final slot I = new slot(i);                                           // Copy data associated with leaf keys
+          d.data(I, data(I));                                                   // Copy data associated with leaf keys
+          return true;
+         }
+       };
       return d;
      }
 
@@ -896,33 +900,39 @@ class Tree extends Test                                                         
     Leaf splitRight(Leaf Right)                                                 // Split a left leaf into an existing right leaf
      {if (!full()) return null;                                                 // Only full leaves can be split
       final int Count = splitSize();
-      int s = 0;                                                                // Count slots used
+      final Int s = new Int(0);                                                 // Count slots used
       final int N = numberOfSlots();
-      for (int i : range(N))                                                    // Each slot
-       {final Slot S = new Slot(i);
-        if (usedSlots(S))                                                       // Slot is in use
-         {if (s++ < Count) Right.clearSlotAndRef(S);                            // Still in left leaf
-          else                   clearSlotAndRef(S);                            // Clear slot being used in right leaf
+      new For(N)                                                                // Each slot
+       {boolean body(int i)
+         {final Slot S = new Slot(i);
+          if (usedSlots(S))                                                     // Slot is in use
+           {if (s.i() < Count) {Right.clearSlotAndRef(S); s.inc();}             // Still in left leaf
+            else                      clearSlotAndRef(S);                       // Clear slot being used in right leaf
+           }
+          return true;
          }
-       }                                                                        // The new right leaf
+       };                                                                       // The new right leaf
       redistribute(); Right.redistribute();
       return Right;
      }
 
     int  splittingKey()                                                         // Splitting key from a leaf
      {if (!full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
-      int  k = 0;                                                               // Splitting key
-      int  p = 0;                                                               // Position in leaf
+      final Int k = new Int(0);                                                 // Splitting key
       final int S = numberOfSlots();
-      for (int i : range(S))                                                    // Scan for splitting keys
-       {if (usedSlots(new Slot(i)))                                             // Used slot
-         {if (p == splitSize()-1 || p == splitSize())                           // Accumulate splitting key as last on left and first on right of split
-           {k += keys(new Slot(i)).value();
+      final Int p = new Int(0);                                                 // Position in leaf
+      new For(S)                                                                // Scan for splitting keys
+       {boolean body(int i)
+         {if (usedSlots(new Slot(i)))                                           // Used slot
+           {if (p.i() == splitSize()-1 || p.i() == splitSize())                 // Accumulate splitting key as last on left and first on right of split
+             {k.add(keys(new Slot(i)).value());
+             }
+            p.inc();                                                            // Next position
            }
-          ++p;                                                                  // Next position
+          return true;
          }
-       }
-      return k /= 2;                                                            // Average splitting key
+       };
+      return k.down().i();                                                      // Average splitting key
      }
 
     Branch split()                                                              // Split a leaf into two leaves and a branch
