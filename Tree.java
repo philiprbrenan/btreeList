@@ -385,18 +385,15 @@ class Tree extends Test                                                         
      }
 
     void shift(int Position, int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
-     {if (Width > 0)                                                            // Shift up including the current slot
-       {for (int i = Width; i > 0; --i)                                         // Move each slot
-         {final Slot P = new Slot(Position+i);
-          slots(P, slots(P.left()));                                            // Move slot
-         }
-        usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
-       }
-      else if (Width < 0)                                                       // Shift the preceding slots down.  This reduces the number of moves needed to insert keys in ascending order
-       {for (int i = Width; i < 0; ++i)                                         // Move each slot
-         {final Slot P = new Slot(Position+i);
-          slots(P, slots(P.right()));                                           // Move slot
-         }
+     {if (Width != 0)                                                           // Shift up including the current slot
+       {new For(Width > 0 ? Width : -Width)                                     // Move each slot
+         {boolean body(int i)
+           {final boolean p = Width > 0;
+            final Slot P = new Slot(Position+Width+(p ? -i : +i));
+            slots(P, slots(p ? P.left() :  P.right()));                         // Move slot
+            return true;
+           }
+         };
         usedSlots(new Slot(Position+Width), true);                              // We only move occupied slots
        }
      }
@@ -1945,16 +1942,19 @@ class Tree extends Test                                                         
     final Stack<Leaf>  leaves   = new Stack<>();
 
     void scan(Branch B)
-     {for (int i : range(B.numberOfSlots()))
-       {final Slots.Slot S = B.new Slot(i);
-        if (B.usedSlots(S))
-         {final Slots    s = B.data(S);
-          final boolean  l = Leaf.ref(s), b = Branch.ref(s);
+     {new For (B.numberOfSlots())
+       {boolean body(int i)
+         {final Slots.Slot S = B.new Slot(i);
+          if (B.usedSlots(S))
+           {final Slots    s = B.data(S);
+            final boolean  l = Leaf.ref(s), b = Branch.ref(s);
 
-          if      (l)  leaves  .push((Leaf)  s);
-          else if (b) {branches.push((Branch)s); scan((Branch)s);}
+            if      (l)  leaves  .push((Leaf)  s);
+            else if (b) {branches.push((Branch)s); scan((Branch)s);}
+           }
+          return true;
          }
-       }
+       };
 
       final Slots s = B.top();
       final boolean l = Leaf.ref(s), b = Branch.ref(s);
