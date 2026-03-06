@@ -184,8 +184,6 @@ abstract public class BitSet extends Test                                       
 
   private void clearOnePath(Pos Index)                                          // Clear bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
-    if (bitSize.eq(0)) return;                                                  // Tree with no entries
-
     new If (bitSize.ne(0))                                                      // Non trivial bit set
      {void Then()
        {new Runnable()                                                          // For loop to set bits along path in One tree to actual bit
