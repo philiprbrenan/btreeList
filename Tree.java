@@ -1487,7 +1487,7 @@ class Tree extends Test                                                         
 
           if (!m)
            {final Slots.Slot r = b.locateFirstGe(Key);                          // Look further right
-            if (r != null && b.mergeRightSibling(r.stepRight())) m = true;      // Merge further right sibling
+            m = r != null && b.mergeRightSibling(r.stepRight());                // Merge further right sibling
            }
 
           if (!m) b.mergeLeftSibling(null);                                     // Migrate into top
