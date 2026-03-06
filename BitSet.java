@@ -145,9 +145,8 @@ abstract public class BitSet extends Test                                       
    {if (!one && !zero) stop("Cannot use path unless One or Zero paths chosen");
     if (getBit(Index) == Value) return;                                         // Already set to the correct value so nothing changes
     setBitNC(Index, Value);                                                     // Set the bit
-    if (bitSize.lt(2)) return;                                                  // The One and Zero trees would have no entries
-    if (one)  {if (Value) setOnePath (Index); else clearOnePath (Index);}
-    if (zero) {if (Value) setZeroPath(Index); else clearZeroPath(Index);}
+    new If (one)  {void Then() {new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};}};
+    new If (zero) {void Then() {new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};}};
    }
 
   private void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();} // Next layer down in a bit tree
