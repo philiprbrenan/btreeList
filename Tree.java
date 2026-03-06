@@ -1826,7 +1826,7 @@ class Tree extends Test                                                         
     final Ref<Branch> p = new Ref<>(q.get().up());                              // Last point at which we went left
     final Ref<Find>   f = new Ref<>();                                          // Find details of first leaf
 
-    if (p.get() != null)
+    if (p.valid())
      {new For(numberOfNodes)                                                    // Step up to turning point
        {boolean body(int i)
          {if (p.get().top().name().at() != q.get().name().at())                 // In the body of the parent branch of the leaf
@@ -1869,16 +1869,28 @@ class Tree extends Test                                                         
       return new Find(L.lastKey(), L);
      }
 
-    for(Branch q = l.up(), p = q.up(); p != null; q = p, p = q.up())            // Go up to the last point where we went left
-     {if (q.upIndex() == null)                                                  // In the body of the parent branch of the leaf
-       {final Slots.Slot I = p.locateLastUsedSlot();
-        final Branch     b = (Branch)p.data(I);
-        b.up(p); b.upIndex(I.value());
-        return goLast(b);
-       }
-     }
+    final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
+    final Ref<Branch> p = new Ref<>(q.get().up());                              // Last point at which we went left
+    final Ref<Find>   f = new Ref<>();                                          // Find details of last leaf
 
-    return null;
+    if (p.valid())
+     {new For(numberOfNodes)                                                    // Go up to the last point where we went left
+       {boolean body(int i)
+         {if (q.get().upIndex() == null)                                        // In the body of the parent branch of the leaf
+           {final Slots.Slot I = p.get().locateLastUsedSlot();
+            final Branch     b = (Branch)p.get().data(I);
+            b.up(p.get());   b.upIndex(I.value());
+            f.set(goLast(b));
+           }
+          else                                                                  // Go up to next branch
+           {q.set(p);
+            p.set(q.get().up());
+           }
+          return !f.valid() && p.valid();                                       // Continue until we find the first leaf
+         }
+       };
+     }
+    return f.get();
    }
 
 //D1 Print                                                                      // Print the tree horizontally
