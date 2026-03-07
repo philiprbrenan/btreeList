@@ -536,8 +536,7 @@ class Tree extends Test                                                         
 //D2 High level operations                                                      // Find, insert, delete values in the slots
 
     public slot insert(Key Key)                                                 // Insert a key into the slots maintaining the order of all the keys in the slots and returning the index of the reference to the key
-     {if (full()) return null;                                                  // No slot available in which to insert a new key
-      final slot alloc = allocRef();                                            // The location in which to store the search key
+     {final slot alloc = allocRef();                                            // The location in which to store the search key
       key(alloc, Key);                                                          // Store the new key in the referenced location
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
       if      ( l.above &&  l.below) {}                                         // Found
