@@ -1080,7 +1080,11 @@ class Tree extends Test                                                         
       new For(N)                                                                // Compact each slot to the right
        {boolean body(int i)
          {final Slot I = new Slot(N-i-1);
-          if (usedSlots(I)) {d[p.i()] = data(slots(I)); p.dec();}
+          new If (usedSlots(I))
+           {void Then()
+             {d[p.i()] = data(slots(I)); p.dec();
+             }
+           };
           return true;
          }
        };
@@ -1093,8 +1097,14 @@ class Tree extends Test                                                         
       new For(maxLeafSize)
        {boolean body(int i)
          {final slot J = new slot(i);
-          if      (l.usedRefs(J)) data(J, l.data(J));
-          else if (r.usedRefs(J)) data(J, r.data(J));
+          new If      (l.usedRefs(J))
+           {void Then()
+             {data(J, l.data(J));
+             }
+            void Else()
+             {new If (r.usedRefs(J)) {void Then() {data(J, r.data(J));}};
+             }
+           };
           return true;
          }
        };
