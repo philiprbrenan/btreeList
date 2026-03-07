@@ -983,8 +983,17 @@ class Tree extends Test                                                         
      }
 
     Leaf splitRight(Leaf Right)                                                 // Split a left leaf into an existing right leaf
-     {if (!full()) return null;                                                 // Only full leaves can be split
-      final int Count = splitSize();
+     {final Ref<Leaf> l = new Ref<>();
+      new If (full())
+       {void Then()
+         {l.set(splitRightFull(Right));                                                                                //
+         }
+       };
+      return l.get();                                                           // Only full leaves can be split
+     }
+
+    Leaf splitRightFull(Leaf Right)                                             // Split a left leaf into an existing right leaf
+     {final int Count = splitSize();
       final Int s = new Int(0);                                                 // Count slots used
       final int N = numberOfSlots();
       new For(N)                                                                // Each slot
@@ -1331,6 +1340,16 @@ class Tree extends Test                                                         
      }
 
     Split splitRight(Branch Right)                                              // Split a left branch into an existing right branch
+     {final Ref<Split> l = new Ref<>();
+      new If (full())
+       {void Then()
+         {l.set(splitRightFull(Right));                                         //
+         }
+       };
+      return l.get();                                                           // Only full leaves can be split
+     }
+
+    Split splitRightFull(Branch Right)                                          // Split a left branch into an existing right branch
      {if (!full()) return null;                                                 // Only full branches can be split
       final int Count = splitSize();
       final Int s     = new Int(0);                                             // Count slots used
@@ -1452,12 +1471,12 @@ class Tree extends Test                                                         
          {final slot J = new slot(i);
           new If      (l.usedRefs(J))
            {void Then()
-             {memory.data(i, l.memory.data(i));             // Merge from left first
+             {memory.data(i, l.memory.data(i));                                 // Merge from left first
              }
             void Else()
              {new If (r.usedRefs(J))
                {void Then()
-                 {memory.data(i, r.memory.data(i));             // Merge from right last
+                 {memory.data(i, r.memory.data(i));                             // Merge from right last
                  }
                };
              }
@@ -1477,13 +1496,22 @@ class Tree extends Test                                                         
      }
 
     boolean mergeFromRight(Key Key, Branch Right)                               // Merge the specified slots from the right
-     {if (countUsed() + Right.countUsed() >= maxBranchSize) return false;
-      mergeBranches(Key, duplicate(), Right.duplicate());
-      return true;
+     {final Bool R = new Bool();
+      new If (countUsed() + Right.countUsed() >= maxBranchSize)
+       {void Then()
+         {R.clear();
+         }
+        void Else()
+         {mergeBranches(Key, duplicate(), Right.duplicate());
+          R.set();
+         }
+       };
+      return R.b();
      }
 
     boolean mergeFromLeft(Key Key, Branch Left)                                 // Merge the specified slots from the right
-     {if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
+     {final Bool R = new Bool();
+      if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
       final Branch l = Left.duplicate(), r = duplicate();
       mergeBranches(Key, l, r);
       l.free(); r.free();
@@ -1491,7 +1519,8 @@ class Tree extends Test                                                         
      }
 
     boolean mergeLeftSibling(Slot Right)                                        // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
-     {final Slots.Slot left = Right != null ? Right.stepLeft() :                // Left sibling from right child
+     {final Bool R = new Bool();
+      final Slots.Slot left = Right != null ? Right.stepLeft() :                // Left sibling from right child
                                               locateLastUsedSlot();             // Sibling prior to top
       if (left == null) return false;                                           // No left sibling
       final Slots L = data(left);                                               // Left sibling as slots
