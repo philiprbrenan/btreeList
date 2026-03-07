@@ -540,67 +540,69 @@ class Tree extends Test                                                         
       key(alloc, Key);                                                          // Store the new key in the referenced location
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
       if   (!l.above || !l.below)                                               // Not found
-       {if (!l.above && !l.below)                                               // Empty place the key in the middle
-         {final int N = numberOfSlots();
-          slots    (new Slot(N/2), alloc);
-          usedSlots(new Slot(N/2), true);
-         }
-        else
-         {new If (l.above)                                                          // Insert their key above the found key
-           {void Then()
-             {final int i = l.at.value();
-              final int w = locateNearestFreeSlot(l.at);                          // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
-              new If (w > 0)                                                      // Move up
-               {void Then()                                                          // Move up
-                 {shift             (i+1,  w-1);                                    // Liberate a slot at this point
-                  slots    (new Slot(i).right(), alloc);                            // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
-                  usedSlots(new Slot(i).right(), true);
-                 }
-                void Else()
-                 {new If (w < 0)                                                     // Liberate a slot below the current slot
-                   {void Then()                                                     // Liberate a slot below the current slot
-                     {shift(         i,  w);                                            // Shift any intervening slots blocking the slot below
-                      slots(new Slot(i), alloc);                                        // Insert into the slot below
-                     }
-                   };
-                 }
-               };
-              new If (java.lang.Math.abs(w) >= redistributionWidth)                   // Redistribute if the used slots are densely packed
-               {void Then()
-                 {redistribute();
-                 }
-               };
-             }
-            void Else()
-             {new If (l.below)                                                        // Insert their key below the found key
-               {void Then()
-                 {final int i = l.at.value();
-                  final int w = locateNearestFreeSlot(l.at);                        // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
-                  new If (w > 0)                                                    // Move up
-                   {void Then()                                                     // Move up
-                     {shift(i,    w);                                                 // Liberate a slot at this point
-                      slots(l.at, alloc);                                             // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
-                     }
-                    void Else()
-                     {new If (w < 0)                                                  // Liberate a slot below the current slot
-                       {void Then()                                                   // Liberate a slot below the current slot
-                         {shift             (i-1,  w + 1);                            // Shift any intervening slots blocking the slot below
-                          slots    (new Slot(i).left(), alloc);                       // Insert into the slot below
-                          usedSlots(new Slot(i).left(), true);                        // Mark the free slot at the start of the range of occupied slots as now in use
-                         }
-                       };
-                     }
-                   };
-                  new If (java.lang.Math.abs(w) >= redistributionWidth)             // Redistribute if the used slots are densely packed
-                   {void Then()
-                     {redistribute();
-                     }
-                   };
-                 }
-               };
-             }
-           };
-         }
+       {new If (!l.above && !l.below)                                               // Empty place the key in the middle
+         {void Then()
+           {final int N = numberOfSlots();
+            slots    (new Slot(N/2), alloc);
+            usedSlots(new Slot(N/2), true);
+           }
+          void Else()
+           {new If (l.above)                                                          // Insert their key above the found key
+             {void Then()
+               {final int i = l.at.value();
+                final int w = locateNearestFreeSlot(l.at);                          // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                new If (w > 0)                                                      // Move up
+                 {void Then()                                                          // Move up
+                   {shift             (i+1,  w-1);                                    // Liberate a slot at this point
+                    slots    (new Slot(i).right(), alloc);                            // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                    usedSlots(new Slot(i).right(), true);
+                   }
+                  void Else()
+                   {new If (w < 0)                                                     // Liberate a slot below the current slot
+                     {void Then()                                                     // Liberate a slot below the current slot
+                       {shift(         i,  w);                                            // Shift any intervening slots blocking the slot below
+                        slots(new Slot(i), alloc);                                        // Insert into the slot below
+                       }
+                     };
+                   }
+                 };
+                new If (java.lang.Math.abs(w) >= redistributionWidth)                   // Redistribute if the used slots are densely packed
+                 {void Then()
+                   {redistribute();
+                   }
+                 };
+               }
+              void Else()
+               {new If (l.below)                                                        // Insert their key below the found key
+                 {void Then()
+                   {final int i = l.at.value();
+                    final int w = locateNearestFreeSlot(l.at);                        // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                    new If (w > 0)                                                    // Move up
+                     {void Then()                                                     // Move up
+                       {shift(i,    w);                                                 // Liberate a slot at this point
+                        slots(l.at, alloc);                                             // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                       }
+                      void Else()
+                       {new If (w < 0)                                                  // Liberate a slot below the current slot
+                         {void Then()                                                   // Liberate a slot below the current slot
+                           {shift             (i-1,  w + 1);                            // Shift any intervening slots blocking the slot below
+                            slots    (new Slot(i).left(), alloc);                       // Insert into the slot below
+                            usedSlots(new Slot(i).left(), true);                        // Mark the free slot at the start of the range of occupied slots as now in use
+                           }
+                         };
+                       }
+                     };
+                    new If (java.lang.Math.abs(w) >= redistributionWidth)             // Redistribute if the used slots are densely packed
+                     {void Then()
+                       {redistribute();
+                       }
+                     };
+                   }
+                 };
+               }
+             };
+           }
+         };
        }
       return alloc;                                                             // The index of the reference to the key
      }
