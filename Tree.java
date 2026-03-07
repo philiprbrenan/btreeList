@@ -990,10 +990,18 @@ class Tree extends Test                                                         
       new For(N)                                                                // Each slot
        {boolean body(int i)
          {final Slot S = new Slot(i);
-          if (usedSlots(S))                                                     // Slot is in use
-           {if (s.i() < Count) {Right.clearSlotAndRef(S); s.inc();}             // Still in left leaf
-            else                      clearSlotAndRef(S);                       // Clear slot being used in right leaf
-           }
+          new If (usedSlots(S))                                                     // Slot is in use
+           {void Then()                                                     // Slot is in use
+             {new If (s.i() < Count)                                              // Still in left leaf
+               {void Then()
+                 {Right.clearSlotAndRef(S); s.inc();
+                 }
+                void Else()                                                       // Clear slot being used in right leaf
+                 {clearSlotAndRef(S);
+                 }
+               };
+             }
+           };
           return true;
          }
        };                                                                       // The new right leaf
