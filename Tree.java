@@ -1097,7 +1097,7 @@ class Tree extends Test                                                         
       new For(maxLeafSize)
        {boolean body(int i)
          {final slot J = new slot(i);
-          new If      (l.usedRefs(J))
+          new If     (l.usedRefs(J))
            {void Then()
              {data(J, l.data(J));
              }
@@ -1119,20 +1119,36 @@ class Tree extends Test                                                         
      }
 
     boolean mergeFromRight(Leaf Right)                                          // Merge the specified slots from the right
-     {if (countUsed() + Right.countUsed() > maxLeafSize) return false;
-      mergeLeaves(duplicate(), Right.duplicate());
-      return true;
+     {final Bool r = new Bool();
+      new If (countUsed() + Right.countUsed() > maxLeafSize)
+       {void Then()
+         {r.clear();
+         }
+        void Else()
+         {mergeLeaves(duplicate(), Right.duplicate());
+          r.set();
+         }
+       };
+      return r.b();
      }
 
     boolean mergeFromLeft(Leaf Left)                                            // Merge the specified slots from the left
-     {if (Left.countUsed() + countUsed() > maxLeafSize) return false;
-      final Leaf l = Left.duplicate();
-      final Leaf r =      duplicate();
-      mergeLeaves(l, r);
-      Left.free();
-      l.free();
-      r.free();
-      return true;
+     {final Bool R = new Bool();
+      new If (Left.countUsed() + countUsed() > maxLeafSize)
+       {void Then()
+         {R.clear();
+         }
+        void Else()
+         {final Leaf l = Left.duplicate();
+          final Leaf r =      duplicate();
+          mergeLeaves(l, r);
+          Left.free();
+          l.free();
+          r.free();
+          R.set();
+         }
+       };
+      return R.b();
      }
 
 //D2 Memory                                                                     // Memory for leaf
