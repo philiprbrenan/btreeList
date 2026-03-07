@@ -1339,23 +1339,33 @@ class Tree extends Test                                                         
       new For (numberOfSlots())                                                 // Each slot
        {boolean body(int i)
          {final Slot I = new Slot(i);                                           // Slot is in use
-          if (usedSlots(I))                                                     // Slot is in use
-           {if (s.lt(Count))                                                    // Still in left branch
-             {Right.clearSlotAndRef(I);                                         // Free the entry from the right branch as it is being used in the left branch
-              s.inc();                                                          // Number of entries active in left branch
+          new If (usedSlots(I))                                                 // Slot is in use
+           {void Then()
+             {new If (s.lt(Count))                                              // Still in left branch
+               {void Then()                                                     // Still in left branch
+                 {Right.clearSlotAndRef(I);                                     // Free the entry from the right branch as it is being used in the left branch
+                  s.inc();                                                      // Number of entries active in left branch
+                 }
+                void Else()                                                     // Splitting key
+                 {new If (s.eq(Count))                                          // Splitting key
+                   {void Then()
+                     {sk.set(keys(I));
+                      top(data(I));
+                            clearSlotAndRef(I);
+                      Right.clearSlotAndRef(I);
+                      s.inc();                                                  // Number of entries active in left branch
+                     }
+                    void Else()
+                     {clearSlotAndRef(I);                                       // Clear slot being used in right branch
+                     }
+                   };
+                 }
+               };
              }
-            else if (s.eq(Count))                                               // Splitting key
-             {sk.set(keys(I));
-              top(data(I));
-                    clearSlotAndRef(I);
-              Right.clearSlotAndRef(I);
-              s.inc();                                                          // Number of entries active in left branch
-             }
-            else clearSlotAndRef(I);                                            // Clear slot being used in right branch
-           }
+           };
           return true;
          }
-       };                                                                        // The new right branch
+       };                                                                       // The new right branch
       redistribute(); Right.redistribute();
       return new Split(sk.get(), this, Right);
      }
@@ -1373,12 +1383,16 @@ class Tree extends Test                                                         
       new For(numberOfSlots())                                                  // Scan for splitting keys
        {boolean body(int i)
          {final Slot I = new Slot(i);
-          if (usedSlots(I))
-           {if (p.eq(splitSize()))
-             {k.add(keys(I).value());                                           // Splitting key as last on left and first on right of split
+          new If (usedSlots(I))
+           {void Then()
+             {new If (p.eq(splitSize()))
+               {void Then()
+                 {k.add(keys(I).value());                                           // Splitting key as last on left and first on right of split
+                 }
+               };
+              p.inc();
              }
-            p.inc();
-           }
+           };
           return true;
          }
        };
@@ -1397,7 +1411,7 @@ class Tree extends Test                                                         
 
     slot insert(Key Key, Slots Data)                                            // Insert a key data pair into a branch
      {final slot i = insert(Key);
-      if (i != null) dataDirect(i.value(), Data);
+      new If (i != null) {void Then() {dataDirect(i.value(), Data);}};
       return i;
      }
 
@@ -1408,7 +1422,7 @@ class Tree extends Test                                                         
       new For(numberOfSlots())
        {boolean body(int i)
          {final Slot I = new Slot(i);
-          if (usedSlots(I)) {d[p.i()] = data(I); p.inc();}
+          new If (usedSlots(I)) {void Then() {d[p.i()] = data(I); p.inc();}};
           return true;
          }
        };
@@ -1423,7 +1437,7 @@ class Tree extends Test                                                         
       new For(N)
        {boolean body(int i)
          {final Slot I = new Slot(N-i-1);
-          if (usedSlots(I)) {d[p.i()] = data(I); p.dec();}
+          new If (usedSlots(I)) {void Then() {d[p.i()] = data(I); p.dec();}};
           return true;
          }
        };
@@ -1436,8 +1450,18 @@ class Tree extends Test                                                         
       new For(maxBranchSize)                                                    // Each slot
        {boolean body(int i)
          {final slot J = new slot(i);
-          if      (l.usedRefs(J)) memory.data(i, l.memory.data(i));             // Merge from left first
-          else if (r.usedRefs(J)) memory.data(i, r.memory.data(i));             // Merge from right last
+          new If      (l.usedRefs(J))
+           {void Then()
+             {memory.data(i, l.memory.data(i));             // Merge from left first
+             }
+            void Else()
+             {new If (r.usedRefs(J))
+               {void Then()
+                 {memory.data(i, r.memory.data(i));             // Merge from right last
+                 }
+               };
+             }
+           };
           return true;
          }
        };
