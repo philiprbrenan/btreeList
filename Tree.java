@@ -653,8 +653,8 @@ class Tree extends Test                                                         
                   final Slot A = M.locatePrevUsedSlot();                        // Occupied slot on or preceding mid point
                   final Slot B = M.locateNextUsedSlot();                        // Occupied slot on or succeeding mid point
                   final Int  D = new Int();                                     // Continue the search unless set
-                  final int Ap = A.value(), ap = a.get().value(),               // New and current limits of range
-                            Bp = B.value(), bp = b.get().value();
+                  final int Ap = A.value(), ap = a.get().value();               // New and current lower limit of range
+                  final int Bp = B.value(), bp = b.get().value();               // New and current upper limit of range
 
                   new If (!D.valid() && Ap != ap && A.ge(Key)) {void Then() {D.i(1); a.set(A);}}; // Make sure that the new range is tighter than the existing one
                   new If (!D.valid() && Ap != bp && A.le(Key)) {void Then() {D.i(1); b.set(A);}};
