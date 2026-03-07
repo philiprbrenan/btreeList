@@ -489,14 +489,17 @@ class Tree extends Test                                                         
      }
 
     boolean mergeSlot(Slots S, Slot I, slot J)                                  // Merge a slot
-     {if (S.usedSlots(I))
-       {    slots(I, S.    slots(I));
-        usedSlots(I, S.usedSlots(I));
-         usedRefs(J, S. usedRefs(J));
-             keys(I, S.     keys(I));
-        return true;
-       }
-      return false;
+     {final Int m = new Int();
+      new If (S.usedSlots(I))
+       {void Then()
+         {    slots(I, S.    slots(I));
+          usedSlots(I, S.usedSlots(I));
+           usedRefs(J, S. usedRefs(J));
+               keys(I, S.     keys(I));
+          m.i(1);
+         }
+       };
+      return m.valid();
      }
 
     void mergeCompacted(Slots Left, Slots Right)                                // Merge left and right compacted slots into the current slots
@@ -521,13 +524,13 @@ class Tree extends Test                                                         
      }
 
     boolean mergeOnRight(Slots Right)                                           // Merge the specified slots from the right
-     {if (countUsed() + Right.countUsed() > numberOfSlots()) return false;
-      return mergeBack(duplicateSlots(), Right.duplicateSlots());
+     {return countUsed() + Right.countUsed() > numberOfSlots() ? false :
+             mergeBack(duplicateSlots(), Right.duplicateSlots());
      }
 
     boolean mergeOnLeft(Slots Left)                                             // Merge the specified slots from the left
-     {if (Left.countUsed() + countUsed() > numberOfSlots()) return false;
-      return mergeBack(Left.duplicateSlots(), duplicateSlots());
+     {return Left.countUsed() + countUsed() > numberOfSlots() ? false :
+             mergeBack(Left.duplicateSlots(), duplicateSlots());
      }
 
 //D2 High level operations                                                      // Find, insert, delete values in the slots
