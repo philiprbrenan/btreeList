@@ -890,9 +890,9 @@ class Tree extends Test                                                         
 
   Slots root()                                                                  // Slots representing the root of the tree held in memory
    {final int r = memory.root();                                                // Current node containing root
-    if (r == 0) return null;                                                    // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
-    if (r <  0) return new Leaf  (new Allocation(-r));                          // Leaf as negative
-    return             new Branch(new Allocation( r));                          // Branch as positive
+    return r == 0 ? null :                                                      // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
+           r <  0 ? new Leaf  (new Allocation(-r)):                             // Leaf as negative
+                    new Branch(new Allocation( r));                             // Branch as positive
    }
 
   void root(Leaf   Root) {memory.root(Root != null ? -Root.name().at() : 0);}   // Set the root in memory with a negative address to show that it is a leaf
