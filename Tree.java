@@ -1350,8 +1350,7 @@ class Tree extends Test                                                         
      }
 
     Split splitRightFull(Branch Right)                                          // Split a left branch into an existing right branch
-     {if (!full()) return null;                                                 // Only full branches can be split
-      final int Count = splitSize();
+     {final int Count = splitSize();
       final Int s     = new Int(0);                                             // Count slots used
       Ref<Key>  sk    = new Ref<>();                                            // Splitting key
 
@@ -1511,11 +1510,18 @@ class Tree extends Test                                                         
 
     boolean mergeFromLeft(Key Key, Branch Left)                                 // Merge the specified slots from the right
      {final Bool R = new Bool();
-      if (Left.countUsed() + countUsed() >= maxBranchSize) return false;
-      final Branch l = Left.duplicate(), r = duplicate();
-      mergeBranches(Key, l, r);
-      l.free(); r.free();
-      return true;
+      new If (Left.countUsed() + countUsed() >= maxBranchSize)
+       {void Then()
+         {R.clear();
+         }
+        void Else()
+         {final Branch l = Left.duplicate(), r = duplicate();
+          mergeBranches(Key, l, r);
+          l.free(); r.free();
+          R.set();
+         }
+       };
+      return R.b();
      }
 
     boolean mergeLeftSibling(Slot Right)                                        // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
