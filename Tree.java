@@ -635,43 +635,43 @@ class Tree extends Test                                                         
       boolean exact() {return above && below;}                                  // Oh America - my new found land.
 
       Locate(Key Key)                                                           // Locate the slot containing the search key if possible.
-       {if (empty()) none();                                                   // Empty so their search key cannot be found
+       {if (empty()) none();                                                    // Empty so their search key cannot be found
         else
-         {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                   // Lower limit
-          final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                   // Upper limit
-          final Int       d = new Int();                                           // Continue the search unless set
-          new If (!d.valid() &&  a.get().eq(Key)) {void Then() {d.i(1); found(a.get());            }};     // Found at the start of the range
-          new If (!d.valid() &&  b.get().eq(Key)) {void Then() {d.i(1); found(b.get());            }};     // Found at the end of the range
-          new If (!d.valid() &&  a.get().le(Key)) {void Then() {d.i(1); below(a.get()); all = true;}};     // Smaller than any key
-          new If (!d.valid() && !b.get().le(Key)) {void Then() {d.i(1); above(b.get()); all = true;}};     // Greater than any key
+         {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                 // Lower limit
+          final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                 // Upper limit
+          final Int       d = new Int();                                        // Continue the search unless set
+          new If (!d.valid() &&  a.get().eq(Key)) {void Then() {d.i(1); found(a.get());            }}; // Found at the start of the range
+          new If (!d.valid() &&  b.get().eq(Key)) {void Then() {d.i(1); found(b.get());            }}; // Found at the end of the range
+          new If (!d.valid() &&  a.get().le(Key)) {void Then() {d.i(1); below(a.get()); all = true;}}; // Smaller than any key
+          new If (!d.valid() && !b.get().le(Key)) {void Then() {d.i(1); above(b.get()); all = true;}}; // Greater than any key
 
-          new If (!d.valid())                                                         // Search
+          new If (!d.valid())                                                   // Search
            {void Then()
-             {new For(numberOfSlots())                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
+             {new For(numberOfSlots())                                          // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
                {boolean body(int i)
-                 {final Slot M = new Slot((a.get().value() + b.get().value()) / 2);   // Desired mid point - but there might not be a slot in use at this point
-                  final Slot A = M.locatePrevUsedSlot();                              // Occupied slot on or preceding mid point
-                  final Slot B = M.locateNextUsedSlot();                              // Occupied slot on or succeeding mid point
-                  final Int  D = new Int();                                           // Continue the search unless set
-                  final int Ap = A.value(), ap = a.get().value(),                     // New and current limits of range
+                 {final Slot M = new Slot((a.get().value()+b.get().value())/2); // Desired mid point - but there might not be a slot in use at this point
+                  final Slot A = M.locatePrevUsedSlot();                        // Occupied slot on or preceding mid point
+                  final Slot B = M.locateNextUsedSlot();                        // Occupied slot on or succeeding mid point
+                  final Int  D = new Int();                                     // Continue the search unless set
+                  final int Ap = A.value(), ap = a.get().value(),               // New and current limits of range
                             Bp = B.value(), bp = b.get().value();
 
-                  new If (!D.valid() && Ap != ap && A.ge(Key)) {void Then() {D.i(1); a.set(A);}};              // Make sure that the new range is tighter than the existing one
+                  new If (!D.valid() && Ap != ap && A.ge(Key)) {void Then() {D.i(1); a.set(A);}}; // Make sure that the new range is tighter than the existing one
                   new If (!D.valid() && Ap != bp && A.le(Key)) {void Then() {D.i(1); b.set(A);}};
                   new If (!D.valid() && Bp != ap && B.ge(Key)) {void Then() {D.i(1); a.set(B);}};
                   new If (!D.valid() && Bp != bp && B.le(Key)) {void Then() {D.i(1); b.set(B);}};
-                  new If (!D.valid())                                                                       // The slots must be adjacent
+                  new If (!D.valid())                                           // The slots must be adjacent
                    {void Then()
                      {new If (!D.valid() && a.get().eq(Key)) {void Then() {D.i(1); found(a.get());}};
-                      new If (!D.valid() && b.get().eq(Key)) {void Then() {D.i(1); found(b.get());}};                         // Found the search key at the upper end
+                      new If (!D.valid() && b.get().eq(Key)) {void Then() {D.i(1); found(b.get());}};
                       new If (!D.valid())                    {void Then() {D.i(1); below(b.get());}};
-                      d.i(1);                                                                        // Search has completed
+                      d.i(1);                                                   // Search has completed
                      }
                    };
-                  return !d.valid();                                                        // Continue search with new range
+                  return !d.valid();                                            // Continue search with new range
                  }
                };
-              new If (!d.valid())                                                     // Incomplete search
+              new If (!d.valid())                                               // Incomplete search
                {void Then()
                  {stop("Searched unsuccessfully more than the maximum number of times:",
                        numberOfSlots());
