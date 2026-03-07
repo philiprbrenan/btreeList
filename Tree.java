@@ -445,33 +445,45 @@ class Tree extends Test                                                         
      }
 
     void compactLeft()                                                          // Compact the used slots to the left end
-     {if (empty()) return;                                                      // Nothing to compact
-      final Slots d = duplicateSlots();
-      reset();
-      final Int p = new Int(0);
-      new For(numberOfSlots())                                                  // Each slot
-       {boolean body(int i)
-         {final Slot I = new Slot(i);
-          if (d.usedSlots(I))                                                   // Each used slot
-           {compactSlot(new Slot(p.i()), new slot(p.i()), d.keys(I)); p.inc();
-           }
-          return true;
+     {new If (!empty())                                                         // Something to compact
+       {void Then()
+         {final Slots d = duplicateSlots();
+          reset();
+          final Int p = new Int(0);
+          new For(numberOfSlots())                                              // Each slot
+           {boolean body(int i)
+             {final Slot I = new Slot(i);
+              new If (d.usedSlots(I))                                           // Each used slot
+               {void Then()
+                 {compactSlot(new Slot(p.i()), new slot(p.i()), d.keys(I));
+                  p.inc();
+                 }
+               };
+              return true;
+             }
+           };
          }
        };
      }
 
     void compactRight()                                                         // Compact the used slots to the left end
-     {if (empty()) return;                                                      // Nothing to squeeze
-      final Slots d = duplicateSlots(); reset();
-      final Int p = new Int(numberOfRefs - 1);
-      final int N = numberOfSlots();
-      new For(N)
-       {boolean body(int i)
-         {final Slot I = new Slot(N-i-1);
-          if (d.usedSlots(I))                                                   // Each used slot
-           {compactSlot(new Slot(p.i()), new slot(p.i()), d.keys(I)); p.dec();
-           }
-          return true;
+     {new If (!empty())                                                         // Something to compact
+       {void Then()
+         {final Slots d = duplicateSlots(); reset();
+          final Int p = new Int(numberOfRefs - 1);
+          final int N = numberOfSlots();
+          new For(N)
+           {boolean body(int i)
+             {final Slot I = new Slot(N-i-1);
+              new If (d.usedSlots(I))                                           // Each used slot
+               {void Then()
+                 {compactSlot(new Slot(p.i()), new slot(p.i()), d.keys(I));
+                  p.dec();
+                 }
+               };
+              return true;
+             }
+           };
          }
        };
      }
