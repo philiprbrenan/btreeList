@@ -1060,8 +1060,8 @@ public class Test                                                               
      {if (condition) Then(); else Else();
      }
 
-    void Then() {}                                                              // Then clause
-    void Else() {}                                                              // Else clause
+    abstract void Then();                                                        // Then clause
+             void Else() {}                                                     // Else clause
    }
 
   static class Int                                                              // An integer that can be passed as a parameter to a method and modified there-in
