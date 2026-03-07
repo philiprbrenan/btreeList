@@ -685,9 +685,8 @@ class Tree extends Test                                                         
 
     Slot locateFirstGe(Key Key)                                                 // Locate the slot containing the first key greater than or equal to the search key
      {final Locate l = new Locate(Key);
-      if (l.at == null) return null;
-      if (l.below) return l.at;
-      return l.at.right().locateNextUsedSlot();
+      final Slot   a = l.at;
+      return a == null ? null : l.below ? a : a.right().locateNextUsedSlot();
      }
 
     Slot locate(Key Key)                                                        // Locate the slot containing the current search key if possible.
@@ -702,9 +701,17 @@ class Tree extends Test                                                         
 
     boolean delete(Key Key)                                                     // Delete the specified key from the slots
      {final Slot i = locate(Key);                                               // Locate the search key
-      if (i == null) return false;                                              // The key is not in the slots
-      clearSlotAndRef(i);                                                       // Delete found key
-      return true;                                                              // Indicate that the key was deleted
+      final Bool C = new Bool();
+      new If (i == null)                                                        // Key not present so no need to delete it
+       {void Then()
+         {C.clear();                                                            // The key is not in the slots
+         }
+        void Else()
+         {clearSlotAndRef(i);                                                   // Delete found key
+          C.set();                                                              // Indicate that the key was deleted
+         }
+       };
+      return C.b();
      }
 
 //D2 Print                                                                      // Print the slots
