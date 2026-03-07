@@ -1525,29 +1525,41 @@ class Tree extends Test                                                         
      }
 
     boolean mergeLeftSibling(Slot Right)                                        // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
-     {final Bool R = new Bool();
+     {final Bool R = new Bool();                                                // Result
       final Slots.Slot left = Right != null ? Right.stepLeft() :                // Left sibling from right child
                                               locateLastUsedSlot();             // Sibling prior to top
-      if (left == null) return false;                                           // No left sibling
-      final Slots L = data(left);                                               // Left sibling as slots
-      if (Leaf.ref(L))                                                          // Merging leaves
-       {final Leaf l = (Leaf)L;
-        final Leaf r = (Leaf)(Right != null ? data(Right) : top());             // Right leaf sibling
-        if (r.mergeFromLeft(l))                                                 // Merge left sibling into right
-         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
-          return true;
+      new If (left == null)
+       {void Then() {R.clear();}                                                // No left sibling
+        void Else()
+         {final Slots L = data(left);                                           // Left sibling as slots
+          new If (Leaf.ref(L))                                                  // Merging leaves
+           {void Then()
+             {final Leaf l = (Leaf)L;
+              final Leaf r = (Leaf)(Right != null ? data(Right) : top());             // Right leaf sibling
+              new If (r.mergeFromLeft(l))                                                 // Merge left sibling into right
+               {void Then()
+                 {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
+                  R.set();
+                 }
+                void Else() {R.clear();};
+               };
+             }
+            void Else()                                                                      // Children are branches
+             {final Branch l = (Branch)L;
+              final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
+              new If (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
+               {void Then()
+                 {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
+                  l.free();
+                  R.set();
+                 }
+                void Else() {R.clear();};
+               };
+             }
+           };
          }
-       }
-      else                                                                      // Children are branches
-       {final Branch l = (Branch)L;
-        final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
-        if (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
-         {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
-          l.free();
-          return true;
-         }
-       }
-      return false;
+       };
+      return R.b();
      }
 
     boolean mergeRightSibling(Slot Left)                                        // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
