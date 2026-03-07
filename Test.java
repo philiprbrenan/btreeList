@@ -2,6 +2,7 @@
 // Test a java program.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //------------------------------------------------------------------------------
+// change boolean eq() to Bool eq()
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.io.*;
@@ -1064,6 +1065,61 @@ public class Test                                                               
              void Else() {}                                                     // Else clause
    }
 
+  static class Bool                                                             // An integer that can be passed as a parameter to a method and modified there-in
+   {private boolean i = false;                                                  // Value of the integer
+    private boolean v = false;                                                  // Whether the current value of the integer is valid or not
+    private String  n = null;                                                   // An optional name for this variable
+    boolean valid() {return v;}
+
+    Bool           ()          {}
+    Bool           (boolean I) {i = I; v = true;}
+    Bool           (Bool    I) {I.x(); i = I.i; v = I.v;}
+    Bool (String N)            {n = N;}
+    Bool (String N, boolean I) {n = N; i = I; v = true;}
+    Bool (String N, Bool    I) {n = N; I.x(); i = I.i; v = I.v;}
+
+    void          x()          {if (!v) stop("Bool has not been set yet");}
+    Bool          X()          {v = true; return this;}
+
+    Bool        set()          {i = true;  v = true;     return this;}
+    Bool        set(boolean I) {i = I;     v = true;     return this;}
+    Bool        set(Bool    I) {I.x(); i = I.i; v = I.v; return this;}
+    Bool      clear()          {i = false; v = true;     return this;}
+    boolean       b()          {      x();               return i;}
+    Bool       flip()          {      x(); i = !i;       return this;}
+
+    Bool        Set()          {return dup().set();}
+    Bool        Set(boolean I) {return dup().set(I);}
+    Bool        Set(Bool    I) {return dup().set(I);}
+    Bool      Clear()          {return dup().clear();}
+    boolean       B()          {return dup().b();}
+    Bool       Flip()          {return dup().flip();}
+
+    Bool         eq(boolean e){  x(); return new Bool(i == e);}
+    Bool         ne(boolean e){  x(); return new Bool(i != e);}
+
+    Bool         eq(Bool    e){e.x(); return eq(e.i);}
+    Bool         ne(Bool    e){e.x(); return ne(e.i);}
+
+    Bool         or(Bool...b)
+     {boolean r = false;
+      for (int i : range(b.length)) r = r || b[i].b();
+      return new Bool(r);
+     }
+
+    Bool        and(Bool...b)
+     {boolean r = true;
+      for (int i : range(b.length)) r = r && b[i].b();
+      return new Bool(r);
+     }
+
+    Bool dup() {final Bool I = new Bool(i); I.n = n; return I;}
+
+    public String toString()
+     {return (n == null ? "" : n+"=")+i;
+     }
+   }
+
   static class Int                                                              // An integer that can be passed as a parameter to a method and modified there-in
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
@@ -1116,7 +1172,7 @@ public class Test                                                               
     boolean ge(Int e){e.x(); return ge(e.i);}
     boolean gt(Int e){e.x(); return gt(e.i);}
 
-    Int dup() {final Int I = new Int(i); I.n = n; return I;}
+    Int dup() {final Int I = new Int(i); I.v = v; I.n = n; return I;}
 
     public String toString()
      {return (n == null ? "" : n+"=")+i;
