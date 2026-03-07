@@ -1261,10 +1261,17 @@ class Tree extends Test                                                         
     static boolean ref(Slots B)    {return B instanceof Branch;}                // Check whether we are referencing a branch
 
     int refSign(Slots Slots)                                                    // The sign of a reference according to whether it is a reference to a leaf or a branch
-     {if (Slots == null) return 0;
-      final int i = Slots.name().at();
-      final int r = ref(Slots) ? +i : -i;
-      return r;
+     {final Int R  = new Int();
+      new If (Slots == null)
+       {void Then()
+         {R.i(0);
+         }
+        void Else()
+         {final int i = Slots.name().at();
+          R.i(ref(Slots) ? +i : -i);
+         }
+       };
+      return R.i();
      }
 
     void top(Slots Value) {memory.top(refSign(Value));}                         // Set the top most element
