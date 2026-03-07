@@ -990,13 +990,13 @@ class Tree extends Test                                                         
       new For(N)                                                                // Each slot
        {boolean body(int i)
          {final Slot S = new Slot(i);
-          new If (usedSlots(S))                                                     // Slot is in use
-           {void Then()                                                     // Slot is in use
-             {new If (s.i() < Count)                                              // Still in left leaf
+          new If (usedSlots(S))                                                 // Slot is in use
+           {void Then()                                                         // Slot is in use
+             {new If (s.i() < Count)                                            // Still in left leaf
                {void Then()
                  {Right.clearSlotAndRef(S); s.inc();
                  }
-                void Else()                                                       // Clear slot being used in right leaf
+                void Else()                                                     // Clear slot being used in right leaf
                  {clearSlotAndRef(S);
                  }
                };
@@ -1009,19 +1009,23 @@ class Tree extends Test                                                         
       return Right;
      }
 
-    int  splittingKey()                                                         // Splitting key from a leaf
+    int splittingKey()                                                          // Splitting key from a leaf
      {if (!full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
       final Int k = new Int(0);                                                 // Splitting key
       final int S = numberOfSlots();
       final Int p = new Int(0);                                                 // Position in leaf
       new For(S)                                                                // Scan for splitting keys
        {boolean body(int i)
-         {if (usedSlots(new Slot(i)))                                           // Used slot
-           {if (p.i() == splitSize()-1 || p.i() == splitSize())                 // Accumulate splitting key as last on left and first on right of split
-             {k.add(keys(new Slot(i)).value());
+         {new If (usedSlots(new Slot(i)))                                       // Used slot
+           {void Then()
+             {new If (p.i() == splitSize()-1 || p.i() == splitSize())           // Accumulate splitting key as last on left and first on right of split
+               {void Then()
+                 {k.add(keys(new Slot(i)).value());
+                 }
+               };
+              p.inc();                                                          // Next position
              }
-            p.inc();                                                            // Next position
-           }
+           };
           return true;
          }
        };
@@ -1041,7 +1045,7 @@ class Tree extends Test                                                         
 
     slot insert(Key Key, Data Data)                                             // Insert a key data pair into a leaf
      {final slot i = insert(Key);
-      if (i != null) data(i, Data);                                             // Save data in allocated reference
+      new If (i != null) {void Then() {data(i, Data);}};                        // Save data in allocated reference
       return i;
      }
 
@@ -1051,7 +1055,11 @@ class Tree extends Test                                                         
       new For(numberOfSlots())                                                  // Copy leaf data
        {boolean body(int i)
          {final Slot I = new Slot(i);
-          if (usedSlots(I)) {d[p.i()] = data(slots(I)); p.inc();}
+          new If (usedSlots(I))
+           {void Then()
+             {d[p.i()] = data(slots(I)); p.inc();
+             }
+           };
           return true;
          }
        };
