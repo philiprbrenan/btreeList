@@ -635,41 +635,47 @@ class Tree extends Test                                                         
       boolean exact() {return above && below;}                                  // Oh America - my new found land.
 
       Locate(Key Key)                                                           // Locate the slot containing the search key if possible.
-       {if (empty()) {none(); return;}                                          // Empty so their search key cannot be found
-        final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                   // Lower limit
-        final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                   // Upper limit
-        if ( a.get().eq(Key)) {found(a.get()); return;}                         // Found at the start of the range
-        if ( b.get().eq(Key)) {found(b.get()); return;}                         // Found at the end of the range
-        if ( a.get().le(Key)) {below(a.get()); all = true; return;}             // Smaller than any key
-        if (!b.get().le(Key)) {above(b.get()); all = true; return;}             // Greater than any key
+       {if (empty()) none();                                                   // Empty so their search key cannot be found
+        else
+         {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                   // Lower limit
+          final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                   // Upper limit
+          boolean c = true;                                                       // Keep going
+          if (c &&  a.get().eq(Key)) {found(a.get());             c = false;}     // Found at the start of the range
+          if (c &&  b.get().eq(Key)) {found(b.get());             c = false;}     // Found at the end of the range
+          if (c &&  a.get().le(Key)) {below(a.get()); all = true; c = false;}     // Smaller than any key
+          if (c && !b.get().le(Key)) {above(b.get()); all = true; c = false;}     // Greater than any key
+          if (!c) return;
 
-        final Int d = new Int();                                                // Set when the search is complete
-        new For(numberOfSlots())                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
-         {boolean body(int i)
-           {final Slot M = new Slot((a.get().value() + b.get().value()) / 2);   // Desired mid point - but there might not be a slot in use at this point
-            final Slot A = M.locatePrevUsedSlot();                              // Occupied slot on or preceding mid point
-            final Slot B = M.locateNextUsedSlot();                              // Occupied slot on or succeeding mid point
-            final int Ap = A.value(), ap = a.get().value(),                     // New and current limits of range
-                      Bp = B.value(), bp = b.get().value();
+          final Int d = new Int();                                                // Set when the search is complete
+          new For(numberOfSlots())                                                // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
+           {boolean body(int i)
+             {final Slot M = new Slot((a.get().value() + b.get().value()) / 2);   // Desired mid point - but there might not be a slot in use at this point
+              final Slot A = M.locatePrevUsedSlot();                              // Occupied slot on or preceding mid point
+              final Slot B = M.locateNextUsedSlot();                              // Occupied slot on or succeeding mid point
+              final int Ap = A.value(), ap = a.get().value(),                     // New and current limits of range
+                        Bp = B.value(), bp = b.get().value();
 
-            if      (Ap != ap && A.ge(Key)) a.set(A);                           // Make sure that the new range is tighter than the existing one
-            else if (Ap != bp && A.le(Key)) b.set(A);
-            else if (Bp != ap && B.ge(Key)) a.set(B);
-            else if (Bp != bp && B.le(Key)) b.set(B);
-            else                                                                // The slots must be adjacent
-             {if      (a.get().eq(Key)) found(a.get());                         // Found the search key at the lower end
-              else if (b.get().eq(Key)) found(b.get());                         // Found the search key at the upper end
-              else                      below(b.get());
-              d.i(1); return false;
+              if      (Ap != ap && A.ge(Key)) a.set(A);                           // Make sure that the new range is tighter than the existing one
+              else if (Ap != bp && A.le(Key)) b.set(A);
+              else if (Bp != ap && B.ge(Key)) a.set(B);
+              else if (Bp != bp && B.le(Key)) b.set(B);
+              else                                                                // The slots must be adjacent
+               {if      (a.get().eq(Key)) found(a.get());                         // Found the search key at the lower end
+                else if (b.get().eq(Key)) found(b.get());                         // Found the search key at the upper end
+                else                      below(b.get());
+                d.i(1); return false;
+               }
+              return true;                                                        // Continue search with new range
              }
-            return true;                                                        // Continue search with new range
-           }
-         };
-        if (!d.valid())                                                         // Incomplete search
-         {stop("Searched unsuccessfully more than the maximum number of times:",
-            numberOfSlots());
+           };
+          new If (!d.valid())                                                     // Incomplete search
+           {void Then()
+             {stop("Searched unsuccessfully more than the maximum number of times:",
+                   numberOfSlots());
+             }
+           };
          }
-       }
+       };
      }
 
     Slot locateFirstGe(Key Key)                                                 // Locate the slot containing the first key greater than or equal to the search key
