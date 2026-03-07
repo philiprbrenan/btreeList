@@ -1563,14 +1563,14 @@ class Tree extends Test                                                         
      }
 
     boolean mergeRightSibling(Slot Left)                                        // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
-     {if (Left == null) return false;                                           // Nothing to right of top
-      return mergeLeftSibling(Left.stepRight());                                // Recast as a merge from the left
+     {return Left == null ? false : mergeLeftSibling(Left.stepRight());         // Nothing to right of top
      }
 
     Slots child(Slot Index)                                                     // The indexed child. The index must be valid or null - if null, top is returned
-     {if (Index == null) return top();                                          // A null index produces top
-      if (!usedSlots(Index)) stop("Indexing unused slot:", Index.value());      // The slot must be valid
-      return data(Index);                                                       // The indicated child
+     {if (Index != null && !usedSlots(Index))                                   // The slot must be valid
+       {stop("Indexing unused slot:", Index.value());
+       }
+      return Index == null ? top() : data(Index);                               // A null index produces top
      }
 
     Tree tree()             {return Tree.this;}                                 // Containing tree
@@ -1585,7 +1585,7 @@ class Tree extends Test                                                         
       new For (numberOfSlots())                                                 // Each slot
        {boolean body(int i)
          {final Slot I = new Slot(i);
-          if (usedSlots(I)) n.add(count(data(I)));
+          new If (usedSlots(I)) {void Then() {n.add(count(data(I)));}};
           return true;
          }
        };
