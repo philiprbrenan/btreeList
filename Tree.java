@@ -1907,18 +1907,20 @@ class Tree extends Test                                                         
 
     if (Leaf.ref(root()))                                                       // Leaf root
      {final Leaf l = (Leaf)root();
-      if (!l.full())                                                            // Still space in leaf root
-       {l.insert(Key, Data);                                                    // Insert into leaf root
-        return;
-       }
-      else
-       {final Branch b = l.split();                                             // Split full leaf root
-        root(b);
-       }
+      new If (!l.full())                                                        // Still space in leaf root
+       {void Then()
+         {l.insert(Key, Data);                                                  // Insert into leaf root
+          return;
+         }
+        void Else()
+         {final Branch b = l.split();                                           // Split full leaf root
+          root(b);
+         }
+       };
      }
 
     final Ref<Branch> p = new Ref<>((Branch)root());                            // Start at root
-    if (p.get().full())                                                         // Split full root branch
+    new If (p.get().full())                                                     // Split full root branch
      {void Then()
        {final Branch P = p.get();
         p.set(p.get().split());
