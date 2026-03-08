@@ -1945,21 +1945,21 @@ class Tree extends Test                                                         
 
     final Ref<Branch> q = new Ref<>(find(Key).leaf.up());                       // First branch above leaf
     final Ref<Branch> b = new Ref<>(q.get().up());                              // Parent of first branch above leaf
-    final Int         D = new Int();                                            // First unfull branch above leaf has been located when set
+    final Bool        D = new Bool().clear();                                   // First unfull branch above leaf has been located when set
     new If (b.valid())
      {void Then()
        {new For(numberOfNodes)                                                  // Look for first unfull branch along path up from leaf
          {boolean body(int i)                                                   // Found the first unfull branch
            {new If (!b.get().full())
              {void Then()
-               {p.set(b.get()); D.i(1);
+               {p.set(b.get()); D.set();
                }
               void Else()
                {q.set(b.get());
                 b.set(q.get().up());
                }
              };
-            return !D.valid() && b.valid();
+            return !D.b() && b.valid();
            }
          };
        }
