@@ -1842,16 +1842,18 @@ class Tree extends Test                                                         
      {boolean body(int i)
        {final Slots.Slot Q = p.get().locateFirstGe(Key);
         final Slots      q = p.get().child(Q);
-        if (Leaf.ref(q))                                                        // Step down to a leaf
-         {final Leaf l = (Leaf)q;
-          l.up(p.get()); l.upIndex(Q);                                          // Parent of leaf along find path
-          f.set(new Find(Key, l));
-         }
-        else
-         {final Branch b = (Branch)q;
-          b.up(p.get()); b.upIndex(Q != null ? Q.value() : null);               // Record parent branch
-          p.set(b);                                                             // Step down into non full branch
-         }
+        new If (Leaf.ref(q))                                                    // Step down to a leaf
+         {void Then()
+           {final Leaf l = (Leaf)q;
+            l.up(p.get()); l.upIndex(Q);                                        // Parent of leaf along find path
+            f.set(new Find(Key, l));
+           }
+          void Else()
+           {final Branch b = (Branch)q;
+            b.up(p.get()); b.upIndex(Q != null ? Q.value() : null);             // Record parent branch
+            p.set(b);                                                           // Step down into non full branch
+           }
+         };
         return !f.valid();
        }
      };
@@ -1978,11 +1980,17 @@ class Tree extends Test                                                         
    }
 
   void delete(Key Key)                                                          // Delete a key from the tree
-   {if (root() == null) return;                                                 // The tree is empty tree so there is nothing to delete
-    final Find f = find(Key);                                                   // Locate the key in the tree
-    if (!f.locate.exact()) return;                                              // Key not found so nothing to delete
-    f.leaf.clearSlotAndRef(f.locate.at);                                        // Delete key and data from leaf
-    mergeAlongPath(Key);
+   {new If (root() != null)                                                         // The tree is not empty so there might be something to delete
+     {void Then()
+       {final Find f = find(Key);                                                 // Locate the key in the tree
+        new If (f.locate.exact())                                                     // Key found so delete it
+         {void Then()
+           {f.leaf.clearSlotAndRef(f.locate.at);                                    // Delete key and data from leaf
+            mergeAlongPath(Key);
+           }
+         };
+       }
+     };
    }
 
   int count()                                                                   // Print the tree with and without details
