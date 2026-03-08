@@ -1965,7 +1965,7 @@ class Tree extends Test                                                         
        }
      };
 
-    final Int d = new Int();                                                    // Set when done
+    final Bool d = new Bool().clear();                                          // Set when done
     new For(MaximumNumberOfLevels)                                              // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {boolean body(int i)
        {final Slots q = p.get().stepDown(Key);                                  // Step down
@@ -1984,7 +1984,7 @@ class Tree extends Test                                                         
               void Else() {r.insert(Key, Data);}                                // Leaf has sufficient space
              };
             mergeAlongPath(Key);                                                // Merge along the path taken by the key to compress the tree
-            d.i(1);
+            d.set();
            }
           void Else()                                                           // Step down to a branch
            {final Branch r = (Branch)q;
@@ -1999,10 +1999,10 @@ class Tree extends Test                                                         
              };
            }
          };
-        return !d.valid();                                                      // Continue until done
+        return !d.b();                                                          // Continue until done
        }
      };
-    if (!d.valid())                                                             // Unable to insert
+    if (!d.b())                                                             // Unable to insert
      {stop("Insert fell off the end of tree after this many searches:", mnl());
      }
    }
