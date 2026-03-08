@@ -187,23 +187,23 @@ abstract public class BitSet extends Test                                       
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
-           {final Int B = b.Down();
-            final Int q = p.Add(w).add(B);
-            final Int Q = p.Add2(B);
-            final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
+           {final Int  B = b.Down();
+            final Int  q = p.Add(w).add(B);
+            final Int  Q = p.Add2(B);
+            final Bool d = new Bool().clear();                                            // Complete early if we found a bit that does not need setting
             new If (B.Up().inc().lt(w) &&                                       // Check both bits in the previous row are off
                 !getBitNC(new Pos(Q))  &&
                 !getBitNC(new Pos(Q.Inc())))
              {void Then()
                {final Pos r = new Pos(q);
                 new If (!getBitNC(r))
-                 {void Then() {d.i(1);}                                         // Bit is already correctly set so there is nothing more to do
+                 {void Then() {d.set();}                                         // Bit is already correctly set so there is nothing more to do
                   void Else() {setBitNC(r, false);}                             // Clear set bit along path to root
                  };
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next layer
-            return !d.valid()&& w.gt(0);                                        // As long as we are in a valid level
+            return !d.b() && w.gt(0);                                           // As long as we are in a valid level
            }
          };
        }
