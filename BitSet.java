@@ -161,18 +161,18 @@ abstract public class BitSet extends Test                                       
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
          {boolean body(int Index)
-           {final Int d = new Int();                                            // Complete early if we found a bit that does not need setting
+           {final Bool d = new Bool().clear();                                            // Complete early if we found a bit that does not need setting
             new If (p.ne(0))                                                    // Not on the actual bits
              {void Then()                                                       // Not on the actual bits
                {final Pos q = new Pos(p.Add(b));                                // Position in One tree
                 new If (getBitNC(q))                                            // Is the bit already set
-                 {void Then() {d.i(1);}                                         // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+                 {void Then() {d.set();}                                         // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
                   void Else() {setBitNC(q, true);}                              // Flip the bit and continue
                  };
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next level up
-            return !d.valid() && w.gt(0);                                       // As long as we are in a valid level
+            return !d.b() && w.gt(0);                                       // As long as we are in a valid level
            }
          };
        }
@@ -366,7 +366,7 @@ abstract public class BitSet extends Test                                       
        {new For(bitSize)                                                        // Step up throgh One bits
          {boolean body(int i)
            {final Int B = b.Dec();                                              // Is there a path down from the next bit?
-            final Int d = new Int();                                            // Whether we have arrived at a bit that is already correctly set
+            final Bool d = new Bool().clear();                                  // Whether we have arrived at a bit that is already correctly set
             new If (b.gt(0) && getBitNC(new Pos(p.Add(B))))                     // Found next down bit
              {void Then()
                {new For(i)                                                      // Step down to the leaves
@@ -377,14 +377,14 @@ abstract public class BitSet extends Test                                       
                    }
                  };
                 R.i(B);                                                         // Save the result
-                d.i(i);                                                         // Finish the loop
+                d.set();                                                        // Finish the loop
                }
               void Else()
                {moveDownOneLayer(b, p, w);                                      // Address next level of bits in tree
-                new If (w.eq(0)) {void Then() {d.i(i);}};
+                new If (w.eq(0)) {void Then() {d.set();}};
                }
              };
-            return !d.valid();
+            return !d.b();
            }
          };
        }
