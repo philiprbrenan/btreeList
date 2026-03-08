@@ -1899,10 +1899,9 @@ class Tree extends Test                                                         
          }
         else                                                                    // At the end of the parent
          {final Slots.Slot L = b.locateLastUsedSlot();                          // End of body of parent
-          if (L != null && b.mergeLeftSibling(L)) return;
+          if (L != null && b.mergeLeftSibling(L))  return;
          }
-        b.mergeLeftSibling(null);                                               // Merge towards top
-        return;
+        b.mergeLeftSibling(null);                  return;                      // Merge towards top
        }
      }
 
@@ -1953,8 +1952,8 @@ class Tree extends Test                                                         
            {final int  sk = r.splittingKey();                                   // Splitting key
             final Leaf  l = r.splitLeft();                                      // Right leaf split out of the leaf
             p.get().insert(Key(sk), l);                                         // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-            if (Key.value() <= sk) l.insert(Key, Data);                         // Insert into left or right leaf which will now have space
-            else r.insert(Key, Data);
+            final Leaf  L = Key.value() <= sk ? l : r;                          // Choose left or right leaf depending on key
+            L.insert(Key, Data);                                                // Insert into left or right leaf which will now have space
            }
           else r.insert(Key, Data);                                             // Leaf has sufficient space
 
@@ -1967,7 +1966,7 @@ class Tree extends Test                                                         
            {final int         sk = r.splittingKey();                            // Splitting key
             final Branch.Split s = r.splitLeft();                               // Branch split out on right from
             p.get().insert(Key(sk), s.left);                                    // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-            if (Key.value() <= sk) p.set(s.left); else p.set(s.right);          // Traverse left or right
+            p.set(Key.value() <= sk ? s.left : s.right);                        // Traverse left or right
            }
           else p.set(r);                                                        // Step down into non full branch
          }
