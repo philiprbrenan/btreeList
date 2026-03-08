@@ -225,6 +225,7 @@ class Tree extends Test                                                         
     final class Slot extends Int                                                // A reference to a slot
      {Slot( int Value)  {i(Value);}                                             // A key
       int       value() {return i();}                                           // The value of the key
+      Int         Int() {return this;}                                          // The value of the key
       Slot      right() {return new Slot(i()+1);}                               // Step right
       Slot       left() {return new Slot(i()-1);}                               // Step left
 
@@ -666,14 +667,14 @@ class Tree extends Test                                                         
                   final Slot A = M.locatePrevUsedSlot();                        // Occupied slot on or preceding mid point
                   final Slot B = M.locateNextUsedSlot();                        // Occupied slot on or succeeding mid point
                   final Bool D = new Bool().clear();                            // Continue the search unless set
-                  final Int Ap = new Int(A.value()), ap = new Int(a.get().value()); // New and current lower limit of range
-                  final Int Bp = new Int(B.value()), bp = new Int(b.get().value()); // New and current upper limit of range
+                  final Int Ap = A.Int(), ap = new Int(a.get().value());        // New and current lower limit of range
+                  final Int Bp = B.Int(), bp = new Int(b.get().value());        // New and current upper limit of range
 
                   new If (!D.b() && Ap.ne(ap) && A.ge(Key)) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
                   new If (!D.b() && Ap.ne(bp) && A.le(Key)) {void Then() {D.set(); b.set(A);}};
                   new If (!D.b() && Bp.ne(ap) && B.ge(Key)) {void Then() {D.set(); a.set(B);}};
                   new If (!D.b() && Bp.ne(bp) && B.le(Key)) {void Then() {D.set(); b.set(B);}};
-                  new If (!D.b())                                           // The slots must be adjacent
+                  new If (!D.b())                                               // The slots must be adjacent
                    {void Then()
                      {new If (!D.b() && a.get().eq(Key)) {void Then() {D.set(); found(a.get());}};
                       new If (!D.b() && b.get().eq(Key)) {void Then() {D.set(); found(b.get());}};
