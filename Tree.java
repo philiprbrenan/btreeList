@@ -1948,27 +1948,30 @@ class Tree extends Test                                                         
         if (Leaf.ref(q))                                                        // Step down to a leaf
          {final Leaf r = (Leaf)q;                                               // We have reached a leaf
 
-          if (r.full())                                                         // Split the leaf if it is full
-           {final int  sk = r.splittingKey();                                   // Splitting key
-            final Leaf  l = r.splitLeft();                                      // Right leaf split out of the leaf
-            p.get().insert(Key(sk), l);                                         // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-            final Leaf  L = Key.value() <= sk ? l : r;                          // Choose left or right leaf depending on key
-            L.insert(Key, Data);                                                // Insert into left or right leaf which will now have space
-           }
-          else r.insert(Key, Data);                                             // Leaf has sufficient space
-
+          new If (r.full())                                                     // Split the leaf if it is full
+           {void Then()
+            {final int  sk = r.splittingKey();                                  // Splitting key
+              final Leaf  l = r.splitLeft();                                    // Right leaf split out of the leaf
+              p.get().insert(Key(sk), l);                                       // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+              final Leaf  L = Key.value() <= sk ? l : r;                        // Choose left or right leaf depending on key
+              L.insert(Key, Data);                                              // Insert into left or right leaf which will now have space
+             }
+            void Else() {r.insert(Key, Data);}                                  // Leaf has sufficient space
+           };
           mergeAlongPath(Key);                                                  // Merge along the path taken by the key to compress the tree
           d.i(1);
          }
-        else
+        else                                                                    // Step down to a branch
          {final Branch r = (Branch)q;
-          if (r.full())                                                         // Split the leaf if it is full
-           {final int         sk = r.splittingKey();                            // Splitting key
-            final Branch.Split s = r.splitLeft();                               // Branch split out on right from
-            p.get().insert(Key(sk), s.left);                                    // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-            p.set(Key.value() <= sk ? s.left : s.right);                        // Traverse left or right
-           }
-          else p.set(r);                                                        // Step down into non full branch
+          new If (r.full())                                                     // Split the leaf if it is full
+           {void Then()
+             {final int         sk = r.splittingKey();                          // Splitting key
+              final Branch.Split s = r.splitLeft();                             // Branch split out on right from
+              p.get().insert(Key(sk), s.left);                                  // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+              p.set(Key.value() <= sk ? s.left : s.right);                      // Traverse left or right
+             }
+            void Else() {p.set(r);}                                             // Step down into non full branch
+           };
          }
         return !d.valid();                                                      // Continue until done
        }
