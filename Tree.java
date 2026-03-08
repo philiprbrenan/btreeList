@@ -1915,11 +1915,15 @@ class Tree extends Test                                                         
         void Else()
          {final Branch b = l.split();                                           // Split full leaf root
           root(b);
+          insertTree(Key, Data);                                                // Insert a key, data pair or update key data pair in the tree
          }
        };
      }
+    else insertTree(Key, Data);                                                 // Insert a key, data pair or update key data pair in the tree
+   }
 
-    final Ref<Branch> p = new Ref<>((Branch)root());                            // Start at root
+  void insertTree(Key Key, Data Data)                                           // Insert a key, data pair or update key data pair in the tree
+   {final Ref<Branch> p = new Ref<>((Branch)root());                            // Start at root
     new If (p.get().full())                                                     // Split full root branch
      {void Then()
        {final Branch P = p.get();
