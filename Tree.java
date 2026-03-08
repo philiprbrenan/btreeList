@@ -137,7 +137,7 @@ class Tree extends Test                                                         
 
     for(Leaf l : a.leaves)
      {final Allocation  n = l.name();
-      if (freeChain.contains(n)) stop("Leaf on free chain and in tree:", n.at());
+      if (freeChain.contains(n)) stop("Leaf on free chain and in tree:",n.at());
       u.add(n.at());
       ((Slots)l).memory.usedSlotsBits.integrity();
       ((Slots)l).memory.usedRefsBits .integrity();
@@ -400,11 +400,14 @@ class Tree extends Test                                                         
     void redistribute()                                                         // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
      {new If (!empty())                                                         // Something to redistribute
        {void Then()
-         {final int N = numberOfSlots(), c = countUsed(), space = (N - c) / c,  // Space between used slots
-                cover = (space+1)*(c-1)+1, remainder = max(0, N - cover);       // Covered space from first used slot to last used slot, uncovered remainder
-          final int    []s = new int    [N];                                    // New slots distribution
-          final boolean[]u = new boolean[N];                                    // New used slots distribution
-          final Int p = new Int(remainder / 2);                                 // Start position for first used slot
+         {final int         N = numberOfSlots();                                // Maximum number of slots
+          final int         c = countUsed();                                    // Number of slots in use
+          final int     space = (N - c) / c;                                    // Space between used slots
+          final int     cover = (space+1)*(c-1)+1;                              // Covered space from first used slot to last used slot,
+          final int remainder = max(0, N - cover);                              // Uncovered remainder
+          final int       []s = new int    [N];                                 // New slots distribution
+          final boolean   []u = new boolean[N];                                 // New used slots distribution
+          final Int         p = new Int(remainder / 2);                         // Start position for first used slot
           new For(N)                                                            // Redistribute slots
            {boolean body(int i)
              {final Slot I = new Slot(i);
@@ -489,17 +492,17 @@ class Tree extends Test                                                         
      }
 
     boolean mergeSlot(Slots S, Slot I, slot J)                                  // Merge a slot
-     {final Int m = new Int();
+     {final Bool m = new Bool().clear();                                        // Whether a successful merge occurred
       new If (S.usedSlots(I))
        {void Then()
          {    slots(I, S.    slots(I));
           usedSlots(I, S.usedSlots(I));
            usedRefs(J, S. usedRefs(J));
                keys(I, S.     keys(I));
-          m.i(1);
+          m.set();
          }
        };
-      return m.valid();
+      return m.b();
      }
 
     void mergeCompacted(Slots Left, Slots Right)                                // Merge left and right compacted slots into the current slots
@@ -639,39 +642,39 @@ class Tree extends Test                                                         
         else
          {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                 // Lower limit
           final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                 // Upper limit
-          final Int       d = new Int();                                        // Continue the search unless set
-          new If (!d.valid() &&  a.get().eq(Key)) {void Then() {d.i(1); found(a.get());            }}; // Found at the start of the range
-          new If (!d.valid() &&  b.get().eq(Key)) {void Then() {d.i(1); found(b.get());            }}; // Found at the end of the range
-          new If (!d.valid() &&  a.get().le(Key)) {void Then() {d.i(1); below(a.get()); all = true;}}; // Smaller than any key
-          new If (!d.valid() && !b.get().le(Key)) {void Then() {d.i(1); above(b.get()); all = true;}}; // Greater than any key
+          final Bool      d = new Bool().clear();                               // Continue the search unless set
+          new If (!d.b() &&  a.get().eq(Key)) {void Then() {d.set(); found(a.get());            }}; // Found at the start of the range
+          new If (!d.b() &&  b.get().eq(Key)) {void Then() {d.set(); found(b.get());            }}; // Found at the end of the range
+          new If (!d.b() &&  a.get().le(Key)) {void Then() {d.set(); below(a.get()); all = true;}}; // Smaller than any key
+          new If (!d.b() && !b.get().le(Key)) {void Then() {d.set(); above(b.get()); all = true;}}; // Greater than any key
 
-          new If (!d.valid())                                                   // Search
+          new If (!d.b())                                                       // Search
            {void Then()
              {new For(numberOfSlots())                                          // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
                {boolean body(int i)
                  {final Slot M = new Slot((a.get().value()+b.get().value())/2); // Desired mid point - but there might not be a slot in use at this point
                   final Slot A = M.locatePrevUsedSlot();                        // Occupied slot on or preceding mid point
                   final Slot B = M.locateNextUsedSlot();                        // Occupied slot on or succeeding mid point
-                  final Int  D = new Int();                                     // Continue the search unless set
+                  final Bool D = new Bool().clear();                            // Continue the search unless set
                   final int Ap = A.value(), ap = a.get().value();               // New and current lower limit of range
                   final int Bp = B.value(), bp = b.get().value();               // New and current upper limit of range
 
-                  new If (!D.valid() && Ap != ap && A.ge(Key)) {void Then() {D.i(1); a.set(A);}}; // Make sure that the new range is tighter than the existing one
-                  new If (!D.valid() && Ap != bp && A.le(Key)) {void Then() {D.i(1); b.set(A);}};
-                  new If (!D.valid() && Bp != ap && B.ge(Key)) {void Then() {D.i(1); a.set(B);}};
-                  new If (!D.valid() && Bp != bp && B.le(Key)) {void Then() {D.i(1); b.set(B);}};
-                  new If (!D.valid())                                           // The slots must be adjacent
+                  new If (!D.b() && Ap != ap && A.ge(Key)) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
+                  new If (!D.b() && Ap != bp && A.le(Key)) {void Then() {D.set(); b.set(A);}};
+                  new If (!D.b() && Bp != ap && B.ge(Key)) {void Then() {D.set(); a.set(B);}};
+                  new If (!D.b() && Bp != bp && B.le(Key)) {void Then() {D.set(); b.set(B);}};
+                  new If (!D.b())                                           // The slots must be adjacent
                    {void Then()
-                     {new If (!D.valid() && a.get().eq(Key)) {void Then() {D.i(1); found(a.get());}};
-                      new If (!D.valid() && b.get().eq(Key)) {void Then() {D.i(1); found(b.get());}};
-                      new If (!D.valid())                    {void Then() {D.i(1); below(b.get());}};
-                      d.i(1);                                                   // Search has completed
+                     {new If (!D.b() && a.get().eq(Key)) {void Then() {D.set(); found(a.get());}};
+                      new If (!D.b() && b.get().eq(Key)) {void Then() {D.set(); found(b.get());}};
+                      new If (!D.b())                    {void Then() {D.set(); below(b.get());}};
+                      d.set();                                                  // Search has completed
                      }
                    };
-                  return !d.valid();                                            // Continue search with new range
+                  return !d.b();                                                // Continue search with new range
                  }
                };
-              new If (!d.valid())                                               // Incomplete search
+              new If (!d.b())                                                   // Incomplete search
                {void Then()
                  {stop("Searched unsuccessfully more than the maximum number of times:",
                        numberOfSlots());
@@ -986,7 +989,7 @@ class Tree extends Test                                                         
      {final Ref<Leaf> l = new Ref<>();
       new If (full())
        {void Then()
-         {l.set(splitRightFull(Right));                                                                                //
+         {l.set(splitRightFull(Right));                                         //
          }
        };
       return l.get();                                                           // Only full leaves can be split
@@ -1405,7 +1408,7 @@ class Tree extends Test                                                         
            {void Then()
              {new If (p.eq(splitSize()))
                {void Then()
-                 {k.add(keys(I).value());                                           // Splitting key as last on left and first on right of split
+                 {k.add(keys(I).value());                                       // Splitting key as last on left and first on right of split
                  }
                };
               p.inc();
@@ -1535,21 +1538,21 @@ class Tree extends Test                                                         
           new If (Leaf.ref(L))                                                  // Merging leaves
            {void Then()
              {final Leaf l = (Leaf)L;
-              final Leaf r = (Leaf)(Right != null ? data(Right) : top());             // Right leaf sibling
-              new If (r.mergeFromLeft(l))                                                 // Merge left sibling into right
+              final Leaf r = (Leaf)(Right != null ? data(Right) : top());       // Right leaf sibling
+              new If (r.mergeFromLeft(l))                                       // Merge left sibling into right
                {void Then()
-                 {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
+                 {clearSlotAndRef(left);                                        // Remove left sibling from parent now that it has been merged with its right sibling
                   R.set();
                  }
                 void Else() {R.clear();};
                };
              }
-            void Else()                                                                      // Children are branches
+            void Else()                                                         // Children are branches
              {final Branch l = (Branch)L;
-              final Branch r = (Branch)(Right != null ? data(Right) : top());         // Right leaf sibling
-              new If (r.mergeFromLeft(keys(left), l))                                     // Merge left sibling into right
+              final Branch r = (Branch)(Right != null ? data(Right) : top());   // Right leaf sibling
+              new If (r.mergeFromLeft(keys(left), l))                           // Merge left sibling into right
                {void Then()
-                 {clearSlotAndRef(left);                                                // Remove left sibling from parent now that it has been merged with its right sibling
+                 {clearSlotAndRef(left);                                        // Remove left sibling from parent now that it has been merged with its right sibling
                   l.free();
                   R.set();
                  }
