@@ -1868,21 +1868,21 @@ class Tree extends Test                                                         
     if (root() == null)                                                         // Empty tree
      {final Leaf l = new Leaf(); root(l);                                       // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
-      return;
+      d.set();
      }
     else                                                                        // Localize optimized insert for non full leaf or full leaf under non full parent
      {final Find F = find(Key);                                                 // See if key is already present
       if (F.locate.exact())                                                     // Key already present so update data associated with the key
        {final Leaf l = F.leaf;                                                  // Child leaf
         l.data(F.locate.at, Data);                                              // Update data
-        return;
+        d.set();
        }
-      else if (!F.leaf.full())                                                  // Leaf not full so insert directly
+      if (!d.b() && !F.leaf.full())                                                  // Leaf not full so insert directly
        {final Leaf l = F.leaf;                                                  // Child leaf
         l.insert(Key, Data);                                                    // Insert key
-        return;
+        d.set();
        }
-      else if (F.leaf.up() != null && !F.leaf.up().full())                      // Leaf is full, parent branch is not full so we can split leaf
+      if (!d.b() && F.leaf.up() != null && !F.leaf.up().full())                      // Leaf is full, parent branch is not full so we can split leaf
        {final Branch b = F.leaf.up();                                           // Parent branch
         final Leaf   r = F.leaf;
         final int   sk = r.splittingKey();
@@ -1890,38 +1890,42 @@ class Tree extends Test                                                         
         b.insert(Key(sk), l);                                                   // Insert new left leaf into leaf
         if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);   // Insert new key, data pair into left leaf or right leaf depending on key
         final Slots.Slot K = b.locateFirstGe(Key);                              // Position of leaf in parent
-        if (b.mergeLeftSibling (K)) return;                                     // Merge inserted leaf into prior leaf if possible
-        if (b.mergeRightSibling(K)) return;                                     // Merge inserted leaf into next leaf if possible
-        if (K != null)                                                          // Some where in the body of the parent branch
+        if (!d.b() && b.mergeLeftSibling (K)) d.set();                                     // Merge inserted leaf into prior leaf if possible
+        if (!d.b() && b.mergeRightSibling(K)) d.set();                                     // Merge inserted leaf into next leaf if possible
+        if (!d.b() && K != null)                                                          // Some where in the body of the parent branch
          {final Slots.Slot L = K.stepLeft(), R = K.stepRight();                 // Further left and right if possible
-          if (L != null && b.mergeLeftSibling (L)) return;
-          if (R != null && b.mergeLeftSibling (R)) return;
-          if (R != null && b.mergeRightSibling(R)) return;
+          if (!d.b() && L != null && b.mergeLeftSibling (L)) d.set();
+          if (!d.b() && R != null && b.mergeLeftSibling (R)) d.set();
+          if (!d.b() && R != null && b.mergeRightSibling(R)) d.set();
          }
-        else                                                                    // At the end of the parent
-         {final Slots.Slot L = b.locateLastUsedSlot();                          // End of body of parent
-          if (L != null && b.mergeLeftSibling(L))  return;
+        if (!d.b() && K == null)                                                // Some where in the body of the parent branch
+         {final Slots.Slot L = b.locateLastUsedSlot();
+          if (!d.b() && L != null && b.mergeLeftSibling(L))  d.set();
          }
-        b.mergeLeftSibling(null);                  return;                      // Merge towards top
+        if (!d.b()) {b.mergeLeftSibling(null); d.set();}                        // Merge towards top
        }
      }
 
-    new If (Leaf.ref(root()))                                                   // Leaf root
+    new If (!d.b())
      {void Then()
-       {final Leaf l = (Leaf)root();
-        new If (!l.full())                                                      // Still space in leaf root
+       {new If (Leaf.ref(root()))                                               // Leaf root
          {void Then()
-           {l.insert(Key, Data);                                                // Insert into leaf root
-            return;
+           {final Leaf l = (Leaf)root();
+            new If (!l.full())                                                  // Still space in leaf root
+             {void Then()
+               {l.insert(Key, Data);                                            // Insert into leaf root
+                return;
+               }
+              void Else()
+               {final Branch b = l.split();                                     // Split full leaf root
+                root(b);
+                insertTree(Key, Data);                                          // Insert a key, data pair or update key data pair in the tree
+               }
+             };
            }
-          void Else()
-           {final Branch b = l.split();                                         // Split full leaf root
-            root(b);
-            insertTree(Key, Data);                                              // Insert a key, data pair or update key data pair in the tree
-           }
+          void Else() {insertTree(Key, Data);}                                  // Insert a key, data pair or update key data pair in the tree
          };
        }
-      void Else() {insertTree(Key, Data);}                                      // Insert a key, data pair or update key data pair in the tree
      };
    }
 
