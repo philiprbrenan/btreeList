@@ -2171,39 +2171,41 @@ class Tree extends Test                                                         
           return new Find(L.lastKey(), L);
          }
         else
-         {if (l.upIndex(P).value() != l.locateFirstUsedSlot().value())           // Not the first leaf of the parent branch
-           {final Slots.Slot U = l.upIndex(P);
-            final Slots.Slot u = U.stepLeft();
-            final Leaf       L = u != null ? (Leaf)P.data(u) : (Leaf)P.top();
-            L.upIndex(u);
-            return new Find(L.lastKey(), L);
-           }
-          else
-           {final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
-            final Ref<Branch> p = new Ref<>(q.get().up());                              // Locate last point at which we went left
+         {new If (l.upIndex(P).value() != l.locateFirstUsedSlot().value())           // Not the first leaf of the parent branch
+           {void Then()
+             {final Slots.Slot U = l.upIndex(P);
+              final Slots.Slot u = U.stepLeft();
+              final Leaf       L = u != null ? (Leaf)P.data(u) : (Leaf)P.top();
+              L.upIndex(u);
+              f.set(new Find(L.lastKey(), L));
+             }
+            void Else()
+             {final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
+              final Ref<Branch> p = new Ref<>(q.get().up());                              // Locate last point at which we went left
 
-            new If (p.valid())
-             {void Then()
-               {new For(numberOfNodes)                                                  // Go up to the last point where we went left
-                 {boolean body(int i)
-                   {new If (q.get().upIndex() == null)                                  // In the body of the parent branch of the leaf
-                     {void Then()
-                       {final Slots.Slot I = p.get().locateLastUsedSlot();
-                        final Branch     b = (Branch)p.get().data(I);
-                        b.up(p.get());   b.upIndex(I.value());
-                        f.set(goLast(b));
-                       }
-                      void Else()                                                       // Go up to next branch
-                       {q.set(p);
-                        p.set(q.get().up());
-                       }
-                     };
-                    return !f.valid() && p.valid();                                     // Continue until we find the first leaf
-                   }
-                 };
-               }
-             };
-           }
+              new If (p.valid())
+               {void Then()
+                 {new For(numberOfNodes)                                                  // Go up to the last point where we went left
+                   {boolean body(int i)
+                     {new If (q.get().upIndex() == null)                                  // In the body of the parent branch of the leaf
+                       {void Then()
+                         {final Slots.Slot I = p.get().locateLastUsedSlot();
+                          final Branch     b = (Branch)p.get().data(I);
+                          b.up(p.get());   b.upIndex(I.value());
+                          f.set(goLast(b));
+                         }
+                        void Else()                                                       // Go up to next branch
+                         {q.set(p);
+                          p.set(q.get().up());
+                         }
+                       };
+                      return !f.valid() && p.valid();                                     // Continue until we find the first leaf
+                     }
+                   };
+                 }
+               };
+             }
+           };
          }
        }
      }
