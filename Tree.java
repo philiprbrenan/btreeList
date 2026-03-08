@@ -1980,12 +1980,12 @@ class Tree extends Test                                                         
    }
 
   void delete(Key Key)                                                          // Delete a key from the tree
-   {new If (root() != null)                                                         // The tree is not empty so there might be something to delete
+   {new If (root() != null)                                                     // The tree is not empty so there might be something to delete
      {void Then()
-       {final Find f = find(Key);                                                 // Locate the key in the tree
-        new If (f.locate.exact())                                                     // Key found so delete it
+       {final Find f = find(Key);                                               // Locate the key in the tree
+        new If (f.locate.exact())                                               // Key found so delete it
          {void Then()
-           {f.leaf.clearSlotAndRef(f.locate.at);                                    // Delete key and data from leaf
+           {f.leaf.clearSlotAndRef(f.locate.at);                                // Delete key and data from leaf
             mergeAlongPath(Key);
            }
          };
@@ -1993,25 +1993,29 @@ class Tree extends Test                                                         
      };
    }
 
-  int count()                                                                   // Print the tree with and without details
+  int count()                                                                   // Count the number of entries in the tree
    {final Slots r = root();
-    if (r == null)   return 0;                                                  // Empty tree
-    if (Leaf.ref(r)) return r.countUsed();                                      // Tree is a single leaf
-                     return ((Branch)r).count();                                // Tree has one or more branches
+    return r == null ? 0 : Leaf.ref(r) ? r.countUsed() : ((Branch)r).count();
    }
 
 //D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
 
   Find first()                                                                  // Find the position of the first key in the key
-   {if (root() == null) return null;                                            // Empty tree does not have a first key
-    if (Leaf.ref(root()))
-     {final Leaf       l = (Leaf)root();
-      final Slots.Slot i = l.locateFirstUsedSlot();
-      l.up(null); l.upIndex(i);
-      return new Find(l.keys(i), l);
+   {final Ref<Find> f = new Ref<>();
+    if (root() != null)                                                         // Non empty tree
+     {new If (Leaf.ref(root()))                                                 // The tree is one leaf
+       {void Then()
+         {final Leaf       l = (Leaf)root();
+          final Slots.Slot i = l.locateFirstUsedSlot();
+          l.up(null); l.upIndex(i);
+          f.set(new Find(l.keys(i), l));
+         }
+        void Else()                                                             // The tree has at least one branch
+         {f.set(goFirst((Branch)root()));                                       // Start at root and go all the way first
+         }
+       };
      }
-
-    return goFirst((Branch)root());                                             // Start at root and go all the way first
+    return f.get();
    }
 
   Find goFirst(Branch Start)                                                    // Go all the way first
