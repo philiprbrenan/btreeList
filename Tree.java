@@ -400,20 +400,30 @@ class Tree extends Test                                                         
     void redistribute()                                                         // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
      {new If (!empty())                                                         // Something to redistribute
        {void Then()
-         {final int         N = numberOfSlots();                                // Maximum number of slots
-          final int         c = countUsed();                                    // Number of slots in use
-          final int     space = (N - c) / c;                                    // Space between used slots
-          final int     cover = (space+1)*(c-1)+1;                              // Covered space from first used slot to last used slot,
-          final int remainder = max(0, N - cover);                              // Uncovered remainder
-          final int       []s = new int    [N];                                 // New slots distribution
-          final boolean   []u = new boolean[N];                                 // New used slots distribution
-          final Int         p = new Int(remainder / 2);                         // Start position for first used slot
+         {final Int         N = new Int(numberOfSlots());                       // Maximum number of slots
+          final Int         c = new Int(countUsed());                           // Number of slots in use
+          final Int     space = new Int(N.Sub(c).div(c));                       // Space between used slots
+          final Int     cover = new Int(space.Inc().mul(c.Dec()).inc());        // Covered space from first used slot to last used slot,
+          final Int remainder = new Int(max(0, N.Sub(cover).i()));              // Uncovered remainder
+          final Int       []s = new Int [N.i()];                                // New slots distribution
+          final Bool      []u = new Bool[N.i()];                                // New used slots distribution
+          final Int         p = new Int(remainder.Down());                      // Start position for first used slot
+          new For(N)                                                            // Redistribute slots
+           {boolean body(int i)
+             {final Slot I = new Slot(i);
+              s[i] = new Int (0);
+              u[i] = new Bool().clear();
+              return true;
+             };
+           };
           new For(N)                                                            // Redistribute slots
            {boolean body(int i)
              {final Slot I = new Slot(i);
               new If (usedSlots(I))                                             // Redistribute active slots
                {void Then()
-                 {s[p.i()] = slots(I).value(); u[p.i()] = true; p.add(space+1); // Spread the used slots out
+                 {s[p.i()] = new Int(slots(I).value());
+                  u[p.i()].set();
+                  p.add(space).inc();                                           // Spread the used slots out
                  }
                };
               return true;
@@ -425,7 +435,8 @@ class Tree extends Test                                                         
           new For(N)                                                            // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
            {boolean body(int i)
              {final Slot I = new Slot(i);
-              slots(I, new slot(s[i])); usedSlots(I, u[i]);
+              slots(I, new slot(s[i].i()));
+              usedSlots(I, u[i].b());
               return true;
              }
            };
