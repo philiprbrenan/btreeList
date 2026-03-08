@@ -2117,27 +2117,28 @@ class Tree extends Test                                                         
     final Ref<Branch> p = new Ref<>(q.get().up());                              // Last point at which we went left
     final Ref<Find>   f = new Ref<>();                                          // Find details of first leaf
 
-    if (p.valid())
-     {new For(numberOfNodes)                                                    // Step up to turning point
-       {boolean body(int i)
-         {final Branch P = p.get();
-          final Branch Q = q.get();
-          new If (P.top().name().at() != Q.name().at())                             // In the body of the parent branch of the leaf
-           {void Then()
-             {final Slots.Slot R = P.new Slot(Q.upIndex()).stepRight();
-              final Branch     b = (Branch)(R != null ? P.data(R) : P.top());     // Must be a branch as we are going up through the tree
-              b.up(p.get()); b.upIndex(R != null ? R.value() : null);
-              f.set(goFirst(b));
-             }
-            void Else()                                                                  // Go up one more level
-             {q.set(p);
-              p.set(q.get().up());
-             }
-           };
-          return !f.valid() && p.valid();                                       // Continue until we find the first leaf
-         }
-       };
-     }
+    new If (p.valid())
+     {void Then()
+       {new For(numberOfNodes)                                                  // Step up to turning point
+         {boolean body(int i)
+           {final Branch P = p.get(), Q = q.get();
+            new If (P.top().name().at() != Q.name().at())                       // In the body of the parent branch of the leaf
+             {void Then()
+               {final Slots.Slot R = P.new Slot(Q.upIndex()).stepRight();
+                final Branch     b = (Branch)(R != null ? P.data(R) : P.top()); // Must be a branch as we are going up through the tree
+                b.up(p.get()); b.upIndex(R != null ? R.value() : null);
+                f.set(goFirst(b));
+               }
+              void Else()                                                       // Go up one more level
+               {q.set(p);
+                p.set(q.get().up());
+               }
+             };
+            return !f.valid() && p.valid();                                     // Continue until we find the first leaf
+           }
+         };
+       }
+     };
     return f.get();
    }
 
