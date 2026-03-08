@@ -1733,7 +1733,7 @@ class Tree extends Test                                                         
    }
 
   void mergeRoot(Key Key)                                                       // Collapse the root if possible
-   {new If (root() != null)                                                         // Tree has content
+   {new If (root() != null)                                                     // Tree has content
      {void Then()
        {mergeRootNotEmpty(Key);                                                 // Merge non empty root if possible
        }
@@ -1742,14 +1742,14 @@ class Tree extends Test                                                         
    }
 
   void mergeRootNotEmpty(Key Key)                                               // Collapse the root if possible
-   {new If (Leaf.ref(root()))                                                       // Leaf root
+   {new If (Leaf.ref(root()))                                                   // Leaf root
      {void Then()
        {final Leaf l = (Leaf)root();
-        new If (l.empty()) {void Then() {l.free(); root((Leaf)null);}};           // Free leaf if it is empty
+        new If (l.empty()) {void Then() {l.free(); root((Leaf)null);}};         // Free leaf if it is empty
        }
       void Else()
-       {final Branch b = (Branch)root();                                          // Branch root
-        new If (b.countUsed() == 0)                                                   // Root body is empty so collapse to top
+       {final Branch b = (Branch)root();                                        // Branch root
+        new If (b.countUsed() == 0)                                             // Root body is empty so collapse to top
          {void Then()
            {final Slots t = b.top();
             b.free();
@@ -1764,20 +1764,20 @@ class Tree extends Test                                                         
            }
          };
 
-        new If (b.countUsed() == 1)                                                   // Root body is right size to collapse
+        new If (b.countUsed() == 1)                                             // Root body is right size to collapse
          {void Then()
-           {new If (Leaf.ref(b.top()))                                              // Leaves for children
+           {new If (Leaf.ref(b.top()))                                          // Leaves for children
              {void Then()
                {final Leaf    l = (Leaf)b.firstChild();
                 final Leaf    r = (Leaf)b.top();
                 final boolean m = l.mergeFromRight(r);
-                new If (m) {void Then() {b.free(); r.free(); root(l);}};            // Update root if the leaves were successfully merged
+                new If (m) {void Then() {b.free(); r.free(); root(l);}};        // Update root if the leaves were successfully merged
                }
               void Else()
-               {final Branch  l = (Branch)b.firstChild();                           // Root has branches for children
+               {final Branch  l = (Branch)b.firstChild();                       // Root has branches for children
                 final Branch  r = (Branch)b.top();
                 final boolean m = r.mergeFromLeft(b.firstKey(), l);
-                new If (m) {void Then() {b.free(); l.free(); root(r);}};            // Update root if the leaves were successfully merged
+                new If (m) {void Then() {b.free(); l.free(); root(r);}};        // Update root if the leaves were successfully merged
                }
              };
            }
@@ -1813,16 +1813,21 @@ class Tree extends Test                                                         
 
   Find find(Key Key)
    {final Slots r = root();                                                     // Root of tree
-    if (r == null) return null;                                                 // Empty tree
-    if (Leaf.ref(r))                                                            // Leaf root
-     {final Leaf l = (Leaf)r;
-      l.up(null);
-      l.upIndex((Slots.Slot)null);                                              // Trace path taken to this leaf
-      return new Find(Key, l);
+    final Ref<Find> f = new Ref<>();                                            // Find details result
+    if (r != null)                                                              // Non empty tree
+     {if (Leaf.ref(r))                                                          // Leaf root
+       {final Leaf L = (Leaf)r;
+        L.up(null);
+        L.upIndex((Slots.Slot)null);                                            // Trace path taken to this leaf
+        f.set(new Find(Key, L));
+       }
+      else
+       {final Branch R = (Branch)r;                                             // Start search from root
+        R.up(null); R.upIndex(null);                                            // Show that there is nothing above the root
+        f.set(find(Key, R));                                                    // Start search from root
+       }
      }
-    final Branch R = (Branch)r;                                                 // Start search from root
-    R.up(null); R.upIndex(null);                                                // Show that there is nothing above the root
-    return find(Key, R);                                                        // Start search from root
+    return f.get();
    }
 
   Find find(Key Key, Branch Start)
