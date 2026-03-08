@@ -2075,16 +2075,18 @@ class Tree extends Test                                                         
     new For(MaximumNumberOfLevels)                                              // Step down from branch to branch splitting as we go
      {boolean body(int i)
        {final Slots q = p.get().top();
-        if (Leaf.ref(q))                                                        // Step down to a leaf
-         {final Leaf l = (Leaf)q;
-          l.up(p.get()); l.upIndex((Slots.Slot)null);
-          f.set(new Find(l.keys(l.new Slot(l.locateLastUsedSlot().value())), l));
-         }
-        else
-         {final Branch b = (Branch)q;
-          b.up(p.get());                                                        // Reference parent
-          p.set(b);                                                             // Step down into non full branch
-         }
+        new If (Leaf.ref(q))                                                    // Step down to a leaf
+         {void Then()
+           {final Leaf l = (Leaf)q;
+            l.up(p.get()); l.upIndex((Slots.Slot)null);
+            f.set(new Find(l.keys(l.new Slot(l.locateLastUsedSlot().value())), l));
+           }
+          void Else()
+           {final Branch b = (Branch)q;
+            b.up(p.get());                                                      // Reference parent
+            p.set(b);                                                           // Step down into non full branch
+           }
+         };
         return !f.valid();
        };
      };
