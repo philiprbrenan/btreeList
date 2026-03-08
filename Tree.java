@@ -2025,39 +2025,47 @@ class Tree extends Test                                                         
      {boolean body(int I)
        {final Slots.Slot P = p.get().locateFirstUsedSlot();
         final Slots      q = p.get().child(P);
-        boolean c;                                                              // Contune down through tree if set
-        if (Leaf.ref(q))                                                        // Step down to a leaf
-         {final Leaf l = (Leaf)q;
-          l.up(p.get()); l.upIndex(P);
-          final int i = l.locateFirstUsedSlot().value();
-          f.set(new Find(l.keys(l.new Slot(i)), l));                            // Reached a leaf
-          c = false;
-         }
-        else
-         {final Branch b = (Branch)q;
-          b.up(p.get()); b.upIndex(P.value());                                  // Step down into non full branch
-          p.set(b);
-          c = true;
-         }
-        return c;                                                               // Continue unless we have encountered a leaf
+        final Bool       c = new Bool();                                        // Contune down through tree if set
+        new If (Leaf.ref(q))                                                    // Step down to a leaf
+         {void Then()
+           {final Leaf l = (Leaf)q;
+            l.up(p.get()); l.upIndex(P);
+            final int i = l.locateFirstUsedSlot().value();
+            f.set(new Find(l.keys(l.new Slot(i)), l));                          // Reached a leaf
+            c.clear();
+           }
+          void Else()
+           {final Branch b = (Branch)q;
+            b.up(p.get()); b.upIndex(P.value());                                // Step down into non full branch
+            p.set(b);
+            c.set();
+           }
+         };
+        return c.b();                                                           // Continue unless we have encountered a leaf
        }
      };
     if (!f.valid())
      {stop("First fell off the end of tree after this many searches:", mnl());
-   }
+     }
     return f.get();
    }
 
   Find last()                                                                   // Find the position of the last key in the tree
-   {if (root() == null) return null;                                            // Empty tree does not have a last key
-    if (Leaf.ref(root()))
-     {final Leaf l = (Leaf)root();
-      final int  i = l.locateLastUsedSlot().value();
-      l.up(null); l.upIndex((Slots.Slot)null);
-      return new Find(l.keys(l. new Slot(i)), l);
+   {final Ref<Find> f = new Ref<>();
+    if (root() != null)                                                         // Non empty tree
+     {new If (Leaf.ref(root()))
+       {void Then()
+         {final Leaf l = (Leaf)root();
+          final int  i = l.locateLastUsedSlot().value();
+          l.up(null); l.upIndex((Slots.Slot)null);
+          f.set(new Find(l.keys(l. new Slot(i)), l));
+         }
+        void Else()
+         {f.set(goLast((Branch)root()));                                        // Start at root and go all the way last
+         }
+       };
      }
-
-    return goLast((Branch)root());                                              // Start at root and go all the way last
+    return f.get();
    }
 
   Find goLast(Branch Start)                                                     // Go all the way last from the specified position
