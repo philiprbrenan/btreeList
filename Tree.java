@@ -1864,7 +1864,8 @@ class Tree extends Test                                                         
    }
 
   void insert(Key Key, Data Data)                                               // Insert a key, data pair or update key data pair in the tree
-   {if (root() == null)                                                         // Empty tree
+   {final Bool d = new Bool().clear();                                          // Try various insertion methods until one succeeds
+    if (root() == null)                                                         // Empty tree
      {final Leaf l = new Leaf(); root(l);                                       // Root is a leaf
       l.insert(Key, Data);                                                      // Insert into leaf root
       return;
@@ -1905,22 +1906,22 @@ class Tree extends Test                                                         
        }
      }
 
-    new If (Leaf.ref(root()))                                                       // Leaf root
+    new If (Leaf.ref(root()))                                                   // Leaf root
      {void Then()
        {final Leaf l = (Leaf)root();
-        new If (!l.full())                                                        // Still space in leaf root
+        new If (!l.full())                                                      // Still space in leaf root
          {void Then()
-           {l.insert(Key, Data);                                                  // Insert into leaf root
+           {l.insert(Key, Data);                                                // Insert into leaf root
             return;
            }
           void Else()
-           {final Branch b = l.split();                                           // Split full leaf root
+           {final Branch b = l.split();                                         // Split full leaf root
             root(b);
-            insertTree(Key, Data);                                                // Insert a key, data pair or update key data pair in the tree
+            insertTree(Key, Data);                                              // Insert a key, data pair or update key data pair in the tree
            }
          };
        }
-      void Else() {insertTree(Key, Data);}                                        // Insert a key, data pair or update key data pair in the tree
+      void Else() {insertTree(Key, Data);}                                      // Insert a key, data pair or update key data pair in the tree
      };
    }
 
