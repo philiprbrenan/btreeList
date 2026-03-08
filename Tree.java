@@ -1905,21 +1905,23 @@ class Tree extends Test                                                         
        }
      }
 
-    if (Leaf.ref(root()))                                                       // Leaf root
-     {final Leaf l = (Leaf)root();
-      new If (!l.full())                                                        // Still space in leaf root
-       {void Then()
-         {l.insert(Key, Data);                                                  // Insert into leaf root
-          return;
-         }
-        void Else()
-         {final Branch b = l.split();                                           // Split full leaf root
-          root(b);
-          insertTree(Key, Data);                                                // Insert a key, data pair or update key data pair in the tree
-         }
-       };
-     }
-    else insertTree(Key, Data);                                                 // Insert a key, data pair or update key data pair in the tree
+    new If (Leaf.ref(root()))                                                       // Leaf root
+     {void Then()
+       {final Leaf l = (Leaf)root();
+        new If (!l.full())                                                        // Still space in leaf root
+         {void Then()
+           {l.insert(Key, Data);                                                  // Insert into leaf root
+            return;
+           }
+          void Else()
+           {final Branch b = l.split();                                           // Split full leaf root
+            root(b);
+            insertTree(Key, Data);                                                // Insert a key, data pair or update key data pair in the tree
+           }
+         };
+       }
+      void Else() {insertTree(Key, Data);}                                        // Insert a key, data pair or update key data pair in the tree
+     };
    }
 
   void insertTree(Key Key, Data Data)                                           // Insert a key, data pair or update key data pair in the tree
