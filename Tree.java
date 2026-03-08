@@ -563,12 +563,12 @@ class Tree extends Test                                                         
             void Else()
              {new If (l.above)                                                  // Insert their key above the found key
                {void Then()
-                 {final Int i = l.at.dup();
+                 {final Int i = l.at;
                   final Int w = new Int(locateNearestFreeSlot(l.at));           // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                   new If (w.gt(0))                                              // Move up
                    {void Then()                                                 // Move up
                      {shift             (i.dup().inc().i(), w.dup().dec().i()); // Liberate a slot at this point
-                      slots    (new Slot(i.i()).right(), alloc);                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                      slots    (new Slot(i.i()).right(), alloc);                // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
                       usedSlots(new Slot(i.i()).right(), true);
                      }
                     void Else()
@@ -589,24 +589,24 @@ class Tree extends Test                                                         
                 void Else()
                  {new If (l.below)                                              // Insert their key below the found key
                    {void Then()
-                     {final int i = l.at.value();
-                      final int w = locateNearestFreeSlot(l.at);                // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
-                      new If (w > 0)                                            // Move up
+                     {final Int i = l.at;
+                      final Int w = new Slot(locateNearestFreeSlot(l.at));      // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                      new If (w.gt(0))                                          // Move up
                        {void Then()                                             // Move up
-                         {shift(i,    w);                                       // Liberate a slot at this point
+                         {shift(i.i(), w.i());                                  // Liberate a slot at this point
                           slots(l.at, alloc);                                   // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
                          }
                         void Else()
-                         {new If (w < 0)                                        // Liberate a slot below the current slot
+                         {new If (w.lt(0))                                      // Liberate a slot below the current slot
                            {void Then()                                         // Liberate a slot below the current slot
-                             {shift             (i-1,  w + 1);                  // Shift any intervening slots blocking the slot below
-                              slots    (new Slot(i).left(), alloc);             // Insert into the slot below
-                              usedSlots(new Slot(i).left(), true);              // Mark the free slot at the start of the range of occupied slots as now in use
+                             {shift             (i.Dec().i(),  w.Inc().i());    // Shift any intervening slots blocking the slot below
+                              slots    (new Slot(i.i()).left(), alloc);         // Insert into the slot below
+                              usedSlots(new Slot(i.i()).left(), true);          // Mark the free slot at the start of the range of occupied slots as now in use
                              }
                            };
                          }
                        };
-                      new If (java.lang.Math.abs(w) >= redistributionWidth)     // Redistribute if the used slots are densely packed
+                      new If (abs(w.i()) >= redistributionWidth)                // Redistribute if the used slots are densely packed
                        {void Then()
                          {redistribute();
                          }
@@ -666,13 +666,13 @@ class Tree extends Test                                                         
                   final Slot A = M.locatePrevUsedSlot();                        // Occupied slot on or preceding mid point
                   final Slot B = M.locateNextUsedSlot();                        // Occupied slot on or succeeding mid point
                   final Bool D = new Bool().clear();                            // Continue the search unless set
-                  final int Ap = A.value(), ap = a.get().value();               // New and current lower limit of range
-                  final int Bp = B.value(), bp = b.get().value();               // New and current upper limit of range
+                  final Int Ap = new Int(A.value()), ap = new Int(a.get().value()); // New and current lower limit of range
+                  final Int Bp = new Int(B.value()), bp = new Int(b.get().value()); // New and current upper limit of range
 
-                  new If (!D.b() && Ap != ap && A.ge(Key)) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
-                  new If (!D.b() && Ap != bp && A.le(Key)) {void Then() {D.set(); b.set(A);}};
-                  new If (!D.b() && Bp != ap && B.ge(Key)) {void Then() {D.set(); a.set(B);}};
-                  new If (!D.b() && Bp != bp && B.le(Key)) {void Then() {D.set(); b.set(B);}};
+                  new If (!D.b() && Ap.ne(ap) && A.ge(Key)) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
+                  new If (!D.b() && Ap.ne(bp) && A.le(Key)) {void Then() {D.set(); b.set(A);}};
+                  new If (!D.b() && Bp.ne(ap) && B.ge(Key)) {void Then() {D.set(); a.set(B);}};
+                  new If (!D.b() && Bp.ne(bp) && B.le(Key)) {void Then() {D.set(); b.set(B);}};
                   new If (!D.b())                                           // The slots must be adjacent
                    {void Then()
                      {new If (!D.b() && a.get().eq(Key)) {void Then() {D.set(); found(a.get());}};
