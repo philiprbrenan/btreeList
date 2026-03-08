@@ -2101,46 +2101,46 @@ class Tree extends Test                                                         
     final Leaf l = Found.leaf;                                                  // Leaf we are currently traversing
     new If (root() != null && l.up() != null)                                   // Tree has branches
      {void Then()
-       {final Slots.Slot r = Found.locate.at.stepRight();                         // Next slot to the right in the leaf
-        new If (r != null)                                                            // There is a next slot to the right so go to it
+       {final Slots.Slot r = Found.locate.at.stepRight();                       // Next slot to the right in the leaf
+        new If (r != null)                                                      // There is a next slot to the right so go to it
           {void Then()
-           {f.set(new Find(l.keys(r), l));                                          // There is a next slot to the right in the leaf so return it
+           {f.set(new Find(l.keys(r), l));                                      // There is a next slot to the right in the leaf so return it
            }
-          void Else()                                                                      // We are at the end of the current branch
-           {final Branch U = l.up();                                                // Parent branch of the leaf
+          void Else()                                                           // We are at the end of the current branch
+           {final Branch U = l.up();                                            // Parent branch of the leaf
 
-            new If (U.top().name().at()  != l.name().at())                          // In the body of the parent branch of the leaf but not at the top of the parent
+            new If (U.top().name().at()  != l.name().at())                      // In the body of the parent branch of the leaf but not at the top of the parent
              {void Then()
-               {final Slots.Slot u = l.upIndex(U);                                  // Next sibling slot right
-                final Slots.Slot R = u != null ? u.stepRight() : null;              // Next sibling slot right
-                final Leaf       L = (Leaf)(R != null ? U.data(R) : U.top());       // Next sibling leaf
+               {final Slots.Slot u = l.upIndex(U);                              // Next sibling slot right
+                final Slots.Slot R = u != null ? u.stepRight() : null;          // Next sibling slot right
+                final Leaf       L = (Leaf)(R != null ? U.data(R) : U.top());   // Next sibling leaf
                 L.up(U); L.upIndex(R);
                 f.set(new Find(L.firstKey(), L));
                }
               void Else()
-               {final Ref<Branch> q = new Ref<>(l.up());                            // First branch above the leaf
-                final Ref<Branch> p = new Ref<>(q.get().up());                      // Last point at which we went left
+               {final Ref<Branch> q = new Ref<>(l.up());                        // First branch above the leaf
+                final Ref<Branch> p = new Ref<>(q.get().up());                  // Last point at which we went left
 
-                new If (p.valid())                                                  // Branch above the leaf exists
+                new If (p.valid())                                              // Branch above the leaf exists
                  {void Then()
-                   {new For(numberOfNodes)                                          // Step up to turning point
+                   {new For(numberOfNodes)                                      // Step up to turning point
                      {boolean body(int i)
                        {final Branch P = p.get(), Q = q.get();
-                        new If (P.top().name().at() != Q.name().at())               // In the body of the parent branch of the leaf
+                        new If (P.top().name().at() != Q.name().at())           // In the body of the parent branch of the leaf
                          {void Then()
-                           {final Integer    I = Q.upIndex();                       // Not null because we are not at the root
-                            final Slots.Slot R = P.new Slot(I).stepRight();         // Next sibling to the right
-                            final boolean    r = R != null;                         // Next sibling to the right exists
-                            final Branch b = (Branch)(r ? P.data(R) : P.top());     // Must be a branch as we are going up through the tree
+                           {final Integer    I = Q.upIndex();                   // Not null because we are not at the root
+                            final Slots.Slot R = P.new Slot(I).stepRight();     // Next sibling to the right
+                            final boolean    r = R != null;                     // Next sibling to the right exists
+                            final Branch b = (Branch)(r ? P.data(R) : P.top()); // Must be a branch as we are going up through the tree
                             b.up(p.get());  b.upIndex(r ? R.value() : null);
                             f.set(goFirst(b));
                            }
-                          void Else()                                               // Go up one more level
+                          void Else()                                           // Go up one more level
                            {q.set(p);
                             p.set(q.get().up());
                            }
                          };
-                        return !f.valid() && p.valid();                             // Continue until we find the first leaf
+                        return !f.valid() && p.valid();                         // Continue until we find the first leaf
                        }
                      };
                    }
@@ -2155,9 +2155,9 @@ class Tree extends Test                                                         
    }
 
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
-   {if (root() == null) return null;                                            // Empty tree does not have a next key
-    final Leaf l = Found.leaf;
-    if (l.up() == null) return null;                                            // Root is a leaf and we are at the end of it
+   {final Ref<Find> f = new Ref<>();                                            // Find details of located previous key
+    final Leaf l = Found.leaf;                                                  // The leaf we are currently traversing
+    if (root() == null || l.up() == null) return null;                          // Tree is emnoty or a leaf and we are at the end of it
 
     final Slots.Slot s = Found.locate.at.stepLeft();                            // Previous slot in leaf
     if (s != null) return new Find(l.keys(s), l);
@@ -2179,7 +2179,6 @@ class Tree extends Test                                                         
 
     final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
     final Ref<Branch> p = new Ref<>(q.get().up());                              // Last point at which we went left
-    final Ref<Find>   f = new Ref<>();                                          // Find details of last leaf
 
     if (p.valid())
      {new For(numberOfNodes)                                                    // Go up to the last point where we went left
