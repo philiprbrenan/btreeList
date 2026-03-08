@@ -2157,50 +2157,54 @@ class Tree extends Test                                                         
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
    {final Ref<Find> f = new Ref<>();                                            // Find details of located previous key
     final Leaf l = Found.leaf;                                                  // The leaf we are currently traversing
-    if (root() != null && l.up() != null)                                       // Tree is not empty and not a leaf that we are at the end of
-     {final Slots.Slot s = Found.locate.at.stepLeft();                            // Previous slot in leaf
-      if (s != null)
-       {return new Find(l.keys(s), l);
-       }
-      else
-       {final Branch P = l.up();                                                    // Parent
-        new If (l.upIndex(P) == null)                                                   // Last leaf of parent
+    new If (root() != null && l.up() != null)                                       // Tree is not empty and not a leaf that we are at the end of
+     {void Then()
+       {final Slots.Slot s = Found.locate.at.stepLeft();                            // Previous slot in leaf
+        new If (s != null)
          {void Then()
-           {final Slots.Slot I = P.locateLastUsedSlot();                              // Element prior to top
-            final Leaf       L = (Leaf)P.data(I);
-            L.upIndex(I);
-            f.set(new Find(L.lastKey(), L));
+          {f.set(new Find(l.keys(s), l));
            }
           void Else()
-           {new If (l.upIndex(P).value() != l.locateFirstUsedSlot().value())           // Not the first leaf of the parent branch
+           {final Branch P = l.up();                                                    // Parent
+            new If (l.upIndex(P) == null)                                                   // Last leaf of parent
              {void Then()
-               {final Slots.Slot U = l.upIndex(P);
-                final Slots.Slot u = U.stepLeft();
-                final Leaf       L = u != null ? (Leaf)P.data(u) : (Leaf)P.top();
-                L.upIndex(u);
+               {final Slots.Slot I = P.locateLastUsedSlot();                              // Element prior to top
+                final Leaf       L = (Leaf)P.data(I);
+                L.upIndex(I);
                 f.set(new Find(L.lastKey(), L));
                }
               void Else()
-               {final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
-                final Ref<Branch> p = new Ref<>(q.get().up());                              // Locate last point at which we went left
-
-                new If (p.valid())
+               {new If (l.upIndex(P).value() != l.locateFirstUsedSlot().value())           // Not the first leaf of the parent branch
                  {void Then()
-                   {new For(numberOfNodes)                                                  // Go up to the last point where we went left
-                     {boolean body(int i)
-                       {new If (q.get().upIndex() == null)                                  // In the body of the parent branch of the leaf
-                         {void Then()
-                           {final Slots.Slot I = p.get().locateLastUsedSlot();
-                            final Branch     b = (Branch)p.get().data(I);
-                            b.up(p.get());   b.upIndex(I.value());
-                            f.set(goLast(b));
-                           }
-                          void Else()                                                       // Go up to next branch
-                           {q.set(p);
-                            p.set(q.get().up());
+                   {final Slots.Slot U = l.upIndex(P);
+                    final Slots.Slot u = U.stepLeft();
+                    final Leaf       L = u != null ? (Leaf)P.data(u) : (Leaf)P.top();
+                    L.upIndex(u);
+                    f.set(new Find(L.lastKey(), L));
+                   }
+                  void Else()
+                   {final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
+                    final Ref<Branch> p = new Ref<>(q.get().up());                              // Locate last point at which we went left
+
+                    new If (p.valid())
+                     {void Then()
+                       {new For(numberOfNodes)                                                  // Go up to the last point where we went left
+                         {boolean body(int i)
+                           {new If (q.get().upIndex() == null)                                  // In the body of the parent branch of the leaf
+                             {void Then()
+                               {final Slots.Slot I = p.get().locateLastUsedSlot();
+                                final Branch     b = (Branch)p.get().data(I);
+                                b.up(p.get());   b.upIndex(I.value());
+                                f.set(goLast(b));
+                               }
+                              void Else()                                                       // Go up to next branch
+                               {q.set(p);
+                                p.set(q.get().up());
+                               }
+                             };
+                            return !f.valid() && p.valid();                                     // Continue until we find the first leaf
                            }
                          };
-                        return !f.valid() && p.valid();                                     // Continue until we find the first leaf
                        }
                      };
                    }
@@ -2210,7 +2214,7 @@ class Tree extends Test                                                         
            }
          };
        }
-     }
+     };
     return f.get();
    }
 
