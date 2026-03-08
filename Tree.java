@@ -1733,33 +1733,57 @@ class Tree extends Test                                                         
    }
 
   void mergeRoot(Key Key)                                                       // Collapse the root if possible
-   {if (root() == null) return;                                                 // Empty tree
-    if (Leaf.ref(root()))                                                       // Leaf root
-     {final Leaf l = (Leaf)root();
-      if (l.empty()) {l.free(); root((Leaf)null);}                              // Free leaf if it is empty
-      return;
-     }
+   {new If (root() != null)                                                         // Tree has content
+     {void Then()
+       {mergeRootNotEmpty(Key);                                                 // Merge non empty root if possible
+       }
+     };
+    return;
+   }
 
-    final Branch b = (Branch)root();                                            // Branch root
-    if (b.countUsed() == 0)                                                     // Root body is empty so collapse to top
-     {final Slots t = b.top();
-      b.free();
-      if (Leaf.ref(t)) root((Leaf)t); else root((Branch)t);
-     }
-    if (b.countUsed() != 1) return;                                             // Root body too big to collapse
+  void mergeRootNotEmpty(Key Key)                                               // Collapse the root if possible
+   {new If (Leaf.ref(root()))                                                       // Leaf root
+     {void Then()
+       {final Leaf l = (Leaf)root();
+        new If (l.empty()) {void Then() {l.free(); root((Leaf)null);}};           // Free leaf if it is empty
+       }
+      void Else()
+       {final Branch b = (Branch)root();                                          // Branch root
+        new If (b.countUsed() == 0)                                                   // Root body is empty so collapse to top
+         {void Then()
+           {final Slots t = b.top();
+            b.free();
+            new If (Leaf.ref(t))
+             {void Then()
+               {root((Leaf)t);
+               }
+              void Else()
+               {root((Branch)t);
+               }
+             };
+           }
+         };
 
-    if (Leaf.ref(b.top()))                                                      // Leaves for children
-     {final Leaf    l = (Leaf)b.firstChild();
-      final Leaf    r = (Leaf)b.top();
-      final boolean m = l.mergeFromRight(r);
-      if (m) {b.free(); r.free(); root(l);}                                     // Update root if the leaves were successfully merged
-
-      return;
-     }
-    final Branch  l = (Branch)b.firstChild();                                   // Root has branches for children
-    final Branch  r = (Branch)b.top();
-    final boolean m = r.mergeFromLeft(b.firstKey(), l);
-    if (m) {b.free(); l.free(); root(r);}                                       // Update root if the leaves were successfully merged
+        new If (b.countUsed() == 1)                                                   // Root body is right size to collapse
+         {void Then()
+           {new If (Leaf.ref(b.top()))                                              // Leaves for children
+             {void Then()
+               {final Leaf    l = (Leaf)b.firstChild();
+                final Leaf    r = (Leaf)b.top();
+                final boolean m = l.mergeFromRight(r);
+                new If (m) {void Then() {b.free(); r.free(); root(l);}};            // Update root if the leaves were successfully merged
+               }
+              void Else()
+               {final Branch  l = (Branch)b.firstChild();                           // Root has branches for children
+                final Branch  r = (Branch)b.top();
+                final boolean m = r.mergeFromLeft(b.firstKey(), l);
+                new If (m) {void Then() {b.free(); l.free(); root(r);}};            // Update root if the leaves were successfully merged
+               }
+             };
+           }
+         };
+       }
+     };
    }
 
 //D1 High Level                                                                 // High level operations: insert, find, delete
