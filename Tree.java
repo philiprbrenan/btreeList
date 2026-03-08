@@ -1838,7 +1838,7 @@ class Tree extends Test                                                         
    {final Ref<Branch> p = new Ref<>(Start);                                     // Start at root
     final Ref<Find>   f = new Ref<>();                                          // Find the Key
 
-    new For(MaximumNumberOfLevels)                                              // Step down from branch splitting as we go
+    new For(MaximumNumberOfLevels)                                              // Step down from branch to branch splitting as we go
      {boolean body(int i)
        {final Slots.Slot Q = p.get().locateFirstGe(Key);
         final Slots      q = p.get().child(Q);
@@ -2021,28 +2021,31 @@ class Tree extends Test                                                         
   Find goFirst(Branch Start)                                                    // Go all the way first
    {Ref<Branch> p = new Ref<>(Start);                                           // Start
     Ref<Find>   f = new Ref<>();
-    new For(MaximumNumberOfLevels)                                              // Step down from branch splitting as we go
+    new For(MaximumNumberOfLevels)                                              // Step down from branch to branch
      {boolean body(int I)
        {final Slots.Slot P = p.get().locateFirstUsedSlot();
         final Slots      q = p.get().child(P);
+        boolean c;                                                              // Contune down through tree if set
         if (Leaf.ref(q))                                                        // Step down to a leaf
          {final Leaf l = (Leaf)q;
           l.up(p.get()); l.upIndex(P);
           final int i = l.locateFirstUsedSlot().value();
           f.set(new Find(l.keys(l.new Slot(i)), l));                            // Reached a leaf
-          return false;
+          c = false;
          }
         else
          {final Branch b = (Branch)q;
           b.up(p.get()); b.upIndex(P.value());                                  // Step down into non full branch
           p.set(b);
-          return true;
+          c = true;
          }
+        return c;                                                               // Continue unless we have encountered a leaf
        }
      };
-    if (f.valid()) return f.get();
-    stop("First fell off the end of tree after this many searches:", mnl());
-    return null;
+    if (!f.valid())
+     {stop("First fell off the end of tree after this many searches:", mnl());
+   }
+    return f.get();
    }
 
   Find last()                                                                   // Find the position of the last key in the tree
@@ -2061,7 +2064,7 @@ class Tree extends Test                                                         
    {final Ref<Branch> p = new Ref<>(Start);                                     // Start
     final Ref<Find>   f = new Ref<>();
 
-    new For(MaximumNumberOfLevels)                                              // Step down from branch splitting as we go
+    new For(MaximumNumberOfLevels)                                              // Step down from branch to branch splitting as we go
      {boolean body(int i)
        {final Slots q = p.get().top();
         if (Leaf.ref(q))                                                        // Step down to a leaf
