@@ -2106,40 +2106,42 @@ class Tree extends Test                                                         
     final Branch U = l.up();                                                    // Parent branch of the leaf
 
     final Ref<Find> f = new Ref<>();
-    if (U.top().name().at()  != l.name().at())                                  // In the body of the parent branch of the leaf but not at the top of the parent
-     {final Slots.Slot u = l.upIndex(U);                                        // Next sibling slot right
-      final Slots.Slot R = u != null ? u.stepRight() : null;                    // Next sibling slot right
-      final Leaf       L = (Leaf)(R != null ? U.data(R) : U.top());             // Next sibling leaf
-      L.up(U); L.upIndex(R);
-      f.set(new Find(L.firstKey(), L));
-     }
-    else
-     {final Ref<Branch> q = new Ref<>(l.up());                                    // First branch above the leaf
-      final Ref<Branch> p = new Ref<>(q.get().up());                              // Last point at which we went left
+    new If (U.top().name().at()  != l.name().at())                                  // In the body of the parent branch of the leaf but not at the top of the parent
+     {void Then()
+       {final Slots.Slot u = l.upIndex(U);                                        // Next sibling slot right
+        final Slots.Slot R = u != null ? u.stepRight() : null;                    // Next sibling slot right
+        final Leaf       L = (Leaf)(R != null ? U.data(R) : U.top());             // Next sibling leaf
+        L.up(U); L.upIndex(R);
+        f.set(new Find(L.firstKey(), L));
+       }
+      void Else()
+       {final Ref<Branch> q = new Ref<>(l.up());                                  // First branch above the leaf
+        final Ref<Branch> p = new Ref<>(q.get().up());                            // Last point at which we went left
 
-      new If (p.valid())
-       {void Then()
-         {new For(numberOfNodes)                                                  // Step up to turning point
-           {boolean body(int i)
-             {final Branch P = p.get(), Q = q.get();
-              new If (P.top().name().at() != Q.name().at())                       // In the body of the parent branch of the leaf
-               {void Then()
-                 {final Slots.Slot R = P.new Slot(Q.upIndex()).stepRight();
-                  final Branch     b = (Branch)(R != null ? P.data(R) : P.top()); // Must be a branch as we are going up through the tree
-                  b.up(p.get()); b.upIndex(R != null ? R.value() : null);
-                  f.set(goFirst(b));
-                 }
-                void Else()                                                       // Go up one more level
-                 {q.set(p);
-                  p.set(q.get().up());
-                 }
-               };
-              return !f.valid() && p.valid();                                     // Continue until we find the first leaf
-             }
-           };
-         }
-       };
-     }
+        new If (p.valid())
+         {void Then()
+           {new For(numberOfNodes)                                                // Step up to turning point
+             {boolean body(int i)
+               {final Branch P = p.get(), Q = q.get();
+                new If (P.top().name().at() != Q.name().at())                     // In the body of the parent branch of the leaf
+                 {void Then()
+                   {final Slots.Slot R = P.new Slot(Q.upIndex()).stepRight();
+                    final Branch     b = (Branch)(R != null ? P.data(R) : P.top()); // Must be a branch as we are going up through the tree
+                    b.up(p.get()); b.upIndex(R != null ? R.value() : null);
+                    f.set(goFirst(b));
+                   }
+                  void Else()                                                     // Go up one more level
+                   {q.set(p);
+                    p.set(q.get().up());
+                   }
+                 };
+                return !f.valid() && p.valid();                                   // Continue until we find the first leaf
+               }
+             };
+           }
+         };
+       }
+     };
     return f.get();
    }
 
