@@ -2079,7 +2079,7 @@ class Tree extends Test                                                         
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex((Slots.Slot)null);
-            f.set(new Find(l.keys(l.new Slot(l.locateLastUsedSlot().value())), l));
+            f.set(new Find(l.keys(l.locateLastUsedSlot()), l));
            }
           void Else()
            {final Branch b = (Branch)q;
@@ -2097,7 +2097,7 @@ class Tree extends Test                                                         
    }
 
   Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming that the structure of the tree has not changed
-   {final Ref<Find> f = new Ref<>();                                            // Result expressed as a find specification
+   {final Ref<Find> f = new Ref<>();                                            // Next key expressed as a find specification
     final Leaf l = Found.leaf;                                                  // Leaf we are currently traversing
     new If (root() != null && l.up() != null)                                   // Tree has branches
      {void Then()
@@ -2155,7 +2155,7 @@ class Tree extends Test                                                         
    }
 
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
-   {final Ref<Find> f = new Ref<>();                                            // Find details of located previous key
+   {final Ref<Find> f = new Ref<>();                                            // Details of located previous key expressed as a find specification
     final Leaf l = Found.leaf;                                                  // The leaf we are currently traversing
     new If (root() != null && l.up() != null)                                   // Tree is not empty and not a leaf that we are at the end of
      {void Then()
