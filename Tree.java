@@ -409,9 +409,8 @@ class Tree extends Test                                                         
           final Bool      []u = new Bool[N.i()];                                // New used slots distribution
           final Int         p = new Int(remainder.Down());                      // Start position for first used slot
           new For(N)                                                            // Redistribute slots
-           {boolean body(int i)
-             {final Slot I = new Slot(i);
-              s[i] = new Int (0);
+           {boolean body(int i)                                                 // Initialize background of slots
+             {s[i] = new Int (0);
               u[i] = new Bool().clear();
               return true;
              };
@@ -557,31 +556,31 @@ class Tree extends Test                                                         
        {void Then()
          {new If (!l.above && !l.below)                                         // Empty place the key in the middle
            {void Then()
-             {final int N = numberOfSlots();
-              slots    (new Slot(N/2), alloc);
-              usedSlots(new Slot(N/2), true);
+             {final Slot S = new Slot(new Int(numberOfSlots()).down().i());
+              slots     (S, alloc);
+              usedSlots (S, true);
              }
             void Else()
              {new If (l.above)                                                  // Insert their key above the found key
                {void Then()
-                 {final int i = l.at.value();
-                  final int w = locateNearestFreeSlot(l.at);                    // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
-                  new If (w > 0)                                                // Move up
+                 {final Int i = l.at.dup();
+                  final Int w = new Int(locateNearestFreeSlot(l.at));           // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                  new If (w.gt(0))                                              // Move up
                    {void Then()                                                 // Move up
-                     {shift             (i+1,  w-1);                            // Liberate a slot at this point
-                      slots    (new Slot(i).right(), alloc);                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
-                      usedSlots(new Slot(i).right(), true);
+                     {shift             (i.dup().inc().i(), w.dup().dec().i()); // Liberate a slot at this point
+                      slots    (new Slot(i.i()).right(), alloc);                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                      usedSlots(new Slot(i.i()).right(), true);
                      }
                     void Else()
-                     {new If (w < 0)                                            // Liberate a slot below the current slot
+                     {new If (w.lt(0))                                          // Liberate a slot below the current slot
                        {void Then()                                             // Liberate a slot below the current slot
-                         {shift(         i,  w);                                // Shift any intervening slots blocking the slot below
-                          slots(new Slot(i), alloc);                            // Insert into the slot below
+                         {shift(         i.i(),  w.i());                        // Shift any intervening slots blocking the slot below
+                          slots(new Slot(i.i()), alloc);                        // Insert into the slot below
                          }
                        };
                      }
                    };
-                  new If (java.lang.Math.abs(w) >= redistributionWidth)         // Redistribute if the used slots are densely packed
+                  new If (abs(w.i()) >= redistributionWidth)                    // Redistribute if the used slots are densely packed
                    {void Then()
                      {redistribute();
                      }
