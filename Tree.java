@@ -2120,16 +2120,20 @@ class Tree extends Test                                                         
     if (p.valid())
      {new For(numberOfNodes)                                                    // Step up to turning point
        {boolean body(int i)
-         {if (p.get().top().name().at() != q.get().name().at())                 // In the body of the parent branch of the leaf
-           {final Slots.Slot R = p.get().new Slot(q.get().upIndex()).stepRight();
-            final Branch     b = R != null ? (Branch)p.get().data(R) : (Branch)p.get().top();
-            b.up(p.get()); b.upIndex(R != null ? R.value() : null);
-            f.set(goFirst(b));
-           }
-          else                                                                  // Go up one more level
-           {q.set(p);
-            p.set(q.get().up());
-           }
+         {final Branch P = p.get();
+          final Branch Q = q.get();
+          new If (P.top().name().at() != Q.name().at())                             // In the body of the parent branch of the leaf
+           {void Then()
+             {final Slots.Slot R = P.new Slot(Q.upIndex()).stepRight();
+              final Branch     b = (Branch)(R != null ? P.data(R) : P.top());     // Must be a branch as we are going up through the tree
+              b.up(p.get()); b.upIndex(R != null ? R.value() : null);
+              f.set(goFirst(b));
+             }
+            void Else()                                                                  // Go up one more level
+             {q.set(p);
+              p.set(q.get().up());
+             }
+           };
           return !f.valid() && p.valid();                                       // Continue until we find the first leaf
          }
        };
