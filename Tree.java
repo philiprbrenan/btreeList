@@ -1918,61 +1918,71 @@ class Tree extends Test                                                         
      }
 
     final Ref<Branch> p = new Ref<>((Branch)root());                            // Start at root
-    if (p.get().full())
-     {final Branch P = p.get();
-      p.set(p.get().split());
-      root(p.get());
-      P.free();
-     }                                                                          // Split full root branch
+    if (p.get().full())                                                         // Split full root branch
+     {void Then()
+       {final Branch P = p.get();
+        p.set(p.get().split());
+        root(p.get());
+        P.free();
+       }
+     };
 
     final Ref<Branch> q = new Ref<>(find(Key).leaf.up());                       // First branch above leaf
     final Ref<Branch> b = new Ref<>(q.get().up());                              // Parent of first branch above leaf
     final Int         D = new Int();                                            // First unfull branch above leaf has been located when set
-    if (b.valid())
-     {new For(numberOfNodes)                                                    // Look for first unfull branch along path up from leaf
-       {boolean body(int i)
-         {if (!b.get().full()) {p.set(b.get()); D.i(1);}                        // Found the first unfull branch
-          else
-           {q.set(b.get());
-            b.set(q.get().up());
+    new If (b.valid())
+     {void Then()
+       {new For(numberOfNodes)                                                  // Look for first unfull branch along path up from leaf
+         {boolean body(int i)                                                   // Found the first unfull branch
+           {new If (!b.get().full())
+             {void Then()
+               {p.set(b.get()); D.i(1);
+               }
+              void Else()
+               {q.set(b.get());
+                b.set(q.get().up());
+               }
+             };
+            return !D.valid() && b.valid();
            }
-          return !D.valid() && b.valid();
-         }
-       };
-     }
+         };
+       }
+     };
 
     final Int d = new Int();                                                    // Set when done
     new For(MaximumNumberOfLevels)                                              // Step down through the tree from branch to branch splitting as we go until we reach a leaf
      {boolean body(int i)
        {final Slots q = p.get().stepDown(Key);                                  // Step down
-        if (Leaf.ref(q))                                                        // Step down to a leaf
-         {final Leaf r = (Leaf)q;                                               // We have reached a leaf
+        new If (Leaf.ref(q))                                                    // Step down to a leaf
+         {void Then()
+           {final Leaf r = (Leaf)q;                                             // We have reached a leaf
 
-          new If (r.full())                                                     // Split the leaf if it is full
-           {void Then()
-            {final int  sk = r.splittingKey();                                  // Splitting key
-              final Leaf  l = r.splitLeft();                                    // Right leaf split out of the leaf
-              p.get().insert(Key(sk), l);                                       // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-              final Leaf  L = Key.value() <= sk ? l : r;                        // Choose left or right leaf depending on key
-              L.insert(Key, Data);                                              // Insert into left or right leaf which will now have space
-             }
-            void Else() {r.insert(Key, Data);}                                  // Leaf has sufficient space
-           };
-          mergeAlongPath(Key);                                                  // Merge along the path taken by the key to compress the tree
-          d.i(1);
-         }
-        else                                                                    // Step down to a branch
-         {final Branch r = (Branch)q;
-          new If (r.full())                                                     // Split the leaf if it is full
-           {void Then()
-             {final int         sk = r.splittingKey();                          // Splitting key
-              final Branch.Split s = r.splitLeft();                             // Branch split out on right from
-              p.get().insert(Key(sk), s.left);                                  // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-              p.set(Key.value() <= sk ? s.left : s.right);                      // Traverse left or right
-             }
-            void Else() {p.set(r);}                                             // Step down into non full branch
-           };
-         }
+            new If (r.full())                                                   // Split the leaf if it is full
+             {void Then()
+              {final int  sk = r.splittingKey();                                // Splitting key
+                final Leaf  l = r.splitLeft();                                  // Right leaf split out of the leaf
+                p.get().insert(Key(sk), l);                                     // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+                final Leaf  L = Key.value() <= sk ? l : r;                      // Choose left or right leaf depending on key
+                L.insert(Key, Data);                                            // Insert into left or right leaf which will now have space
+               }
+              void Else() {r.insert(Key, Data);}                                // Leaf has sufficient space
+             };
+            mergeAlongPath(Key);                                                // Merge along the path taken by the key to compress the tree
+            d.i(1);
+           }
+          void Else()                                                           // Step down to a branch
+           {final Branch r = (Branch)q;
+            new If (r.full())                                                   // Split the leaf if it is full
+             {void Then()
+               {final int         sk = r.splittingKey();                        // Splitting key
+                final Branch.Split s = r.splitLeft();                           // Branch split out on right from
+                p.get().insert(Key(sk), s.left);                                // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+                p.set(Key.value() <= sk ? s.left : s.right);                    // Traverse left or right
+               }
+              void Else() {p.set(r);}                                           // Step down into non full branch
+             };
+           }
+         };
         return !d.valid();                                                      // Continue until done
        }
      };
