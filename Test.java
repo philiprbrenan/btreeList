@@ -1143,6 +1143,10 @@ public class Test                                                               
     Int  add2(Int I) {        I.x();       return add(I.i()*2);}
     Int  sub (int I) {i   -= I; x(); X();  return this;}
     Int  sub (Int I) {        I.x();       return sub(I.i());}
+    Int  mul (int I) {i   *= I; x(); X();  return this;}
+    Int  mul (Int I) {        I.x();       return mul(I.i());}
+    Int  div (int I) {i   /= I; x(); X();  return this;}
+    Int  div (Int I) {        I.x();       return div(I.i());}
     Int  inc ()      {          x();       return add(1);}
     Int  dec ()      {          x();       return sub(1);}
     Int  up  ()      {i  <<= 1; x();       return this;}
@@ -1153,6 +1157,10 @@ public class Test                                                               
     Int  Add2(Int I) {return dup().add2(I);}
     Int  Sub (int I) {return dup().sub(I);}
     Int  Sub (Int I) {return dup().sub(I);}
+    Int  Mul (int I) {return dup().mul(I);}
+    Int  Mul (Int I) {return dup().mul(I);}
+    Int  Div (int I) {return dup().div(I);}
+    Int  Div (Int I) {return dup().div(I);}
     Int  Inc ()      {return dup().add(1);}
     Int  Dec ()      {return dup().sub(1);}
     Int  Up  ()      {return dup().up();}
