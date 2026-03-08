@@ -1814,19 +1814,23 @@ class Tree extends Test                                                         
   Find find(Key Key)
    {final Slots r = root();                                                     // Root of tree
     final Ref<Find> f = new Ref<>();                                            // Find details result
-    if (r != null)                                                              // Non empty tree
-     {if (Leaf.ref(r))                                                          // Leaf root
-       {final Leaf L = (Leaf)r;
-        L.up(null);
-        L.upIndex((Slots.Slot)null);                                            // Trace path taken to this leaf
-        f.set(new Find(Key, L));
+    new If (r != null)                                                          // Non empty tree
+     {void Then()
+       {new If (Leaf.ref(r))                                                    // Leaf root
+         {void Then()
+           {final Leaf L = (Leaf)r;
+            L.up(null);
+            L.upIndex((Slots.Slot)null);                                        // Trace path taken to this leaf
+            f.set(new Find(Key, L));
+           }
+          void Else()
+           {final Branch R = (Branch)r;                                         // Start search from root
+            R.up(null); R.upIndex(null);                                        // Show that there is nothing above the root
+            f.set(find(Key, R));                                                // Start search from root
+           }
+         };
        }
-      else
-       {final Branch R = (Branch)r;                                             // Start search from root
-        R.up(null); R.upIndex(null);                                            // Show that there is nothing above the root
-        f.set(find(Key, R));                                                    // Start search from root
-       }
-     }
+     };
     return f.get();
    }
 
