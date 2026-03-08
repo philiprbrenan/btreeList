@@ -1877,12 +1877,12 @@ class Tree extends Test                                                         
         l.data(F.locate.at, Data);                                              // Update data
         d.set();
        }
-      if (!d.b() && !F.leaf.full())                                                  // Leaf not full so insert directly
+      if (!d.b() && !F.leaf.full())                                             // Leaf not full so insert directly
        {final Leaf l = F.leaf;                                                  // Child leaf
         l.insert(Key, Data);                                                    // Insert key
         d.set();
        }
-      if (!d.b() && F.leaf.up() != null && !F.leaf.up().full())                      // Leaf is full, parent branch is not full so we can split leaf
+      if (!d.b() && F.leaf.up() != null && !F.leaf.up().full())                 // Leaf is full, parent branch is not full so we can split leaf
        {final Branch b = F.leaf.up();                                           // Parent branch
         final Leaf   r = F.leaf;
         final int   sk = r.splittingKey();
@@ -1890,9 +1890,9 @@ class Tree extends Test                                                         
         b.insert(Key(sk), l);                                                   // Insert new left leaf into leaf
         if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);   // Insert new key, data pair into left leaf or right leaf depending on key
         final Slots.Slot K = b.locateFirstGe(Key);                              // Position of leaf in parent
-        if (!d.b() && b.mergeLeftSibling (K)) d.set();                                     // Merge inserted leaf into prior leaf if possible
-        if (!d.b() && b.mergeRightSibling(K)) d.set();                                     // Merge inserted leaf into next leaf if possible
-        if (!d.b() && K != null)                                                          // Some where in the body of the parent branch
+        if (!d.b() && b.mergeLeftSibling (K)) d.set();                          // Merge inserted leaf into prior leaf if possible
+        if (!d.b() && b.mergeRightSibling(K)) d.set();                          // Merge inserted leaf into next leaf if possible
+        if (!d.b() && K != null)                                                // Some where in the body of the parent branch
          {final Slots.Slot L = K.stepLeft(), R = K.stepRight();                 // Further left and right if possible
           if (!d.b() && L != null && b.mergeLeftSibling (L)) d.set();
           if (!d.b() && R != null && b.mergeLeftSibling (R)) d.set();
