@@ -1060,6 +1060,9 @@ public class Test                                                               
    {If (boolean condition)
      {if (condition) Then(); else Else();
      }
+    If (Bool    condition)
+     {if (condition.b()) Then(); else Else();
+     }
 
     abstract void Then();                                                        // Then clause
              void Else() {}                                                     // Else clause
@@ -1101,17 +1104,40 @@ public class Test                                                               
     Bool         eq(Bool    e){e.x(); return eq(e.i);}
     Bool         ne(Bool    e){e.x(); return ne(e.i);}
 
+    Bool         or(boolean...b)
+     {x(); boolean r = b();
+      for (int i : range(b.length)) r = r || b[i];
+      return new Bool(r);
+     }
+
     Bool         or(Bool...b)
-     {boolean r = false;
-      for (int i : range(b.length)) r = r || b[i].b();
+     {x(); boolean r = b();
+      for (int i : range(b.length))
+       {b[i].x();
+        r = r || b[i].b();
+       }
+      return new Bool(r);
+     }
+
+    Bool        and(boolean...b)
+     {x(); boolean r = b();
+      for (int i : range(b.length)) r = r && b[i];
       return new Bool(r);
      }
 
     Bool        and(Bool...b)
-     {boolean r = true;
-      for (int i : range(b.length)) r = r && b[i].b();
+     {x(); boolean r = b();
+      for (int i : range(b.length))
+       {b[i].x();
+        r = r && b[i].b();
+       }
       return new Bool(r);
      }
+
+    Bool  nor(boolean...b) {return  or(b).flip();}
+    Bool  nor(Bool   ...b) {return  or(b).flip();}
+    Bool nand(boolean...b) {return and(b).flip();}
+    Bool nand(Bool   ...b) {return and(b).flip();}
 
     Bool dup() {final Bool I = new Bool(i); I.n = n; return I;}
 
@@ -1677,6 +1703,15 @@ a   aa    AAA
     ok(i.valid());
    }
 
+  static void test_bool()
+   {final Bool b1 = new Bool().clear();
+    final Bool b2 = new Bool().set();
+    ok(b1.or(  b2).b() == true);
+    ok(b1.nor (b2).b() == false);
+    ok(b1.and (b2).b() == false);
+    ok(b1.nand(b2).b() == true);
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
@@ -1698,6 +1733,7 @@ a   aa    AAA
 //  test_bitSetToHex();
     test_hextoInt();
     test_programming();
+    test_bool();
    }
 
   static void newTests()                                                        // Tests being worked on
