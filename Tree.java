@@ -769,26 +769,26 @@ class Tree extends Test                                                         
       final BitSet.Spec us = new BitSet.Spec(new Int(N), true, true);           // Specification of bit set for used slots
       final BitSet.Spec ur = new BitSet.Spec(new Int(R), true, true);           // Specification of bit set for references
 
-      final int posType      = 0;
-      final int posSlots     = posType      + Integer.BYTES;
-      final int posUsedSlots = posSlots     + Integer.BYTES * N;
-      final int posUsedRefs  = posUsedSlots + us.byteSize().i();
-      final int posKeys      = posUsedRefs  + ur.byteSize().i();
-      final int posName      = posKeys      + Integer.BYTES * R;
-      final int size         = posName      + Integer.BYTES;
+      final Int posType      = new Int(0);
+      final Int posSlots     = posType      .Add(Integer.BYTES);
+      final Int posUsedSlots = posSlots     .Add(Integer.BYTES * N);
+      final Int posUsedRefs  = posUsedSlots .Add(us.byteSize().i());
+      final Int posKeys      = posUsedRefs  .Add(ur.byteSize().i());
+      final Int posName      = posKeys      .Add(Integer.BYTES * R);
+      final Int size         = posName      .Add(Integer.BYTES);
      }
 
     class Memory extends SlotsMemoryPositions                                   // Memory required to hold bytes
      {final ByteBuffer bytes;                                                   // Bytes used by this set of slots
 
       final BitSet usedSlotsBits = new BitSet(us)                               // Bit storage for used slots
-       {void setByte(Int I, byte V) {bytes.put(posUsedSlots + I.i(), V);}       // Save used slot bit
-        byte getByte(Int I)  {return bytes.get(posUsedSlots + I.i());}          // Get used slot bit
+       {void setByte(Int I, byte V) {bytes.put(posUsedSlots.Add(I).i(), V);}    // Save used slot bit
+        byte getByte(Int I)  {return bytes.get(posUsedSlots.Add(I).i());}       // Get used slot bit
        };
 
       final BitSet usedRefsBits  = new BitSet(ur)                               // Bit storage for used refs
-       {void setByte(Int I, byte V) {bytes.put(posUsedRefs + I.i(), V);}        // Save used ref bit
-        byte getByte(Int I)  {return bytes.get(posUsedRefs + I.i());}           // Get used ref bit
+       {void setByte(Int I, byte V) {bytes.put(posUsedRefs.Add(I).i(), V);}     // Save used ref bit
+        byte getByte(Int I)  {return bytes.get(posUsedRefs.Add(I).i());}        // Get used ref bit
        };
 
       void copySlots(Memory Memory)                                             // Copy a set of slots from the specified memory into this memory
@@ -818,7 +818,7 @@ class Tree extends Test                                                         
          };
        }
 
-      Memory() {bytes = ByteBuffer.allocate(size);}                             // Create memory
+      Memory()                 {bytes = ByteBuffer.allocate(size.i());}         // Create memory
       Memory(ByteBuffer Bytes) {bytes = Bytes;}                                 // Use a specified memory
 
       BitSet.Pos us(int I) {return usedSlotsBits.new Pos(I);}                   // A slot position in the used slots
@@ -826,23 +826,23 @@ class Tree extends Test                                                         
 
       boolean usedSlots (int I) {return usedSlotsBits.getBit(us(I));}           // Value of indexed used slot
       boolean usedRefs  (int I) {return usedRefsBits .getBit(ur(I));}           // Value of indexed used reference
-      int     slots     (int I) {return bytes.getInt(posSlots + ib(I));}        // Value of indexed slot
-      int     keys      (int I) {return bytes.getInt(posKeys  + ib(I));}        // Value of key via indexed reference
-      int     name      (     ) {return bytes.getInt(posName);}
+      int     slots     (int I) {return bytes.getInt(posSlots.Add(ib(I)).i());} // Value of indexed slot
+      int     keys      (int I) {return bytes.getInt(posKeys .Add(ib(I)).i());} // Value of key via indexed reference
+      int     name      (     ) {return bytes.getInt(posName.i());}
 
-      void    usedSlots (int I, boolean V) {usedSlotsBits.set(      us(I), V);} // set value of indexed used slot
-      void    usedRefs  (int I, boolean V) {usedRefsBits .set(      ur(I), V);} // set value of indexed used reference
-      void    slots     (int I, int     V) {bytes.putInt(posSlots + ib(I), V);} // set value of indexed slot
-      void    keys      (int I, int     V) {bytes.putInt(posKeys  + ib(I), V);} // set value of key via indexed reference
-      void    name      (       int     V) {bytes.putInt(posName,          V);} // Save the name of the node in memory to assist debugging
+      void    usedSlots (int I, boolean V) {usedSlotsBits.set(        us(I),      V);} // set value of indexed used slot
+      void    usedRefs  (int I, boolean V) {usedRefsBits .set(        ur(I),      V);} // set value of indexed used reference
+      void    slots     (int I, int     V) {bytes.putInt(posSlots.Add(ib(I)).i(), V);} // set value of indexed slot
+      void    keys      (int I, int     V) {bytes.putInt(posKeys .Add(ib(I)).i(), V);} // set value of key via indexed reference
+      void    name      (       int     V) {bytes.putInt(posName.i(),             V);} // Save the name of the node in memory to assist debugging
 
-      void type(int Type) {       bytes.putInt(posType, Type);}                 // Type of object in which the slots are embedded
-      int  type()         {return bytes.getInt(posType);}
+      void type(int Type) {       bytes.putInt(posType.i(), Type);}             // Type of object in which the slots are embedded
+      int  type()         {return bytes.getInt(posType.i());}
      }
    }
 
   int getMemorySize(int NumberOfRefs)                                           // Size of memory for a specified number of references
-   {return new Slots(NumberOfRefs, false).memory.size;
+   {return new Slots(NumberOfRefs, false).memory.size.i();
    }
 
 //D1 Tree memory                                                                // Memory used to hold the root of the tree, its leaves and branches
@@ -966,7 +966,6 @@ class Tree extends Test                                                         
 
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
-      final int p = new SlotsMemoryPositions().posKeys + 1 * Integer.BYTES;
       d.copySlots(this);                                                        // Copy slots
       new For(numberOfRefs())                                                   // Each reference
        {boolean body(int i)                                                     // Each reference
