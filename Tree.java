@@ -1032,13 +1032,12 @@ class Tree extends Test                                                         
     int splittingKey()                                                          // Splitting key from a leaf
      {if (!full()) stop("Leaf not full");                                       // The leaf must be full if we are going to split it
       final Int k = new Int(0);                                                 // Splitting key
-      final int S = numberOfSlots();
       final Int p = new Int(0);                                                 // Position in leaf
-      new For(S)                                                                // Scan for splitting keys
+      new For(numberOfSlots())                                                  // Scan for splitting keys
        {boolean body(int i)
          {new If (usedSlots(new Slot(i)))                                       // Used slot
            {void Then()
-             {new If (p.i() == splitSize()-1 || p.i() == splitSize())           // Accumulate splitting key as last on left and first on right of split
+             {new If (p.Eq(splitSize()-1).or(p.Eq(splitSize())))                // Accumulate splitting key as last on left and first on right of split
                {void Then()
                  {k.add(keys(new Slot(i)).value());
                  }
