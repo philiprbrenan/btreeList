@@ -670,22 +670,22 @@ class Tree extends Test                                                         
                   final Int Ap = A.Int(), ap = a.get().Int();                   // New and current lower limit of range
                   final Int Bp = B.Int(), bp = b.get().Int();                   // New and current upper limit of range
 
-                  new If (!D.b() && Ap.ne(ap) && A.ge(Key)) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
-                  new If (!D.b() && Ap.ne(bp) && A.le(Key)) {void Then() {D.set(); b.set(A);}};
-                  new If (!D.b() && Bp.ne(ap) && B.ge(Key)) {void Then() {D.set(); a.set(B);}};
-                  new If (!D.b() && Bp.ne(bp) && B.le(Key)) {void Then() {D.set(); b.set(B);}};
-                  new If (!D.b())                                               // The slots must be adjacent
+                  new If (D.Flip().and(Ap.ne(ap), A.ge(Key))) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
+                  new If (D.Flip().and(Ap.ne(bp), A.le(Key))) {void Then() {D.set(); b.set(A);}};
+                  new If (D.Flip().and(Bp.ne(ap), B.ge(Key))) {void Then() {D.set(); a.set(B);}};
+                  new If (D.Flip().and(Bp.ne(bp), B.le(Key))) {void Then() {D.set(); b.set(B);}};
+                  new If (D.Flip())                                             // The slots must be adjacent
                    {void Then()
-                     {new If (!D.b() && a.get().eq(Key)) {void Then() {D.set(); found(a.get());}};
-                      new If (!D.b() && b.get().eq(Key)) {void Then() {D.set(); found(b.get());}};
-                      new If (!D.b())                    {void Then() {D.set(); below(b.get());}};
+                     {new If (D.Flip().and(a.get().eq(Key))) {void Then() {D.set(); found(a.get());}};
+                      new If (D.Flip().and(b.get().eq(Key))) {void Then() {D.set(); found(b.get());}};
+                      new If (D.Flip())                      {void Then() {D.set(); below(b.get());}};
                       d.set();                                                  // Search has completed
                      }
                    };
                   return !d.b();                                                // Continue search with new range
                  }
                };
-              new If (!d.b())                                                   // Incomplete search
+              new If (d.Flip())                                                 // Incomplete search
                {void Then()
                  {stop("Searched unsuccessfully more than the maximum number of times:",
                        numberOfSlots());
