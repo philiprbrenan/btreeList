@@ -654,10 +654,10 @@ class Tree extends Test                                                         
          {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                 // Lower limit
           final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                 // Upper limit
           final Bool      d = new Bool().clear();                               // Continue the search unless set
-          new If (!d.b() &&  a.get().eq(Key)) {void Then() {d.set(); found(a.get());            }}; // Found at the start of the range
-          new If (!d.b() &&  b.get().eq(Key)) {void Then() {d.set(); found(b.get());            }}; // Found at the end of the range
-          new If (!d.b() &&  a.get().le(Key)) {void Then() {d.set(); below(a.get()); all = true;}}; // Smaller than any key
-          new If (!d.b() && !b.get().le(Key)) {void Then() {d.set(); above(b.get()); all = true;}}; // Greater than any key
+          new If (d.Flip().and(a.get().eq(Key))) {void Then() {d.set(); found(a.get());            }}; // Found at the start of the range
+          new If (d.Flip().and(b.get().eq(Key))) {void Then() {d.set(); found(b.get());            }}; // Found at the end of the range
+          new If (d.Flip().and(a.get().le(Key))) {void Then() {d.set(); below(a.get()); all = true;}}; // Smaller than any key
+          new If (d.Flip().and(b.get().gt(Key))) {void Then() {d.set(); above(b.get()); all = true;}}; // Greater than any key
 
           new If (!d.b())                                                       // Search
            {void Then()
