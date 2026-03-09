@@ -1006,15 +1006,14 @@ class Tree extends Test                                                         
      }
 
     Leaf splitRightFull(Leaf Right)                                             // Split a left leaf into an existing right leaf
-     {final int Count = splitSize();
+     {final Int Count = new Int(splitSize());
       final Int s = new Int(0);                                                 // Count slots used
-      final int N = numberOfSlots();
-      new For(N)                                                                // Each slot
+      new For(numberOfSlots())                                                  // Each slot
        {boolean body(int i)
          {final Slot S = new Slot(i);
           new If (usedSlots(S))                                                 // Slot is in use
            {void Then()                                                         // Slot is in use
-             {new If (s.i() < Count)                                            // Still in left leaf
+             {new If (s.lt(Count))                                              // Still in left leaf
                {void Then()
                  {Right.clearSlotAndRef(S); s.inc();
                  }
