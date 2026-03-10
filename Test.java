@@ -1173,10 +1173,19 @@ public class Test                                                               
     Int  mul (Int I) {        I.x();       return mul(I.i());}
     Int  div (int I) {i   /= I; x(); X();  return this;}
     Int  div (Int I) {        I.x();       return div(I.i());}
+    Int  mod (int I) {i   %= I; x(); X();  return this;}
+    Int  mod (Int I) {        I.x();       return mod(I.i());}
     Int  inc ()      {          x();       return add(1);}
     Int  dec ()      {          x();       return sub(1);}
     Int  up  ()      {i  <<= 1; x();       return this;}
     Int  down()      {i >>>= 1; x();       return this;}
+    Int  sqrt()      {x(); i = (int)java.lang.Math.sqrt(i); X(); return this;}
+    Int  neg ()      {x(); i = -i;   X();  return this;}
+    Int  abs ()      {x(); i = i < 0 ? -i : i; X(); return this;}
+    Int  max (int I) {x(); return i < I ? new Int(I) : this;}
+    Int  max (Int I) {        I.x();       return max(I.i);}
+    Int  min (int I) {x(); return i > I ? new Int(I) : this;}
+    Int  min (Int I) {        I.x();       return min(I.i);}
 
     Int  Add (int I) {return dup().add(I);}
     Int  Add (Int I) {return dup().add(I);}
@@ -1187,10 +1196,15 @@ public class Test                                                               
     Int  Mul (Int I) {return dup().mul(I);}
     Int  Div (int I) {return dup().div(I);}
     Int  Div (Int I) {return dup().div(I);}
+    Int  Mod (int I) {return dup().mod(I);}
+    Int  Mod (Int I) {return dup().mod(I);}
     Int  Inc ()      {return dup().add(1);}
     Int  Dec ()      {return dup().sub(1);}
     Int  Up  ()      {return dup().up();}
     Int  Down()      {return dup().down();}
+    Int  Sqrt()      {return dup().sqrt();}
+    Int  Neg()       {return dup().neg();}
+    Int  Abs()       {return dup().abs();}
 
     boolean eq(int e){  x(); return i == e;}
     boolean ne(int e){  x(); return i != e;}
