@@ -21,23 +21,23 @@ class Tree extends Test                                                         
 
 //D1 Construction                                                               // Construct and layout a tree
 
-  Tree(Int MaxLeafSize, Int MaxBranchSize, Int NumberOfNodes)                   // Create the tree
-   {final String m  = "The maximum ";
+  Tree(int MaxLeafSize, int MaxBranchSize, int NumberOfNodes)                   // Create the tree
+   {maxLeafSize   = new Int(MaxLeafSize);                                                // The maximum number of entries in a leaf
+    maxBranchSize = new Int(MaxBranchSize);                                              // The maximum number of entries in a branch
+    numberOfNodes = new Int(NumberOfNodes);                                              // The maximum number of leaves and branches combined
+
+    final String m  = "The maximum ";
     final String m1 = m + "leaf size must be 2 or more, not: "   +MaxLeafSize;
     final String m2 = m + "branch size must be 3 or more, not: " +MaxBranchSize;
     final String m3 = m + "branch size must be odd, not: "       +MaxBranchSize;
 
-    final boolean b1 = MaxLeafSize     .lt(2),                                   // Size checks
-                  b2 = MaxBranchSize   .lt(3),
-                  b3 = MaxBranchSize.Mod(2).eq(0);
+    final boolean b1 = maxLeafSize     .lt(2),                                   // Size checks
+                  b2 = maxBranchSize   .lt(3),
+                  b3 = maxBranchSize.Mod(2).eq(0);
 
     if (b1 && !b2 && !b3) stop(m1); else if (b1) say(m1);
     if (b2        && !b3) stop(m2); else if (b2) say(m2);
     if (b3              ) stop(m3);
-
-    maxLeafSize   = MaxLeafSize;                                                // The maximum number of entries in a leaf
-    maxBranchSize = MaxBranchSize;                                              // The maximum number of entries in a branch
-    numberOfNodes = NumberOfNodes;                                              // The maximum number of leaves and branches combined
     for (int i = numberOfNodes.i(); i > 0; --i) freeChain.push(new Allocation(new Int(i)));  // Initial free chain. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
 
     memory        = new Memory();                                               // Memory for the tree
@@ -47,8 +47,8 @@ class Tree extends Test                                                         
     memory.numberOfNodes(numberOfNodes);
    }
 
-  Tree(Int LeafSize)                {this(LeafSize, LeafSize.Dec());}           // Create a test tree
-  Tree(Int LeafSize, Int BranchSize){this(LeafSize, BranchSize, new Int(999));} // Create a test tree
+  Tree(int LeafSize)                {this(LeafSize, LeafSize-1);}               // Create a test tree
+  Tree(int LeafSize, int BranchSize){this(LeafSize, BranchSize, 999);}          // Create a test tree
 
   Int maxLeafSize  () {return maxLeafSize;}                                     // Maximum size of a leaf
   Int maxBranchSize() {return maxBranchSize;}                                   // Maximum size of a branch
@@ -60,7 +60,7 @@ class Tree extends Test                                                         
     Key(  Int Value)  {i(Value);}
     Int       value() {return this;}
     public String toString()
-     {return "Key : "+value();
+     {return "Key : "+i();
      }
    }
 
@@ -68,10 +68,11 @@ class Tree extends Test                                                         
   static Key Key(Int Value) {return new Key(Value);}                            // Create a key with the specified value
 
   static final class Data extends Int                                           // An item of data associated with a key
-   {Data(Int Value) {i(Value);}
+   {Data(int Value) {i(Value);}
+    Data(Int Value) {i(Value);}
     Int     value() {return this;}
     public String toString()
-     {return "Data: "+value();
+     {return "Data: "+i();
      }
    }
 
@@ -109,7 +110,8 @@ class Tree extends Test                                                         
    }
 
   class Allocation extends Int                                                  // An allocated node that could become a leaf or a branch or a tree base
-   {Allocation(Int At) {i(At);}
+   {Allocation(int At) {i(At);}
+    Allocation(Int At) {i(At);}
     Int at()           {return this;}
    }
 
@@ -159,7 +161,7 @@ class Tree extends Test                                                         
    }
 
   Slots fake(Allocation Name)                                                   // Slots used during testing to mock attached branches and leaves
-   {final Slots s = new Slots(new Int(2));
+   {final Slots s = new Slots(2);
     s.name(Name);
     return s;
    }
@@ -173,8 +175,8 @@ class Tree extends Test                                                         
 
 //D2 Construction                                                               // Construct and layout the slots
 
-    Slots(Int NumberOfRefs, ByteBuffer Bytes)                                   // Create the slots using the specified memory
-     {numberOfRefs        = NumberOfRefs;                                       // Number of slots referenced
+    Slots(int NumberOfRefs, ByteBuffer Bytes)                                   // Create the slots using the specified memory
+     {numberOfRefs        = new Int(NumberOfRefs);                              // Number of slots referenced
       redistributionWidth = numberOfRefs.Sqrt();                                // Redistribute the slots if we see a run of more than these that are all occupied to make insertion easier.
       if (Bytes == null)                                                        // Memory used by the slots
        {memory = new Memory();                                                  // Create memory used by the slots
@@ -183,10 +185,10 @@ class Tree extends Test                                                         
       else memory = new Memory(Bytes);                                          // Memory used by the slots
      }
 
-    Slots(Int NumberOfRefs) {this(NumberOfRefs, null);}                         // Create the slots and some memory to hold them
+    Slots(int NumberOfRefs) {this(NumberOfRefs, null);}                         // Create the slots and some memory to hold them
 
-    Slots(Int NumberOfRefs, boolean usable)                                     // Create the slots just to find out how big they will be
-     {numberOfRefs        = NumberOfRefs;                                       // Number of slots referenced
+    Slots(int NumberOfRefs, boolean usable)                                     // Create the slots just to find out how big they will be
+     {numberOfRefs        = new Int(NumberOfRefs);                                       // Number of slots referenced
       redistributionWidth = new Int(0);
       memory              = new Memory();
       initialize();
@@ -195,7 +197,7 @@ class Tree extends Test                                                         
     void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}              // Set memory to be used
 
     Slots duplicateSlots()                                                      // Copy the source slots
-     {final Slots t = new Slots(numberOfRefs);
+     {final Slots t = new Slots(numberOfRefs.i());
       t.copySlots(this);
       return t;                                                                 // The copied slots
      }
@@ -278,12 +280,12 @@ class Tree extends Test                                                         
 
 //D2 Slots                                                                      // Manage the slots
 
-    void setSlots(Int...Slots)                                                  // Set slots as used
-     {for (int i : range(Slots.length)) usedSlots(new Slot(Slots[i]), true);
+    void setSlots(int...Slots)                                                  // Set slots as used
+     {for (int i : range(Slots.length)) usedSlots(new Slot(new Int(Slots[i])), true);
      }
 
-    void clearSlots(Int...Slots)                                                // Set slots as not being used
-     {for (int i : range(Slots.length)) usedSlots(new Slot(Slots[i]), false);
+    void clearSlots(int...Slots)                                                // Set slots as not being used
+     {for (int i : range(Slots.length)) usedSlots(new Slot(new Int(Slots[i])), false);
      }
 
     void clearFirstSlot()                                                       // Set the first used slot to not used
@@ -291,7 +293,7 @@ class Tree extends Test                                                         
       new If (f != null) {void Then() {usedSlots(f, false);}};
      }
 
-    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I))); clearSlots(I);} // Remove a key from the slots
+    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I))); clearSlots(I.i());} // Remove a key from the slots
     slot           slots(Slot I) {return  new slot(memory.slots    (I));}                     // The indexed slot
     boolean    usedSlots(Slot I) {return           memory.usedSlots(I);}                      // The indexed slot usage indicator
     boolean     usedRefs(slot I) {return           memory.usedRefs (I);}                      // The indexed reference usage indicator
@@ -747,12 +749,12 @@ class Tree extends Test                                                         
       final int[]N = range(numberOfSlots());
       final int[]R = range(numberOfRefs);
       s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",                // Title line
-                              name().at(), type(), numberOfRefs));
+                              name().at().i(), type().i(), numberOfRefs.i()));
       s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
-      s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, slots(new Slot(i)).value()));
+      s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, slots(new Slot(i)).i()));
       s.append("\nusedSlots: "); for (int i : N) s.append(             usedSlots(new Slot(i)) ? "   X" : "   .");
       s.append("\nusedRefs : "); for (int i : R) s.append(             usedRefs (new slot(i)) ? "   X" : "   .");
-      s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey,   key(new slot(i)) != null ? key(new slot(i)).value() : 0));
+      s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey,   key(new slot(i)) != null ? key(new slot(i)).i() : 0));
       return ""+s+"\n";
      }
 
@@ -760,7 +762,7 @@ class Tree extends Test                                                         
      {final StringJoiner s = new StringJoiner(", ");
 
       for (int i : range(numberOfSlots()))
-       {if (usedSlots(new Slot(i))) s.add(""+keys(new Slot(i)).value());
+       {if (usedSlots(new Slot(i))) s.add(""+keys(new Slot(i)).i());
        }
       return ""+s;
      }
@@ -846,7 +848,7 @@ class Tree extends Test                                                         
    }
 
   Int getMemorySize(Int NumberOfRefs)                                           // Size of memory for a specified number of references
-   {return new Slots(NumberOfRefs, false).memory.size.dup();
+   {return new Slots(NumberOfRefs.i(), false).memory.size.dup();
    }
 
 //D1 Tree memory                                                                // Memory used to hold the root of the tree, its leaves and branches
@@ -923,7 +925,7 @@ class Tree extends Test                                                         
     final Allocation node;                                                      // The node holding this leaf
 
     Leaf()                                                                      // Create a leaf
-     {super(maxLeafSize);                                                       // Slots for leaf
+     {super(maxLeafSize.i());                                                   // Slots for leaf
       node   = allocate();                                                      // Allocate the leaf
       memory = new Memory(node);                                                // Memory for leaf
       super.setMemory(memory.bytes);                                            // Share memory with slots
@@ -934,7 +936,7 @@ class Tree extends Test                                                         
      }
 
     Leaf(Allocation Name)                                                       // Reuse the leaf at the indexed node in memory
-     {super(maxLeafSize, node(Name));                                           // Slots for leaf
+     {super(maxLeafSize.i(), node(Name));                                           // Slots for leaf
       node   = Name;                                                            // Node containing leaf
       memory = new Memory(Name);                                                // Memory for leaf
       super.setMemory(memory.bytes);                                            // Share memory with slots
@@ -1142,7 +1144,7 @@ class Tree extends Test                                                         
 
     boolean mergeFromRight(Leaf Right)                                          // Merge the specified slots from the right
      {final Bool r = new Bool();
-      new If (countUsed() + Right.countUsed() > maxLeafSize)
+      new If (countUsed().Add(Right.countUsed()).gt(maxLeafSize))
        {void Then()
          {r.clear();
          }
@@ -1156,7 +1158,7 @@ class Tree extends Test                                                         
 
     boolean mergeFromLeft(Leaf Left)                                            // Merge the specified slots from the left
      {final Bool R = new Bool();
-      new If (Left.countUsed() + countUsed() > maxLeafSize)
+      new If (Left.countUsed().Add(countUsed()).gt(maxLeafSize))
        {void Then()
          {R.clear();
          }
@@ -1198,19 +1200,19 @@ class Tree extends Test                                                         
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
 
-      Int  up()     {return bytes.getInt(posUp);}                               // Reference to parent branch. The zero node contains the tree base so zero can be used as a representation of null for references to branches and leaves
-      void up(Int Index)   {bytes.putInt(posUp, Index);}                        // Save address of parent branch into memory
+      Int  up()     {return new Int(bytes.getInt(posUp.i()));}                  // Reference to parent branch. The zero node contains the tree base so zero can be used as a representation of null for references to branches and leaves
+      void up(Int Index)   {bytes.putInt(posUp.i(), Index.i());}                // Save address of parent branch into memory
 
-      Int  upIndex(){return bytes.getInt(posUpIndex);}                          // Get index of leaf in its parent from memory
-      void upIndex(Int Value)                                                    // Save index of this leaf in its parent branch
-       {bytes.putInt(posUpIndex, Value != null ? Value : -1);                   // -1 used to indicate top
+      Int  upIndex(){return new Int(bytes.getInt(posUpIndex.i()));}             // Get index of leaf in its parent from memory
+      void upIndex(Int Value)                                                   // Save index of this leaf in its parent branch
+       {bytes.putInt(posUpIndex.i(), Value != null ? Value.i() : -1);           // -1 used to indicate top
        }
 
       Int  data(Int Index)                                                      // Get the index of the leaf in its parent branch from memory
-       {return bytes.getInt(posData + Index * Integer.BYTES);
+       {return new Int(bytes.getInt(posData.Add(ib(Index)).i()));
        }
       void data(Int Index, Int  Value)                                          // Put the index of the leaf in its parent branch into memory
-       {bytes.putInt(posData + Index * Integer.BYTES, Value);
+       {bytes.putInt(posData.Add(ib(Index)).i(), Value.i());
        }
      }
 
@@ -1232,7 +1234,7 @@ class Tree extends Test                                                         
     public String toString()                                                    // Print a leaf
      {final StringJoiner d = new StringJoiner(" ");
       for (int i : range(numberOfRefs()))
-       {d.add(f(formatKey, memory.data(i)));
+       {d.add(f(formatKey, memory.data(new Int(i)).i()));
        }
       final Branch     P = up();                                                // Containing branch
       final Slots.Slot Q = P != null ? upIndex(P) : null;
@@ -1250,18 +1252,18 @@ class Tree extends Test                                                         
     final Memory   memory;                                                      // Memory used by the slots
 
     Branch()                                                                    // Create a branch
-     {super(maxBranchSize);                                                     // Slots for branch
+     {super(maxBranchSize.i());                                                     // Slots for branch
       node   = allocate();                                                      // Name the branch
       memory = new Memory(node);                                                // Memory for branch
       super.setMemory(memory.bytes);                                            // Share memory with slots
       super.memory.clear();                                                     // Clear the memory associated with the slots
       super.initialize();                                                       // Create path bit trees for slots
       name(node);                                                               // Save the name of the node in memory to assist debugging
-      type(NodeType.Branch.ordinal());                                          // Set the type to branch
+      type(new Int(NodeType.Branch.ordinal()));                                 // Set the type to branch
      }
 
     Branch(Allocation Name)                                                     // Reuse the branch at the indexed node in memory
-     {super(maxBranchSize);                                                     // Slots for branch
+     {super(maxBranchSize.i());                                                 // Slots for branch
       node   = Name;                                                            // Node containing branch
       memory = new Memory(node);                                                // Memory for branch
       super.setMemory(memory.bytes);                                            // Share memory with slots
@@ -1270,15 +1272,15 @@ class Tree extends Test                                                         
 
     Branch up()                                                                 // Name of branch above if any
      {final Int i = memory.up();
-      return i > 0 ? new Branch(new Allocation(i)) : null;
+      return i.gt(0) ? new Branch(new Allocation(i)) : null;
      }
 
     void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
-     {memory.up(Branch != null ? Branch.name().at() : 0);
+     {memory.up(Branch != null ? Branch.name().at() : new Int(0));
      }
 
-    Int     upIndex()              {return memory.upIndex();}                   // Index of this branch in its parent
-    void    upIndex(Integer Value) {memory.upIndex(Value);}                     // Set the index of this branch in its parent
+    Int  upIndex()          {return new Int(memory.upIndex());}                 // Index of this branch in its parent
+    void upIndex(Int Value) {memory.upIndex(Value);}                        // Set the index of this branch in its parent
 
     static boolean ref(Slots B)    {return B instanceof Branch;}                // Check whether we are referencing a branch
 
@@ -1290,18 +1292,18 @@ class Tree extends Test                                                         
          }
         void Else()
          {final Int i = Slots.name().at();
-          R.i(ref(Slots) ? +i : -i);
+          R.i(ref(Slots) ? i : i.neg());
          }
        };
-      return R.i();
+      return R;
      }
 
     void top(Slots Value) {memory.top(refSign(Value));}                         // Set the top most element
 
     Slots   top()                                                               // Top element of this branch
      {final Int i = memory.top();
-      return i == 0 ? null :  i > 0 ? new Branch(new Allocation( i)):
-                                      new Leaf  (new Allocation(-i));
+      return i.eq(0) ? null :  i.gt(0) ? new Branch(new Allocation(i)):
+                                         new Leaf  (new Allocation(i.neg()));
      }
 
     void free()                                                                 // Free the branch
@@ -1310,7 +1312,7 @@ class Tree extends Test                                                         
       memory.invalidate();                                                      // Invalidate branch data
      }
 
-    Int splitSize()             {return maxBranchSize / 2;}                     // Size of a split branch
+    Int splitSize()             {return maxBranchSize.Down();}                  // Size of a split branch
     Slots firstChild()          {return data(locateFirstUsedSlot());}           // First child assuming there is one
 
     Slots data(Slot Index)                                                      // Step down via indexed slot to the branch or leaf below
@@ -1319,8 +1321,8 @@ class Tree extends Test                                                         
 
     Slots dataDirect(Int Index)                                                 // Step down directly through to the branch or leaf below
      {final Int i = memory.data(Index);
-      return i == 0 ? null : i < 0 ? new Leaf(new Allocation(-i)):
-                                     new Branch(new Allocation(i));
+      return i.eq(0) ? null : i.lt(0) ? new Leaf(new Allocation(i.neg())):
+                                      new Branch(new Allocation(i));
      }
 
     void data(Int Index, Slots S)                                               // Set child leaf or branch via the indexed slot
@@ -1334,7 +1336,7 @@ class Tree extends Test                                                         
       d.copySlots(this);                                                        // Copy slots
       new For(numberOfRefs())                                                   // Copy used data
        {boolean body(int i)
-         {d.memory.data(i, memory.data(i));
+         {d.memory.data(new Int(i), memory.data(new Int(i)));
           return true;
          }
        };
@@ -1427,7 +1429,7 @@ class Tree extends Test                                                         
           return true;
          }
        };
-      return k.i();                                                             // Splitting key
+      return k;                                                                 // Splitting key
      }
 
     Branch split()                                                              // Split a branch
@@ -1448,7 +1450,7 @@ class Tree extends Test                                                         
 
     void compactLeft()                                                          // Compact the branch to the left
      {final Int R = numberOfRefs();
-      final Slots[]d = new Slots[R];
+      final Slots[]d = new Slots[R.i()];
       final Int p = new Int(0);
       new For(numberOfSlots())
        {boolean body(int i)
@@ -1458,22 +1460,22 @@ class Tree extends Test                                                         
          }
        };
       super.compactLeft();
-      new For(R) {boolean body(int i) {dataDirect(i, d[i]); return true;}};
+      new For(R) {boolean body(int i) {dataDirect(new Int(i), d[i]); return true;}};
      }
 
     void compactRight()                                                         // Compact the branch to the right
      {final Int    N = numberOfSlots(), R = numberOfRefs();
-      final Slots[]d = new Slots[R];
-      final Int    p = new Int(R-1);
+      final Slots[]d = new Slots[R.i()];
+      final Int    p = R.Dec();
       new For(N)
        {boolean body(int i)
-         {final Slot I = new Slot(N-i-1);
+         {final Slot I = new Slot(N.Sub(i).dec());
           new If (usedSlots(I)) {void Then() {d[p.i()] = data(I); p.dec();}};
           return true;
          }
        };
       super.compactRight();
-      new For(R) {boolean body(int i) {dataDirect(i, d[i]); return true;}};
+      new For(R) {boolean body(int i) {dataDirect(new Int(i), d[i]); return true;}};
      }
 
     void mergeData(Key Key, Branch Left, Branch Right)                          // Merge the data from the compacted left and right slots
@@ -1481,14 +1483,15 @@ class Tree extends Test                                                         
       new For(maxBranchSize)                                                    // Each slot
        {boolean body(int i)
          {final slot J = new slot(i);
+          final Int  I = new Int(i);
           new If      (l.usedRefs(J))
            {void Then()
-             {memory.data(i, l.memory.data(i));                                 // Merge from left first
+             {memory.data(I, l.memory.data(I));                                 // Merge from left first
              }
             void Else()
              {new If (r.usedRefs(J))
                {void Then()
-                 {memory.data(i, r.memory.data(i));                             // Merge from right last
+                 {memory.data(I, r.memory.data(I));                             // Merge from right last
                  }
                };
              }
@@ -1509,7 +1512,7 @@ class Tree extends Test                                                         
 
     boolean mergeFromRight(Key Key, Branch Right)                               // Merge the specified slots from the right
      {final Bool R = new Bool();
-      new If (countUsed() + Right.countUsed() >= maxBranchSize)
+      new If (countUsed().Add(Right.countUsed()).ge(maxBranchSize))
        {void Then()
          {R.clear();
          }
@@ -1523,7 +1526,7 @@ class Tree extends Test                                                         
 
     boolean mergeFromLeft(Key Key, Branch Left)                                 // Merge the specified slots from the right
      {final Bool R = new Bool();
-      new If (Left.countUsed() + countUsed() >= maxBranchSize)
+      new If (Left.countUsed().Add(countUsed()).ge(maxBranchSize))
        {void Then()
          {R.clear();
          }
@@ -1602,7 +1605,7 @@ class Tree extends Test                                                         
           return true;
          }
        };
-      return n.i() + count(top());                                              // Count entries below top
+      return n.Add(count(top()));                                               // Count entries below top
      }
 
 //D2 Memory                                                                     // Memory for a branch
@@ -1630,25 +1633,25 @@ class Tree extends Test                                                         
 
       Memory(Allocation Name) {bytes = node(Name);}                             // Position in tree memory
 
-      Int  up()   {return bytes.getInt(posUp);}                                 // Parent branch
-      void up(Int Value) {bytes.putInt(posUp, Value);}
+      Int  up()   {return new Int(bytes.getInt(posUp.i()));}                    // Parent branch
+      void up(Int Value) {bytes.putInt(posUp.i(), Value.i());}
 
-      Integer upIndex()                                                         // Index of this branch in its parent
-       {final Int i = bytes.getInt(posUpIndex); return i < 0 ? null : i;
+      Int upIndex()                                                             // Index of this branch in its parent
+       {final Int i = new Int(bytes.getInt(posUpIndex.i())); return i.lt(0) ? null : i;
        }
 
-      void    upIndex(Integer Value)                                            // Set the index of this branch in its parent
-       {bytes.putInt(posUpIndex, Value != null ? Value : -1);                   // Have to use -1 to represent null as 0 is a valid position
+      void    upIndex(Int Value)                                                // Set the index of this branch in its parent
+       {bytes.putInt(posUpIndex.i(), Value != null ? Value.i() : -1);                   // Have to use -1 to represent null as 0 is a valid position
        }
 
-      Int  top ()  {return bytes.getInt(posTop);}
-      void top (Int Top)  {bytes.putInt(posTop, Top);}
+      Int  top ()  {return new Int(bytes.getInt(posTop.i()));}
+      void top (Int Top)  {bytes.putInt(posTop.i(), Top.i());}
 
       Int  data(Int Index)
-       {return bytes.getInt(posData + Index * Integer.BYTES);
+       {return new Int(bytes.getInt(posData.Add(ib(Index)).i()));
        }
       void data(Int Index, Int  Value)
-       {bytes.putInt(posData + Index * Integer.BYTES, Value);
+       {bytes.putInt(posData.Add(ib(Index)).i());
        }
      }
 
@@ -1671,20 +1674,21 @@ class Tree extends Test                                                         
      {final StringJoiner d = new StringJoiner(" ");
 
       for (int i : range(numberOfRefs()))
-       {if (memory.data(i) == 0) d.add("  .");
-        else d.add(f(formatKey, memory.data(i)));
+       {final Int I = new Int(i);
+        if (memory.data(I).eq(0)) d.add("  .");
+        else d.add(f(formatKey, memory.data(I).i()));
        }
       final StringBuilder s = new StringBuilder();
 
-      final Integer ui = upIndex();
-      final String  us = ui != null ? ""+ui : "null";
-      final Int n = name().at();
-      final Int u = memory.up();
-      final Int i = memory.upIndex() != null ? memory.upIndex() : -1;           // -1 represents null
+      final Int    ui = upIndex();
+      final String us = ui != null ? ""+ui.i() : "null";
+      final int n = name().at().i();
+      final int u = memory.up().i();
+      final int i = memory.upIndex() != null ? memory.upIndex().i() : -1;           // -1 represents null
       s.append(f("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
       s.append(super.toString());
       s.append("data     :  "+d+"\n");
-      s.append("top      :  "+f(formatKey, memory.top())+"\n");
+      s.append("top      :  "+f(formatKey, memory.top().i())+"\n");
       return ""+s;
      }
    }
@@ -1762,7 +1766,7 @@ class Tree extends Test                                                         
        }
       void Else()
        {final Branch b = (Branch)root();                                        // Branch root
-        new If (b.countUsed() == 0)                                             // Root body is empty so collapse to top
+        new If (b.countUsed().eq(0))                                            // Root body is empty so collapse to top
          {void Then()
            {final Slots t = b.top();
             b.free();
@@ -1777,7 +1781,7 @@ class Tree extends Test                                                         
            }
          };
 
-        new If (b.countUsed() == 1)                                             // Root body is right size to collapse
+        new If (b.countUsed().eq(1))                                            // Root body is right size to collapse
          {void Then()
            {new If (Leaf.ref(b.top()))                                          // Leaves for children
              {void Then()
@@ -1901,7 +1905,7 @@ class Tree extends Test                                                         
         final Int   sk = r.splittingKey();
         final Leaf   l = r.splitLeft();
         b.insert(Key(sk), l);                                                   // Insert new left leaf into leaf
-        if (Key.value() <= sk) l.insert(Key, Data); else r.insert(Key, Data);   // Insert new key, data pair into left leaf or right leaf depending on key
+        if (Key.value().le(sk)) l.insert(Key, Data); else r.insert(Key, Data);   // Insert new key, data pair into left leaf or right leaf depending on key
         final Slots.Slot K = b.locateFirstGe(Key);                              // Position of leaf in parent
         if (!d.b() && b.mergeLeftSibling (K)) d.set();                          // Merge inserted leaf into prior leaf if possible
         if (!d.b() && b.mergeRightSibling(K)) d.set();                          // Merge inserted leaf into next leaf if possible
@@ -1988,7 +1992,7 @@ class Tree extends Test                                                         
               {final Int  sk = r.splittingKey();                                // Splitting key
                 final Leaf  l = r.splitLeft();                                  // Right leaf split out of the leaf
                 p.get().insert(Key(sk), l);                                     // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                final Leaf  L = Key.value() <= sk ? l : r;                      // Choose left or right leaf depending on key
+                final Leaf  L = Key.value().le(sk) ? l : r;                      // Choose left or right leaf depending on key
                 L.insert(Key, Data);                                            // Insert into left or right leaf which will now have space
                }
               void Else() {r.insert(Key, Data);}                                // Leaf has sufficient space
@@ -2003,7 +2007,7 @@ class Tree extends Test                                                         
                {final Int         sk = r.splittingKey();                        // Splitting key
                 final Branch.Split s = r.splitLeft();                           // Branch split out on right from
                 p.get().insert(Key(sk), s.left);                                // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                p.set(Key.value() <= sk ? s.left : s.right);                    // Traverse left or right
+                p.set(Key.value().le(sk) ? s.left : s.right);                    // Traverse left or right
                }
               void Else() {p.set(r);}                                           // Step down into non full branch
              };
@@ -2033,7 +2037,7 @@ class Tree extends Test                                                         
 
   Int count()                                                                   // Count the number of entries in the tree
    {final Slots r = root();
-    return r == null ? 0 : Leaf.ref(r) ? r.countUsed() : ((Branch)r).count();
+    return r == null ? new Int(0) : Leaf.ref(r) ? r.countUsed() : ((Branch)r).count();
    }
 
 //D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
@@ -2166,7 +2170,7 @@ class Tree extends Test                                                         
                        {final Branch P = p.get(), Q = q.get();
                         new If (P.top().name().at() != Q.name().at())           // In the body of the parent branch of the leaf
                          {void Then()
-                           {final Integer    I = Q.upIndex();                   // Not null because we are not at the root
+                           {final Int        I = Q.upIndex();                   // Not null because we are not at the root
                             final Slots.Slot R = P.new Slot(I).stepRight();     // Next sibling to the right
                             final boolean    r = R != null;                     // Next sibling to the right exists
                             final Branch b = (Branch)(r ? P.data(R) : P.top()); // Must be a branch as we are going up through the tree
@@ -2259,11 +2263,11 @@ class Tree extends Test                                                         
 
 //D1 Print                                                                      // Print the tree horizontally
 
-  final Int linesToPrintABranch = 4;                                            // The number of lines required to print a branch
-  final Int maxPrintLevels      = 3;                                            // The maximum number of levels to print - this avoids endless print loops when something goes wrong
+  final int linesToPrintABranch = 4;                                            // The number of lines required to print a branch
+  final int maxPrintLevels      = 3;                                            // The maximum number of levels to print - this avoids endless print loops when something goes wrong
 
   void printLeaf                                                                // Print leaf horizontally
-   (Leaf Leaf, Stack<StringBuilder>P, Int level, boolean Details,
+   (Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details,
     Branch Parent, Integer Index)
    {final Leaf L = Leaf;
     padStrings(P, level);
@@ -2273,7 +2277,7 @@ class Tree extends Test                                                         
      {final Slots.Slot l = L.new Slot(i);
       if (L.usedSlots(l)) s.add(""+L.keys(l).value());
      }
-    final Int N = level * linesToPrintABranch;                                  // Start line at which to print branch
+    final int N = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(N+0).append(s);
     final String U = Parent != null ? "" + Parent.name().at() : "*";
     final String I = Index  != null ? "" + Index              : "*";
@@ -2284,15 +2288,15 @@ class Tree extends Test                                                         
    }
 
   void printBranch                                                              // Print branch horizontally
-   (Branch Branch, Stack<StringBuilder>P, Int level, boolean Details,
+   (Branch Branch, Stack<StringBuilder>P, int level, boolean Details,
     Branch Parent, Integer Index)                                               // Details of parent which might differ from what is actually stored in the tree
    {final Branch B = Branch;
-    final Int L = level * linesToPrintABranch;                                  // Size of branch
+    final int L = level * linesToPrintABranch;                                  // Size of branch
 
     if (level > maxPrintLevels) return;
     padStrings(P, level);
 
-    if (B.countUsed() > 0)                                                      // Branch has key, next pairs
+    if (B.countUsed().gt(0))                                                      // Branch has key, next pairs
      {for (int i : range(B.numberOfSlots()))
        {if (B.usedSlots(B.new Slot(i)))
          {final Slots s = B.data(B.new Slot(i));
@@ -2331,7 +2335,7 @@ class Tree extends Test                                                         
 
   String printBoxed()                                                           // Print a tree in a box
    {final String  s = ""+this;
-    final Int     n = longestLine(s)-1;
+    final int     n = longestLine(s)-1;
     final String[]L = s.split("\n");
     final StringJoiner t = new StringJoiner("\n",  "", "\n");
     t.add("+"+("-".repeat(n))+"+");
@@ -2340,10 +2344,10 @@ class Tree extends Test                                                         
     return ""+t;
    }
 
-  void padStrings(Stack<StringBuilder> S, Int level)                            // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
-   {final Int N = level * linesToPrintABranch + maxLeafSize;                    // Number of lines we might want
+  void padStrings(Stack<StringBuilder> S, int level)                            // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
+   {final int N = level * linesToPrintABranch + maxLeafSize.i();                // Number of lines we might want
     for (int i = S.size(); i <= N; ++i) S.push(new StringBuilder());            // Make sure we have a full deck of strings
-    Int m = 0;                                                                  // Maximum length
+    int m = 0;                                                                  // Maximum length
     for (StringBuilder s : S) m = m < s.length() ? s.length() : m;              // Find maximum length
     for (StringBuilder s : S)                                                   // Pad each string to maximum length
      {if (s.length() < m) s.append(" ".repeat(m - s.length()));                 // Pad string to maximum length
@@ -2374,12 +2378,12 @@ class Tree extends Test                                                         
   String db()                                                                   // Raw dump of memory used by the tree to assist with debugging
    {final StringBuilder s = new StringBuilder();
     final ByteBuffer b = memory.bytes;
-    final Int N = b.capacity();
-    for (Int l = 0, c = 0; l < 10; ++l)                                         // Print first few nodes one per line
+    final int N = b.capacity();
+    for (int l = 0, c = 0; l < 10; ++l)                                         // Print first few nodes one per line
      {final StringJoiner j = new StringJoiner(" ");
       for (int i : range(sizeOfNode))
        {if (c++ >= N) break;
-        j.add(""+b.get(l * sizeOfNode + i));
+        j.add(""+b.get(l * sizeOfNode.i() + i));
        }
       s.append(""+j+"\n");
       if (c >= N) break;
@@ -2448,12 +2452,12 @@ class Tree extends Test                                                         
     ok(s.locateNearestFreeSlot(s.new Slot(14)),  0);
     ok(s.locateNearestFreeSlot(s.new Slot(15)),  0);
 
-    ok(s.locateFirstUsedSlot().value(),      2);
-    ok(s.locateLastUsedSlot ().value(),      13);
-    ok(s.new Slot( 9).locatePrevUsedSlot().value(),     9);
-    ok(s.new Slot(10).locatePrevUsedSlot().value(),     9);
-    ok(s.new Slot(10).locateNextUsedSlot().value(),    11);
-    ok(s.new Slot(11).locateNextUsedSlot().value(),    11);
+    ok(s.locateFirstUsedSlot().i(),      2);
+    ok(s.locateLastUsedSlot ().i(),      13);
+    ok(s.new Slot( 9).locatePrevUsedSlot().i(),     9);
+    ok(s.new Slot(10).locatePrevUsedSlot().i(),     9);
+    ok(s.new Slot(10).locateNextUsedSlot().i(),    11);
+    ok(s.new Slot(11).locateNextUsedSlot().i(),    11);
 
     ok(s.new Slot( 1).locatePrevUsedSlot() == null, true);
     ok(s.new Slot(14).locateNextUsedSlot() == null, true);
@@ -2500,7 +2504,8 @@ class Tree extends Test                                                         
     s.insert(Key(12));
     s.insert(Key(11));
     ok(s.printInOrder(), "11, 12, 13, 14, 15, 16, 17, 18");
-                        ok(s.empty(), false); ok(s.full(), true);
+                        ok(s.empty(), false);
+                        ok(s.full(), true);
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2509,25 +2514,25 @@ usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
 usedRefs :    X   X   X   X   X   X   X   X
 keys     :   14  13  16  15  18  17  12  11
 """);
-    ok(s.locate(Key(11)).value(),  5);
-    ok(s.locate(Key(12)).value(),  6);
-    ok(s.locate(Key(13)).value(),  7);
-    ok(s.locate(Key(14)).value(),  8);
-    ok(s.locate(Key(15)).value(),  9);
-    ok(s.locate(Key(16)).value(), 10);
-    ok(s.locate(Key(17)).value(), 11);
-    ok(s.locate(Key(18)).value(), 12);
+    ok(s.locate(Key(11)).i(),  5);
+    ok(s.locate(Key(12)).i(),  6);
+    ok(s.locate(Key(13)).i(),  7);
+    ok(s.locate(Key(14)).i(),  8);
+    ok(s.locate(Key(15)).i(),  9);
+    ok(s.locate(Key(16)).i(), 10);
+    ok(s.locate(Key(17)).i(), 11);
+    ok(s.locate(Key(18)).i(), 12);
     ok(s.locate(Key(10)) == null, true);
     ok(s.locate(Key(20)) == null, true);
 
-    ok(s.key(s.find(Key(14))).value(), 14); ok(s.delete(Key(14)), true); ok(s.printInOrder(), "11, 12, 13, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(12))).value(), 12); ok(s.delete(Key(12)), true); ok(s.printInOrder(), "11, 13, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(13))).value(), 13); ok(s.delete(Key(13)), true); ok(s.printInOrder(), "11, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(16))).value(), 16); ok(s.delete(Key(16)), true); ok(s.printInOrder(), "11, 15, 17, 18");
-    ok(s.key(s.find(Key(18))).value(), 18); ok(s.delete(Key(18)), true); ok(s.printInOrder(), "11, 15, 17");
-    ok(s.key(s.find(Key(11))).value(), 11); ok(s.delete(Key(11)), true); ok(s.printInOrder(), "15, 17");
-    ok(s.key(s.find(Key(17))).value(), 17); ok(s.delete(Key(17)), true); ok(s.printInOrder(), "15");
-    ok(s.key(s.find(Key(15))).value(), 15); ok(s.delete(Key(15)), true); ok(s.printInOrder(), "");
+    ok(s.key(s.find(Key(14))).i(), 14); ok(s.delete(Key(14)), true); ok(s.printInOrder(), "11, 12, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(12))).i(), 12); ok(s.delete(Key(12)), true); ok(s.printInOrder(), "11, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(13))).i(), 13); ok(s.delete(Key(13)), true); ok(s.printInOrder(), "11, 15, 16, 17, 18");
+    ok(s.key(s.find(Key(16))).i(), 16); ok(s.delete(Key(16)), true); ok(s.printInOrder(), "11, 15, 17, 18");
+    ok(s.key(s.find(Key(18))).i(), 18); ok(s.delete(Key(18)), true); ok(s.printInOrder(), "11, 15, 17");
+    ok(s.key(s.find(Key(11))).i(), 11); ok(s.delete(Key(11)), true); ok(s.printInOrder(), "15, 17");
+    ok(s.key(s.find(Key(17))).i(), 17); ok(s.delete(Key(17)), true); ok(s.printInOrder(), "15");
+    ok(s.key(s.find(Key(15))).i(), 15); ok(s.delete(Key(15)), true); ok(s.printInOrder(), "");
 
     ok(s.locate(Key(10))== null, true); ok(s.delete(Key(10)), false);
    }
@@ -2536,7 +2541,7 @@ keys     :   14  13  16  15  18  17  12  11
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    for (int i = 0; i < s.numberOfSlots()*10; i++)
+    for (int i = 0; i < s.numberOfSlots().i()*10; i++)
      {s.insert(Key(14)); s.redistribute();
       s.insert(Key(13)); s.redistribute();
       s.insert(Key(16)); s.redistribute();
@@ -2649,7 +2654,7 @@ keys     :    0   0   0   0  11  12  13  14
     s.usedSlots(s.new Slot( 5), true); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), true); s.key(s.new slot(4), Key(12));
     s.usedSlots(s.new Slot( 9), true); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), true); s.key(s.new slot(2), Key(13));
     s.usedSlots(s.new Slot(14), true); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), true); s.key(s.new slot(0), Key(14));
-    s.type     (11);
+    s.type     (new Int(11));
     ok(s, """
 Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2664,39 +2669,39 @@ keys     :   14   0  13   0  12   0   0  11
 
     ok(B, s);
 
-    ok(m.slots       (0), 0);
-    ok(m.slots       (1), 7);
-    ok(m.slots       (2), 0);
-    ok(m.slots       (3), 0);
-    ok(m.slots       (4), 0);
-    ok(m.slots       (5), 4);
-    ok(m.slots       (6), 0);
-    ok(m.usedSlots   (0), false);
-    ok(m.usedSlots   (1), true);
-    ok(m.usedSlots   (2), false);
-    ok(m.usedSlots   (3), false);
-    ok(m.usedSlots   (4), false);
-    ok(m.usedSlots   (5), true);
-    ok(m.usedSlots   (6), false);
-    ok(m.usedRefs    (0), true);
-    ok(m.usedRefs    (1), false);
-    ok(m.usedRefs    (2), true);
-    ok(m.usedRefs    (3), false);
-    ok(m.usedRefs    (4), true);
-    ok(m.usedRefs    (5), false);
-    ok(m.usedRefs    (6), false);
-    ok(m.keys        (0), 14);
-    ok(m.keys        (1),  0);
-    ok(m.keys        (2), 13);
-    ok(m.keys        (3),  0);
-    ok(m.keys        (4), 12);
-    ok(m.keys        (5),  0);
-    ok(m.keys        (6),  0);
+    ok(m.slots       (new Int(0)), 0);
+    ok(m.slots       (new Int(1)), 7);
+    ok(m.slots       (new Int(2)), 0);
+    ok(m.slots       (new Int(3)), 0);
+    ok(m.slots       (new Int(4)), 0);
+    ok(m.slots       (new Int(5)), 4);
+    ok(m.slots       (new Int(6)), 0);
+    ok(m.usedSlots   (new Int(0)), false);
+    ok(m.usedSlots   (new Int(1)), true);
+    ok(m.usedSlots   (new Int(2)), false);
+    ok(m.usedSlots   (new Int(3)), false);
+    ok(m.usedSlots   (new Int(4)), false);
+    ok(m.usedSlots   (new Int(5)), true);
+    ok(m.usedSlots   (new Int(6)), false);
+    ok(m.usedRefs    (new Int(0)), true);
+    ok(m.usedRefs    (new Int(1)), false);
+    ok(m.usedRefs    (new Int(2)), true);
+    ok(m.usedRefs    (new Int(3)), false);
+    ok(m.usedRefs    (new Int(4)), true);
+    ok(m.usedRefs    (new Int(5)), false);
+    ok(m.usedRefs    (new Int(6)), false);
+    ok(m.keys        (new Int(0)), 14);
+    ok(m.keys        (new Int(1)),  0);
+    ok(m.keys        (new Int(2)), 13);
+    ok(m.keys        (new Int(3)),  0);
+    ok(m.keys        (new Int(4)), 12);
+    ok(m.keys        (new Int(5)),  0);
+    ok(m.keys        (new Int(6)),  0);
 
-    m.slots    (13, 6);
-    m.usedSlots(13, true);
-    m.usedRefs(  6, true);
-    m.keys    (  6, 10);
+    m.slots    (new Int(13), new Int(6));
+    m.usedSlots(new Int(13), true);
+    m.usedRefs( new Int( 6), true);
+    m.keys    ( new Int( 6), new Int(10));
 
     ok(B, """
 Slots    : name:  0, type: 11, refs:  8
@@ -2723,8 +2728,8 @@ keys     :   14   0  13   0  12   0  10  11
 
 //D2 Tree                                                                       // Test the btree
 
-  final static Int[]random_32 = {12, 3, 27, 1, 23, 20, 8, 18, 2, 31, 25, 16, 13, 32, 11, 21, 5, 24, 4, 10, 26, 30, 9, 6, 29, 17, 28, 15, 14, 19, 7, 22};
-  final static Int[]random    = {5918,5624,2514,4291,1791,5109,7993,60,1345,2705,5849,1034,2085,4208,4590,7740,9367,6582,4178,5578,1120,378,7120,8646,5112,4903,1482,8005,3801,5439,4534,9524,6111,204,5459,248,4284,8037,5369,7334,3384,5193,2847,1660,5605,7371,3430,1786,1216,4282,2146,1969,7236,2187,136,2726,9480,5,4515,6082,969,5017,7809,9321,3826,9179,5781,3351,4819,4545,8607,4146,6682,1043,2890,2964,7472,9405,4348,8333,2915,9674,7225,4743,995,1321,3885,6061,9958,3901,4710,4185,4776,5070,8892,8506,6988,2317,9342,3764,9859,4724,5195,673,359,9740,2089,9942,3749,9208,1,7446,7023,5496,4206,3272,3527,8593,809,3149,4173,9605,9021,5120,5265,7121,8667,6911,4717,2535,2743,1289,1494,3788,6380,9366,2732,1501,8543,8013,5612,2393,7041,3350,3204,288,7213,1741,1238,9830,6722,4687,6758,8067,4443,5013,5374,6986,282,6762,192,340,5075,6970,7723,5913,1060,1641,1495,5738,1618,157,6891,173,7535,4952,9166,8950,8680,1974,5466,2383,3387,3392,2188,3140,6806,3131,6237,6249,7952,1114,9017,4285,7193,3191,3763,9087,7284,9170,6116,3717,6695,6538,6165,6449,8960,2897,6814,3283,6600,6151,4624,3992,5860,9557,1884,5585,2966,1061,6414,2431,9543,6654,7417,2617,878,8848,8241,3790,3370,8768,1694,9875,9882,8802,7072,3772,2689,5301,7921,7774,1614,494,2338,8638,4161,4523,5709,4305,17,9626,843,9284,3492,7755,5525,4423,9718,2237,7401,2686,8751,1585,5919,9444,3271,1490,7004,5980,3904,370,5930,6304,7737,93,5941,9079,4968,9266,262,2766,4999,2450,9518,5137,8405,483,8840,2231,700,8049,8823,9811,9378,3811,8074,153,1940,1998,4354,7830,7086,6132,9967,5680,448,1976,4101,7839,3122,4379,9296,4881,1246,4334,9457,5401,1945,9548,8290,1184,3464,132,2458,7704,1056,7554,6203,2270,6070,4889,7369,1676,485,3648,357,1912,9661,4246,1576,1836,4521,7667,6907,2098,8825,7404,4019,8284,3710,7202,7050,9870,3348,3624,9224,6601,7897,6288,3713,932,5596,353,2615,3273,833,1446,8624,2489,3872,486,1091,2493,4157,3611,6570,7107,9153,4543,9504,4746,1342,9737,3247,8984,3640,5698,7814,307,8775,1150,4330,3059,5784,2370,5248,4806,6107,9700,231,3566,5627,3957,5317,5415,8119,2588,9440,2961,9786,4769,466,5411,3080,7623,5031,2378,9286,4801,797,1527,2325,847,6341,5310,1926,9481,2115,2165,5255,5465,5561,3606,7673,7443,7243,8447,2348,7925,6447,8311,6729,4441,7763,8107,267,8135,9194,6775,3883,9639,612,5024,1351,7557,9241,5181,2239,8002,5446,747,166,325,9925,3820,9531,5163,3545,558,7103,7658,5670,8323,4821,6263,7982,59,3700,1082,4474,4353,8637,9558,5191,842,5925,6455,4092,9929,9961,290,3523,6290,7787,8266,7986,7269,6408,3620,406,5964,7289,1620,6726,1257,1993,7006,5545,2913,5093,5066,3019,7081,6760,6779,7061,9051,8852,8118,2340,6596,4594,9708,8430,8659,8920,9268,5431,9203,2823,1427,2203,6422,6193,5214,9566,8791,4964,7575,4350,56,2227,8545,5646,3089,2204,4081,487,8496,2258,4336,6955,3452,556,8602,8251,8569,8636,9430,1025,9459,7137,8392,3553,5945,9414,3078,1688,5480,327,8117,2289,2195,8564,9423,103,7724,3091,8548,7298,5279,6042,2855,3286,3542,9361,420,7020,4112,5320,5366,6379,114,9174,9744,592,5346,3985,3174,5157,9890,1605,3082,8099,4346,7256,8670,5687,6613,6620,1458,1045,7917,2980,2399,1433,3315,4084,178,7056,2132,2728,4421,9195,4181,6017,6229,2945,4627,2809,8816,6737,18,8981,3813,8890,5304,3789,6959,7476,1856,4197,6944,9578,5915,3060,9932,3463,67,7393,9857,5822,3187,501,653,8453,3691,9736,6845,1365,9645,4120,2157,8471,4436,6435,2758,7591,9805,7142,7612,4891,7342,5764,8683,8365,2967,6947,441,2116,6612,1399,7585,972,6548,5481,7733,7209,222,5903,6161,9172,9628,7348,1588,5992,6094,7176,4214,8702,2987,74,8486,9788,7164,5788,8535,8422,6826,1800,8965,4965,565,5609,4686,2556,9324,5000,9809,1994,4737,63,8992,4783,2536,4462,8868,6346,5553,3980,2670,1601,4272,8725,4698,7333,7826,9233,4198,1997,1687,4851,62,7893,8149,8015,341,2230,1280,5559,9756,3761,7834,6805,9287,4622,5748,2320,1958,9129,9649,1644,4323,5096,9490,7529,6444,7478,7044,9525,7713,234,7553,9099,9885,7135,6493,9793,6268,8363,2267,9157,9451,1438,9292,1637,3739,695,1090,4731,4549,5171,5975,7347,5192,5243,1084,2216,9860,3318,5594,5790,1107,220,9397,3378,1353,4498,6497,5442,7929,7377,9541,9871,9895,6742,9146,9409,292,6278,50,5288,2217,4923,6790,4730,9240,3006,3547,9347,7863,4275,3287,2673,7485,1915,9837,2931,3918,635,9131,1197,6250,3853,4303,790,5548,9993,3702,2446,3862,9652,4432,973,41,3507,8585,2444,1633,956,5789,1523,8657,4869,8580,8474,7093,7812,2549,7363,9315,6731,1130,7645,7018,7852,362,1636,2905,8006,4040,6643,8052,7021,3665,8383,715,1876,2783,3065,604,4566,8761,7911,1983,3836,5547,8495,8144,1950,2537,8575,640,8730,8303,1454,8165,6647,4762,909,9449,8640,9253,7293,8767,3004,4623,6862,8994,2520,1215,6299,8414,2576,6148,1510,313,3693,9843,8757,5774,8871,8061,8832,5573,5275,9452,1248,228,9749,2730};
+  final static int[]random_32 = {12, 3, 27, 1, 23, 20, 8, 18, 2, 31, 25, 16, 13, 32, 11, 21, 5, 24, 4, 10, 26, 30, 9, 6, 29, 17, 28, 15, 14, 19, 7, 22};
+  final static int[]random    = {5918,5624,2514,4291,1791,5109,7993,60,1345,2705,5849,1034,2085,4208,4590,7740,9367,6582,4178,5578,1120,378,7120,8646,5112,4903,1482,8005,3801,5439,4534,9524,6111,204,5459,248,4284,8037,5369,7334,3384,5193,2847,1660,5605,7371,3430,1786,1216,4282,2146,1969,7236,2187,136,2726,9480,5,4515,6082,969,5017,7809,9321,3826,9179,5781,3351,4819,4545,8607,4146,6682,1043,2890,2964,7472,9405,4348,8333,2915,9674,7225,4743,995,1321,3885,6061,9958,3901,4710,4185,4776,5070,8892,8506,6988,2317,9342,3764,9859,4724,5195,673,359,9740,2089,9942,3749,9208,1,7446,7023,5496,4206,3272,3527,8593,809,3149,4173,9605,9021,5120,5265,7121,8667,6911,4717,2535,2743,1289,1494,3788,6380,9366,2732,1501,8543,8013,5612,2393,7041,3350,3204,288,7213,1741,1238,9830,6722,4687,6758,8067,4443,5013,5374,6986,282,6762,192,340,5075,6970,7723,5913,1060,1641,1495,5738,1618,157,6891,173,7535,4952,9166,8950,8680,1974,5466,2383,3387,3392,2188,3140,6806,3131,6237,6249,7952,1114,9017,4285,7193,3191,3763,9087,7284,9170,6116,3717,6695,6538,6165,6449,8960,2897,6814,3283,6600,6151,4624,3992,5860,9557,1884,5585,2966,1061,6414,2431,9543,6654,7417,2617,878,8848,8241,3790,3370,8768,1694,9875,9882,8802,7072,3772,2689,5301,7921,7774,1614,494,2338,8638,4161,4523,5709,4305,17,9626,843,9284,3492,7755,5525,4423,9718,2237,7401,2686,8751,1585,5919,9444,3271,1490,7004,5980,3904,370,5930,6304,7737,93,5941,9079,4968,9266,262,2766,4999,2450,9518,5137,8405,483,8840,2231,700,8049,8823,9811,9378,3811,8074,153,1940,1998,4354,7830,7086,6132,9967,5680,448,1976,4101,7839,3122,4379,9296,4881,1246,4334,9457,5401,1945,9548,8290,1184,3464,132,2458,7704,1056,7554,6203,2270,6070,4889,7369,1676,485,3648,357,1912,9661,4246,1576,1836,4521,7667,6907,2098,8825,7404,4019,8284,3710,7202,7050,9870,3348,3624,9224,6601,7897,6288,3713,932,5596,353,2615,3273,833,1446,8624,2489,3872,486,1091,2493,4157,3611,6570,7107,9153,4543,9504,4746,1342,9737,3247,8984,3640,5698,7814,307,8775,1150,4330,3059,5784,2370,5248,4806,6107,9700,231,3566,5627,3957,5317,5415,8119,2588,9440,2961,9786,4769,466,5411,3080,7623,5031,2378,9286,4801,797,1527,2325,847,6341,5310,1926,9481,2115,2165,5255,5465,5561,3606,7673,7443,7243,8447,2348,7925,6447,8311,6729,4441,7763,8107,267,8135,9194,6775,3883,9639,612,5024,1351,7557,9241,5181,2239,8002,5446,747,166,325,9925,3820,9531,5163,3545,558,7103,7658,5670,8323,4821,6263,7982,59,3700,1082,4474,4353,8637,9558,5191,842,5925,6455,4092,9929,9961,290,3523,6290,7787,8266,7986,7269,6408,3620,406,5964,7289,1620,6726,1257,1993,7006,5545,2913,5093,5066,3019,7081,6760,6779,7061,9051,8852,8118,2340,6596,4594,9708,8430,8659,8920,9268,5431,9203,2823,1427,2203,6422,6193,5214,9566,8791,4964,7575,4350,56,2227,8545,5646,3089,2204,4081,487,8496,2258,4336,6955,3452,556,8602,8251,8569,8636,9430,1025,9459,7137,8392,3553,5945,9414,3078,1688,5480,327,8117,2289,2195,8564,9423,103,7724,3091,8548,7298,5279,6042,2855,3286,3542,9361,420,7020,4112,5320,5366,6379,114,9174,9744,592,5346,3985,3174,5157,9890,1605,3082,8099,4346,7256,8670,5687,6613,6620,1458,1045,7917,2980,2399,1433,3315,4084,178,7056,2132,2728,4421,9195,4181,6017,6229,2945,4627,2809,8816,6737,18,8981,3813,8890,5304,3789,6959,7476,1856,4197,6944,9578,5915,3060,9932,3463,67,7393,9857,5822,3187,501,653,8453,3691,9736,6845,1365,9645,4120,2157,8471,4436,6435,2758,7591,9805,7142,7612,4891,7342,5764,8683,8365,2967,6947,441,2116,6612,1399,7585,972,6548,5481,7733,7209,222,5903,6161,9172,9628,7348,1588,5992,6094,7176,4214,8702,2987,74,8486,9788,7164,5788,8535,8422,6826,1800,8965,4965,565,5609,4686,2556,9324,5000,9809,1994,4737,63,8992,4783,2536,4462,8868,6346,5553,3980,2670,1601,4272,8725,4698,7333,7826,9233,4198,1997,1687,4851,62,7893,8149,8015,341,2230,1280,5559,9756,3761,7834,6805,9287,4622,5748,2320,1958,9129,9649,1644,4323,5096,9490,7529,6444,7478,7044,9525,7713,234,7553,9099,9885,7135,6493,9793,6268,8363,2267,9157,9451,1438,9292,1637,3739,695,1090,4731,4549,5171,5975,7347,5192,5243,1084,2216,9860,3318,5594,5790,1107,220,9397,3378,1353,4498,6497,5442,7929,7377,9541,9871,9895,6742,9146,9409,292,6278,50,5288,2217,4923,6790,4730,9240,3006,3547,9347,7863,4275,3287,2673,7485,1915,9837,2931,3918,635,9131,1197,6250,3853,4303,790,5548,9993,3702,2446,3862,9652,4432,973,41,3507,8585,2444,1633,956,5789,1523,8657,4869,8580,8474,7093,7812,2549,7363,9315,6731,1130,7645,7018,7852,362,1636,2905,8006,4040,6643,8052,7021,3665,8383,715,1876,2783,3065,604,4566,8761,7911,1983,3836,5547,8495,8144,1950,2537,8575,640,8730,8303,1454,8165,6647,4762,909,9449,8640,9253,7293,8767,3004,4623,6862,8994,2520,1215,6299,8414,2576,6148,1510,313,3693,9843,8757,5774,8871,8061,8832,5573,5275,9452,1248,228,9749,2730};
 
   static void test_emptyTree()
    {final Tree t = new Tree(2, 3,4);
@@ -2869,9 +2874,9 @@ top      :   -4
 """);
    }
 
-  static  Data[]test_leaf_data(Int...Values)
+  static  Data[]test_leaf_data(int...Values)
    {final Data[]d = new Data[Values.length];
-    for (int i = 0; i < d.length; i++) d[i] = new Data(Values[i]);
+    for (int i = 0; i < d.length; i++) d[i] = new Data(new Int(Values[i]));
     return d;
    }
 
@@ -2972,8 +2977,8 @@ data: 15, 16, 17, 18
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
 
-    final Int []k = new Int [] {13, 16, 15, 17, 14, 12, 11};
-    final Int []d = new Int [] {3,   6,  5,  7,  4,  2, 1};
+    final int []k = new int [] {13, 16, 15, 17, 14, 12, 11};
+    final int []d = new int [] {3,   6,  5,  7,  4,  2, 1};
     for (int i = 0; i < d.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
     b.top(t.fake(t.new Allocation(8)));
     return b;
@@ -3095,8 +3100,8 @@ data     :   11  12  13  14  15  16  17  18
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
 
-    final Int []k = new Int []{13, 12, 11};
-    final Int []d = new Int []{ 3,  2,  1};
+    final int []k = new int[]{13, 12, 11};
+    final int []d = new int[]{ 3,  2,  1};
     for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
     b.top(t.fake(t.new Allocation(4)));
     return b;
@@ -3106,8 +3111,8 @@ data     :   11  12  13  14  15  16  17  18
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
 
-    final Int []k = new Int []{16, 15, 17};
-    final Int []d = new Int[]{6, 5, 7};
+    final int []k = new int[]{16, 15, 17};
+    final int []d = new int[]{6, 5, 7};
     for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
     b.top(t.fake(t.new Allocation(8)));
     return b;
@@ -3208,7 +3213,7 @@ top : 8
 
   static void test_insert2()
    {final Tree t = new Tree(2, 3);
-    final Int N = 32;
+    final int N = 32;
     final StringBuilder s = new StringBuilder();
     for (int i = 1; i <= N; ++i)
      {t.insert(Key(i), new Data(i));
@@ -3550,7 +3555,7 @@ Path        : 7, 9
 
   static void test_insert_reverse()
    {final Tree t = new Tree(4, 3);
-    final Int N = 32;
+    final int N = 32;
     for (int i = N; i > 0; i--)
      {t.insert(Key(i), new Data(i));
       ok(t.count(), N-i+1);
@@ -3693,7 +3698,7 @@ Path        : 2, 9
 
   static void test_delete()
    {final Tree t = new Tree(4, 3);
-    final Int N = 32;
+    final int N = 32;
     for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
 
     final StringBuilder s = new StringBuilder();
@@ -3822,7 +3827,7 @@ Delete: 32
    }
   static void test_delete_descending()
    {final Tree t = new Tree(4, 3);
-    final Int N = 32;
+    final int N = 32;
     for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
 
     final StringBuilder s = new StringBuilder();
@@ -4077,7 +4082,7 @@ Delete 22
 
   static void test_deep()
    {final Tree t = new Tree(2, 3);
-    final Int N = 256;
+    final int N = 256;
     for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
     ok(t, """
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             128                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -4089,7 +4094,7 @@ Delete 22
    }
 
   static void test_idi()
-   {final Int N = 32;
+   {final int N = 32;
     final Tree t = new Tree(2,3,32);
     for (int i = 1; i <= N; ++i) {t.insert(Key(i), new Data(i)); t.freeCheck();}
     for (int i = 1; i <= N; ++i) {t.delete(Key(i));              t.freeCheck();}
