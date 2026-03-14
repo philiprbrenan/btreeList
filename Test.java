@@ -1095,7 +1095,7 @@ public class Test                                                               
     Bool        Set(boolean I) {return dup().set(I);}
     Bool        Set(Bool    I) {return dup().set(I);}
     Bool      Clear()          {return dup().clear();}
-    boolean       B()          {return dup().b();}
+    boolean       B()          {return dup().b();} // Bad name for  method
     Bool       Flip()          {return dup().flip();}
 
     Bool         eq(boolean e){  x(); return new Bool(i == e);}

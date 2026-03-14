@@ -172,7 +172,7 @@ abstract public class BitSet extends Test                                       
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next level up
-            return d.Flip().and(w.gt(0));                                       // As long as we are in a valid level
+            return d.Flip().and(w.gt(0)).b();                                   // As long as we are in a valid level
            }
          };
        }
