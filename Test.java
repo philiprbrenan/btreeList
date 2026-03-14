@@ -1206,12 +1206,12 @@ public class Test                                                               
     Int  Neg()       {return dup().neg();}
     Int  Abs()       {return dup().abs();}
 
-    Bool eq(int e){  x(); return i == e;}
-    Bool ne(int e){  x(); return i != e;}
-    Bool le(int e){  x(); return i <= e;}
-    Bool lt(int e){  x(); return i <  e;}
-    Bool ge(int e){  x(); return i >= e;}
-    Bool gt(int e){  x(); return i >  e;}
+    Bool eq(int e){  x(); return new Bool(i == e);}
+    Bool ne(int e){  x(); return new Bool(i != e);}
+    Bool le(int e){  x(); return new Bool(i <= e);}
+    Bool lt(int e){  x(); return new Bool(i <  e);}
+    Bool ge(int e){  x(); return new Bool(i >= e);}
+    Bool gt(int e){  x(); return new Bool(i >  e);}
 
     Bool eq(Int e){e.x(); return eq(e.i);}
     Bool ne(Int e){e.x(); return ne(e.i);}
