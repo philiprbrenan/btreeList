@@ -172,7 +172,7 @@ abstract public class BitSet extends Test                                       
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next level up
-            return d.Flip().and(w.gt(0)).b();                                    // As long as we are in a valid level
+            return d.Flip().and(w.gt(0)).b();                                   // As long as we are in a valid level
            }
          };
        }
@@ -203,7 +203,7 @@ abstract public class BitSet extends Test                                       
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next layer
-            return !d.b() && w.gt(0);                                           // As long as we are in a valid level
+            return d.Flip().and(w.gt(0)).b();                                   // As long as we are in a valid level
            }
          };
        }
@@ -233,7 +233,7 @@ abstract public class BitSet extends Test                                       
               void Else() {setBitNC(q, true);}
              };
             moveDownOneLayer(b, p, w);                                          // Next layer
-            return !d.b() && w.gt(0);                                           // As long as we are in a valid level
+            return d.Flip().and(w.gt(0)).b();                                           // As long as we are in a valid level
            }
          };
        }
@@ -273,7 +273,7 @@ abstract public class BitSet extends Test                                       
                          };
                        }
                      };
-                    return !d.b() && w.gt(0);                                   // As long as we are in a valid level
+                    return d.Flip().and(w.gt(0)).b();                                   // As long as we are in a valid level
                    }
                  };
                }
@@ -327,13 +327,13 @@ abstract public class BitSet extends Test                                       
     final Int p = new Int(0);                                                   // Offset of layer
     final Int n = new Int();                                                    // The next element if it exists, offset of layer
 
-    if (b.eq(w.Sub(1))) return null;                                            // At the end so no next bit
+    if (b.eq(w.Sub(1)).b()) return null;                                            // At the end so no next bit
 
     new For(bitSize)                                                            // Traverse down through the tree
      {boolean body(int i)                                                       // Traverse down through the tree
        {final Int  c = b.Add(1);                                                // Is there a path down from the next bit?
         final Bool d = new Bool().clear();                                      // Whether we are done yet
-        new If (c.lt(w) && getBitNC(new Pos(p.Add(c))))                         // Found next up bit
+        new If (c.lt(w).and(getBitNC(new Pos(p.Add(c)))))                         // Found next up bit
          {void Then()
            {new For(i)                                                          // Step down to the leaves
              {boolean body(int j)                                               // Step down to the leaves
