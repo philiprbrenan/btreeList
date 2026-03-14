@@ -191,9 +191,9 @@ abstract public class BitSet extends Test                                       
             final Int  q = p.Add(w).add(B);
             final Int  Q = p.Add2(B);
             final Bool d = new Bool().clear();                                  // Complete early if we found a bit that does not need setting
-            new If (B.Up().inc().lt(w) &&                                       // Check both bits in the previous row are off
-                !getBitNC(new Pos(Q))  &&
-                !getBitNC(new Pos(Q.Inc())))
+            new If (B.Up().inc().lt(w)                                          // Check both bits in the previous row are off
+                .and(!getBitNC(new Pos(Q)))
+                .and(!getBitNC(new Pos(Q.Inc()))))
              {void Then()
                {final Pos r = new Pos(q);
                 new If (!getBitNC(r))
@@ -367,7 +367,7 @@ abstract public class BitSet extends Test                                       
          {boolean body(int i)
            {final Int B = b.Dec();                                              // Is there a path down from the next bit?
             final Bool d = new Bool().clear();                                  // Whether we have arrived at a bit that is already correctly set
-            new If (b.gt(0) && getBitNC(new Pos(p.Add(B))))                     // Found next down bit
+            new If (b.gt(0).and(getBitNC(new Pos(p.Add(B)))))                   // Found next down bit
              {void Then()
                {new For(i)                                                      // Step down to the leaves
                  {boolean body(int j)
@@ -413,10 +413,10 @@ abstract public class BitSet extends Test                                       
     final Int b = Index.position();
     final Int w = bitSize.Down();
     final Int p = addressZeroTree();
-    if (b.eq(bitSize.Dec())) return null;                                       // Last bit so no next bit
+    if (b.eq(bitSize.Dec()).b()) return null;                                       // Last bit so no next bit
     final Pos q = new Pos(b.Inc());
     if (!getBit(q))    return q;                                                // Next bit is zero
-    if (bitSize.eq(2)) return null;                                             // No more bits to check
+    if (bitSize.eq(2).b()) return null;                                             // No more bits to check
     b.down();                                                                   // First layer of zero tree bits
 
     final Int R = new Int();                                                    // Result
@@ -460,9 +460,9 @@ abstract public class BitSet extends Test                                       
     checkIndex(Index.position());
 
     final Int b = Index.position();
-    if (b.eq(0))                   return null;                                 // First bit so no prev bit
+    if (b.eq(0).b())               return null;                                 // First bit so no prev bit
     if (!getBit(new Pos(b.Dec()))) return new Pos(b.Dec());                     // Prev bit is zero
-    if (bitSize.eq(2))             return null;                                 // No more bits to check
+    if (bitSize.eq(2).b())         return null;                                 // No more bits to check
 
     final Int w = bitSize.Down(), p = addressZeroTree(); b.down();              // First layer of zero tree bits
 
@@ -471,19 +471,23 @@ abstract public class BitSet extends Test                                       
      {boolean body(int i)                                                       // Search down through the zero bit tree
        {final Int B = b.Dec();                                                  // Is there a path down from the next bit?
         final Bool d = new Bool().clear();                                      // Whether we have arrived at a bit that is already correctly set
-        if (B.lt(0)) return false;                                              // Nothing prior to search so no prev zero
-        if (getBitNC(new Pos(p.Add(B))))                                        // Found next up bit
-         {new For(i)                                                            // Step down to the leaves
-           {boolean body(int j)                                                 // Step down to the leaves
-             {b.up(); moveUpOneLayer(B, p, w);                                  // Move up one layer
-              B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                       // Follow path as high as possible
-              return true;
+        new If (B.lt(0)) 
+         {void Then() {d.set();}                                                // Nothing prior to search so no prev zero
+          void Else()
+           {if (getBitNC(new Pos(p.Add(B))))                                    // Found next up bit
+             {new For(i)                                                        // Step down to the leaves
+               {boolean body(int j)                                             // Step down to the leaves
+                 {b.up(); moveUpOneLayer(B, p, w);                              // Move up one layer
+                  B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                   // Follow path as high as possible
+                  return true;
+                 }
+               };
+              final Int BB = B.Add(B), CC = BB.dup().inc();
+              R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));                        // Next zero bit from actual bits
+              d.set();
              }
-           };
-          final Int BB = B.Add(B), CC = BB.dup().inc();
-          R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));                            // Next zero bit from actual bits
-          d.set();
-         }
+           }
+         };    
         moveDownOneLayer(b, p, w); if (w.eq(0)) d.set();                        // Address next level of bits in tree
         return !d.b();
        }
