@@ -1945,11 +1945,22 @@ class Tree extends Test                                                         
           if (!d.b() && R.valid() && b.mergeLeftSibling (R)) d.set();
           if (!d.b() && R.valid() && b.mergeRightSibling(R)) d.set();
          }
-        if (!d.b() && K.notValid())                                             // Some where in the body of the parent branch
-         {final Slots.Slot L = b.locateLastUsedSlot();
-          if (!d.b() && L.valid() && b.mergeLeftSibling(L))  d.set();
-         }
-        if (!d.b()) {b.mergeLeftSibling(b.new Slot()); d.set();}                // Merge towards top
+        new If (!d.b() && K.notValid())                                         // Some where in the body of the parent branch
+         {void Then()
+           {final Slots.Slot L = b.locateLastUsedSlot();
+            new If (!d.b() && L.valid() && b.mergeLeftSibling(L))
+             {void Then()
+               {d.set();
+               }
+             };
+           }
+         };
+        new If (!d.b())                                                         // Merge towards top
+         {void Then()
+           {b.mergeLeftSibling(b.new Slot());
+            d.set();
+           }
+         };
        }
      }
 
