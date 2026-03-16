@@ -101,12 +101,11 @@ abstract public class BitSet extends Test                                       
     public boolean one () {return one;}
    }
 
-  class Pos                                                                     // A position of a bit in the bit set
-   {final Int position;                                                         // Position of the bit
-    Int position() {return position.dup();}                                     // Current position
-    public Pos(Int Position) {position = Position;}                             // Construct a bit position
-    public Pos(int Position) {this(new Int(Position));}                         // Construct a bit position
-    public String toString() {return ""+position();}                            // Print a bit position
+  class Pos extends Int                                                         // A position of a bit in the bit set
+   {Int position() {return dup();}                                              // Current position
+    public Pos(Int Position) {super(Position);}                                 // Construct a bit position
+    public Pos(int Position) {super(Position);}                                 // Construct a bit position
+    public String toString() {return "Pos: "+i();}                                // Print a bit position
    }
 
 // D2 Get and Set                                                               // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
@@ -327,7 +326,7 @@ abstract public class BitSet extends Test                                       
     final Int p = new Int(0);                                                   // Offset of layer
     final Int n = new Int();                                                    // The next element if it exists, offset of layer
 
-    if (b.eq(w.Sub(1))) return null;                                            // At the end so no next bit
+//  if (b.ne(w.Sub(1)))                                                         // Not at end so there migAt the end so no next bit
 
     new For(bitSize)                                                            // Traverse down through the tree
      {boolean body(int i)                                                       // Traverse down through the tree
