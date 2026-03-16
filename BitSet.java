@@ -482,19 +482,27 @@ abstract public class BitSet extends Test                                       
              {boolean body(int i)                                               // Search down through the zero bit tree
                {final Int B = b.Dec();                                          // Is there a path down from the next bit?
                 final Bool d = new Bool().clear();                              // Whether we have arrived at a bit that is already correctly set
-                if (B.lt(0)) return false;                                      // Nothing prior to search so no prev zero
-                if (getBitNC(new Pos(p.Add(B))))                                // Found next up bit
-                 {new For(i)                                                    // Step down to the leaves
-                   {boolean body(int j)                                         // Step down to the leaves
-                     {b.up(); moveUpOneLayer(B, p, w);                          // Move up one layer
-                      B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);               // Follow path as high as possible
-                      return true;
-                     }
-                   };
-                  final Int BB = B.Add(B), CC = BB.dup().inc();
-                  R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));                    // Next zero bit from actual bits
-                  d.set();
-                 }
+                new If (B.lt(0))                                                // Nothing prior to search so no prev zero
+                 {void Then()
+                   {d.set();
+                   }
+                  void Else()                                                   // More prior bits to search
+                   {new If (getBitNC(new Pos(p.Add(B))))                        // Found next up bit
+                     {void Then()
+                       {new For(i)                                              // Step down to the leaves
+                         {boolean body(int j)                                   // Step down to the leaves
+                           {b.up(); moveUpOneLayer(B, p, w);                    // Move up one layer
+                            B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);         // Follow path as high as possible
+                            return true;
+                           }
+                         };
+                        final Int BB = B.Add(B), CC = BB.dup().inc();
+                        R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));              // Next zero bit from actual bits
+                        d.set();
+                       }
+                     };
+                   }
+                 };
                 moveDownOneLayer(b, p, w); if (w.eq(0)) d.set();                // Address next level of bits in tree
                 return !d.b();
                }
