@@ -2,6 +2,7 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// /// Convert to new If()
 // Investigate listAll introducing errors
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
@@ -231,8 +232,9 @@ class Tree extends Test                                                         
      }
 
     class Slot extends Int                                                      // A reference to a slot
-     {Slot(int Value)  {i(Value);}                                              // A key
-      Slot(Int Value)  {i(Value);}                                              // A key
+     {Slot()            {super();}                                              // An invalid slot
+      Slot(int Value)   {super(Value);}                                         // A valid slot
+      Slot(Int Value)   {super(Value);}                                         // A slot
       Int       value() {return this;}                                          // The value of the key
       Int         Int() {return this;}                                          // The value of the key
       Slot      right() {return new Slot(Inc());}                               // Step right
@@ -241,13 +243,13 @@ class Tree extends Test                                                         
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-        return p != null ? new Slot(p.position()) : null;
+        return p.valid() ? new Slot(p.position()) : new Slot();
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-        return p != null ? new Slot(p.position()) : null;
+        return p.valid() ? new Slot(p.position()) : new Slot();
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
@@ -353,17 +355,6 @@ class Tree extends Test                                                         
 
     boolean empty() {return memory.usedSlotsBits.empty();}                      // All bits in the corresponding bitset are unused so the Slots must be empty
     boolean full () {return countUsed().eq(numberOfRefs);}                      // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-
-    boolean adjacentUsedSlots(Int Start, Int Finish)                            // Checks whether two used slots are adjacent
-     {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
-      if (!usedSlots(new Slot(Finish))) stop("Finish slot  must be occupied but it is empty, slot:", Finish);
-      if (Start.ge(Finish))              stop("Start must precede finish:", Start, Finish);
-
-      for (int i : range(Start.Inc().i(), Finish.i()))                          // From start to finish looking for an intermediate used slot
-       {if (usedSlots(new Slot(new Int(i)))) return false;
-       }
-      return true;
-     }
 
 //D2 Low level operations                                                       // Low level operations on slots
 
@@ -1904,7 +1895,7 @@ class Tree extends Test                                                         
     return f.get();
    }
 
-  void insert(Key Key, Data Data)                                               // Insert a key, data pair or update key data pair in the tree
+  void insert(Key Key, Data Data)                                               /// Insert a key, data pair or update key data pair in the tree
    {final Bool d = new Bool().clear();                                          // Try various insertion methods until one succeeds
     if (root() == null)                                                         // Empty tree
      {final Leaf l = new Leaf(); root(l);                                       // Root is a leaf
@@ -2488,8 +2479,8 @@ class Tree extends Test                                                         
     ok(s.new Slot(10).locateNextUsedSlot().i(),    11);
     ok(s.new Slot(11).locateNextUsedSlot().i(),    11);
 
-    ok(s.new Slot( 1).locatePrevUsedSlot() == null, true);
-    ok(s.new Slot(14).locateNextUsedSlot() == null, true);
+    ok(s.new Slot( 1).locatePrevUsedSlot().notValid(), true);
+    ok(s.new Slot(14).locateNextUsedSlot().notValid(), true);
 
     s.setSlots(0, 15);
    }
@@ -2614,7 +2605,7 @@ keys     :   28   0  26   0  24   0   0  22
     ok(s.locateFirstGe(Key(23)).i(),    5);
     ok(s.locateFirstGe(Key(24)).i(),    5);
     ok(s.locateFirstGe(Key(25)).i(),    9);
-    ok(s.locateFirstGe(Key(30)) == null, true);
+    ok(s.locateFirstGe(Key(30)).notValid());
    }
 
   static void test_compactLeft()
