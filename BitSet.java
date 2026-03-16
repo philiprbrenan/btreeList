@@ -503,8 +503,9 @@ abstract public class BitSet extends Test                                       
                      };
                    }
                  };
-                moveDownOneLayer(b, p, w); if (w.eq(0)) d.set();                // Address next level of bits in tree
-                return !d.b();
+                moveDownOneLayer(b, p, w);                                      // Address next level of bits in tree
+                new If (w.eq(0)) {void Then() {d.set();}};                      // Next layer exists
+                return !d.b();                                                  // Continue search until done
                }
              };
            }
