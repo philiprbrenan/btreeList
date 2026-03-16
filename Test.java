@@ -3,7 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //------------------------------------------------------------------------------
 // change boolean eq() to Bool eq()
-// For return should return a Bool
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.io.*;
@@ -1096,7 +1095,7 @@ public class Test                                                               
     Bool        Set(boolean I) {return dup().set(I);}
     Bool        Set(Bool    I) {return dup().set(I);}
     Bool      Clear()          {return dup().clear();}
-    boolean       B()          {return dup().b();} // Bad name for  method
+    boolean       B()          {return dup().b();}
     Bool       Flip()          {return dup().flip();}
 
     Bool         eq(boolean e){  x(); return new Bool(i == e);}
@@ -1154,10 +1153,10 @@ public class Test                                                               
     boolean valid()  {return v;}
 
     Int           (int I) {       i = I;   v = true;}
-    Int           (Int I) {       i = I.i; v = I.v;}
+    Int           (Int I) {       if (I != null) {i = I.i; v = I.v;}}
     Int (String N)        {n = N;}
     Int (String N, int I) {n = N; i = I;   v = true;}
-    Int (String N, Int I) {n = N; i = I.i; v = I.v;}
+    Int (String N, Int I) {n = N; if (I != null) {i = I.i; v = I.v;}}
 
     Int      ()      {}
     void x   ()      {if (!v) stop("Int has not been set yet");}
@@ -1207,19 +1206,19 @@ public class Test                                                               
     Int  Neg()       {return dup().neg();}
     Int  Abs()       {return dup().abs();}
 
-    Bool eq(int e){  x(); return new Bool(i == e);}
-    Bool ne(int e){  x(); return new Bool(i != e);}
-    Bool le(int e){  x(); return new Bool(i <= e);}
-    Bool lt(int e){  x(); return new Bool(i <  e);}
-    Bool ge(int e){  x(); return new Bool(i >= e);}
-    Bool gt(int e){  x(); return new Bool(i >  e);}
+    boolean eq(int e){  x(); return i == e;}
+    boolean ne(int e){  x(); return i != e;}
+    boolean le(int e){  x(); return i <= e;}
+    boolean lt(int e){  x(); return i <  e;}
+    boolean ge(int e){  x(); return i >= e;}
+    boolean gt(int e){  x(); return i >  e;}
 
-    Bool eq(Int e){e.x(); return eq(e.i);}
-    Bool ne(Int e){e.x(); return ne(e.i);}
-    Bool le(Int e){e.x(); return le(e.i);}
-    Bool lt(Int e){e.x(); return lt(e.i);}
-    Bool ge(Int e){e.x(); return ge(e.i);}
-    Bool gt(Int e){e.x(); return gt(e.i);}
+    boolean eq(Int e){e.x(); return eq(e.i);}
+    boolean ne(Int e){e.x(); return ne(e.i);}
+    boolean le(Int e){e.x(); return le(e.i);}
+    boolean lt(Int e){e.x(); return lt(e.i);}
+    boolean ge(Int e){e.x(); return ge(e.i);}
+    boolean gt(Int e){e.x(); return gt(e.i);}
 
     Bool    Eq(int e){  x(); return new Bool(eq(e));}
     Bool    Ne(int e){  x(); return new Bool(ne(e));}
@@ -1250,6 +1249,10 @@ public class Test                                                               
     void set(Ref<T> I) {i = I.get();}                                           // Set the refernce
     T    get()         {return i;}                                              // Dereference the reference
     boolean valid()    {return i != null;}                                      // Check that the refence is valid
+
+    public String toString()
+     {return i == null ? "null" : "ref("+i+")";
+     }
    }
 
 //D1 Testing                                                                    // Test expected output against got output
