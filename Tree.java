@@ -57,7 +57,7 @@ class Tree extends Test                                                         
   int numberOfNodes() {return numberOfNodes;}                                   // Maximum number of nodes in tree
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
-  static class Key extends Int                                            // A key
+  static class Key extends Int                                                  // A key
    {Key(  int Value)  {i(Value);}
     Key(  Int Value)  {i(Value);}
     Int       value() {return this;}
@@ -69,7 +69,7 @@ class Tree extends Test                                                         
   static Key Key(int Value) {return new Key(Value);}                            // Create a key with the specified value
   static Key Key(Int Value) {return new Key(Value);}                            // Create a key with the specified value
 
-  static class Data extends Int                                           // An item of data associated with a key
+  static class Data extends Int                                                 // An item of data associated with a key
    {Data(int Value) {i(Value);}
     Data(Int Value) {i(Value);}
     Int     value() {return this;}
@@ -221,7 +221,7 @@ class Tree extends Test                                                         
       memory.usedRefsBits .initialize();
      }
 
-    class slot extends Int                                                // A dereferenced slot
+    class slot extends Int                                                      // A dereferenced slot
      {slot( int Value)  {i(Value);}                                             // A key
       slot( Int Value)  {i(Value);}                                             // A key
       Int       value() {return this;}
@@ -230,9 +230,9 @@ class Tree extends Test                                                         
        }
      }
 
-    class Slot extends Int                                                // A reference to a slot
-     {Slot(int Value)  {i(Value);}                                             // A key
-      Slot(Int Value)  {i(Value);}                                             // A key
+    class Slot extends Int                                                      // A reference to a slot
+     {Slot(int Value)  {i(Value);}                                              // A key
+      Slot(Int Value)  {i(Value);}                                              // A key
       Int       value() {return this;}                                          // The value of the key
       Int         Int() {return this;}                                          // The value of the key
       Slot      right() {return new Slot(Inc());}                               // Step right
@@ -258,8 +258,8 @@ class Tree extends Test                                                         
        {return usedSlots(this) ? this : stepRight();
        }
 
-      boolean eq(Key Key) {return Key.eq(keys(this));}           // Search key is equal to indexed key
-      boolean le(Key Key) {return Key.le(keys(this));}           // Search key is less than or equal to indexed key
+      boolean eq(Key Key) {return Key.eq(keys(this));}                          // Search key is equal to indexed key
+      boolean le(Key Key) {return Key.le(keys(this));}                          // Search key is less than or equal to indexed key
       boolean lt(Key Key) {return !eq(Key) && le(Key);}                         // Search key is less than or equal to indexed key
       boolean ge(Key Key) {return  eq(Key) || gt(Key);}                         // Search key is less than or equal to indexed key
       boolean gt(Key Key) {return !le(Key);}                                    // Search key is less than or equal to indexed key
@@ -284,11 +284,15 @@ class Tree extends Test                                                         
 //D2 Slots                                                                      // Manage the slots
 
     void setSlots(int...Slots)                                                  // Set slots as used
-     {for (int i : range(Slots.length)) usedSlots(new Slot(new Int(Slots[i])), true);
+     {for (int i : range(Slots.length))
+       {usedSlots(new Slot(new Int(Slots[i])), true);
+       }
      }
 
     void clearSlots(int...Slots)                                                // Set slots as not being used
-     {for (int i : range(Slots.length)) usedSlots(new Slot(new Int(Slots[i])), false);
+     {for (int i : range(Slots.length))
+       {usedSlots(new Slot(new Int(Slots[i])), false);
+       }
      }
 
     void clearFirstSlot()                                                       // Set the first used slot to not used
@@ -307,8 +311,8 @@ class Tree extends Test                                                         
     void  usedRefs(slot I, boolean Value) {memory.usedRefs (I, Value);}                       // The indexed reference usage indicator
     void      keys(Slot I, Key     Key)   {memory.keys(memory.slots(I), Key);}                // The indexed key
 
-    Key  key(slot I) {return new Key(memory.keys(I));}                      // Get the key directly
-    void key(slot I, Key Key)       {memory.keys(I, Key);}                  // Set the key directly
+    Key  key(slot I) {return new Key(memory.keys(I));}                          // Get the key directly
+    void key(slot I, Key Key)       {memory.keys(I, Key);}                      // Set the key directly
 
     Allocation name() {return new Allocation(memory.name());}                   // Get the name
     void name(Allocation Name)              {memory.name(Name.at());}           // Set the name
@@ -368,10 +372,10 @@ class Tree extends Test                                                         
         final BitSet.Pos p = s.prevZero(s.new Pos(Q));                          // Prev free slot
         final BitSet.Pos n = s.nextZero(s.new Pos(Q));                          // Next free slot
         if (p == null && n == null) stop("No more free slots");
-        if (p == null && n != null) return n.position().Sub(Q);                  // Next free slot because no prev free slot
-        if (p != null && n == null) return p.position().Sub(Q);                  // Prev free slot because no next free slot
-        final Int P = p.position().Sub(Q), N = n.position().Sub(Q);              // Relative positions
-        r.i((P.Neg().le(N) ? P : N));                                                   // Choose nearest slow favoring lower slot if they are both the same distance away
+        if (p == null && n != null) return n.position().Sub(Q);                 // Next free slot because no prev free slot
+        if (p != null && n == null) return p.position().Sub(Q);                 // Prev free slot because no next free slot
+        final Int P = p.position().Sub(Q), N = n.position().Sub(Q);             // Relative positions
+        r.i((P.Neg().le(N) ? P : N));                                           // Choose nearest slow favoring lower slot if they are both the same distance away
        }
       return r;
      }
@@ -575,23 +579,23 @@ class Tree extends Test                                                         
              {new If (l.above)                                                  // Insert their key above the found key
                {void Then()
                  {final Int i = l.at();
-                  final Int w = new Int(locateNearestFreeSlot(l.at()));           // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                  final Int w = new Int(locateNearestFreeSlot(l.at()));         // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                   new If (w.gt(0))                                              // Move up
                    {void Then()                                                 // Move up
                      {shift             (i.Inc(), w.Dec());                     // Liberate a slot at this point
-                      slots    (new Slot(i).right(), alloc);                // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                      slots    (new Slot(i).right(), alloc);                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
                       usedSlots(new Slot(i).right(), true);
                      }
                     void Else()
                      {new If (w.lt(0))                                          // Liberate a slot below the current slot
                        {void Then()                                             // Liberate a slot below the current slot
-                         {shift(         i,  w);                        // Shift any intervening slots blocking the slot below
-                          slots(new Slot(i), alloc);                        // Insert into the slot below
+                         {shift(         i,  w);                                // Shift any intervening slots blocking the slot below
+                          slots(new Slot(i), alloc);                            // Insert into the slot below
                          }
                        };
                      }
                    };
-                  new If (w.abs().ge(redistributionWidth))                    // Redistribute if the used slots are densely packed
+                  new If (w.abs().ge(redistributionWidth))                      // Redistribute if the used slots are densely packed
                    {void Then()
                      {redistribute();
                      }
@@ -601,11 +605,11 @@ class Tree extends Test                                                         
                  {new If (l.below)                                              // Insert their key below the found key
                    {void Then()
                      {final Int i = l.at();
-                      final Int w = new Slot(locateNearestFreeSlot(l.at()));      // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                      final Int w = new Slot(locateNearestFreeSlot(l.at()));    // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                       new If (w.gt(0))                                          // Move up
                        {void Then()                                             // Move up
                          {shift(i, w);                                          // Liberate a slot at this point
-                          slots(l.at(), alloc);                                   // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                          slots(l.at(), alloc);                                 // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
                          }
                         void Else()
                          {new If (w.lt(0))                                      // Liberate a slot below the current slot
@@ -700,8 +704,8 @@ class Tree extends Test                                                         
                };
               new If (d.Flip())                                                 // Incomplete search
                {void Then()
-                 {stop("Searched unsuccessfully more than the maximum number of times:",
-                       numberOfSlots());
+                 {stop(f("%s %s %d", "Searched unsuccessfully more than",
+                         "the maximum number of times:", numberOfSlots()));
                  }
                };
              }
