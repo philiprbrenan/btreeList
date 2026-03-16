@@ -57,7 +57,7 @@ class Tree extends Test                                                         
   int numberOfNodes() {return numberOfNodes;}                                   // Maximum number of nodes in tree
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
-  static final class Key extends Int                                            // A key
+  static class Key extends Int                                            // A key
    {Key(  int Value)  {i(Value);}
     Key(  Int Value)  {i(Value);}
     Int       value() {return this;}
@@ -69,7 +69,7 @@ class Tree extends Test                                                         
   static Key Key(int Value) {return new Key(Value);}                            // Create a key with the specified value
   static Key Key(Int Value) {return new Key(Value);}                            // Create a key with the specified value
 
-  static final class Data extends Int                                           // An item of data associated with a key
+  static class Data extends Int                                           // An item of data associated with a key
    {Data(int Value) {i(Value);}
     Data(Int Value) {i(Value);}
     Int     value() {return this;}
@@ -221,7 +221,7 @@ class Tree extends Test                                                         
       memory.usedRefsBits .initialize();
      }
 
-    final class slot extends Int                                                // A dereferenced slot
+    class slot extends Int                                                // A dereferenced slot
      {slot( int Value)  {i(Value);}                                             // A key
       slot( Int Value)  {i(Value);}                                             // A key
       Int       value() {return this;}
@@ -230,7 +230,7 @@ class Tree extends Test                                                         
        }
      }
 
-    final class Slot extends Int                                                // A reference to a slot
+    class Slot extends Int                                                // A reference to a slot
      {Slot(int Value)  {i(Value);}                                             // A key
       Slot(Int Value)  {i(Value);}                                             // A key
       Int       value() {return this;}                                          // The value of the key
