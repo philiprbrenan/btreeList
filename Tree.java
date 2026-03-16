@@ -325,12 +325,15 @@ class Tree extends Test                                                         
     slot allocRef()                                                             // Allocate a reference to one of the keys in the slots. A linear search is used here because in hardware this will be done in parallel
      {final slot I = locateFirstEmptyRef();
 
-      if (I != null)
-       {usedRefs(I, true);
-        return I;
-       }
-      stop("No more slots available in this set of slots");
-      return null;
+      new If (I.valid())
+       {void Then()
+         {usedRefs(I, true);
+         }
+        void Else()
+         {stop("No more slots available in this set of slots");
+         }
+       };
+      return I;
      }
 
     void freeRef(slot Ref) {usedRefs(Ref, false);}                              // Free a reference to one of the keys in the slots
