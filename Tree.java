@@ -562,9 +562,10 @@ class Tree extends Test                                                         
      {final slot alloc = allocRef();                                            // The location in which to store the search key
       key(alloc, Key);                                                          // Store the new key in the referenced location
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
-      new If   (!l.above || !l.below)                                           // Not found
+
+      new If   (!l.found())                                                     // Not found
        {void Then()
-         {new If (!l.above && !l.below)                                         // Empty place the key in the middle
+         {new If (l.notFoundBecauseEmpty())                                     // Empty place the key in the middle
            {void Then()
              {final Slot S = new Slot(new Int(numberOfSlots()).down().i());
               slots     (S, alloc);
@@ -573,8 +574,8 @@ class Tree extends Test                                                         
             void Else()
              {new If (l.above)                                                  // Insert their key above the found key
                {void Then()
-                 {final Int i = l.at;
-                  final Int w = new Int(locateNearestFreeSlot(l.at));           // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                 {final Int i = l.at();
+                  final Int w = new Int(locateNearestFreeSlot(l.at()));           // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                   new If (w.gt(0))                                              // Move up
                    {void Then()                                                 // Move up
                      {shift             (i.Inc(), w.Dec());                     // Liberate a slot at this point
@@ -599,12 +600,12 @@ class Tree extends Test                                                         
                 void Else()
                  {new If (l.below)                                              // Insert their key below the found key
                    {void Then()
-                     {final Int i = l.at;
-                      final Int w = new Slot(locateNearestFreeSlot(l.at));      // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                     {final Int i = l.at();
+                      final Int w = new Slot(locateNearestFreeSlot(l.at()));      // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                       new If (w.gt(0))                                          // Move up
                        {void Then()                                             // Move up
                          {shift(i, w);                                          // Liberate a slot at this point
-                          slots(l.at, alloc);                                   // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                          slots(l.at(), alloc);                                   // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
                          }
                         void Else()
                          {new If (w.lt(0))                                      // Liberate a slot below the current slot
@@ -632,22 +633,23 @@ class Tree extends Test                                                         
       return alloc;                                                             // The index of the reference to the key
      }
 
-    class Locate                                                                // Locate the slot containing the search key if possible else the key immediately above or below the search key.
-     {Slot at;                                                                  // The point at which the closest key was found
+    class Locate extends Slot                                                   // Locate the slot containing the search key if possible else the key immediately above or below the search key.
+     {Slot at() {return this;}                                                  // The point at which the closest key was found
       boolean above;                                                            // The search key is above or equal to the found key
       boolean below;                                                            // The search key is below or equal to the found key
       boolean all;                                                              // Above all or below all if true
 
       public String toString()                                                  // Print the location
-       {if (exact()) return f("%d exact", at.i());
-        return f("%2d %s %s %s", at.i(),
+       {if (found())                return f("%d found", at().i());
+        if (notFoundBecauseEmpty()) return "notFoundBecauseEmpty";
+        return f("%2d %s %s %s", at().i(),
                                  above ? "above" : "",
                                  below ? "below" : "",
                                  all   ? "all"   : "");
        }
 
       void pos(Slot At, boolean Above, boolean Below)                           // Specify the position of the location
-       {at = At; above = Above; below = Below;
+       {i(At.i()); above = Above; below = Below;
        }
 
       void above(Slot At) {pos(At, true, false);}                               // Their search key is above this key
@@ -655,10 +657,12 @@ class Tree extends Test                                                         
       void found(Slot At) {pos(At, true,  true);}                               // Found their search key
       void none ()        {}                                                    // Slots are empty
 
-      boolean exact() {return above && below;}                                  // Oh America - my new found land.
+      boolean found()                {return  above &&  below;}                 // Oh America - my new found land.
+      boolean notFoundBecauseEmpty() {return !above && !below;}                 // The slots are empty so neither above or below or exact
 
       Locate(Key Key)                                                           // Locate the slot containing the search key if possible.
-       {if (empty()) none();                                                    // Empty so their search key cannot be found
+       {super(Key);
+        if (empty()) none();                                                    // Empty so their search key cannot be found
         else
          {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                 // Lower limit
           final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                 // Upper limit
@@ -708,13 +712,13 @@ class Tree extends Test                                                         
 
     Slot locateFirstGe(Key Key)                                                 // Locate the slot containing the first key greater than or equal to the search key
      {final Locate l = new Locate(Key);
-      final Slot   a = l.at;
-      return a == null ? null : l.below ? a : a.right().locateNextUsedSlot();
+      final Slot   a = l.at();
+      return l.notFoundBecauseEmpty() ? null : l.below ? a : a.right().locateNextUsedSlot();
      }
 
     Slot locate(Key Key)                                                        // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
-      return l.exact() ? l.at : null;                                           // Found if exact match
+      return l.found() ? l.at() : null;                                           // Found if exact match
      }
 
     slot find(Key Key)                                                          // Find the index of the current key in the slots
@@ -1895,15 +1899,15 @@ class Tree extends Test                                                         
      }
     else                                                                        // Localize optimized insert for non full leaf or full leaf under non full parent
      {final Find F = find(Key);                                                 // See if key is already present
-      if (F.locate.exact())                                                     // Key already present so update data associated with the key
+      if (F.locate.found())                                                     // Key already present so update data associated with the key
        {final Leaf l = F.leaf;                                                  // Child leaf
-        l.data(F.locate.at, Data);                                              // Update data
-        d.set();
+        l.data(F.locate.at(), Data);                                            // Update data
+        d.set();                                                                // Success
        }
       if (!d.b() && !F.leaf.full())                                             // Leaf not full so insert directly
        {final Leaf l = F.leaf;                                                  // Child leaf
         l.insert(Key, Data);                                                    // Insert key
-        d.set();
+        d.set();                                                                // Success
        }
       if (!d.b() && F.leaf.up() != null && !F.leaf.up().full())                 // Leaf is full, parent branch is not full so we can split leaf
        {final Branch b = F.leaf.up();                                           // Parent branch
@@ -2031,9 +2035,9 @@ class Tree extends Test                                                         
    {new If (root() != null)                                                     // The tree is not empty so there might be something to delete
      {void Then()
        {final Find f = find(Key);                                               // Locate the key in the tree
-        new If (f.locate.exact())                                               // Key found so delete it
+        new If (f.locate.found())                                               // Key found so delete it
          {void Then()
-           {f.leaf.clearSlotAndRef(f.locate.at);                                // Delete key and data from leaf
+           {f.leaf.clearSlotAndRef(f.locate.at());                                // Delete key and data from leaf
             mergeAlongPath(Key);
            }
          };
@@ -2152,7 +2156,7 @@ class Tree extends Test                                                         
 
     new If (root() != null && l.up() != null)                                   // Tree has branches
      {void Then()
-       {final Slots.Slot r = Found.locate.at.stepRight();                       // Next slot to the right in the leaf
+       {final Slots.Slot r = Found.locate.at().stepRight();                       // Next slot to the right in the leaf
         new If (r != null)                                                      // There is a next slot to the right so go to it
           {void Then()
            {f.set(new Find(l.keys(r), l));                                      // There is a next slot to the right in the leaf so return it
@@ -2211,7 +2215,7 @@ class Tree extends Test                                                         
 
     new If (root() != null && l.up() != null)                                   // Tree is not empty and not a leaf that we are at the end of
      {void Then()
-       {final Slots.Slot s = Found.locate.at.stepLeft();                        // Previous slot in leaf
+       {final Slots.Slot s = Found.locate.at().stepLeft();                        // Previous slot in leaf
         new If (s != null)
          {void Then()
            {f.set(new Find(l.keys(s), l));
@@ -3558,7 +3562,7 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :   23  24  25  26
 data     :   33  34  35  36
-Locate      : 0 exact
+Locate      : 0 found
 Path        : 7, 9
 """);
    }
@@ -3588,7 +3592,7 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :    4   3   2   1
 data     :    4   3   2   1
-Locate      : 0 exact
+Locate      : 0 found
 Path        : 7, 9
 """);
 
@@ -3635,7 +3639,7 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedRefs :    X   X   X   X
 keys     :   29  30  31  32
 data     :   29  30  31  32
-Locate      : 6 exact
+Locate      : 6 found
 Path        : 2, 9
 """);
 
