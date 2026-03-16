@@ -224,7 +224,7 @@ class Tree extends Test                                                         
     final class slot extends Int                                                // A dereferenced slot
      {slot( int Value)  {i(Value);}                                             // A key
       slot( Int Value)  {i(Value);}                                             // A key
-      Int       value() {return this;}    // Is this needed
+      Int       value() {return this;}
       public String toString()
        {return "slot: "+i();
        }
@@ -632,7 +632,7 @@ class Tree extends Test                                                         
       return alloc;                                                             // The index of the reference to the key
      }
 
-    class Locate   // can this extend Int                                                             // Locate the slot containing the search key if possible else the key immediately above or below the search key.
+    class Locate                                                                // Locate the slot containing the search key if possible else the key immediately above or below the search key.
      {Slot at;                                                                  // The point at which the closest key was found
       boolean above;                                                            // The search key is above or equal to the found key
       boolean below;                                                            // The search key is below or equal to the found key
