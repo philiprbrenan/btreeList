@@ -223,7 +223,7 @@ class Tree extends Test                                                         
       slot( Int Value)  {i(Value);}                                             // A key
       Int       value() {return this;}    // Is this needed
       public String toString()
-       {return "slot: "+value();
+       {return "slot: "+i();
        }
      }
 
@@ -255,8 +255,8 @@ class Tree extends Test                                                         
        {return usedSlots(this) ? this : stepRight();
        }
 
-      boolean eq(Key Key) {return Key.value().eq(keys(this).value());}           // Search key is equal to indexed key
-      boolean le(Key Key) {return Key.value().le(keys(this).value());}           // Search key is less than or equal to indexed key
+      boolean eq(Key Key) {return Key.eq(keys(this));}           // Search key is equal to indexed key
+      boolean le(Key Key) {return Key.le(keys(this));}           // Search key is less than or equal to indexed key
       boolean lt(Key Key) {return !eq(Key) && le(Key);}                         // Search key is less than or equal to indexed key
       boolean ge(Key Key) {return  eq(Key) || gt(Key);}                         // Search key is less than or equal to indexed key
       boolean gt(Key Key) {return !le(Key);}                                    // Search key is less than or equal to indexed key
@@ -338,12 +338,11 @@ class Tree extends Test                                                         
           return true;
          }
        };
-      say("AAAA". n); 
       return n;
      }
 
     boolean empty() {return memory.usedSlotsBits.empty();}                      // All bits in the corresponding bitset are unused so the Slots must be empty
-    boolean full () {return countUsed() == numberOfRefs;}                       // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+    boolean full () {return countUsed().eq(numberOfRefs);}                      // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
 
     boolean adjacentUsedSlots(Int Start, Int Finish)                            // Checks whether two used slots are adjacent
      {if (!usedSlots(new Slot(Start)))  stop("Start  slot  must be occupied but it is empty, slot:", Start);
@@ -393,7 +392,7 @@ class Tree extends Test                                                         
      {new If (Width.ne(0))                                                      // Non zero shift
        {void Then()
          {final boolean p = Width.gt(0);
-          new For(p ? Width : Width.neg())                                      // Move each slot
+          new For(p ? Width : Width.Neg())                                      // Move each slot
            {boolean body(int i)
              {final Slot P = new Slot(Position.Add(Width).add(p ? -i : +i));
               slots(P, slots(p ? P.left() :  P.right()));                       // Move slot
@@ -637,8 +636,8 @@ class Tree extends Test                                                         
       boolean all;                                                              // Above all or below all if true
 
       public String toString()                                                  // Print the location
-       {if (exact()) return f("%d exact", at.value());
-        return f("%2d %s %s %s", at.value(),
+       {if (exact()) return f("%d exact", at.i());
+        return f("%2d %s %s %s", at.i(),
                                  above ? "above" : "",
                                  below ? "below" : "",
                                  all   ? "all"   : "");
@@ -761,7 +760,6 @@ class Tree extends Test                                                         
 
     String printInOrder()                                                       // Print the values in the used slots in order
      {final StringJoiner s = new StringJoiner(", ");
-
       for (int i : range(numberOfSlots()))
        {if (usedSlots(new Slot(i))) s.add(""+keys(new Slot(i)).i());
        }
@@ -1225,8 +1223,8 @@ class Tree extends Test                                                         
       for (int i : range(numberOfSlots()))
        {final Slot I = new Slot(i);
         if (usedSlots(I))
-         {k.add(""+keys(I).value());
-          d.add(""+memory.data(slots(I).value()));
+         {k.add(""+keys(I).i());
+          d.add(""+memory.data(slots(I)).i());
          }
        }
       return "keys: "+k+"\n"+"data: "+d+"\n";
@@ -1239,8 +1237,8 @@ class Tree extends Test                                                         
        }
       final Branch     P = up();                                                // Containing branch
       final Slots.Slot Q = P != null ? upIndex(P) : null;
-      final String U = " up: "   +(P != null ? P.name().at()          : "null");
-      final String I = " index: "+(P != null && Q != null ? Q.value() : "null");
+      final String U = " up: "   +(P != null ? P.name().at()      : "null");
+      final String I = " index: "+(P != null && Q != null ? Q.i() : "null");
       return "Leaf     : "+name().at()+U+I+"\n"+
               super.toString() + "data     :  "+d+"\n";
      }
@@ -1280,8 +1278,8 @@ class Tree extends Test                                                         
      {memory.up(Branch != null ? Branch.name().at() : new Int(0));
      }
 
-    Int  upIndex()          {return new Int(memory.upIndex());}                 // Index of this branch in its parent
-    void upIndex(Int Value) {memory.upIndex(Value);}                        // Set the index of this branch in its parent
+    Int  upIndex()          {return memory.upIndex();}                          // Index of this branch in its parent
+    void upIndex(Int Value) {memory.upIndex(Value);}                            // Set the index of this branch in its parent
 
     static boolean ref(Slots B)    {return B instanceof Branch;}                // Check whether we are referencing a branch
 
@@ -1445,7 +1443,11 @@ class Tree extends Test                                                         
 
     slot insert(Key Key, Slots Data)                                            // Insert a key data pair into a branch
      {final slot i = insert(Key);
-      new If (i != null) {void Then() {dataDirect(i.value(), Data);}};
+      new If (i != null)
+       {void Then()
+         {dataDirect(i, Data);
+         }
+       };
       return i;
      }
 
@@ -1638,11 +1640,12 @@ class Tree extends Test                                                         
       void up(Int Value) {bytes.putInt(posUp.i(), Value.i());}
 
       Int upIndex()                                                             // Index of this branch in its parent
-       {final Int i = new Int(bytes.getInt(posUpIndex.i())); return i.lt(0) ? null : i;
+       {final int i = bytes.getInt(posUpIndex.i());                             // Get a discrete value from memory
+        return i < 0 ? new Int() : new Int(i);                                  // Values less than zero represent a null value which is represented by a structure describing null rathern directly by null
        }
 
       void    upIndex(Int Value)                                                // Set the index of this branch in its parent
-       {bytes.putInt(posUpIndex.i(), Value != null ? Value.i() : -1);                   // Have to use -1 to represent null as 0 is a valid position
+       {bytes.putInt(posUpIndex.i(), Value != null ? Value.i() : -1);           // Have to use -1 to represent null as 0 is a valid position
        }
 
       Int  top ()  {return new Int(bytes.getInt(posTop.i()));}
@@ -1652,7 +1655,7 @@ class Tree extends Test                                                         
        {return new Int(bytes.getInt(posData.Add(ib(Index)).i()));
        }
       void data(Int Index, Int  Value)
-       {bytes.putInt(posData.Add(ib(Index)).i());
+       {bytes.putInt(posData.Add(ib(Index)).i(), Value.i());
        }
      }
 
@@ -1664,8 +1667,8 @@ class Tree extends Test                                                         
 
       for (int i : range(numberOfSlots()))
        {if (usedSlots(new Slot(i)))
-         {k.add(""+keys(new Slot(i)).value());
-          d.add(""+memory.data(slots(new Slot(i)).value()));
+         {k.add(""+keys(new Slot(i)).i());
+          d.add(""+memory.data(slots(new Slot(i))).i());
          }
        }
       return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name().at()+"\n";
@@ -1682,10 +1685,10 @@ class Tree extends Test                                                         
       final StringBuilder s = new StringBuilder();
 
       final Int    ui = upIndex();
-      final String us = ui != null ? ""+ui.i() : "null";
+      final String us = ui.valid() ? ""+ui.i() : "null";
       final int n = name().at().i();
       final int u = memory.up().i();
-      final int i = memory.upIndex() != null ? memory.upIndex().i() : -1;           // -1 represents null
+      final int i = ui.valid() ? memory.upIndex().i() : -1;                     // -1 represents null
       s.append(f("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
       s.append(super.toString());
       s.append("data     :  "+d+"\n");
@@ -1819,7 +1822,7 @@ class Tree extends Test                                                         
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
-      s.append("Find Key : "+key.value()+"\n");
+      s.append("Find Key : "+key.i()+"\n");
       if (leaf    != null) s.append(""+leaf);
       if (locate  != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
@@ -2064,22 +2067,24 @@ class Tree extends Test                                                         
   Find goFirst(Branch Start)                                                    // Go all the way first
    {Ref<Branch> p = new Ref<>(Start);                                           // Start
     Ref<Find>   f = new Ref<>();
+
     new For(MaximumNumberOfLevels)                                              // Step down from branch to branch
-     {boolean body(Int I)
+     {boolean body(int I)
        {final Slots.Slot P = p.get().locateFirstUsedSlot();
         final Slots      q = p.get().child(P);
-        final Bool       c = new Bool();                                        // Contune down through tree if set
+        final Bool       c = new Bool();                                        // Contine down through tree if set
+
         new If (Leaf.ref(q))                                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(P);
-            final Int i = l.locateFirstUsedSlot().value();
+            final Int i = l.locateFirstUsedSlot();
             f.set(new Find(l.keys(l.new Slot(i)), l));                          // Reached a leaf
             c.clear();
            }
           void Else()
            {final Branch b = (Branch)q;
-            b.up(p.get()); b.upIndex(P.value());                                // Step down into non full branch
+            b.up(p.get()); b.upIndex(P);                                // Step down into non full branch
             p.set(b);
             c.set();
            }
@@ -2142,6 +2147,7 @@ class Tree extends Test                                                         
   Find next(Find Found)                                                         // Find the next key beyond the one previously found assuming that the structure of the tree has not changed
    {final Ref<Find> f = new Ref<>();                                            // Next key expressed as a find specification
     final Leaf l = Found.leaf;                                                  // Leaf we are currently traversing
+
     new If (root() != null && l.up() != null)                                   // Tree has branches
      {void Then()
        {final Slots.Slot r = Found.locate.at.stepRight();                       // Next slot to the right in the leaf
@@ -2152,7 +2158,7 @@ class Tree extends Test                                                         
           void Else()                                                           // We are at the end of the current branch
            {final Branch U = l.up();                                            // Parent branch of the leaf
 
-            new If (U.top().name().at()  != l.name().at())                      // In the body of the parent branch of the leaf but not at the top of the parent
+            new If (U.top().name().at().ne(l.name().at()))                      // In the body of the parent branch of the leaf but not at the top of the parent
              {void Then()
                {final Slots.Slot u = l.upIndex(U);                              // Next sibling slot right
                 final Slots.Slot R = u != null ? u.stepRight() : null;          // Next sibling slot right
@@ -2169,13 +2175,13 @@ class Tree extends Test                                                         
                    {new For(numberOfNodes)                                      // Step up to turning point
                      {boolean body(int i)
                        {final Branch P = p.get(), Q = q.get();
-                        new If (P.top().name().at() != Q.name().at())           // In the body of the parent branch of the leaf
+                        new If (P.top().name().at().ne(Q.name().at()))          // In the body of the parent branch of the leaf
                          {void Then()
-                           {final Int        I = Q.upIndex();                   // Not null because we are not at the root
+                           {final Int        I = Q.upIndex();                  // Not null because we are not at the root
                             final Slots.Slot R = P.new Slot(I).stepRight();     // Next sibling to the right
                             final boolean    r = R != null;                     // Next sibling to the right exists
                             final Branch b = (Branch)(r ? P.data(R) : P.top()); // Must be a branch as we are going up through the tree
-                            b.up(p.get());  b.upIndex(r ? R.value() : null);
+                            b.up(p.get());  b.upIndex(r ? R         : null);
                             f.set(goFirst(b));
                            }
                           void Else()                                           // Go up one more level
@@ -2200,12 +2206,13 @@ class Tree extends Test                                                         
   Find prev(Find Found)                                                         // Find the previous key before the one previously found assuming that the structure of the tree has not changed
    {final Ref<Find> f = new Ref<>();                                            // Details of located previous key expressed as a find specification
     final Leaf l = Found.leaf;                                                  // The leaf we are currently traversing
+
     new If (root() != null && l.up() != null)                                   // Tree is not empty and not a leaf that we are at the end of
      {void Then()
        {final Slots.Slot s = Found.locate.at.stepLeft();                        // Previous slot in leaf
         new If (s != null)
          {void Then()
-          {f.set(new Find(l.keys(s), l));
+           {f.set(new Find(l.keys(s), l));
            }
           void Else()
            {final Branch P = l.up();                                            // Parent
@@ -2217,7 +2224,7 @@ class Tree extends Test                                                         
                 f.set(new Find(L.lastKey(), L));
                }
               void Else()
-               {new If (l.upIndex(P).value() != l.locateFirstUsedSlot().value())// Not the first leaf of the parent branch
+               {new If (l.upIndex(P).ne(l.locateFirstUsedSlot()))               // Not the first leaf of the parent branch
                  {void Then()
                    {final Slots.Slot U = l.upIndex(P);
                     final Slots.Slot u = U.stepLeft();
@@ -2233,17 +2240,17 @@ class Tree extends Test                                                         
                      {void Then()
                        {new For(numberOfNodes)                                  // Go up to the last point where we went left
                          {boolean body(int i)
-                           {new If (q.get().upIndex() == null)                  // In the body of the parent branch of the leaf
+                           {new If (!q.get().upIndex().valid())                  // In the body of the parent branch of the leaf
                              {void Then()
-                               {final Branch      P = p.get();
-                                 final Slots.Slot I = P.locateLastUsedSlot();
-                                final Branch      b = (Branch)P.data(I);
-                                b.up(p.get());    b.upIndex(I.value());
+                               {final Branch     P = p.get();
+                                final Slots.Slot I = P.locateLastUsedSlot();
+                                final Branch     b = (Branch)P.data(I);
+                                b.up(p.get());   b.upIndex(I);
                                 f.set(goLast(b));
                                }
                               void Else()                                       // Go up to next branch
                                {q.set(p);
-                                p.set(q.get().up());
+                                if (q.valid()) p.set(q.get().up());
                                }
                              };
                             return !f.valid() && p.valid();                     // Continue until we find the first leaf
@@ -2276,7 +2283,7 @@ class Tree extends Test                                                         
     final StringJoiner s = new StringJoiner(",");
     for (int i : range(L.numberOfSlots()))
      {final Slots.Slot l = L.new Slot(i);
-      if (L.usedSlots(l)) s.add(""+L.keys(l).value());
+      if (L.usedSlots(l)) s.add(""+L.keys(l).i());
      }
     final int N = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(N+0).append(s);
@@ -2307,7 +2314,7 @@ class Tree extends Test                                                         
           if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b) printBranch((Branch)s, P, level+1, Details, B, i);
 
-            P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).value());         // Key
+            P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).i());         // Key
           if (Details)
            {P.elementAt(L+1).append("["+B.name().at()+"."+i+"]");               // Branch, key, next pair
             final String U = Parent != null ? ""+Parent.name().at() : "*";      // Parent up from descent
@@ -2506,7 +2513,7 @@ class Tree extends Test                                                         
     s.insert(Key(11));
     ok(s.printInOrder(), "11, 12, 13, 14, 15, 16, 17, 18");
                         ok(s.empty(), false);
-                        ok(s.full(), true);
+                        ok(s.full(),  true);
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2583,9 +2590,9 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
 keys     :   28   0  26   0  24   0   0  22
 """);
-    ok(s.locateFirstGe(Key(23)).value(),    5);
-    ok(s.locateFirstGe(Key(24)).value(),    5);
-    ok(s.locateFirstGe(Key(25)).value(),    9);
+    ok(s.locateFirstGe(Key(23)).i(),    5);
+    ok(s.locateFirstGe(Key(24)).i(),    5);
+    ok(s.locateFirstGe(Key(25)).i(),    9);
     ok(s.locateFirstGe(Key(30)) == null, true);
    }
 
@@ -2643,8 +2650,8 @@ usedRefs :    .   .   .   .   X   X   X   X
 keys     :    0   0   0   0  11  12  13  14
 """);
 
-    ok(s.firstKey().value(), 11);
-    ok(s. lastKey().value(), 14);
+    ok(s.firstKey().i(), 11);
+    ok(s. lastKey().i(), 14);
    }
 
   static void test_memory()
@@ -2807,7 +2814,6 @@ data     :    0   0   0   0  21  22  23  24
   static void test_compactBranchLeft()
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
-Tree.debug = true;
     b.insert(Key(12), t.fake(t.new Allocation(22)));
     b.insert(Key(11), t.fake(t.new Allocation(21)));
     b.insert(Key(13), t.fake(t.new Allocation(23)));
@@ -2884,7 +2890,7 @@ top      :   -4
   static Leaf test_leaf()
    {final Leaf  l = new Tree(8).new Leaf();
     final Data[]d = test_leaf_data(13, 16, 15, 18, 17, 14, 12, 11);
-    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].value()), d[i]);
+    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].i()), d[i]);
     return l;
    }
 
@@ -2955,6 +2961,7 @@ data     :   13  16  15  18  17  14  12  11
 keys: 11, 12, 13, 14
 data: 11, 12, 13, 14
 """);
+
     ok(r.printInOrder(), """
 keys: 15, 16, 17, 18
 data: 15, 16, 17, 18
@@ -3028,7 +3035,7 @@ keys: 15, 16, 17
 data: -5, -6, -7
 top : 8
 """);
-    ok(s.key.value(), 14);
+    ok(s.key.i(), 14);
    }
 
   static void test_splitRightBranchIntoLeft()
@@ -3046,20 +3053,20 @@ keys: 15, 16, 17
 data: -5, -6, -7
 top : 8
 """);
-    ok(s.key.value(), 14);
+    ok(s.key.i(), 14);
    }
 
   static Leaf test_leaf1()
    {final Leaf  l = new Tree(8,7).new Leaf();
     final Data[]d = test_leaf_data(13, 14, 12, 11);
-    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].value()), d[i]);
+    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].i()), d[i]);
     return l;
    }
 
   static Leaf test_leaf2()
    {final Leaf  l = new Tree(8,7).new Leaf();
     final Data[]d = test_leaf_data(16, 15, 18, 17);
-    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].value()), d[i]);
+    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].i()), d[i]);
     return l;
    }
 
@@ -3566,7 +3573,9 @@ Path        : 7, 9
         4        8           12                          20            24            28           |
 1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
 """);
+
     final Find n1 = t.first();
+
     ok(n1, """
 Find Key : 1
 Leaf     : 12 up: 7 index: 0
@@ -3581,37 +3590,37 @@ Locate      : 0 exact
 Path        : 7, 9
 """);
 
-    final Find  n2 = t.next(n1);  ok(n2.key.value(),   2);
-    final Find  n3 = t.next(n2);  ok(n3.key.value(),   3);
-    final Find  n4 = t.next(n3);  ok(n4.key.value(),   4);
-    final Find  n5 = t.next(n4);  ok(n5.key.value(),   5);
-    final Find  n6 = t.next(n5);  ok(n6.key.value(),   6);
-    final Find  n7 = t.next(n6);  ok(n7.key.value(),   7);
-    final Find  n8 = t.next(n7);  ok(n8.key.value(),   8);
-    final Find  n9 = t.next(n8);  ok(n9.key.value(),   9);
-    final Find n10 = t.next(n9);  ok(n10.key.value(), 10);
-    final Find n11 = t.next(n10); ok(n11.key.value(), 11);
-    final Find n12 = t.next(n11); ok(n12.key.value(), 12);
-    final Find n13 = t.next(n12); ok(n13.key.value(), 13);
-    final Find n14 = t.next(n13); ok(n14.key.value(), 14);
-    final Find n15 = t.next(n14); ok(n15.key.value(), 15);
-    final Find n16 = t.next(n15); ok(n16.key.value(), 16);
-    final Find n17 = t.next(n16); ok(n17.key.value(), 17);
-    final Find n18 = t.next(n17); ok(n18.key.value(), 18);
-    final Find n19 = t.next(n18); ok(n19.key.value(), 19);
-    final Find n20 = t.next(n19); ok(n20.key.value(), 20);
-    final Find n21 = t.next(n20); ok(n21.key.value(), 21);
-    final Find n22 = t.next(n21); ok(n22.key.value(), 22);
-    final Find n23 = t.next(n22); ok(n23.key.value(), 23);
-    final Find n24 = t.next(n23); ok(n24.key.value(), 24);
-    final Find n25 = t.next(n24); ok(n25.key.value(), 25);
-    final Find n26 = t.next(n25); ok(n26.key.value(), 26);
-    final Find n27 = t.next(n26); ok(n27.key.value(), 27);
-    final Find n28 = t.next(n27); ok(n28.key.value(), 28);
-    final Find n29 = t.next(n28); ok(n29.key.value(), 29);
-    final Find n30 = t.next(n29); ok(n30.key.value(), 30);
-    final Find n31 = t.next(n30); ok(n31.key.value(), 31);
-    final Find n32 = t.next(n31); ok(n32.key.value(), 32);
+    final Find  n2 = t.next(n1);  ok(n2.key.i(),   2);
+    final Find  n3 = t.next(n2);  ok(n3.key.i(),   3);
+    final Find  n4 = t.next(n3);  ok(n4.key.i(),   4);
+    final Find  n5 = t.next(n4);  ok(n5.key.i(),   5);
+    final Find  n6 = t.next(n5);  ok(n6.key.i(),   6);
+    final Find  n7 = t.next(n6);  ok(n7.key.i(),   7);
+    final Find  n8 = t.next(n7);  ok(n8.key.i(),   8);
+    final Find  n9 = t.next(n8);  ok(n9.key.i(),   9);
+    final Find n10 = t.next(n9);  ok(n10.key.i(), 10);
+    final Find n11 = t.next(n10); ok(n11.key.i(), 11);
+    final Find n12 = t.next(n11); ok(n12.key.i(), 12);
+    final Find n13 = t.next(n12); ok(n13.key.i(), 13);
+    final Find n14 = t.next(n13); ok(n14.key.i(), 14);
+    final Find n15 = t.next(n14); ok(n15.key.i(), 15);
+    final Find n16 = t.next(n15); ok(n16.key.i(), 16);
+    final Find n17 = t.next(n16); ok(n17.key.i(), 17);
+    final Find n18 = t.next(n17); ok(n18.key.i(), 18);
+    final Find n19 = t.next(n18); ok(n19.key.i(), 19);
+    final Find n20 = t.next(n19); ok(n20.key.i(), 20);
+    final Find n21 = t.next(n20); ok(n21.key.i(), 21);
+    final Find n22 = t.next(n21); ok(n22.key.i(), 22);
+    final Find n23 = t.next(n22); ok(n23.key.i(), 23);
+    final Find n24 = t.next(n23); ok(n24.key.i(), 24);
+    final Find n25 = t.next(n24); ok(n25.key.i(), 25);
+    final Find n26 = t.next(n25); ok(n26.key.i(), 26);
+    final Find n27 = t.next(n26); ok(n27.key.i(), 27);
+    final Find n28 = t.next(n27); ok(n28.key.i(), 28);
+    final Find n29 = t.next(n28); ok(n29.key.i(), 29);
+    final Find n30 = t.next(n29); ok(n30.key.i(), 30);
+    final Find n31 = t.next(n30); ok(n31.key.i(), 31);
+    final Find n32 = t.next(n31); ok(n32.key.i(), 32);
     final Find n33 = t.next(n32); ok(n33 == null, true);
 
     ok(t.last(), """
@@ -3629,38 +3638,40 @@ Path        : 2, 9
 """);
 
 
-    final Find p31 = t.prev(n32); ok(p31.key.value(), 31);
-    final Find p30 = t.prev(p31); ok(p30.key.value(), 30);
-    final Find p29 = t.prev(p30); ok(p29.key.value(), 29);
-    final Find p28 = t.prev(p29); ok(p28.key.value(), 28);
-    final Find p27 = t.prev(p28); ok(p27.key.value(), 27);
-    final Find p26 = t.prev(p27); ok(p26.key.value(), 26);
-    final Find p25 = t.prev(p26); ok(p25.key.value(), 25);
-    final Find p24 = t.prev(p25); ok(p24.key.value(), 24);
-    final Find p23 = t.prev(p24); ok(p23.key.value(), 23);
-    final Find p22 = t.prev(p23); ok(p22.key.value(), 22);
-    final Find p21 = t.prev(p22); ok(p21.key.value(), 21);
-    final Find p20 = t.prev(p21); ok(p20.key.value(), 20);
-    final Find p19 = t.prev(p20); ok(p19.key.value(), 19);
-    final Find p18 = t.prev(p19); ok(p18.key.value(), 18);
-    final Find p17 = t.prev(p18); ok(p17.key.value(), 17);
-    final Find p16 = t.prev(p17); ok(p16.key.value(), 16);
-    final Find p15 = t.prev(p16); ok(p15.key.value(), 15);
-    final Find p14 = t.prev(p15); ok(p14.key.value(), 14);
-    final Find p13 = t.prev(p14); ok(p13.key.value(), 13);
-    final Find p12 = t.prev(p13); ok(p12.key.value(), 12);
-    final Find p11 = t.prev(p12); ok(p11.key.value(), 11);
-    final Find p10 = t.prev(p11); ok(p10.key.value(), 10);
-    final Find  p9 = t.prev(p10); ok(p9.key.value(),   9);
-    final Find  p8 = t.prev(p9);  ok(p8.key.value(),   8);
-    final Find  p7 = t.prev(p8);  ok(p7.key.value(),   7);
-    final Find  p6 = t.prev(p7);  ok(p6.key.value(),   6);
-    final Find  p5 = t.prev(p6);  ok(p5.key.value(),   5);
-    final Find  p4 = t.prev(p5);  ok(p4.key.value(),   4);
-    final Find  p3 = t.prev(p4);  ok(p3.key.value(),   3);
-    final Find  p2 = t.prev(p3);  ok(p2.key.value(),   2);
-    final Find  p1 = t.prev(p2);  ok(p1.key.value(),   1);
-    final Find  p0 = t.prev(p1);  ok(p0 == null, true);
+    final Find p31 = t.prev(n32); ok(p31.key.i(), 31);
+    final Find p30 = t.prev(p31); ok(p30.key.i(), 30);
+    final Find p29 = t.prev(p30); ok(p29.key.i(), 29);
+    final Find p28 = t.prev(p29); ok(p28.key.i(), 28);
+    final Find p27 = t.prev(p28); ok(p27.key.i(), 27);
+    final Find p26 = t.prev(p27); ok(p26.key.i(), 26);
+    final Find p25 = t.prev(p26); ok(p25.key.i(), 25);
+    final Find p24 = t.prev(p25); ok(p24.key.i(), 24);
+    final Find p23 = t.prev(p24); ok(p23.key.i(), 23);
+    final Find p22 = t.prev(p23); ok(p22.key.i(), 22);
+    final Find p21 = t.prev(p22); ok(p21.key.i(), 21);
+    final Find p20 = t.prev(p21); ok(p20.key.i(), 20);
+    final Find p19 = t.prev(p20); ok(p19.key.i(), 19);
+    final Find p18 = t.prev(p19); ok(p18.key.i(), 18);
+    final Find p17 = t.prev(p18); ok(p17.key.i(), 17);
+    final Find p16 = t.prev(p17); ok(p16.key.i(), 16);
+    final Find p15 = t.prev(p16); ok(p15.key.i(), 15);
+    final Find p14 = t.prev(p15); ok(p14.key.i(), 14);
+    final Find p13 = t.prev(p14); ok(p13.key.i(), 13);
+    final Find p12 = t.prev(p13); ok(p12.key.i(), 12);
+    final Find p11 = t.prev(p12); ok(p11.key.i(), 11);
+    final Find p10 = t.prev(p11); ok(p10.key.i(), 10);
+    final Find  p9 = t.prev(p10); ok(p9.key.i(),   9);
+    final Find  p8 = t.prev(p9);  ok(p8.key.i(),   8);
+    final Find  p7 = t.prev(p8);  ok(p7.key.i(),   7);
+    final Find  p6 = t.prev(p7);  ok(p6.key.i(),   6);
+    final Find  p5 = t.prev(p6);  ok(p5.key.i(),   5);
+    final Find  p4 = t.prev(p5);  ok(p4.key.i(),   4);
+    final Find  p3 = t.prev(p4);  ok(p3.key.i(),   3);
+    final Find  p2 = t.prev(p3);  ok(p2.key.i(),   2);
+    final Find  p1 = t.prev(p2);  ok(p1.key.i(),   1);
+Tree.debug = true;
+    final Find  p0 = t.prev(p1);
+    ok(p0 == null, true);
    }
 
   static Tree test_insert_random_32()
@@ -4102,16 +4113,16 @@ Delete 22
     for (int i = 1; i <= N; ++i) {t.insert(Key(i), new Data(i)); t.freeCheck();}
     //stop(t.dump());
     ok(t.dump(), """
-                                                                                     8                                                                                                   16                                                                                               24                                                                                   |
-                                                                                    [5.0]                                                                                               [5.2]                                                                                            [5.4]                                                                                 |
-                                                                                    (20, *, *)                                                                                          (13, *, *)                                                                                       (11, *, *){2}                                                                         |
-                                                                                    (20, 19, null)                                                                                      (13, 19, null)                                                                                   (11, 19, null)                                                                        |
-           2                       4                        6                                                 10                       12                       14                                               18                      20                       22                                             26                   28                   30                  |
-          [20.0]                  [20.2]                   [20.4]                                            [13.0]                   [13.2]                   [13.4]                                           [11.0]                  [11.2]                   [11.4]                                         [2.0]                [2.2]                [2.4]                |
-          (3, 5, 0)               (21, 5, 0)               (22, 5, 0){23}                                    (16, 5, 2)               (17, 5, 2)               (24, 5, 2){14}                                   (7, 5, 4)               (12, 5, 4)               (15, 5, 4){6}                                  (1, 5, *)            (8, 5, *)            (4, 5, *){9}         |
-          (3, -1, null)           (21, -1, null)           (22, -1, null)                                    (16, -1, null)           (17, -1, null)           (24, -1, null)                                   (7, -1, null)           (12, -1, null)           (15, -1, null)                                 (1, 5, null)         (8, 5, null)         (4, 5, null)         |
-1,2                    3,4                      5,6                      7,8                      9,10                     11,12                    13,14                    15,16                    17,18                  19,20                    21,22                    23,24                   25,26                27,28                29,30                31,32    |
-(3, 20, 0)             (21, 20, 2)              (22, 20, 4)              (23, 20, *)              (16, 13, 0)              (17, 13, 2)              (24, 13, 4)              (14, 13, *)              (7, 11, 0)             (12, 11, 2)              (15, 11, 4)              (6, 11, *)              (1, 2, 0)            (8, 2, 2)            (4, 2, 4)            (9, 2, *)|
+                                                                               8                                                                                          16                                                                                     24                                                                            |
+                                                                              [5.0]                                                                                      [5.2]                                                                                  [5.4]                                                                          |
+                                                                              (20, *, *)                                                                                 (13, *, *)                                                                             (11, *, *){2}                                                                  |
+                                                                              (20, 19, 0)                                                                                (13, 19, 0)                                                                            (11, 19, 0)                                                                    |
+           2                    4                     6                                              10                    12                    14                                            18                   20                    22                                           26                28                30                  |
+          [20.0]               [20.2]                [20.4]                                         [13.0]                [13.2]                [13.4]                                        [11.0]               [11.2]                [11.4]                                       [2.0]             [2.2]             [2.4]                |
+          (3, 5, 0)            (21, 5, 0)            (22, 5, 0){23}                                 (16, 5, 2)            (17, 5, 2)            (24, 5, 2){14}                                (7, 5, 4)            (12, 5, 4)            (15, 5, 4){6}                                (1, 5, *)         (8, 5, *)         (4, 5, *){9}         |
+          (3, -1, 0)           (21, -1, 0)           (22, -1, 0)                                    (16, -1, 0)           (17, -1, 0)           (24, -1, 0)                                   (7, -1, 0)           (12, -1, 0)           (15, -1, 0)                                  (1, 5, 0)         (8, 5, 0)         (4, 5, 0)            |
+1,2                 3,4                   5,6                      7,8                   9,10                  11,12                 13,14                    15,16                 17,18               19,20                 21,22                   23,24                  25,26             27,28             29,30                31,32    |
+(3, 20, 0)          (21, 20, 2)           (22, 20, 4)              (23, 20, *)           (16, 13, 0)           (17, 13, 2)           (24, 13, 4)              (14, 13, *)           (7, 11, 0)          (12, 11, 2)           (15, 11, 4)             (6, 11, *)             (1, 2, 0)         (8, 2, 2)         (4, 2, 4)            (9, 2, *)|
 """);
    }
 
