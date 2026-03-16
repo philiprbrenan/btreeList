@@ -1150,7 +1150,8 @@ public class Test                                                               
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
     private String  n = null;                                                   // An optional name for this variable
-    boolean valid()  {return v;}
+    boolean valid()    {return  v;}                                             // A valid integer
+    boolean notValid() {return !v;}                                             // A not valid integer
 
     Int           (int I) {       i = I;   v = true;}
     Int           (Int I) {       if (I != null) {i = I.i; v = I.v;}}
