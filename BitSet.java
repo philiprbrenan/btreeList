@@ -415,10 +415,10 @@ abstract public class BitSet extends Test                                       
         final Int p = addressZeroTree();                                        // Position in bits
         final Pos q = new Pos(b.Inc());
         if (!getBit(q))                                                         // Next bit is zero
-         {R.i(q.i());
+         {R.i(q.i());                                                           // Location of next bit
           return;
          }
-        if (bitSize == 2) return;                                               // No more bits to check
+        if (bitSize == 2) return;                                               // No more bits to check because the bitset if trivially small
         b.down();                                                               // First layer of zero tree bits
 
         new For(bitSize)                                                        // Search down through the zero bit tree
@@ -459,36 +459,45 @@ abstract public class BitSet extends Test                                       
    }
 
   public Pos prevZero(Pos Index)                                                // Find the index of the previous set bit below the specified bit
-   {checkZero();
+   {final Int R = new Int();                                                    // Result
+    checkZero();
     checkIndex(Index.position());
 
     final Int b = Index.position();
-    if (b.eq(0))                   return null;                                 // First bit so no prev bit
-    if (!getBit(new Pos(b.Dec()))) return new Pos(b.Dec());                     // Prev bit is zero
-    if (bitSize == 2)              return null;                                 // No more bits to check
+    new If (b.ne(0))                                                            // Not the first bit so there might be a previous bit
+     {void Then()
+       {new If (new Bool(getBit(new Pos(b.Dec()))).flip())                      // Prev bit is zero
+         {void Then()
+           {R.i(b.Dec());
+           }
+          void Else()
+           {if (bitSize == 2) return;                                           // No more bits to check
 
-    final Int w = new Int(bitSize>>>1), p = addressZeroTree(); b.down();        // First layer of zero tree bits
+            final Int w = new Int(bitSize>>>1), p = addressZeroTree(); b.down();// First layer of zero tree bits
 
-    final Int R = new Int();                                                    // Result
-    new For(bitSize)                                                            // Search down through the zero bit tree
-     {boolean body(int i)                                                       // Search down through the zero bit tree
-       {final Int B = b.Dec();                                                  // Is there a path down from the next bit?
-        final Bool d = new Bool().clear();                                      // Whether we have arrived at a bit that is already correctly set
-        if (B.lt(0)) return false;                                              // Nothing prior to search so no prev zero
-        if (getBitNC(new Pos(p.Add(B))))                                        // Found next up bit
-         {new For(i)                                                            // Step down to the leaves
-           {boolean body(int j)                                                 // Step down to the leaves
-             {b.up(); moveUpOneLayer(B, p, w);                                  // Move up one layer
-              B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);                       // Follow path as high as possible
-              return true;
-             }
-           };
-          final Int BB = B.Add(B), CC = BB.dup().inc();
-          R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));                            // Next zero bit from actual bits
-          d.set();
-         }
-        moveDownOneLayer(b, p, w); if (w.eq(0)) d.set();                        // Address next level of bits in tree
-        return !d.b();
+            new For(bitSize)                                                    // Search down through the zero bit tree
+             {boolean body(int i)                                               // Search down through the zero bit tree
+               {final Int B = b.Dec();                                          // Is there a path down from the next bit?
+                final Bool d = new Bool().clear();                              // Whether we have arrived at a bit that is already correctly set
+                if (B.lt(0)) return false;                                      // Nothing prior to search so no prev zero
+                if (getBitNC(new Pos(p.Add(B))))                                // Found next up bit
+                 {new For(i)                                                    // Step down to the leaves
+                   {boolean body(int j)                                         // Step down to the leaves
+                     {b.up(); moveUpOneLayer(B, p, w);                          // Move up one layer
+                      B.add(getBitNC(new Pos(p.Add(b))) ? 0 : 1);               // Follow path as high as possible
+                      return true;
+                     }
+                   };
+                  final Int BB = B.Add(B), CC = BB.dup().inc();
+                  R.i(BB.add(!getBit(new Pos(CC)) ? 1 : 0));                    // Next zero bit from actual bits
+                  d.set();
+                 }
+                moveDownOneLayer(b, p, w); if (w.eq(0)) d.set();                // Address next level of bits in tree
+                return !d.b();
+               }
+             };
+           }
+         };
        }
      };
     return R.valid() ? new Pos(R) : null;                                       // Result if found
@@ -557,7 +566,7 @@ abstract public class BitSet extends Test                                       
     if (one && zero)                                                            // Print zero search tree block if both one and zero bit trees are present
      {r.i(bitSize>>>1);
       s.append("Zero:\n");
-      for   (int i : range(1, bitSize))                                     // Each level
+      for   (int i : range(1, bitSize))                                         // Each level
        {s.append(f("%4d %4d %4d |", i, p.i(), r.i()));
         for (int j : range(r))                                                  // Bits in level
          {s.append(f("  %1d", getBitNC(new Pos(p.Add(j))) ? 1 : 0));
