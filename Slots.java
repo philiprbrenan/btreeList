@@ -548,8 +548,8 @@ public class Slots extends Test                                                 
 
 
     int     slots       (int Index) {return bytes.getInt(posSlots + Index * Integer.BYTES);}
-    boolean usedSlots   (int Index) {return usedSlotsBits.getBit(usedSlotsBits.new Pos(Index));}
-    boolean usedRefs    (int Index) {return usedRefsBits .getBit(usedRefsBits .new Pos(Index));}
+    boolean usedSlots   (int Index) {return usedSlotsBits.getBit(usedSlotsBits.new Pos(Index)).b();}
+    boolean usedRefs    (int Index) {return usedRefsBits .getBit(usedRefsBits .new Pos(Index)).b();}
     int     keys        (int Index) {return bytes.getInt(posKeys  + Index * Integer.BYTES);}
     int     name        (         ) {return bytes.getInt(posName);}
 
