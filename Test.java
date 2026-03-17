@@ -1046,6 +1046,8 @@ public class Test                                                               
    {private boolean i = false;                                                  // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
     private String  n = null;                                                   // An optional name for this variable
+    final static Bool  True = new Bool(true);                                   // Useful constants
+    final static Bool False = new Bool(false);
     Bool      valid() {return new Bool(v);}
 
     Bool           ()          {}
