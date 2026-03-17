@@ -141,19 +141,19 @@ class Tree extends Test                                                         
     final Set<Integer> f = new TreeSet<>();
     final Set<Integer> u = new TreeSet<>();
 
-    for(Allocation i : freeChain) f.add(i.at().i());
+    for(Allocation i : freeChain) f.add(i.i());
 
     for(Leaf l : a.leaves)
      {final Allocation  n = l.name();
-      if (freeChain.contains(n)) stop("Leaf on free chain and in tree:",n.at());
-      u.add(n.at().i());
+      if (freeChain.contains(n)) stop("Leaf on free chain and in tree:", n);
+      u.add(n.i());
       ((Slots)l).memory.usedSlotsBits.integrity();
       ((Slots)l).memory.usedRefsBits .integrity();
      }
     for(Branch b : a.branches)
      {final Allocation  n = b.name();
       if (freeChain.contains(n)) stop("Branch on free chain and in tree:", n);
-      u.add(n.at().i());
+      u.add(n.i());
       ((Slots)b).memory.usedSlotsBits.integrity();
       ((Slots)b).memory.usedRefsBits .integrity();
      }
@@ -318,7 +318,7 @@ class Tree extends Test                                                         
     void key(slot I, Key Key)       {memory.keys(I, Key);}                      // Set the key directly
 
     Allocation name() {return new Allocation(memory.name());}                   // Get the name
-    void name(Allocation Name)              {memory.name(Name.at());}           // Set the name
+    void name(Allocation Name)              {memory.name(Name);}                // Set the name
 
     Int  type()  {return memory.type();}                                        // Get the type
     void type(Int Type) {memory.type(Type);}                                    // Set the type
@@ -599,7 +599,7 @@ class Tree extends Test                                                         
              {new If (l.above)                                                  // Insert their key above the found key
                {void Then()
                  {final Int i = l;
-                  final Int w = new Int(locateNearestFreeSlot(l.at()));         // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                  final Int w = new Int(locateNearestFreeSlot(l));              // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                   new If (w.gt(0))                                              // Move up
                    {void Then()                                                 // Move up
                      {shift             (i.Inc(), w.Dec());                     // Liberate a slot at this point
@@ -624,8 +624,8 @@ class Tree extends Test                                                         
                 void Else()
                  {new If (l.below)                                              // Insert their key below the found key
                    {void Then()
-                     {final Int i = l.at();
-                      final Int w = new Slot(locateNearestFreeSlot(l.at()));    // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
+                     {final Int i = l;
+                      final Int w = new Slot(locateNearestFreeSlot(l));         // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                       new If (w.gt(0))                                          // Move up
                        {void Then()                                             // Move up
                          {shift(i, w);                                          // Liberate a slot at this point
