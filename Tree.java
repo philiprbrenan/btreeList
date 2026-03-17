@@ -2148,19 +2148,21 @@ class Tree extends Test                                                         
 
   Find first()                                                                  // Find the position of the first key in the key
    {final Ref<Find> f = new Ref<>();
-    if (root() != null)                                                         // Non empty tree
-     {new If (Leaf.ref(root()))                                                 // The tree is one leaf
-       {void Then()
-         {final Leaf       l = (Leaf)root();
-          final Slots.Slot i = l.locateFirstUsedSlot();
-          l.up(null); l.upIndex(i);
-          f.set(new Find(l.keys(i), l));
-         }
-        void Else()                                                             // The tree has at least one branch
-         {f.set(goFirst((Branch)root()));                                       // Start at root and go all the way first
-         }
-       };
-     }
+    new If (root() != null)                                                     // Non empty tree
+     {void Then()
+       {new If (Leaf.ref(root()))                                               // The tree is one leaf
+         {void Then()
+           {final Leaf       l = (Leaf)root();
+            final Slots.Slot i = l.locateFirstUsedSlot();
+            l.up(null); l.upIndex(i);
+            f.set(new Find(l.keys(i), l));
+           }
+          void Else()                                                           // The tree has at least one branch
+           {f.set(goFirst((Branch)root()));                                     // Start at root and go all the way first
+           }
+         };
+       }
+     };
     return f.get();
    }
 
@@ -2200,20 +2202,22 @@ class Tree extends Test                                                         
 
   Find last()                                                                   // Find the position of the last key in the tree
    {final Ref<Find> f = new Ref<>();
-    if (root() != null)                                                         // Non empty tree
-     {new If (Leaf.ref(root()))
-       {void Then()
-         {final Leaf l = (Leaf)root();
-          final Int  i = l.locateLastUsedSlot().value();
-          l.up(null);
-          l.upIndex(l.new Slot());
-          f.set(new Find(l.keys(l. new Slot(i)), l));
-         }
-        void Else()
-         {f.set(goLast((Branch)root()));                                        // Start at root and go all the way last
-         }
-       };
-     }
+    new If (root() != null)                                                     // Non empty tree
+     {void Then()
+       {new If (Leaf.ref(root()))
+         {void Then()
+           {final Leaf l = (Leaf)root();
+            final Int  i = l.locateLastUsedSlot().value();
+            l.up(null);
+            l.upIndex(l.new Slot());
+            f.set(new Find(l.keys(l. new Slot(i)), l));
+           }
+          void Else()
+           {f.set(goLast((Branch)root()));                                      // Start at root and go all the way last
+           }
+         };
+       }//
+     };
     return f.get();
    }
 
