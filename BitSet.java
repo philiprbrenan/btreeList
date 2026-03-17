@@ -311,7 +311,7 @@ abstract public class BitSet extends Test                                       
 
   public Pos firstOne()                                                         // Find the index of the first set bit
    {checkOne();
-    final Pos p = new Pos(new Int(0));
+    final Pos p = new Pos(Int.zero);
     return getBit(p).b() ? p : nextOne(p);
    }
 
@@ -397,7 +397,7 @@ abstract public class BitSet extends Test                                       
 
   public Pos firstZero()                                                        // Find the index of the first set bit
    {checkZero();
-    final Pos p = new Pos(new Int(0));
+    final Pos p = new Pos(Int.zero);
     return !getBit(p).b() ? p : nextZero(p);
    }
 
@@ -484,7 +484,7 @@ abstract public class BitSet extends Test                                       
 
             new For(bitSize)                                                    // Search down through the zero bit tree
              {Bool body(int i)                                                  // Search down through the zero bit tree
-               {final Int B = b.Dec();                                          // Is there a path down from the next bit?
+               {final Int  B = b.Dec();                                         // Is there a path down from the next bit?
                 final Bool d = new Bool().clear();                              // Whether we have arrived at a bit that is already correctly set
                 new If (B.lt(0))                                                // Nothing prior to search so no prev zero
                  {void Then()
@@ -670,7 +670,7 @@ Zero:
     for (int i : range(23, 28)) ok(b.nextZero(b.new Pos( i)).position(), 29);
     for (int i : range(29, 32)) ok(b.nextZero(b.new Pos( i)).notValid());
 
-                                ok(b.prevZero(b.new Pos(new Int(0))).notValid());
+                                ok(b.prevZero(b.new Pos(Int.zero)).notValid());
     for (int i : range( 1, 14)) ok(b.prevZero(b.new Pos( i)).position(), i-1);
                                 ok(b.prevZero(b.new Pos(14)).position(), 12);
     for (int i : range(15, 19)) ok(b.prevZero(b.new Pos( i)).position(), i-1);
@@ -727,7 +727,7 @@ Zero:
     for (int i : range( 7, 11)) ok(b.nextOne(b.new Pos(i)).position(), new Int(i).inc());
     for (int i : range(11, 16)) ok(b.nextOne(b.new Pos(i)).notValid());
 
-                                ok(b.prevOne(b.new Pos(new Int(0))).notValid());
+                                ok(b.prevOne(b.new Pos(Int.zero)).notValid());
     for (int i : range( 1,  5)) ok(b.prevOne(b.new Pos(i)).position(), new Int(i).dec());
     for (int i : range( 4,  9)) ok(b.prevOne(b.new Pos(i)).position(), 3);
     for (int i : range( 9, 12)) ok(b.prevOne(b.new Pos(i)).position(), new Int(i).dec());
@@ -762,7 +762,7 @@ Zero:
     for (int i : range( 7, 11)) ok(b.nextZero(b.new Pos(i)).position(), new Int(i).inc());
     for (int i : range(11, 16)) ok(b.nextZero(b.new Pos(i)).notValid());
 
-                                ok(b.prevZero(b.new Pos(new Int(0))).notValid());
+                                ok(b.prevZero(b.new Pos(Int.zero)).notValid());
     for (int i : range( 1,  5)) ok(b.prevZero(b.new Pos(i)).position(), new Int(i).dec());
     for (int i : range( 4,  8)) ok(b.prevZero(b.new Pos(i)).position(), 3);
     for (int i : range( 9, 13)) ok(b.prevZero(b.new Pos(i)).position(), new Int(i).dec());
