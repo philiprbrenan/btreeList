@@ -163,18 +163,18 @@ abstract public class BitSet extends Test                                       
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
          {Bool body(int Index)
-           {final Bool d = new Bool().clear();                                  // Complete early if we found a bit that does not need setting
+           {final Bool c = new Bool().set();                                    // Complete early if we found a bit that does not need setting
             new If (p.ne(0))                                                    // Not on the actual bits
              {void Then()                                                       // Not on the actual bits
                {final Pos q = new Pos(p.Add(b));                                // Position in One tree
                 new If (getBitNC(q))                                            // Is the bit already set
-                 {void Then() {d.set();}                                        // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+                 {void Then() {c.clear();}                                      // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
                   void Else() {setBitNC(q, true);}                              // Flip the bit and continue
                  };
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next level up
-            return d.Flip().and(()->{return w.gt(0);});                         // As long as we are in a valid level
+            return c.and(()->{return w.gt(0);});                                // As long as we are in a valid level
            }
          };
        }
@@ -192,20 +192,20 @@ abstract public class BitSet extends Test                                       
            {final Int  B = b.Down();
             final Int  q = p.Add(w).add(B);
             final Int  Q = p.Add2(B);
-            final Bool d = new Bool().clear();                                  // Complete early if we found a bit that does not need setting
+            final Bool c = new Bool().set();                                    // Complete early if we found a bit that does not need setting
             new If (B.Up().inc().lt(w).and(                                     // Check both bits in the previous row are off
                   ()->{return getBitNC(new Pos(Q      )).Flip();},
                   ()->{return getBitNC(new Pos(Q.Inc())).Flip();}))
              {void Then()
                {final Pos r = new Pos(q);
                 new If (getBitNC(r).Flip())
-                 {void Then() {d.set();}                                        // Bit is already correctly set so there is nothing more to do
+                 {void Then() {c.clear();}                                      // Bit is already correctly set so there is nothing more to do
                   void Else() {setBitNC(r, false);}                             // Clear set bit along path to root
                  };
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next layer
-            return d.Flip().and(()->{return w.gt(0);});                         // As long as we are in a valid level
+            return c.and(()->{return w.gt(0);});                                // As long as we are in a valid level
            }
          };
        }
@@ -262,20 +262,20 @@ abstract public class BitSet extends Test                                       
                  {Bool body(int Index)
                    {final Int P = p.dup();                                      // Child layer becomes parent layer
                     moveDownOneLayer(b, p, w);                                  // Index of bit in child layer, position in child layer, width of child layer
-                    final Int Q = P.Add(b).add(b);
-                    final Bool d = new Bool().clear();                          // Complete early if we found a bit that does not need setting
+                    final Int  Q = P.Add(b).add(b);
+                    final Bool c = new Bool().set();                            // Complete early if we found a bit that does not need setting
                     new If (getBitNC(new Pos(Q)).or(
                             ()->{return getBitNC(new Pos(Q.Inc()));}))
-                     {void Then() {d.set();}                                    // There is a one in the upper row so we do not need to clear further down
+                     {void Then() {c.clear();}                                  // There is a one in the upper row so we do not need to clear further down
                       void Else()                                               // Need to show that there are no ones in the upper row
                        {final Pos r = new Pos(p.Add(b));                        // Bit to set
                         new If (getBitNC(r).Flip())
-                         {void Then() {d.set();}                                // Bit is already correctly set so there is nothing more to do
+                         {void Then() {c.clear();}                              // Bit is already correctly set so there is nothing more to do
                           void Else() {setBitNC(r, false);}                     // Clear set bit along path to root
                          };
                        }
                      };
-                    return d.Flip().and(()->{return w.gt(0);});                 // As long as we are in a valid level
+                    return c.and(()->{return w.gt(0);});                        // As long as we are in a valid level
                    }
                  };
                }
