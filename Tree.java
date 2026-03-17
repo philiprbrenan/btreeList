@@ -629,12 +629,12 @@ class Tree extends Test                                                         
                       new If (w.gt(0))                                          // Move up
                        {void Then()                                             // Move up
                          {shift(i, w);                                          // Liberate a slot at this point
-                          slots(l.at(), alloc);                                 // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
+                          slots(l, alloc);                                      // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
                          }
                         void Else()
                          {new If (w.lt(0))                                      // Liberate a slot below the current slot
                            {void Then()                                         // Liberate a slot below the current slot
-                             {shift             (i.Dec(),  w.Inc());            // Shift any intervening slots blocking the slot below
+                             {shift             (i.Dec(),   w.Inc());           // Shift any intervening slots blocking the slot below
                               slots    (new Slot(i).left(), alloc);             // Insert into the slot below
                               usedSlots(new Slot(i).left(), new Bool(true));    // Mark the free slot at the start of the range of occupied slots as now in use
                              }
@@ -2263,7 +2263,7 @@ class Tree extends Test                                                         
           void Else()                                                           // We are at the end of the current branch
            {final Branch U = l.up();                                            // Parent branch of the leaf
 
-            new If (U.top().name().ne(l.name().at()))                           // In the body of the parent branch of the leaf but not at the top of the parent
+            new If (U.top().name().ne(l.name()))                                // In the body of the parent branch of the leaf but not at the top of the parent
              {void Then()
                {final Slots.Slot u = l.upIndex(U);                              // Next sibling slot right
                 final Slots.Slot R = u.valid().b() ? u.stepRight() : l.new Slot();  // Next sibling slot right
