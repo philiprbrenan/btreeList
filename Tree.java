@@ -2216,7 +2216,7 @@ class Tree extends Test                                                         
            {f.set(goLast((Branch)root()));                                      // Start at root and go all the way last
            }
          };
-       }//
+       }
      };
     return f.get();
    }
