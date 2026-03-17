@@ -31,7 +31,7 @@ public class Test                                                               
 
   Test Test() {return this;}                                                    // Instance
 
-//D2 String routines                                                            // String routines
+//D1 String routines                                                            // String routines
 
   public static String f(String format, Object...args)                          // Alias for String.format
    {return String.format(format, args);
@@ -157,7 +157,7 @@ public class Test                                                               
       format(DateTimeFormatter.ISO_INSTANT).replace(":", "-");
    }
 
-//D2 Numeric routines                                                           // Numeric routines
+//D1 Numeric routines                                                           // Numeric routines
 
   static int abs(int i) {return i >= 0 ? +i : -i;}                              // Absolute value of integer
 
@@ -259,7 +259,7 @@ public class Test                                                               
    {return Integer.parseInt(dec.replaceAll("[^0-9]", ""));
    }
 
-//D2 Array routines                                                             // Routines operating on arrays
+//D1 Array routines                                                             // Routines operating on arrays
 
    static int[]range(int Limit)                                                 // Range of integers
     {final int[]r = new int[Limit];
@@ -294,7 +294,7 @@ public class Test                                                               
       }
     }
 
-//D2 Traceback                                                                  // Trace back so we know where we are
+//D1 Traceback                                                                  // Trace back so we know where we are
 
   static String fullTraceBack(Exception e)                                      // Get a full stack trace that we can use in Geany
    {final StackTraceElement[]  t = e.getStackTrace();
@@ -425,7 +425,7 @@ public class Test                                                               
     return " /* "+t.replaceAll("\\n", " ")+" */";                               // Finish a statement and show where it came from
    }
 
-//D2 Coverage                                                                   // Analyze code coverage
+//D1 Coverage                                                                   // Analyze code coverage
 
   static final TreeMap<String, Integer> coverage = new TreeMap<>();             // Count of how many times each line has been executed
 
@@ -572,7 +572,7 @@ public class Test                                                               
      }
    }
 
-//D2 Files                                                                      // Operations on files
+//D1 Files                                                                      // Operations on files
 
   static Long fileSize(String file)                                             // Size of a file
    {final Path path = Path.of(file);
@@ -855,7 +855,7 @@ public class Test                                                               
      }
    }
 
-//D2 Timing                                                                     // Print log messages
+//D1 Timing                                                                     // Print log messages
 
   static class Timer                                                            // Time a section of code
    {final long start = System.nanoTime();
@@ -870,7 +870,7 @@ public class Test                                                               
 
   static Timer timer() {return new Timer();}                                    // Create a new timer
 
-//D2 Printing                                                                   // Print log messages
+//D1 Printing                                                                   // Print log messages
 
   static void sayf(String format, Object...O)                                   // Say something under the control of a format string
    {System.err.println(String.format(format, O));
@@ -1416,7 +1416,7 @@ public class Test                                                               
     System.exit(testsFailed > 0 ? 1 : 0);                                       // Set the return code
    }
 
-//D2 Command Execution                                                          // Execute a command and return its stdout and stderr
+//D1 Command Execution                                                          // Execute a command and return its stdout and stderr
 
   static String pwd() {return System.getProperty("user.dir");}                  // Current working folder
 
