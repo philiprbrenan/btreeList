@@ -165,7 +165,7 @@ abstract public class BitSet extends Test                                       
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
          {Bool body(Int Index)
-           {final Bool c = new Bool().set();                                    // Complete early if we found a bit that does not need setting
+           {final Bool c = BoolDec.c().set();                                   // Complete early if we found a bit that does not need setting
             new If (p.ne(0))                                                    // Not on the actual bits
              {void Then()                                                       // Not on the actual bits
                {final Pos q = new Pos(p.Add(b));                                // Position in One tree
@@ -186,7 +186,9 @@ abstract public class BitSet extends Test                                       
   private void clearOnePath(Pos Index)                                          // Clear bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
-     {final Int b = Index.position(), p = new Int(0), w = new Int(bitSize);     // Position in level, level, width
+     {final Int b = Index.position();                                           // Position in level
+      final Int p = IntDec.p().i(0);                                            // Position in bits, width
+      final Int w = IntDec.w().i(bitSize);                                      // Width
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
@@ -194,7 +196,7 @@ abstract public class BitSet extends Test                                       
            {final Int  B = b.Down();
             final Int  q = p.Add(w).add(B);
             final Int  Q = p.Add2(B);
-            final Bool c = new Bool().set();                                    // Complete early if we found a bit that does not need setting
+            final Bool c = BoolDec.c().set();                                   // Complete early if we found a bit that does not need setting
             new If (B.Up().inc().lt(w).and(                                     // Check both bits in the previous row are off
                   ()->{return getBitNC(new Pos(Q      )).Flip();},
                   ()->{return getBitNC(new Pos(Q.Inc())).Flip();}))
@@ -215,7 +217,7 @@ abstract public class BitSet extends Test                                       
    }
 
   private Int addressZeroTree()                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {final Int p = new Int(bitSize);
+   {final Int p = IntDec.p().i(bitSize);
     new If (one) {void Then() {p.add(bitSize).dec();}};                         // Address first bit of zero bit tree
     return p;
    }
@@ -225,7 +227,7 @@ abstract public class BitSet extends Test                                       
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
      {final Int p = addressZeroTree();                                          // Address zero bit tree
       final Int b = Index.position().Down();                                    // Position in layer
-      final Int w = new Int(bitSize >>> 1);                                     // Width of this layer
+      final Int w = IntDec.w().i(new Int(bitSize).down());                      // Width of this layer
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
@@ -600,6 +602,10 @@ abstract public class BitSet extends Test                                       
    }
 
 //D1 Declarations                                                               // Declarations of variables to automate the capture of their names
+
+  class BoolDec                                                                 // By declaring boolean variables in this strange way we can automate the collection of their fully qualified names via a trace back
+   {static Bool c() {return new Bool();}
+   }
 
   class IntDec                                                                  // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
    {static Int p() {return new Int();}
