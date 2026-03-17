@@ -1057,6 +1057,7 @@ public class Test                                                               
     Bool (String N, boolean I) {n = N; i = I; v = true;}
     Bool (String N, Bool    I) {n = N; I.x(); i = I.i; v = I.v;}
 
+    boolean       b()          {      x();               return i;}
     void          x()          {if (!v) stop("Bool has not been set yet");}
     Bool          X()          {v = true; return this;}
 
@@ -1064,14 +1065,12 @@ public class Test                                                               
     Bool        set(boolean I) {i = I;     v = true;     return this;}
     Bool        set(Bool    I) {I.x(); i = I.i; v = I.v; return this;}
     Bool      clear()          {i = false; v = true;     return this;}
-    boolean       b()          {      x();               return i;}
     Bool       flip()          {      x(); i = !i;       return this;}
 
     Bool        Set()          {return dup().set();}
     Bool        Set(boolean I) {return dup().set(I);}
     Bool        Set(Bool    I) {return dup().set(I);}
     Bool      Clear()          {return dup().clear();}
-    boolean       B()          {return dup().b();}
     Bool       Flip()          {return dup().flip();}
 
     Bool         eq(boolean e){  x(); return new Bool(i == e);}
@@ -1677,32 +1676,7 @@ a   aa    AAA
     ok(modZero(4, 4), 4);
     ok(modZero(5, 4), 8);
    }
-/*
-  static void test_bitSetToHex()
-   {if (true)
-     {final BitSet b = new BitSet();
-      b.set(5, true);
-      b.set(3, true);
-      b.set(1, true);
-      ok(bitSetToHex(b),       "2a");
-      ok(bitSetToHex(b, 9),   "02a");
-      ok(bitSetToHex(b, 12),  "02a");
-      ok(bitSetToHex(b, 13), "002a");
-      ok(bitSetToInt(b), 42);
-     }
-    if (true)
-     {final BitSet b = new BitSet();
-      b.set(4, true);
-      b.set(3, true);
-      b.set(1, true);
-      ok(bitSetToHex(b), "1a");
-     }
-    if (true)
-     {final BitSet b = intToBitSet(11);
-      ok(bitSetToHex(b), "b");
-     }
-   }
-*/
+
   static void test_hextoInt()
    {ok(hexToInt("axxx"),  10);
     ok(hexToInt("x1zbx"), 27);
