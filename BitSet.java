@@ -248,7 +248,7 @@ abstract public class BitSet extends Test                                       
 
   private void setZeroPath(Pos Index)                                           // Set bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
    {new Runnable()                                                              // Set bits along the path to the actual bit in the One tree
-     {final Int w = new Int(bitSize>>>1);                                       // Width of child layer
+     {final Int w = IntDec.w().i(new Int(bitSize).down());                      // Width of child layer
       final Int p = addressZeroTree();                                          // First child layer is the first layer of the zero bit tree
       final Int b = Index.position().Down();                                    // Index of bit in child layer
       final Int B = b.Up();                                                     // Position in layer above
