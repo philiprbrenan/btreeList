@@ -362,15 +362,32 @@ class Tree extends Test                                                         
     Int locateNearestFreeSlot(Slot Position)                                    // Relative position of the nearest free slot to the indicated position if there is one.
      {final Int r = new Int(0);
       if (usedSlots(Position).b())                                              // The slot is not free already. If it is not free we do at least get an error if the specified position is invalid
-       {final Int Q = Position.value();
-        final BitSet     s = memory.usedSlotsBits;
+       {final Int        Q = Position.value();                                  // The current position
+        final BitSet     s = memory.usedSlotsBits;                              // The bitset to query
         final BitSet.Pos p = s.prevZero(s.new Pos(Q));                          // Prev free slot
         final BitSet.Pos n = s.nextZero(s.new Pos(Q));                          // Next free slot
-        if (p.notValid().and(()->{return n.notValid();}).b()) stop("No more free slots");
-        if (p.notValid().and(()->{return n.valid()   ;}).b()) return n.position().Sub(Q);     // Next free slot because no prev free slot
-        if (p.valid()   .and(()->{return n.notValid();}).b()) return p.position().Sub(Q);     // Prev free slot because no next free slot
-        final Int P = p.position().Sub(Q), N = n.position().Sub(Q);             // Relative positions
-        r.i((P.Neg().le(N).b() ? P : N));                                       // Choose nearest slow favoring lower slot if they are both the same distance away
+        final Bool       d = new Bool().clear();                                // Done when set
+
+        if (p.notValid().b() && n.notValid().b()) stop("No more free slots");   // The caller should check that the slots are not full before calling us
+
+        new If (p.notValid().and(()->{return n.valid();}))                      // Next free slot because no prev free slot
+         {void Then()
+           {r.i(n.position().Sub(Q)); d.set();
+           }
+         };
+        new If (d.Flip().and                                                    // Prev free slot because no next free slot
+         (()->{return p.valid();},
+          ()->{return n.notValid();}).b())
+         {void Then()
+           {r.i(p.position().Sub(Q)); d.set();
+           }
+         };
+        new If (d.Flip())                                                       // Choose nearest slot favoring lower slot if they are both the same distance away
+         {void Then()
+           {final Int P = p.position().Sub(Q), N = n.position().Sub(Q);         // Relative positions
+            r.i((P.Neg().le(N).b() ? P : N));
+           }
+         };
        }
       return r;
      }
@@ -2214,7 +2231,7 @@ class Tree extends Test                                                         
         return f.valid().Flip();
        };
      };
-    if (f.valid().Flip().b())                                                   // Unable to find tehlat element
+    if (f.valid().Flip().b())                                                   // Unable to find the last element
      {stop("Last fell off the end of tree after this many searches:", mnl());
      }
     return f.get();
