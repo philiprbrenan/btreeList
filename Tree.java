@@ -658,9 +658,9 @@ class Tree extends Test                                                         
      }
 
     class Locate extends Slot                                                   // Locate the slot containing the search key if possible else the key immediately above or below the search key.
-     {boolean above;                                                            // The search key is above or equal to the found key
-      boolean below;                                                            // The search key is below or equal to the found key
-      boolean all;                                                              // Above all or below all if true
+     {private boolean above;                                                    // The search key is above or equal to the found key
+      private boolean below;                                                    // The search key is below or equal to the found key
+      private boolean all;                                                      // Above all or below all if true
 
       public String toString()                                                  // Print the location
        {if (found())                return f("%d found", i());
