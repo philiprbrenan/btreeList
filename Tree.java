@@ -310,8 +310,8 @@ class Tree extends Test                                                         
     Key       keys(Slot I) {return   new Key(memory.keys(memory.slots(I)));}    // The indexed key
 
     void     slots(Slot I, slot   Ref) {memory.slots    (I, Ref.value());}      // The indexed slot
-    void usedSlots(Slot I, Bool Value) {memory.usedSlots(I, Value.b());}        // The indexed slot usage indicator
-    void  usedRefs(slot I, Bool Value) {memory.usedRefs (I, Value.b());}        // The indexed reference usage indicator
+    void usedSlots(Slot I, Bool Value) {memory.usedSlots(I, Value);}            // The indexed slot usage indicator
+    void  usedRefs(slot I, Bool Value) {memory.usedRefs (I, Value);}            // The indexed reference usage indicator
     void      keys(Slot I, Key    Key) {memory.keys(memory.slots(I), Key);}     // The indexed key
 
     Key  key(slot I) {return new Key(memory.keys(I));}                          // Get the key directly
@@ -874,14 +874,14 @@ class Tree extends Test                                                         
       Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}  // Value of key via indexed reference
       Int        name(     ) {return new Int(bytes.getInt(posName));}
 
-      void usedSlots(Int I, boolean V) {usedSlotsBits.set(        us(I),               V);}     // Set value of indexed used slot
-      void  usedRefs(Int I, boolean V) {usedRefsBits .set(        ur(I),               V);}     // Set value of indexed used reference
+      void usedSlots(Int I, Bool V) {usedSlotsBits.set(                    us(I),      V.b());} // Set value of indexed used slot
+      void  usedRefs(Int I, Bool V) {usedRefsBits .set(                    ur(I),      V.b());} // Set value of indexed used reference
       void     slots(Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());} // Set value of indexed slot
       void      keys(Int I, Int     V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());} // Set value of key via indexed reference
       void      name(       Int     V) {bytes.putInt(posName,                          V.i());} // Save the name of the node in memory to assist debugging
 
-      void      type(Int Type)         {       bytes.putInt(posType, Type.i());}// Type of object in which the slots are embedded
-      Int       type()                 {return new Int(bytes.getInt(posType));}
+      void      type(Int Type) {       bytes.putInt(posType, Type.i());}        // Type of object in which the slots are embedded
+      Int       type() {return new Int(bytes.getInt(posType));}
      }
    }
 
@@ -2817,8 +2817,8 @@ keys     :   14   0  13   0  12   0   0  11
     ok(m.keys        (new Int(6)),  0);
 
     m.slots    (new Int(13), new Int(6));
-    m.usedSlots(new Int(13), true);
-    m.usedRefs( new Int( 6), true);
+    m.usedSlots(new Int(13), Bool.True);
+    m.usedRefs( new Int( 6), Bool.True);
     m.keys    ( new Int( 6), new Int(10));
 
     ok(B, """
