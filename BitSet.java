@@ -321,7 +321,7 @@ abstract public class BitSet extends Test                                       
 
   public Pos lastOne()                                                          // Find the index of the last set bit
    {checkOne();
-    final Int l = new Int (bitSize-1);
+    final Int l = IntDec.l().i(bitSize-1);
     return getBit(new Pos(l)).b() ? new Pos(l) : prevOne(new Pos(l));
    }
 
@@ -609,6 +609,7 @@ abstract public class BitSet extends Test                                       
 
   class IntDec                                                                  // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
    {static Int b() {return new Int();}
+    static Int l() {return new Int();}
     static Int n() {return new Int();}
     static Int p() {return new Int();}
     static Int w() {return new Int();}
