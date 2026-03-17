@@ -288,19 +288,19 @@ class Tree extends Test                                                         
 
     void setSlots(int...Slots)                                                  // Set slots as used
      {for (int i : range(Slots.length))
-       {usedSlots(new Slot(new Int(Slots[i])), new Bool(true));
+       {usedSlots(new Slot(new Int(Slots[i])), Bool.True);
        }
      }
 
     void clearSlots(int...Slots)                                                // Set slots as not being used
      {for (int i : range(Slots.length))
-       {usedSlots(new Slot(new Int(Slots[i])), new Bool(false));
+       {usedSlots(new Slot(new Int(Slots[i])), Bool.False);
        }
      }
 
     void clearFirstSlot()                                                       // Set the first used slot to not used
      {final Slots.Slot f = locateFirstUsedSlot();
-      new If (f.valid()) {void Then() {usedSlots(f, new Bool(false));}};
+      new If (f.valid()) {void Then() {usedSlots(f, Bool.False);}};
      }
 
     void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots(I))); clearSlots(I.i());} // Remove a key from the slots
@@ -330,7 +330,7 @@ class Tree extends Test                                                         
 
       new If (I.valid())
        {void Then()
-         {usedRefs(I, new Bool(true));
+         {usedRefs(I, Bool.True);
          }
         void Else()
          {stop("No more slots available in this set of slots");
@@ -339,7 +339,7 @@ class Tree extends Test                                                         
       return I;
      }
 
-    void freeRef(slot Ref) {usedRefs(Ref, new Bool(false));}                    // Free a reference to one of the keys in the slots
+    void freeRef(slot Ref) {usedRefs(Ref, Bool.False);}                    // Free a reference to one of the keys in the slots
 
 //D2 Statistics                                                                 // Query the state of the slots
 
@@ -348,7 +348,7 @@ class Tree extends Test                                                         
       new For(numberOfSlots())
        {Bool body(int i)
          {new If (usedSlots(new Slot(new Int(i)))) {void Then(){n.inc();}};
-          return new Bool(true);
+          return Bool.True;
          }
        };
       return n;
@@ -415,10 +415,10 @@ class Tree extends Test                                                         
            {Bool body(int i)
              {final Slot P = new Slot(Position.Add(Width).add(p ? -i : +i));
               slots(P, slots(p ? P.left() :  P.right()));                       // Move slot
-              return new Bool(true);
+              return Bool.True;
              }
            };
-          usedSlots(new Slot(Position.Add(Width)), new Bool(true));             // We only move occupied slots
+          usedSlots(new Slot(Position.Add(Width)), Bool.True);             // We only move occupied slots
          }
        };
      }
@@ -438,7 +438,7 @@ class Tree extends Test                                                         
            {Bool body(int i)                                                    // Initialize background of slots
              {s[i] = new Int (0);
               u[i] = new Bool().clear();
-              return new Bool(true);
+              return Bool.True;
              };
            };
           new For(N)                                                            // Redistribute slots
@@ -451,7 +451,7 @@ class Tree extends Test                                                         
                   p.add(space).inc();                                           // Spread the used slots out
                  }
                };
-              return new Bool(true);
+              return Bool.True;
              }
            };
 
@@ -462,7 +462,7 @@ class Tree extends Test                                                         
              {final Slot I = new Slot(i);
               slots(I, new slot(s[i].i()));
               usedSlots(I, u[i]);
-              return new Bool(true);
+              return Bool.True;
              }
            };
          }
@@ -470,15 +470,15 @@ class Tree extends Test                                                         
      }
 
     void reset()                                                                // Reset the slots
-     {new For(numberOfSlots()) {Bool body(int i) {slots(new Slot(i), new slot(0)); return new Bool(true);}};
-      new For(numberOfRefs   ) {Bool body(int i) {  key(new slot(i), Key(0));      return new Bool(true);}};
+     {new For(numberOfSlots()) {Bool body(int i) {slots(new Slot(i), new slot(0)); return Bool.True;}};
+      new For(numberOfRefs   ) {Bool body(int i) {  key(new slot(i), Key(0));      return Bool.True;}};
 
       initialize();                                                             // Clear the existing tree bits - faster than deleting each path in turn
      }
 
     void compactSlot(Slot P, slot Q, Key K)                                     // Compact a slot
-     {usedSlots(P, new Bool(true));
-       usedRefs(Q, new Bool(true));
+     {usedSlots(P, Bool.True);
+       usedRefs(Q, Bool.True);
           slots(P, Q);
            keys(P, K);
      }
@@ -498,7 +498,7 @@ class Tree extends Test                                                         
                   p.inc();
                  }
                };
-              return new Bool(true);
+              return Bool.True;
              }
            };
          }
@@ -520,7 +520,7 @@ class Tree extends Test                                                         
                   p.dec();
                  }
                };
-              return new Bool(true);
+              return Bool.True;
              }
            };
          }
@@ -553,11 +553,11 @@ class Tree extends Test                                                         
           new If (c.and(()->{return mergeSlot(r, I, J);})) {void Then() {c.clear();}}; // Merge on right
           new If (c)                                                            // Reset center
            {void Then()
-             {usedSlots(I, new Bool(false));
-              usedRefs (J, new Bool(false));
+             {usedSlots(I, Bool.False);
+              usedRefs (J, Bool.False);
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };
      }
@@ -565,18 +565,18 @@ class Tree extends Test                                                         
     Bool mergeBack(Slots Left, Slots Right)                                     // Merge the specified slots back into the current set of slots
      {Left.compactLeft(); Right.compactRight();
       mergeCompacted(Left, Right);
-      return new Bool(true);
+      return Bool.True;
      }
 
     Bool mergeOnRight(Slots Right)                                              // Merge the specified slots from the right
      {return countUsed().Add(Right.countUsed()).gt(numberOfSlots()).b() ?
-             new Bool(false) :
+             Bool.False :
              mergeBack(duplicateSlots(), Right.duplicateSlots());
      }
 
     Bool mergeOnLeft(Slots Left)                                                // Merge the specified slots from the left
      {return Left.countUsed().Add(countUsed()).gt(numberOfSlots()).b() ?
-             new Bool(false) :
+             Bool.False :
              mergeBack(Left.duplicateSlots(), duplicateSlots());
      }
 
@@ -593,7 +593,7 @@ class Tree extends Test                                                         
            {void Then()
              {final Slot S = new Slot(new Int(numberOfSlots()).down().i());
               slots     (S, alloc);
-              usedSlots (S, new Bool(true));
+              usedSlots (S, Bool.True);
              }
             void Else()
              {new If (l.above)                                                  // Insert their key above the found key
@@ -604,7 +604,7 @@ class Tree extends Test                                                         
                    {void Then()                                                 // Move up
                      {shift             (i.Inc(), w.Dec());                     // Liberate a slot at this point
                       slots    (new Slot(i).right(), alloc);                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
-                      usedSlots(new Slot(i).right(), new Bool(true));
+                      usedSlots(new Slot(i).right(), Bool.True);
                      }
                     void Else()
                      {new If (w.lt(0))                                          // Liberate a slot below the current slot
@@ -636,7 +636,7 @@ class Tree extends Test                                                         
                            {void Then()                                         // Liberate a slot below the current slot
                              {shift             (i.Dec(),   w.Inc());           // Shift any intervening slots blocking the slot below
                               slots    (new Slot(i).left(), alloc);             // Insert into the slot below
-                              usedSlots(new Slot(i).left(), new Bool(true));    // Mark the free slot at the start of the range of occupied slots as now in use
+                              usedSlots(new Slot(i).left(), Bool.True);    // Mark the free slot at the start of the range of occupied slots as now in use
                              }
                            };
                          }
@@ -837,7 +837,7 @@ class Tree extends Test                                                         
        {new For(size)
          {Bool body(int i)
            {bytes.put(i, Memory.bytes.get(i));
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -846,7 +846,7 @@ class Tree extends Test                                                         
        {new For(size)
          {Bool body(int i)
            {bytes.put(i, (byte)-1);
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -855,7 +855,7 @@ class Tree extends Test                                                         
        {new For(size)
          {Bool body(int i)
            {bytes.put(i, (byte)0);
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -1017,7 +1017,7 @@ class Tree extends Test                                                         
        {Bool body(int i)                                                        // Each reference
          {final slot I = new slot(i);                                           // Copy data associated with leaf keys
           d.data(I, data(I));                                                   // Copy data associated with leaf keys
-          return new Bool(true);
+          return Bool.True;
          }
        };
       return d;
@@ -1068,7 +1068,7 @@ class Tree extends Test                                                         
                };
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };                                                                       // The new right leaf
       redistribute(); Right.redistribute();
@@ -1091,7 +1091,7 @@ class Tree extends Test                                                         
               p.inc();                                                          // Next position
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };
       return k.Down();                                                          // Average splitting key
@@ -1124,7 +1124,7 @@ class Tree extends Test                                                         
              {d[p.i()] = data(slots(I)); p.inc();
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };
       super.compactLeft();                                                      // Compact slots
@@ -1132,7 +1132,7 @@ class Tree extends Test                                                         
       new For(numberOfRefs())                                                   // Copy compacted leaf data
        {Bool body(int i)
          {data(new slot(i), d[i] != null ? d[i] : new Data());
-          return new Bool(true);
+          return Bool.True;
          }
        };
      }
@@ -1149,14 +1149,14 @@ class Tree extends Test                                                         
              {d[p.i()] = data(slots(I)); p.dec();
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };
       super.compactRight();                                                     // Compact slots
       new For(R)                                                                // Copy compacted leaf data
        {Bool body(int i)
          {data(new slot(i), d[i] != null ? d[i] : new Data());
-          return new Bool(true);
+          return Bool.True;
          }
        };
      }
@@ -1174,7 +1174,7 @@ class Tree extends Test                                                         
              {new If (r.usedRefs(J)) {void Then() {data(J, r.data(J));}};
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };
      }
@@ -1229,7 +1229,7 @@ class Tree extends Test                                                         
        {new For(size)
          {Bool body(int i)
            {bytes.put(i, Memory.bytes.get(i));
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -1238,7 +1238,7 @@ class Tree extends Test                                                         
        {new For(size)
          {Bool body(int i)
            {bytes.put(i, (byte)-1);
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -1384,7 +1384,7 @@ class Tree extends Test                                                         
       new For(numberOfRefs())                                                   // Copy used data
        {Bool body(int i)
          {d.memory.data(new Int(i), memory.data(new Int(i)));
-          return new Bool(true);
+          return Bool.True;
          }
        };
       d.top(top());
@@ -1443,7 +1443,7 @@ class Tree extends Test                                                         
                };
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };                                                                       // The new right branch
       redistribute(); Right.redistribute();
@@ -1473,7 +1473,7 @@ class Tree extends Test                                                         
               p.inc();
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };
       return k;                                                                 // Splitting key
@@ -1507,12 +1507,12 @@ class Tree extends Test                                                         
        {Bool body(int i)
          {final Slot I = new Slot(i);
           new If (usedSlots(I)) {void Then() {d[p.i()] = data(I); p.inc();}};
-          return new Bool(true);
+          return Bool.True;
          }
        };
       super.compactLeft();
       new For(R)
-       {Bool body(int i) {dataDirect(new Int(i), d[i]); return new Bool(true);}
+       {Bool body(int i) {dataDirect(new Int(i), d[i]); return Bool.True;}
        };
      }
 
@@ -1524,14 +1524,14 @@ class Tree extends Test                                                         
        {Bool body(int i)
          {final Slot I = new Slot(N.Sub(i).dec());
           new If (usedSlots(I)) {void Then() {d[p.i()] = data(I); p.dec();}};
-          return new Bool(true);
+          return Bool.True;
          }
        };
       super.compactRight();
       new For(R)
        {Bool body(int i)
          {dataDirect(new Int(i), d[i]);
-          return new Bool(true);
+          return Bool.True;
          }
        };
      }
@@ -1554,7 +1554,7 @@ class Tree extends Test                                                         
                };
              }
            };
-          return new Bool(true);
+          return Bool.True;
          }
        };
       insert(Key, l.top()); top(r.top());                                       // Insert left top
@@ -1637,7 +1637,7 @@ class Tree extends Test                                                         
      }
 
     Bool mergeRightSibling(Slot Left)                                           // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
-     {return Left.notValid().b() ? new Bool(false) :                            // Nothing to right of top
+     {return Left.notValid().b() ? Bool.False :                                 // Nothing to right of top
                                    mergeLeftSibling(Left.stepRight());
      }
 
@@ -1663,7 +1663,7 @@ class Tree extends Test                                                         
        {Bool body(int i)
          {final Slot I = new Slot(i);
           new If (usedSlots(I)) {void Then() {n.add(count(data(I)));}};
-          return new Bool(true);
+          return Bool.True;
          }
        };
       return n.Add(count(top()));                                               // Count entries below top
@@ -1678,7 +1678,7 @@ class Tree extends Test                                                         
        {new For(size)
          {Bool body(int i)
            {bytes.put(i,Memory.bytes.get(i));
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -1687,7 +1687,7 @@ class Tree extends Test                                                         
        {new For(size)
          {Bool body(int i)
            {bytes.put(i, (byte)-1);
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -2524,7 +2524,7 @@ class Tree extends Test                                                         
             if      (l)  leaves  .push((Leaf)  s);
             else if (b) {branches.push((Branch)s); scan((Branch)s);}
            }
-          return new Bool(true);
+          return Bool.True;
          }
        };
 
@@ -2686,10 +2686,10 @@ keys     :   14  13  16  15  18  17  12  11
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), new Bool(true)); s.key(s.new slot(7), Key(22));
-    s.usedSlots(s.new Slot( 5), new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), new Bool(true)); s.key(s.new slot(4), Key(24));
-    s.usedSlots(s.new Slot( 9), new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), new Bool(true)); s.key(s.new slot(2), Key(26));
-    s.usedSlots(s.new Slot(14), new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), new Bool(true)); s.key(s.new slot(0), Key(28));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(22));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(24));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(26));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(28));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2708,10 +2708,10 @@ keys     :   28   0  26   0  24   0   0  22
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), new Bool(true)); s.key(s.new slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), new Bool(true)); s.key(s.new slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), new Bool(true)); s.key(s.new slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), new Bool(true)); s.key(s.new slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(11));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(12));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(13));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2736,10 +2736,10 @@ keys     :   11  12  13  14   0   0   0   0
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), new Bool(true)); s.key(s.new slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), new Bool(true)); s.key(s.new slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), new Bool(true)); s.key(s.new slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), new Bool(true)); s.key(s.new slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(11));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(12));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(13));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2766,10 +2766,10 @@ keys     :    0   0   0   0  11  12  13  14
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8, ByteBuffer.allocate(200));
 
-    s.usedSlots(s.new Slot( 1), new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), new Bool(true)); s.key(s.new slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), new Bool(true)); s.key(s.new slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), new Bool(true)); s.key(s.new slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), new Bool(true)); s.key(s.new slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(11));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(12));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(13));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(14));
     s.type     (new Int(11));
     ok(s, """
 Slots    : name:  0, type: 11, refs:  8
