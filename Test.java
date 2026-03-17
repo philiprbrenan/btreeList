@@ -1153,7 +1153,7 @@ public class Test                                                               
     @SafeVarargs final Bool  nor(Supplier<Bool>...b) {return  or(b).flip();}
     @SafeVarargs final Bool nand(Supplier<Bool>...b) {return and(b).flip();}
 
-    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}
+    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}            // Duplicate a valid boolean
 
     public String toString()
      {return (n == null ? "" : n+"=")+i;
@@ -1249,7 +1249,7 @@ public class Test                                                               
     Bool Ge(Int e){e.x(); return Ge(e.i);}
     Bool Gt(Int e){e.x(); return Gt(e.i);}
 
-    Int dup() {final Int I = new Int(i); I.v = v; I.n = n; return I;}
+    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}
 
     public String toString()
      {return (n == null ? "" : n+"=")+i;
