@@ -233,7 +233,7 @@ abstract public class BitSet extends Test                                       
        {new For(bitSize)                                                        // Step from root to leaf
          {Bool body(Int Index)
            {final Pos  q = new Pos(p.Add(b));
-            final Bool c = new Bool().set();                                    // Complete early if we found a bit that does not need setting
+            final Bool c = BoolDec.c().set();                                   // Complete early if we found a bit that does not need setting
             new If (getBitNC(q))                                                // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
              {void Then() {c.clear();}
               void Else() {setBitNC(q, true);}
