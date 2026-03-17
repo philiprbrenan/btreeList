@@ -527,7 +527,7 @@ class Tree extends Test                                                         
        };
      }
 
-    boolean mergeSlot(Slots S, Slot I, slot J)                                  // Merge a slot
+    Bool mergeSlot(Slots S, Slot I, slot J)                                     // Merge a slot
      {final Bool m = new Bool().clear();                                        // Whether a successful merge occurred
       new If (S.usedSlots(I))
        {void Then()
@@ -538,7 +538,7 @@ class Tree extends Test                                                         
           m.set();
          }
        };
-      return m.b();
+      return m;
      }
 
     void mergeCompacted(Slots Left, Slots Right)                                // Merge left and right compacted slots into the current slots
@@ -548,9 +548,15 @@ class Tree extends Test                                                         
        {Bool body(int i)
          {final Slot I = new Slot(i);                                           // The input slots have been compacted so this Slot will match the corresponding slot
           final slot J = new slot(i);
-          if      (mergeSlot(l, I, J)) {}                                       // Merge on left
-          else if (mergeSlot(r, I, J)) {}                                       // Merge on right
-          else {usedSlots(I, new Bool(false)); usedRefs(J, new Bool(false));}   // Reset center
+          final Bool c = new Bool().set();                                      // Continue until false
+          new If (                  mergeSlot(l, I, J))    {void Then() {c.clear();}}; // Merge on left
+          new If (c.and(()->{return mergeSlot(r, I, J);})) {void Then() {c.clear();}}; // Merge on right
+          new If (c)                                                            // Reset center
+           {void Then()
+             {usedSlots(I, new Bool(false));
+              usedRefs (J, new Bool(false));
+             }
+           };
           return new Bool(true);
          }
        };
