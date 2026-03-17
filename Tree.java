@@ -757,7 +757,7 @@ class Tree extends Test                                                         
       return i.notValid().b() ? new slot() : slots(i);
      }
 
-    boolean delete(Key Key)                                                     // Delete the specified key from the slots
+    Bool delete(Key Key)                                                        // Delete the specified key from the slots
      {final Slot i = locate(Key);                                               // Locate the search key
       final Bool C = new Bool();
       new If (i.notValid())                                                     // Key not present so no need to delete it
@@ -769,7 +769,7 @@ class Tree extends Test                                                         
           C.set();                                                              // Indicate that the key was deleted
          }
        };
-      return C.b();
+      return C;                                                                 // Wether the key was found and deleted
      }
 
 //D2 Print                                                                      // Print the slots
