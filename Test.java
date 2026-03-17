@@ -13,6 +13,7 @@ import java.text.*;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.*;
 import java.util.zip.GZIPOutputStream;
 
@@ -1047,13 +1048,13 @@ public class Test                                                               
 
   abstract static class For                                                     // For loop
    {For(int Start, int End)                                                     // Execute the loop the specified number of times
-     {for(int i : range(Start, End)) if (!body(i)) break;
+     {for(int i : range(Start, End)) if (!body(i).b()) break;                   // Execute the loop as long as it returns true
      }
 
     For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
     For(Int End) {this(0, End.i());}                                            // Execute the loop the specified number of times as long as it returns true
 
-    boolean body(int Index) { return false;}                                    // Body of the for loop: return flse to terminate execution of the loop
+    Bool body(int Index) { return new Bool(false);}                             // Body of the for loop: return flse to terminate execution of the loop
    }
 
   abstract static class If                                                      // If statement
@@ -1072,7 +1073,7 @@ public class Test                                                               
    {private boolean i = false;                                                  // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
     private String  n = null;                                                   // An optional name for this variable
-    boolean valid() {return v;}
+    Bool      valid() {return new Bool(v);}
 
     Bool           ()          {}
     Bool           (boolean I) {i = I; v = true;}
@@ -1104,40 +1105,53 @@ public class Test                                                               
     Bool         eq(Bool    e){e.x(); return eq(e.i);}
     Bool         ne(Bool    e){e.x(); return ne(e.i);}
 
-    Bool         or(boolean...b)
-     {x(); boolean r = b();
-      for (int i : range(b.length)) r = r || b[i];
-      return new Bool(r);
-     }
-
-    Bool         or(Bool...b)
+    Bool or(boolean...b)                                                // "Or" with no short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
-       {b[i].x();
-        r = r || b[i].b();
+       {if (r) break;
+        r = b[i];
        }
       return new Bool(r);
      }
 
-    Bool        and(boolean...b)
-     {x(); boolean r = b();
-      for (int i : range(b.length)) r = r && b[i];
-      return new Bool(r);
-     }
-
-    Bool        and(Bool...b)
+    @SafeVarargs
+    final Bool or(Supplier<Bool>...b)                                         // "Or" with short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
-       {b[i].x();
-        r = r && b[i].b();
+       {if (r) break;
+        final Bool B = b[i].get();
+        B.x();
+        r = B.b();
        }
       return new Bool(r);
      }
 
-    Bool  nor(boolean...b) {return  or(b).flip();}
-    Bool  nor(Bool   ...b) {return  or(b).flip();}
-    Bool nand(boolean...b) {return and(b).flip();}
-    Bool nand(Bool   ...b) {return and(b).flip();}
+    Bool and(boolean...b)                                                // "And" with no short circuit
+     {x(); boolean r = b();
+      for (int i : range(b.length))
+       {if (!r) break;
+        r = b[i];
+       }
+      return new Bool(r);
+     }
+
+    @SafeVarargs
+    final Bool and(Supplier<Bool>...b)                                         // "And" with short circuit
+     {x(); boolean r = b();
+      for (int i : range(b.length))
+       {if (!r) break;
+        final Bool B = b[i].get();
+        B.x();
+        r = B.b();
+       }
+      return new Bool(r);
+     }
+
+    Bool  nor(boolean       ...b) {return  or(b).flip();}
+    Bool nand(boolean       ...b) {return and(b).flip();}
+
+    @SafeVarargs final Bool  nor(Supplier<Bool>...b) {return  or(b).flip();}
+    @SafeVarargs final Bool nand(Supplier<Bool>...b) {return and(b).flip();}
 
     Bool dup() {final Bool I = new Bool(i); I.n = n; return I;}
 
@@ -1150,8 +1164,8 @@ public class Test                                                               
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
     private String  n = null;                                                   // An optional name for this variable
-    boolean valid()    {return  v;}                                             // A valid integer
-    boolean notValid() {return !v;}                                             // A not valid integer
+    Bool    valid() {return new Bool( v);}                                      // A valid integer
+    Bool notValid() {return new Bool(!v);}                                      // A not valid integer
 
     Int           (int I) {       i = I;   v = true;}
     Int           (Int I) {       if (I != null) {i = I.i; v = I.v;}}
@@ -1207,33 +1221,33 @@ public class Test                                                               
     Int  Neg()       {return dup().neg();}
     Int  Abs()       {return dup().abs();}
 
-    boolean eq(int e){  x(); return i == e;}
-    boolean ne(int e){  x(); return i != e;}
-    boolean le(int e){  x(); return i <= e;}
-    boolean lt(int e){  x(); return i <  e;}
-    boolean ge(int e){  x(); return i >= e;}
-    boolean gt(int e){  x(); return i >  e;}
+    Bool eq(int e){  x(); return new Bool(i == e);}
+    Bool ne(int e){  x(); return new Bool(i != e);}
+    Bool le(int e){  x(); return new Bool(i <= e);}
+    Bool lt(int e){  x(); return new Bool(i <  e);}
+    Bool ge(int e){  x(); return new Bool(i >= e);}
+    Bool gt(int e){  x(); return new Bool(i >  e);}
 
-    boolean eq(Int e){e.x(); return eq(e.i);}
-    boolean ne(Int e){e.x(); return ne(e.i);}
-    boolean le(Int e){e.x(); return le(e.i);}
-    boolean lt(Int e){e.x(); return lt(e.i);}
-    boolean ge(Int e){e.x(); return ge(e.i);}
-    boolean gt(Int e){e.x(); return gt(e.i);}
+    Bool eq(Int e){e.x(); return eq(e.i);}
+    Bool ne(Int e){e.x(); return ne(e.i);}
+    Bool le(Int e){e.x(); return le(e.i);}
+    Bool lt(Int e){e.x(); return lt(e.i);}
+    Bool ge(Int e){e.x(); return ge(e.i);}
+    Bool gt(Int e){e.x(); return gt(e.i);}
 
-    Bool    Eq(int e){  x(); return new Bool(eq(e));}
-    Bool    Ne(int e){  x(); return new Bool(ne(e));}
-    Bool    Le(int e){  x(); return new Bool(le(e));}
-    Bool    Lt(int e){  x(); return new Bool(lt(e));}
-    Bool    Ge(int e){  x(); return new Bool(ge(e));}
-    Bool    Gt(int e){  x(); return new Bool(gt(e));}
+    Bool Eq(int e){  x(); return new Bool(eq(e));}
+    Bool Ne(int e){  x(); return new Bool(ne(e));}
+    Bool Le(int e){  x(); return new Bool(le(e));}
+    Bool Lt(int e){  x(); return new Bool(lt(e));}
+    Bool Ge(int e){  x(); return new Bool(ge(e));}
+    Bool Gt(int e){  x(); return new Bool(gt(e));}
 
-    Bool    Eq(Int e){e.x(); return Eq(e.i);}
-    Bool    Ne(Int e){e.x(); return Ne(e.i);}
-    Bool    Le(Int e){e.x(); return Le(e.i);}
-    Bool    Lt(Int e){e.x(); return Lt(e.i);}
-    Bool    Ge(Int e){e.x(); return Ge(e.i);}
-    Bool    Gt(Int e){e.x(); return Gt(e.i);}
+    Bool Eq(Int e){e.x(); return Eq(e.i);}
+    Bool Ne(Int e){e.x(); return Ne(e.i);}
+    Bool Le(Int e){e.x(); return Le(e.i);}
+    Bool Lt(Int e){e.x(); return Lt(e.i);}
+    Bool Ge(Int e){e.x(); return Ge(e.i);}
+    Bool Gt(Int e){e.x(); return Gt(e.i);}
 
     Int dup() {final Int I = new Int(i); I.v = v; I.n = n; return I;}
 
@@ -1249,7 +1263,7 @@ public class Test                                                               
     void set(T I)      {i = I;}                                                 // Set the refernce
     void set(Ref<T> I) {i = I.get();}                                           // Set the refernce
     T    get()         {return i;}                                              // Dereference the reference
-    boolean valid()    {return i != null;}                                      // Check that the refence is valid
+    Bool valid()       {return new Bool(i != null);}                            // Check that the refence is valid
 
     public String toString()
      {return i == null ? "null" : "ref("+i+")";
@@ -1266,6 +1280,8 @@ public class Test                                                               
     err(currentTestName(), "failed\n");
     return false;
    }
+
+  static boolean ok(Bool b) {return ok(b.b());}                                 // Check test results match expected results.
 
   static boolean ok(Object a, Object b)                                         // Check test results match expected results.
    {if (a.toString().equals(b.toString())) {++testsPassed; return true;}
@@ -1721,28 +1737,28 @@ a   aa    AAA
     class test_programming
      {test_programming(int N)
        {new For(N)
-         {boolean body(int Index)
+         {Bool body(int Index)
            {new If (Index % 2 == 0)
              {void Then() {i.add(Index);}
               void Else() {i.sub(Index);}
              };
-            return true;
+            return new Bool(true);
            }
          };
        }
      }
     new test_programming(11);
     ok(i, 5);
-    ok(i.valid());
+    ok(i.valid().b());
    }
 
   static void test_bool()
    {final Bool b1 = new Bool().clear();
     final Bool b2 = new Bool().set();
-    ok(b1.or(  b2).b() == true);
-    ok(b1.nor (b2).b() == false);
-    ok(b1.and (b2).b() == false);
-    ok(b1.nand(b2).b() == true);
+    ok(b1.or(  ()->{return b2;}).b() == true);
+    ok(b1.nor (()->{return b2;}).b() == false);
+    ok(b1.and (()->{return b2;}).b() == false);
+    ok(b1.nand(()->{return b2;}).b() == true);
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
