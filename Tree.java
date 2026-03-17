@@ -125,7 +125,7 @@ class Tree extends Test                                                         
    }
 
   void free(Allocation Free)                                                    // Free a leaf or a branch
-   {final Int f = Free.at();
+   {final Int f = Free;
     if (f.le(0).b()) stop("Name of node to free must be positive not:", f);
     if (f.gt(numberOfNodes).b()) stop("Name of node to free too big:",  f);
     if (freeChain.contains(f))
@@ -2425,14 +2425,14 @@ class Tree extends Test                                                         
 
             P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).i());             // Key
           if (Details)
-           {P.elementAt(L+1).append("["+B.name().at()+"."+i+"]");               // Branch, key, next pair
-            final String U = Parent != null ? ""+Parent.name().at() : "*";      // Parent up from descent
-            final String I = Index  != null ? ""+Index              : "*";      // Index in parent up
-            P.elementAt(L+2).append("("+s.name().at()+", "+U+", "+I+")");       // Link to next level
+           {P.elementAt(L+1).append("["+B.name()+"."+i+"]");                    // Branch, key, next pair
+            final String U = Parent != null ? ""+Parent.name() : "*";           // Parent up from descent
+            final String I = Index  != null ? ""+Index         : "*";           // Index in parent up
+            P.elementAt(L+2).append("("+s.name()+", "+U+", "+I+")");            // Link to next level
 
             final String um = ""+B.memory.up();                                 // Parent up as recorded
             final String im = ""+B.upIndex();                                   // Index in parent up as recorded
-            P.elementAt(L+3).append("("+s.name().at()+", "+um+", "+im+")");     // Link to next level
+            P.elementAt(L+3).append("("+s.name()+", "+um+", "+im+")");          // Link to next level
            }
          }
        }
@@ -2440,7 +2440,7 @@ class Tree extends Test                                                         
 
     if (Details)                                                                // Top of branch
      {P.elementAt(L+2).append
-       ("{"+(B.top() != null ? B.top().name().at() : "null")+"}");
+       ("{"+(B.top() != null ? B.top().name() : "null")+"}");
      }
 
     final boolean l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());          // Print top leaf
