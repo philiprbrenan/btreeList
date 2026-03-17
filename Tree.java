@@ -950,8 +950,8 @@ class Tree extends Test                                                         
                      new Branch(new Allocation(r));                             // Branch as positive
    }
 
-  void root(Leaf   Root) {memory.root(Root != null ? Root.name().neg() : new Int(0));}   // Set the root in memory with a negative address to show that it is a leaf
-  void root(Branch Root) {memory.root(Root != null ? Root.name()       : new Int(0));}   // Set the root in memory with a positive address to show that it is a branch
+  void root(Leaf   Root) {memory.root(Root != null ? Root.name().neg() : Int.zero);}   // Set the root in memory with a negative address to show that it is a leaf
+  void root(Branch Root) {memory.root(Root != null ? Root.name()       : Int.zero);}   // Set the root in memory with a positive address to show that it is a branch
 
 //D2 Leaf                                                                       // Use the slots to model a leaf
 
@@ -985,7 +985,7 @@ class Tree extends Test                                                         
      }
 
     void up(Branch Branch)                                                      // Set parent branch
-     {memory.up(Branch != null ? Branch.name() : new Int(0));
+     {memory.up(Branch != null ? Branch.name() : Int.zero);
      }
 
     Slot upIndex(Branch Branch)                                                 // Index of this leaf in its parent. We have to return an Integer rather than a slot because we do not know which branch the slot is in
@@ -999,7 +999,7 @@ class Tree extends Test                                                         
     Data data(Slot I) {return new Data(memory.data(slots(I).value()));}         // Get value of data field at index
     void data(Slot I, Data Value)                                               // Set value of data field at index
      {memory.data(slots(I).value(), Value.valid().b() ?
-                                    Value.value()     : new Int(0));
+                                    Value.value()     : Int.zero);
      }
 
     Data data(slot I) {return new Data(memory.data(I.value()));}                // Get value of data field at the slot
@@ -1321,7 +1321,7 @@ class Tree extends Test                                                         
      }
 
     void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
-     {memory.up(Branch != null ? Branch.name() : new Int(0));
+     {memory.up(Branch != null ? Branch.name() : Int.zero);
      }
 
     Int  upIndex()          {return memory.upIndex();}                          // Index of this branch in its parent
