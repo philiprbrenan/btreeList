@@ -1027,7 +1027,9 @@ public class Test                                                               
 
     columns: for(int i = m; i >= collapse; i--)                                 // Each column working backwards through each string
      {for(StringBuilder s: S)                                                   // Check there are two spaces that can be squeezed to one in all rows in this column
-       {if (!s.substring(i-collapse, i).equals(" ".repeat(collapse))) continue columns;
+       {if (!s.substring(i-collapse, i).equals(" ".repeat(collapse)))
+         {continue columns;
+         }
        }
 
       for(int j = 0; j < S.size(); j++)                                         // Squeeze common spaces in column
@@ -1054,7 +1056,7 @@ public class Test                                                               
     For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
     For(Int End) {this(0, End.i());}                                            // Execute the loop the specified number of times as long as it returns true
 
-    Bool body(int Index) { return new Bool(false);}                             // Body of the for loop: return flse to terminate execution of the loop
+    Bool body(int Index) {return new Bool(false);}                              // Body of the for loop: return flse to terminate execution of the loop
    }
 
   abstract static class If                                                      // If statement
@@ -1065,7 +1067,7 @@ public class Test                                                               
      {if (condition.b()) Then(); else Else();
      }
 
-    abstract void Then();                                                        // Then clause
+    abstract void Then();                                                       // Then clause
              void Else() {}                                                     // Else clause
    }
 
@@ -1155,7 +1157,7 @@ public class Test                                                               
 
     Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}            // Duplicate a valid boolean
 
-    public String toString()
+    public String toString()                                                    // Print the boolean
      {return (n == null ? "" : n+"=")+i;
      }
    }
@@ -1249,9 +1251,9 @@ public class Test                                                               
     Bool Ge(Int e){e.x(); return Ge(e.i);}
     Bool Gt(Int e){e.x(); return Gt(e.i);}
 
-    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}
+    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}      // Duplicate a valid integer
 
-    public String toString()
+    public String toString()                                                    // Print the integer
      {return (n == null ? "" : n+"=")+i;
      }
    }
@@ -1265,7 +1267,7 @@ public class Test                                                               
     T    get()         {return i;}                                              // Dereference the reference
     Bool valid()       {return new Bool(i != null);}                            // Check that the refence is valid
 
-    public String toString()
+    public String toString()                                                    // Print the reference
      {return i == null ? "null" : "ref("+i+")";
      }
    }
