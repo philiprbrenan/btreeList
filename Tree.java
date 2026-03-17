@@ -658,8 +658,7 @@ class Tree extends Test                                                         
      }
 
     class Locate extends Slot                                                   // Locate the slot containing the search key if possible else the key immediately above or below the search key.
-     {Slot at() {return this;}                                                  // The point at which the closest key was found
-      boolean above;                                                            // The search key is above or equal to the found key
+     {boolean above;                                                            // The search key is above or equal to the found key
       boolean below;                                                            // The search key is below or equal to the found key
       boolean all;                                                              // Above all or below all if true
 
@@ -2280,7 +2279,7 @@ class Tree extends Test                                                         
                    {new For(numberOfNodes)                                      // Step up to turning point
                      {Bool body(int i)
                        {final Branch P = p.get(), Q = q.get();
-                        new If (P.top().name().ne(Q.name().at()))               // In the body of the parent branch of the leaf
+                        new If (P.top().name().ne(Q.name()))                    // In the body of the parent branch of the leaf
                          {void Then()
                            {final Int     I = Q.upIndex();                      // Not null because we are not at the root
                             final Slots.Slot R = P.new Slot(I).stepRight();     // Next sibling to the right
