@@ -924,10 +924,10 @@ class Tree extends Test                                                         
       for (int i : range(min(numberOfNodes, 20)))
        {final int n = sizeOfNode * i;
         s.append(f("Node: %4d at %4d\n", i, n));
-        final boolean    l = new Int(bytes.getInt(n))
-                             .eq(new Int(NodeType.Leaf.ordinal())).b();
+        final Bool       l = new Int(bytes.getInt(n))
+                             .eq(new Int(NodeType.Leaf.ordinal()));
         final Allocation a = new Allocation(new Int(i));
-        final String t = l ? new Leaf(a).toString() : new Branch(a).toString();
+        final String t = l.b() ? new Leaf(a).toString() : new Branch(a).toString();
         s.append(t);
        }
       return ""+s;
@@ -1009,8 +1009,8 @@ class Tree extends Test                                                         
      {memory.data(I.value(), Value.valid().b() ? Value.value() : new Int(0));
      }
 
-    static boolean ref(Slots L)  {return L instanceof Leaf;}                    // Check whether we are referencing a leaf
-    int splitSize()              {return maxLeafSize>>>1;}                      // Size of a split leaf
+    static Bool ref(Slots L)  {return new Bool(L instanceof Leaf);}             // Check whether we are referencing a leaf
+    int splitSize()           {return maxLeafSize>>>1;}                         // Size of a split leaf
 
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
@@ -1326,10 +1326,10 @@ class Tree extends Test                                                         
      {memory.up(Branch != null ? Branch.name() : Int.zero);
      }
 
-    Int  upIndex()          {return memory.upIndex();}                          // Index of this branch in its parent
-    void upIndex(Int Value) {memory.upIndex(Value);}                            // Set the index of this branch in its parent
+    Int  upIndex()           {return memory.upIndex();}                         // Index of this branch in its parent
+    void upIndex(Int Value)  {memory.upIndex(Value);}                           // Set the index of this branch in its parent
 
-    static boolean ref(Slots B)    {return B instanceof Branch;}                // Check whether we are referencing a branch
+    static Bool ref(Slots B) {return new Bool(B instanceof Branch);}            // Check whether we are referencing a branch
 
     Int refSign(Slots Slots)                                                    // The sign of a reference according to whether it is a reference to a leaf or a branch
      {final Int R  = new Int();
@@ -1339,7 +1339,7 @@ class Tree extends Test                                                         
          }
         void Else()
          {final Int i = Slots.name();
-          R.i(ref(Slots) ? i : i.neg());
+          R.i(ref(Slots).b() ? i : i.neg());
          }
        };
       return R;
@@ -1570,7 +1570,7 @@ class Tree extends Test                                                         
       redistribute();
      }
 
-    boolean mergeFromRight(Key Key, Branch Right)                               // Merge the specified slots from the right
+    Bool mergeFromRight(Key Key, Branch Right)                                  // Merge the specified slots from the right
      {final Bool R = new Bool();
       new If (countUsed().Add(Right.countUsed()).ge(maxBranchSize))
        {void Then()
@@ -1581,10 +1581,10 @@ class Tree extends Test                                                         
           R.set();
          }
        };
-      return R.b();
+      return R;
      }
 
-    boolean mergeFromLeft(Key Key, Branch Left)                                 // Merge the specified slots from the right
+    Bool mergeFromLeft(Key Key, Branch Left)                                    // Merge the specified slots from the right
      {final Bool R = new Bool();
       new If (Left.countUsed().Add(countUsed()).ge(maxBranchSize))
        {void Then()
@@ -1597,7 +1597,7 @@ class Tree extends Test                                                         
           R.set();
          }
        };
-      return R.b();
+      return R;
      }
 
     Bool mergeLeftSibling(Slot Right)                                           // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
@@ -1656,7 +1656,7 @@ class Tree extends Test                                                         
     Slots stepDown(Key Key) {return child(locateFirstGe(Key));}                 // Step down from this branch
 
     Int count(Slots s)                                                          // Count the number of entries under this branch
-     {return Leaf.ref(s) ? s.countUsed() : ((Branch)s).count();
+     {return Leaf.ref(s).b() ? s.countUsed() : ((Branch)s).count();
      }
 
     Int count()                                                                 // Count the number of entries under this branch
@@ -1863,9 +1863,9 @@ class Tree extends Test                                                         
                 new If (m) {void Then() {b.free(); r.free(); root(l);}};        // Update root if the leaves were successfully merged
                }
               void Else()
-               {final Branch  l = (Branch)b.firstChild();                       // Root has branches for children
-                final Branch  r = (Branch)b.top();
-                final boolean m = r.mergeFromLeft(b.firstKey(), l);
+               {final Branch l = (Branch)b.firstChild();                        // Root has branches for children
+                final Branch r = (Branch)b.top();
+                final Bool   m = r.mergeFromLeft(b.firstKey(), l);
                 new If (m) {void Then() {b.free(); l.free(); root(r);}};        // Update root if the leaves were successfully merged
                }
              };
@@ -2142,7 +2142,7 @@ class Tree extends Test                                                         
   Int count()                                                                   // Count the number of entries in the tree
    {final Slots r = root();
     return r == null   ? new Int(0) :
-           Leaf.ref(r) ? r.countUsed() : ((Branch)r).count();
+           Leaf.ref(r).b() ? r.countUsed() : ((Branch)r).count();
    }
 
 //D2 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
@@ -2419,10 +2419,10 @@ class Tree extends Test                                                         
        {if (B.usedSlots(B.new Slot(i)).b())
          {final Slots s = B.data(B.new Slot(i));
           if (s == null) continue;
-          final boolean l = Leaf.ref(s), b = Tree.Branch.ref(s);
+          final Bool l = Leaf.ref(s), b = Tree.Branch.ref(s);
 
-          if      (l) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
-          else if (b) printBranch((Branch)s, P, level+1, Details, B, i);
+          if      (l.b()) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
+          else if (b.b()) printBranch((Branch)s, P, level+1, Details, B, i);
 
             P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).i());             // Key
           if (Details)
@@ -2444,9 +2444,9 @@ class Tree extends Test                                                         
        ("{"+(B.top() != null ? B.top().name() : "null")+"}");
      }
 
-    final boolean l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());          // Print top leaf
-    if      (l) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
-    else if (b) printBranch((Branch)B.top(), P, level+1, Details, B, null);
+    final Bool l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());             // Print top leaf
+    if      (l.b()) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
+    else if (b.b()) printBranch((Branch)B.top(), P, level+1, Details, B, null);
 
     padStrings(P, level);                                                       // Equalize the strings used to print the tree
    }
@@ -2487,9 +2487,9 @@ class Tree extends Test                                                         
   String print(boolean Details)                                                 // Print the tree with and without linkage details
    {final Stack<StringBuilder> P = new Stack<>();
     if (root() == null) return "|\n";                                           // Empty tree
-    final boolean lr = Leaf.ref(root());
-    if (lr) printLeaf  ((Leaf)  root(), P, 0, Details, null, null);             // Tree is a single leaf
-    else    printBranch((Branch)root(), P, 0, Details, null, null);             // Tree has one or more branches
+    final Bool lr = Leaf.ref(root());
+    if (lr.b()) printLeaf  ((Leaf)  root(), P, 0, Details, null, null);         // Tree is a single leaf
+    else        printBranch((Branch)root(), P, 0, Details, null, null);         // Tree has one or more branches
     return printCollapsed(P);                                                   // Remove blank lines and add right fence
    }
 
@@ -2520,27 +2520,27 @@ class Tree extends Test                                                         
        {Bool body(int i)
          {final Slots.Slot S = B.new Slot(i);
           if (B.usedSlots(S).b())
-           {final Slots    s = B.data(S);
-            final boolean  l = Leaf.ref(s), b = Branch.ref(s);
+           {final Slots s = B.data(S);
+            final Bool  l = Leaf.ref(s), b = Branch.ref(s);
 
-            if      (l)  leaves  .push((Leaf)  s);
-            else if (b) {branches.push((Branch)s); scan((Branch)s);}
+            if      (l.b())  leaves  .push((Leaf)  s);
+            else if (b.b()) {branches.push((Branch)s); scan((Branch)s);}
            }
           return Bool.True;
          }
        };
 
       final Slots s = B.top();
-      final boolean l = Leaf.ref(s), b = Branch.ref(s);
-      if      (l)  leaves  .push((Leaf)  s);
-      else if (b) {branches.push((Branch)s); scan((Branch)s);}
+      final Bool  l = Leaf.ref(s), b = Branch.ref(s);
+      if      (l.b())  leaves  .push((Leaf)  s);
+      else if (b.b()) {branches.push((Branch)s); scan((Branch)s);}
      }
 
     ListAll()                                                                   // Create lists of all theleaves and branches in the tree to assist with debugging
      {if (root() == null) return;
-      final boolean l = Leaf.ref(root()), b = Branch.ref(root());
-      if      (l)  leaves  .push((Leaf)  root());
-      else if (b) {branches.push((Branch)root()); scan((Branch)root());}
+      final Bool l = Leaf.ref(root()), b = Branch.ref(root());
+      if      (l.b())  leaves  .push((Leaf)  root());
+      else if (b.b()) {branches.push((Branch)root()); scan((Branch)root());}
      }
    }
 
