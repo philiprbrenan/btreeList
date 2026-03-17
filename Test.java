@@ -1105,7 +1105,7 @@ public class Test                                                               
     Bool         eq(Bool    e){e.x(); return eq(e.i);}
     Bool         ne(Bool    e){e.x(); return ne(e.i);}
 
-    Bool or(boolean...b)                                                // "Or" with no short circuit
+    Bool or(boolean...b)                                                        // "Or" with no short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (r) break;
@@ -1115,7 +1115,7 @@ public class Test                                                               
      }
 
     @SafeVarargs
-    final Bool or(Supplier<Bool>...b)                                         // "Or" with short circuit
+    final Bool or(Supplier<Bool>...b)                                           // "Or" with short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (r) break;
@@ -1126,7 +1126,7 @@ public class Test                                                               
       return new Bool(r);
      }
 
-    Bool and(boolean...b)                                                // "And" with no short circuit
+    Bool and(boolean...b)                                                       // "And" with no short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (!r) break;
@@ -1136,7 +1136,7 @@ public class Test                                                               
      }
 
     @SafeVarargs
-    final Bool and(Supplier<Bool>...b)                                         // "And" with short circuit
+    final Bool and(Supplier<Bool>...b)                                          // "And" with short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (!r) break;
@@ -1153,7 +1153,7 @@ public class Test                                                               
     @SafeVarargs final Bool  nor(Supplier<Bool>...b) {return  or(b).flip();}
     @SafeVarargs final Bool nand(Supplier<Bool>...b) {return and(b).flip();}
 
-    Bool dup() {final Bool I = new Bool(i); I.n = n; return I;}
+    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}
 
     public String toString()
      {return (n == null ? "" : n+"=")+i;
