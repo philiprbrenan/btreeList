@@ -692,13 +692,13 @@ class Tree extends Test                                                         
           void Else()
            {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());               // Lower limit
             final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());               // Upper limit
-            final Bool      d = new Bool().clear();                             // Continue the search unless set
-            new If (d.Flip().and(()->{return a.get().eq(Key);})) {void Then() {d.set(); found(a.get());            }}; // Found at the start of the range
-            new If (d.Flip().and(()->{return b.get().eq(Key);})) {void Then() {d.set(); found(b.get());            }}; // Found at the end of the range
-            new If (d.Flip().and(()->{return a.get().le(Key);})) {void Then() {d.set(); below(a.get()); all = true;}}; // Smaller than any key
-            new If (d.Flip().and(()->{return b.get().gt(Key);})) {void Then() {d.set(); above(b.get()); all = true;}}; // Greater than any key
+            final Bool      c = new Bool().set();                               // Continue the search unless set
+            new If (c.and(()->{return a.get().eq(Key);})) {void Then() {c.clear(); found(a.get());            }}; // Found at the start of the range
+            new If (c.and(()->{return b.get().eq(Key);})) {void Then() {c.clear(); found(b.get());            }}; // Found at the end of the range
+            new If (c.and(()->{return a.get().le(Key);})) {void Then() {c.clear(); below(a.get()); all = true;}}; // Smaller than any key
+            new If (c.and(()->{return b.get().gt(Key);})) {void Then() {c.clear(); above(b.get()); all = true;}}; // Greater than any key
 
-            new If (!d.b())                                                     // Search
+            new If (c)                                                          // Search
              {void Then()
                {new For(numberOfSlots())                                        // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
                  {Bool body(int i)
@@ -717,14 +717,14 @@ class Tree extends Test                                                         
                      {void Then()
                        {new If (C.and(()->{return a.get().eq(Key);})) {void Then() {C.clear(); found(a.get());}};
                         new If (C.and(()->{return b.get().eq(Key);})) {void Then() {C.clear(); found(b.get());}};
-                        new If (C)                      {void Then() {C.clear(); below(b.get());}};
-                        d.set();                                                // Search has completed
+                        new If (C)                                    {void Then() {C.clear(); below(b.get());}};
+                        c.clear();                                              // Search has completed
                        }
                      };
-                    return d.Flip();                                            // Continue search with new range
+                    return c;                                                   // Continue search with new range
                    }
                  };
-                new If (d.Flip())                                               // Incomplete search
+                new If (c)                                                      // Incomplete search
                  {void Then()
                    {stop(f("%s %s %d", "Searched unsuccessfully more than",
                            "the maximum number of times:", numberOfSlots()));
