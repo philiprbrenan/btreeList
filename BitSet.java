@@ -290,7 +290,7 @@ abstract public class BitSet extends Test                                       
    {new For(byteSize)                                                           // Step from root to leaf
      {Bool body(int i)
        {setByte(new Int(i), (byte)0);
-        return new Bool(true);
+        return Bool.True;
        }
      };
 
@@ -300,7 +300,7 @@ abstract public class BitSet extends Test                                       
         new For(bitSize)                                                        // For loop to set bits along path in One tree to actual bit
          {Bool body(int i)
            {setBitNC(new Pos(p.Add(i)), true);
-            return new Bool(true);
+            return Bool.True;
            }
          };
        }
@@ -340,7 +340,7 @@ abstract public class BitSet extends Test                                       
              {Bool body(int j)                                                  // Step down to the leaves
                {moveUpOneLayer(c, p, w);                                        // Move up to next layer
                 c.add(getBitNC(new Pos(p.Add(c))).b() ? 0 : 1);                 // Follow path as low as possible
-                return new Bool(true);                                          // Continue the loop
+                return Bool.True;                                               // Continue the loop
                }
              };
             n.i(c); d.set();                                                    // Found the next element
@@ -374,7 +374,7 @@ abstract public class BitSet extends Test                                       
                  {Bool body(int j)
                    {moveUpOneLayer(B, p, w);
                     B.add(getBitNC(new Pos(p.Add(B).inc())).b() ? 1 : 0);       // Follow path to actual bits
-                    return new Bool(true);
+                    return Bool.True;
                    }
                  };
                 R.i(B);                                                         // Save the result
@@ -441,7 +441,7 @@ abstract public class BitSet extends Test                                       
                          {Bool body(int j)                                      // Step down to the leaves
                            {moveUpOneLayer(B, p, w);                            // Move up one layer
                             B.add(getBitNC(new Pos(p.Add(B))).b() ? 0 : 1);     // Follow path as low as possible
-                            return new Bool(true);
+                            return Bool.True;
                            }
                          };
                         final Int C = B.Add(B);
@@ -497,7 +497,7 @@ abstract public class BitSet extends Test                                       
                          {Bool body(int j)                                      // Step down to the leaves
                            {b.up(); moveUpOneLayer(B, p, w);                    // Move up one layer
                             B.add(getBitNC(new Pos(p.Add(b))).b() ? 0 : 1);     // Follow path as high as possible
-                            return new Bool(true);
+                            return Bool.True;
                            }
                          };
                         final Int BB = B.Add(B), CC = BB.dup().inc();
