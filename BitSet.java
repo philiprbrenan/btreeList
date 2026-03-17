@@ -158,7 +158,9 @@ abstract public class BitSet extends Test                                       
   private void setOnePath(Pos Index)                                            // Set bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
-     {final Int b = Index.position(), p = new Int(0), w = new Int(bitSize);     // Position in level, level, width
+     {final Int b = Index.position();                                           // Position in level
+      final Int p = IntDec.p().i(0);                                            // Position in bits, width
+      final Int w = new Int(bitSize);                                           // Width
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
@@ -595,6 +597,12 @@ abstract public class BitSet extends Test                                       
        }
      }
     return ""+s;
+   }
+
+//D1 Declarations                                                               // Declarations of variables to automate the capture of their names
+
+  class IntDec                                                                  // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
+   {static Int p() {return new Int();}
    }
 
 //D1 Tests                                                                      // Tests
