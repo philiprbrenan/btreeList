@@ -488,12 +488,14 @@ abstract public class BitSet extends Test                                       
           void Else()
            {if (oneTreeBit) return;                                             // No more bits to check
 
-            final Int w = new Int(bitSize2), p = addressZeroTree(); b.down();   // First layer of zero tree bits
+            final Int w = 𝗜𝗻𝘁.w().i(bitSize2);                                  // Current width
+            final Int p = addressZeroTree();                                    // Position in bits
+            b.down();                                                           // First layer of zero tree bits
 
             new For(bitSize)                                                    // Search down through the zero bit tree
              {Bool body(Int i)                                                  // Search down through the zero bit tree
                {final Int  B = b.Dec();                                         // Is there a path down from the next bit?
-                final Bool d = new Bool().clear();                              // Whether we have arrived at a bit that is already correctly set
+                final Bool d = 𝗕𝗼𝗼𝗹.d().clear();                                // Whether we have arrived at a bit that is already correctly set
                 new If (B.lt(0))                                                // Nothing prior to search so no prev zero
                  {void Then()
                    {d.set();
@@ -508,8 +510,9 @@ abstract public class BitSet extends Test                                       
                             return Bool.True;
                            }
                          };
-                        final Int BB = B.Add(B), CC = BB.dup().inc();
-                        R.i(BB.add(!getBit(new Pos(CC)).b() ? 1 : 0));          // Next zero bit from actual bits
+                        final Int P = 𝗜𝗻𝘁.P().i(B.Add(B));                      // Parent row bits - low position
+                        final Int Q = 𝗜𝗻𝘁.Q().i(P.dup().inc());                 // Parent row bits - high position
+                        R.i(P.add(!getBit(new Pos(Q)).b() ? 1 : 0));            // Next zero bit from actual bits
                         d.set();
                        }
                      };
@@ -606,7 +609,6 @@ abstract public class BitSet extends Test                                       
    }
 
 //D1 Declarations                                                               // Declarations of variables to automate the capture of their names
-
 
   class 𝗕𝗼𝗼𝗹                                                                    // By declaring boolean variables in this strange way we can automate the collection of their fully qualified names via a trace back
    {static Bool b() {return new Bool();}
