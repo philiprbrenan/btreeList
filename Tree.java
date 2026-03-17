@@ -7,7 +7,7 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 import java.nio.ByteBuffer;
 
-class Tree extends Test                                                         // A tree that translates keys into values
+class Tree extends Test                                                         // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int             maxLeafSize;                                            // The maximum number of entries in a leaf of the tree
   final int           maxBranchSize;                                            // The maximum number of entries in a branch of the tree
   final Stack<Allocation> freeChain = new Stack<>();                            // Unallocated leaves and branches
