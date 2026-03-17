@@ -1021,13 +1021,13 @@ public class Test                                                               
 
   abstract static class For                                                     // For loop
    {For(int Start, int End)                                                     // Execute the loop the specified number of times
-     {for(int i : range(Start, End)) if (!body(i).b()) break;                   // Execute the loop as long as it returns true
+     {for(int i : range(Start, End)) if (!body(new Int(i)).b()) break;          // Execute the loop as long as it returns true
      }
 
     For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
     For(Int End) {this(0, End.i());}                                            // Execute the loop the specified number of times as long as it returns true
 
-    Bool body(int Index) {return new Bool(false);}                              // Body of the for loop: return flse to terminate execution of the loop
+    Bool body(Int Index) {return new Bool(false);}                              // Body of the for loop: return flse to terminate execution of the loop
    }
 
   abstract static class If                                                      // If statement
@@ -1688,8 +1688,8 @@ a   aa    AAA
     class test_programming
      {test_programming(int N)
        {new For(N)
-         {Bool body(int Index)
-           {new If (Index % 2 == 0)
+         {Bool body(Int Index)
+           {new If (Index.Mod(2).eq(0))
              {void Then() {i.add(Index);}
               void Else() {i.sub(Index);}
              };
