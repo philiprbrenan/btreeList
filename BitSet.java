@@ -307,7 +307,7 @@ abstract public class BitSet extends Test                                       
      };
    }
 
-//D2 Locate Ones                                                                // Find the first, last, next, previous bit set to one
+//D1 Locate Ones                                                                // Find the first, last, next, previous bit set to one
 
   public Pos firstOne()                                                         // Find the index of the first set bit
    {checkOne();
@@ -393,7 +393,7 @@ abstract public class BitSet extends Test                                       
     return R.valid().b() ? new Pos(R) : new Pos();                              // Result if found
    }
 
-//D2 Locate Zeros                                                               // Find the first, last, next, previous bit set to zero
+//D1 Locate Zeros                                                               // Find the first, last, next, previous bit set to zero
 
   public Pos firstZero()                                                        // Find the index of the first set bit
    {checkZero();
@@ -519,12 +519,12 @@ abstract public class BitSet extends Test                                       
     return R.valid().b() ? new Pos(R) : new Pos();                              // Result if found
    }
 
-//D2 Full or empty                                                              // Check whether a bit set is full or empty
+//D1 Full or empty                                                              // Check whether a bit set is full or empty
 
   public Bool  full() {return firstZero().notValid();}                          // If there are no zero bits then the bit set must be full
   public Bool empty() {return firstOne ().notValid();}                          // If there are no one bits then the bit set must be empty
 
-//D2 Integrity                                                                  // Check that the bit trees match the actual bits
+//D1 Integrity                                                                  // Check that the bit trees match the actual bits
 
   public boolean integrity() {return integrity(true);}                          // Do an integrity check on the bitset to detect corruption
 
@@ -553,7 +553,7 @@ abstract public class BitSet extends Test                                       
     return true;
    }
 
-//D2 Print                                                                      // Print the bit set
+//D1 Print                                                                      // Print the bit set
 
   public String toString()                                                      // Print levels in bit tree
    {final StringBuilder s = new StringBuilder();
