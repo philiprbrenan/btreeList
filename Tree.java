@@ -2384,7 +2384,7 @@ class Tree extends Test                                                         
     if (level > maxPrintLevels) return;
     padStrings(P, level);
 
-    if (B.countUsed().gt(0).b())                                                    // Branch has key, next pairs
+    if (B.countUsed().gt(0).b())                                                // Branch has key, next pairs
      {for (int i : range(B.numberOfSlots()))
        {if (B.usedSlots(B.new Slot(i)).b())
          {final Slots s = B.data(B.new Slot(i));
