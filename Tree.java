@@ -339,7 +339,7 @@ class Tree extends Test                                                         
       return I;
      }
 
-    void freeRef(slot Ref) {usedRefs(Ref, Bool.False);}                    // Free a reference to one of the keys in the slots
+    void freeRef(slot Ref) {usedRefs(Ref, Bool.False);}                         // Free a reference to one of the keys in the slots
 
 //D2 Statistics                                                                 // Query the state of the slots
 
@@ -418,7 +418,7 @@ class Tree extends Test                                                         
               return Bool.True;
              }
            };
-          usedSlots(new Slot(Position.Add(Width)), Bool.True);             // We only move occupied slots
+          usedSlots(new Slot(Position.Add(Width)), Bool.True);                  // We only move occupied slots
          }
        };
      }
@@ -636,7 +636,7 @@ class Tree extends Test                                                         
                            {void Then()                                         // Liberate a slot below the current slot
                              {shift             (i.Dec(),   w.Inc());           // Shift any intervening slots blocking the slot below
                               slots    (new Slot(i).left(), alloc);             // Insert into the slot below
-                              usedSlots(new Slot(i).left(), Bool.True);    // Mark the free slot at the start of the range of occupied slots as now in use
+                              usedSlots(new Slot(i).left(), Bool.True);         // Mark the free slot at the start of the range of occupied slots as now in use
                              }
                            };
                          }
