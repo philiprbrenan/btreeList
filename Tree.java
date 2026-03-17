@@ -598,7 +598,7 @@ class Tree extends Test                                                         
             void Else()
              {new If (l.above)                                                  // Insert their key above the found key
                {void Then()
-                 {final Int i = l.at();
+                 {final Int i = l;
                   final Int w = new Int(locateNearestFreeSlot(l.at()));         // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
                   new If (w.gt(0))                                              // Move up
                    {void Then()                                                 // Move up
@@ -664,9 +664,9 @@ class Tree extends Test                                                         
       boolean all;                                                              // Above all or below all if true
 
       public String toString()                                                  // Print the location
-       {if (found())                return f("%d found", at().i());
+       {if (found())                return f("%d found", i());
         if (notFoundBecauseEmpty()) return "notFoundBecauseEmpty";
-        return f("%2d %s %s %s", at().i(),
+        return f("%2d %s %s %s", i(),
                                  above ? "above" : "",
                                  below ? "below" : "",
                                  all   ? "all"   : "");
@@ -740,7 +740,7 @@ class Tree extends Test                                                         
 
     Slot locateFirstGe(Key Key)                                                 // Locate the slot containing the first key greater than or equal to the search key
      {final Locate l = new Locate(Key);
-      final Slot   a = l.at();
+      final Slot   a = l;
       return l.notFoundBecauseEmpty() ? new Slot() :
              l.below                  ? a          :
              a.right().locateNextUsedSlot();
@@ -748,7 +748,7 @@ class Tree extends Test                                                         
 
     Slot locate(Key Key)                                                        // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
-      return l.found() ? l.at() : new Slot();                                   // Found if exact match
+      return l.found() ? l : new Slot();                                        // Found if exact match
      }
 
     slot find(Key Key)                                                          // Find the index of the current key in the slots
@@ -786,7 +786,7 @@ class Tree extends Test                                                         
       final int[]N = range(numberOfSlots());
       final int[]R = range(numberOfRefs);
       s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",                // Title line
-                              name().at().i(), type().i(), numberOfRefs));
+                              name().i(), type().i(), numberOfRefs));
       s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
       s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, slots(new Slot(i)).i()));
       s.append("\nusedSlots: "); for (int i : N) s.append(             usedSlots(new Slot(i)).b() ? "   X" : "   .");
@@ -934,7 +934,7 @@ class Tree extends Test                                                         
    }
 
   ByteBuffer node(Allocation Name)                                              // Address the specified node of the tree
-   {return memory.bytes.slice(Name.at().Mul(sizeOfNode).i(), sizeOfNode);
+   {return memory.bytes.slice(Name.Mul(sizeOfNode).i(), sizeOfNode);
    }
 
   String getInt(Int Name, Int Field)                                            // Address the specified node of the tree - useful for debugging
@@ -951,8 +951,8 @@ class Tree extends Test                                                         
                      new Branch(new Allocation(r));                             // Branch as positive
    }
 
-  void root(Leaf   Root) {memory.root(Root != null ? Root.name().at().neg() : new Int(0));}   // Set the root in memory with a negative address to show that it is a leaf
-  void root(Branch Root) {memory.root(Root != null ? Root.name().at()       : new Int(0));}   // Set the root in memory with a positive address to show that it is a branch
+  void root(Leaf   Root) {memory.root(Root != null ? Root.name().neg() : new Int(0));}   // Set the root in memory with a negative address to show that it is a leaf
+  void root(Branch Root) {memory.root(Root != null ? Root.name()       : new Int(0));}   // Set the root in memory with a positive address to show that it is a branch
 
 //D2 Leaf                                                                       // Use the slots to model a leaf
 
@@ -986,7 +986,7 @@ class Tree extends Test                                                         
      }
 
     void up(Branch Branch)                                                      // Set parent branch
-     {memory.up(Branch != null ? Branch.name().at() : new Int(0));
+     {memory.up(Branch != null ? Branch.name() : new Int(0));
      }
 
     Slot upIndex(Branch Branch)                                                 // Index of this leaf in its parent. We have to return an Integer rather than a slot because we do not know which branch the slot is in
@@ -1284,9 +1284,9 @@ class Tree extends Test                                                         
        }
       final Branch     P = up();                                                // Containing branch
       final Slots.Slot Q = P != null ? upIndex(P) : new Slots(2).new Slot();
-      final String U = " up: "   +(P != null ? P.name().at()      : "null");
+      final String U = " up: "   +(P != null ? P.name()               : "null");
       final String I = " index: "+(P != null && Q.valid().b() ? Q.i() : "null");
-      return "Leaf     : "+name().at()+U+I+"\n"+
+      return "Leaf     : "+name()+U+I+"\n"+
               super.toString() + "data     :  "+d+"\n";
      }
    }
@@ -1322,7 +1322,7 @@ class Tree extends Test                                                         
      }
 
     void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
-     {memory.up(Branch != null ? Branch.name().at() : new Int(0));
+     {memory.up(Branch != null ? Branch.name() : new Int(0));
      }
 
     Int  upIndex()          {return memory.upIndex();}                          // Index of this branch in its parent
@@ -1337,7 +1337,7 @@ class Tree extends Test                                                         
          {R.i(0);
          }
         void Else()
-         {final Int i = Slots.name().at();
+         {final Int i = Slots.name();
           R.i(ref(Slots) ? i : i.neg());
          }
        };
@@ -1730,7 +1730,7 @@ class Tree extends Test                                                         
           d.add(""+memory.data(slots(new Slot(i))).i());
          }
        }
-      return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name().at()+"\n";
+      return "keys: "+k+"\n"+"data: "+d+"\ntop : "+top().name()+"\n";
      }
 
     public String toString()                                                    // Print a branch
@@ -1745,7 +1745,7 @@ class Tree extends Test                                                         
 
       final Int    ui = upIndex();
       final String us = ui.valid().b() ? ""+ui.i() : "null";
-      final int n = name().at().i();
+      final int n = name().i();
       final int u = memory.up().i();
       final int i = ui.valid().b() ? memory.upIndex().i() : -1;                 // -1 represents null
       s.append(f("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
@@ -1893,7 +1893,7 @@ class Tree extends Test                                                         
       if (leaf    != null) s.append(""+leaf);
       if (locate  != null) s.append("Locate      : "+locate   +"\n");
       final StringJoiner j = new StringJoiner(", ");
-      for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name().at());
+      for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
       if (leaf.up() != null) s.append("Path        : "+j+"\n");
       return ""+s;
      }
@@ -1966,7 +1966,7 @@ class Tree extends Test                                                         
         new If (F.locate.found())                                               // Key already present so update data associated with the key
          {void Then()
            {final Leaf l = F.leaf;                                              // Child leaf
-            l.data(F.locate.at(), Data);                                        // Update data
+            l.data(F.locate, Data);                                             // Update data
             d.set();                                                            // Success
            }
          };
@@ -2130,7 +2130,7 @@ class Tree extends Test                                                         
        {final Find f = find(Key);                                               // Locate the key in the tree
         new If (f.locate.found())                                               // Key found so delete it
          {void Then()
-           {f.leaf.clearSlotAndRef(f.locate.at());                              // Delete key and data from leaf
+           {f.leaf.clearSlotAndRef(f.locate);                                   // Delete key and data from leaf
             mergeAlongPath(Key);
            }
          };
@@ -2255,7 +2255,7 @@ class Tree extends Test                                                         
 
     new If (root() != null && l.up() != null)                                   // Tree has branches
      {void Then()
-       {final Slots.Slot r = Found.locate.at().stepRight();                     // Next slot to the right in the leaf
+       {final Slots.Slot r = Found.locate.stepRight();                          // Next slot to the right in the leaf
         new If (r.valid())                                                      // There is a next slot to the right so go to it
           {void Then()
            {f.set(new Find(l.keys(r), l));                                      // There is a next slot to the right in the leaf so return it
@@ -2263,7 +2263,7 @@ class Tree extends Test                                                         
           void Else()                                                           // We are at the end of the current branch
            {final Branch U = l.up();                                            // Parent branch of the leaf
 
-            new If (U.top().name().at().ne(l.name().at()))                      // In the body of the parent branch of the leaf but not at the top of the parent
+            new If (U.top().name().ne(l.name().at()))                           // In the body of the parent branch of the leaf but not at the top of the parent
              {void Then()
                {final Slots.Slot u = l.upIndex(U);                              // Next sibling slot right
                 final Slots.Slot R = u.valid().b() ? u.stepRight() : l.new Slot();  // Next sibling slot right
@@ -2280,7 +2280,7 @@ class Tree extends Test                                                         
                    {new For(numberOfNodes)                                      // Step up to turning point
                      {Bool body(int i)
                        {final Branch P = p.get(), Q = q.get();
-                        new If (P.top().name().at().ne(Q.name().at()))          // In the body of the parent branch of the leaf
+                        new If (P.top().name().ne(Q.name().at()))               // In the body of the parent branch of the leaf
                          {void Then()
                            {final Int     I = Q.upIndex();                      // Not null because we are not at the root
                             final Slots.Slot R = P.new Slot(I).stepRight();     // Next sibling to the right
@@ -2315,7 +2315,7 @@ class Tree extends Test                                                         
 
     new If (root() != null && l.up() != null)                                   // Tree is not empty and not a leaf that we are at the end of
      {void Then()
-       {final Slots.Slot s = Found.locate.at().stepLeft();                      // Previous slot in leaf
+       {final Slots.Slot s = Found.locate.stepLeft();                           // Previous slot in leaf
         new If (s.valid())
          {void Then()
            {f.set(new Find(l.keys(s), l));
@@ -2396,10 +2396,10 @@ class Tree extends Test                                                         
      }
     final int N = level * linesToPrintABranch;                                  // Start line at which to print branch
     P.elementAt(N+0).append(s);
-    final String U = Parent != null ? "" + Parent.name().at() : "*";
-    final String I = Index  != null ? "" + Index              : "*";
+    final String U = Parent != null ? "" + Parent.name() : "*";
+    final String I = Index  != null ? "" + Index         : "*";
     if (Details)
-     {P.elementAt(N+1).append("("+L.name().at()+", "+U+", "+I+")");
+     {P.elementAt(N+1).append("("+L.name()+", "+U+", "+I+")");
      }
     padStrings(P, level);
    }
@@ -2508,7 +2508,7 @@ class Tree extends Test                                                         
     return ""+s;
    }
 
-//D2 List All                                                                   // Create lists of all leaves and branches in the tree
+//D21 List All                                                                   // Create lists of all leaves and branches in the tree
 
   class ListAll  // Causes errors when run                                      // Create lists of all the leaves and branches in the tree to assist with debugging
    {final Stack<Branch>branches = new Stack<>();
