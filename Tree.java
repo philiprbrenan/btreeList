@@ -714,7 +714,7 @@ class Tree extends Test                                                         
                     new If (C.and(()->{return Ap.ne(bp);}, ()->{return A.le(Key);})) {void Then() {C.clear(); b.set(A);}};
                     new If (C.and(()->{return Bp.ne(ap);}, ()->{return B.ge(Key);})) {void Then() {C.clear(); a.set(B);}};
                     new If (C.and(()->{return Bp.ne(bp);}, ()->{return B.le(Key);})) {void Then() {C.clear(); b.set(B);}};
-                    new If (C)                                           // The slots must be adjacent
+                    new If (C)                                                  // The slots must be adjacent
                      {void Then()
                        {new If (C.and(()->{return a.get().eq(Key);})) {void Then() {C.clear(); found(a.get());}};
                         new If (C.and(()->{return b.get().eq(Key);})) {void Then() {C.clear(); found(b.get());}};
@@ -1762,59 +1762,61 @@ class Tree extends Test                                                         
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
     //if (f == null) return;                                                    // Empty tree
 
-    if (f.leaf.up() != null)                                                    // Process path from leaf to root
-     {final Ref<Branch> B = new Ref<>(f.leaf.up());                             // First branch
-      new For(numberOfNodes)                                                    // Go up the tree merging as we go: only one merge is needed at each level
-       {Bool body(int i)
-         {final Branch b = B.get();
-          final Bool m = new Bool().clear();                                    // Whether we have merged anything yet
+    new If (f.leaf.up() != null)                                                // Process path from leaf to root
+     {void Then()
+       {final Ref<Branch> B = new Ref<>(f.leaf.up());                           // First branch
+        new For(numberOfNodes)                                                  // Go up the tree merging as we go: only one merge is needed at each level
+         {Bool body(int i)
+           {final Branch b = B.get();
+            final Bool m = new Bool().clear();                                  // Whether we have merged anything yet
 
-          new If (!m.b())
-           {void Then()
-             {final Slots.Slot l = b.locateFirstGe(Key);                        // Position of key
-              m.set(l.valid().and(()->{return b.mergeRightSibling(l);}));       // Merge right sibling of keyed child
-             }
-           };
+            new If (!m.b())
+             {void Then()
+               {final Slots.Slot l = b.locateFirstGe(Key);                      // Position of key
+                m.set(l.valid().and(()->{return b.mergeRightSibling(l);}));     // Merge right sibling of keyed child
+               }
+             };
 
-          new If (!m.b())
-           {void Then()
-             {final Slots.Slot L = b.locateFirstGe(Key);                        // Position of key
-              m.set(L.valid().and(()->{return b.mergeLeftSibling(L);}));        // Merge left sibling of keyed child
-             }
-           };
+            new If (!m.b())
+             {void Then()
+               {final Slots.Slot L = b.locateFirstGe(Key);                      // Position of key
+                m.set(L.valid().and(()->{return b.mergeLeftSibling(L);}));      // Merge left sibling of keyed child
+               }
+             };
 
-          new If (!m.b())
-           {void Then()
-             {final Slots.Slot k = b.locateFirstGe(Key);                        // Look further left
-              m.set(k.valid()
-               .and(()->{return b.mergeLeftSibling(k.stepLeft());}));           // Merge further left sibling
-              new If (!m.b())                                                   // Top
-               {void Then()
-                 {final Slots.Slot S = b.locateLastUsedSlot();
-                  m.set(S.valid().and(()->{return b.mergeLeftSibling(S);}));    // Merge further left of top
-                 }
-               };
-             }
-           };
+            new If (!m.b())
+             {void Then()
+               {final Slots.Slot k = b.locateFirstGe(Key);                      // Look further left
+                m.set(k.valid()
+                 .and(()->{return b.mergeLeftSibling(k.stepLeft());}));         // Merge further left sibling
+                new If (!m.b())                                                 // Top
+                 {void Then()
+                   {final Slots.Slot S = b.locateLastUsedSlot();
+                    m.set(S.valid().and(()->{return b.mergeLeftSibling(S);}));  // Merge further left of top
+                   }
+                 };
+               }
+             };
 
-          new If (!m.b())
-           {void Then()
-             {final Slots.Slot r = b.locateFirstGe(Key);                        // Look further right
-              m.set(r.valid()
-               .and(()->{return b.mergeRightSibling(r.stepRight());}));         // Merge further right sibling
-             }
-           };
+            new If (!m.b())
+             {void Then()
+               {final Slots.Slot r = b.locateFirstGe(Key);                      // Look further right
+                m.set(r.valid()
+                 .and(()->{return b.mergeRightSibling(r.stepRight());}));       // Merge further right sibling
+               }
+             };
 
-          new If (!m.b())                                                       // Migrate into top
-           {void Then()
-             {b.mergeLeftSibling(b.new Slot());
-             }
-           };
-          B.set(b.up());                                                        // Go up the tree merging as we go: only one merge is needed at each level
-          return B.valid();
-         }
-       };
-     }
+            new If (!m.b())                                                     // Migrate into top
+             {void Then()
+               {b.mergeLeftSibling(b.new Slot());
+               }
+             };
+            B.set(b.up());                                                      // Go up the tree merging as we go: only one merge is needed at each level
+            return B.valid();
+           }
+         };
+       }
+     };
     mergeRoot(Key);                                                             // Merge the root if possible
    }
 
