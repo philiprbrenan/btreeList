@@ -863,23 +863,23 @@ class Tree extends Test                                                         
       Memory()                 {bytes = ByteBuffer.allocate(size);}             // Create memory
       Memory(ByteBuffer Bytes) {bytes = Bytes;}                                 // Use a specified memory
 
-      BitSet.Pos us(Int I) {return usedSlotsBits.new Pos(I);}                   // A slot position in the used slots
-      BitSet.Pos ur(Int I) {return usedRefsBits .new Pos(I);}                   // A slot position in the references
+      BitSet.Pos   us(Int I) {return usedSlotsBits.new Pos(I);}                 // A slot position in the used slots
+      BitSet.Pos   ur(Int I) {return usedRefsBits .new Pos(I);}                 // A slot position in the references
 
-      Bool usedSlots (Int I) {return usedSlotsBits.getBit(us(I));}              // Value of indexed used slot
-      Bool usedRefs  (Int I) {return usedRefsBits .getBit(ur(I));}              // Value of indexed used reference
-      Int  slots     (Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}  // Value of indexed slot
-      Int  keys      (Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}  // Value of key via indexed reference
-      Int  name      (     ) {return new Int(bytes.getInt(posName));}
+      Bool  usedSlots(Int I) {return usedSlotsBits.getBit(us(I));}              // Value of indexed used slot
+      Bool   usedRefs(Int I) {return usedRefsBits .getBit(ur(I));}              // Value of indexed used reference
+      Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}  // Value of indexed slot
+      Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}  // Value of key via indexed reference
+      Int        name(     ) {return new Int(bytes.getInt(posName));}
 
-      void usedSlots (Int I, boolean V) {usedSlotsBits.set(        us(I),               V);}     // set value of indexed used slot
-      void usedRefs  (Int I, boolean V) {usedRefsBits .set(        ur(I),               V);}     // set value of indexed used reference
-      void slots     (Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());} // set value of indexed slot
-      void keys      (Int I, Int     V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());} // set value of key via indexed reference
-      void name      (       Int     V) {bytes.putInt(posName,                          V.i());} // Save the name of the node in memory to assist debugging
+      void usedSlots(Int I, boolean V) {usedSlotsBits.set(        us(I),               V);}     // Set value of indexed used slot
+      void  usedRefs(Int I, boolean V) {usedRefsBits .set(        ur(I),               V);}     // Set value of indexed used reference
+      void     slots(Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());} // Set value of indexed slot
+      void      keys(Int I, Int     V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());} // Set value of key via indexed reference
+      void      name(       Int     V) {bytes.putInt(posName,                          V.i());} // Save the name of the node in memory to assist debugging
 
-      void type(Int Type) {       bytes.putInt(posType, Type.i());}             // Type of object in which the slots are embedded
-      Int  type()         {return new Int(bytes.getInt(posType));}
+      void      type(Int Type)         {       bytes.putInt(posType, Type.i());}// Type of object in which the slots are embedded
+      Int       type()                 {return new Int(bytes.getInt(posType));}
      }
    }
 
@@ -890,10 +890,10 @@ class Tree extends Test                                                         
 //D1 Tree memory                                                                // Memory used to hold the root of the tree, its leaves and branches
 
   class Memory extends TreeMemoryPositions                                      // Memory used to hold the bytes of the
-   {final int l            = new   LeafMemoryPositions().memorySize();          // Memory positions for leaves
-    final int b            = new BranchMemoryPositions().memorySize();          // Memory positions for branches
-    final int sizeOfNode   = max(l, b);                                         // Size of memory for a branch or a leaf or the base description of the tree - which is held in node 0.
-    final int size         = sizeOfNode * (numberOfNodes+1);                    // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node zero
+   {final int            l = new   LeafMemoryPositions().memorySize();          // Memory positions for leaves
+    final int            b = new BranchMemoryPositions().memorySize();          // Memory positions for branches
+    final int   sizeOfNode = max(l, b);                                         // Size of memory for a branch or a leaf or the base description of the tree - which is held in node 0.
+    final int         size = sizeOfNode * (numberOfNodes+1);                    // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node zero
     final ByteBuffer bytes = ByteBuffer.allocate(size);                         // Memory occupied by tree
 
     Int  root()             {return new Int(bytes.getInt(posRoot));}            // Get index of node containing root
@@ -979,7 +979,7 @@ class Tree extends Test                                                         
      }
 
     Branch up()                                                                 // Parent branch
-     {final Int u = memory.up();
+     {final Int    u = memory.up();
       final Branch B = u.gt(0).b() ? new Branch(new Allocation(u)) : null;
       return B;
      }
@@ -1180,14 +1180,14 @@ class Tree extends Test                                                         
      }
 
     void mergeLeaves(Leaf Left, Leaf Right)                                     // Merge the specified leaves into the current leaf
-     {Left.compactLeft ();
+     {Left .compactLeft ();
       Right.compactRight();
       mergeCompacted(Left, Right);
       mergeData     (Left, Right);
       redistribute();
      }
 
-    boolean mergeFromRight(Leaf Right)                                          // Merge the specified slots from the right
+    Bool mergeFromRight(Leaf Right)                                             // Merge the specified slots from the right
      {final Bool r = new Bool();
       new If (countUsed().Add(Right.countUsed()).gt(maxLeafSize))
        {void Then()
@@ -1198,10 +1198,10 @@ class Tree extends Test                                                         
           r.set();
          }
        };
-      return r.b();
+      return r;
      }
 
-    boolean mergeFromLeft(Leaf Left)                                            // Merge the specified slots from the left
+    Bool mergeFromLeft(Leaf Left)                                               // Merge the specified slots from the left
      {final Bool R = new Bool();
       new If (Left.countUsed().Add(countUsed()).gt(maxLeafSize))
        {void Then()
@@ -1217,7 +1217,7 @@ class Tree extends Test                                                         
           R.set();
          }
        };
-      return R.b();
+      return R;
      }
 
 //D2 Memory                                                                     // Memory for leaf
@@ -1855,9 +1855,9 @@ class Tree extends Test                                                         
          {void Then()
            {new If (Leaf.ref(b.top()))                                          // Leaves for children
              {void Then()
-               {final Leaf    l = (Leaf)b.firstChild();
-                final Leaf    r = (Leaf)b.top();
-                final boolean m = l.mergeFromRight(r);
+               {final Leaf l = (Leaf)b.firstChild();
+                final Leaf r = (Leaf)b.top();
+                final Bool m = l.mergeFromRight(r);
                 new If (m) {void Then() {b.free(); r.free(); root(l);}};        // Update root if the leaves were successfully merged
                }
               void Else()
