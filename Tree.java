@@ -706,19 +706,19 @@ class Tree extends Test                                                         
                    {final Slot M = new Slot(a.get().Add(b.get()).down());       // Desired mid point - but there might not be a slot in use at this point
                     final Slot A = M.locatePrevUsedSlot();                      // Occupied slot on or preceding mid point
                     final Slot B = M.locateNextUsedSlot();                      // Occupied slot on or succeeding mid point
-                    final Bool D = new Bool().clear();                          // Continue the search unless set
+                    final Bool C = new Bool().set();                            // Continue the search unless cleared
                     final Int Ap = A.Int(), ap = a.get().Int();                 // New and current lower limit of range
                     final Int Bp = B.Int(), bp = b.get().Int();                 // New and current upper limit of range
 
-                    new If (D.Flip().and(()->{return Ap.ne(ap);}, ()->{return A.ge(Key);})) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
-                    new If (D.Flip().and(()->{return Ap.ne(bp);}, ()->{return A.le(Key);})) {void Then() {D.set(); b.set(A);}};
-                    new If (D.Flip().and(()->{return Bp.ne(ap);}, ()->{return B.ge(Key);})) {void Then() {D.set(); a.set(B);}};
-                    new If (D.Flip().and(()->{return Bp.ne(bp);}, ()->{return B.le(Key);})) {void Then() {D.set(); b.set(B);}};
-                    new If (D.Flip())                                           // The slots must be adjacent
+                    new If (C.and(()->{return Ap.ne(ap);}, ()->{return A.ge(Key);})) {void Then() {C.clear(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
+                    new If (C.and(()->{return Ap.ne(bp);}, ()->{return A.le(Key);})) {void Then() {C.clear(); b.set(A);}};
+                    new If (C.and(()->{return Bp.ne(ap);}, ()->{return B.ge(Key);})) {void Then() {C.clear(); a.set(B);}};
+                    new If (C.and(()->{return Bp.ne(bp);}, ()->{return B.le(Key);})) {void Then() {C.clear(); b.set(B);}};
+                    new If (C)                                           // The slots must be adjacent
                      {void Then()
-                       {new If (D.Flip().and(()->{return a.get().eq(Key);})) {void Then() {D.set(); found(a.get());}};
-                        new If (D.Flip().and(()->{return b.get().eq(Key);})) {void Then() {D.set(); found(b.get());}};
-                        new If (D.Flip())                      {void Then() {D.set(); below(b.get());}};
+                       {new If (C.and(()->{return a.get().eq(Key);})) {void Then() {C.clear(); found(a.get());}};
+                        new If (C.and(()->{return b.get().eq(Key);})) {void Then() {C.clear(); found(b.get());}};
+                        new If (C)                      {void Then() {C.clear(); below(b.get());}};
                         d.set();                                                // Search has completed
                        }
                      };
