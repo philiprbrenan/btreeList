@@ -423,7 +423,7 @@ abstract public class BitSet extends Test                                       
     final Int b = IntDec.b().i(Index.position());                               // Offset in bits in the current layer
     new If (b.ne(bitSize1))                                                     // Not last bit so there might be a next bit
      {void Then()
-       {final Int w = new Int(bitSize2);                                        // Current width
+       {final Int w = IntDec.w().i(bitSize2);                                   // Current width
         final Int p = addressZeroTree();                                        // Position in bits
         final Pos q = new Pos(b.Inc());
         new If (getBit(q).Flip())                                               // Next bit is zero
@@ -436,11 +436,11 @@ abstract public class BitSet extends Test                                       
 
             new For(bitSize)                                                    // Search down through the zero bit tree
              {Bool body(Int i)                                                  // Search down through the zero bit tree
-               {final Int B = b.Inc();                                          // Is there a path down from the next bit?
-                final Bool d = new Bool().clear();                              // Whether we have arrived at a bit that is already correctly set
+               {final Int  B = IntDec.B().i(b.Inc());                           // Is there a path down from the next bit?
+                final Bool C = BoolDec.C().set();                               // Whether we have arrived at a bit that is already correctly set
                 new If (B.ge(w))
                  {void Then()
-                   {d.set();                                                    // Nothing beyond to search so no next zero
+                   {C.clear();                                                  // Nothing beyond to search so no next zero
                    }
                   void Else()
                    {new If (getBitNC(new Pos(p.Add(B))))                        // Found next up bit
@@ -452,18 +452,18 @@ abstract public class BitSet extends Test                                       
                             return Bool.True;
                            }
                          };
-                        final Int C = B.Add(B);
-                        R.i(C.Add(getBit(new Pos(C)).b() ? 1 : 0));             // Next zero bit from actual bits
-                        d.set();
+                        final Int D = B.Add(B);
+                        R.i(D.Add(getBit(new Pos(D)).b() ? 1 : 0));             // Next zero bit from actual bits
+                        C.clear();
                        }
                       void Else()
                        {moveDownOneLayer(b, p, w);                              // Address next level of bits in tree
-                        new If (w.eq(0)) {void Then() {d.set();}};              // Address next level of bits in tree
+                        new If (w.eq(0)) {void Then() {C.clear();}};            // Address next level of bits in tree
                        }
                      };
                    }
                  };
-                return d.Flip();
+                return C;
                }
              };
            }
