@@ -167,7 +167,7 @@ abstract public class BitSet extends Test                                       
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
          {Bool body(Int Index)
-           {final Bool c = BoolDec.c().set();                                   // Complete early if we found a bit that does not need setting
+           {final Bool c = 𝗕𝗼𝗼𝗹.c().set();                                   // Complete early if we found a bit that does not need setting
             new If (p.ne(0))                                                    // Not on the actual bits
              {void Then()                                                       // Not on the actual bits
                {final Pos q = new Pos(p.Add(b));                                // Position in One tree
@@ -198,7 +198,7 @@ abstract public class BitSet extends Test                                       
            {final Int  B = b.Down();
             final Int  q = p.Add(w).add(B);
             final Int  Q = p.Add2(B);
-            final Bool c = BoolDec.c().set();                                   // Complete early if we found a bit that does not need setting
+            final Bool c = 𝗕𝗼𝗼𝗹.c().set();                                   // Complete early if we found a bit that does not need setting
             new If (B.Up().inc().lt(w).and(                                     // Check both bits in the previous row are off
                   ()->{return getBitNC(new Pos(Q      )).Flip();},
                   ()->{return getBitNC(new Pos(Q.Inc())).Flip();}))
@@ -235,7 +235,7 @@ abstract public class BitSet extends Test                                       
        {new For(bitSize)                                                        // Step from root to leaf
          {Bool body(Int Index)
            {final Pos  q = new Pos(p.Add(b));
-            final Bool c = BoolDec.c().set();                                   // Complete early if we found a bit that does not need setting
+            final Bool c = 𝗕𝗼𝗼𝗹.c().set();                                   // Complete early if we found a bit that does not need setting
             new If (getBitNC(q))                                                // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
              {void Then() {c.clear();}
               void Else() {setBitNC(q, true);}
@@ -269,7 +269,7 @@ abstract public class BitSet extends Test                                       
                    {final Int P  = p.dup();                                     // Child layer becomes parent layer
                     moveDownOneLayer(b, p, w);                                  // Index of bit in child layer, position in child layer, width of child layer
                     final Int  Q = P.Add(b).add(b);
-                    final Bool c = BoolDec.c().set();                           // Complete early if we found a bit that does not need setting
+                    final Bool c = 𝗕𝗼𝗼𝗹.c().set();                           // Complete early if we found a bit that does not need setting
                     new If (getBitNC(new Pos(Q)).or(
                             ()->{return getBitNC(new Pos(Q.Inc()));}))
                      {void Then() {c.clear();}                                  // There is a one in the upper row so we do not need to clear further down
@@ -339,7 +339,7 @@ abstract public class BitSet extends Test                                       
     new For(bitSize)                                                            // Traverse down through the tree
      {Bool body(Int i)                                                          // Traverse down through the tree
        {final Int  c = 𝗜𝗻𝘁.c().i(b.Add(1));                                  // Is there a path down from the next bit?
-        final Bool C = BoolDec.C().set();                                       // Whether we are done yet
+        final Bool C = 𝗕𝗼𝗼𝗹.C().set();                                       // Whether we are done yet
         new If (c.lt(w).and(()->{return getBitNC(new Pos(p.Add(c)));}))         // Found next up bit
          {void Then()
            {new For(i)                                                          // Step down to the leaves
@@ -375,7 +375,7 @@ abstract public class BitSet extends Test                                       
        {new For(bitSize)                                                        // Step up throgh One bits
          {Bool body(Int i)
            {final Int  B =  𝗜𝗻𝘁.B().i(b.Dec());                              // Is there a path down from the next bit?
-            final Bool C = BoolDec.C().set();                                   // Whether we have arrived at a bit that is already correctly set
+            final Bool C = 𝗕𝗼𝗼𝗹.C().set();                                   // Whether we have arrived at a bit that is already correctly set
             new If (b.gt(0).and(()->{return getBitNC(new Pos(p.Add(B)));}))     // Found next down bit
              {void Then()
                {new For(i)                                                      // Step down to the leaves
@@ -437,7 +437,7 @@ abstract public class BitSet extends Test                                       
             new For(bitSize)                                                    // Search down through the zero bit tree
              {Bool body(Int i)                                                  // Search down through the zero bit tree
                {final Int  B = 𝗜𝗻𝘁.B().i(b.Inc());                           // Is there a path down from the next bit?
-                final Bool C = BoolDec.C().set();                               // Whether we have arrived at a bit that is already correctly set
+                final Bool C = 𝗕𝗼𝗼𝗹.C().set();                               // Whether we have arrived at a bit that is already correctly set
                 new If (B.ge(w))
                  {void Then()
                    {C.clear();                                                  // Nothing beyond to search so no next zero
@@ -607,7 +607,8 @@ abstract public class BitSet extends Test                                       
 
 //D1 Declarations                                                               // Declarations of variables to automate the capture of their names
 
-  class BoolDec                                                                 // By declaring boolean variables in this strange way we can automate the collection of their fully qualified names via a trace back
+
+  class 𝗕𝗼𝗼𝗹                                                                    // By declaring boolean variables in this strange way we can automate the collection of their fully qualified names via a trace back
    {static Bool b() {return new Bool();}
     static Bool c() {return new Bool();}
     static Bool C() {return new Bool();}
