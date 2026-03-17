@@ -2,8 +2,6 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// /// Convert to new If()
-// Investigate listAll introducing errors
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1910,59 +1908,78 @@ class Tree extends Test                                                         
     return f.get();
    }
 
-  void insert(Key Key, Data Data)                                               // /// Insert a key, data pair or update key data pair in the tree
+  void insert(Key Key, Data Data)                                               // Insert a key, data pair or update key data pair in the tree
    {final Bool d = new Bool().clear();                                          // Try various insertion methods until one succeeds
-    if (root() == null)                                                         // Empty tree
-     {final Leaf l = new Leaf(); root(l);                                       // Root is a leaf
-      l.insert(Key, Data);                                                      // Insert into leaf root
-      d.set();
-     }
-    else                                                                        // Localize optimized insert for non full leaf or full leaf under non full parent
-     {final Find F = find(Key);                                                 // See if key is already present
-      if (F.locate.found())                                                     // Key already present so update data associated with the key
-       {final Leaf l = F.leaf;                                                  // Child leaf
-        l.data(F.locate.at(), Data);                                            // Update data
-        d.set();                                                                // Success
+    new If (root() == null)                                                     // Empty tree
+     {void Then()
+       {final Leaf l = new Leaf(); root(l);                                     // Root is a leaf
+        l.insert(Key, Data);                                                    // Insert into leaf root
+        d.set();
        }
-      if (!d.b() && !F.leaf.full())                                             // Leaf not full so insert directly
-       {final Leaf l = F.leaf;                                                  // Child leaf
-        l.insert(Key, Data);                                                    // Insert key
-        d.set();                                                                // Success
-       }
-      if (!d.b() && F.leaf.up() != null && !F.leaf.up().full())                 // Leaf is full, parent branch is not full so we can split leaf
-       {final Branch b = F.leaf.up();                                           // Parent branch
-        final Leaf   r = F.leaf;
-        final Int   sk = r.splittingKey();
-        final Leaf   l = r.splitLeft();
-        b.insert(Key(sk), l);                                                   // Insert new left leaf into leaf
-        if (Key.value().le(sk)) l.insert(Key, Data); else r.insert(Key, Data);  // Insert new key, data pair into left leaf or right leaf depending on key
-        final Slots.Slot K = b.locateFirstGe(Key);                              // Position of leaf in parent
-        if (!d.b() && b.mergeLeftSibling (K)) d.set();                          // Merge inserted leaf into prior leaf if possible
-        if (!d.b() && b.mergeRightSibling(K)) d.set();                          // Merge inserted leaf into next leaf if possible
-        if (!d.b() && K.valid())                                                // Some where in the body of the parent branch
-         {final Slots.Slot L = K.stepLeft(), R = K.stepRight();                 // Further left and right if possible
-          if (!d.b() && L.valid() && b.mergeLeftSibling (L)) d.set();
-          if (!d.b() && R.valid() && b.mergeLeftSibling (R)) d.set();
-          if (!d.b() && R.valid() && b.mergeRightSibling(R)) d.set();
-         }
-        new If (!d.b() && K.notValid())                                         // Some where in the body of the parent branch
+      void Else()                                                               // Localize optimized insert for non full leaf or full leaf under non full parent
+       {final Find F = find(Key);                                               // See if key is already present
+        new If (F.locate.found())                                               // Key already present so update data associated with the key
          {void Then()
-           {final Slots.Slot L = b.locateLastUsedSlot();
-            new If (!d.b() && L.valid() && b.mergeLeftSibling(L))
+           {final Leaf l = F.leaf;                                              // Child leaf
+            l.data(F.locate.at(), Data);                                        // Update data
+            d.set();                                                            // Success
+           }
+         };
+        new If (!d.b() && !F.leaf.full())                                       // Leaf not full so insert directly
+         {void Then()
+           {final Leaf l = F.leaf;                                              // Child leaf
+            l.insert(Key, Data);                                                // Insert key
+            d.set();                                                            // Success
+           }
+         };
+        new If (!d.b() && F.leaf.up() != null && !F.leaf.up().full())           // Leaf is full, parent branch is not full so we can split leaf
+         {void Then()
+           {final Branch b = F.leaf.up();                                       // Parent branch
+            final Leaf   r = F.leaf;
+            final Int   sk = r.splittingKey();
+            final Leaf   l = r.splitLeft();
+            b.insert(Key(sk), l);                                               // Insert new left leaf into leaf
+
+            new If (Key.value().le(sk))                                         // Insert new key, data pair into left leaf or right leaf depending on key
              {void Then()
-               {d.set();
+               {l.insert(Key, Data);
+               }
+              void Else()
+               {r.insert(Key, Data);
+               }
+             };
+
+            final Slots.Slot K = b.locateFirstGe(Key);                          // Position of leaf in parent
+            new If (!d.b() && b.mergeLeftSibling (K)) {void Then() {d.set();}}; // Merge inserted leaf into prior leaf if possible
+            new If (!d.b() && b.mergeRightSibling(K)) {void Then() {d.set();}}; // Merge inserted leaf into next leaf if possible
+            new If (!d.b() && K.valid())                                        // Some where in the body of the parent branch
+             {void Then()
+               {final Slots.Slot L = K.stepLeft(), R = K.stepRight();           // Further left and right if possible
+                new If (!d.b() && L.valid() && b.mergeLeftSibling (L)) {void Then() {d.set();}};
+                new If (!d.b() && R.valid() && b.mergeLeftSibling (R)) {void Then() {d.set();}};
+                new If (!d.b() && R.valid() && b.mergeRightSibling(R)) {void Then() {d.set();}};
+               }
+             };
+            new If (!d.b() && K.notValid())                                     // Some where in the body of the parent branch
+             {void Then()
+               {final Slots.Slot L = b.locateLastUsedSlot();
+                new If (!d.b() && L.valid() && b.mergeLeftSibling(L))
+                 {void Then()
+                   {d.set();
+                   }
+                 };
+               }
+             };
+            new If (!d.b())                                                     // Merge towards top
+             {void Then()
+               {b.mergeLeftSibling(b.new Slot());
+                d.set();
                }
              };
            }
          };
-        new If (!d.b())                                                         // Merge towards top
-         {void Then()
-           {b.mergeLeftSibling(b.new Slot());
-            d.set();
-           }
-         };
        }
-     }
+     };
 
     new If (!d.b())
      {void Then()
@@ -2441,7 +2458,7 @@ class Tree extends Test                                                         
 
 //D1 List All                                                                   // Create lists of all leaves and branches in the tree
 
-  class ListAll                                                                 // Create lists of all the leaves and branches in the tree to assist with debugging
+  class ListAll  // Causes errors when run                                      // Create lists of all the leaves and branches in the tree to assist with debugging
    {final Stack<Branch>branches = new Stack<>();
     final Stack<Leaf>  leaves   = new Stack<>();
 
