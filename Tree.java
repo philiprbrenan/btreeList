@@ -840,12 +840,12 @@ class Tree extends Test                                                         
 
       boolean usedSlots (Int I) {return usedSlotsBits.getBit(us(I));}           // Value of indexed used slot
       boolean usedRefs  (Int I) {return usedRefsBits .getBit(ur(I));}           // Value of indexed used reference
-      Int     slots     (Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));} // Value of indexed slot
-      Int     keys      (Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));} // Value of key via indexed reference
+      Int     slots     (Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}  // Value of indexed slot
+      Int     keys      (Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}  // Value of key via indexed reference
       Int     name      (     ) {return new Int(bytes.getInt(posName));}
 
-      void    usedSlots (Int I, boolean V) {usedSlotsBits.set(        us(I),               V);} // set value of indexed used slot
-      void    usedRefs  (Int I, boolean V) {usedRefsBits .set(        ur(I),               V);} // set value of indexed used reference
+      void    usedSlots (Int I, boolean V) {usedSlotsBits.set(        us(I),               V);}     // set value of indexed used slot
+      void    usedRefs  (Int I, boolean V) {usedRefsBits .set(        ur(I),               V);}     // set value of indexed used reference
       void    slots     (Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());} // set value of indexed slot
       void    keys      (Int I, Int     V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());} // set value of key via indexed reference
       void    name      (       Int     V) {bytes.putInt(posName,                          V.i());} // Save the name of the node in memory to assist debugging
@@ -894,7 +894,8 @@ class Tree extends Test                                                         
       for (int i : range(min(numberOfNodes, 20)))
        {final int n = sizeOfNode * i;
         s.append(f("Node: %4d at %4d\n", i, n));
-        final boolean    l = new Int(bytes.getInt(n)).eq(new Int(NodeType.Leaf.ordinal()));
+        final boolean    l = new Int(bytes.getInt(n))
+                             .eq(new Int(NodeType.Leaf.ordinal()));
         final Allocation a = new Allocation(new Int(i));
         final String t = l ? new Leaf(a).toString() : new Branch(a).toString();
         s.append(t);
