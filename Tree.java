@@ -275,12 +275,12 @@ class Tree extends Test                                                         
 //D2 Keys                                                                       // Define a key
 
     Key firstKey()                                                              // First key in slots
-     {if (empty().b()) stop("No first key in empty slots");                         // First key in slots if there is one
+     {if (empty().b()) stop("No first key in empty slots");                     // First key in slots if there is one
       return keys(locateFirstUsedSlot());
      }
 
     Key lastKey()                                                               // Last key in slots
-     {if (empty().b()) stop("No last key in empty slots");                          // Last key in slots if there is one
+     {if (empty().b()) stop("No last key in empty slots");                      // Last key in slots if there is one
       return keys(locateLastUsedSlot());
      }
 
@@ -303,7 +303,7 @@ class Tree extends Test                                                         
       new If (f.valid()) {void Then() {usedSlots(f, new Bool(false));}};
      }
 
-    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots    (I))); clearSlots(I.i());} // Remove a key from the slots
+    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots(I))); clearSlots(I.i());} // Remove a key from the slots
     slot     slots(Slot I) {return  new slot(memory.slots    (I));}             // The indexed slot
     Bool usedSlots(Slot I) {return           memory.usedSlots(I);}              // The indexed slot usage indicator
     Bool  usedRefs(slot I) {return           memory.usedRefs (I);}              // The indexed reference usage indicator
@@ -665,44 +665,44 @@ class Tree extends Test                                                         
        {super(Key);
         new If (empty())
          {void Then()
-           {none();                                                    // Empty so their search key cannot be found
+           {none();                                                             // Empty so their search key cannot be found
            }
           void Else()
-           {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                 // Lower limit
-            final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                 // Upper limit
-            final Bool      d = new Bool().clear();                               // Continue the search unless set
+           {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());               // Lower limit
+            final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());               // Upper limit
+            final Bool      d = new Bool().clear();                             // Continue the search unless set
             new If (d.Flip().and(()->{return a.get().eq(Key);})) {void Then() {d.set(); found(a.get());            }}; // Found at the start of the range
             new If (d.Flip().and(()->{return b.get().eq(Key);})) {void Then() {d.set(); found(b.get());            }}; // Found at the end of the range
             new If (d.Flip().and(()->{return a.get().le(Key);})) {void Then() {d.set(); below(a.get()); all = true;}}; // Smaller than any key
             new If (d.Flip().and(()->{return b.get().gt(Key);})) {void Then() {d.set(); above(b.get()); all = true;}}; // Greater than any key
 
-            new If (!d.b())                                                       // Search
+            new If (!d.b())                                                     // Search
              {void Then()
-               {new For(numberOfSlots())                                          // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
+               {new For(numberOfSlots())                                        // Perform a reasonable number of searches knowing the key, if it is present, is within the current range. NB this is not a linear search, the slots are searched using binary search with an upper limit that has fooled some reviewers into thinking that a linear search is being performed.
                  {Bool body(int i)
-                   {final Slot M = new Slot(a.get().Add(b.get()).down());         // Desired mid point - but there might not be a slot in use at this point
-                    final Slot A = M.locatePrevUsedSlot();                        // Occupied slot on or preceding mid point
-                    final Slot B = M.locateNextUsedSlot();                        // Occupied slot on or succeeding mid point
-                    final Bool D = new Bool().clear();                            // Continue the search unless set
-                    final Int Ap = A.Int(), ap = a.get().Int();                   // New and current lower limit of range
-                    final Int Bp = B.Int(), bp = b.get().Int();                   // New and current upper limit of range
+                   {final Slot M = new Slot(a.get().Add(b.get()).down());       // Desired mid point - but there might not be a slot in use at this point
+                    final Slot A = M.locatePrevUsedSlot();                      // Occupied slot on or preceding mid point
+                    final Slot B = M.locateNextUsedSlot();                      // Occupied slot on or succeeding mid point
+                    final Bool D = new Bool().clear();                          // Continue the search unless set
+                    final Int Ap = A.Int(), ap = a.get().Int();                 // New and current lower limit of range
+                    final Int Bp = B.Int(), bp = b.get().Int();                 // New and current upper limit of range
 
                     new If (D.Flip().and(()->{return Ap.ne(ap);}, ()->{return A.ge(Key);})) {void Then() {D.set(); a.set(A);}}; // Make sure that the new range is tighter than the existing one
                     new If (D.Flip().and(()->{return Ap.ne(bp);}, ()->{return A.le(Key);})) {void Then() {D.set(); b.set(A);}};
                     new If (D.Flip().and(()->{return Bp.ne(ap);}, ()->{return B.ge(Key);})) {void Then() {D.set(); a.set(B);}};
                     new If (D.Flip().and(()->{return Bp.ne(bp);}, ()->{return B.le(Key);})) {void Then() {D.set(); b.set(B);}};
-                    new If (D.Flip())                                             // The slots must be adjacent
+                    new If (D.Flip())                                           // The slots must be adjacent
                      {void Then()
                        {new If (D.Flip().and(()->{return a.get().eq(Key);})) {void Then() {D.set(); found(a.get());}};
                         new If (D.Flip().and(()->{return b.get().eq(Key);})) {void Then() {D.set(); found(b.get());}};
                         new If (D.Flip())                      {void Then() {D.set(); below(b.get());}};
-                        d.set();                                                  // Search has completed
+                        d.set();                                                // Search has completed
                        }
                      };
                     return d.Flip();                                            // Continue search with new range
                    }
                  };
-                new If (d.Flip())                                                 // Incomplete search
+                new If (d.Flip())                                               // Incomplete search
                  {void Then()
                    {stop(f("%s %s %d", "Searched unsuccessfully more than",
                            "the maximum number of times:", numberOfSlots()));
@@ -923,8 +923,8 @@ class Tree extends Test                                                         
 
   Slots root()                                                                  // Slots representing the root of the tree held in memory
    {final Int r = memory.root();                                                // Current node containing root
-    return r.eq(0).b() ? null :                                                     // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
-           r.lt(0).b() ? new Leaf  (new Allocation(r.neg())):                       // Leaf as negative
+    return r.eq(0).b() ? null :                                                 // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
+           r.lt(0).b() ? new Leaf  (new Allocation(r.neg())):                   // Leaf as negative
                      new Branch(new Allocation(r));                             // Branch as positive
    }
 
@@ -971,12 +971,13 @@ class Tree extends Test                                                         
       return i.lt(0).b() ? new Slot() : Branch.new Slot(i);
      }
     void upIndex(Slot Slot)                                                     // Set the index of this leaf in its parent
-     {memory.upIndex(Slot.valid().b() ? Slot.value() : new Int(-1));                // -1 represents null in the byte buffer for this index
+     {memory.upIndex(Slot.valid().b() ? Slot.value() : new Int(-1));            // -1 represents null in the byte buffer for this index
      }
 
     Data data(Slot I) {return new Data(memory.data(slots(I).value()));}         // Get value of data field at index
     void data(Slot I, Data Value)                                               // Set value of data field at index
-     {memory.data(slots(I).value(), Value.valid().b() ? Value.value() : new Int(0));
+     {memory.data(slots(I).value(), Value.valid().b() ?
+                                    Value.value()     : new Int(0));
      }
 
     Data data(slot I) {return new Data(memory.data(I.value()));}                // Get value of data field at the slot
@@ -991,7 +992,7 @@ class Tree extends Test                                                         
      {final Leaf d = new Leaf();
       d.copySlots(this);                                                        // Copy slots
       new For(numberOfRefs())                                                   // Each reference
-       {Bool body(int i)                                                     // Each reference
+       {Bool body(int i)                                                        // Each reference
          {final slot I = new slot(i);                                           // Copy data associated with leaf keys
           d.data(I, data(I));                                                   // Copy data associated with leaf keys
           return new Bool(true);
@@ -1227,7 +1228,7 @@ class Tree extends Test                                                         
 
       Int  upIndex(){return new Int(bytes.getInt(posUpIndex));}                 // Get index of leaf in its parent from memory
       void upIndex(Int Value)                                                   // Save index of this leaf in its parent branch
-       {bytes.putInt(posUpIndex, Value.valid().b() ? Value.i() : -1);               // -1 used to indicate null which means top
+       {bytes.putInt(posUpIndex, Value.valid().b() ? Value.i() : -1);           // -1 used to indicate null which means top
        }
 
       Int  data(Int Index)                                                      // Get the index of the leaf in its parent branch from memory
@@ -1505,7 +1506,12 @@ class Tree extends Test                                                         
          }
        };
       super.compactRight();
-      new For(R) {Bool body(int i) {dataDirect(new Int(i), d[i]); return new Bool(true);}};
+      new For(R)
+       {Bool body(int i)
+         {dataDirect(new Int(i), d[i]);
+          return new Bool(true);
+         }
+       };
      }
 
     void mergeData(Key Key, Branch Left, Branch Right)                          // Merge the data from the compacted left and right slots
@@ -1572,7 +1578,7 @@ class Tree extends Test                                                         
 
     Bool mergeLeftSibling(Slot Right)                                           // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
      {final Bool R = new Bool();                                                // Result
-      final Slots.Slot left = Right.valid().b() ? Right.stepLeft() :                // Left sibling from right child
+      final Slots.Slot left = Right.valid().b() ? Right.stepLeft() :            // Left sibling from right child
                                               locateLastUsedSlot();             // Sibling prior to top
       new If (left.notValid())
        {void Then() {R.clear();}                                                // No left sibling
@@ -1592,7 +1598,7 @@ class Tree extends Test                                                         
              }
             void Else()                                                         // Children are branches
              {final Branch l = (Branch)L;
-              final Branch r = (Branch)(Right.valid().b() ? data(Right) : top());   // Right leaf sibling
+              final Branch r = (Branch)(Right.valid().b() ? data(Right):top()); // Right leaf sibling
               new If (r.mergeFromLeft(keys(left), l))                           // Merge left sibling into right
                {void Then()
                  {clearSlotAndRef(left);                                        // Remove left sibling from parent now that it has been merged with its right sibling
@@ -1614,7 +1620,7 @@ class Tree extends Test                                                         
      }
 
     Slots child(Slot Index)                                                     // The indexed child. The index must be valid or null - if null, top is returned
-     {new If (Index.valid().and(()->{return usedSlots(Index).Flip();}))                           // The slot must be valid
+     {new If (Index.valid().and(()->{return usedSlots(Index).Flip();}))         // The slot must be valid
        {void Then()
          {stop("Indexing unused slot:", Index.value());
          }
@@ -1675,7 +1681,7 @@ class Tree extends Test                                                         
        }
 
       void    upIndex(Int Value)                                                // Set the index of this branch in its parent
-       {bytes.putInt(posUpIndex, Value.valid().b() ? Value.i() : -1);               // Have to use -1 to represent null as 0 is a valid position
+       {bytes.putInt(posUpIndex, Value.valid().b() ? Value.i() : -1);           // Have to use -1 to represent null as 0 is a valid position
        }
 
       Int  top ()  {return new Int(bytes.getInt(posTop));}
@@ -1718,7 +1724,7 @@ class Tree extends Test                                                         
       final String us = ui.valid().b() ? ""+ui.i() : "null";
       final int n = name().at().i();
       final int u = memory.up().i();
-      final int i = ui.valid().b() ? memory.upIndex().i() : -1;                     // -1 represents null
+      final int i = ui.valid().b() ? memory.upIndex().i() : -1;                 // -1 represents null
       s.append(f("Branch   : %4d   up: %4d  index: %4d\n", n, u, i));
       s.append(super.toString());
       s.append("data     :  "+d+"\n");
@@ -1743,25 +1749,26 @@ class Tree extends Test                                                         
           new If (!m.b())
            {void Then()
              {final Slots.Slot l = b.locateFirstGe(Key);                        // Position of key
-              m.set(l.valid().and(()->{return b.mergeRightSibling(l);}));                     // Merge right sibling of keyed child
+              m.set(l.valid().and(()->{return b.mergeRightSibling(l);}));       // Merge right sibling of keyed child
              }
            };
 
           new If (!m.b())
            {void Then()
              {final Slots.Slot L = b.locateFirstGe(Key);                        // Position of key
-              m.set(L.valid().and(()->{return b.mergeLeftSibling(L);}));                      // Merge left sibling of keyed child
+              m.set(L.valid().and(()->{return b.mergeLeftSibling(L);}));        // Merge left sibling of keyed child
              }
            };
 
           new If (!m.b())
            {void Then()
              {final Slots.Slot k = b.locateFirstGe(Key);                        // Look further left
-              m.set(k.valid().and(()->{return b.mergeLeftSibling(k.stepLeft());}));           // Merge further left sibling
+              m.set(k.valid()
+               .and(()->{return b.mergeLeftSibling(k.stepLeft());}));           // Merge further left sibling
               new If (!m.b())                                                   // Top
                {void Then()
                  {final Slots.Slot S = b.locateLastUsedSlot();
-                  m.set(S.valid().and(()->{return b.mergeLeftSibling(S);}));                  // Merge further left of top
+                  m.set(S.valid().and(()->{return b.mergeLeftSibling(S);}));    // Merge further left of top
                  }
                };
              }
@@ -1770,7 +1777,8 @@ class Tree extends Test                                                         
           new If (!m.b())
            {void Then()
              {final Slots.Slot r = b.locateFirstGe(Key);                        // Look further right
-              m.set(r.valid().and(()->{return b.mergeRightSibling(r.stepRight());}));         // Merge further right sibling
+              m.set(r.valid()
+               .and(()->{return b.mergeRightSibling(r.stepRight());}));         // Merge further right sibling
              }
            };
 
@@ -1937,7 +1945,7 @@ class Tree extends Test                                                         
             d.set();                                                            // Success
            }
          };
-        new If (d.Flip().and(()->{return F.leaf.full().Flip();}))                             // Leaf not full so insert directly
+        new If (d.Flip().and(()->{return F.leaf.full().Flip();}))               // Leaf not full so insert directly
          {void Then()
            {final Leaf l = F.leaf;                                              // Child leaf
             l.insert(Key, Data);                                                // Insert key
@@ -1964,7 +1972,7 @@ class Tree extends Test                                                         
             final Slots.Slot K = b.locateFirstGe(Key);                          // Position of leaf in parent
             new If (d.Flip().and(()->{return b.mergeLeftSibling (K);})) {void Then() {d.set();}}; // Merge inserted leaf into prior leaf if possible
             new If (d.Flip().and(()->{return b.mergeRightSibling(K);})) {void Then() {d.set();}}; // Merge inserted leaf into next leaf if possible
-            new If (d.Flip().and(()->{return K.valid();}))                                        // Some where in the body of the parent branch
+            new If (d.Flip().and(()->{return K.valid();}))                      // Some where in the body of the parent branch
              {void Then()
                {final Slots.Slot L = K.stepLeft(), R = K.stepRight();           // Further left and right if possible
                 new If (d.Flip().and(()->{return L.valid();}, ()->{return b.mergeLeftSibling (L);})) {void Then() {d.set();}};
@@ -1972,7 +1980,7 @@ class Tree extends Test                                                         
                 new If (d.Flip().and(()->{return R.valid();}, ()->{return b.mergeRightSibling(R);})) {void Then() {d.set();}};
                }
              };
-            new If (d.Flip().and(()->{return K.notValid();}))                                 // Some where in the body of the parent branch
+            new If (d.Flip().and(()->{return K.notValid();}))                   // Some where in the body of the parent branch
              {void Then()
                {final Slots.Slot L = b.locateLastUsedSlot();
                 new If (d.Flip().and(()->{return L.valid();}, ()->{return b.mergeLeftSibling(L);}))
@@ -2033,7 +2041,7 @@ class Tree extends Test                                                         
     new If (b.valid())
      {void Then()
        {new For(numberOfNodes)                                                  // Look for first unfull branch along path up from leaf
-         {Bool body(int i)                                                   // Found the first unfull branch
+         {Bool body(int i)                                                      // Found the first unfull branch
            {new If (b.get().full().Flip())
              {void Then()
                {p.set(b.get()); D.set();
@@ -2258,7 +2266,7 @@ class Tree extends Test                                                         
                             p.set(q.get().up());
                            }
                          };
-                        return f.valid().Flip().and(()->{return p.valid();});                 // Continue until we find the first leaf
+                        return f.valid().Flip().and(()->{return p.valid();});   // Continue until we find the first leaf
                        }
                      };
                    }
@@ -2319,10 +2327,13 @@ class Tree extends Test                                                         
                                }
                               void Else()                                       // Go up to next branch
                                {q.set(p);
-                                new If (q.valid()) {void Then() {p.set(q.get().up());}};
+                                new If (q.valid())
+                                 {void Then() {p.set(q.get().up());}
+                                 };
                                }
                              };
-                            return f.valid().Flip().and(()->{return p.valid();});             // Continue until we find the first leaf
+                            return f.valid().Flip()
+                             .and(()->{return p.valid();});                     // Continue until we find the first leaf
                            }
                          };
                        }
