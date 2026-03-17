@@ -363,8 +363,10 @@ abstract public class BitSet extends Test                                       
   public Pos prevOne(Pos Index)                                                 // Find the index of the previous set bit below the specified bit
    {checkOne();
     checkIndex(Index.position());
-    final Int b = Index.position(), p = new Int(0), w = new Int(bitSize);
-    final Int R = new Int();                                                    // Result
+    final Int b = Index.position();                                             // Position in layer
+    final Int w = IntDec.w().i(bitSize);                                        // Width of layer
+    final Int p = IntDec.p().i(0);                                              // Offset of layer
+    final Int R = IntDec.R();                                                   // Result
 
     new If (b.ne(0))                                                            // At the start so no previous bit
      {void Then()
@@ -615,6 +617,8 @@ abstract public class BitSet extends Test                                       
     static Int l() {return new Int();}
     static Int n() {return new Int();}
     static Int p() {return new Int();}
+    static Int r() {return new Int();}
+    static Int R() {return new Int();}
     static Int w() {return new Int();}
    }
 
