@@ -17,11 +17,9 @@ import java.util.function.Supplier;
 import java.util.stream.*;
 import java.util.zip.GZIPOutputStream;
 
-//D1 Utility routines                                                           // Utility routines
+//D1 Construct                                                                  // Develop and test a java program to describe a chip and emulate its operation.
 
-//D2 Construct                                                                  // Develop and test a java program
-
-public class Test                                                               // Describe a chip and emulate its operation.
+public class Test                                                               // Develop and test a java program to describe a chip and emulate its operation.
  {final static boolean github_actions          =                                // Whether we are on a github
     "true".equals(System.getenv("GITHUB_ACTIONS"));
   final static long start                      = System.nanoTime();             // Start time
@@ -159,41 +157,6 @@ public class Test                                                               
       format(DateTimeFormatter.ISO_INSTANT).replace(":", "-");
    }
 
-// D1 BitSet                                                                    // Operations on BitSets
-/*
-  static int bitSetToInt(BitSet B)                                              // Convert a bitset to an integer if possible
-   {final long[]l = B.toLongArray();
-    final int   L = l.length;
-    if (L == 0) return 0;
-    if (L > 1)               stop("BitSet way too big");
-    if (l[0] > Integer.MAX_VALUE) stop("BitSet too big:", l[0]);
-    return (int)l[0];
-   }
-
-  static String bitSetToHex(BitSet B)                                           // Print a bitset as a hex string
-   {final int  L = modZero(B.length(), 4), N = L / 4;
-    final int[]b = new int[N];
-    for (int i = 0; i < L; i++)                                                 // Load bits into integers in fours so that each integer gas one hex digit in it
-     {if (B.get(i)) b[i / 4] |= (1 << (i % 4));
-     }
-    final StringBuilder s = new StringBuilder();
-    for (int i = 0; i < N; i++) s.append("0123456789abcdef".charAt(b[N-i-1]));  // Print integers
-    return ""+s;
-   }
-
-  static String bitSetToHex(BitSet B, int Width)                                // Print a bitset as a hex string with enough leading zeros to fill the field to match icarus verilog
-   {final String s = bitSetToHex(B);
-    //if (s.equals("0")) return s;
-    return "0".repeat(modZero(Width, 4)/4-s.length())+s;
-   }
-
-  static BitSet intToBitSet(int N)                                              // Convert an int to a bit set
-   {final BitSet b = new BitSet();
-    if (N < 0) stop("Positive integers only, not:", N);
-    for (int i = 0; i < Integer.SIZE-1; i++) if (((1<<i) & N) > 0) b.set(i);    // Transfer bits from int to bitset
-    return b;
-   }
-*/
 //D2 Numeric routines                                                           // Numeric routines
 
   static int abs(int i) {return i >= 0 ? +i : -i;}                              // Absolute value of integer
@@ -360,7 +323,9 @@ public class Test                                                               
       final String c = s.getClassName();
       final String m = s.getMethodName();
       final String l = String.format("%04d", s.getLineNumber());
-      if (f.equals("Main.java") || f.equals("Method.java") || f.equals("DirectMethodHandleAccessor.java")) {}
+      if (f.equals("Main.java")   ||
+          f.equals("Method.java") ||
+          f.equals("DirectMethodHandleAccessor.java")) {}
       else if (skipped < Skip) ++skipped;
       else b.append("  "+f+":"+l+":"+m+'\n');
      }
@@ -557,7 +522,9 @@ public class Test                                                               
       final String f = fml[0];                                                  // The file containing the line executed
       final String m = fml[1];                                                  // Method name
       final int    l = Integer.parseInt(fml[2]);                                // Line number
-      if (!executed.containsKey(f)) executed.put(f, new TreeMap<Integer,Integer>());
+      if (!executed.containsKey(f))
+       {executed.put(f, new TreeMap<Integer,Integer>());
+       }
       final TreeMap<Integer,Integer> e = executed.get(f);
       if (e.containsKey(l)) e.put(l, e.get(l)+1); else e.put(l, 1);             // Add or update the number of times this line was executed
      }
@@ -789,11 +756,13 @@ public class Test                                                               
      }
     try
      {Files.walkFileTree(dir, new SimpleFileVisitor<Path>()
-       {public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+       {public FileVisitResult visitFile
+         (Path file, BasicFileAttributes attrs) throws IOException
          {Files.delete(file);
           return FileVisitResult.CONTINUE;
          }
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException
+        public FileVisitResult postVisitDirectory
+         (Path dir, IOException exc) throws IOException
          {Files.delete(dir);                                                    // Delete the folder
           return FileVisitResult.CONTINUE;
          }
@@ -1034,7 +1003,9 @@ public class Test                                                               
 
       for(int j = 0; j < S.size(); j++)                                         // Squeeze common spaces in column
        {final String s = S.elementAt(j).toString();
-        S.setElementAt(new StringBuilder(s.substring(0, i-collapse)+s.substring(i-collapse+1)), j);
+        S.setElementAt
+         (new StringBuilder
+           (s.substring(0, i-collapse)+s.substring(i-collapse+1)), j);
        }
      }
 
@@ -1321,7 +1292,8 @@ public class Test                                                               
        {final String ee = e == '\n' ? "new-line" : ""+(char)e;                  // Handle new lines gracefully
         final String gg = g == '\n' ? "new-line" : ""+(char)g;
         final String ruler = "0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8----+----9----+----";
-        final String error = "Line: "+l+" character: "+c+", expected="+ee+"= got="+gg+"=";   // Location of error
+        final String error = "Line: "+l+" character: "+c+                       // Location of error
+         ", expected="+ee+"= got="+gg+"=";
 
         say(b, error); //say(b, ruler);
 
