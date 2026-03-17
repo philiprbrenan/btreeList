@@ -1475,7 +1475,7 @@ public class Test                                                               
     ExecCommand(StringBuilder command) {this(""+command);}
    }
 
-//D0                                                                            // Tests
+//D1 Tests                                                                      // Tests
 
   static void test_log_two()
    {ok(logTwo(0), 0);
