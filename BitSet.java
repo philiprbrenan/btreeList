@@ -339,7 +339,7 @@ abstract public class BitSet extends Test                                       
     new For(bitSize)                                                            // Traverse down through the tree
      {Bool body(Int i)                                                          // Traverse down through the tree
        {final Int  c = IntDec.c().i(b.Add(1));                                  // Is there a path down from the next bit?
-        final Bool d = BoolDec.d().clear();                                     // Whether we are done yet
+        final Bool C = BoolDec.C().set();                                       // Whether we are done yet
         new If (c.lt(w).and(()->{return getBitNC(new Pos(p.Add(c)));}))         // Found next up bit
          {void Then()
            {new For(i)                                                          // Step down to the leaves
@@ -349,14 +349,14 @@ abstract public class BitSet extends Test                                       
                 return Bool.True;                                               // Continue the loop
                }
              };
-            n.i(c); d.set();                                                    // Found the next element
+            n.i(c); C.clear();                                                  // Found the next element
            }
           void Else()
            {moveDownOneLayer(b, p, w);
-            new If (w.eq(0)) {void Then() {d.set();}};                          // Address next level of bits further down in One tree
+            new If (w.eq(0)) {void Then() {C.clear();}};                        // Address next level of bits further down in One tree
            }
          };
-        return d.Flip();                                                        // Continue the loop
+        return C;                                                               // Continue the loop
        }
      };
     return n.valid().b() ? new Pos(n) : new Pos();                              // No alternate path down
@@ -365,7 +365,7 @@ abstract public class BitSet extends Test                                       
   public Pos prevOne(Pos Index)                                                 // Find the index of the previous set bit below the specified bit
    {checkOne();
     checkIndex(Index.position());
-    final Int b = Index.position();                                             // Position in layer
+    final Int b = IntDec.b().i(Index.position());                               // Position in layer
     final Int w = IntDec.w().i(bitSize);                                        // Width of layer
     final Int p = IntDec.p().i(0);                                              // Offset of layer
     final Int R = IntDec.R();                                                   // Result
@@ -374,8 +374,8 @@ abstract public class BitSet extends Test                                       
      {void Then()
        {new For(bitSize)                                                        // Step up throgh One bits
          {Bool body(Int i)
-           {final Int  B = IntDec.B().i(b.Dec());                               // Is there a path down from the next bit?
-            final Bool d = BoolDec.d().clear();                                 // Whether we have arrived at a bit that is already correctly set
+           {final Int  B =  IntDec.B().i(b.Dec());                              // Is there a path down from the next bit?
+            final Bool c = BoolDec.c().set();                                   // Whether we have arrived at a bit that is already correctly set
             new If (b.gt(0).and(()->{return getBitNC(new Pos(p.Add(B)));}))     // Found next down bit
              {void Then()
                {new For(i)                                                      // Step down to the leaves
@@ -386,14 +386,14 @@ abstract public class BitSet extends Test                                       
                    }
                  };
                 R.i(B);                                                         // Save the result
-                d.set();                                                        // Finish the loop
+                c.clear();                                                      // Finish the loop
                }
               void Else()
                {moveDownOneLayer(b, p, w);                                      // Address next level of bits in tree
-                new If (w.eq(0)) {void Then() {d.set();}};
+                new If (w.eq(0)) {void Then() {c.clear();}};
                }
              };
-            return d.Flip();
+            return c;
            }
          };
        }
@@ -610,6 +610,7 @@ abstract public class BitSet extends Test                                       
   class BoolDec                                                                 // By declaring boolean variables in this strange way we can automate the collection of their fully qualified names via a trace back
    {static Bool b() {return new Bool();}
     static Bool c() {return new Bool();}
+    static Bool C() {return new Bool();}
     static Bool d() {return new Bool();}
    }
 
