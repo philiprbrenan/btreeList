@@ -264,10 +264,10 @@ abstract public class BitSet extends Test                                       
 
                 new For(bitSize)                                                // Step from root to leaf
                  {Bool body(Int Index)
-                   {final Int P = p.dup();                                      // Child layer becomes parent layer
+                   {final Int P  = p.dup();                                     // Child layer becomes parent layer
                     moveDownOneLayer(b, p, w);                                  // Index of bit in child layer, position in child layer, width of child layer
                     final Int  Q = P.Add(b).add(b);
-                    final Bool c = new Bool().set();                            // Complete early if we found a bit that does not need setting
+                    final Bool c = BoolDec.c().set();                           // Complete early if we found a bit that does not need setting
                     new If (getBitNC(new Pos(Q)).or(
                             ()->{return getBitNC(new Pos(Q.Inc()));}))
                      {void Then() {c.clear();}                                  // There is a one in the upper row so we do not need to clear further down
@@ -330,9 +330,9 @@ abstract public class BitSet extends Test                                       
     checkIndex(Index.position());
 
     final Int b = Index.position();                                             // Position in layer
-    final Int w = new Int(bitSize);                                             // Width of layer
-    final Int p = new Int(0);                                                   // Offset of layer
-    final Int n = new Int();                                                    // The next element if it exists, offset of layer
+    final Int w = IntDec.w().i(bitSize);                                        // Width of layer
+    final Int p = IntDec.p().i(0);                                              // Offset of layer
+    final Int n = IntDec.n();                                                   // The next element if it exists, offset of layer
 
     new For(bitSize)                                                            // Traverse down through the tree
      {Bool body(Int i)                                                          // Traverse down through the tree
@@ -608,7 +608,9 @@ abstract public class BitSet extends Test                                       
    }
 
   class IntDec                                                                  // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
-   {static Int p() {return new Int();}
+   {static Int b() {return new Int();}
+    static Int n() {return new Int();}
+    static Int p() {return new Int();}
     static Int w() {return new Int();}
    }
 
