@@ -160,7 +160,7 @@ abstract public class BitSet extends Test                                       
     new Runnable()                                                              // For loop to set bits along path in One tree to actual bit
      {final Int b = Index.position();                                           // Position in level
       final Int p = IntDec.p().i(0);                                            // Position in bits, width
-      final Int w = new Int(bitSize);                                           // Width
+      final Int w = IntDec.w().i(bitSize);                                      // Width
 
       public void run()                                                         // Set bits along the path to the actual bit in the One tree
        {new For(bitSize)                                                        // Step from root to leaf
@@ -603,6 +603,7 @@ abstract public class BitSet extends Test                                       
 
   class IntDec                                                                  // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
    {static Int p() {return new Int();}
+    static Int w() {return new Int();}
    }
 
 //D1 Tests                                                                      // Tests
