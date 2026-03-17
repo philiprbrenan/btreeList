@@ -942,7 +942,7 @@ class Tree extends Test                                                         
       Field+" = "+memory.bytes.getInt(Name.Mul(sizeOfNode).add(Field).i());
    }
 
-//D1 Root                                                                       // The root of the tree is referenced from a known location which allows any node to act as the root if needed - which simplifies the logic for merging and splitting the root.
+//D2 Root                                                                       // The root of the tree is referenced from a known location which allows any node to act as the root if needed - which simplifies the logic for merging and splitting the root.
 
   Slots root()                                                                  // Slots representing the root of the tree held in memory
    {final Int r = memory.root();                                                // Current node containing root
@@ -954,7 +954,7 @@ class Tree extends Test                                                         
   void root(Leaf   Root) {memory.root(Root != null ? Root.name().at().neg() : new Int(0));}   // Set the root in memory with a negative address to show that it is a leaf
   void root(Branch Root) {memory.root(Root != null ? Root.name().at()       : new Int(0));}   // Set the root in memory with a positive address to show that it is a branch
 
-//D1 Leaf                                                                       // Use the slots to model a leaf
+//D2 Leaf                                                                       // Use the slots to model a leaf
 
   class Leaf extends Slots                                                      // Leaf
    {final Memory memory;                                                        // Memory used by the leaf
@@ -1291,7 +1291,7 @@ class Tree extends Test                                                         
      }
    }
 
-//D1 Branch                                                                     // Use the slots to model a branch
+//D2 Branch                                                                     // Use the slots to model a branch
 
   class Branch extends Slots                                                    // Branch
    {final Allocation node;                                                      // The node holding this leaf
@@ -1756,7 +1756,7 @@ class Tree extends Test                                                         
      }
    }
 
-//D1 Low Level                                                                  // Low level operations
+//D2 Low Level                                                                  // Low level operations
 
   void mergeAlongPath(Key Key)                                                  // Merge along the path from the specified key to the root
    {final Find f = find(Key);                                                   // Locate the leaf that should contain the key
@@ -1874,7 +1874,7 @@ class Tree extends Test                                                         
      };
    }
 
-//D1 High Level                                                                 // High level operations: insert, find, delete
+//D2 High Level                                                                 // High level operations: insert, find, delete
 
   class Find                                                                    // Find results
    {final Leaf leaf;                                                            // Leaf that should contain the key
@@ -2144,7 +2144,7 @@ class Tree extends Test                                                         
            Leaf.ref(r) ? r.countUsed() : ((Branch)r).count();
    }
 
-//D1 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
+//D2 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
 
   Find first()                                                                  // Find the position of the first key in the key
    {final Ref<Find> f = new Ref<>();
@@ -2378,7 +2378,7 @@ class Tree extends Test                                                         
     return f.get();
    }
 
-//D1 Print                                                                      // Print the tree horizontally
+//D2 Print                                                                      // Print the tree horizontally
 
   final int linesToPrintABranch = 4;                                            // The number of lines required to print a branch
   final int maxPrintLevels      = 3;                                            // The maximum number of levels to print - this avoids endless print loops when something goes wrong
@@ -2508,7 +2508,7 @@ class Tree extends Test                                                         
     return ""+s;
    }
 
-//D1 List All                                                                   // Create lists of all leaves and branches in the tree
+//D2 List All                                                                   // Create lists of all leaves and branches in the tree
 
   class ListAll  // Causes errors when run                                      // Create lists of all the leaves and branches in the tree to assist with debugging
    {final Stack<Branch>branches = new Stack<>();
