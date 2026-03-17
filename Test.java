@@ -1139,6 +1139,7 @@ public class Test                                                               
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
     private String  n = null;                                                   // An optional name for this variable
+    final static Int zero = new Int(0);                                         // Useful constants
     Bool    valid() {return new Bool( v);}                                      // A valid integer
     Bool notValid() {return new Bool(!v);}                                      // A not valid integer
 
