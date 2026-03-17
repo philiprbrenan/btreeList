@@ -336,8 +336,8 @@ abstract public class BitSet extends Test                                       
 
     new For(bitSize)                                                            // Traverse down through the tree
      {Bool body(Int i)                                                          // Traverse down through the tree
-       {final Int  c = b.Add(1);                                                // Is there a path down from the next bit?
-        final Bool d = new Bool().clear();                                      // Whether we are done yet
+       {final Int  c = IntDec.c().i(b.Add(1));                                  // Is there a path down from the next bit?
+        final Bool d = BoolDec.d().clear();                                     // Whether we are done yet
         new If (c.lt(w).and(()->{return getBitNC(new Pos(p.Add(c)));}))         // Found next up bit
          {void Then()
            {new For(i)                                                          // Step down to the leaves
@@ -604,11 +604,14 @@ abstract public class BitSet extends Test                                       
 //D1 Declarations                                                               // Declarations of variables to automate the capture of their names
 
   class BoolDec                                                                 // By declaring boolean variables in this strange way we can automate the collection of their fully qualified names via a trace back
-   {static Bool c() {return new Bool();}
+   {static Bool b() {return new Bool();}
+    static Bool c() {return new Bool();}
+    static Bool d() {return new Bool();}
    }
 
   class IntDec                                                                  // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
    {static Int b() {return new Int();}
+    static Int c() {return new Int();}
     static Int l() {return new Int();}
     static Int n() {return new Int();}
     static Int p() {return new Int();}
