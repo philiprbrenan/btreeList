@@ -30,9 +30,9 @@ class Tree extends Test                                                         
     final String m2 = m + "branch size must be 3 or more, not: " +MaxBranchSize;
     final String m3 = m + "branch size must be odd, not: "       +MaxBranchSize;
 
-    final boolean b1 = maxLeafSize     < 2,                                     // Size checks
-                  b2 = maxBranchSize   < 3,
-                  b3 = maxBranchSize % 2 == 0;
+    final boolean b1 = maxLeafSize       <  2;                                  // Size checks
+    final boolean b2 = maxBranchSize     <  3;
+    final boolean b3 = maxBranchSize % 2 == 0;
 
     if (b1 && !b2 && !b3) stop(m1); else if (b1) say(m1);
     if (b2        && !b3) stop(m2); else if (b2) say(m2);
@@ -410,7 +410,7 @@ class Tree extends Test                                                         
     void shift(Int Position, Int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
      {new If (Width.ne(0))                                                      // Non zero shift
        {void Then()
-         {final boolean p = Width.gt(0).b();
+         {final boolean p = Width.gt(0).b();                                    // Whether we are shifting up or down
           new For(p ? Width : Width.Neg())                                      // Move each slot
            {Bool body(int i)
              {final Slot P = new Slot(Position.Add(Width).add(p ? -i : +i));
@@ -587,7 +587,7 @@ class Tree extends Test                                                         
       key(alloc, Key);                                                          // Store the new key in the referenced location
       final Locate l = new Locate(Key);                                         // Search for the slot containing the key closest to their search key
 
-      new If   (!l.found())                                                     // Not found
+      new If   (l.found().Flip())                                               // Not found
        {void Then()
          {new If (l.notFoundBecauseEmpty())                                     // Empty place the key in the middle
            {void Then()
@@ -596,7 +596,7 @@ class Tree extends Test                                                         
               usedSlots (S, Bool.True);
              }
             void Else()
-             {new If (l.above)                                                  // Insert their key above the found key
+             {new If (l.above())                                                // Insert their key above the found key
                {void Then()
                  {final Int i = l;
                   final Int w = new Int(locateNearestFreeSlot(l));              // Width of move and direction needed to liberate a slot here - we know there is one because we know the slots are not full
@@ -663,8 +663,8 @@ class Tree extends Test                                                         
       private boolean all;                                                      // Above all or below all if true
 
       public String toString()                                                  // Print the location
-       {if (found())                return f("%d found", i());
-        if (notFoundBecauseEmpty()) return "notFoundBecauseEmpty";
+       {if (found().b())                return f("%d found", i());
+        if (notFoundBecauseEmpty().b()) return "notFoundBecauseEmpty";
         return f("%2d %s %s %s", i(),
                                  above ? "above" : "",
                                  below ? "below" : "",
@@ -680,8 +680,10 @@ class Tree extends Test                                                         
       void found(Slot At) {pos(At, true,  true);}                               // Found their search key
       void none ()        {}                                                    // Slots are empty
 
-      boolean found()                {return  above &&  below;}                 // Oh America - my new found land.
-      boolean notFoundBecauseEmpty() {return !above && !below;}                 // The slots are empty so neither above or below or exact
+      Bool                found() {return new Bool( above &&  below);}          // Oh America - my new found land.
+      Bool notFoundBecauseEmpty() {return new Bool(!above && !below);}          // The slots are empty so neither above or below or exact
+      Bool                above() {return new Bool(above);}                     // The insertion position is above the located position
+      Bool                below() {return new Bool(below);}                     // The insertion position is below the located position
 
       Locate(Key Key)                                                           // Locate the slot containing the search key if possible.
        {super(Key);
@@ -740,14 +742,14 @@ class Tree extends Test                                                         
     Slot locateFirstGe(Key Key)                                                 // Locate the slot containing the first key greater than or equal to the search key
      {final Locate l = new Locate(Key);
       final Slot   a = l;
-      return l.notFoundBecauseEmpty() ? new Slot() :
-             l.below                  ? a          :
+      return l.notFoundBecauseEmpty().b() ? new Slot() :
+             l.below().b()                ? a          :
              a.right().locateNextUsedSlot();
      }
 
     Slot locate(Key Key)                                                        // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
-      return l.found() ? l : new Slot();                                        // Found if exact match
+      return l.found().b() ? l : new Slot();                                    // Found if exact match
      }
 
     slot find(Key Key)                                                          // Find the index of the current key in the slots
