@@ -344,7 +344,7 @@ class Tree extends Test                                                         
 //D2 Statistics                                                                 // Query the state of the slots
 
     Int countUsed()                                                             // Number of slots in use. How can we do this quickly in parallel?
-     {final Int n = new Int(0);
+     {final Int n = IntDeclarations.n().i(0);
       new For(numberOfSlots())
        {Bool body(int i)
          {new If (usedSlots(new Slot(new Int(i)))) {void Then(){n.inc();}};
@@ -2542,6 +2542,12 @@ class Tree extends Test                                                         
       if      (l.b())  leaves  .push((Leaf)  root());
       else if (b.b()) {branches.push((Branch)root()); scan((Branch)root());}
      }
+   }
+
+//D1 Declarations                                                               // Declarations of variables to automate the capture of their names
+
+  class IntDeclarations                                                         // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
+   {static Int n() {return new Int();}
    }
 
 //D1 Tests                                                                      // Tests
