@@ -113,7 +113,7 @@ abstract public class BitSet extends Test                                       
 
 // D2 Get and Set                                                               // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
-  public Bool getBit(Pos Index)                                              // Get bit value at an index after checking that the index is valid
+  public Bool getBit(Pos Index)                                                 // Get bit value at an index after checking that the index is valid
    {checkIndex(Index.position());
     return getBitNC(Index);
    }
@@ -174,7 +174,7 @@ abstract public class BitSet extends Test                                       
                }
              };
             moveDownOneLayer(b, p, w);                                          // Next level up
-            return d.Flip().and(()->{return w.gt(0);});                                       // As long as we are in a valid level
+            return d.Flip().and(()->{return w.gt(0);});                         // As long as we are in a valid level
            }
          };
        }
