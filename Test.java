@@ -1735,7 +1735,12 @@ a   aa    AAA
      {void a()
        {class B
          {void b()
-           {ok(traceNamesString(), "main.newTests.oldTests.test_traceNames.a.b");
+           {if (github_actions)
+             {ok(traceNamesString(), "main.oldTests.test_traceNames.a.b");
+             }
+            else
+             {ok(traceNamesString(), "main.newTests.oldTests.test_traceNames.a.b");
+             }
            }
          }
         new B().b();
