@@ -296,6 +296,18 @@ public class Test                                                               
 
 //D1 Traceback                                                                  // Trace back so we know where we are
 
+  static Stack<String> traceNames()                                             // Containing method names
+   {final Exception e = new Exception();
+    final StackTraceElement[]  t = e.getStackTrace();
+    final Stack<String>        T = new Stack<>();
+
+    for(StackTraceElement s : t)
+     {final String m = s.getMethodName();
+      T.insertElementAt(m, 0);
+     }
+    return T;
+   }
+
   static String fullTraceBack(Exception e)                                      // Get a full stack trace that we can use in Geany
    {final StackTraceElement[]  t = e.getStackTrace();
     final StringBuilder        b = new StringBuilder();
@@ -311,7 +323,7 @@ public class Test                                                               
     return b.toString();
    }
 
-  static String traceBack(Exception e)                                          // Get a stack trace that we can use in Geany
+  static String traceBack(Exception e)                                          // Get an abbrieviated stack trace that we can use in Geany
    {final int Skip = 2;
     final StackTraceElement[]  t = e.getStackTrace();
     final StringBuilder        b = new StringBuilder();
@@ -1712,11 +1724,24 @@ a   aa    AAA
     ok(b1.nand(()->{return b2;}).b() == true);
    }
 
+  static void test_names()
+   {class A
+     {void a()
+       {class B
+         {void b()
+           {stop(traceNames());
+           }
+         }
+        new B().b();
+       }
+     }
+    new A().a();
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
     test_max_min();
-    //test_string();
     test_longest_line();
     test_files();
     test_join_stack();
@@ -1730,10 +1755,10 @@ a   aa    AAA
     test_executed();
     test_squeezeVerticalSpaces();
     test_modZero();
-//  test_bitSetToHex();
     test_hextoInt();
     test_programming();
     test_bool();
+    test_names();
    }
 
   static void newTests()                                                        // Tests being worked on
