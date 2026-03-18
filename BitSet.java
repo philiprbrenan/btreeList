@@ -295,7 +295,7 @@ abstract public class BitSet extends Test                                       
   public void initialize()                                                      // Clear all bits.
    {new For(byteSize)                                                           // Step from root to leaf
      {Bool body(Int i)
-       {setByte(new Int(i), (byte)0);
+       {setByte(i, (byte)0);
         return Bool.True;
        }
      };
