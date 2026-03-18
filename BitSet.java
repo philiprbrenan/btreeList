@@ -6,7 +6,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;                                                             // Standard utility library.
 
-abstract public class BitSet extends Test                                       // Abstract fixed-size bit set using byte-level storage.
+abstract public class BitSet extends Programming                                // Abstract fixed-size bit set using byte-level storage.
  {final  int bitSize, bitSize1, bitSize2;                                       // Number of bits in the bit set.
   final  int byteSize;                                                          // Number of bytes in the bit set.
   final  boolean oneTreeBit;                                                    // At most only one tree bit present
