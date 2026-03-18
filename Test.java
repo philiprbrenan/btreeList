@@ -309,6 +309,11 @@ public class Test                                                               
     return T;
    }
 
+  static String traceNamesString()                                              // Containing method names as a dotted string
+   {final Stack<String> s  = traceNames(); s.pop();                             // Remove our method name
+    return joinStrings(s, ".");
+   }
+
   static String fullTraceBack(Exception e)                                      // Get a full stack trace that we can use in Geany
    {final StackTraceElement[]  t = e.getStackTrace();
     final StringBuilder        b = new StringBuilder();
@@ -1730,8 +1735,7 @@ a   aa    AAA
      {void a()
        {class B
          {void b()
-           {ok(joinStrings(traceNames(), "."),
-             "main.newTests.oldTests.test_traceNames.a.b");
+           {ok(traceNamesString(), "main.newTests.oldTests.test_traceNames.a.b");
            }
          }
         new B().b();
