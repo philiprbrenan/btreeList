@@ -53,7 +53,7 @@ public class Programming extends Test                                           
   static class Bool                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private boolean i = false;                                                  // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
-    private String  n = null;                                                   // An optional name for this variable
+    final String    n = traceNamesString();                                     // Name of this variable
     final static Bool  True = new Bool(true);                                   // Useful constants
     final static Bool False = new Bool(false);
     Bool      valid() {return new Bool(v);}
@@ -61,9 +61,6 @@ public class Programming extends Test                                           
     Bool           ()          {}
     Bool           (boolean I) {i = I; v = true;}
     Bool           (Bool    I) {I.x(); i = I.i; v = I.v;}
-    Bool (String N)            {n = N;}
-    Bool (String N, boolean I) {n = N; i = I; v = true;}
-    Bool (String N, Bool    I) {n = N; I.x(); i = I.i; v = I.v;}
 
     boolean       b()          {      x();               return i;}
     void          x()          {if (!v) stop("Bool has not been set yet");}
@@ -135,7 +132,7 @@ public class Programming extends Test                                           
     @SafeVarargs final Bool  nor(Supplier<Bool>...b) {return  or(b).flip();}
     @SafeVarargs final Bool nand(Supplier<Bool>...b) {return and(b).flip();}
 
-    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}            // Duplicate a valid boolean
+    Bool dup() {x(); final Bool I = new Bool(i); return I;}                     // Duplicate a valid boolean
 
     public String toString()                                                    // Print the boolean
      {return (n == null ? "" : n+"=")+i;
@@ -145,16 +142,13 @@ public class Programming extends Test                                           
   static class Int                                                              // An integer that can be passed as a parameter to a method and modified there-in
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
-    private String  n = null;                                                   // An optional name for this variable
+    final String    n = traceNamesString();                                     // Name of this variable
     final static Int zero = new Int(0);                                         // Useful constants
     Bool    valid() {return new Bool( v);}                                      // A valid integer
     Bool notValid() {return new Bool(!v);}                                      // A not valid integer
 
     Int           (int I) {       i = I;   v = true;}
     Int           (Int I) {       if (I != null) {i = I.i; v = I.v;}}
-    Int (String N)        {n = N;}
-    Int (String N, int I) {n = N; i = I;   v = true;}
-    Int (String N, Int I) {n = N; if (I != null) {i = I.i; v = I.v;}}
 
     Int      ()      {}
     void x   ()      {if (!v) stop("Int has not been set yet");}
@@ -232,7 +226,7 @@ public class Programming extends Test                                           
     Bool Ge(Int e){e.x(); return Ge(e.i);}
     Bool Gt(Int e){e.x(); return Gt(e.i);}
 
-    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}      // Duplicate a valid integer
+    Int dup() {x(); final Int I = new Int(i); I.v = v; return I;}               // Duplicate a valid integer
 
     public String toString()                                                    // Print the integer
      {return (n == null ? "" : n+"=")+i;
@@ -276,7 +270,7 @@ public class Programming extends Test                                           
        }
      }
     new test_programming(11);
-    ok(i, 5);
+    ok(i, "main.newTests.oldTests.test_programming=5");
     ok(i.valid().b());
    }
 
