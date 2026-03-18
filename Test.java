@@ -17,9 +17,9 @@ import java.util.function.Supplier;
 import java.util.stream.*;
 import java.util.zip.GZIPOutputStream;
 
-//D1 Construct                                                                  // Develop and test a java program to describe a chip and emulate its operation.
+//D1 Construct                                                                  // Test a java program describing a chip
 
-public class Test                                                               // Develop and test a java program to describe a chip and emulate its operation.
+public class Test                                                               // Test a java program describing a chip
  {final static boolean github_actions          =                                // Whether we are on a github
     "true".equals(System.getenv("GITHUB_ACTIONS"));
   final static long start                      = System.nanoTime();             // Start time
@@ -301,6 +301,7 @@ public class Test                                                               
 
     for(StackTraceElement s : t)
      {final String m = s.getMethodName();
+      if (m.equals("<init>")) continue;
       T.insertElementAt(m, 0);
      }
     T.pop();                                                                    // Remove this method from the stack
