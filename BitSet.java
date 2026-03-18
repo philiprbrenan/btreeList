@@ -19,12 +19,10 @@ abstract public class BitSet extends Test                                       
    {bitSize  = nextPowerOfTwo(BitSize);                                         // Record size.
     bitSize1 = bitSize - 1;
     bitSize2 = bitSize >>> 1;
-    if (bitSize < 2)                                                            // There is not much point in bit sets with sizes of less than two.
-     {stop("Size must be two or more");
-     };
-    zero = Zero;                                                                // Locate zeroes efficiently
-    one = One;                                                                  // Locate ones efficiently
-    byteSize = bytesNeeded(BitSize, one, zero);                                 // Bytes needed for the bitset and its bit trees
+    if (bitSize < 2) stop("Size must be two or more");                          // There is not much point in bit sets with sizes of less than two.
+    zero       = Zero;                                                          // Locate zeroes efficiently
+    one        = One;                                                           // Locate ones efficiently
+    byteSize   = bytesNeeded(BitSize, one, zero);                               // Bytes needed for the bitset and its bit trees
     oneTreeBit = bitSize <= 2;                                                  // At most only one tree bit present
    }
 
@@ -267,7 +265,7 @@ abstract public class BitSet extends Test                                       
                      };
                    }
                  };
-                return c.and(()->{return w.gt(0);});                        // As long as we are in a valid level
+                return c.and(()->{return w.gt(0);});                            // As long as we are in a valid level
                }
              };
            }
