@@ -305,6 +305,7 @@ public class Test                                                               
      {final String m = s.getMethodName();
       T.insertElementAt(m, 0);
      }
+    T.pop();                                                                    // Remove this method from the stack
     return T;
    }
 
@@ -1724,12 +1725,13 @@ a   aa    AAA
     ok(b1.nand(()->{return b2;}).b() == true);
    }
 
-  static void test_names()
+  static void test_traceNames()
    {class A
      {void a()
        {class B
          {void b()
-           {stop(traceNames());
+           {ok(joinStrings(traceNames(), "."),
+             "main.newTests.oldTests.test_traceNames.a.b");
            }
          }
         new B().b();
@@ -1758,7 +1760,7 @@ a   aa    AAA
     test_hextoInt();
     test_programming();
     test_bool();
-    test_names();
+    test_traceNames();
    }
 
   static void newTests()                                                        // Tests being worked on
