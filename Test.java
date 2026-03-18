@@ -261,38 +261,36 @@ public class Test                                                               
 
 //D1 Array routines                                                             // Routines operating on arrays
 
-   static int[]range(int Limit)                                                 // Range of integers
-    {final int[]r = new int[Limit];
-     for (int i = 0; i < r.length; i++) r[i] = i;
-     return r;
-    }
+  static int[]range(int Limit)                                                  // Range of integers
+   {final int[]r = new int[Limit];
+    for (int i = 0; i < r.length; i++) r[i] = i;
+    return r;
+   }
 
-   static int[]range(Int Limit) {return range(Limit.i());}                      // Range of integers
+  static int[]range(int Start, int Limit)                                       // Range of integers
+   {final int[]r = new int[Limit - Start];
+    for (int i = 0, j = Start; i < r.length; i++) r[i] = j++;
+    return r;
+   }
 
-   static int[]range(int Start, int Limit)                                      // Range of integers
-    {final int[]r = new int[Limit - Start];
-     for (int i = 0, j = Start; i < r.length; i++) r[i] = j++;
-     return r;
-    }
+  static void reverseArray(Object[] array)                                      // Reverse an array in situ
+   {final int N = array.length;
+    for (int i = 0; i < N / 2; i++)
+     {final Object temp = array[i];
+      array[i] = array[N - 1 - i];
+                 array[N - 1 - i] = temp;
+     }
+   }
 
-   static void reverseArray(Object[] array)                                     // Reverse an array in situ
-    {final int N = array.length;
-     for (int i = 0; i < N / 2; i++)
-      {final Object temp = array[i];
-       array[i] = array[N - 1 - i];
-                  array[N - 1 - i] = temp;
-      }
-    }
-
-   static void randomizeArray(Object[] array)                                   // Randomize an array
-    {final Random random = new Random();
-     for (int i = array.length - 1; i > 0; i--)
-      {int j = random.nextInt(i + 1);
-       Object temp = array[i];
-                     array[i] = array[j];
-                                array[j] = temp;
-      }
-    }
+  static void randomizeArray(Object[] array)                                    // Randomize an array
+   {final Random random = new Random();
+    for (int i = array.length - 1; i > 0; i--)
+     {int j = random.nextInt(i + 1);
+      Object temp = array[i];
+                    array[i] = array[j];
+                               array[j] = temp;
+     }
+   }
 
 //D1 Traceback                                                                  // Trace back so we know where we are
 
@@ -1035,234 +1033,6 @@ public class Test                                                               
      }
    }
 
-//D1 Programming                                                                // Program structures
-
-  abstract static class For                                                     // For loop
-   {For(int Start, int End)                                                     // Execute the loop the specified number of times
-     {for(int i : range(Start, End)) if (!body(new Int(i)).b()) break;          // Execute the loop as long as it returns true
-     }
-
-    For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
-    For(Int End) {this(0, End.i());}                                            // Execute the loop the specified number of times as long as it returns true
-
-    Bool body(Int Index) {return new Bool(false);}                              // Body of the for loop: return flse to terminate execution of the loop
-   }
-
-  abstract static class If                                                      // If statement
-   {If (boolean condition)
-     {if (condition) Then(); else Else();
-     }
-    If (Bool    condition)
-     {if (condition.b()) Then(); else Else();
-     }
-
-    abstract void Then();                                                       // Then clause
-             void Else() {}                                                     // Else clause
-   }
-
-  static class Bool                                                             // An integer that can be passed as a parameter to a method and modified there-in
-   {private boolean i = false;                                                  // Value of the integer
-    private boolean v = false;                                                  // Whether the current value of the integer is valid or not
-    private String  n = null;                                                   // An optional name for this variable
-    final static Bool  True = new Bool(true);                                   // Useful constants
-    final static Bool False = new Bool(false);
-    Bool      valid() {return new Bool(v);}
-
-    Bool           ()          {}
-    Bool           (boolean I) {i = I; v = true;}
-    Bool           (Bool    I) {I.x(); i = I.i; v = I.v;}
-    Bool (String N)            {n = N;}
-    Bool (String N, boolean I) {n = N; i = I; v = true;}
-    Bool (String N, Bool    I) {n = N; I.x(); i = I.i; v = I.v;}
-
-    boolean       b()          {      x();               return i;}
-    void          x()          {if (!v) stop("Bool has not been set yet");}
-    Bool          X()          {v = true; return this;}
-
-    Bool        set()          {i = true;  v = true;     return this;}
-    Bool        set(boolean I) {i = I;     v = true;     return this;}
-    Bool        set(Bool    I) {I.x(); i = I.i; v = I.v; return this;}
-    Bool      clear()          {i = false; v = true;     return this;}
-    Bool       flip()          {      x(); i = !i;       return this;}
-
-    Bool        Set()          {return dup().set();}
-    Bool        Set(boolean I) {return dup().set(I);}
-    Bool        Set(Bool    I) {return dup().set(I);}
-    Bool      Clear()          {return dup().clear();}
-    Bool       Flip()          {return dup().flip();}
-
-    Bool         eq(boolean e){  x(); return new Bool(i == e);}
-    Bool         ne(boolean e){  x(); return new Bool(i != e);}
-
-    Bool         eq(Bool    e){e.x(); return eq(e.i);}
-    Bool         ne(Bool    e){e.x(); return ne(e.i);}
-
-    Bool or(boolean...b)                                                        // "Or" with no short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (r) break;
-        r = b[i];
-       }
-      return new Bool(r);
-     }
-
-    @SafeVarargs
-    final Bool or(Supplier<Bool>...b)                                           // "Or" with short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (r) break;
-        final Bool B = b[i].get();
-        B.x();
-        r = B.b();
-       }
-      return new Bool(r);
-     }
-
-    Bool and(boolean...b)                                                       // "And" with no short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (!r) break;
-        r = b[i];
-       }
-      return new Bool(r);
-     }
-
-    @SafeVarargs
-    final Bool and(Supplier<Bool>...b)                                          // "And" with short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (!r) break;
-        final Bool B = b[i].get();
-        B.x();
-        r = B.b();
-       }
-      return new Bool(r);
-     }
-
-    Bool  nor(boolean       ...b) {return  or(b).flip();}
-    Bool nand(boolean       ...b) {return and(b).flip();}
-
-    @SafeVarargs final Bool  nor(Supplier<Bool>...b) {return  or(b).flip();}
-    @SafeVarargs final Bool nand(Supplier<Bool>...b) {return and(b).flip();}
-
-    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}            // Duplicate a valid boolean
-
-    public String toString()                                                    // Print the boolean
-     {return (n == null ? "" : n+"=")+i;
-     }
-   }
-
-  static class Int                                                              // An integer that can be passed as a parameter to a method and modified there-in
-   {private int     i = 0;                                                      // Value of the integer
-    private boolean v = false;                                                  // Whether the current value of the integer is valid or not
-    private String  n = null;                                                   // An optional name for this variable
-    final static Int zero = new Int(0);                                         // Useful constants
-    Bool    valid() {return new Bool( v);}                                      // A valid integer
-    Bool notValid() {return new Bool(!v);}                                      // A not valid integer
-
-    Int           (int I) {       i = I;   v = true;}
-    Int           (Int I) {       if (I != null) {i = I.i; v = I.v;}}
-    Int (String N)        {n = N;}
-    Int (String N, int I) {n = N; i = I;   v = true;}
-    Int (String N, Int I) {n = N; if (I != null) {i = I.i; v = I.v;}}
-
-    Int      ()      {}
-    void x   ()      {if (!v) stop("Int has not been set yet");}
-    Int  X   ()      {v = true; return this;}
-    int  i   ()      {          x();       return i;}
-    Int  i   (int I) {i    = I;      X();  return this;}
-    Int  i   (Int I) {i    = I.i; v = I.v; return this;}
-    Int  add (int I) {i   += I; x(); X();  return this;}
-    Int  add (Int I) {        I.x();       return add(I.i());}
-    Int  add2(Int I) {        I.x();       return add(I.i()*2);}
-    Int  sub (int I) {i   -= I; x(); X();  return this;}
-    Int  sub (Int I) {        I.x();       return sub(I.i());}
-    Int  mul (int I) {i   *= I; x(); X();  return this;}
-    Int  mul (Int I) {        I.x();       return mul(I.i());}
-    Int  div (int I) {i   /= I; x(); X();  return this;}
-    Int  div (Int I) {        I.x();       return div(I.i());}
-    Int  mod (int I) {i   %= I; x(); X();  return this;}
-    Int  mod (Int I) {        I.x();       return mod(I.i());}
-    Int  inc ()      {          x();       return add(1);}
-    Int  dec ()      {          x();       return sub(1);}
-    Int  up  ()      {i  <<= 1; x();       return this;}
-    Int  down()      {i >>>= 1; x();       return this;}
-    Int  sqrt()      {x(); i = (int)java.lang.Math.sqrt(i); X(); return this;}
-    Int  neg ()      {x(); i = -i;   X();  return this;}
-    Int  abs ()      {x(); i = i < 0 ? -i : i; X(); return this;}
-    Int  max (int I) {x(); return i < I ? new Int(I) : this;}
-    Int  max (Int I) {        I.x();       return max(I.i);}
-    Int  min (int I) {x(); return i > I ? new Int(I) : this;}
-    Int  min (Int I) {        I.x();       return min(I.i);}
-
-    Int  Add (int I) {return dup().add(I);}
-    Int  Add (Int I) {return dup().add(I);}
-    Int  Add2(Int I) {return dup().add2(I);}
-    Int  Sub (int I) {return dup().sub(I);}
-    Int  Sub (Int I) {return dup().sub(I);}
-    Int  Mul (int I) {return dup().mul(I);}
-    Int  Mul (Int I) {return dup().mul(I);}
-    Int  Div (int I) {return dup().div(I);}
-    Int  Div (Int I) {return dup().div(I);}
-    Int  Mod (int I) {return dup().mod(I);}
-    Int  Mod (Int I) {return dup().mod(I);}
-    Int  Inc ()      {return dup().add(1);}
-    Int  Dec ()      {return dup().sub(1);}
-    Int  Up  ()      {return dup().up();}
-    Int  Down()      {return dup().down();}
-    Int  Sqrt()      {return dup().sqrt();}
-    Int  Neg()       {return dup().neg();}
-    Int  Abs()       {return dup().abs();}
-
-    Bool eq(int e){  x(); return new Bool(i == e);}
-    Bool ne(int e){  x(); return new Bool(i != e);}
-    Bool le(int e){  x(); return new Bool(i <= e);}
-    Bool lt(int e){  x(); return new Bool(i <  e);}
-    Bool ge(int e){  x(); return new Bool(i >= e);}
-    Bool gt(int e){  x(); return new Bool(i >  e);}
-
-    Bool eq(Int e){e.x(); return eq(e.i);}
-    Bool ne(Int e){e.x(); return ne(e.i);}
-    Bool le(Int e){e.x(); return le(e.i);}
-    Bool lt(Int e){e.x(); return lt(e.i);}
-    Bool ge(Int e){e.x(); return ge(e.i);}
-    Bool gt(Int e){e.x(); return gt(e.i);}
-
-    Bool Eq(int e){  x(); return new Bool(eq(e));}
-    Bool Ne(int e){  x(); return new Bool(ne(e));}
-    Bool Le(int e){  x(); return new Bool(le(e));}
-    Bool Lt(int e){  x(); return new Bool(lt(e));}
-    Bool Ge(int e){  x(); return new Bool(ge(e));}
-    Bool Gt(int e){  x(); return new Bool(gt(e));}
-
-    Bool Eq(Int e){e.x(); return Eq(e.i);}
-    Bool Ne(Int e){e.x(); return Ne(e.i);}
-    Bool Le(Int e){e.x(); return Le(e.i);}
-    Bool Lt(Int e){e.x(); return Lt(e.i);}
-    Bool Ge(Int e){e.x(); return Ge(e.i);}
-    Bool Gt(Int e){e.x(); return Gt(e.i);}
-
-    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}      // Duplicate a valid integer
-
-    public String toString()                                                    // Print the integer
-     {return (n == null ? "" : n+"=")+i;
-     }
-   }
-
-  static class Ref<T>                                                           // A reference to an object
-   {private T i;                                                                // Value of the object
-    Ref()              {i = null;}                                              // Create a null reference
-    Ref(T I)           {i = I;}                                                 // Create a reference to the object
-    void set(T I)      {i = I;}                                                 // Set the refernce
-    void set(Ref<T> I) {i = I.get();}                                           // Set the refernce
-    T    get()         {return i;}                                              // Dereference the reference
-    Bool valid()       {return new Bool(i != null);}                            // Check that the refence is valid
-
-    public String toString()                                                    // Print the reference
-     {return i == null ? "null" : "ref("+i+")";
-     }
-   }
-
 //D1 Testing                                                                    // Test expected output against got output
 
   static int testsPassed = 0, testsFailed = 0;                                  // Number of tests passed and failed
@@ -1273,8 +1043,6 @@ public class Test                                                               
     err(currentTestName(), "failed\n");
     return false;
    }
-
-  static boolean ok(Bool b) {return ok(b.b());}                                 // Check test results match expected results.
 
   static boolean ok(Object a, Object b)                                         // Check test results match expected results.
    {if (a.toString().equals(b.toString())) {++testsPassed; return true;}
@@ -1701,54 +1469,6 @@ a   aa    AAA
     ok(decToInt("1x1xx"), 11);
    }
 
-  static void test_programming()
-   {final Int i = new Int(0);
-    class test_programming
-     {test_programming(int N)
-       {new For(N)
-         {Bool body(Int Index)
-           {new If (Index.Mod(2).eq(0))
-             {void Then() {i.add(Index);}
-              void Else() {i.sub(Index);}
-             };
-            return new Bool(true);
-           }
-         };
-       }
-     }
-    new test_programming(11);
-    ok(i, 5);
-    ok(i.valid().b());
-   }
-
-  static void test_bool()
-   {final Bool b1 = new Bool().clear();
-    final Bool b2 = new Bool().set();
-    ok(b1.or(  ()->{return b2;}).b() == true);
-    ok(b1.nor (()->{return b2;}).b() == false);
-    ok(b1.and (()->{return b2;}).b() == false);
-    ok(b1.nand(()->{return b2;}).b() == true);
-   }
-
-  static void test_traceNames()
-   {class A
-     {void a()
-       {class B
-         {void b()
-           {if (github_actions)
-             {ok(traceNamesString(), "main.oldTests.test_traceNames.a.b");
-             }
-            else
-             {ok(traceNamesString(), "main.newTests.oldTests.test_traceNames.a.b");
-             }
-           }
-         }
-        new B().b();
-       }
-     }
-    new A().a();
-   }
-
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
@@ -1767,9 +1487,6 @@ a   aa    AAA
     test_squeezeVerticalSpaces();
     test_modZero();
     test_hextoInt();
-    test_programming();
-    test_bool();
-    test_traceNames();
    }
 
   static void newTests()                                                        // Tests being worked on
