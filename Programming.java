@@ -5,17 +5,8 @@
 // change boolean eq() to Bool eq()
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
-import java.io.*;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.security.*;
-import java.text.*;
-import java.time.*;
-import java.time.format.*;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.*;
-import java.util.zip.GZIPOutputStream;
 
 //D1 Construct                                                                  // Develop and test a java program to describe a chip and emulate its operation.
 
@@ -24,6 +15,9 @@ public class Programming extends Test                                           
     "true".equals(System.getenv("GITHUB_ACTIONS"));
   final static long start               = System.nanoTime();                    // Start time
   final static boolean coverageAnalysis = false;                                // Enables coverage checks
+  final Stack<I>       code = new Stack<>();                                    // Machine code instructions
+  final Stack<Label> labels = new Stack<>();                                    // Labels for instructions in this process
+  boolean mc = false;                                                           // Generate machine code if true
 
 //D1 Programming                                                                // Program structures
 
@@ -249,6 +243,36 @@ public class Programming extends Test                                           
 
   static int[]range(Int Limit) {return range(Limit.i());}                       // Range of integers
   static boolean ok(Bool b) {return ok(b.b());}                                 // Check test results match expected results.
+
+//D1 Machine Code                                                               // Generate machine code instructions to implement the program
+
+//D2 Instruction                                                                // An instruction represents code to be executed by a process in a single clock cycle == process step
+
+  abstract class I                                                              // Instructions implement the action of a program
+   {final int instructionNumber;                                                // The number of this instruction
+    final boolean mightJump;                                                    // The instruction might cause a jump
+    final String traceBack = traceBack();                                       // Line at which this instruction was created
+
+    final String traceBackOnOneLine()                                           // Line at which this instruction was created represented with out new lines
+     {return traceBack.replace("\n", "|").trim();
+     }
+
+    I(boolean MightJump)                                                        // Add this instruction to the process's code
+     {instructionNumber = code.size();                                          // Number each instruction
+      mightJump = MightJump;
+      code.push(this);                                                          // Save instruction
+     }
+
+    I() {this(false);}                                                          // Add this instruction to the process's code assunming it will not jump
+
+    abstract void action();                                                     // The action to be performed by the instruction
+   }
+
+  class Label                                                                   // Label jump targets in the program
+   {int offset;                                                                 // The instruction location to which this labels applies
+    Label()    {set(); labels.push(this);}                                      // A label assigned to an instruction location
+    void set() {offset = code.size();}                                          // Reassign the label to an instruction
+   }
 
 //D1 Testing                                                                    // Test expected output against got output
 
