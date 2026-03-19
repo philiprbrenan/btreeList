@@ -146,32 +146,34 @@ public class Programming extends Test                                           
 
     Int      ()      {}
     void x   ()      {if (!v) stop("Int has not been set yet");}
-    Int  X   ()      {v = true;                     return this;}
+    Int  X   ()      {v = true;                     return mc("X"   );}
     int  i   ()      {          x();                return i;}
-    Int  i   (int I) {i     = I;     X();           return this;}
-    Int  i   (Int I) {i     = I.i; v = I.v;         return this;}
-    Int  add (int I) {i    += I;x(); X();           return this;}
-    Int  add (Int I) {        I.x(); add(I.i());    return this;}
-    Int  add2(Int I) {        I.x(); add(I.i()*2);  return this;}
-    Int  sub (int I) {i    -= I;x(); X();           return this;}
-    Int  sub (Int I) {        I.x(); sub(I.i());    return this;}
-    Int  mul (int I) {i    *= I;x(); X();           return this;}
-    Int  mul (Int I) {        I.x(); mul(I.i());    return this;}
-    Int  div (int I) {i    /= I;x(); X();           return this;}
-    Int  div (Int I) {        I.x(); div(I.i());    return this;}
-    Int  mod (int I) {i    %= I;x(); X();           return this;}
-    Int  mod (Int I) {        I.x(); mod(I.i());    return this;}
-    Int  inc ()      {          x(); add(1);        return this;}
-    Int  dec ()      {          x(); sub(1);        return this;}
-    Int  up  ()      {i  <<= 1; x();                return this;}
-    Int  down()      {i >>>= 1; x();                return this;}
-    Int  sqrt()      {x(); i = (int)java.lang.Math.sqrt(i); X(); return this;}
-    Int  neg ()      {x(); i = -i;   X();           return this;}
-    Int  abs ()      {x(); i = i < 0 ? -i : i; X(); return this;}
+    Int  i   (int I) {i     = I;     X();           return mc("i"   );}
+    Int  i   (Int I) {i     = I.i; v = I.v;         return mc("i"   );}
+    Int  add (int I) {i    += I;x(); X();           return mc("add" );}
+    Int  add (Int I) {        I.x(); add(I.i());    return mc("add" );}
+    Int  add2(Int I) {        I.x(); add(I.i()*2);  return mc("add2");}
+    Int  sub (int I) {i    -= I;x(); X();           return mc("sub" );}
+    Int  sub (Int I) {        I.x(); sub(I.i());    return mc("sub" );}
+    Int  mul (int I) {i    *= I;x(); X();           return mc("mul" );}
+    Int  mul (Int I) {        I.x(); mul(I.i());    return mc("mul" );}
+    Int  div (int I) {i    /= I;x(); X();           return mc("div" );}
+    Int  div (Int I) {        I.x(); div(I.i());    return mc("div" );}
+    Int  mod (int I) {i    %= I;x(); X();           return mc("mod" );}
+    Int  mod (Int I) {        I.x(); mod(I.i());    return mc("mod" );}
+    Int  inc ()      {          x(); add(1);        return mc("inc" );}
+    Int  dec ()      {          x(); sub(1);        return mc("dec" );}
+    Int  up  ()      {i  <<= 1; x();                return mc("up"  );}
+    Int  down()      {i >>>= 1; x();                return mc("down");}
+    Int  sqrt()      {x(); i = (int)Math.sqrt(i); X(); return mc("");}
+    Int  neg ()      {x(); i = -i;   X();           return mc("");}
+    Int  abs ()      {x(); i = i < 0 ? -i : i; X(); return mc("");}
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
-    Int  max (Int I) {        I.x(); max(I.i);      return this;}
+    Int  max (Int I) {        I.x(); max(I.i);      return mc("max");}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
-    Int  min (Int I) {        I.x(); min(I.i);      return this;}
+    Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
+
+    Int mc(String name) {return this;}
 
     Int  Add (int I) {return dup().add(I);}
     Int  Add (Int I) {return dup().add(I);}
