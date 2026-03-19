@@ -250,14 +250,14 @@ public class Programming extends Test                                           
 
   abstract class I                                                              // Instructions implement the action of a program
    {final int instructionNumber;                                                // The number of this instruction
-    final boolean mightJump;                                                    // The instruction might cause a jump
-    final String traceBack = traceBack();                                       // Line at which this instruction was created
+    final boolean     mightJump;                                                // The instruction might cause a jump
+    final String      traceBack = traceBack();                                  // Line at which this instruction was created
 
     final String traceBackOnOneLine()                                           // Line at which this instruction was created represented with out new lines
      {return traceBack.replace("\n", "|").trim();
      }
 
-    I(boolean MightJump)                                                        // Add this instruction to the process's code
+    I(boolean MightJump)                                                        // Add this instruction to the code for the process
      {instructionNumber = code.size();                                          // Number each instruction
       mightJump = MightJump;
       code.push(this);                                                          // Save instruction
