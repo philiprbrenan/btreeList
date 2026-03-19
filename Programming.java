@@ -146,32 +146,32 @@ public class Programming extends Test                                           
 
     Int      ()      {}
     void x   ()      {if (!v) stop("Int has not been set yet");}
-    Int  X   ()      {v = true; return this;}
-    int  i   ()      {          x();       return i;}
-    Int  i   (int I) {i    = I;      X();  return this;}
-    Int  i   (Int I) {i    = I.i; v = I.v; return this;}
-    Int  add (int I) {i   += I; x(); X();  return this;}
-    Int  add (Int I) {        I.x();       return add(I.i());}
-    Int  add2(Int I) {        I.x();       return add(I.i()*2);}
-    Int  sub (int I) {i   -= I; x(); X();  return this;}
-    Int  sub (Int I) {        I.x();       return sub(I.i());}
-    Int  mul (int I) {i   *= I; x(); X();  return this;}
-    Int  mul (Int I) {        I.x();       return mul(I.i());}
-    Int  div (int I) {i   /= I; x(); X();  return this;}
-    Int  div (Int I) {        I.x();       return div(I.i());}
-    Int  mod (int I) {i   %= I; x(); X();  return this;}
-    Int  mod (Int I) {        I.x();       return mod(I.i());}
-    Int  inc ()      {          x();       return add(1);}
-    Int  dec ()      {          x();       return sub(1);}
-    Int  up  ()      {i  <<= 1; x();       return this;}
-    Int  down()      {i >>>= 1; x();       return this;}
+    Int  X   ()      {v = true;                     return this;}
+    int  i   ()      {          x();                return i;}
+    Int  i   (int I) {i     = I;     X();           return this;}
+    Int  i   (Int I) {i     = I.i; v = I.v;         return this;}
+    Int  add (int I) {i    += I;x(); X();           return this;}
+    Int  add (Int I) {        I.x(); add(I.i());    return this;}
+    Int  add2(Int I) {        I.x(); add(I.i()*2);  return this;}
+    Int  sub (int I) {i    -= I;x(); X();           return this;}
+    Int  sub (Int I) {        I.x(); sub(I.i());    return this;}
+    Int  mul (int I) {i    *= I;x(); X();           return this;}
+    Int  mul (Int I) {        I.x(); mul(I.i());    return this;}
+    Int  div (int I) {i    /= I;x(); X();           return this;}
+    Int  div (Int I) {        I.x(); div(I.i());    return this;}
+    Int  mod (int I) {i    %= I;x(); X();           return this;}
+    Int  mod (Int I) {        I.x(); mod(I.i());    return this;}
+    Int  inc ()      {          x(); add(1);        return this;}
+    Int  dec ()      {          x(); sub(1);        return this;}
+    Int  up  ()      {i  <<= 1; x();                return this;}
+    Int  down()      {i >>>= 1; x();                return this;}
     Int  sqrt()      {x(); i = (int)java.lang.Math.sqrt(i); X(); return this;}
-    Int  neg ()      {x(); i = -i;   X();  return this;}
+    Int  neg ()      {x(); i = -i;   X();           return this;}
     Int  abs ()      {x(); i = i < 0 ? -i : i; X(); return this;}
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
-    Int  max (Int I) {        I.x();       return max(I.i);}
+    Int  max (Int I) {        I.x(); max(I.i);      return this;}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
-    Int  min (Int I) {        I.x();       return min(I.i);}
+    Int  min (Int I) {        I.x(); min(I.i);      return this;}
 
     Int  Add (int I) {return dup().add(I);}
     Int  Add (Int I) {return dup().add(I);}
