@@ -56,7 +56,7 @@ class Tree extends Programming                                                  
   int numberOfNodes() {return numberOfNodes;}                                   // Maximum number of nodes in tree
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
-  static class Key extends Int                                                  // A key
+  class Key extends Int                                                  // A key
    {Key()             {super();}                                                // A not valid key
     Key(  int Value)  {super(Value);}                                           // A valid key
     Key(  Int Value)  {super(Value);}                                           // A key
@@ -66,10 +66,7 @@ class Tree extends Programming                                                  
      }
    }
 
-  static Key Key(int Value) {return new Key(Value);}                            // Create a key with the specified value
-  static Key Key(Int Value) {return new Key(Value);}                            // Create a key with the specified value
-
-  static class Data extends Int                                                 // An item of data associated with a key
+  class Data extends Int                                                        // An item of data associated with a key
    {Data()          {super();}                                                  // A not valid key
     Data(int Value) {super(Value);}                                             // A valid key
     Data(Int Value) {super(Value);}                                             // A key
@@ -344,7 +341,7 @@ class Tree extends Programming                                                  
 //D2 Statistics                                                                 // Query the state of the slots
 
     Int countUsed()                                                             // Number of slots in use. How can we do this quickly in parallel?
-     {final Int n = IntDec.n().i(0);
+     {final Int n = new Int(0);
       new For(numberOfSlots())
        {Bool body(Int i)
          {new If (usedSlots(new Slot(new Int(i)))) {void Then(){n.inc();}};
@@ -472,7 +469,7 @@ class Tree extends Programming                                                  
 
     void reset()                                                                // Reset the slots
      {new For(numberOfSlots()) {Bool body(Int i) {slots(new Slot(i), new slot(0)); return Bool.True;}};
-      new For(numberOfRefs   ) {Bool body(Int i) {  key(new slot(i), Key(0));      return Bool.True;}};
+      new For(numberOfRefs   ) {Bool body(Int i) {  key(new slot(i), new Key(0));  return Bool.True;}};
 
       initialize();                                                             // Clear the existing tree bits - faster than deleting each path in turn
      }
@@ -953,8 +950,8 @@ class Tree extends Programming                                                  
                      new Branch(new Allocation(r));                             // Branch as positive
    }
 
-  void root(Leaf   Root) {memory.root(Root != null ? Root.name().neg() : Int.zero);}   // Set the root in memory with a negative address to show that it is a leaf
-  void root(Branch Root) {memory.root(Root != null ? Root.name()       : Int.zero);}   // Set the root in memory with a positive address to show that it is a branch
+  void root(Leaf   Root) {memory.root(Root != null ? Root.name().neg() : new Int(0));}   // Set the root in memory with a negative address to show that it is a leaf
+  void root(Branch Root) {memory.root(Root != null ? Root.name()       : new Int(0));}   // Set the root in memory with a positive address to show that it is a branch
 
 //D2 Leaf                                                                       // Use the slots to model a leaf
 
@@ -988,7 +985,7 @@ class Tree extends Programming                                                  
      }
 
     void up(Branch Branch)                                                      // Set parent branch
-     {memory.up(Branch != null ? Branch.name() : Int.zero);
+     {memory.up(Branch != null ? Branch.name() : new Int(0));
      }
 
     Slot upIndex(Branch Branch)                                                 // Index of this leaf in its parent. We have to return an Integer rather than a slot because we do not know which branch the slot is in
@@ -1002,7 +999,7 @@ class Tree extends Programming                                                  
     Data data(Slot I) {return new Data(memory.data(slots(I).value()));}         // Get value of data field at index
     void data(Slot I, Data Value)                                               // Set value of data field at index
      {memory.data(slots(I).value(), Value.valid().b() ?
-                                    Value.value()     : Int.zero);
+                                    Value.value()     : new Int(0));
      }
 
     Data data(slot I) {return new Data(memory.data(I.value()));}                // Get value of data field at the slot
@@ -1324,7 +1321,7 @@ class Tree extends Programming                                                  
      }
 
     void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
-     {memory.up(Branch != null ? Branch.name() : Int.zero);
+     {memory.up(Branch != null ? Branch.name() : new Int(0));
      }
 
     Int  upIndex()           {return memory.upIndex();}                         // Index of this branch in its parent
@@ -1985,7 +1982,7 @@ class Tree extends Programming                                                  
             final Leaf   r = F.leaf;
             final Int   sk = r.splittingKey();
             final Leaf   l = r.splitLeft();
-            b.insert(Key(sk), l);                                               // Insert new left leaf into leaf
+            b.insert(new Key(sk), l);                                           // Insert new left leaf into leaf
 
             new If (Key.value().le(sk))                                         // Insert new key, data pair into left leaf or right leaf depending on key
              {void Then()
@@ -2096,7 +2093,7 @@ class Tree extends Programming                                                  
              {void Then()
               {final Int  sk = r.splittingKey();                                // Splitting key
                 final Leaf  l = r.splitLeft();                                  // Right leaf split out of the leaf
-                p.get().insert(Key(sk), l);                                     // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+                p.get().insert(new Key(sk), l);                                 // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
                 final Leaf  L = Key.value().le(sk).b() ? l : r;                 // Choose left or right leaf depending on key
                 L.insert(Key, Data);                                            // Insert into left or right leaf which will now have space
                }
@@ -2111,7 +2108,7 @@ class Tree extends Programming                                                  
              {void Then()
                {final Int         sk = r.splittingKey();                        // Splitting key
                 final Branch.Split s = r.splitLeft();                           // Branch split out on right from
-                p.get().insert(Key(sk), s.left);                                // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+                p.get().insert(new Key(sk), s.left);                            // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
                 p.set(Key.value().le(sk).b() ? s.left : s.right);               // Traverse left or right
                }
               void Else() {p.set(r);}                                           // Step down into non full branch
@@ -2545,12 +2542,6 @@ class Tree extends Programming                                                  
      }
    }
 
-//D1 Declarations                                                               // Declarations of variables to automate the capture of their names
-
-  class IntDec                                                                  // By declaring integer variables in this strange way we can automate the collection of their fully qualified names via a trace back
-   {static Int n() {return new Int();}
-   }
-
 //D1 Tests                                                                      // Tests
 
 //D2 Slots                                                                      // Test the slots
@@ -2620,14 +2611,14 @@ class Tree extends Programming                                                  
     final Slots s = t.new Slots(8);
     s.initialize();
                         ok(s.empty(), true);  ok(s.full(), false);
-    s.insert(Key(14));  ok(s.empty(), false); ok(s.full(), false);
-    s.insert(Key(13));  ok(s.countUsed(), 2);
-    s.insert(Key(16));
-    s.insert(Key(15));
-    s.insert(Key(18));
-    s.insert(Key(17));
-    s.insert(Key(12));
-    s.insert(Key(11));
+    s.insert(t.new Key(14));  ok(s.empty(), false); ok(s.full(), false);
+    s.insert(t.new Key(13));  ok(s.countUsed(), 2);
+    s.insert(t.new Key(16));
+    s.insert(t.new Key(15));
+    s.insert(t.new Key(18));
+    s.insert(t.new Key(17));
+    s.insert(t.new Key(12));
+    s.insert(t.new Key(11));
     ok(s.printInOrder(), "11, 12, 13, 14, 15, 16, 17, 18");
                         ok(s.empty(), false);
                         ok(s.full(),  true);
@@ -2639,44 +2630,49 @@ usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
 usedRefs :    X   X   X   X   X   X   X   X
 keys     :   14  13  16  15  18  17  12  11
 """);
-    ok(s.locate(Key(11)).i(),  5);
-    ok(s.locate(Key(12)).i(),  6);
-    ok(s.locate(Key(13)).i(),  7);
-    ok(s.locate(Key(14)).i(),  8);
-    ok(s.locate(Key(15)).i(),  9);
-    ok(s.locate(Key(16)).i(), 10);
-    ok(s.locate(Key(17)).i(), 11);
-    ok(s.locate(Key(18)).i(), 12);
-    ok(s.locate(Key(10)).notValid());
-    ok(s.locate(Key(20)).notValid());
+    ok(s.locate(t.new Key(11)).i(),  5);
+    ok(s.locate(t.new Key(12)).i(),  6);
+    ok(s.locate(t.new Key(13)).i(),  7);
+    ok(s.locate(t.new Key(14)).i(),  8);
+    ok(s.locate(t.new Key(15)).i(),  9);
+    ok(s.locate(t.new Key(16)).i(), 10);
+    ok(s.locate(t.new Key(17)).i(), 11);
+    ok(s.locate(t.new Key(18)).i(), 12);
+    ok(s.locate(t.new Key(10)).notValid());
+    ok(s.locate(t.new Key(20)).notValid());
 
-    ok(s.key(s.find(Key(14))).i(), 14); ok(s.delete(Key(14)), true); ok(s.printInOrder(), "11, 12, 13, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(12))).i(), 12); ok(s.delete(Key(12)), true); ok(s.printInOrder(), "11, 13, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(13))).i(), 13); ok(s.delete(Key(13)), true); ok(s.printInOrder(), "11, 15, 16, 17, 18");
-    ok(s.key(s.find(Key(16))).i(), 16); ok(s.delete(Key(16)), true); ok(s.printInOrder(), "11, 15, 17, 18");
-    ok(s.key(s.find(Key(18))).i(), 18); ok(s.delete(Key(18)), true); ok(s.printInOrder(), "11, 15, 17");
-    ok(s.key(s.find(Key(11))).i(), 11); ok(s.delete(Key(11)), true); ok(s.printInOrder(), "15, 17");
-    ok(s.key(s.find(Key(17))).i(), 17); ok(s.delete(Key(17)), true); ok(s.printInOrder(), "15");
-    ok(s.key(s.find(Key(15))).i(), 15); ok(s.delete(Key(15)), true); ok(s.printInOrder(), "");
+    ok(s.key(s.find(t.new Key(14))).i(), 14); ok(s.delete(t.new Key(14)), true); ok(s.printInOrder(), "11, 12, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(t.new Key(12))).i(), 12); ok(s.delete(t.new Key(12)), true); ok(s.printInOrder(), "11, 13, 15, 16, 17, 18");
+    ok(s.key(s.find(t.new Key(13))).i(), 13); ok(s.delete(t.new Key(13)), true); ok(s.printInOrder(), "11, 15, 16, 17, 18");
+    ok(s.key(s.find(t.new Key(16))).i(), 16); ok(s.delete(t.new Key(16)), true); ok(s.printInOrder(), "11, 15, 17, 18");
+    ok(s.key(s.find(t.new Key(18))).i(), 18); ok(s.delete(t.new Key(18)), true); ok(s.printInOrder(), "11, 15, 17");
+    ok(s.key(s.find(t.new Key(11))).i(), 11); ok(s.delete(t.new Key(11)), true); ok(s.printInOrder(), "15, 17");
+    ok(s.key(s.find(t.new Key(17))).i(), 17); ok(s.delete(t.new Key(17)), true); ok(s.printInOrder(), "15");
+    ok(s.key(s.find(t.new Key(15))).i(), 15); ok(s.delete(t.new Key(15)), true); ok(s.printInOrder(), "");
 
-    ok(s.locate(Key(10)).notValid()); ok(s.delete(Key(10)), false);
+    ok(s.locate(t.new Key(10)).notValid()); ok(s.delete(t.new Key(10)), false);
    }
 
   static void test_idn()                                                        // Repeated inserts and deletes
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
+    final Key k14 = t.new Key(14);
+    final Key k13 = t.new Key(13);
+    final Key k16 = t.new Key(16);
+    final Key k15 = t.new Key(15);
+
     for (int i = 0; i < s.numberOfSlots()*10; i++)
-     {s.insert(Key(14)); s.redistribute();
-      s.insert(Key(13)); s.redistribute();
-      s.insert(Key(16)); s.redistribute();
-      s.insert(Key(15)); s.redistribute();
+     {s.insert(k14); s.redistribute();
+      s.insert(k13); s.redistribute();
+      s.insert(k16); s.redistribute();
+      s.insert(k15); s.redistribute();
       ok(s.printInOrder(), "13, 14, 15, 16");
       ok(s.countUsed(), 4);
-      s.delete(Key(14)); s.redistribute();
-      s.delete(Key(13)); s.redistribute();
-      s.delete(Key(16)); s.redistribute();
-      s.delete(Key(15)); s.redistribute();
+      s.delete(k14); s.redistribute();
+      s.delete(k13); s.redistribute();
+      s.delete(k16); s.redistribute();
+      s.delete(k15); s.redistribute();
       ok(s.printInOrder(), "");
       ok(s.countUsed(), 0);
      }
@@ -2686,19 +2682,19 @@ keys     :   14  13  16  15  18  17  12  11
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.insert(Key(10));
-    s.insert(Key(20));
-    ok(s.find(Key(15)).notValid());
+    s.insert(t.new Key(10));
+    s.insert(t.new Key(20));
+    ok(s.find(t.new Key(15)).notValid());
    }
 
   static void test_locateFirstGeKey()
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(22));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(24));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(26));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(28));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(22));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(24));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(26));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(28));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2707,20 +2703,20 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
 usedRefs :    X   .   X   .   X   .   .   X
 keys     :   28   0  26   0  24   0   0  22
 """);
-    ok(s.locateFirstGe(Key(23)).i(),    5);
-    ok(s.locateFirstGe(Key(24)).i(),    5);
-    ok(s.locateFirstGe(Key(25)).i(),    9);
-    ok(s.locateFirstGe(Key(30)).notValid());
+    ok(s.locateFirstGe(t.new Key(23)).i(),    5);
+    ok(s.locateFirstGe(t.new Key(24)).i(),    5);
+    ok(s.locateFirstGe(t.new Key(25)).i(),    9);
+    ok(s.locateFirstGe(t.new Key(30)).notValid());
    }
 
   static void test_compactLeft()
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2745,10 +2741,10 @@ keys     :   11  12  13  14   0   0   0   0
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(14));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2775,11 +2771,11 @@ keys     :    0   0   0   0  11  12  13  14
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8, ByteBuffer.allocate(200));
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), Key(11));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), Key(12));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), Key(13));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), Key(14));
-    s.type     (new Int(11));
+    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(14));
+    s.type     (t.new Int (11));
     ok(s, """
 Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2794,39 +2790,39 @@ keys     :   14   0  13   0  12   0   0  11
 
     ok(B, s);
 
-    ok(m.slots       (new Int(0)), 0);
-    ok(m.slots       (new Int(1)), 7);
-    ok(m.slots       (new Int(2)), 0);
-    ok(m.slots       (new Int(3)), 0);
-    ok(m.slots       (new Int(4)), 0);
-    ok(m.slots       (new Int(5)), 4);
-    ok(m.slots       (new Int(6)), 0);
-    ok(m.usedSlots   (new Int(0)), false);
-    ok(m.usedSlots   (new Int(1)), true);
-    ok(m.usedSlots   (new Int(2)), false);
-    ok(m.usedSlots   (new Int(3)), false);
-    ok(m.usedSlots   (new Int(4)), false);
-    ok(m.usedSlots   (new Int(5)), true);
-    ok(m.usedSlots   (new Int(6)), false);
-    ok(m.usedRefs    (new Int(0)), true);
-    ok(m.usedRefs    (new Int(1)), false);
-    ok(m.usedRefs    (new Int(2)), true);
-    ok(m.usedRefs    (new Int(3)), false);
-    ok(m.usedRefs    (new Int(4)), true);
-    ok(m.usedRefs    (new Int(5)), false);
-    ok(m.usedRefs    (new Int(6)), false);
-    ok(m.keys        (new Int(0)), 14);
-    ok(m.keys        (new Int(1)),  0);
-    ok(m.keys        (new Int(2)), 13);
-    ok(m.keys        (new Int(3)),  0);
-    ok(m.keys        (new Int(4)), 12);
-    ok(m.keys        (new Int(5)),  0);
-    ok(m.keys        (new Int(6)),  0);
+    ok(m.slots       (t.new Int(0)), 0);
+    ok(m.slots       (t.new Int(1)), 7);
+    ok(m.slots       (t.new Int(2)), 0);
+    ok(m.slots       (t.new Int(3)), 0);
+    ok(m.slots       (t.new Int(4)), 0);
+    ok(m.slots       (t.new Int(5)), 4);
+    ok(m.slots       (t.new Int(6)), 0);
+    ok(m.usedSlots   (t.new Int(0)), false);
+    ok(m.usedSlots   (t.new Int(1)), true);
+    ok(m.usedSlots   (t.new Int(2)), false);
+    ok(m.usedSlots   (t.new Int(3)), false);
+    ok(m.usedSlots   (t.new Int(4)), false);
+    ok(m.usedSlots   (t.new Int(5)), true);
+    ok(m.usedSlots   (t.new Int(6)), false);
+    ok(m.usedRefs    (t.new Int(0)), true);
+    ok(m.usedRefs    (t.new Int(1)), false);
+    ok(m.usedRefs    (t.new Int(2)), true);
+    ok(m.usedRefs    (t.new Int(3)), false);
+    ok(m.usedRefs    (t.new Int(4)), true);
+    ok(m.usedRefs    (t.new Int(5)), false);
+    ok(m.usedRefs    (t.new Int(6)), false);
+    ok(m.keys        (t.new Int(0)), 14);
+    ok(m.keys        (t.new Int(1)),  0);
+    ok(m.keys        (t.new Int(2)), 13);
+    ok(m.keys        (t.new Int(3)),  0);
+    ok(m.keys        (t.new Int(4)), 12);
+    ok(m.keys        (t.new Int(5)),  0);
+    ok(m.keys        (t.new Int(6)),  0);
 
-    m.slots    (new Int(13), new Int(6));
-    m.usedSlots(new Int(13), Bool.True);
-    m.usedRefs( new Int( 6), Bool.True);
-    m.keys    ( new Int( 6), new Int(10));
+    m.slots    (t.new Int(13), t.new Int(6));
+    m.usedSlots(t.new Int(13), Bool.True);
+    m.usedRefs (t.new Int( 6), Bool.True);
+    m.keys     (t.new Int( 6), t.new Int(10));
 
     ok(B, """
 Slots    : name:  0, type: 11, refs:  8
@@ -2868,11 +2864,12 @@ keys     :   14   0  13   0  12   0  10  11
    }
 
   static void test_compactLeafLeft()
-   {final Leaf l = new Tree(8).new Leaf();
-    l.insert(Key(13), new Data(23));
-    l.insert(Key(12), new Data(22));
-    l.insert(Key(14), new Data(24));
-    l.insert(Key(11), new Data(21));
+   {final Tree t = new Tree(8);
+    final Leaf l = t.new Leaf();
+    l.insert(t.new Key(13), t.new Data(23));
+    l.insert(t.new Key(12), t.new Data(22));
+    l.insert(t.new Key(14), t.new Data(24));
+    l.insert(t.new Key(11), t.new Data(21));
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -2897,11 +2894,12 @@ data     :   21  22  23  24   0   0   0   0
    }
 
   static void test_compactLeafRight()
-   {final Leaf l = new Tree(8).new Leaf();
-    l.insert(Key(13), new Data(23));
-    l.insert(Key(12), new Data(22));
-    l.insert(Key(14), new Data(24));
-    l.insert(Key(11), new Data(21));
+   {final Tree t = new Tree(8);
+    final Leaf l = t.new Leaf();
+    l.insert(t.new Key(13), t.new Data(23));
+    l.insert(t.new Key(12), t.new Data(22));
+    l.insert(t.new Key(14), t.new Data(24));
+    l.insert(t.new Key(11), t.new Data(21));
 
   //stop(l);
     ok(l, """
@@ -2931,9 +2929,9 @@ data     :    0   0   0   0  21  22  23  24
   static void test_compactBranchLeft()
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
-    b.insert(Key(12), t.fake(t.new Allocation(22)));
-    b.insert(Key(11), t.fake(t.new Allocation(21)));
-    b.insert(Key(13), t.fake(t.new Allocation(23)));
+    b.insert(t.new Key(12), t.fake(t.new Allocation(22)));
+    b.insert(t.new Key(11), t.fake(t.new Allocation(21)));
+    b.insert(t.new Key(13), t.fake(t.new Allocation(23)));
     b.top(t.fake(t.new Allocation(4)));
     //stop(b);
     ok(b, """
@@ -2966,9 +2964,9 @@ top      :   -4
   static void test_compactBranchRight()
    {final Tree t = new Tree(8);
     final Branch b = t.new Branch();
-    b.insert(Key(12), t.fake(t.new Allocation(12)));
-    b.insert(Key(11), t.fake(t.new Allocation(11)));
-    b.insert(Key(13), t.fake(t.new Allocation(13)));
+    b.insert(t.new Key(12), t.fake(t.new Allocation(12)));
+    b.insert(t.new Key(11), t.fake(t.new Allocation(11)));
+    b.insert(t.new Key(13), t.fake(t.new Allocation(13)));
     b.top(t.fake(t.new Allocation(4)));
     //stop(b);
     ok(b, """
@@ -2998,16 +2996,17 @@ top      :   -4
 """);
    }
 
-  static  Data[]test_leaf_data(int...Values)
+  static  Data[]test_leaf_data(Tree t, int...Values)
    {final Data[]d = new Data[Values.length];
-    for (int i = 0; i < d.length; i++) d[i] = new Data(new Int(Values[i]));
+    for (int i = 0; i < d.length; i++) d[i] = t.new Data(t.new Int(Values[i]));
     return d;
    }
 
   static Leaf test_leaf()
-   {final Leaf  l = new Tree(8).new Leaf();
-    final Data[]d = test_leaf_data(13, 16, 15, 18, 17, 14, 12, 11);
-    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].i()), d[i]);
+   {final Tree  t = new Tree(8);
+    final Leaf  l = t.new Leaf();
+    final Data[]d = test_leaf_data(t, 13, 16, 15, 18, 17, 14, 12, 11);
+    for (int i = 0; i < d.length; i++) l.insert(t.new Key(d[i].i()), d[i]);
     return l;
    }
 
@@ -3104,7 +3103,7 @@ data: 15, 16, 17, 18
 
     final int []k = new int [] {13, 16, 15, 17, 14, 12, 11};
     final int []d = new int [] {3,   6,  5,  7,  4,  2, 1};
-    for (int i = 0; i < d.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
+    for (int i = 0; i < d.length; i++) b.insert(t.new Key(k[i]), t.fake(t.new Allocation(d[i])));
     b.top(t.fake(t.new Allocation(8)));
     return b;
    }
@@ -3174,16 +3173,18 @@ top : 8
    }
 
   static Leaf test_leaf1()
-   {final Leaf  l = new Tree(8,7).new Leaf();
-    final Data[]d = test_leaf_data(13, 14, 12, 11);
-    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].i()), d[i]);
+   {final Tree  t = new Tree(8,7);
+    final Leaf  l = t.new Leaf();
+    final Data[]d = test_leaf_data(t, 13, 14, 12, 11);
+    for (int i = 0; i < d.length; i++) l.insert(t.new Key(d[i].i()), d[i]);
     return l;
    }
 
   static Leaf test_leaf2()
-   {final Leaf  l = new Tree(8,7).new Leaf();
-    final Data[]d = test_leaf_data(16, 15, 18, 17);
-    for (int i = 0; i < d.length; i++) l.insert(Key(d[i].i()), d[i]);
+   {final Tree  t = new Tree(8,7);
+    final Leaf  l = t.new Leaf();
+    final Data[]d = test_leaf_data(t, 16, 15, 18, 17);
+    for (int i = 0; i < d.length; i++) l.insert(t.new Key(d[i].i()), d[i]);
     return l;
    }
 
@@ -3221,34 +3222,40 @@ data     :   11  12  13  14  15  16  17  18
 """);
    }
 
-  static Branch test_branch1()
-   {final Tree t = new Tree(8);
+  static class TreeBranch
+   {final Tree t;
+    final Branch b;
+    TreeBranch(Tree T, Branch B) {t = T; b = B;}
+   }
+
+  static TreeBranch test_branch1()
+   {final Tree   t = new Tree(8);
     final Branch b = t.new Branch();
 
     final int []k = new int[]{13, 12, 11};
     final int []d = new int[]{ 3,  2,  1};
-    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
+    for (int i = 0; i < k.length; i++) b.insert(t.new Key(k[i]), t.fake(t.new Allocation(d[i])));
     b.top(t.fake(t.new Allocation(4)));
-    return b;
+    return new TreeBranch(t, b);
    }
 
-  static Branch test_branch2()
-   {final Tree t = new Tree(8);
+  static TreeBranch test_branch2()
+   {final Tree   t = new Tree(8);
     final Branch b = t.new Branch();
 
     final int []k = new int[]{16, 15, 17};
     final int []d = new int[]{6, 5, 7};
-    for (int i = 0; i < k.length; i++) b.insert(Key(k[i]), t.fake(t.new Allocation(d[i])));
+    for (int i = 0; i < k.length; i++) b.insert(t.new Key(k[i]), t.fake(t.new Allocation(d[i])));
     b.top(t.fake(t.new Allocation(8)));
-    return b;
+    return new TreeBranch(t, b);
    }
 
   static void test_mergeBranchLeft()
-   {final Branch l = test_branch1();
-    final Branch r = test_branch2();
-    l.mergeFromRight(Key(14), r);
+   {final TreeBranch l = test_branch1();
+    final TreeBranch r = test_branch2();
+    l.b.mergeFromRight(l.t.new Key(14), r.b);
     //stop(l);
-    ok(l, """
+    ok(l.b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -3262,11 +3269,11 @@ top      :   -8
    }
 
   static void test_mergeBranchRight()
-   {final Branch l = test_branch1();
-    final Branch r = test_branch2();
-    r.mergeFromLeft(Key(14), l);
+   {final TreeBranch l = test_branch1();
+    final TreeBranch r = test_branch2();
+    r.b.mergeFromLeft(r.t.new Key(14), l.b);
     //stop(r);
-    ok(r, """
+    ok(r.b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -3282,9 +3289,9 @@ top      :   -8
   static void test_locateFirstGe()
    {final Tree t = new Tree(8);
     final Slots b = t.new Slots(16);
-    b.insert(Key(1));
-    b.insert(Key(5));
-    b.insert(Key(3));
+    b.insert(t.new Key(1));
+    b.insert(t.new Key(5));
+    b.insert(t.new Key(3));
     b.redistribute();
     //stop(b);
     ok(b, """
@@ -3295,13 +3302,13 @@ usedRefs :    X   X   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 keys     :  1.0 5.0 3.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 """);
 
-    ok(b.locateFirstGe(Key(0)),  2);
-    ok(b.locateFirstGe(Key(1)),  2);
-    ok(b.locateFirstGe(Key(2)),  7);
-    ok(b.locateFirstGe(Key(3)),  7);
-    ok(b.locateFirstGe(Key(4)), 12);
-    ok(b.locateFirstGe(Key(5)), 12);
-    ok(b.locateFirstGe(Key(6)), null);
+    ok(b.locateFirstGe(t.new Key(0)),  2);
+    ok(b.locateFirstGe(t.new Key(1)),  2);
+    ok(b.locateFirstGe(t.new Key(2)),  7);
+    ok(b.locateFirstGe(t.new Key(3)),  7);
+    ok(b.locateFirstGe(t.new Key(4)), 12);
+    ok(b.locateFirstGe(t.new Key(5)), 12);
+    ok(b.locateFirstGe(t.new Key(6)), null);
    }
 
   static void test_splitLeaf()
@@ -3341,7 +3348,7 @@ top : 8
     final int N = 32;
     final StringBuilder s = new StringBuilder();
     for (int i = 1; i <= N; ++i)
-     {t.insert(Key(i), new Data(i));
+     {t.insert(t.new Key(i), t.new Data(i));
       t.freeCheck();
       s.append("Insert: "+i+"\n"+t);
      }
@@ -3471,177 +3478,177 @@ Insert: 32
   static void test_insert()
    {final Tree t = new Tree(4, 3);
     ok(t.count(), 0);
-    t.insert(Key(11), new Data(21));
+    t.insert(t.new Key(11), t.new Data(21));
     ok(t, """
 11|
 """);
-    t.insert(Key(13), new Data(23));
+    t.insert(t.new Key(13), t.new Data(23));
     ok(t, """
 11,13|
 """);
-    t.insert(Key(12), new Data(22));
+    t.insert(t.new Key(12), t.new Data(22));
     ok(t, """
 11,12,13|
 """);
-    t.insert(Key(14), new Data(24));
+    t.insert(t.new Key(14), t.new Data(24));
     ok(t, """
 11,12,13,14|
 """);
-    t.insert(Key(15), new Data(25));
+    t.insert(t.new Key(15), t.new Data(25));
     ok(t, """
       12        |
 11,12   13,14,15|
 """);
-    t.insert(Key(16), new Data(26));
+    t.insert(t.new Key(16), t.new Data(26));
     ok(t, """
       12           |
 11,12   13,14,15,16|
 """);
-    t.insert(Key(17), new Data(27));
+    t.insert(t.new Key(17), t.new Data(27));
     ok(t, """
             14        |
 11,12,13,14   15,16,17|
 """);
-    t.insert(Key(18), new Data(28));
+    t.insert(t.new Key(18), t.new Data(28));
     ok(t, """
             14           |
 11,12,13,14   15,16,17,18|
 """);
-    t.insert(Key(19), new Data(29));
+    t.insert(t.new Key(19), t.new Data(29));
     ok(t, """
             14      16        |
 11,12,13,14   15,16   17,18,19|
 """);
-    t.insert(Key(20), new Data(30));
+    t.insert(t.new Key(20), t.new Data(30));
     ok(t, """
             14      16           |
 11,12,13,14   15,16   17,18,19,20|
 """);
-    t.insert(Key(21), new Data(31));
+    t.insert(t.new Key(21), t.new Data(31));
     ok(t, """
             14            18        |
 11,12,13,14   15,16,17,18   19,20,21|
 """);
-    t.insert(Key(22), new Data(32));
+    t.insert(t.new Key(22), t.new Data(32));
     ok(t, """
             14            18           |
 11,12,13,14   15,16,17,18   19,20,21,22|
 """);
-    t.insert(Key(23), new Data(33));
+    t.insert(t.new Key(23), t.new Data(33));
     ok(t, """
             14            18      20        |
 11,12,13,14   15,16,17,18   19,20   21,22,23|
 """);
-    t.insert(Key(24), new Data(34));
+    t.insert(t.new Key(24), t.new Data(34));
     ok(t, """
             14            18      20           |
 11,12,13,14   15,16,17,18   19,20   21,22,23,24|
 """);
-    t.insert(Key(25), new Data(35));
+    t.insert(t.new Key(25), t.new Data(35));
     ok(t, """
             14            18            22        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25|
 """);
     ok(t.count(), 15);
-    t.insert(Key(26), new Data(36));
+    t.insert(t.new Key(26), t.new Data(36));
     ok(t, """
             14            18            22           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26|
 """);
     ok(t.count(), 16);
-    t.insert(Key(27), new Data(37));
+    t.insert(t.new Key(27), t.new Data(37));
     ok(t, """
                           18                              |
             14                          22      24        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27|
 """);
     ok(t.count(), 17);
-    t.insert(Key(28), new Data(38));
+    t.insert(t.new Key(28), t.new Data(38));
     ok(t, """
                           18                                 |
             14                          22      24           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27,28|
 """);
     ok(t.count(), 18);
-    t.insert(Key(29), new Data(39));
+    t.insert(t.new Key(29), t.new Data(39));
     ok(t, """
                           18                                    |
             14                          22            26        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29|
 """);
-    t.insert(Key(30), new Data(40));
+    t.insert(t.new Key(30), t.new Data(40));
     ok(t, """
                           18                                       |
             14                          22            26           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30|
 """);
-    t.insert(Key(31), new Data(41));
+    t.insert(t.new Key(31), t.new Data(41));
     ok(t, """
                           18                                            |
             14                          22            26      28        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31|
 """);
-    t.insert(Key(32), new Data(42));
+    t.insert(t.new Key(32), t.new Data(42));
     ok(t, """
                           18                                               |
             14                          22            26      28           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31,32|
 """);
-    t.insert(Key(33), new Data(43));
+    t.insert(t.new Key(33), t.new Data(43));
     ok(""+t, """
                                                       26                      |
             14            18            22                          30        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33|
 """);
-    t.insert(Key(34), new Data(44));
+    t.insert(t.new Key(34), t.new Data(44));
     ok(t, """
                                                       26                         |
             14            18            22                          30           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34|
 """);
-    t.insert(Key(35), new Data(45));
+    t.insert(t.new Key(35), t.new Data(45));
     ok(t, """
                                                       26                              |
             14            18            22                          30      32        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35|
 """);
-    t.insert(Key(36), new Data(46));
+    t.insert(t.new Key(36), t.new Data(46));
     ok(t, """
                                                       26                                 |
             14            18            22                          30      32           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35,36|
 """);
-    t.insert(Key(37), new Data(47));
+    t.insert(t.new Key(37), t.new Data(47));
     ok(t, """
                                                       26                                    |
             14            18            22                          30            34        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37|
 """);
-    t.insert(Key(38), new Data(48));
+    t.insert(t.new Key(38), t.new Data(48));
     ok(t, """
                                                       26                                       |
             14            18            22                          30            34           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38|
 """);
-    t.insert(Key(39), new Data(49));
+    t.insert(t.new Key(39), t.new Data(49));
     ok(t, """
                                                       26                                            |
             14            18            22                          30            34      36        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39|
 """);
-    t.insert(Key(40), new Data(50));
+    t.insert(t.new Key(40), t.new Data(50));
     ok(t, """
                                                       26                                               |
             14            18            22                          30            34      36           |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39,40|
 """);
-    t.insert(Key(41), new Data(51));
+    t.insert(t.new Key(41), t.new Data(51));
     ok(t, """
                                                       26                                                  |
             14            18            22                          30            34            38        |
 11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41|
 """);
-    t.insert(Key(42), new Data(52));
+    t.insert(t.new Key(42), t.new Data(52));
     ok(t, """
                                                       26                                                     |
             14            18            22                          30            34            38           |
@@ -3649,7 +3656,7 @@ Insert: 32
 """);
     ok(t.count(), 32);
 
-    ok(t.find(Key(10)), """
+    ok(t.find(t.new Key(10)), """
 Find Key : 10
 Leaf     : 1 up: 7 index: 0
 Slots    : name:  1, type:  0, refs:  4
@@ -3663,7 +3670,7 @@ Locate      :  0  below all
 Path        : 7, 9
 """);
 
-    ok(t.find(Key(23)), """
+    ok(t.find(t.new Key(23)), """
 Find Key : 23
 Leaf     : 10 up: 7 index: null
 Slots    : name: 10, type:  0, refs:  4
@@ -3682,7 +3689,7 @@ Path        : 7, 9
    {final Tree t = new Tree(4, 3);
     final int N = 32;
     for (int i = N; i > 0; i--)
-     {t.insert(Key(i), new Data(i));
+     {t.insert(t.new Key(i), t.new Data(i));
       ok(t.count(), N-i+1);
      }
     ok(t, """
@@ -3792,7 +3799,7 @@ Path        : 2, 9
   static Tree test_insert_random_32()
    {final Tree t = new Tree(4, 3);
     for (int i = 0; i < random_32.length; i++)
-     {t.insert(Key(random_32[i]), new Data(i));
+     {t.insert(t.new Key(random_32[i]), t.new Data(i));
       t.freeCheck();
       ok(t.count(), i+1);
      }
@@ -3808,7 +3815,7 @@ Path        : 2, 9
    {final Tree t = new Tree(4, 3);
 
     for (int i : range(random.length))
-     {t.insert(Key(random[i]), new Data(i));
+     {t.insert(t.new Key(random[i]), t.new Data(i));
       t.freeCheck();
       ok(t.count(), i+1);
      }
@@ -3826,12 +3833,12 @@ Path        : 2, 9
   static void test_delete()
    {final Tree t = new Tree(4, 3);
     final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
+    for (int i = 1; i <= N; ++i) t.insert(t.new Key(i), t.new Data(i));
 
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
     for (int i = 1; i <= N; ++i)
-     {t.delete(Key(i));
+     {t.delete(t.new Key(i));
       ok(t.count(), N-i);
       s.append("Delete: "+i+"\n"+t);
      }
@@ -3955,12 +3962,12 @@ Delete: 32
   static void test_delete_descending()
    {final Tree t = new Tree(4, 3);
     final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
+    for (int i = 1; i <= N; ++i) t.insert(t.new Key(i), t.new Data(i));
 
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
     for (int i = N; i > 0; --i)
-     {t.delete(Key(i));
+     {t.delete(t.new Key(i));
       ok(t.count(), i-1);
       s.append("Delete: "+i+"\n"+t);
      }
@@ -4087,7 +4094,7 @@ Delete: 1
     final StringBuilder s = new StringBuilder();
     s.append("Start\n"+t);
     for (int i = 0; i < random_32.length; i++)
-     {t.delete(Key(random_32[i]));
+     {t.delete(t.new Key(random_32[i]));
       ok(t.count(), random_32.length-i-1);
       s.append("Delete "+random_32[i]+"\n"+t);
      }
@@ -4210,7 +4217,7 @@ Delete 22
   static void test_deep()
    {final Tree t = new Tree(2, 3);
     final int N = 256;
-    for (int i = 1; i <= N; ++i) t.insert(Key(i), new Data(i));
+    for (int i = 1; i <= N; ++i) t.insert(t.new Key(i), t.new Data(i));
     ok(t, """
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             128                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
                                                                                                                  32                                                                                                                              64                                                                                                                              96                                                                                                                                                                                                                                                                                                                                                         160                                                                                                                                                                             192                                                                                                                                                                             224                                                                                                                                                                            |
@@ -4223,9 +4230,9 @@ Delete 22
   static void test_idi()
    {final int N = 32;
     final Tree t = new Tree(2,3,32);
-    for (int i = 1; i <= N; ++i) {t.insert(Key(i), new Data(i)); t.freeCheck();}
-    for (int i = 1; i <= N; ++i) {t.delete(Key(i));              t.freeCheck();}
-    for (int i = 1; i <= N; ++i) {t.insert(Key(i), new Data(i)); t.freeCheck();}
+    for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
+    for (int i = 1; i <= N; ++i) {t.delete(t.new Key(i));                t.freeCheck();}
+    for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
     //stop(t.dump());
     ok(t.dump(), """
                                                                                8                                                                                          16                                                                                     24                                                                            |
@@ -4273,7 +4280,8 @@ Delete 22
    }
 
   static void newTests()                                                        // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_idn();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
