@@ -178,9 +178,11 @@ public class Programming extends Test                                           
     Int mc(Ops op)        {return mc(op, null);}
     Int mc(Ops op, int I) {return mc(op, new Int(I));}
     Int mc(Ops op, Int I)
-     {final I i = new I()
-       {void action() {}
-       };
+     {if (mc)
+       {final I i = new I()
+         {void action() {}
+         };
+       }
       return this;
      }
 
