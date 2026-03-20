@@ -21,7 +21,7 @@ public class Programming extends Test                                           
 
 //D1 Programming                                                                // Program structures
 
-  abstract static class For                                                     // For loop
+  abstract class For                                                     // For loop
    {For(int Start, int End)                                                     // Execute the loop the specified number of times
      {for(int i : range(Start, End)) if (!body(new Int(i)).b()) break;          // Execute the loop as long as it returns true
      }
@@ -32,7 +32,7 @@ public class Programming extends Test                                           
     Bool body(Int Index) {return new Bool(false);}                              // Body of the for loop: return flse to terminate execution of the loop
    }
 
-  abstract static class If                                                      // If statement
+  abstract class If                                                      // If statement
    {If (boolean condition)
      {if (condition) Then(); else Else();
      }
@@ -133,47 +133,56 @@ public class Programming extends Test                                           
      }
    }
 
-  static class Int                                                              // An integer that can be passed as a parameter to a method and modified there-in
+  class Int                                                                     // An integer that can be passed as a parameter to a method and modified there-in
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
     private String  n = null;                                                   // An optional name for this variable
-    final static Int zero = new Int(0);                                         // Useful constants
+
     Bool    valid() {return new Bool( v);}                                      // A valid integer
     Bool notValid() {return new Bool(!v);}                                      // A not valid integer
 
-    Int           (int I) {       i = I;   v = true;}
-    Int           (Int I) {       if (I != null) {i = I.i; v = I.v;}}
-
+    Int (int I)      {i = I;   v = true;}
+    Int (Int I)      {if (I != null) {i = I.i; v = I.v;}}
     Int      ()      {}
-    void x   ()      {if (!v) stop("Int has not been set yet");}
-    Int  X   ()      {v = true;                     return mc("X"   );}
-    int  i   ()      {          x();                return i;}
-    Int  i   (int I) {i     = I;     X();           return mc("i"   );}
-    Int  i   (Int I) {i     = I.i; v = I.v;         return mc("i"   );}
-    Int  add (int I) {i    += I;x(); X();           return mc("add" );}
-    Int  add (Int I) {        I.x(); add(I.i());    return mc("add" );}
-    Int  add2(Int I) {        I.x(); add(I.i()*2);  return mc("add2");}
-    Int  sub (int I) {i    -= I;x(); X();           return mc("sub" );}
-    Int  sub (Int I) {        I.x(); sub(I.i());    return mc("sub" );}
-    Int  mul (int I) {i    *= I;x(); X();           return mc("mul" );}
-    Int  mul (Int I) {        I.x(); mul(I.i());    return mc("mul" );}
-    Int  div (int I) {i    /= I;x(); X();           return mc("div" );}
-    Int  div (Int I) {        I.x(); div(I.i());    return mc("div" );}
-    Int  mod (int I) {i    %= I;x(); X();           return mc("mod" );}
-    Int  mod (Int I) {        I.x(); mod(I.i());    return mc("mod" );}
-    Int  inc ()      {          x(); add(1);        return mc("inc" );}
-    Int  dec ()      {          x(); sub(1);        return mc("dec" );}
-    Int  up  ()      {i  <<= 1; x();                return mc("up"  );}
-    Int  down()      {i >>>= 1; x();                return mc("down");}
-    Int  sqrt()      {x(); i = (int)Math.sqrt(i); X(); return mc("");}
-    Int  neg ()      {x(); i = -i;   X();           return mc("");}
-    Int  abs ()      {x(); i = i < 0 ? -i : i; X(); return mc("");}
-    Int  max (int I) {x(); return i < I ? new Int(I) : this;}
-    Int  max (Int I) {        I.x(); max(I.i);      return mc("max");}
-    Int  min (int I) {x(); return i > I ? new Int(I) : this;}
-    Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
 
-    Int mc(String name) {return this;}
+    enum Ops {X, i, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};
+
+    void x   ()      {if (!v) stop("Int has not been set yet");}
+    Int  X   ()      {v = true;                        return mc(Ops.X);}
+    int  i   ()      {          x();                   return i;}
+    Int  i   (int I) {i     = I;     X();              return mc(Ops.i   , I);}
+    Int  i   (Int I) {i     = I.i; v = I.v;            return mc(Ops.i   , I);}
+    Int  add (int I) {i    += I;x(); X();              return mc(Ops.add , I);}
+    Int  add (Int I) {        I.x(); add(I.i());       return mc(Ops.add , I);}
+    Int  add2(Int I) {        I.x(); add(I.i()*2);     return mc(Ops.add2, I);}
+    Int  sub (int I) {i    -= I;x(); X();              return mc(Ops.sub , I);}
+    Int  sub (Int I) {        I.x(); sub(I.i());       return mc(Ops.sub , I);}
+    Int  mul (int I) {i    *= I;x(); X();              return mc(Ops.mul , I);}
+    Int  mul (Int I) {        I.x(); mul(I.i());       return mc(Ops.mul , I);}
+    Int  div (int I) {i    /= I;x(); X();              return mc(Ops.div , I);}
+    Int  div (Int I) {        I.x(); div(I.i());       return mc(Ops.div , I);}
+    Int  mod (int I) {i    %= I;x(); X();              return mc(Ops.mod , I);}
+    Int  mod (Int I) {        I.x(); mod(I.i());       return mc(Ops.mod , I);}
+    Int  inc ()      {          x(); add(1);           return mc(Ops.inc );}
+    Int  dec ()      {          x(); sub(1);           return mc(Ops.dec );}
+    Int  up  ()      {i  <<= 1; x();                   return mc(Ops.up  );}
+    Int  down()      {i >>>= 1; x();                   return mc(Ops.down);}
+    Int  sqrt()      {x(); i = (int)Math.sqrt(i); X(); return mc(Ops.sqrt);}
+    Int  neg ()      {x(); i = -i;   X();              return mc(Ops.neg);}
+    Int  abs ()      {x(); i = i < 0 ? -i : i; X();    return mc(Ops.abs);}
+    Int  max (int I) {x(); return i < I ? new Int(I) : this;}
+  //Int  max (Int I) {        I.x(); max(I.i);      return mc("max");}
+    Int  min (int I) {x(); return i > I ? new Int(I) : this;}
+  //Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
+
+    Int mc(Ops op)        {return mc(op, null);}
+    Int mc(Ops op, int I) {return mc(op, new Int(I));}
+    Int mc(Ops op, Int I)
+     {final I i = new I()
+       {void action() {}
+       };
+      return this;
+     }
 
     Int  Add (int I) {return dup().add(I);}
     Int  Add (Int I) {return dup().add(I);}
@@ -281,12 +290,13 @@ public class Programming extends Test                                           
   static int testsPassed = 0, testsFailed = 0;                                  // Number of tests passed and failed
 
   static void test_programming()
-   {final Int i = new Int(0);
+   {final Programming p = new Programming();
+    final Int         i = p.new Int(0);
     class test_programming
      {test_programming(int N)
-       {new For(N)
+       {p.new For(N)
          {Bool body(Int Index)
-           {new If (Index.Mod(2).eq(0))
+           {p.new If (Index.Mod(2).eq(0))
              {void Then() {i.add(Index);}
               void Else() {i.sub(Index);}
              };
