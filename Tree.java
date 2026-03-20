@@ -4280,8 +4280,7 @@ Delete 22
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//oldTests();
-    test_idn();
+   {oldTests();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
