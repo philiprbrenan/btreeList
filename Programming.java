@@ -175,12 +175,58 @@ public class Programming extends Test                                           
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
   //Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
 
-    Int mc(Ops op)        {return mc(op, null);}
-    Int mc(Ops op, int I) {return mc(op, new Int(I));}
+    Int mc(Ops op)
+     {if (mc)
+       {new I()
+         {void action()
+           {switch(op)
+             {case inc : add(1);                break;
+              case dec : sub(1);                break;
+              case up  : i  <<= 1;              break;
+              case down: i >>>= 1;              break;
+              case sqrt: i = (int)Math.sqrt(i); break;
+              case neg : i = -i;                break;
+              case abs : i = i < 0 ? -i : i;    break;
+             }
+           }
+         };
+       }
+      return this;
+     }
+    Int mc(Ops op, int I)
+     {if (mc)
+       {new I()
+         {void action()
+           {switch(op)
+             {case X   : v = true;        break;
+              case i   : i = I; v = true; break;
+              case add : add(I);          break;
+              case add2: add(I*2);        break;
+              case sub : sub(I);          break;
+              case mul : mul(I);          break;
+              case div : div(I);          break;
+              case mod : mod(I);          break;
+             }
+           }
+         };
+       }
+      return this;
+     }
     Int mc(Ops op, Int I)
      {if (mc)
-       {final I i = new I()
-         {void action() {}
+       {new I()
+         {void action()
+           {switch(op)
+             {case X   : v = true;         break;
+              case i   : i = I.i; v = I.v; break;
+              case add : add(I.i());       break;
+              case add2: add(I.i()*2);     break;
+              case sub : sub(I.i());       break;
+              case mul : mul(I.i());       break;
+              case div : div(I.i());       break;
+              case mod : mod(I.i());       break;
+             }
+           }
          };
        }
       return this;
