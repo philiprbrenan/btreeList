@@ -182,42 +182,43 @@ public class Programming extends Test                                           
 
     Int ex(Ops op)
      {switch(op)
-       {case X   : v = true;                        break;
-        case inc :           x(); add(1);           break;
-        case dec :           x(); sub(1);           break;
-        case up  : i  <<= 1; x();                   break;
-        case down: i >>>= 1; x();                   break;
-        case sqrt: x(); i = (int)Math.sqrt(i); X(); break;
-        case neg : x(); i = -i;   X();              break;
-        case abs : x(); i = i < 0 ? -i : i;    X(); break;
+       {case inc -> {x(); add(1);                }
+        case dec -> {x(); sub(1);                }
+        case up  -> {x(); i  <<= 1;              }
+        case down-> {x(); i >>>= 1;              }
+        case sqrt-> {x(); i = (int)Math.sqrt(i); }
+        case neg -> {x(); i = -i;                }
+        case abs -> {x(); i = i < 0 ? -i : i;    }
+        default  -> stop("Op not implemented:", op);
        }
       return this;
      }
 
     Int ex(Ops op, int I)
-     {say("DDDD");
-       switch(op)
-       {case i  : i     = I;     X(); break;
-        case add: i    += I;x(); X(); break;
-        case sub: i    -= I;x(); X(); break;
-        case mul: i    *= I;x(); X(); break;
-        case div: i    /= I;x(); X(); break;
-        case mod: i    %= I;x(); X(); break;
+     {switch (op)
+       {case i   -> {      i  = I;     v = true; }
+        case add -> { x(); i += I;     v = true; }
+        case sub -> { x(); i -= I;     v = true; }
+        case mul -> { x(); i *= I;     v = true; }
+        case div -> { x(); i /= I;     v = true; }
+        case mod -> { x(); i %= I;     v = true; }
+        case add2-> { x(); i += I + I; v = true; }
+        default  -> stop("Op not implemented:", op);
        }
       return this;
      }
 
     Int ex(Ops op, Int I)
      {switch(op)
-       {case i : i = I.i; v = I.v;     break;
-        default: I.x(); ex(op, I.i()); break;
+       {case i  -> {i = I.i;  v = I.v;   }
+        default -> {I.x(); ex(op, I.i());}
        }
       return this;
      }
 
     Int in(Ops op)        {new I() {void action() {ex(op)   ;}}; return this;}
     Int in(Ops op, int I) {new I() {void action() {ex(op, I);}}; return this;}
-    Int in(Ops op, Int I) {new I() {void action() {say("CCCC11", code.size());ex(op, I);say("CCCC22", code.size());}}; return this;}
+    Int in(Ops op, Int I) {new I() {void action() {ex(op, I);}}; return this;}
 
     Int  Add (int I) {return dup().add(I);}
     Int  Add (Int I) {return dup().add(I);}
@@ -327,9 +328,7 @@ public class Programming extends Test                                           
      {final I i = code.elementAt(pc);
       try
        {pc++;                                                                   // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
-say("BBBB111", N, code.size());
         i.action();
-say("BBBB222", N, code.size());
        }
       catch(Exception e)
        {stop("Exception:", e, "while executing:", traceBack(e));
@@ -399,9 +398,9 @@ say("BBBB222", N, code.size());
     final Int c = P.new Int(0);
     c.add(a);
     c.add(b);
-    say("AAAA11", a, b, c);
+    ok(c, 0);
     P.execute();
-    say("AAAA22", a, b, c);
+    ok(c, 3);
    }
 
   static void test_fibonnacci()
