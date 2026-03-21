@@ -17,11 +17,14 @@ public class Programming extends Test                                           
   final static boolean coverageAnalysis = false;                                // Enables coverage checks
   final Stack<I>       code = new Stack<>();                                    // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                    // Labels for instructions in this process
-  boolean mc = false;                                                           // Generate machine code if true
+
+  final int maxSteps = 999;                                                     // Number of steps permitted in code execution
+  boolean         ex = true;                                                    // Execute immediately if true else generate machine code and execute later
+  int             pc;                                                           // Program counter - set to something less than zero to stop with a return code
 
 //D1 Programming                                                                // Program structures
 
-  abstract class For                                                     // For loop
+  abstract class For                                                            // For loop
    {For(int Start, int End)                                                     // Execute the loop the specified number of times
      {for(int i : range(Start, End)) if (!body(new Int(i)).b()) break;          // Execute the loop as long as it returns true
      }
@@ -32,7 +35,7 @@ public class Programming extends Test                                           
     Bool body(Int Index) {return new Bool(false);}                              // Body of the for loop: return flse to terminate execution of the loop
    }
 
-  abstract class If                                                      // If statement
+  abstract class If                                                             // If statement
    {If (boolean condition)
      {if (condition) Then(); else Else();
      }
@@ -140,97 +143,81 @@ public class Programming extends Test                                           
 
     Bool    valid() {return new Bool( v);}                                      // A valid integer
     Bool notValid() {return new Bool(!v);}                                      // A not valid integer
+    int         i() {x(); return i;}                                            // Current value
 
     Int (int I)      {i = I;   v = true;}
     Int (Int I)      {if (I != null) {i = I.i; v = I.v;}}
     Int      ()      {}
 
-    enum Ops {X, i, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};
-
-    void x   ()      {if (!v) stop("Int has not been set yet");}
-    Int  X   ()      {v = true;                        return mc(Ops.X);}
-    int  i   ()      {          x();                   return i;}
-    Int  i   (int I) {i     = I;     X();              return mc(Ops.i   , I);}
-    Int  i   (Int I) {i     = I.i; v = I.v;            return mc(Ops.i   , I);}
-    Int  add (int I) {i    += I;x(); X();              return mc(Ops.add , I);}
-    Int  add (Int I) {        I.x(); add(I.i());       return mc(Ops.add , I);}
-    Int  add2(Int I) {        I.x(); add(I.i()*2);     return mc(Ops.add2, I);}
-    Int  sub (int I) {i    -= I;x(); X();              return mc(Ops.sub , I);}
-    Int  sub (Int I) {        I.x(); sub(I.i());       return mc(Ops.sub , I);}
-    Int  mul (int I) {i    *= I;x(); X();              return mc(Ops.mul , I);}
-    Int  mul (Int I) {        I.x(); mul(I.i());       return mc(Ops.mul , I);}
-    Int  div (int I) {i    /= I;x(); X();              return mc(Ops.div , I);}
-    Int  div (Int I) {        I.x(); div(I.i());       return mc(Ops.div , I);}
-    Int  mod (int I) {i    %= I;x(); X();              return mc(Ops.mod , I);}
-    Int  mod (Int I) {        I.x(); mod(I.i());       return mc(Ops.mod , I);}
-    Int  inc ()      {          x(); add(1);           return mc(Ops.inc );}
-    Int  dec ()      {          x(); sub(1);           return mc(Ops.dec );}
-    Int  up  ()      {i  <<= 1; x();                   return mc(Ops.up  );}
-    Int  down()      {i >>>= 1; x();                   return mc(Ops.down);}
-    Int  sqrt()      {x(); i = (int)Math.sqrt(i); X(); return mc(Ops.sqrt);}
-    Int  neg ()      {x(); i = -i;   X();              return mc(Ops.neg);}
-    Int  abs ()      {x(); i = i < 0 ? -i : i; X();    return mc(Ops.abs);}
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
   //Int  max (Int I) {        I.x(); max(I.i);      return mc("max");}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
   //Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
 
-    Int mc(Ops op)
-     {if (mc)
-       {new I()
-         {void action()
-           {switch(op)
-             {case inc : add(1);                break;
-              case dec : sub(1);                break;
-              case up  : i  <<= 1;              break;
-              case down: i >>>= 1;              break;
-              case sqrt: i = (int)Math.sqrt(i); break;
-              case neg : i = -i;                break;
-              case abs : i = i < 0 ? -i : i;    break;
-             }
-           }
-         };
+    enum Ops {X, i, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};
+
+    Int  X   ()      {return ex ? ex(Ops.X      ) : in(Ops.X      );}
+    Int  i   (int I) {return ex ? ex(Ops.i   , I) : in(Ops.i   , I);}
+    Int  i   (Int I) {return ex ? ex(Ops.i   , I) : in(Ops.i   , I);}
+    Int  add (int I) {return ex ? ex(Ops.add , I) : in(Ops.add , I);}
+    Int  add (Int I) {return ex ? ex(Ops.add , I) : in(Ops.add , I);}
+    Int  add2(Int I) {return ex ? ex(Ops.add2, I) : in(Ops.add2, I);}
+    Int  sub (int I) {return ex ? ex(Ops.sub , I) : in(Ops.sub , I);}
+    Int  sub (Int I) {return ex ? ex(Ops.sub , I) : in(Ops.sub , I);}
+    Int  mul (int I) {return ex ? ex(Ops.mul , I) : in(Ops.mul , I);}
+    Int  mul (Int I) {return ex ? ex(Ops.mul , I) : in(Ops.mul , I);}
+    Int  div (int I) {return ex ? ex(Ops.div , I) : in(Ops.div , I);}
+    Int  div (Int I) {return ex ? ex(Ops.div , I) : in(Ops.div , I);}
+    Int  mod (int I) {return ex ? ex(Ops.mod , I) : in(Ops.mod , I);}
+    Int  mod (Int I) {return ex ? ex(Ops.mod , I) : in(Ops.mod , I);}
+    Int  inc ()      {return ex ? ex(Ops.inc    ) : in(Ops.inc    );}
+    Int  dec ()      {return ex ? ex(Ops.dec    ) : in(Ops.dec    );}
+    Int  up  ()      {return ex ? ex(Ops.up     ) : in(Ops.up     );}
+    Int  down()      {return ex ? ex(Ops.down   ) : in(Ops.down   );}
+    Int  sqrt()      {return ex ? ex(Ops.sqrt   ) : in(Ops.sqrt   );}
+    Int  neg ()      {return ex ? ex(Ops.neg    ) : in(Ops.neg    );}
+    Int  abs ()      {return ex ? ex(Ops.abs    ) : in(Ops.abs    );}
+
+    void x   ()      {if (!v) stop("Int has not been set yet");}
+
+    Int ex(Ops op)
+     {switch(op)
+       {case X   : v = true;                        break;
+        case inc :           x(); add(1);           break;
+        case dec :           x(); sub(1);           break;
+        case up  : i  <<= 1; x();                   break;
+        case down: i >>>= 1; x();                   break;
+        case sqrt: x(); i = (int)Math.sqrt(i); X(); break;
+        case neg : x(); i = -i;   X();              break;
+        case abs : x(); i = i < 0 ? -i : i;    X(); break;
        }
       return this;
      }
-    Int mc(Ops op, int I)
-     {if (mc)
-       {new I()
-         {void action()
-           {switch(op)
-             {case X   : v = true;        break;
-              case i   : i = I; v = true; break;
-              case add : add(I);          break;
-              case add2: add(I*2);        break;
-              case sub : sub(I);          break;
-              case mul : mul(I);          break;
-              case div : div(I);          break;
-              case mod : mod(I);          break;
-             }
-           }
-         };
+
+    Int ex(Ops op, int I)
+     {say("DDDD");
+       switch(op)
+       {case i  : i     = I;     X(); break;
+        case add: i    += I;x(); X(); break;
+        case sub: i    -= I;x(); X(); break;
+        case mul: i    *= I;x(); X(); break;
+        case div: i    /= I;x(); X(); break;
+        case mod: i    %= I;x(); X(); break;
        }
       return this;
      }
-    Int mc(Ops op, Int I)
-     {if (mc)
-       {new I()
-         {void action()
-           {switch(op)
-             {case X   : v = true;         break;
-              case i   : i = I.i; v = I.v; break;
-              case add : add(I.i());       break;
-              case add2: add(I.i()*2);     break;
-              case sub : sub(I.i());       break;
-              case mul : mul(I.i());       break;
-              case div : div(I.i());       break;
-              case mod : mod(I.i());       break;
-             }
-           }
-         };
+
+    Int ex(Ops op, Int I)
+     {switch(op)
+       {case i : i = I.i; v = I.v;     break;
+        default: I.x(); ex(op, I.i()); break;
        }
       return this;
      }
+
+    Int in(Ops op)        {new I() {void action() {ex(op)   ;}}; return this;}
+    Int in(Ops op, int I) {new I() {void action() {ex(op, I);}}; return this;}
+    Int in(Ops op, Int I) {new I() {void action() {say("CCCC11", code.size());ex(op, I);say("CCCC22", code.size());}}; return this;}
 
     Int  Add (int I) {return dup().add(I);}
     Int  Add (Int I) {return dup().add(I);}
@@ -333,6 +320,24 @@ public class Programming extends Test                                           
     void set() {offset = code.size();}                                          // Reassign the label to an instruction
    }
 
+  void execute()                                                                // Execute the current code
+   {pc = 0;
+    final int N = code.size();                                                  // Number of instructions
+    for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                      // Execute each instruction within a specified number of steps
+     {final I i = code.elementAt(pc);
+      try
+       {pc++;                                                                   // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
+say("BBBB111", N, code.size());
+        i.action();
+say("BBBB222", N, code.size());
+       }
+      catch(Exception e)
+       {stop("Exception:", e, "while executing:", traceBack(e));
+       }
+      if (code.size() != N) stop("Instruction added");
+     }
+   }
+
 //D1 Testing                                                                    // Test expected output against got output
 
   static int testsPassed = 0, testsFailed = 0;                                  // Number of tests passed and failed
@@ -386,14 +391,37 @@ public class Programming extends Test                                           
     new A().a();
    }
 
+  static void test_add()
+   {final Programming P = new Programming();
+    P.ex = false;
+    final Int a = P.new Int(1);
+    final Int b = P.new Int(2);
+    final Int c = P.new Int(0);
+    c.add(a);
+    c.add(b);
+    say("AAAA11", a, b, c);
+    P.execute();
+    say("AAAA22", a, b, c);
+   }
+
+  static void test_fibonnacci()
+   {final Programming P = new Programming();
+    final Int a = P.new Int(0);
+    final Int b = P.new Int(1);
+    final Int c = P.new Int(0);
+    final Int i = P.new Int(10);
+   }
+
   static void oldTests()                                                        // Tests thought to be in good shape
    {test_programming();
     test_bool();
     test_traceNames();
+    test_add();
    }
 
   static void newTests()                                                        // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_add();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
