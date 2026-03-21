@@ -300,7 +300,7 @@ public class Test                                                               
 
     for(StackTraceElement s : t)
      {final String m = s.getMethodName();
-      if (m.equals("<init>"))  continue;
+      if (m.equals("<init>")) continue;
       T.insertElementAt(m, 0);
      }
     T.pop();                                                                    // Remove this method from the stack
