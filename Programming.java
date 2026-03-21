@@ -419,8 +419,7 @@ public class Programming extends Test                                           
    }
 
   static void newTests()                                                        // Tests being worked on
-   {//oldTests();
-    test_add();
+   {oldTests();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
