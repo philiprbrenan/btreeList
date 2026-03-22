@@ -312,7 +312,14 @@ abstract public class BitSet extends Programming                                
   public Pos lastOne()                                                          // Find the index of the last set bit
    {checkOne();
     final Int l = new Int(bitSize1);
-    return getBit(new Pos(l)).b() ? new Pos(l) : prevOne(new Pos(l));
+
+    final Ref<Pos> r = new Ref<>();
+    final     Pos  p = new Pos(l);
+    new If (getBit(p))
+     {void Then() {r.set(        p );}
+      void Else() {r.set(prevOne(p));}
+     };
+    return r.get();
    }
 
   Pos resultIfFound(Int R)
@@ -400,15 +407,25 @@ abstract public class BitSet extends Programming                                
 
   public Pos firstZero()                                                        // Find the index of the first set bit
    {checkZero();
-    final Pos p = new Pos(new Int(0));
-    return !getBit(p).b() ? p : nextZero(p);
+    final     Pos  p = new Pos(new Int(0));
+    final Ref<Pos> r = new Ref<>();
+    new If (getBit(p))
+     {void Then() {r.set(nextZero(p));}
+      void Else() {r.set(p);          }
+     };
+    return r.get();
    }
 
   public Pos lastZero()                                                         // Find the index of the last set bit
    {checkZero();
-    final Int l = new Int(bitSize1);
-    final Pos p = new Pos(l);
-    return !getBit(p).b() ? p : prevZero(p);
+    final     Int  l = new Int(bitSize1);
+    final     Pos  p = new Pos(l);
+    final Ref<Pos> r = new Ref<>();
+    new If (getBit(p))
+     {void Then() {r.set(prevZero(p));}
+      void Else() {r.set(p);          }
+     };
+    return r.get();
    }
 
   public Pos nextZero(Pos Index)                                                // Find the index of the next set bit above the specified bit
