@@ -2016,7 +2016,7 @@ class Tree extends Programming                                                  
                  };
                }
              };
-            new If (!d.b())                                                     // Merge towards top
+            new If (d.Flip())                                                   // Merge towards top
              {void Then()
                {b.mergeLeftSibling(b.new Slot());
                 d.set();
