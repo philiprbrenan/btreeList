@@ -2,6 +2,7 @@
 // Fixed size bit set which can locate set or cleared bits in log N time
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// Convert ? to if/Ref where possible
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                             // Standard utility library.
@@ -309,6 +310,15 @@ abstract public class BitSet extends Programming                                
     return getBit(new Pos(l)).b() ? new Pos(l) : prevOne(new Pos(l));
    }
 
+  Pos resultIfFound(Int R)
+   {final Ref<Pos> r = new Ref<>();
+    new If (R.valid())                                                          // Result if found
+     {void Then() {r.set(new Pos(R));}
+      void Else() {r.set(new Pos( ));}
+     };
+    return r.get();
+   }
+
   public Pos nextOne(Pos Index)                                                 // Find the index of the next set bit above the specified bit
    {checkOne();
     checkIndex(Index.position());
@@ -340,7 +350,7 @@ abstract public class BitSet extends Programming                                
          };
        }
      };
-    return n.valid().b() ? new Pos(n) : new Pos();                              // No alternate path down
+    return resultIfFound(n);                                                    // No alternate path down
    }
 
   public Pos prevOne(Pos Index)                                                 // Find the index of the previous set bit below the specified bit
@@ -379,15 +389,6 @@ abstract public class BitSet extends Programming                                
        }
      };
     return resultIfFound(R);                                                    // Result if found
-   }
-
-  Pos resultIfFound(Int R)
-   {final Ref<Pos> r = new Ref<>();
-    new If (R.valid())                                                          // Result if found
-     {void Then() {r.set(new Pos(R));}
-      void Else() {r.set(new Pos( ));}
-     };
-    return r.get();
    }
 
 //D1 Locate Zeros                                                               // Find the first, last, next, previous bit set to zero
