@@ -262,7 +262,7 @@ class Tree extends Programming                                                  
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-        return p.valid().b() ? new Slot(p.position()) : new Slot();
+        return valid(p.valid(), ()->{return p.position();});
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
