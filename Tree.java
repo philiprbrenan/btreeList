@@ -1642,7 +1642,7 @@ class Tree extends Programming                                                  
      }
 
     Slots child(Slot Index)                                                     // The indexed child. The index must be valid or null - if null, top is returned
-     {new If (Index.valid().And(()->{return usedSlots(Index).Flip();}))         // The slot must be valid
+     {new If (Index.valid().and(()->{return usedSlots(Index).Flip();}))         // The slot must be valid
        {void Then()
          {stop("Indexing unused slot:", Index.value());
          }
@@ -1772,14 +1772,14 @@ class Tree extends Programming                                                  
             new If (m.Flip())
              {void Then()
                {final Slots.Slot l = b.locateFirstGe(Key);                      // Position of key
-                m.set(l.valid().And(()->{return b.mergeRightSibling(l);}));     // Merge right sibling of keyed child
+                m.set(l.valid().and(()->{return b.mergeRightSibling(l);}));     // Merge right sibling of keyed child
                }
              };
 
             new If (m.Flip())
              {void Then()
                {final Slots.Slot L = b.locateFirstGe(Key);                      // Position of key
-                m.set(L.valid().And(()->{return b.mergeLeftSibling(L);}));      // Merge left sibling of keyed child
+                m.set(L.valid().and(()->{return b.mergeLeftSibling(L);}));      // Merge left sibling of keyed child
                }
              };
 
@@ -1787,11 +1787,11 @@ class Tree extends Programming                                                  
              {void Then()
                {final Slots.Slot k = b.locateFirstGe(Key);                      // Look further left
                 m.set(k.valid()
-                 .And(()->{return b.mergeLeftSibling(k.stepLeft());}));         // Merge further left sibling
+                 .and(()->{return b.mergeLeftSibling(k.stepLeft());}));         // Merge further left sibling
                 new If (m.Flip())                                               // Top
                  {void Then()
                    {final Slots.Slot S = b.locateLastUsedSlot();
-                    m.set(S.valid().And(()->{return b.mergeLeftSibling(S);}));  // Merge further left of top
+                    m.set(S.valid().and(()->{return b.mergeLeftSibling(S);}));  // Merge further left of top
                    }
                  };
                }
@@ -1801,7 +1801,7 @@ class Tree extends Programming                                                  
              {void Then()
                {final Slots.Slot r = b.locateFirstGe(Key);                      // Look further right
                 m.set(r.valid()
-                 .And(()->{return b.mergeRightSibling(r.stepRight());}));       // Merge further right sibling
+                 .and(()->{return b.mergeRightSibling(r.stepRight());}));       // Merge further right sibling
                }
              };
 
