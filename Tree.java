@@ -7,6 +7,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 class Tree extends Programming                                                  // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int             maxLeafSize;                                            // The maximum number of entries in a leaf of the tree
@@ -239,10 +240,23 @@ class Tree extends Programming                                                  
       Slot      right() {return new Slot(Inc());}                               // Step right
       Slot       left() {return new Slot(Dec());}                               // Step left
 
+      Slot valid(Bool Valid, Supplier<Int> Slot)                                // Create a valid slot reference
+       {final Ref<Slot>r = new Ref<>();
+        new If (Valid)
+         {void Then()
+           {r.set(new Slot(Slot.get()));
+           }
+          void Else()
+           {r.set(new Slot());
+           }
+         };
+        return r.get();
+       }
+
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-        return p.valid().b() ? new Slot(p.position()) : new Slot();
+        return valid(p.valid(), ()->{return p.position();});
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
