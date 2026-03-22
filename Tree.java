@@ -3,7 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 // .and can be used to eliminate some if statements
-// convert if(...b())
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -549,8 +548,8 @@ class Tree extends Programming                                                  
          {final Slot I = new Slot(i);                                           // The input slots have been compacted so this Slot will match the corresponding slot
           final slot J = new slot(i);
           final Bool c = new Bool().set();                                      // Continue until false
-          new If (                  mergeSlot(l, I, J))    {void Then() {c.clear();}}; // Merge on left
-          new If (c.And(()->{return mergeSlot(r, I, J);})) {void Then() {c.clear();}}; // Merge on right
+          c.and(()->{return mergeSlot(l, I, J).flip();});                       // Merge on left
+          c.and(()->{return mergeSlot(r, I, J).flip();});                       // Merge on right
           new If (c)                                                            // Reset center
            {void Then()
              {usedSlots(I, Bool.False);
@@ -2027,7 +2026,7 @@ class Tree extends Programming                                                  
        }
      };
 
-    new If (!d.b())
+    new If (d.Flip())
      {void Then()
        {new If (Leaf.ref(root()))                                               // Leaf root
          {void Then()
@@ -2194,9 +2193,11 @@ class Tree extends Programming                                                  
          };
        }
      };
-    if (f.valid().Flip().b())
-     {stop("First fell off the end of tree after this many searches:", mnl());
-     }
+    new If (f.valid().Flip())
+     {void Then()
+       {stop("First fell off the end of tree after this many searches:", mnl());
+       }
+     };
     return f.get();
    }
 
@@ -2243,9 +2244,11 @@ class Tree extends Programming                                                  
         C.set(f.valid()).flip();
        };
      };
-    if (f.valid().Flip().b())                                                   // Unable to find the last element
-     {stop("Last fell off the end of tree after this many searches:", mnl());
-     }
+    new If (f.valid().Flip())                                                   // Unable to find the last element
+     {void Then()
+       {stop("Last fell off the end of tree after this many searches:", mnl());
+       }
+     };
     return f.get();
    }
 
