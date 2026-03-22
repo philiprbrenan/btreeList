@@ -162,8 +162,8 @@ abstract public class BitSet extends Programming                                
     final Int w = new Int(bitSize);                                             // Width
 
     new For(bitSize)                                                            // Set bits along the path to the actual bit in the One tree
-     {Bool body(Int Index)
-       {final Bool c = new Bool().set();                                        // Complete early if we found a bit that does not need setting
+     {void body(Int Index, Bool c)
+       {c.set();                                                                // Complete early if we found a bit that does not need setting
         new If (p.ne(0))                                                        // Not on the actual bits
          {void Then()                                                           // Not on the actual bits
            {final Pos q = new Pos(p.Add(b));                                    // Position in One tree
@@ -174,7 +174,7 @@ abstract public class BitSet extends Programming                                
            }
          };
         moveDownOneLayer(b, p, w);                                              // Next level up
-        return c.and(()->{return w.gt(0);});                                    // As long as we are in a valid level
+        c.and(()->{return w.gt(0);});                                           // As long as we are in a valid level
        }
      };
    }
@@ -186,11 +186,11 @@ abstract public class BitSet extends Programming                                
     final Int w = new Int(bitSize);                                             // Width
 
     new For(bitSize)                                                            // Step from root to leaf
-     {Bool body(Int Index)
+     {void body(Int Index, Bool c)
        {final Int  B = b.Down();
         final Int  q = p.Add(w).add(B);
         final Int  Q = p.Add2(B);
-        final Bool c = new Bool().set();                                          // Complete early if we found a bit that does not need setting
+        c.set();                                                                // Complete early if we found a bit that does not need setting
         new If (B.Up().inc().lt(w).and(                                         // Check both bits in the previous row are off
               ()->{return getBitNC(new Pos(Q      )).Flip();},
               ()->{return getBitNC(new Pos(Q.Inc())).Flip();}))
@@ -203,7 +203,7 @@ abstract public class BitSet extends Programming                                
            }
          };
         moveDownOneLayer(b, p, w);                                              // Next layer
-        return c.and(()->{return w.gt(0);});                                    // As long as we are in a valid level
+        c.and(()->{return w.gt(0);});                                           // As long as we are in a valid level
        }
      };
    }
@@ -218,24 +218,24 @@ abstract public class BitSet extends Programming                                
    {checkZero();
     final Int p = addressZeroTree();                                            // Address zero bit tree
     final Int b = Index.position().Down();                                      // Position in layer
-    final Int w = new Int(bitSize2);                                          // Width of this layer
+    final Int w = new Int(bitSize2);                                            // Width of this layer
 
     new For(bitSize)                                                            // Step from root to leaf
-     {Bool body(Int Index)
+     {void body(Int Index, Bool c)
        {final Pos  q = new Pos(p.Add(b));
-        final Bool c = new Bool().set();                                          // Complete early if we found a bit that does not need setting
+        c.set();
         new If (getBitNC(q))                                                    // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          {void Then() {c.clear();}
           void Else() {setBitNC(q, true);}
          };
         moveDownOneLayer(b, p, w);                                              // Next layer
-        return c.and(()->{return w.gt(0);});                                    // As long as we are in a valid level
+        c.and(()->{return w.gt(0);});                                           // As long as we are in a valid level
        }
      };
    }
 
   private void setZeroPath(Pos Index)                                           // Set bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
-   {final Int w = new Int(bitSize2);                                          // Width of child layer
+   {final Int w = new Int(bitSize2);                                            // Width of child layer
     final Int p = addressZeroTree();                                            // First child layer is the first layer of the zero bit tree
     final Int b = Index.position().Down();                                      // Index of bit in child layer
     final Int B = b.Up();                                                       // Position in layer above
@@ -249,11 +249,11 @@ abstract public class BitSet extends Programming                                
            {setBitNC(r, false);                                                 // Clear set bit along path to root to show no path
 
             new For(bitSize)                                                    // Step from root to leaf
-             {Bool body(Int Index)
-               {final Int P  = p.dup();                                         // Child layer becomes parent layer
+             {void body(Int Index, Bool c)
+               {final Int  P = p.dup();                                         // Child layer becomes parent layer
                 moveDownOneLayer(b, p, w);                                      // Index of bit in child layer, position in child layer, width of child layer
                 final Int  Q = P.Add(b).add(b);
-                final Bool c = new Bool().set();                                  // Complete early if we found a bit that does not need setting
+                c.set();                                                        // Complete early if we found a bit that does not need setting
                 new If (getBitNC(new Pos(Q)).or(
                         ()->{return getBitNC(new Pos(Q.Inc()));}))
                  {void Then() {c.clear();}                                      // There is a one in the upper row so we do not need to clear further down
@@ -265,7 +265,7 @@ abstract public class BitSet extends Programming                                
                      };
                    }
                  };
-                return c.and(()->{return w.gt(0);});                            // As long as we are in a valid level
+                c.and(()->{return w.gt(0);});                                   // As long as we are in a valid level
                }
              };
            }
@@ -276,9 +276,9 @@ abstract public class BitSet extends Programming                                
 
   public void initialize()                                                      // Clear all bits.
    {new For(byteSize)                                                           // Step from root to leaf
-     {Bool body(Int i)
+     {void body(Int i, Bool C)
        {setByte(i, (byte)0);
-        return Bool.True;
+        C.set();
        }
      };
 
@@ -286,9 +286,9 @@ abstract public class BitSet extends Programming                                
      {void Then()
        {final Int p = addressZeroTree();                                        // Position in level, level, width
         new For(bitSize)                                                        // For loop to set bits along path in One tree to actual bit
-         {Bool body(Int i)
+         {void body(Int i, Bool C)
            {setBitNC(new Pos(p.Add(i)), true);
-            return Bool.True;
+            C.set();
            }
          };
        }
@@ -319,16 +319,16 @@ abstract public class BitSet extends Programming                                
     final Int n = new Int();                                                    // The next element if it exists, offset of layer
 
     new For(bitSize)                                                            // Traverse down through the tree
-     {Bool body(Int i)                                                          // Traverse down through the tree
+     {void body(Int i, Bool C)                                                  // Traverse down through the tree
        {final Int  c = new Int(b.Add(1));                                       // Is there a path down from the next bit?
-        final Bool C = new Bool().set();                                        // Whether we are done yet
+        C.set();                                                                // Whether we are done yet
         new If (c.lt(w).and(()->{return getBitNC(new Pos(p.Add(c)));}))         // Found next up bit
          {void Then()
            {new For(i)                                                          // Step down to the leaves
-             {Bool body(Int j)                                                  // Step down to the leaves
+             {void body(Int j, Bool K)                                          // Step down to the leaves
                {moveUpOneLayer(c, p, w);                                        // Move up to next layer
                 c.add(getBitNC(new Pos(p.Add(c))).b() ? 0 : 1);                 // Follow path as low as possible
-                return Bool.True;                                               // Continue the loop
+                K.set();                                                        // Continue the loop
                }
              };
             n.i(c); C.clear();                                                  // Found the next element
@@ -338,7 +338,6 @@ abstract public class BitSet extends Programming                                
             new If (w.eq(0)) {void Then() {C.clear();}};                        // Address next level of bits further down in One tree
            }
          };
-        return C;                                                               // Continue the loop
        }
      };
     return n.valid().b() ? new Pos(n) : new Pos();                              // No alternate path down
@@ -355,16 +354,16 @@ abstract public class BitSet extends Programming                                
     new If (b.ne(0))                                                            // At the start so no previous bit
      {void Then()
        {new For(bitSize)                                                        // Step up throgh One bits
-         {Bool body(Int i)
+         {void body(Int i, Bool C)
            {final Int  B = new Int(b.Dec());                                    // Is there a path down from the next bit?
-            final Bool C = new Bool().set();                                      // Whether we have arrived at a bit that is already correctly set
+            C.set();                                                            // Whether we have arrived at a bit that is already correctly set
             new If (b.gt(0).and(()->{return getBitNC(new Pos(p.Add(B)));}))     // Found next down bit
              {void Then()
                {new For(i)                                                      // Step down to the leaves
-                 {Bool body(Int j)
+                 {void body(Int j, Bool K)
                    {moveUpOneLayer(B, p, w);
                     B.add(getBitNC(new Pos(p.Add(B).inc())).b() ? 1 : 0);       // Follow path to actual bits
-                    return Bool.True;
+                    K.set();
                    }
                  };
                 R.i(B);                                                         // Save the result
@@ -375,7 +374,6 @@ abstract public class BitSet extends Programming                                
                 new If (w.eq(0)) {void Then() {C.clear();}};
                }
              };
-            return C;
            }
          };
        }
@@ -417,9 +415,9 @@ abstract public class BitSet extends Programming                                
             b.down();                                                           // First layer of zero tree bits
 
             new For(bitSize)                                                    // Search down through the zero bit tree
-             {Bool body(Int i)                                                  // Search down through the zero bit tree
+             {void body(Int i, Bool C)                                          // Search down through the zero bit tree
                {final Int  B = new Int(b.Inc());                                // Is there a path down from the next bit?
-                final Bool C = new Bool().set();                                // Whether we have arrived at a bit that is already correctly set
+                C.set();                                                        // Whether we have arrived at a bit that is already correctly set
                 new If (B.ge(w))
                  {void Then()
                    {C.clear();                                                  // Nothing beyond to search so no next zero
@@ -428,10 +426,10 @@ abstract public class BitSet extends Programming                                
                    {new If (getBitNC(new Pos(p.Add(B))))                        // Found next up bit
                      {void Then()
                        {new For(i)                                              // Step down to the leaves
-                         {Bool body(Int j)                                      // Step down to the leaves
+                         {void body(Int j, Bool K)                              // Step down to the leaves
                            {moveUpOneLayer(B, p, w);                            // Move up one layer
                             B.add(getBitNC(new Pos(p.Add(B))).b() ? 0 : 1);     // Follow path as low as possible
-                            return Bool.True;
+                            K.set();
                            }
                          };
                         final Int P = new Int(B.Add(B));                        // Position in parent layer
@@ -445,7 +443,6 @@ abstract public class BitSet extends Programming                                
                      };
                    }
                  };
-                return C;
                }
              };
            }
@@ -475,34 +472,33 @@ abstract public class BitSet extends Programming                                
             b.down();                                                           // First layer of zero tree bits
 
             new For(bitSize)                                                    // Search down through the zero bit tree
-             {Bool body(Int i)                                                  // Search down through the zero bit tree
+             {void body(Int i, Bool C)                                          // Search down through the zero bit tree
                {final Int  B = b.Dec();                                         // Is there a path down from the next bit?
-                final Bool d = new Bool().clear();                                // Whether we have arrived at a bit that is already correctly set
+                C.set();                                                        // Whether we have arrived at a bit that is already correctly set
                 new If (B.lt(0))                                                // Nothing prior to search so no prev zero
                  {void Then()
-                   {d.set();
+                   {C.clear();
                    }
                   void Else()                                                   // More prior bits to search
                    {new If (getBitNC(new Pos(p.Add(B))))                        // Found next up bit
                      {void Then()
                        {new For(i)                                              // Step down to the leaves
-                         {Bool body(Int j)                                      // Step down to the leaves
+                         {void body(Int j, Bool K)                              // Step down to the leaves
                            {b.up(); moveUpOneLayer(B, p, w);                    // Move up one layer
                             B.add(getBitNC(new Pos(p.Add(b))).b() ? 0 : 1);     // Follow path as high as possible
-                            return Bool.True;
+                            K.set();
                            }
                          };
                         final Int P = new Int(B.Add(B));                        // Parent row bits - low position
                         final Int Q = new Int(P.dup().inc());                   // Parent row bits - high position
                         R.i(P.add(!getBit(new Pos(Q)).b() ? 1 : 0));            // Next zero bit from actual bits
-                        d.set();
+                        C.clear();
                        }
                      };
                    }
                  };
                 moveDownOneLayer(b, p, w);                                      // Address next level of bits in tree
-                new If (w.eq(0)) {void Then() {d.set();}};                      // Next layer exists
-                return d.Flip();                                                // Continue search until done
+                new If (w.eq(0)) {void Then() {C.clear();}};                    // Next layer exists
                }
              };
            }
