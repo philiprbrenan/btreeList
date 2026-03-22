@@ -378,7 +378,16 @@ abstract public class BitSet extends Programming                                
          };
        }
      };
-    return R.valid().b() ? new Pos(R) : new Pos();                              // Result if found
+    return resultIfFound(R);                                                    // Result if found
+   }
+
+  Pos resultIfFound(Int R)
+   {final Ref<Pos> r = new Ref<>();
+    new If (R.valid())                                                          // Result if found
+     {void Then() {r.set(new Pos(R));}
+      void Else() {r.set(new Pos( ));}
+     };
+    return r.get();
    }
 
 //D1 Locate Zeros                                                               // Find the first, last, next, previous bit set to zero
@@ -449,7 +458,7 @@ abstract public class BitSet extends Programming                                
          };
        }
      };
-    return R.valid().b() ? new Pos(R) : new Pos();                              // Result if found
+    return resultIfFound(R);                                                    // Result if found
    }
 
   public Pos prevZero(Pos Index)                                                // Find the index of the previous set bit below the specified bit
@@ -505,7 +514,7 @@ abstract public class BitSet extends Programming                                
          };
        }
      };
-    return R.valid().b() ? new Pos(R) : new Pos();                              // Result if found
+    return resultIfFound(R);                                                    // Result if found
    }
 
 //D1 Full or empty                                                              // Check whether a bit set is full or empty
