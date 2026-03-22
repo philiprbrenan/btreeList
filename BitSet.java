@@ -300,8 +300,13 @@ abstract public class BitSet extends Programming                                
 
   public Pos firstOne()                                                         // Find the index of the first set bit
    {checkOne();
-    final Pos p = new Pos(new Int(0));
-    return getBit(p).b() ? p : nextOne(p);
+    final     Pos  p = new Pos(new Int(0));
+    final Ref<Pos> r = new Ref<>();
+    new If (getBit(p))
+     {void Then() {r.set(p);         }
+      void Else() {r.set(nextOne(p));}
+     };
+    return r.get();
    }
 
   public Pos lastOne()                                                          // Find the index of the last set bit
