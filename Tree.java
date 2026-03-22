@@ -253,24 +253,37 @@ class Tree extends Programming                                                  
         return r.get();
        }
 
+      Slot choose(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)           // Choose a slot
+       {final Ref<Slot>r = new Ref<>();
+        new If (Valid)
+         {void Then()
+           {r.set(new Slot(Then.get()));
+           }
+          void Else()
+           {r.set(new Slot(Else.get()));
+           }
+         };
+        return r.get();
+       }
+
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-        return valid(p.valid(), ()->{return p.position();});
+        return valid(p.valid(), ()->p.position());
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-        return valid(p.valid(), ()->{return p.position();});
+        return valid(p.valid(), ()->p.position());
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {return usedSlots(this).b() ? this : stepLeft();
+       {return choose(usedSlots(this), ()->this, ()->stepLeft());
        }
 
       Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {return usedSlots(this).b() ? this : stepRight();
+       {return choose(usedSlots(this), ()->this, ()->stepRight());
        }
 
       Bool eq(Key Key) {return Key.eq(keys(this));}                             // Search key is equal to indexed key
