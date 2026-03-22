@@ -2,7 +2,6 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// .and can be used to eliminate some if statements
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -368,7 +367,7 @@ class Tree extends Programming                                                  
 
         if (p.notValid().b() && n.notValid().b()) stop("No more free slots");   // The caller should check that the slots are not full before calling us
 
-        new If (p.notValid().And(()->{return n.valid();}))                      // Next free slot because no prev free slot
+        new If (p.notValid().and(()->{return n.valid();}))                      // Next free slot because no prev free slot
          {void Then()
            {r.i(n.position().Sub(Q)); d.set();
            }
