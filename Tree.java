@@ -231,20 +231,11 @@ class Tree extends Programming                                                  
        }
      }
 
-    class Slot extends Int                                                      // A reference to a slot
-     {Slot()            {super();}                                              // An invalid slot
-      Slot(int Value)   {super(Value);}                                         // A valid slot
-      Slot(Int Value)   {super(Value);}                                         // A slot
-      Int       value() {return this;}                                          // The value of the key
-      Int         Int() {return this;}                                          // The value of the key
-      Slot      right() {return new Slot(Inc());}                               // Step right
-      Slot       left() {return new Slot(Dec());}                               // Step left
-
-      Slot valid(Bool Valid, Supplier<Int> Slot)                                // Create a valid slot reference
+      Slot validSlot(Bool Valid, Supplier<Int> Then)                     // Create a valid slot reference
        {final Ref<Slot>r = new Ref<>();
         new If (Valid)
          {void Then()
-           {r.set(new Slot(Slot.get()));
+           {r.set(new Slot(Then.get()));
            }
           void Else()
            {r.set(new Slot());
@@ -253,7 +244,7 @@ class Tree extends Programming                                                  
         return r.get();
        }
 
-      Slot choose(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)           // Choose a slot
+      Slot chooseSlot(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)// Choose a slot
        {final Ref<Slot>r = new Ref<>();
         new If (Valid)
          {void Then()
@@ -266,24 +257,33 @@ class Tree extends Programming                                                  
         return r.get();
        }
 
+    class Slot extends Int                                                      // A reference to a slot
+     {Slot()            {super();}                                              // An invalid slot
+      Slot(int Value)   {super(Value);}                                         // A valid slot
+      Slot(Int Value)   {super(Value);}                                         // A slot
+      Int       value() {return this;}                                          // The value of the key
+      Int         Int() {return this;}                                          // The value of the key
+      Slot      right() {return new Slot(Inc());}                               // Step right
+      Slot       left() {return new Slot(Dec());}                               // Step left
+
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-        return valid(p.valid(), ()->p.position());
+        return validSlot(p.valid(), ()->p.position());
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-        return valid(p.valid(), ()->p.position());
+        return validSlot(p.valid(), ()->p.position());
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {return choose(usedSlots(this), ()->this, ()->stepLeft());
+       {return chooseSlot(usedSlots(this), ()->this, ()->stepLeft());
        }
 
       Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {return choose(usedSlots(this), ()->this, ()->stepRight());
+       {return chooseSlot(usedSlots(this), ()->this, ()->stepRight());
        }
 
       Bool eq(Key Key) {return Key.eq(keys(this));}                             // Search key is equal to indexed key
@@ -419,7 +419,7 @@ class Tree extends Programming                                                  
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
      {final BitSet.Pos p = memory.usedSlotsBits.firstOne();
-      return p.valid().b() ? new Slot(p.position()) : new Slot();
+      return validSlot(p.valid(), ()->p.position());
      }
 
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
