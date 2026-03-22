@@ -1789,7 +1789,7 @@ class Tree extends Programming                                                  
                {final Slots.Slot k = b.locateFirstGe(Key);                      // Look further left
                 m.set(k.valid()
                  .And(()->{return b.mergeLeftSibling(k.stepLeft());}));         // Merge further left sibling
-                new If (!m.b())                                                 // Top
+                new If (m.Flip())                                               // Top
                  {void Then()
                    {final Slots.Slot S = b.locateLastUsedSlot();
                     m.set(S.valid().And(()->{return b.mergeLeftSibling(S);}));  // Merge further left of top
