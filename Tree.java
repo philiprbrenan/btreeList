@@ -231,31 +231,31 @@ class Tree extends Programming                                                  
        }
      }
 
-      Slot validSlot(Bool Valid, Supplier<Int> Then)                     // Create a valid slot reference
-       {final Ref<Slot>r = new Ref<>();
-        new If (Valid)
-         {void Then()
-           {r.set(new Slot(Then.get()));
-           }
-          void Else()
-           {r.set(new Slot());
-           }
-         };
-        return r.get();
-       }
+    Slot validSlot(Bool Valid, Supplier<Int> Then)                              // Create a valid slot reference
+     {final Ref<Slot>r = new Ref<>();
+      new If (Valid)
+       {void Then()
+         {r.set(new Slot(Then.get()));
+         }
+        void Else()
+         {r.set(new Slot());
+         }
+       };
+      return r.get();
+     }
 
-      Slot chooseSlot(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)// Choose a slot
-       {final Ref<Slot>r = new Ref<>();
-        new If (Valid)
-         {void Then()
-           {r.set(new Slot(Then.get()));
-           }
-          void Else()
-           {r.set(new Slot(Else.get()));
-           }
-         };
-        return r.get();
-       }
+    Slot chooseSlot(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)         // Choose a slot
+     {final Ref<Slot>r = new Ref<>();
+      new If (Valid)
+       {void Then()
+         {r.set(new Slot(Then.get()));
+         }
+        void Else()
+         {r.set(new Slot(Else.get()));
+         }
+       };
+      return r.get();
+     }
 
     class Slot extends Int                                                      // A reference to a slot
      {Slot()            {super();}                                              // An invalid slot
