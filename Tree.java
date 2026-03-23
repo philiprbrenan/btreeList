@@ -243,21 +243,21 @@ class Tree extends Programming                                                  
       Slot stepLeft()                                                           // Step left to prior occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-        return validSlot(p.valid(), ()->p.position());
+        return valid_Slot(p.valid(), ()->p.position());
        }
 
       Slot stepRight()                                                          // Step right to the next occupied slot assuming that such a step is possible
        {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
         final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-        return validSlot(p.valid(), ()->p.position());
+        return valid_Slot(p.valid(), ()->p.position());
        }
 
       Slot locatePrevUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {return chooseSlot(usedSlots(this), ()->this, ()->stepLeft());
+       {return choose_Slot(usedSlots(this), ()->this, ()->stepLeft());
        }
 
       Slot locateNextUsedSlot()                                                 // Absolute position of this slot if it is in use or else the next lower used slot
-       {return chooseSlot(usedSlots(this), ()->this, ()->stepRight());
+       {return choose_Slot(usedSlots(this), ()->this, ()->stepRight());
        }
 
       Bool eq(Key Key) {return Key.eq(keys(this));}                             // Search key is equal to indexed key
@@ -271,34 +271,25 @@ class Tree extends Programming                                                  
        }
      }
 
-    <T> T valid_slot_or_Slot(Bool Valid, Supplier<T> Then, Supplier<T> Else)    // Create a valid slot or Slot reference
+    <T> T choose(Bool Choice, Supplier<T> Then, Supplier<T> Else)                // Create a valid slot or Slot reference
      {final Ref<T>r = new Ref<>();
-      new If (Valid)
+      new If (Choice)
        {void Then() {r.set(Then.get());}
         void Else() {r.set(Else.get());}
        };
       return r.get();
      }
 
-    slot valid_slot(Bool Valid, Supplier<Int> Then)                             // Create a valid slot reference
-     {return valid_slot_or_Slot(Valid,()->new slot(Then.get()), ()->new slot());
+    slot valid_slot(Bool Choice, Supplier<Int> Then)                            // Create a valid slot reference
+     {return choose(Choice, ()->new slot(Then.get()), ()->new slot());
      }
 
-    Slot validSlot(Bool Valid, Supplier<Int> Then)                              // Create a valid slot reference
-     {return valid_slot_or_Slot(Valid,()->new Slot(Then.get()), ()->new Slot());
+    Slot valid_Slot(Bool Choice, Supplier<Int> Then)                            // Create a valid slot reference
+     {return choose(Choice, ()->new Slot(Then.get()), ()->new Slot());
      }
 
-    Slot chooseSlot(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)         // Choose a slot
-     {final Ref<Slot>r = new Ref<>();
-      new If (Valid)
-       {void Then()
-         {r.set(new Slot(Then.get()));
-         }
-        void Else()
-         {r.set(new Slot(Else.get()));
-         }
-       };
-      return r.get();
+    Slot choose_Slot(Bool Choice, Supplier<Int> Then, Supplier<Int> Else)       // Choose a slot
+     {return choose(Choice, ()->new Slot(Then.get()), ()->new Slot(Else.get()));
      }
 
 //D2 Keys                                                                       // Define a key
@@ -423,12 +414,12 @@ class Tree extends Programming                                                  
 
     Slot locateFirstUsedSlot()                                                  // Absolute position of this slot if it is in use or else the next lower used slot
      {final BitSet.Pos p = memory.usedSlotsBits.firstOne();
-      return validSlot(p.valid(), ()->p.position());
+      return valid_Slot(p.valid(), ()->p.position());
      }
 
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
      {final BitSet.Pos p = memory.usedSlotsBits.lastOne();
-      return validSlot(p.valid(), ()->p.position());
+      return valid_Slot(p.valid(), ()->p.position());
      }
 
     slot locateFirstEmptyRef()                                                  // Absolute position of the first empty reference
