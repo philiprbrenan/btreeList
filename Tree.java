@@ -1616,8 +1616,8 @@ class Tree extends Programming                                                  
 
     Bool mergeLeftSibling(Slot Right)                                           // Merge the indicated child with its left sibling if possible.  If the index is null merge into top
      {final Bool R = new Bool();                                                // Result
-      final Slots.Slot left = Right.valid().b() ? Right.stepLeft() :            // Left sibling from right child
-                                              locateLastUsedSlot();             // Sibling prior to top
+      final Slots.Slot left =
+        If (Right.valid(), ()->Right.stepLeft(), ()->locateLastUsedSlot());     // Sibling prior to top
       new If (left.notValid())
        {void Then() {R.clear();}                                                // No left sibling
         void Else()
@@ -1625,7 +1625,7 @@ class Tree extends Programming                                                  
           new If (Leaf.ref(L))                                                  // Merging leaves
            {void Then()
              {final Leaf l = (Leaf)L;
-              final Leaf r = (Leaf)(Right.valid().b() ? data(Right) : top());   // Right leaf sibling
+              final Leaf r = (Leaf)(If (Right.valid(), ()->data(Right), ()->top())); // Right leaf sibling
               new If (r.mergeFromLeft(l))                                       // Merge left sibling into right
                {void Then()
                  {clearSlotAndRef(left);                                        // Remove left sibling from parent now that it has been merged with its right sibling
@@ -1636,7 +1636,7 @@ class Tree extends Programming                                                  
              }
             void Else()                                                         // Children are branches
              {final Branch l = (Branch)L;
-              final Branch r = (Branch)(Right.valid().b() ? data(Right):top()); // Right leaf sibling
+              final Branch r = (Branch)(If (Right.valid(), ()->data(Right), ()->top())); // Right leaf sibling
               new If (r.mergeFromLeft(keys(left), l))                           // Merge left sibling into right
                {void Then()
                  {clearSlotAndRef(left);                                        // Remove left sibling from parent now that it has been merged with its right sibling
@@ -1653,8 +1653,8 @@ class Tree extends Programming                                                  
      }
 
     Bool mergeRightSibling(Slot Left)                                           // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
-     {return Left.notValid().b() ? Bool.False :                                 // Nothing to right of top
-                                   mergeLeftSibling(Left.stepRight());
+     {return If (Left.notValid(), ()->Bool.False,                               // Nothing to right of top
+                                  ()->mergeLeftSibling(Left.stepRight()));
      }
 
     Slots child(Slot Index)                                                     // The indexed child. The index must be valid or null - if null, top is returned
@@ -1670,7 +1670,7 @@ class Tree extends Programming                                                  
     Slots stepDown(Key Key) {return child(locateFirstGe(Key));}                 // Step down from this branch
 
     Int count(Slots s)                                                          // Count the number of entries under this branch
-     {return Leaf.ref(s).b() ? s.countUsed() : ((Branch)s).count();
+     {return If (Leaf.ref(s), ()->s.countUsed(), ()->((Branch)s).count());
      }
 
     Int count()                                                                 // Count the number of entries under this branch
@@ -1715,11 +1715,11 @@ class Tree extends Programming                                                  
 
       Int upIndex()                                                             // Index of this branch in its parent
        {final int i = bytes.getInt(posUpIndex);                                 // Get a discrete value from memory
-        return i < 0 ? new Int() : new Int(i);                                  // Values less than zero represent a null value which is represented by a structure describing null rathern directly by null
+        return If (new Bool(i < 0), ()->new Int(), ()->new Int(i));                                  // Values less than zero represent a null value which is represented by a structure describing null rathern directly by null
        }
 
       void    upIndex(Int Value)                                                // Set the index of this branch in its parent
-       {bytes.putInt(posUpIndex, Value.valid().b() ? Value.i() : -1);           // Have to use -1 to represent null as 0 is a valid position
+       {bytes.putInt(posUpIndex, If (Value.valid(), ()->Value.i(), ()->-1));    // Have to use -1 to represent null as 0 is a valid position
        }
 
       Int  top () {return new Int(bytes.getInt(posTop));}
@@ -1955,7 +1955,7 @@ class Tree extends Programming                                                  
           void Else()
            {final Branch b = (Branch)q;
             b.up(p.get());                                                      // Record parent branch
-            b.upIndex(Q.valid().b() ? Q.value() : b.new Slot());
+            b.upIndex(If (Q.valid(), ()->Q.value(), ()->b.new Slot()));
             p.set(b);                                                           // Step down into non full branch
            }
          };
@@ -2110,7 +2110,7 @@ class Tree extends Programming                                                  
               {final Int  sk = r.splittingKey();                                // Splitting key
                 final Leaf l = r.splitLeft();                                   // Right leaf split out of the leaf
                 p.get().insert(new Key(sk), l);                                 // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                final Leaf L = Key.value().le(sk).b() ? l : r;                  // Choose left or right leaf depending on key
+                final Leaf L = If (Key.value().le(sk), ()->l, ()->r);           // Choose left or right leaf depending on key
                 L.insert(Key, Data);                                            // Insert into left or right leaf which will now have space
                }
               void Else() {r.insert(Key, Data);}                                // Leaf has sufficient space
@@ -2125,7 +2125,7 @@ class Tree extends Programming                                                  
                {final Int         sk = r.splittingKey();                        // Splitting key
                 final Branch.Split s = r.splitLeft();                           // Branch split out on right from
                 p.get().insert(new Key(sk), s.left);                            // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                p.set(Key.value().le(sk).b() ? s.left : s.right);               // Traverse left or right
+                p.set(If (Key.value().le(sk), ()->s.left, ()->s.right));        // Traverse left or right
                }
               void Else() {p.set(r);}                                           // Step down into non full branch
              };
@@ -2156,8 +2156,9 @@ class Tree extends Programming                                                  
 
   Int count()                                                                   // Count the number of entries in the tree
    {final Slots r = root();
-    return r == null   ? new Int(0) :
-           Leaf.ref(r).b() ? r.countUsed() : ((Branch)r).count();
+    return If (new Bool(r == null),
+      ()->new Int(0),
+      ()->If (Leaf.ref(r), ()->r.countUsed(), ()->((Branch)r).count()));
    }
 
 //D2 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
