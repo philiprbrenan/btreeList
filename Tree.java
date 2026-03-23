@@ -1382,9 +1382,10 @@ class Tree extends Programming                                                  
 
     Slots dataDirect(Int Index)                                                 // Step down directly through to the branch or leaf below
      {final Int i = memory.data(Index);
-      return i.eq(0).b() ? null : i.lt(0).b() ?
-        new Leaf(new Allocation(i.neg()))     :
-        new Branch(new Allocation(i));
+      return If (i.eq(0), ()->null,
+        ()->If (i.lt(0),
+          ()->new Leaf(new Allocation(i.neg())),
+          ()->new Branch(new Allocation(i))));
      }
 
     void data(Int Index, Slots S)                                               // Set child leaf or branch via the indexed slot
