@@ -1334,7 +1334,7 @@ class Tree extends Programming                                                  
      }
 
     void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
-     {memory.up(Branch != null ? Branch.name() : new Int(0));
+     {memory.up(If (new Bool(Branch != null), ()->Branch.name(), ()->new Int(0)));
      }
 
     Int  upIndex()           {return memory.upIndex();}                         // Index of this branch in its parent
