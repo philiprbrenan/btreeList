@@ -271,25 +271,16 @@ class Tree extends Programming                                                  
        }
      }
 
-    <T> T choose(Bool Choice, Supplier<T> Then, Supplier<T> Else)                // Create a valid slot or Slot reference
-     {final Ref<T>r = new Ref<>();
-      new If (Choice)
-       {void Then() {r.set(Then.get());}
-        void Else() {r.set(Else.get());}
-       };
-      return r.get();
-     }
-
     slot valid_slot(Bool Choice, Supplier<Int> Then)                            // Create a valid slot reference
-     {return choose(Choice, ()->new slot(Then.get()), ()->new slot());
+     {return If(Choice, ()->new slot(Then.get()), ()->new slot());
      }
 
     Slot valid_Slot(Bool Choice, Supplier<Int> Then)                            // Create a valid slot reference
-     {return choose(Choice, ()->new Slot(Then.get()), ()->new Slot());
+     {return If(Choice, ()->new Slot(Then.get()), ()->new Slot());
      }
 
     Slot choose_Slot(Bool Choice, Supplier<Int> Then, Supplier<Int> Else)       // Choose a slot
-     {return choose(Choice, ()->new Slot(Then.get()), ()->new Slot(Else.get()));
+     {return If(Choice, ()->new Slot(Then.get()), ()->new Slot(Else.get()));
      }
 
 //D2 Keys                                                                       // Define a key
