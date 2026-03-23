@@ -761,12 +761,12 @@ class Tree extends Programming                                                  
 
     Slot locate(Key Key)                                                        // Locate the slot containing the current search key if possible.
      {final Locate l = new Locate(Key);                                         // Locate the search key
-      return l.found().b() ? l : new Slot();                                    // Found if exact match
+      return If(l.found(), ()->l, ()->new Slot());                              // Found if exact match
      }
 
     slot find(Key Key)                                                          // Find the index of the current key in the slots
      {final Slot i = locate(Key);
-      return i.notValid().b() ? new slot() : slots(i);
+      return If (i.notValid(), ()->new slot(), ()->slots(i));
      }
 
     Bool delete(Key Key)                                                        // Delete the specified key from the slots
@@ -961,11 +961,11 @@ class Tree extends Programming                                                  
    {final Int r = memory.root();                                                // Current node containing root
     return r.eq(0).b() ? null :                                                 // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
            r.lt(0).b() ? new Leaf  (new Allocation(r.neg())):                   // Leaf as negative
-                     new Branch(new Allocation(r));                             // Branch as positive
+                         new Branch(new Allocation(r));                         // Branch as positive
    }
 
-  void root(Leaf   Root) {memory.root(Root != null ? Root.name().neg() : new Int(0));}   // Set the root in memory with a negative address to show that it is a leaf
-  void root(Branch Root) {memory.root(Root != null ? Root.name()       : new Int(0));}   // Set the root in memory with a positive address to show that it is a branch
+  void root(Leaf   Root) {memory.root(If (new Bool(Root != null), ()->Root.name().neg(), ()->new Int(0)));}   // Set the root in memory with a negative address to show that it is a leaf
+  void root(Branch Root) {memory.root(If (new Bool(Root != null), ()->Root.name()      , ()->new Int(0)));}   // Set the root in memory with a positive address to show that it is a branch
 
 //D2 Leaf                                                                       // Use the slots to model a leaf
 
@@ -994,31 +994,31 @@ class Tree extends Programming                                                  
 
     Branch up()                                                                 // Parent branch
      {final Int    u = memory.up();
-      final Branch B = u.gt(0).b() ? new Branch(new Allocation(u)) : null;
-      return B;
+      return If (u.gt(0), ()->new Branch(new Allocation(u)), ()->null);
      }
 
     void up(Branch Branch)                                                      // Set parent branch
-     {memory.up(Branch != null ? Branch.name() : new Int(0));
+     {memory.up(If (new Bool(Branch != null), ()->Branch.name(), ()->new Int(0)));
      }
 
     Slot upIndex(Branch Branch)                                                 // Index of this leaf in its parent. We have to return an Integer rather than a slot because we do not know which branch the slot is in
      {final Int i = memory.upIndex();
-      return i.lt(0).b() ? new Slot() : Branch.new Slot(i);
+      return If(i.lt(0), ()->new Slot(), ()->Branch.new Slot(i));
      }
     void upIndex(Slot Slot)                                                     // Set the index of this leaf in its parent
-     {memory.upIndex(Slot.valid().b() ? Slot.value() : new Int(-1));            // -1 represents null in the byte buffer for this index
+     {memory.upIndex(If (Slot.valid(), ()->Slot.value(), ()->new Int(-1)));            // -1 represents null in the byte buffer for this index
      }
 
     Data data(Slot I) {return new Data(memory.data(slots(I).value()));}         // Get value of data field at index
     void data(Slot I, Data Value)                                               // Set value of data field at index
-     {memory.data(slots(I).value(), Value.valid().b() ?
-                                    Value.value()     : new Int(0));
+     {memory.data(slots(I).value(),
+        If (Value.valid(), ()->Value.value(), ()->new Int(0)));
      }
 
     Data data(slot I) {return new Data(memory.data(I.value()));}                // Get value of data field at the slot
     void data(slot I, Data Value)                                               // Set value of data field at the slot
-     {memory.data(I.value(), Value.valid().b() ? Value.value() : new Int(0));
+     {memory.data(I.value(),
+        If (Value.valid(), ()->Value.value(), ()->new Int(0)));
      }
 
     static Bool ref(Slots L)  {return new Bool(L instanceof Leaf);}             // Check whether we are referencing a leaf
@@ -1145,7 +1145,7 @@ class Tree extends Programming                                                  
 
       new For(numberOfRefs())                                                   // Copy compacted leaf data
        {void body(Int i, Bool C)
-         {data(new slot(i), d[i.i()] != null ? d[i.i()] : new Data());
+         {data(new slot(i), If (new Bool(d[i.i()] != null), ()->d[i.i()], ()->new Data()));
           C.set();
          }
        };
@@ -1169,7 +1169,7 @@ class Tree extends Programming                                                  
       super.compactRight();                                                     // Compact slots
       new For(R)                                                                // Copy compacted leaf data
        {void body(Int i, Bool C)
-         {data(new slot(i), d[i.i()] != null ? d[i.i()] : new Data());
+         {data(new slot(i), If (new Bool(d[i.i()] != null), ()->d[i.i()], ()->new Data()));
           C.set();
          }
        };
@@ -1264,7 +1264,7 @@ class Tree extends Programming                                                  
 
       Int  upIndex(){return new Int(bytes.getInt(posUpIndex));}                 // Get index of leaf in its parent from memory
       void upIndex(Int Value)                                                   // Save index of this leaf in its parent branch
-       {bytes.putInt(posUpIndex, Value.valid().b() ? Value.i() : -1);           // -1 used to indicate null which means top
+       {bytes.putInt(posUpIndex, If (Value.valid(), ()->Value.i(), ()->-1));    // -1 used to indicate null which means top
        }
 
       Int  data(Int Index)                                                      // Get the index of the leaf in its parent branch from memory
@@ -1331,7 +1331,7 @@ class Tree extends Programming                                                  
 
     Branch up()                                                                 // Name of branch above if any
      {final Int i = memory.up();
-      return i.gt(0).b() ? new Branch(new Allocation(i)) : null;
+      return If (i.gt(0), ()->new Branch(new Allocation(i)), ()->null);
      }
 
     void up(Branch Branch)                                                      // Set name of branch above to the indicated branch
@@ -1351,7 +1351,7 @@ class Tree extends Programming                                                  
          }
         void Else()
          {final Int i = Slots.name();
-          R.i(ref(Slots).b() ? i : i.neg());
+          R.i(If (ref(Slots), ()->i, ()->i.neg()));
          }
        };
       return R;
@@ -1361,9 +1361,10 @@ class Tree extends Programming                                                  
 
     Slots   top()                                                               // Top element of this branch
      {final Int i = memory.top();
-      return i.eq(0).b() ? null :  i.gt(0).b() ?
-        new Branch(new Allocation(i))      :
-        new Leaf  (new Allocation(i.neg()));
+      return If (i.eq(0), ()->null,
+        ()->If (i.gt(0),
+          ()->new Branch(new Allocation(i)),
+          ()->new Leaf  (new Allocation(i.neg()))));
      }
 
     void free()                                                                 // Free the branch
