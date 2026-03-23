@@ -2285,8 +2285,8 @@ class Tree extends Programming                                                  
             new If (U.top().name().ne(l.name()))                                // In the body of the parent branch of the leaf but not at the top of the parent
              {void Then()
                {final Slots.Slot u = l.upIndex(U);                              // Next sibling slot right
-                final Slots.Slot R = u.valid().b() ? u.stepRight() : l.new Slot();  // Next sibling slot right
-                final Leaf       L = (Leaf)(R.valid().b() ? U.data(R) : U.top());   // Next sibling leaf
+                final Slots.Slot R = If (u.valid(), ()->u.stepRight(), ()->l.new Slot());  // Next sibling slot right
+                final Leaf       L = (Leaf)(If (R.valid(), ()->U.data(R), ()->U.top()));   // Next sibling leaf
                 L.up(U); L.upIndex(R);
                 f.set(new Find(L.firstKey(), L));
                }
@@ -2301,12 +2301,12 @@ class Tree extends Programming                                                  
                        {final Branch P = p.get(), Q = q.get();
                         new If (P.top().name().ne(Q.name()))                    // In the body of the parent branch of the leaf
                          {void Then()
-                           {final Int     I = Q.upIndex();                      // Not null because we are not at the root
+                           {final Int    I = Q.upIndex();                       // Not null because we are not at the root
                             final Slots.Slot R = P.new Slot(I).stepRight();     // Next sibling to the right
-                            final boolean r = R.valid().b();                    // Next sibling to the right exists
-                            final Branch  b = (Branch)(r ? P.data(R) : P.top());// Must be a branch as we are going up through the tree
+                            final Bool   r = R.valid();                         // Next sibling to the right exists
+                            final Branch b = (Branch)If (r,  ()->P.data(R), ()->P.top());// Must be a branch as we are going up through the tree
                             b.up(p.get());
-                            b.upIndex(r ? R : b.new Slot());
+                            b.upIndex(If (r, ()->R, ()->b.new Slot()));
                             f.set(goFirst(b));
                            }
                           void Else()                                           // Go up one more level
