@@ -57,7 +57,7 @@ class Tree extends Programming                                                  
   int numberOfNodes() {return numberOfNodes;}                                   // Maximum number of nodes in tree
   int           mnl() {return MaximumNumberOfLevels;}                           // Maximum number of levels
 
-  class Key extends Int                                                  // A key
+  class Key extends Int                                                         // A key
    {Key()             {super();}                                                // A not valid key
     Key(  int Value)  {super(Value);}                                           // A valid key
     Key(  Int Value)  {super(Value);}                                           // A key
@@ -446,7 +446,7 @@ class Tree extends Programming                                                  
           final Bool      []u = new Bool[N.i()];                                // New used slots distribution
           final Int         p = new Int(remainder.Down());                      // Start position for first used slot
           new For(N)                                                            // Redistribute slots
-           {void body(Int i, Bool C)                                                    // Initialize background of slots
+           {void body(Int i, Bool C)                                            // Initialize background of slots
              {s[i.i()] = new Int (0);
               u[i.i()] = new Bool().clear();
               C.set();
@@ -1004,7 +1004,7 @@ class Tree extends Programming                                                  
       return If(i.lt(0), ()->new Slot(), ()->Branch.new Slot(i));
      }
     void upIndex(Slot Slot)                                                     // Set the index of this leaf in its parent
-     {memory.upIndex(If (Slot.valid(), ()->Slot.value(), ()->new Int(-1)));            // -1 represents null in the byte buffer for this index
+     {memory.upIndex(If (Slot.valid(), ()->Slot.value(), ()->new Int(-1)));     // -1 represents null in the byte buffer for this index
      }
 
     Data data(Slot I) {return new Data(memory.data(slots(I).value()));}         // Get value of data field at index
@@ -1713,7 +1713,7 @@ class Tree extends Programming                                                  
 
       Int upIndex()                                                             // Index of this branch in its parent
        {final int i = bytes.getInt(posUpIndex);                                 // Get a discrete value from memory
-        return If (new Bool(i < 0), ()->new Int(), ()->new Int(i));                                  // Values less than zero represent a null value which is represented by a structure describing null rathern directly by null
+        return If (new Bool(i < 0), ()->new Int(), ()->new Int(i));             // Values less than zero represent a null value which is represented by a structure describing null rathern directly by null
        }
 
       void    upIndex(Int Value)                                                // Set the index of this branch in its parent
@@ -2131,7 +2131,7 @@ class Tree extends Programming                                                  
          };
        }
      };
-    new If (d.Flip())                                                               // Unable to insert
+    new If (d.Flip())                                                           // Unable to insert
      {void Then()
        {stop("Insert fell off the end of tree after this many searches:", mnl());
        }
@@ -2524,7 +2524,7 @@ class Tree extends Programming                                                  
     return ""+s;
    }
 
-//D21 List All                                                                   // Create lists of all leaves and branches in the tree
+//D21 List All                                                                  // Create lists of all leaves and branches in the tree
 
   class ListAll  // Causes errors when run                                      // Create lists of all the leaves and branches in the tree to assist with debugging
    {final Stack<Branch>branches = new Stack<>();
