@@ -396,7 +396,7 @@ class Tree extends Programming                                                  
         new If (d.Flip())                                                       // Choose nearest slot favoring lower slot if they are both the same distance away
          {void Then()
            {final Int P = p.position().Sub(Q), N = n.position().Sub(Q);         // Relative positions
-            r.i((P.Neg().le(N).b() ? P : N));
+            r.i(If (P.Neg().le(N), ()->P, ()->N));
            }
          };
        }
@@ -415,18 +415,18 @@ class Tree extends Programming                                                  
 
     slot locateFirstEmptyRef()                                                  // Absolute position of the first empty reference
      {final BitSet.Pos p = memory.usedRefsBits.firstZero();
-      return p.valid().b() ? new slot(p.position()) : new slot();
+      return If (p.valid(), ()->new slot(p.position()), ()->new slot());
      }
 
     void shift(Int Position, Int Width)                                         // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
      {new If (Width.ne(0))                                                      // Non zero shift
        {void Then()
-         {final boolean p = Width.gt(0).b();                                    // Whether we are shifting up or down
-          new For(p ? Width : Width.Neg())                                      // Move each slot
+         {final Bool p = Width.gt(0);                                           // Whether we are shifting up or down
+          new For (If (p, ()->Width, ()->Width.Neg()))                          // Move each slot
            {void body(Int i, Bool C)
-             {final int  d = p ? i.Neg().i() : i.i();
+             {final int  d = If (p, ()->i.Neg().i(), ()->i.i());
               final Slot P = new Slot(Position.Add(Width).add(d));
-              slots(P, slots(p ? P.left() :  P.right()));                       // Move slot
+              slots(P, slots(If (p, ()->P.left(), ()->P.right())));             // Move slot
               C.set();
              }
            };
@@ -754,9 +754,8 @@ class Tree extends Programming                                                  
     Slot locateFirstGe(Key Key)                                                 // Locate the slot containing the first key greater than or equal to the search key
      {final Locate l = new Locate(Key);
       final Slot   a = l;
-      return l.notFoundBecauseEmpty().b() ? new Slot() :
-             l.below().b()                ? a          :
-             a.right().locateNextUsedSlot();
+      return If (l.notFoundBecauseEmpty(), ()->new Slot(),
+        ()->If (l.below(), ()->a, ()->a.right().locateNextUsedSlot()));
      }
 
     Slot locate(Key Key)                                                        // Locate the slot containing the current search key if possible.
@@ -959,9 +958,9 @@ class Tree extends Programming                                                  
 
   Slots root()                                                                  // Slots representing the root of the tree held in memory
    {final Int r = memory.root();                                                // Current node containing root
-    return r.eq(0).b() ? null :                                                 // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
-           r.lt(0).b() ? new Leaf  (new Allocation(r.neg())):                   // Leaf as negative
-                         new Branch(new Allocation(r));                         // Branch as positive
+    return If (r.eq(0), ()->null,                                               // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
+           ()->If (r.lt(0), ()->new Leaf  (new Allocation(r.neg())),            // Leaf as negative
+                            ()->new Branch(new Allocation(r))));                // Branch as positive
    }
 
   void root(Leaf   Root) {memory.root(If (new Bool(Root != null), ()->Root.name().neg(), ()->new Int(0)));}   // Set the root in memory with a negative address to show that it is a leaf
@@ -2353,7 +2352,7 @@ class Tree extends Programming                                                  
                  {void Then()
                    {final Slots.Slot U = l.upIndex(P);
                     final Slots.Slot u = U.stepLeft();
-                    final Leaf  L = (Leaf)(u.valid().b() ? P.data(u) : P.top());
+                    final Leaf  L = (Leaf)(If (u.valid(), ()->P.data(u), ()->P.top()));
                     L.upIndex(u);
                     f.set(new Find(L.lastKey(), L));
                    }
