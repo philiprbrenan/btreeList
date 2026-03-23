@@ -61,6 +61,15 @@ public class Programming extends Test                                           
              void Else() {}                                                     // Else clause
    }
 
+  <T> T If(Bool Choice, Supplier<T> Then, Supplier<T> Else)                     // Choose between two alternatives
+   {final Ref<T>r = new Ref<>();
+    new If (Choice)
+     {void Then() {r.set(Then.get());}
+      void Else() {r.set(Else.get());}
+     };
+    return r.get();
+   }
+
   static class Bool                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private boolean i = false;                                                  // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
