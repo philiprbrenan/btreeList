@@ -2,7 +2,6 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Convert ? to if/Ref
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1376,7 +1375,7 @@ class Tree extends Programming                                                  
     Slots firstChild() {return data(locateFirstUsedSlot());}                    // First child assuming there is one
 
     Slots data(Slot Index)                                                      // Step down via indexed slot to the branch or leaf below
-     {return usedSlots(Index).b() ? dataDirect(slots(Index).value()) : null;
+     {return If (usedSlots(Index), ()->dataDirect(slots(Index).value()), ()->null);
      }
 
     Slots dataDirect(Int Index)                                                 // Step down directly through to the branch or leaf below
@@ -1662,7 +1661,7 @@ class Tree extends Programming                                                  
          {stop("Indexing unused slot:", Index.value());
          }
        };
-      return Index.notValid().b() ? top() : data(Index);                        // An invalid index produces top
+      return If (Index.notValid(), ()->top(), ()->data(Index));                 // An invalid index produces top
      }
 
     Tree tree()             {return Tree.this;}                                 // Containing tree
