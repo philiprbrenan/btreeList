@@ -231,32 +231,6 @@ class Tree extends Programming                                                  
        }
      }
 
-    Slot validSlot(Bool Valid, Supplier<Int> Then)                              // Create a valid slot reference
-     {final Ref<Slot>r = new Ref<>();
-      new If (Valid)
-       {void Then()
-         {r.set(new Slot(Then.get()));
-         }
-        void Else()
-         {r.set(new Slot());
-         }
-       };
-      return r.get();
-     }
-
-    Slot chooseSlot(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)         // Choose a slot
-     {final Ref<Slot>r = new Ref<>();
-      new If (Valid)
-       {void Then()
-         {r.set(new Slot(Then.get()));
-         }
-        void Else()
-         {r.set(new Slot(Else.get()));
-         }
-       };
-      return r.get();
-     }
-
     class Slot extends Int                                                      // A reference to a slot
      {Slot()            {super();}                                              // An invalid slot
       Slot(int Value)   {super(Value);}                                         // A valid slot
@@ -295,6 +269,36 @@ class Tree extends Programming                                                  
       public String toString()
        {return "Slot: "+i();
        }
+     }
+
+    <T> T valid_slot_or_Slot(Bool Valid, Supplier<T> Then, Supplier<T> Else)    // Create a valid slot or Slot reference
+     {final Ref<T>r = new Ref<>();
+      new If (Valid)
+       {void Then() {r.set(Then.get());}
+        void Else() {r.set(Else.get());}
+       };
+      return r.get();
+     }
+
+    slot valid_slot(Bool Valid, Supplier<Int> Then)                             // Create a valid slot reference
+     {return valid_slot_or_Slot(Valid,()->new slot(Then.get()), ()->new slot());
+     }
+
+    Slot validSlot(Bool Valid, Supplier<Int> Then)                              // Create a valid slot reference
+     {return valid_slot_or_Slot(Valid,()->new Slot(Then.get()), ()->new Slot());
+     }
+
+    Slot chooseSlot(Bool Valid, Supplier<Int> Then, Supplier<Int> Else)         // Choose a slot
+     {final Ref<Slot>r = new Ref<>();
+      new If (Valid)
+       {void Then()
+         {r.set(new Slot(Then.get()));
+         }
+        void Else()
+         {r.set(new Slot(Else.get()));
+         }
+       };
+      return r.get();
      }
 
 //D2 Keys                                                                       // Define a key
@@ -424,7 +428,7 @@ class Tree extends Programming                                                  
 
     Slot locateLastUsedSlot()                                                   // Absolute position of the last slot in use
      {final BitSet.Pos p = memory.usedSlotsBits.lastOne();
-      return p.valid().b() ? new Slot(p.position()) : new Slot();
+      return validSlot(p.valid(), ()->p.position());
      }
 
     slot locateFirstEmptyRef()                                                  // Absolute position of the first empty reference
