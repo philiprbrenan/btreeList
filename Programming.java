@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Test a java program.
+// Test a java program..
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //------------------------------------------------------------------------------
 // change boolean eq() to Bool eq()
@@ -26,27 +26,13 @@ public class Programming extends Test                                           
 
   abstract class For                                                            // For loop
    {For(int Start, int End)                                                     // Execute the loop the specified number of times
-     {if (ex)
-       {final Int  index = new Int();
-        final Bool  cont = new Bool();
-
-        for(int i : range(Start, End))                                          // Iterate over the specified range
-         {index.i(i);                                                           // Set the index to each element of the specified range
-          cont.clear();                                                         // Terminate unless told otherwise
-          body(index, cont);                                                    // Execute the loop
-          if (cont.Flip().b()) break;                                           // Terminate the loop unless continuation requested
-         }
-       }
-      else
-       {final Label start = new Label();                                        // Start of for loop code
-        final Label   end = new Label();                                        // End of for loop code
-       }
+     {for(int i : range(Start, End)) if (!body(new Int(i)).b()) break;          // Execute the loop as long as it returns true
      }
 
     For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
     For(Int End) {this(0, End.i());}                                            // Execute the loop the specified number of times as long as it returns true
 
-    abstract void body(Int Index, Bool Continue);                               // Body of the for loop - execute while in range and continuation requested
+    Bool body(Int Index) {return new Bool(false);}                              // Body of the for loop: return flse to terminate execution of the loop
    }
 
   abstract class If                                                             // If statement
@@ -59,15 +45,6 @@ public class Programming extends Test                                           
 
     abstract void Then();                                                       // Then clause
              void Else() {}                                                     // Else clause
-   }
-
-  <T> T If(Bool Choice, Supplier<T> Then, Supplier<T> Else)                     // Choose between two alternatives
-   {final Ref<T>r = new Ref<>();
-    new If (Choice)
-     {void Then() {r.set(Then.get());}
-      void Else() {r.set(Else.get());}
-     };
-    return r.get();
    }
 
   static class Bool                                                             // An integer that can be passed as a parameter to a method and modified there-in
@@ -104,19 +81,17 @@ public class Programming extends Test                                           
     Bool         eq(Bool    e){e.x(); return eq(e.i);}
     Bool         ne(Bool    e){e.x(); return ne(e.i);}
 
-    boolean oR(boolean...b)                                                     // "Or" with no short circuit
+    Bool or(boolean...b)                                                        // "Or" with no short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (r) break;
         r = b[i];
        }
-      return r;
+      return new Bool(r);
      }
-    Bool or(boolean...b) {set(oR(b)); return this;}                             // "Or" with no short circuit - modify in place
-    Bool Or(boolean...b) {return new Bool(oR(b));}                              // "Or" with no short circuit - duplicate
 
     @SafeVarargs
-    final Bool oR(Supplier<Bool>...b)                                           // "Or" with short circuit
+    final Bool or(Supplier<Bool>...b)                                           // "Or" with short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (r) break;
@@ -126,10 +101,8 @@ public class Programming extends Test                                           
        }
       return new Bool(r);
      }
-    @SafeVarargs final Bool or(Supplier<Bool>...b) {set(oR(b)); return this;}   // "Or" with short circuit - modify in place
-    @SafeVarargs final Bool Or(Supplier<Bool>...b) {return new Bool(oR(b));}    // "Or" with short circuit - duplicate
 
-    Bool anD(boolean...b)                                                       // "And" without short circuit
+    Bool and(boolean...b)                                                       // "And" with no short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (!r) break;
@@ -137,11 +110,9 @@ public class Programming extends Test                                           
        }
       return new Bool(r);
      }
-    Bool and(boolean...b) {set(anD(b)); return this;}                           // "And" without short circuit - modify in place
-    Bool And(boolean...b) {return new Bool(anD(b));}                            // "And" without short circuit - duplicate
 
     @SafeVarargs
-    final Bool anD(Supplier<Bool>...b)                                          // "And" with short circuit
+    final Bool and(Supplier<Bool>...b)                                          // "And" with short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (!r) break;
@@ -151,14 +122,12 @@ public class Programming extends Test                                           
        }
       return new Bool(r);
      }
-    @SafeVarargs final Bool and(Supplier<Bool>...b) {set(anD(b)); return this;} // "And" with short circuit - modify in place
-    @SafeVarargs final Bool And(Supplier<Bool>...b) {return new Bool(anD(b));}  // "And" with short circuit - duplicate
 
-    Bool  Nor(boolean       ...b) {return  Or(b).flip();}                       // Not of "or"
-    Bool Nand(boolean       ...b) {return And(b).flip();}                       // Not of "and"
+    Bool  nor(boolean       ...b) {return  or(b).flip();}
+    Bool nand(boolean       ...b) {return and(b).flip();}
 
-    @SafeVarargs final Bool  Nor(Supplier<Bool>...b) {return  Or(b).flip();}    // Not of short circuited "or"
-    @SafeVarargs final Bool Nand(Supplier<Bool>...b) {return And(b).flip();}    // Not of short circuited "and"
+    @SafeVarargs final Bool  nor(Supplier<Bool>...b) {return  or(b).flip();}
+    @SafeVarargs final Bool nand(Supplier<Bool>...b) {return and(b).flip();}
 
     Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}            // Duplicate a valid boolean
 
@@ -378,12 +347,12 @@ public class Programming extends Test                                           
     class test_programming
      {test_programming(int N)
        {p.new For(N)
-         {void body(Int Index, Bool Continue)
+         {Bool body(Int Index)
            {p.new If (Index.Mod(2).eq(0))
              {void Then() {i.add(Index);}
               void Else() {i.sub(Index);}
              };
-            Continue.set();
+            return new Bool(true);
            }
          };
        }
@@ -396,10 +365,10 @@ public class Programming extends Test                                           
   static void test_bool()
    {final Bool b1 = new Bool().clear();
     final Bool b2 = new Bool().set();
-    ok(b1.Or(  ()->{return b2;}).b() == true);
-    ok(b1.Nor (()->{return b2;}).b() == false);
-    ok(b1.And (()->{return b2;}).b() == false);
-    ok(b1.Nand(()->{return b2;}).b() == true);
+    ok(b1.or(  ()->{return b2;}).b() == true);
+    ok(b1.nor (()->{return b2;}).b() == false);
+    ok(b1.and (()->{return b2;}).b() == false);
+    ok(b1.nand(()->{return b2;}).b() == true);
    }
 
   static void test_traceNames()
