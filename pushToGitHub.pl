@@ -49,8 +49,8 @@ writeFileUsingSavedToken($user, $repo, q(.config/geany/snippets.conf),          
                    readFile(q(/home/phil/.config/geany/snippets.conf)));
 writeFileUsingSavedToken($user, $repo, q(.config/geany/keybindings.conf),       # Save the keybindings file for the same reason
                   readFile(q(/home/phil/.config/geany/keybindings.conf)));
-#writeFileUsingSavedToken($user, $repo, q(.config/MakeWithPerl.pm),              # Save make with perl for the same reason
-#                  readFile(q(/home/phil/perl/cpan/MakeWithPerl/lib/MakeWithPerl.pm)));
+writeFileUsingSavedToken($user, $repo, q(.config/MakeWithPerl.pm),              # Save make with perl for the same reason
+                  readFile(q(/home/phil/perl/cpan/MakeWithPerl/lib/MakeWithPerl.pm)));
 
 if (@java)                                                                      # Write workflow to test java files
  {my @j = map {fn $_} @java;                                                    # Java files
