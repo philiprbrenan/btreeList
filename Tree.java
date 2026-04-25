@@ -313,7 +313,11 @@ class Tree extends Programming                                                  
       new If (f.valid()) {void Then() {usedSlots(f, False);}};
      }
 
-    void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots(I))); clearSlots(I.i());} // Remove a key from the slots
+    void clearSlotAndRef(Slot I)                                                // Remove a key from the slots
+     {freeRef(new slot(memory.slots(I)));
+      clearSlots(I.i());
+     }
+
     slot     slots(Slot I) {return  new slot(memory.slots    (I));}             // The indexed slot
     Bool usedSlots(Slot I) {return           memory.usedSlots(I);}              // The indexed slot usage indicator
     Bool  usedRefs(slot I) {return           memory.usedRefs (I);}              // The indexed reference usage indicator
@@ -349,7 +353,7 @@ class Tree extends Programming                                                  
       return I;
      }
 
-    void freeRef(slot Ref) {usedRefs(Ref, False);}                         // Free a reference to one of the keys in the slots
+    void freeRef(slot Ref) {usedRefs(Ref, False);}                              // Free a reference to one of the keys in the slots
 
 //D2 Statistics                                                                 // Query the state of the slots
 
@@ -429,7 +433,7 @@ class Tree extends Programming                                                  
               C.set();
              }
            };
-          usedSlots(new Slot(Position.Add(Width)), True);                  // We only move occupied slots
+          usedSlots(new Slot(Position.Add(Width)), True);                       // We only move occupied slots
          }
        };
      }
@@ -646,7 +650,7 @@ class Tree extends Programming                                                  
                            {void Then()                                         // Liberate a slot below the current slot
                              {shift             (i.Dec(),   w.Inc());           // Shift any intervening slots blocking the slot below
                               slots    (new Slot(i).left(), alloc);             // Insert into the slot below
-                              usedSlots(new Slot(i).left(), True);         // Mark the free slot at the start of the range of occupied slots as now in use
+                              usedSlots(new Slot(i).left(), True);              // Mark the free slot at the start of the range of occupied slots as now in use
                              }
                            };
                          }
@@ -1338,8 +1342,6 @@ class Tree extends Programming                                                  
     Int  upIndex()           {return memory.upIndex();}                         // Index of this branch in its parent
     void upIndex(Int Value)  {memory.upIndex(Value);}                           // Set the index of this branch in its parent
 
-    Bool ref(Slots B) {return new Bool(B instanceof Branch);}                   // Check whether we are referencing a branch
-
     Int refSign(Slots Slots)                                                    // The sign of a reference according to whether it is a reference to a leaf or a branch
      {final Int R  = new Int();
       new If (Slots == null)
@@ -1348,7 +1350,7 @@ class Tree extends Programming                                                  
          }
         void Else()
          {final Int i = Slots.name();
-          R.i(If (ref(Slots), ()->i, ()->i.neg()));
+          R.i(If (new Bool(Slots  instanceof Branch), ()->i, ()->i.neg()));
          }
        };
       return R;
@@ -1650,7 +1652,7 @@ class Tree extends Programming                                                  
      }
 
     Bool mergeRightSibling(Slot Left)                                           // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
-     {return If (Left.notValid(), ()->False,                               // Nothing to right of top
+     {return If (Left.notValid(), ()->False,                                    // Nothing to right of top
                                   ()->mergeLeftSibling(Left.stepRight()));
      }
 
@@ -2040,7 +2042,7 @@ class Tree extends Programming                                                  
 
     new If (d.Flip())
      {void Then()
-       {new If (new Bool(root() instanceof Leaf) )                                               // Leaf root
+       {new If (new Bool(root() instanceof Leaf) )                              // Leaf root
          {void Then()
            {final Leaf l = (Leaf)root();
             new If (l.full().Flip())                                            // Still space in leaf root
@@ -2164,7 +2166,7 @@ class Tree extends Programming                                                  
    {final Ref<Find> f = new Ref<>();
     new If (root() != null)                                                     // Non empty tree
      {void Then()
-       {new If (new Bool(root() instanceof Leaf) )                                               // The tree is one leaf
+       {new If (new Bool(root() instanceof Leaf) )                              // The tree is one leaf
          {void Then()
            {final Leaf       l = (Leaf)root();
             final Slots.Slot i = l.locateFirstUsedSlot();
@@ -2242,7 +2244,7 @@ class Tree extends Programming                                                  
     new For(MaximumNumberOfLevels)                                              // Step down from branch to branch splitting as we go
      {void body(Int i, Bool C)
        {final Slots q = p.get().top();
-        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
+        new If (new Bool(q instanceof Leaf))                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(l.new Slot());
