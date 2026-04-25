@@ -17,8 +17,12 @@ public class Programming extends Test                                           
   final static boolean coverageAnalysis = false;                                // Enables coverage checks
   final Stack<I>       code = new Stack<>();                                    // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                    // Labels for instructions in this process
+  final Bool   True = new Bool(true);                                           // Useful constants
+  final Bool  False = new Bool(false);
 
   final int maxSteps = 999;                                                     // Number of steps permitted in code execution
+  int      nextIntId = 0;                                                       // Unique id for each Int
+  int     nextBoolId = 0;                                                       // Unique id for each Bool
   boolean         ex = true;                                                    // Execute immediately if true else generate machine code and execute later
   int             pc;                                                           // Program counter - set to something less than zero to stop with a return code
 
@@ -70,14 +74,11 @@ public class Programming extends Test                                           
     return r.get();
    }
 
-  static class Bool                                                             // An integer that can be passed as a parameter to a method and modified there-in
-   {private boolean i = false;                                                  // Value of the integer
-    private boolean v = false;                                                  // Whether the current value of the integer is valid or not
-    private String  n = null;                                                   // An optional name for this variable
-    final static Bool  True = new Bool(true);                                   // Useful constants
-    final static Bool False = new Bool(false);
-    private static int nextId = 0;                                              // Unique id for each Bool
-    private final  int id = nextId++;                                           // Unique id for Bool
+  class Bool                                                                    // An integer that can be passed as a parameter to a method and modified there-in
+   {boolean         i = false;                                                  // Value of the integer
+    boolean         v = false;                                                  // Whether the current value of the integer is valid or not
+    String          n = null;                                                   // An optional name for this variable
+    final int      id = nextBoolId++;                                           // Unique id for Bool
 
     Bool      valid() {return new Bool(v);}
 
@@ -171,11 +172,10 @@ public class Programming extends Test                                           
    }
 
   class Int                                                                     // An integer that can be passed as a parameter to a method and modified there-in
-   {private int     i = 0;                                                      // Value of the integer
-    private boolean v = false;                                                  // Whether the current value of the integer is valid or not
-    private String  n = null;                                                   // An optional name for this variable
-    private static int nextId = 0;                                              // Unique id for each Int
-    private final  int id = nextId++;                                           // Unique id for Int
+   {private int        i = 0;                                                   // Value of the integer
+    private boolean    v = false;                                               // Whether the current value of the integer is valid or not
+    private String     n = null;                                                // An optional name for this variable
+    private final int id = nextIntId++;                                         // Unique id for Int
 
     Bool    valid() {return new Bool( v);}                                      // A valid integer
     Bool notValid() {return new Bool(!v);}                                      // A not valid integer
@@ -310,8 +310,8 @@ public class Programming extends Test                                           
      }
    }
 
-  static class Ref<T>                                                           // A reference to an object
-   {private T i;                                                                // Value of the object
+  class Ref<T>                                                                  // A reference to an object
+   {T i;                                                                        // Value of the object
     Ref()              {i = null;}                                              // Create a null reference
     Ref(T I)           {i = I;}                                                 // Create a reference to the object
     void set(T I)      {i = I;}                                                 // Set the refernce
@@ -399,8 +399,9 @@ public class Programming extends Test                                           
    }
 
   static void test_bool()
-   {final Bool b1 = new Bool().clear();
-    final Bool b2 = new Bool().set();
+   {final Programming P = new Programming();
+    final Bool b1 = P.new Bool().clear();
+    final Bool b2 = P.new Bool().set();
     ok(b1.Or(  ()->{return b2;}).b() == true);
     ok(b1.Nor (()->{return b2;}).b() == false);
     ok(b1.And (()->{return b2;}).b() == false);
