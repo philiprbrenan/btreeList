@@ -298,19 +298,19 @@ class Tree extends Programming                                                  
 
     void setSlots(int...Slots)                                                  // Set slots as used
      {for (int i : range(Slots.length))
-       {usedSlots(new Slot(new Int(Slots[i])), Bool.True);
+       {usedSlots(new Slot(new Int(Slots[i])), True);
        }
      }
 
     void clearSlots(int...Slots)                                                // Set slots as not being used
      {for (int i : range(Slots.length))
-       {usedSlots(new Slot(new Int(Slots[i])), Bool.False);
+       {usedSlots(new Slot(new Int(Slots[i])), False);
        }
      }
 
     void clearFirstSlot()                                                       // Set the first used slot to not used
      {final Slots.Slot f = locateFirstUsedSlot();
-      new If (f.valid()) {void Then() {usedSlots(f, Bool.False);}};
+      new If (f.valid()) {void Then() {usedSlots(f, False);}};
      }
 
     void clearSlotAndRef(Slot I) {freeRef(new slot(memory.slots(I))); clearSlots(I.i());} // Remove a key from the slots
@@ -340,7 +340,7 @@ class Tree extends Programming                                                  
 
       new If (I.valid())
        {void Then()
-         {usedRefs(I, Bool.True);
+         {usedRefs(I, True);
          }
         void Else()
          {stop("No more slots available in this set of slots");
@@ -349,7 +349,7 @@ class Tree extends Programming                                                  
       return I;
      }
 
-    void freeRef(slot Ref) {usedRefs(Ref, Bool.False);}                         // Free a reference to one of the keys in the slots
+    void freeRef(slot Ref) {usedRefs(Ref, False);}                         // Free a reference to one of the keys in the slots
 
 //D2 Statistics                                                                 // Query the state of the slots
 
@@ -429,7 +429,7 @@ class Tree extends Programming                                                  
               C.set();
              }
            };
-          usedSlots(new Slot(Position.Add(Width)), Bool.True);                  // We only move occupied slots
+          usedSlots(new Slot(Position.Add(Width)), True);                  // We only move occupied slots
          }
        };
      }
@@ -488,8 +488,8 @@ class Tree extends Programming                                                  
      }
 
     void compactSlot(Slot P, slot Q, Key K)                                     // Compact a slot
-     {usedSlots(P, Bool.True);
-       usedRefs(Q, Bool.True);
+     {usedSlots(P, True);
+       usedRefs(Q, True);
           slots(P, Q);
            keys(P, K);
      }
@@ -564,8 +564,8 @@ class Tree extends Programming                                                  
           c.and(()->{return mergeSlot(r, I, J).flip();});                       // Merge on right
           new If (c)                                                            // Reset center
            {void Then()
-             {usedSlots(I, Bool.False);
-              usedRefs (J, Bool.False);
+             {usedSlots(I, False);
+              usedRefs (J, False);
              }
            };
           C.set();
@@ -576,18 +576,18 @@ class Tree extends Programming                                                  
     Bool mergeBack(Slots Left, Slots Right)                                     // Merge the specified slots back into the current set of slots
      {Left.compactLeft(); Right.compactRight();
       mergeCompacted(Left, Right);
-      return Bool.True;
+      return True;
      }
 
     Bool mergeOnRight(Slots Right)                                              // Merge the specified slots from the right
      {return countUsed().Add(Right.countUsed()).gt(numberOfSlots()).b() ?
-             Bool.False :
+             False :
              mergeBack(duplicateSlots(), Right.duplicateSlots());
      }
 
     Bool mergeOnLeft(Slots Left)                                                // Merge the specified slots from the left
      {return Left.countUsed().Add(countUsed()).gt(numberOfSlots()).b() ?
-             Bool.False :
+             False :
              mergeBack(Left.duplicateSlots(), duplicateSlots());
      }
 
@@ -603,7 +603,7 @@ class Tree extends Programming                                                  
            {void Then()
              {final Slot S = new Slot(new Int(numberOfSlots()).down().i());
               slots     (S, alloc);
-              usedSlots (S, Bool.True);
+              usedSlots (S, True);
              }
             void Else()
              {new If (l.above())                                                // Insert their key above the found key
@@ -614,7 +614,7 @@ class Tree extends Programming                                                  
                    {void Then()                                                 // Move up
                      {shift             (i.Inc(), w.Dec());                     // Liberate a slot at this point
                       slots    (new Slot(i).right(), alloc);                    // Place their current key in the empty slot, it has already been marked as set so there is no point in setting it again
-                      usedSlots(new Slot(i).right(), Bool.True);
+                      usedSlots(new Slot(i).right(), True);
                      }
                     void Else()
                      {new If (w.lt(0))                                          // Liberate a slot below the current slot
@@ -646,7 +646,7 @@ class Tree extends Programming                                                  
                            {void Then()                                         // Liberate a slot below the current slot
                              {shift             (i.Dec(),   w.Inc());           // Shift any intervening slots blocking the slot below
                               slots    (new Slot(i).left(), alloc);             // Insert into the slot below
-                              usedSlots(new Slot(i).left(), Bool.True);         // Mark the free slot at the start of the range of occupied slots as now in use
+                              usedSlots(new Slot(i).left(), True);         // Mark the free slot at the start of the range of occupied slots as now in use
                              }
                            };
                          }
@@ -1019,8 +1019,7 @@ class Tree extends Programming                                                  
         If (Value.valid(), ()->Value.value(), ()->new Int(0)));
      }
 
-    static Bool ref(Slots L)  {return new Bool(L instanceof Leaf);}             // Check whether we are referencing a leaf
-    int splitSize()           {return maxLeafSize>>>1;}                         // Size of a split leaf
+    int splitSize() {return maxLeafSize>>>1;}                                   // Size of a split leaf
 
     Leaf duplicate()                                                            // Duplicate a leaf
      {final Leaf d = new Leaf();
@@ -1339,7 +1338,7 @@ class Tree extends Programming                                                  
     Int  upIndex()           {return memory.upIndex();}                         // Index of this branch in its parent
     void upIndex(Int Value)  {memory.upIndex(Value);}                           // Set the index of this branch in its parent
 
-    static Bool ref(Slots B) {return new Bool(B instanceof Branch);}            // Check whether we are referencing a branch
+    Bool ref(Slots B) {return new Bool(B instanceof Branch);}                   // Check whether we are referencing a branch
 
     Int refSign(Slots Slots)                                                    // The sign of a reference according to whether it is a reference to a leaf or a branch
      {final Int R  = new Int();
@@ -1620,7 +1619,7 @@ class Tree extends Programming                                                  
        {void Then() {R.clear();}                                                // No left sibling
         void Else()
          {final Slots L = data(left);                                           // Left sibling as slots
-          new If (Leaf.ref(L))                                                  // Merging leaves
+          new If (L instanceof Leaf )                                           // Merging leaves
            {void Then()
              {final Leaf l = (Leaf)L;
               final Leaf r = (Leaf)(If (Right.valid(), ()->data(Right), ()->top())); // Right leaf sibling
@@ -1651,7 +1650,7 @@ class Tree extends Programming                                                  
      }
 
     Bool mergeRightSibling(Slot Left)                                           // Merge the indicated child with its right sibling if possible.  If the index is null merge into top
-     {return If (Left.notValid(), ()->Bool.False,                               // Nothing to right of top
+     {return If (Left.notValid(), ()->False,                               // Nothing to right of top
                                   ()->mergeLeftSibling(Left.stepRight()));
      }
 
@@ -1668,7 +1667,7 @@ class Tree extends Programming                                                  
     Slots stepDown(Key Key) {return child(locateFirstGe(Key));}                 // Step down from this branch
 
     Int count(Slots s)                                                          // Count the number of entries under this branch
-     {return If (Leaf.ref(s), ()->s.countUsed(), ()->((Branch)s).count());
+     {return If (new Bool(s instanceof Leaf), ()->s.countUsed(), ()->((Branch)s).count());
      }
 
     Int count()                                                                 // Count the number of entries under this branch
@@ -1843,7 +1842,7 @@ class Tree extends Programming                                                  
    }
 
   void mergeRootNotEmpty(Key Key)                                               // Collapse the root if possible
-   {new If (Leaf.ref(root()))                                                   // Leaf root
+   {new If (new Bool(root() instanceof Leaf))                                   // Leaf root
      {void Then()
        {final Leaf l = (Leaf)root();
         new If (l.empty()) {void Then() {l.free(); root((Leaf)null);}};         // Free leaf if it is empty
@@ -1854,7 +1853,7 @@ class Tree extends Programming                                                  
          {void Then()
            {final Slots t = b.top();
             b.free();
-            new If (Leaf.ref(t))
+            new If (new Bool(t instanceof Leaf))
              {void Then()
                {root((Leaf)t);
                }
@@ -1867,7 +1866,7 @@ class Tree extends Programming                                                  
 
         new If (b.countUsed().eq(1))                                            // Root body is right size to collapse
          {void Then()
-           {new If (Leaf.ref(b.top()))                                          // Leaves for children
+           {new If (new Bool(b.top() instanceof Leaf))                          // Leaves for children
              {void Then()
                {final Leaf l = (Leaf)b.firstChild();
                 final Leaf r = (Leaf)b.top();
@@ -1917,7 +1916,7 @@ class Tree extends Programming                                                  
     final Ref<Find> f = new Ref<>();                                            // Find details result
     new If (r != null)                                                          // Non empty tree
      {void Then()
-       {new If (Leaf.ref(r))                                                    // Leaf root
+       {new If (new Bool(r instanceof Leaf))                                                    // Leaf root
          {void Then()
            {final Leaf L = (Leaf)r;
             L.up(null);
@@ -1944,7 +1943,7 @@ class Tree extends Programming                                                  
      {void body(Int i, Bool C)
        {final Slots.Slot Q = p.get().locateFirstGe(Key);
         final Slots      q = p.get().child(Q);
-        new If (Leaf.ref(q))                                                    // Step down to a leaf
+        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(Q);                                        // Parent of leaf along find path
@@ -2041,7 +2040,7 @@ class Tree extends Programming                                                  
 
     new If (d.Flip())
      {void Then()
-       {new If (Leaf.ref(root()))                                               // Leaf root
+       {new If (new Bool(root() instanceof Leaf) )                                               // Leaf root
          {void Then()
            {final Leaf l = (Leaf)root();
             new If (l.full().Flip())                                            // Still space in leaf root
@@ -2100,7 +2099,7 @@ class Tree extends Programming                                                  
      {void body(Int i, Bool C)
        {final Slots q = p.get().stepDown(Key);                                  // Step down
         C.set();
-        new If (Leaf.ref(q))                                                    // Step down to a leaf
+        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
          {void Then()
            {final Leaf r = (Leaf)q;                                             // We have reached a leaf
             new If (r.full())                                                   // Split the leaf if it is full
@@ -2156,7 +2155,7 @@ class Tree extends Programming                                                  
    {final Slots r = root();
     return If (new Bool(r == null),
       ()->new Int(0),
-      ()->If (Leaf.ref(r), ()->r.countUsed(), ()->((Branch)r).count()));
+      ()->If (new Bool(r instanceof Leaf), ()->r.countUsed(), ()->((Branch)r).count()));
    }
 
 //D2 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
@@ -2165,7 +2164,7 @@ class Tree extends Programming                                                  
    {final Ref<Find> f = new Ref<>();
     new If (root() != null)                                                     // Non empty tree
      {void Then()
-       {new If (Leaf.ref(root()))                                               // The tree is one leaf
+       {new If (new Bool(root() instanceof Leaf) )                                               // The tree is one leaf
          {void Then()
            {final Leaf       l = (Leaf)root();
             final Slots.Slot i = l.locateFirstUsedSlot();
@@ -2190,7 +2189,7 @@ class Tree extends Programming                                                  
        {final Slots.Slot P = p.get().locateFirstUsedSlot();
         final Slots      q = p.get().child(P);
 
-        new If (Leaf.ref(q))                                                    // Step down to a leaf
+        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(P);
@@ -2219,7 +2218,7 @@ class Tree extends Programming                                                  
    {final Ref<Find> f = new Ref<>();
     new If (root() != null)                                                     // Non empty tree
      {void Then()
-       {new If (Leaf.ref(root()))
+       {new If (new Bool(root() instanceof Leaf) )
          {void Then()
            {final Leaf l = (Leaf)root();
             final Int  i = l.locateLastUsedSlot().value();
@@ -2243,7 +2242,7 @@ class Tree extends Programming                                                  
     new For(MaximumNumberOfLevels)                                              // Step down from branch to branch splitting as we go
      {void body(Int i, Bool C)
        {final Slots q = p.get().top();
-        new If (Leaf.ref(q))                                                    // Step down to a leaf
+        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(l.new Slot());
@@ -2434,7 +2433,8 @@ class Tree extends Programming                                                  
        {if (B.usedSlots(B.new Slot(i)).b())
          {final Slots s = B.data(B.new Slot(i));
           if (s == null) continue;
-          final Bool l = Leaf.ref(s), b = Tree.Branch.ref(s);
+          final Bool l = new Bool(s instanceof Leaf);
+          final Bool b = new Bool(s instanceof Branch);
 
           if      (l.b()) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b.b()) printBranch((Branch)s, P, level+1, Details, B, i);
@@ -2459,7 +2459,8 @@ class Tree extends Programming                                                  
        ("{"+(B.top() != null ? B.top().name() : "null")+"}");
      }
 
-    final Bool l = Leaf.ref(B.top()), b = Tree.Branch.ref(B.top());             // Print top leaf
+    final Bool l = new Bool(B.top() instanceof Leaf);
+    final Bool b = new Bool(B.top() instanceof Branch);                         // Print top leaf
     if      (l.b()) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
     else if (b.b()) printBranch((Branch)B.top(), P, level+1, Details, B, null);
 
@@ -2502,7 +2503,7 @@ class Tree extends Programming                                                  
   String print(boolean Details)                                                 // Print the tree with and without linkage details
    {final Stack<StringBuilder> P = new Stack<>();
     if (root() == null) return "|\n";                                           // Empty tree
-    final Bool lr = Leaf.ref(root());
+    final Bool lr = new Bool(root() instanceof Leaf) ;
     if (lr.b()) printLeaf  ((Leaf)  root(), P, 0, Details, null, null);         // Tree is a single leaf
     else        printBranch((Branch)root(), P, 0, Details, null, null);         // Tree has one or more branches
     return printCollapsed(P);                                                   // Remove blank lines and add right fence
@@ -2536,7 +2537,8 @@ class Tree extends Programming                                                  
          {final Slots.Slot S = B.new Slot(i);
           if (B.usedSlots(S).b())
            {final Slots s = B.data(S);
-            final Bool  l = Leaf.ref(s), b = Branch.ref(s);
+            final Bool  l = new Bool(s instanceof Leaf);
+            final Bool  b = new Bool(s instanceof Branch);
 
             if      (l.b())  leaves  .push((Leaf)  s);
             else if (b.b()) {branches.push((Branch)s); scan((Branch)s);}
@@ -2546,14 +2548,16 @@ class Tree extends Programming                                                  
        };
 
       final Slots s = B.top();
-      final Bool  l = Leaf.ref(s), b = Branch.ref(s);
+      final Bool  l = new Bool(s instanceof Leaf);
+      final Bool  b = new Bool(s instanceof Branch);
       if      (l.b())  leaves  .push((Leaf)  s);
       else if (b.b()) {branches.push((Branch)s); scan((Branch)s);}
      }
 
     ListAll()                                                                   // Create lists of all theleaves and branches in the tree to assist with debugging
      {if (root() == null) return;
-      final Bool l = Leaf.ref(root()), b = Branch.ref(root());
+      final Bool l = new Bool(root() instanceof Leaf);
+      final Bool b = new Bool(root() instanceof Branch);
       if      (l.b())  leaves  .push((Leaf)  root());
       else if (b.b()) {branches.push((Branch)root()); scan((Branch)root());}
      }
@@ -2708,10 +2712,10 @@ keys     :   14  13  16  15  18  17  12  11
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(22));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(24));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(26));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(28));
+    s.usedSlots(s.new Slot( 1), t.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.True); s.key(s.new slot(7), t.new Key(22));
+    s.usedSlots(s.new Slot( 5), t.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.True); s.key(s.new slot(4), t.new Key(24));
+    s.usedSlots(s.new Slot( 9), t.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.True); s.key(s.new slot(2), t.new Key(26));
+    s.usedSlots(s.new Slot(14), t.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.True); s.key(s.new slot(0), t.new Key(28));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2730,10 +2734,10 @@ keys     :   28   0  26   0  24   0   0  22
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(11));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(12));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(13));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(14));
+    s.usedSlots(s.new Slot( 1), t.True);; s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.True);; s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), t.True);; s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.True);; s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), t.True);; s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.True);; s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), t.True);; s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.True);; s.key(s.new slot(0), t.new Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2758,10 +2762,10 @@ keys     :   11  12  13  14   0   0   0   0
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(11));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(12));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(13));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(14));
+    s.usedSlots(s.new Slot( 1), t.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.True); s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), t.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.True); s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), t.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.True); s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), t.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.True); s.key(s.new slot(0), t.new Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2788,10 +2792,10 @@ keys     :    0   0   0   0  11  12  13  14
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8, ByteBuffer.allocate(200));
 
-    s.usedSlots(s.new Slot( 1), Bool.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), Bool.True); s.key(s.new slot(7), t.new Key(11));
-    s.usedSlots(s.new Slot( 5), Bool.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), Bool.True); s.key(s.new slot(4), t.new Key(12));
-    s.usedSlots(s.new Slot( 9), Bool.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), Bool.True); s.key(s.new slot(2), t.new Key(13));
-    s.usedSlots(s.new Slot(14), Bool.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), Bool.True); s.key(s.new slot(0), t.new Key(14));
+    s.usedSlots(s.new Slot( 1), t.True); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.True); s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), t.True); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.True); s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), t.True); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.True); s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), t.True); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.True); s.key(s.new slot(0), t.new Key(14));
     s.type     (t.new Int (11));
     ok(s, """
 Slots    : name:  0, type: 11, refs:  8
@@ -2837,8 +2841,8 @@ keys     :   14   0  13   0  12   0   0  11
     ok(m.keys        (t.new Int(6)),  0);
 
     m.slots    (t.new Int(13), t.new Int(6));
-    m.usedSlots(t.new Int(13), Bool.True);
-    m.usedRefs (t.new Int( 6), Bool.True);
+    m.usedSlots(t.new Int(13), t.True);
+    m.usedRefs (t.new Int( 6), t.True);
     m.keys     (t.new Int( 6), t.new Int(10));
 
     ok(B, """
