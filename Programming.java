@@ -171,6 +171,8 @@ public class Programming extends Test                                           
    {private int     i = 0;                                                      // Value of the integer
     private boolean v = false;                                                  // Whether the current value of the integer is valid or not
     private String  n = null;                                                   // An optional name for this variable
+    private static int nextId = 0;                                              // Unique id for each Int
+    private final  int id = nextId++;                                           // Unique id for Int
 
     Bool    valid() {return new Bool( v);}                                      // A valid integer
     Bool notValid() {return new Bool(!v);}                                      // A not valid integer
