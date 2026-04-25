@@ -76,6 +76,9 @@ public class Programming extends Test                                           
     private String  n = null;                                                   // An optional name for this variable
     final static Bool  True = new Bool(true);                                   // Useful constants
     final static Bool False = new Bool(false);
+    private static int nextId = 0;                                              // Unique id for each Bool
+    private final  int id = nextId++;                                           // Unique id for Bool
+
     Bool      valid() {return new Bool(v);}
 
     Bool           ()          {}
