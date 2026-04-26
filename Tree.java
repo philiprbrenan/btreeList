@@ -2,8 +2,6 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
-// Check whether node type is needed
-// Remove slots.java and other externals that are no longer needed after merge into Tree.java
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -81,7 +79,7 @@ class Tree extends Programming                                                  
 
 //D1 Allocation                                                                 // Allocate or free a leaf or branch
 
-  enum NodeType {Leaf, Branch}                                                  // Types of nodes
+  enum NodeType {Leaf, Branch}                                                  // Types of nodes stored in backing memory
 
   static int ib()      {return Integer.BYTES;}                                  // Number of bytes in an integer
   static int ib(int I) {return I * ib();}                                       // Number of bytes in a number of integers
