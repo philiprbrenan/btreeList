@@ -2,6 +2,7 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// redistribute(): block out a range like a perl array to allow rapid unshift and push operations while limiting the sizeo of the gap between adjacent elements to make binary search faster.
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -440,7 +441,7 @@ class Tree extends Programming                                                  
        };
      }
 
-    void redistribute()                                                         // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order
+    void redistribute()                                                         // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order.
      {new If (empty().Flip())                                                   // Something to redistribute
        {void Then()
          {final Int         N = new Int(numberOfSlots());                       // Maximum number of slots
