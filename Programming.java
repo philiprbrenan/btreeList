@@ -122,18 +122,15 @@ public class Programming extends Test                                           
     //Bool Or(boolean...b) {return new Bool(oR(b));}                              // "Or" with no short circuit - duplicate
 
     @SafeVarargs
-    final Bool oR(Supplier<Bool>...b)                                           // "Or" with short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (r) break;
-        final Bool B = b[i].get();
-        B.x();
-        r = B.b();
+    final Bool Or(Supplier<Bool>...b)                                           // "Or" with short circuit
+     {x(); final Bool r = new Bool(b());                                        // Start with the current value
+      for (int i : range(b.length))                                             // Test each additional value as necessary
+       {if (r.b()) break;                                                       // Finish when we know the result
+        r.set(b[i].get());                                                      // Check additional operands
        }
-      return new Bool(r);
+      return r;
      }
-    @SafeVarargs final Bool or(Supplier<Bool>...b) {set(oR(b)); return this;}   // "Or" with short circuit - modify in place
-    @SafeVarargs final Bool Or(Supplier<Bool>...b) {return oR(b);}              // "Or" with short circuit - duplicate
+    @SafeVarargs final Bool or(Supplier<Bool>...b) {set(Or(b)); return this;}   // "Or" with short circuit - modify in place
 
     //Bool anD(boolean...b)                                                       // "And" without short circuit
     // {x(); boolean r = b();
@@ -147,7 +144,7 @@ public class Programming extends Test                                           
     //Bool And(boolean...b) {return new Bool(anD(b));}                            // "And" without short circuit - duplicate
 
     @SafeVarargs
-    final Bool anD(Supplier<Bool>...b)                                          // "And" with short circuit
+    final Bool And(Supplier<Bool>...b)                                          // "And" with short circuit
      {x(); boolean r = b();
       for (int i : range(b.length))
        {if (!r) break;
@@ -157,8 +154,7 @@ public class Programming extends Test                                           
        }
       return new Bool(r);
      }
-    @SafeVarargs final Bool and(Supplier<Bool>...b) {set(anD(b)); return this;} // "And" with short circuit - modify in place
-    @SafeVarargs final Bool And(Supplier<Bool>...b) {return anD(b);}            // "And" with short circuit - duplicate
+    @SafeVarargs final Bool and(Supplier<Bool>...b) {set(And(b)); return this;} // "And" with short circuit - modify in place
 
     //Bool  Nor(boolean       ...b) {return  Or(b).flip();}                       // Not of "or"
     //Bool Nand(boolean       ...b) {return And(b).flip();}                       // Not of "and"
