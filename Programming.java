@@ -75,16 +75,18 @@ public class Programming extends Test                                           
    }
 
   class Bool                                                                    // An integer that can be passed as a parameter to a method and modified there-in
-   {boolean         i = false;                                                  // Value of the integer
-    boolean         v = false;                                                  // Whether the current value of the integer is valid or not
-    String          n = null;                                                   // An optional name for this variable
-    final int      id = nextBoolId++;                                           // Unique id for Bool
+   {boolean    i = false;                                                       // Value of the integer
+    boolean    v = false;                                                       // Whether the current value of the integer is valid or not
+    String     n = null;                                                        // An optional name for this variable
+    final int id = nextBoolId++;                                                // Unique id for Bool
+
+    enum Op {Set};                                                              // Boolean operation classification by argument types
 
     Bool      valid() {return new Bool(v);}
 
     Bool           ()          {}
-    Bool           (boolean I) {i = I; v = true;}
-    Bool           (Bool    I) {I.x(); i = I.i; v = I.v;}
+    Bool           (boolean I) {i(Op.Set, I); i = I; v = true;}
+    Bool           (Bool    I) {i(Op.Set, I); I.x(); i = I.i; v = I.v;}
 
     boolean       b()          {      x();               return i;}
     void          x()          {if (!v) stop("Bool has not been set yet");}
@@ -102,11 +104,11 @@ public class Programming extends Test                                           
     Bool      Clear()          {return dup().clear();}
     Bool       Flip()          {return dup().flip();}
 
-    Bool         eq(boolean e){  x(); return new Bool(i == e);}
-    Bool         ne(boolean e){  x(); return new Bool(i != e);}
+    Bool         eq(boolean I) {  x(); return new Bool(i == I);}
+    Bool         ne(boolean I) {  x(); return new Bool(i != I);}
 
-    Bool         eq(Bool    e){e.x(); return eq(e.i);}
-    Bool         ne(Bool    e){e.x(); return ne(e.i);}
+    Bool         eq(Bool    I) {I.x(); return eq(I.i);}
+    Bool         ne(Bool    I) {I.x(); return ne(I.i);}
 
     boolean oR(boolean...b)                                                     // "Or" with no short circuit
      {x(); boolean r = b();
@@ -168,6 +170,14 @@ public class Programming extends Test                                           
 
     public String toString()                                                    // Print the boolean
      {return (n == null ? "" : n+"=")+i;
+     }
+
+    void i(Op Op, boolean I)                                                    // Generate instruction for single boolean argument
+     {if (!ex) return;                                                          // Avoid generating code when executing directly as the amount of code generated can be large
+     }
+
+    void i(Op Op, Bool    I)                                                    // Generate instruction for single boolean argument
+     {if (!ex) return;                                                          // Avoid generating code when executing directly as the amount of code generated can be large
      }
    }
 
