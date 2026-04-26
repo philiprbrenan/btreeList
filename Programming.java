@@ -80,7 +80,7 @@ public class Programming extends Test                                           
     String     n = null;                                                        // An optional name for this variable
     final int id = nextBoolId++;                                                // Unique id for Bool
 
-    enum Op {Set};                                                              // Boolean operation classification by argument types
+    enum Op {Eq, Flip, Ne, Set};                                                // Boolean operation classification by argument types
 
     Bool      valid() {return new Bool(v);}
 
@@ -92,11 +92,11 @@ public class Programming extends Test                                           
     void          x()          {if (!v) stop("Bool has not been set yet");}
     Bool          X()          {v = true; return this;}
 
-    Bool        set()          {i = true;  v = true;     return this;}
-    Bool        set(boolean I) {i = I;     v = true;     return this;}
-    Bool        set(Bool    I) {I.x(); i = I.i; v = I.v; return this;}
-    Bool      clear()          {i = false; v = true;     return this;}
-    Bool       flip()          {      x(); i = !i;       return this;}
+    Bool        set()          {i(Op.Set,  true);  i = true;  v = true;     return this;}
+    Bool        set(boolean I) {i(Op.Set,  I);     i = I;     v = true;     return this;}
+    Bool        set(Bool    I) {i(Op.Set,  I);     I.x(); i = I.i; v = I.v; return this;}
+    Bool      clear()          {i(Op.Set,  false); i = false; v = true;     return this;}
+    Bool       flip()          {i(Op.Flip); x();   i = !i;                  return this;}
 
     Bool        Set()          {return dup().set();}
     Bool        Set(boolean I) {return dup().set(I);}
@@ -104,22 +104,22 @@ public class Programming extends Test                                           
     Bool      Clear()          {return dup().clear();}
     Bool       Flip()          {return dup().flip();}
 
-    Bool         eq(boolean I) {  x(); return new Bool(i == I);}
-    Bool         ne(boolean I) {  x(); return new Bool(i != I);}
+    Bool         eq(boolean I) {i(Op.Eq,  I);   x(); return new Bool(i == I);}
+    Bool         ne(boolean I) {i(Op.Ne,  I);   x(); return new Bool(i != I);}
 
-    Bool         eq(Bool    I) {I.x(); return eq(I.i);}
-    Bool         ne(Bool    I) {I.x(); return ne(I.i);}
+    Bool         eq(Bool    I) {i(Op.Eq,  I); I.x(); return eq(I.i);}
+    Bool         ne(Bool    I) {i(Op.Ne,  I); I.x(); return ne(I.i);}
 
-    boolean oR(boolean...b)                                                     // "Or" with no short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (r) break;
-        r = b[i];
-       }
-      return r;
-     }
-    Bool or(boolean...b) {set(oR(b)); return this;}                             // "Or" with no short circuit - modify in place
-    Bool Or(boolean...b) {return new Bool(oR(b));}                              // "Or" with no short circuit - duplicate
+    //boolean oR(boolean...b)                                                     // "Or" with no short circuit
+    // {x(); boolean r = b();
+    //  for (int i : range(b.length))
+    //   {if (r) break;
+    //    r = b[i];
+    //   }
+    //  return r;
+    // }
+    //Bool or(boolean...b) {set(oR(b)); return this;}                             // "Or" with no short circuit - modify in place
+    //Bool Or(boolean...b) {return new Bool(oR(b));}                              // "Or" with no short circuit - duplicate
 
     @SafeVarargs
     final Bool oR(Supplier<Bool>...b)                                           // "Or" with short circuit
@@ -135,16 +135,16 @@ public class Programming extends Test                                           
     @SafeVarargs final Bool or(Supplier<Bool>...b) {set(oR(b)); return this;}   // "Or" with short circuit - modify in place
     @SafeVarargs final Bool Or(Supplier<Bool>...b) {return new Bool(oR(b));}    // "Or" with short circuit - duplicate
 
-    Bool anD(boolean...b)                                                       // "And" without short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (!r) break;
-        r = b[i];
-       }
-      return new Bool(r);
-     }
-    Bool and(boolean...b) {set(anD(b)); return this;}                           // "And" without short circuit - modify in place
-    Bool And(boolean...b) {return new Bool(anD(b));}                            // "And" without short circuit - duplicate
+    //Bool anD(boolean...b)                                                       // "And" without short circuit
+    // {x(); boolean r = b();
+    //  for (int i : range(b.length))
+    //   {if (!r) break;
+    //    r = b[i];
+    //   }
+    //  return new Bool(r);
+    // }
+    //Bool and(boolean...b) {set(anD(b)); return this;}                           // "And" without short circuit - modify in place
+    //Bool And(boolean...b) {return new Bool(anD(b));}                            // "And" without short circuit - duplicate
 
     @SafeVarargs
     final Bool anD(Supplier<Bool>...b)                                          // "And" with short circuit
@@ -160,11 +160,11 @@ public class Programming extends Test                                           
     @SafeVarargs final Bool and(Supplier<Bool>...b) {set(anD(b)); return this;} // "And" with short circuit - modify in place
     @SafeVarargs final Bool And(Supplier<Bool>...b) {return new Bool(anD(b));}  // "And" with short circuit - duplicate
 
-    Bool  Nor(boolean       ...b) {return  Or(b).flip();}                       // Not of "or"
-    Bool Nand(boolean       ...b) {return And(b).flip();}                       // Not of "and"
+    //Bool  Nor(boolean       ...b) {return  Or(b).flip();}                       // Not of "or"
+    //Bool Nand(boolean       ...b) {return And(b).flip();}                       // Not of "and"
 
-    @SafeVarargs final Bool  Nor(Supplier<Bool>...b) {return  Or(b).flip();}    // Not of short circuited "or"
-    @SafeVarargs final Bool Nand(Supplier<Bool>...b) {return And(b).flip();}    // Not of short circuited "and"
+    //@SafeVarargs final Bool  Nor(Supplier<Bool>...b) {return  Or(b).flip();}    // Not of short circuited "or"
+    //@SafeVarargs final Bool Nand(Supplier<Bool>...b) {return And(b).flip();}    // Not of short circuited "and"
 
     Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}            // Duplicate a valid boolean
 
@@ -177,6 +177,10 @@ public class Programming extends Test                                           
      }
 
     void i(Op Op, Bool    I)                                                    // Generate instruction for single boolean argument
+     {if (!ex) return;                                                          // Avoid generating code when executing directly as the amount of code generated can be large
+     }
+
+    void i(Op Op)                                                               // Generate instruction for single boolean argument
      {if (!ex) return;                                                          // Avoid generating code when executing directly as the amount of code generated can be large
      }
    }
@@ -413,9 +417,9 @@ public class Programming extends Test                                           
     final Bool b1 = P.new Bool().clear();
     final Bool b2 = P.new Bool().set();
     ok(b1.Or(  ()->{return b2;}).b() == true);
-    ok(b1.Nor (()->{return b2;}).b() == false);
+    //ok(b1.Nor (()->{return b2;}).b() == false);
     ok(b1.And (()->{return b2;}).b() == false);
-    ok(b1.Nand(()->{return b2;}).b() == true);
+    //ok(b1.Nand(()->{return b2;}).b() == true);
    }
 
   static void test_traceNames()
