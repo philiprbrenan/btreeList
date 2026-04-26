@@ -145,14 +145,12 @@ public class Programming extends Test                                           
 
     @SafeVarargs
     final Bool And(Supplier<Bool>...b)                                          // "And" with short circuit
-     {x(); boolean r = b();
-      for (int i : range(b.length))
-       {if (!r) break;
-        final Bool B = b[i].get();
-        B.x();
-        r = B.b();
+     {x(); final Bool r = new Bool(b());                                        // Start with the current value
+      for (int i : range(b.length))                                             // Test each additional value as necessary
+       {if (!r.b()) break;                                                      // Finish when we know the result
+        r.set(b[i].get());                                                      // Check additional operands
        }
-      return new Bool(r);
+      return r;
      }
     @SafeVarargs final Bool and(Supplier<Bool>...b) {set(And(b)); return this;} // "And" with short circuit - modify in place
 
