@@ -1623,7 +1623,7 @@ class Tree extends Programming                                                  
        {void Then() {R.clear();}                                                // No left sibling
         void Else()
          {final Slots L = data(left);                                           // Left sibling as slots
-          new If (L instanceof Leaf )                                           // Merging leaves
+          new If (L.isLeaf())                                                   // Merging leaves
            {void Then()
              {final Leaf l = (Leaf)L;
               final Leaf r = (Leaf)(If (Right.valid(), ()->data(Right), ()->top())); // Right leaf sibling
@@ -2044,7 +2044,7 @@ class Tree extends Programming                                                  
 
     new If (d.Flip())
      {void Then()
-       {new If (root().isLeaf() )                              // Leaf root
+       {new If (root().isLeaf() )                                               // Leaf root
          {void Then()
            {final Leaf l = (Leaf)root();
             new If (l.full().Flip())                                            // Still space in leaf root
@@ -2103,7 +2103,7 @@ class Tree extends Programming                                                  
      {void body(Int i, Bool C)
        {final Slots q = p.get().stepDown(Key);                                  // Step down
         C.set();
-        new If (q.isLeaf())                                                    // Step down to a leaf
+        new If (q.isLeaf())                                                     // Step down to a leaf
          {void Then()
            {final Leaf r = (Leaf)q;                                             // We have reached a leaf
             new If (r.full())                                                   // Split the leaf if it is full
@@ -2168,7 +2168,7 @@ class Tree extends Programming                                                  
    {final Ref<Find> f = new Ref<>();
     new If (root() != null)                                                     // Non empty tree
      {void Then()
-       {new If (root().isLeaf() )                              // The tree is one leaf
+       {new If (root().isLeaf() )                                               // The tree is one leaf
          {void Then()
            {final Leaf       l = (Leaf)root();
             final Slots.Slot i = l.locateFirstUsedSlot();
@@ -2193,7 +2193,7 @@ class Tree extends Programming                                                  
        {final Slots.Slot P = p.get().locateFirstUsedSlot();
         final Slots      q = p.get().child(P);
 
-        new If (q.isLeaf())                                                    // Step down to a leaf
+        new If (q.isLeaf())                                                     // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(P);
@@ -2246,7 +2246,7 @@ class Tree extends Programming                                                  
     new For(MaximumNumberOfLevels)                                              // Step down from branch to branch splitting as we go
      {void body(Int i, Bool C)
        {final Slots q = p.get().top();
-        new If (q.isLeaf())                                    // Step down to a leaf
+        new If (q.isLeaf())                                                     // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(l.new Slot());
