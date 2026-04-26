@@ -2,6 +2,8 @@
 // Btree with stucks implemented as distributed slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
+// Check whether node type is needed
+// Remove slots.java and other externals that are no longer needed after merge into Tree.java
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -368,8 +370,10 @@ class Tree extends Programming                                                  
       return n;
      }
 
-    Bool empty() {return memory.usedSlotsBits.empty();}                         // All bits in the corresponding bitset are unused so the Slots must be empty
-    Bool full () {return countUsed().eq(numberOfRefs);}                         // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+    Bool empty()    {return memory.usedSlotsBits.empty();}                      // All bits in the corresponding bitset are unused so the Slots must be empty
+    Bool full ()    {return countUsed().eq(numberOfRefs);}                      // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+    Bool isBranch() {return new Bool(this instanceof Branch);}                  // Is this set of slots implemented in a branch
+    Bool isLeaf()   {return new Bool(this instanceof Leaf);}                    // Is this set of slots implemented in a leaf
 
 //D2 Low level operations                                                       // Low level operations on slots
 
@@ -1350,7 +1354,7 @@ class Tree extends Programming                                                  
          }
         void Else()
          {final Int i = Slots.name();
-          R.i(If (new Bool(Slots  instanceof Branch), ()->i, ()->i.neg()));
+          R.i(If (Slots.isBranch(), ()->i, ()->i.neg()));
          }
        };
       return R;
@@ -1669,7 +1673,7 @@ class Tree extends Programming                                                  
     Slots stepDown(Key Key) {return child(locateFirstGe(Key));}                 // Step down from this branch
 
     Int count(Slots s)                                                          // Count the number of entries under this branch
-     {return If (new Bool(s instanceof Leaf), ()->s.countUsed(), ()->((Branch)s).count());
+     {return If (s.isLeaf(), ()->s.countUsed(), ()->((Branch)s).count());
      }
 
     Int count()                                                                 // Count the number of entries under this branch
@@ -1844,7 +1848,7 @@ class Tree extends Programming                                                  
    }
 
   void mergeRootNotEmpty(Key Key)                                               // Collapse the root if possible
-   {new If (new Bool(root() instanceof Leaf))                                   // Leaf root
+   {new If (root().isLeaf())                                   // Leaf root
      {void Then()
        {final Leaf l = (Leaf)root();
         new If (l.empty()) {void Then() {l.free(); root((Leaf)null);}};         // Free leaf if it is empty
@@ -1855,7 +1859,7 @@ class Tree extends Programming                                                  
          {void Then()
            {final Slots t = b.top();
             b.free();
-            new If (new Bool(t instanceof Leaf))
+            new If (t.isLeaf())
              {void Then()
                {root((Leaf)t);
                }
@@ -1868,7 +1872,7 @@ class Tree extends Programming                                                  
 
         new If (b.countUsed().eq(1))                                            // Root body is right size to collapse
          {void Then()
-           {new If (new Bool(b.top() instanceof Leaf))                          // Leaves for children
+           {new If (b.top().isLeaf())                          // Leaves for children
              {void Then()
                {final Leaf l = (Leaf)b.firstChild();
                 final Leaf r = (Leaf)b.top();
@@ -1918,7 +1922,7 @@ class Tree extends Programming                                                  
     final Ref<Find> f = new Ref<>();                                            // Find details result
     new If (r != null)                                                          // Non empty tree
      {void Then()
-       {new If (new Bool(r instanceof Leaf))                                                    // Leaf root
+       {new If (r.isLeaf())                                                    // Leaf root
          {void Then()
            {final Leaf L = (Leaf)r;
             L.up(null);
@@ -1945,7 +1949,7 @@ class Tree extends Programming                                                  
      {void body(Int i, Bool C)
        {final Slots.Slot Q = p.get().locateFirstGe(Key);
         final Slots      q = p.get().child(Q);
-        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
+        new If (q.isLeaf())                                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(Q);                                        // Parent of leaf along find path
@@ -2042,7 +2046,7 @@ class Tree extends Programming                                                  
 
     new If (d.Flip())
      {void Then()
-       {new If (new Bool(root() instanceof Leaf) )                              // Leaf root
+       {new If (root().isLeaf() )                              // Leaf root
          {void Then()
            {final Leaf l = (Leaf)root();
             new If (l.full().Flip())                                            // Still space in leaf root
@@ -2101,7 +2105,7 @@ class Tree extends Programming                                                  
      {void body(Int i, Bool C)
        {final Slots q = p.get().stepDown(Key);                                  // Step down
         C.set();
-        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
+        new If (q.isLeaf())                                                    // Step down to a leaf
          {void Then()
            {final Leaf r = (Leaf)q;                                             // We have reached a leaf
             new If (r.full())                                                   // Split the leaf if it is full
@@ -2157,7 +2161,7 @@ class Tree extends Programming                                                  
    {final Slots r = root();
     return If (new Bool(r == null),
       ()->new Int(0),
-      ()->If (new Bool(r instanceof Leaf), ()->r.countUsed(), ()->((Branch)r).count()));
+      ()->If (r.isLeaf(), ()->r.countUsed(), ()->((Branch)r).count()));
    }
 
 //D2 Navigation                                                                 // First, Last key, or find the next or prev key from a given key
@@ -2166,7 +2170,7 @@ class Tree extends Programming                                                  
    {final Ref<Find> f = new Ref<>();
     new If (root() != null)                                                     // Non empty tree
      {void Then()
-       {new If (new Bool(root() instanceof Leaf) )                              // The tree is one leaf
+       {new If (root().isLeaf() )                              // The tree is one leaf
          {void Then()
            {final Leaf       l = (Leaf)root();
             final Slots.Slot i = l.locateFirstUsedSlot();
@@ -2191,7 +2195,7 @@ class Tree extends Programming                                                  
        {final Slots.Slot P = p.get().locateFirstUsedSlot();
         final Slots      q = p.get().child(P);
 
-        new If (new Bool(q instanceof Leaf))                                                    // Step down to a leaf
+        new If (q.isLeaf())                                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(P);
@@ -2220,7 +2224,7 @@ class Tree extends Programming                                                  
    {final Ref<Find> f = new Ref<>();
     new If (root() != null)                                                     // Non empty tree
      {void Then()
-       {new If (new Bool(root() instanceof Leaf) )
+       {new If (root().isLeaf() )
          {void Then()
            {final Leaf l = (Leaf)root();
             final Int  i = l.locateLastUsedSlot().value();
@@ -2244,7 +2248,7 @@ class Tree extends Programming                                                  
     new For(MaximumNumberOfLevels)                                              // Step down from branch to branch splitting as we go
      {void body(Int i, Bool C)
        {final Slots q = p.get().top();
-        new If (new Bool(q instanceof Leaf))                                    // Step down to a leaf
+        new If (q.isLeaf())                                    // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(l.new Slot());
@@ -2435,8 +2439,8 @@ class Tree extends Programming                                                  
        {if (B.usedSlots(B.new Slot(i)).b())
          {final Slots s = B.data(B.new Slot(i));
           if (s == null) continue;
-          final Bool l = new Bool(s instanceof Leaf);
-          final Bool b = new Bool(s instanceof Branch);
+          final Bool l = s.isLeaf();
+          final Bool b = s.isBranch();
 
           if      (l.b()) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
           else if (b.b()) printBranch((Branch)s, P, level+1, Details, B, i);
@@ -2461,8 +2465,8 @@ class Tree extends Programming                                                  
        ("{"+(B.top() != null ? B.top().name() : "null")+"}");
      }
 
-    final Bool l = new Bool(B.top() instanceof Leaf);
-    final Bool b = new Bool(B.top() instanceof Branch);                         // Print top leaf
+    final Bool l = B.top().isLeaf();
+    final Bool b = B.top().isBranch();                         // Print top leaf
     if      (l.b()) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
     else if (b.b()) printBranch((Branch)B.top(), P, level+1, Details, B, null);
 
@@ -2505,7 +2509,7 @@ class Tree extends Programming                                                  
   String print(boolean Details)                                                 // Print the tree with and without linkage details
    {final Stack<StringBuilder> P = new Stack<>();
     if (root() == null) return "|\n";                                           // Empty tree
-    final Bool lr = new Bool(root() instanceof Leaf) ;
+    final Bool lr = root().isLeaf() ;
     if (lr.b()) printLeaf  ((Leaf)  root(), P, 0, Details, null, null);         // Tree is a single leaf
     else        printBranch((Branch)root(), P, 0, Details, null, null);         // Tree has one or more branches
     return printCollapsed(P);                                                   // Remove blank lines and add right fence
@@ -2539,8 +2543,8 @@ class Tree extends Programming                                                  
          {final Slots.Slot S = B.new Slot(i);
           if (B.usedSlots(S).b())
            {final Slots s = B.data(S);
-            final Bool  l = new Bool(s instanceof Leaf);
-            final Bool  b = new Bool(s instanceof Branch);
+            final Bool  l = s.isLeaf();
+            final Bool  b = s.isBranch();
 
             if      (l.b())  leaves  .push((Leaf)  s);
             else if (b.b()) {branches.push((Branch)s); scan((Branch)s);}
@@ -2550,16 +2554,16 @@ class Tree extends Programming                                                  
        };
 
       final Slots s = B.top();
-      final Bool  l = new Bool(s instanceof Leaf);
-      final Bool  b = new Bool(s instanceof Branch);
+      final Bool  l = s.isLeaf();
+      final Bool  b = s.isBranch();
       if      (l.b())  leaves  .push((Leaf)  s);
       else if (b.b()) {branches.push((Branch)s); scan((Branch)s);}
      }
 
     ListAll()                                                                   // Create lists of all theleaves and branches in the tree to assist with debugging
      {if (root() == null) return;
-      final Bool l = new Bool(root() instanceof Leaf);
-      final Bool b = new Bool(root() instanceof Branch);
+      final Bool l = root().isLeaf();
+      final Bool b = root().isBranch();
       if      (l.b())  leaves  .push((Leaf)  root());
       else if (b.b()) {branches.push((Branch)root()); scan((Branch)root());}
      }
