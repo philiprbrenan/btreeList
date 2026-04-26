@@ -133,7 +133,7 @@ public class Programming extends Test                                           
       return new Bool(r);
      }
     @SafeVarargs final Bool or(Supplier<Bool>...b) {set(oR(b)); return this;}   // "Or" with short circuit - modify in place
-    @SafeVarargs final Bool Or(Supplier<Bool>...b) {return new Bool(oR(b));}    // "Or" with short circuit - duplicate
+    @SafeVarargs final Bool Or(Supplier<Bool>...b) {return oR(b);}              // "Or" with short circuit - duplicate
 
     //Bool anD(boolean...b)                                                       // "And" without short circuit
     // {x(); boolean r = b();
@@ -158,7 +158,7 @@ public class Programming extends Test                                           
       return new Bool(r);
      }
     @SafeVarargs final Bool and(Supplier<Bool>...b) {set(anD(b)); return this;} // "And" with short circuit - modify in place
-    @SafeVarargs final Bool And(Supplier<Bool>...b) {return new Bool(anD(b));}  // "And" with short circuit - duplicate
+    @SafeVarargs final Bool And(Supplier<Bool>...b) {return anD(b);}            // "And" with short circuit - duplicate
 
     //Bool  Nor(boolean       ...b) {return  Or(b).flip();}                       // Not of "or"
     //Bool Nand(boolean       ...b) {return And(b).flip();}                       // Not of "and"
