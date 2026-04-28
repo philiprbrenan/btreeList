@@ -1,8 +1,7 @@
 //------------------------------------------------------------------------------
-// Test a java program.
+// Test a java program
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //------------------------------------------------------------------------------
-// change boolean eq() to Bool eq()
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -30,11 +29,11 @@ public class Programming extends Test                                           
 
   abstract class For                                                            // For loop
    {For(int Start, int End)                                                     // Execute the loop the specified number of times
-     {if (ex)
-       {final Int  index = new Int();
-        final Bool  cont = new Bool();
+     {final Int  index = new Int();
+      final Bool  cont = new Bool();
 
-        for(int i : range(Start, End))                                          // Iterate over the specified range
+      if (ex)
+       {for(int i : range(Start, End))                                          // Iterate over the specified range
          {index.i(i);                                                           // Set the index to each element of the specified range
           cont.clear();                                                         // Terminate unless told otherwise
           body(index, cont);                                                    // Execute the loop
@@ -42,8 +41,17 @@ public class Programming extends Test                                           
          }
        }
       else
-       {final Label start = new Label();                                        // Start of for loop code
+       {index.i(Start);                                                         // Start index
+        final Label start = new Label();                                        // Start of for loop code
         final Label   end = new Label();                                        // End of for loop code
+        cont.clear();                                                           // Terminate unless told otherwise
+        body(index, cont);                                                      // Execute the loop
+        Noto(end, cont);                                                        // Terminate the loop unless continuation requested
+        //cont.lt(index, end);                                                    // Continue if the index is in range
+        Noto(end, cont);                                                        // Terminate the loop if the index is out of range
+        index.inc();                                                            // Terminate the loop unless continuation requested
+        Goto(start);                                                            // Restart the loop
+        end.set();                                                              // End of the loop
        }
      }
 
@@ -316,6 +324,10 @@ public class Programming extends Test                                           
     public String toString()                                                    // Print the integer
      {return (n == null ? "" : n+"=")+i;
      }
+
+    void put(final String...Titles)                                             // Write the value of an integer variable
+     {say(Titles, i);
+     }
    }
 
   class Ref<T>                                                                  // A reference to an object
@@ -380,6 +392,10 @@ public class Programming extends Test                                           
       if (code.size() != N) stop("Instruction added");
      }
    }
+
+  void Goto(Label Target) {pc = Target.offset;}                                 // Goto a label unconditionally
+  void Goto(Label Target, Bool If) {if ( If.b()) pc = Target.offset;}           // Goto a label conditionally
+  void Noto(Label Target, Bool If) {if (!If.b()) pc = Target.offset;}           // Goto a label conditionally
 
 //D1 Testing                                                                    // Test expected output against got output
 
@@ -450,10 +466,22 @@ public class Programming extends Test                                           
 
   static void test_fibonnacci()
    {final Programming P = new Programming();
+    P.ex = false;
     final Int a = P.new Int(0);
     final Int b = P.new Int(1);
     final Int c = P.new Int(0);
-    final Int i = P.new Int(10);
+    final Int N = P.new Int(10);
+    P.new For(N)
+     {void body(Int Index, Bool Continue)
+       {c.i(a);
+        c.add(b);
+        a.i(b);
+        b.i(c);
+        c.put();
+        say("AAAA");
+       }
+     };
+    P.execute();
    }
 
   static void oldTests()                                                        // Tests thought to be in good shape
@@ -464,7 +492,8 @@ public class Programming extends Test                                           
    }
 
   static void newTests()                                                        // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_fibonnacci();
    }
 
   public static void main(String[] args)                                        // Test if called as a program
