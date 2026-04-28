@@ -1,94 +1,96 @@
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Test a java program
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
-//------------------------------------------------------------------------------
-package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
-
-import java.util.*;
-import java.util.function.Supplier;
-
-//D1 Construct                                                                  // Develop and test a java program to describe a chip and emulate its operation.
-
-public class Programming extends Test                                           // Develop and test a java program to describe a chip and emulate its operation.
- {final static boolean github_actions   =                                       // Whether we are on a github
-    "true".equals(System.getenv("GITHUB_ACTIONS"));
-  final static long start               = System.nanoTime();                    // Start time
-  final static boolean coverageAnalysis = false;                                // Enables coverage checks
-  final Stack<I>       code = new Stack<>();                                    // Machine code instructions
-  final Stack<Label> labels = new Stack<>();                                    // Labels for instructions in this process
-  final Bool   True = new Bool(true);                                           // Useful constants
-  final Bool  False = new Bool(false);
-
-  final int maxSteps = 999;                                                     // Number of steps permitted in code execution
-  int      nextIntId = 0;                                                       // Unique id for each Int
-  int     nextBoolId = 0;                                                       // Unique id for each Bool
-  boolean         ex = true;                                                    // Execute immediately if true else generate machine code and execute later
-  int             pc;                                                           // Program counter - set to something less than zero to stop with a return code
-
-//D1 Programming                                                                // Program structures
-
-  abstract class For                                                            // For loop
-   {For(int Start, int End)                                                     // Execute the loop the specified number of times
-     {final Int  index = new Int();
-      final Bool  cont = new Bool();
-
-      if (ex)
-       {for(int i : range(Start, End))                                          // Iterate over the specified range
-         {index.i(i);                                                           // Set the index to each element of the specified range
-          cont.clear();                                                         // Terminate unless told otherwise
-          body(index, cont);                                                    // Execute the loop
-          if (cont.Flip().b()) break;                                           // Terminate the loop unless continuation requested
-         }
-       }
-      else
-       {index.i(Start);                                                         // Start index
-        final Label start = new Label();                                        // Start of for loop code
-        final Label   end = new Label();                                        // End of for loop code
-        cont.clear();                                                           // Terminate unless told otherwise
-        body(index, cont);                                                      // Execute the loop
-        Noto(end, cont);                                                        // Terminate the loop unless continuation requested
-        //cont.lt(index, end);                                                    // Continue if the index is in range
-        Noto(end, cont);                                                        // Terminate the loop if the index is out of range
-        index.inc();                                                            // Terminate the loop unless continuation requested
-        Goto(start);                                                            // Restart the loop
-        end.set();                                                              // End of the loop
-       }
-     }
-
-    For(int End) {this(0, End);}                                                // Execute the loop the specified number of times as long as it returns true
-    For(Int End) {this(0, End.i());}                                            // Execute the loop the specified number of times as long as it returns true
-
-    abstract void body(Int Index, Bool Continue);                               // Body of the for loop - execute while in range and continuation requested
-   }
-
-  abstract class If                                                             // If statement
-   {If (boolean condition)
-     {if (condition) Then(); else Else();
-     }
-    If (Bool    condition)
-     {if (condition.b()) Then(); else Else();
-     }
-
-    abstract void Then();                                                       // Then clause
-             void Else() {}                                                     // Else clause
-   }
-
-  <T> T If(Bool Choice, Supplier<T> Then, Supplier<T> Else)                     // Choose between two alternatives
-   {final Ref<T>r = new Ref<>();
-    new If (Choice)
-     {void Then() {r.set(Then.get());}
-      void Else() {r.set(Else.get());}
-     };
-    return r.get();
-   }
-
-  class Bool                                                                    // An integer that can be passed as a parameter to a method and modified there-in
-   {boolean    i = false;                                                       // Value of the integer
-    boolean    v = false;                                                       // Whether the current value of the integer is valid or not
-    String     n = null;                                                        // An optional name for this variable
-    final int id = nextBoolId++;                                                // Unique id for Bool
-
-    enum Op {Eq, Flip, Ne, Set};                                                // Boolean operation classification by argument types
+//----------------------------------------------------------------------------------------------------------------------
+package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
+                                                                                                                        
+import java.util.*;                                                                                                     
+import java.util.function.Supplier;                                                                                     
+                                                                                                                        
+//D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
+                                                                                                                        
+public class Programming extends Test                                                                                   // Develop and test a java program to describe a chip and emulate its operation.
+ {final static boolean github_actions   =                                                                               // Whether we are on a github
+    "true".equals(System.getenv("GITHUB_ACTIONS"));                                                                     
+  final static long start               = System.nanoTime();                                                            // Start time
+  final static boolean coverageAnalysis = false;                                                                        // Enables coverage checks
+  final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
+  final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
+  final Stack<String>   put = new Stack<>();                                                                            // Output from execution
+  final Bool   True = new Bool(true);                                                                                   // Useful constants
+  final Bool  False = new Bool(false);                                                                                  
+                                                                                                                        
+  final int maxSteps = 999;                                                                                             // Number of steps permitted in code execution
+  int      nextIntId = 0;                                                                                               // Unique id for each Int
+  int     nextBoolId = 0;                                                                                               // Unique id for each Bool
+  boolean         ex = true;                                                                                            // Execute immediately if true else generate machine code and execute later
+  int             pc;                                                                                                   // Program counter - set to something less than zero to stop with a return code
+                                                                                                                        
+//D1 Programming                                                                                                        // Program structures
+                                                                                                                        
+  abstract class For                                                                                                    // For loop
+   {For(int Start, int End)                                                                                             // Execute the loop the specified number of times
+     {final Int  index = new Int();                                                                                     
+      final Bool  cont = new Bool();                                                                                    
+                                                                                                                        
+      if (ex)                                                                                                           
+       {for(int i : range(Start, End))                                                                                  // Iterate over the specified range
+         {index.i(i);                                                                                                   // Set the index to each element of the specified range
+          cont.clear();                                                                                                 // Terminate unless told otherwise
+          body(index, cont);                                                                                            // Execute the loop
+          if (cont.Flip().b()) break;                                                                                   // Terminate the loop unless continuation requested
+         }                                                                                                              
+       }                                                                                                                
+      else                                                                                                              
+       {index.i(Start);                                                                                                 // Start index
+        final Label start = new Label();                                                                                // Start of for loop code
+        final Label   end = new Label();                                                                                // End of for loop code
+        cont.clear();                                                                                                   // Terminate unless told otherwise
+        body(index, cont);                                                                                              // Execute the loop
+        index.inc();                                                                                                    // Increment lop counter
+        new I()                                                                                                         
+         {void action()                                                                                                 
+           {pc = cont.b() && index.i() < End ? start.offset : end.offset;                                               // Continue while requested and maximum number of iterations has not been  surpassed      
+           }                                                                                                            
+         };                                                                                                             
+        end.set();                                                                                                      // End of the loop
+       }                                                                                                                
+     }                                                                                                                  
+                                                                                                                        
+    For(int End) {this(0, End);}                                                                                        // Execute the loop the specified number of times as long as it returns true
+    For(Int End) {this(0, End.i());}                                                                                    // Execute the loop the specified number of times as long as it returns true
+                                                                                                                        
+    abstract void body(Int Index, Bool Continue);                                                                       // Body of the for loop - execute while in range and continuation requested
+   }                                                                                                                    
+                                                                                                                        
+  abstract class If                                                                                                     // If statement
+   {If (boolean condition)                                                                                              
+     {if (condition) Then(); else Else();                                                                               
+     }                                                                                                                  
+    If (Bool    condition)                                                                                              
+     {if (condition.b()) Then(); else Else();                                                                           
+     }                                                                                                                  
+                                                                                                                        
+    abstract void Then();                                                                                               // Then clause
+             void Else() {}                                                                                             // Else clause
+   }                                                                                                                    
+                                                                                                                        
+  <T> T If(Bool Choice, Supplier<T> Then, Supplier<T> Else)                                                             // Choose between two alternatives
+   {final Ref<T>r = new Ref<>();                                                                                        
+    new If (Choice)                                                                                                     
+     {void Then() {r.set(Then.get());}                                                                                  
+      void Else() {r.set(Else.get());}                                                                                  
+     };                                                                                                                 
+    return r.get();                                                                                                     
+   }                                                                                                                    
+                                                                                                                        
+  class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
+   {boolean    i = false;                                                                                               // Value of the integer
+    boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
+    String     n = null;                                                                                                // An optional name for this variable
+    final int id = nextBoolId++;                                                                                        // Unique id for Bool
+                                                                                                                        
+    enum Op {Eq, Flip, Ne, Set};                                                                                        // Boolean operation classification by argument types
 
     Bool      valid() {return new Bool(v);}
 
@@ -118,84 +120,84 @@ public class Programming extends Test                                           
     Bool         eq(Bool    I) {i(Op.Eq,  I); I.x(); return eq(I.i);}
     Bool         ne(Bool    I) {i(Op.Ne,  I); I.x(); return ne(I.i);}
 
-    //boolean oR(boolean...b)                                                     // "Or" with no short circuit
-    // {x(); boolean r = b();
-    //  for (int i : range(b.length))
-    //   {if (r) break;
-    //    r = b[i];
-    //   }
-    //  return r;
-    // }
-    //Bool or(boolean...b) {set(oR(b)); return this;}                             // "Or" with no short circuit - modify in place
-    //Bool Or(boolean...b) {return new Bool(oR(b));}                              // "Or" with no short circuit - duplicate
-
-    @SafeVarargs
-    final Bool Or(Supplier<Bool>...b)                                           // "Or" with short circuit
-     {x(); final Bool r = new Bool(b());                                        // Start with the current value
-      for (int i : range(b.length))                                             // Test each additional value as necessary
-       {if (r.b()) break;                                                       // Finish when we know the result
-        r.set(b[i].get());                                                      // Check additional operands
-       }
-      return r;
-     }
-    @SafeVarargs final Bool or(Supplier<Bool>...b) {set(Or(b)); return this;}   // "Or" with short circuit - modify in place
-
-    //Bool anD(boolean...b)                                                       // "And" without short circuit
-    // {x(); boolean r = b();
-    //  for (int i : range(b.length))
-    //   {if (!r) break;
-    //    r = b[i];
-    //   }
-    //  return new Bool(r);
-    // }
-    //Bool and(boolean...b) {set(anD(b)); return this;}                           // "And" without short circuit - modify in place
-    //Bool And(boolean...b) {return new Bool(anD(b));}                            // "And" without short circuit - duplicate
-
-    @SafeVarargs
-    final Bool And(Supplier<Bool>...b)                                          // "And" with short circuit
-     {x(); final Bool r = new Bool(b());                                        // Start with the current value
-      for (int i : range(b.length))                                             // Test each additional value as necessary
-       {if (!r.b()) break;                                                      // Finish when we know the result
-        r.set(b[i].get());                                                      // Check additional operands
-       }
-      return r;
-     }
-    @SafeVarargs final Bool and(Supplier<Bool>...b) {set(And(b)); return this;} // "And" with short circuit - modify in place
-
-    //Bool  Nor(boolean       ...b) {return  Or(b).flip();}                       // Not of "or"
-    //Bool Nand(boolean       ...b) {return And(b).flip();}                       // Not of "and"
-
-    //@SafeVarargs final Bool  Nor(Supplier<Bool>...b) {return  Or(b).flip();}    // Not of short circuited "or"
-    //@SafeVarargs final Bool Nand(Supplier<Bool>...b) {return And(b).flip();}    // Not of short circuited "and"
-
-    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}            // Duplicate a valid boolean
-
-    public String toString()                                                    // Print the boolean
-     {return (n == null ? "" : n+"=")+i;
-     }
-
-    void i(Op Op, boolean I)                                                    // Generate instruction for single boolean argument
-     {if (!ex) return;                                                          // Avoid generating code when executing directly as the amount of code generated can be large
-     }
-
-    void i(Op Op, Bool    I)                                                    // Generate instruction for single boolean argument
-     {if (!ex) return;                                                          // Avoid generating code when executing directly as the amount of code generated can be large
-     }
-
-    void i(Op Op)                                                               // Generate instruction for single boolean argument
-     {if (!ex) return;                                                          // Avoid generating code when executing directly as the amount of code generated can be large
-     }
-   }
-
-  class Int                                                                     // An integer that can be passed as a parameter to a method and modified there-in
-   {private int        i = 0;                                                   // Value of the integer
-    private boolean    v = false;                                               // Whether the current value of the integer is valid or not
-    private String     n = null;                                                // An optional name for this variable
-    private final int id = nextIntId++;                                         // Unique id for Int
-
-    Bool    valid() {return new Bool( v);}                                      // A valid integer
-    Bool notValid() {return new Bool(!v);}                                      // A not valid integer
-    int         i() {x(); return i;}                                            // Current value
+    //boolean oR(boolean...b)                                                                                             // "Or" with no short circuit
+    // {x(); boolean r = b();                                                                                          
+    //  for (int i : range(b.length))                                                                                  
+    //   {if (r) break;                                                                                                
+    //    r = b[i];                                                                                                    
+    //   }                                                                                                             
+    //  return r;                                                                                                      
+    // }                                                                                                               
+    //Bool or(boolean...b) {set(oR(b)); return this;}                                                                     // "Or" with no short circuit - modify in place
+    //Bool Or(boolean...b) {return new Bool(oR(b));}                                                                      // "Or" with no short circuit - duplicate
+                                                                                                                       
+    @SafeVarargs                                                                                                       
+    final Bool Or(Supplier<Bool>...b)                                                                                   // "Or" with short circuit
+     {x(); final Bool r = new Bool(b());                                                                                // Start with the current value
+      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
+       {if (r.b()) break;                                                                                               // Finish when we know the result
+        r.set(b[i].get());                                                                                              // Check additional operands
+       }                                                                                                               
+      return r;                                                                                                        
+     }                                                                                                                 
+    @SafeVarargs final Bool or(Supplier<Bool>...b) {set(Or(b)); return this;}                                           // "Or" with short circuit - modify in place
+                                                                                                                       
+    //Bool anD(boolean...b)                                                                                               // "And" without short circuit
+    // {x(); boolean r = b();                                                                                          
+    //  for (int i : range(b.length))                                                                                  
+    //   {if (!r) break;                                                                                               
+    //    r = b[i];                                                                                                    
+    //   }                                                                                                             
+    //  return new Bool(r);                                                                                            
+    // }                                                                                                               
+    //Bool and(boolean...b) {set(anD(b)); return this;}                                                                   // "And" without short circuit - modify in place
+    //Bool And(boolean...b) {return new Bool(anD(b));}                                                                    // "And" without short circuit - duplicate
+                                                                                                                       
+    @SafeVarargs                                                                                                       
+    final Bool And(Supplier<Bool>...b)                                                                                  // "And" with short circuit
+     {x(); final Bool r = new Bool(b());                                                                                // Start with the current value
+      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
+       {if (!r.b()) break;                                                                                              // Finish when we know the result
+        r.set(b[i].get());                                                                                              // Check additional operands
+       }                                                                                                               
+      return r;                                                                                                        
+     }                                                                                                                 
+    @SafeVarargs final Bool and(Supplier<Bool>...b) {set(And(b)); return this;}                                         // "And" with short circuit - modify in place
+                                                                                                                       
+    //Bool  Nor(boolean       ...b) {return  Or(b).flip();}                                                               // Not of "or"
+    //Bool Nand(boolean       ...b) {return And(b).flip();}                                                               // Not of "and"
+                                                                                                                       
+    //@SafeVarargs final Bool  Nor(Supplier<Bool>...b) {return  Or(b).flip();}                                            // Not of short circuited "or"
+    //@SafeVarargs final Bool Nand(Supplier<Bool>...b) {return And(b).flip();}                                            // Not of short circuited "and"
+                                                                                                                       
+    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}                                                    // Duplicate a valid boolean
+                                                                                                                       
+    public String toString()                                                                                            // Print the boolean
+     {return (n == null ? "" : n+"=")+i;                                                                               
+     }                                                                                                                 
+                                                                                                                       
+    void i(Op Op, boolean I)                                                                                            // Generate instruction for single boolean argument
+     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
+     }                                                                                                                 
+                                                                                                                       
+    void i(Op Op, Bool    I)                                                                                            // Generate instruction for single boolean argument
+     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
+     }                                                                                                                 
+                                                                                                                       
+    void i(Op Op)                                                                                                       // Generate instruction for single boolean argument
+     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
+     }                                                                                                                 
+   }                                                                                                                   
+                                                                                                                       
+  class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
+   {private int        i = 0;                                                                                           // Value of the integer
+    private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
+    private String     n = null;                                                                                        // An optional name for this variable
+    private final int id = nextIntId++;                                                                                 // Unique id for Int
+                                                                                                                       
+    Bool    valid() {return new Bool( v);}                                                                              // A valid integer
+    Bool notValid() {return new Bool(!v);}                                                                              // A not valid integer
+    int         i() {x(); return i;}                                                                                    // Current value
 
     Int (int I)      {i = I;   v = true;}
     Int (Int I)      {if (I != null) {i = I.i; v = I.v;}}
@@ -233,9 +235,9 @@ public class Programming extends Test                                           
     void x   ()      {if (!v) stop("Int has not been set yet");}
 
     Int ex(Ops op)
-     {switch(op)
-       {case inc -> {x(); add(1);                }
-        case dec -> {x(); sub(1);                }
+     {switch(op)                   
+       {case inc -> {x(); i++;                   }
+        case dec -> {x(); i--;                   }
         case up  -> {x(); i  <<= 1;              }
         case down-> {x(); i >>>= 1;              }
         case sqrt-> {x(); i = (int)Math.sqrt(i); }
@@ -319,87 +321,86 @@ public class Programming extends Test                                           
     Bool Ge(Int e){e.x(); return Ge(e.i);}
     Bool Gt(Int e){e.x(); return Gt(e.i);}
 
-    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}      // Duplicate a valid integer
-
-    public String toString()                                                    // Print the integer
-     {return (n == null ? "" : n+"=")+i;
-     }
-
-    void put(final String...Titles)                                             // Write the value of an integer variable
-     {say(Titles, i);
-     }
-   }
-
-  class Ref<T>                                                                  // A reference to an object
-   {T i;                                                                        // Value of the object
-    Ref()              {i = null;}                                              // Create a null reference
-    Ref(T I)           {i = I;}                                                 // Create a reference to the object
-    void set(T I)      {i = I;}                                                 // Set the refernce
-    void set(Ref<T> I) {i = I.get();}                                           // Set the refernce
-    T    get()         {return i;}                                              // Dereference the reference
-    Bool valid()       {return new Bool(i != null);}                            // Check that the refence is valid
-
-    public String toString()                                                    // Print the reference
-     {return i == null ? "null" : "ref("+i+")";
-     }
-   }
-
-  static int[]range(Int Limit) {return range(Limit.i());}                       // Range of integers
-  static boolean ok(Bool b) {return ok(b.b());}                                 // Check test results match expected results.
-
-//D1 Machine Code                                                               // Generate machine code instructions to implement the program
-
-//D2 Instruction                                                                // An instruction represents code to be executed by a process in a single clock cycle == process step
-
-  abstract class I                                                              // Instructions implement the action of a program
-   {final int instructionNumber;                                                // The number of this instruction
-    final boolean     mightJump;                                                // The instruction might cause a jump
-    final String      traceBack = traceBack();                                  // Line at which this instruction was created
-
-    final String traceBackOnOneLine()                                           // Line at which this instruction was created represented with out new lines
-     {return traceBack.replace("\n", "|").trim();
-     }
-
-    I(boolean MightJump)                                                        // Add this instruction to the code for the process
-     {instructionNumber = code.size();                                          // Number each instruction
-      mightJump = MightJump;
-      code.push(this);                                                          // Save instruction
-     }
-
-    I() {this(false);}                                                          // Add this instruction to the process's code assunming it will not jump
-
-    abstract void action();                                                     // The action to be performed by the instruction
-   }
-
-  class Label                                                                   // Label jump targets in the program
-   {int offset;                                                                 // The instruction location to which this labels applies
-    Label()    {set(); labels.push(this);}                                      // A label assigned to an instruction location
-    void set() {offset = code.size();}                                          // Reassign the label to an instruction
-   }
-
-  void execute()                                                                // Execute the current code
-   {pc = 0;
-    final int N = code.size();                                                  // Number of instructions
-    for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                      // Execute each instruction within a specified number of steps
-     {final I i = code.elementAt(pc);
-      try
-       {pc++;                                                                   // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
-        i.action();
-       }
-      catch(Exception e)
-       {stop("Exception:", e, "while executing:", traceBack(e));
-       }
-      if (code.size() != N) stop("Instruction added");
-     }
-   }
-
-  void Goto(Label Target) {pc = Target.offset;}                                 // Goto a label unconditionally
-  void Goto(Label Target, Bool If) {if ( If.b()) pc = Target.offset;}           // Goto a label conditionally
-  void Noto(Label Target, Bool If) {if (!If.b()) pc = Target.offset;}           // Goto a label conditionally
-
-//D1 Testing                                                                    // Test expected output against got output
-
-  static int testsPassed = 0, testsFailed = 0;                                  // Number of tests passed and failed
+    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}                                              // Duplicate a valid integer
+                                                                                                                        
+    public String toString()                                                                                            // Print the integer
+     {return (n == null ? "" : n+"=")+i;                                                                                
+     }                                                                                                                  
+   }                                                                                                                    
+                                                                                                                        
+  class Ref<T>                                                                                                          // A reference to an object
+   {T i;                                                                                                                // Value of the object
+    Ref()              {i = null;}                                                                                      // Create a null reference
+    Ref(T I)           {i = I;}                                                                                         // Create a reference to the object
+    void set(T I)      {i = I;}                                                                                         // Set the refernce
+    void set(Ref<T> I) {i = I.get();}                                                                                   // Set the refernce
+    T    get()         {return i;}                                                                                      // Dereference the reference
+    Bool valid()       {return new Bool(i != null);}                                                                    // Check that the refence is valid
+                                                                                                                        
+    public String toString()                                                                                            // Print the reference
+     {return i == null ? "null" : "ref("+i+")";                                                                         
+     }                                                                                                                  
+   }                                                                                                                    
+                                                                                                                        
+  static int[]range(Int Limit) {return range(Limit.i());}                                                               // Range of integers
+  static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
+                                                                                                                        
+  void put(Object...Values) {new I() {void action() {put.push(""+saySb(Values));}};}                                    // Say some values
+  String output()           {return joinLines(put)+"\n";}                                                               // Output from execution
+                                                                                                                        
+//D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
+                                                                                                                        
+//D2 Instruction                                                                                                        // An instruction represents code to be executed by a process in a single clock cycle == process step
+                                                                                                                        
+  abstract class I                                                                                                      // Instructions implement the action of a program
+   {final int instructionNumber;                                                                                        // The number of this instruction
+    final boolean     mightJump;                                                                                        // The instruction might cause a jump
+    final String      traceBack = traceBack();                                                                          // Line at which this instruction was created
+                                                                                                                        
+    final String traceBackOnOneLine()                                                                                   // Line at which this instruction was created represented with out new lines
+     {return traceBack.replace("\n", "|").trim();                                                                       
+     }                                                                                                                  
+                                                                                                                        
+    I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
+     {instructionNumber = code.size();                                                                                  // Number each instruction
+      mightJump = MightJump;                                                                                            
+      code.push(this);                                                                                                  // Save instruction
+     }                                                                                                                  
+                                                                                                                        
+    I() {this(false);}                                                                                                  // Add this instruction to the process's code assunming it will not jump
+                                                                                                                        
+    abstract void action();                                                                                             // The action to be performed by the instruction
+   }                                                                                                                    
+                                                                                                                        
+  class Label                                                                                                           // Label jump targets in the program
+   {int offset;                                                                                                         // The instruction location to which this labels applies
+    Label()    {set(); labels.push(this);}                                                                              // A label assigned to an instruction location
+    void set() {offset = code.size();}                                                                                  // Reassign the label to an instruction
+   }                                                                                                                    
+                                                                                                                        
+  void execute()                                                                                                        // Execute the current code
+   {pc = 0;                                                                                                             
+    final int N = code.size();                                                                                          // Number of instructions
+    for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
+     {final I i = code.elementAt(pc);                                                                                   
+      try                                                                                                               
+       {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
+        i.action();                                                                                                     
+       }                                                                                                                
+      catch(Exception e)                                                                                                
+       {stop("Exception:", e, "while executing:", traceBack(e));                                                        
+       }                                                                                                                
+      if (code.size() != N) stop("Instruction added during execution");                                                 
+     }                                                                                                                  
+   }                                                                                                                    
+                                                                                                                        
+  void Goto(Label Target) {pc = Target.offset;}                                                                         // Goto a label unconditionally
+  void Goto(Label Target, Bool If) {if ( If.b()) pc = Target.offset;}                                                   // Goto a label conditionally
+  void Noto(Label Target, Bool If) {if (!If.b()) pc = Target.offset;}                                                   // Goto a label conditionally
+                                                                                                                        
+//D1 Testing                                                                                                            // Test expected output against got output
+                                                                                                                        
+  static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   static void test_programming()
    {final Programming p = new Programming();
@@ -477,34 +478,47 @@ public class Programming extends Test                                           
         c.add(b);
         a.i(b);
         b.i(c);
-        c.put();
-        say("AAAA");
+        P.put(c);
+        Continue.set();
        }
      };
     P.execute();
+    //stop(P.output());
+    ok(P.output(), """
+1
+2
+3
+5
+8
+13
+21
+34
+55
+89
+""");
    }
-
-  static void oldTests()                                                        // Tests thought to be in good shape
-   {test_programming();
-    test_bool();
-    test_traceNames();
-    test_add();
-   }
-
-  static void newTests()                                                        // Tests being worked on
-   {//oldTests();
-    test_fibonnacci();
-   }
-
-  public static void main(String[] args)                                        // Test if called as a program
-   {try                                                                         // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {if (github_actions) oldTests(); else newTests();                          // Tests to run
-      testSummary();                                                            // Summarize test results
-      System.exit(testsFailed);
-     }
-    catch(Exception e)                                                          // Get a traceback in a format clickable in Geany
-     {System.err.println(e);
-      System.err.println(fullTraceBack(e));
+  
+  static void oldTests()                                                                                                // Tests thought to be in good shape
+   {test_programming();                                                                                                 
+    test_bool();                                                                                                        
+    test_traceNames();                                                                                                  
+    test_add();                                                                                                         
+    test_fibonnacci();                                                                                                  
+   }                                                                                                                    
+                                                                                                                        
+  static void newTests()                                                                                                // Tests being worked on
+   {oldTests();                                                                                                       
+   }                                                                                                                    
+                                                                                                                        
+  public static void main(String[] args)                                                                                // Test if called as a program
+   {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
+     {if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
+      testSummary();                                                                                                    // Summarize test results
+      System.exit(testsFailed);                                                                                         
+     }                                                                                                                  
+    catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
+     {System.err.println(e);                                                                                            
+      System.err.println(fullTraceBack(e));                                                                             
       System.exit(testsFailed);
      }
    }
