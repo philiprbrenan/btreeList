@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Fixed size bit set which can locate set or cleared bits in log N time
+// Fixed size bit set which can locate set or cleared bits in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                   // Btree in a block on the surface of a silicon chip.
