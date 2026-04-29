@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Test a java program
+// Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -223,7 +223,15 @@ public class Programming extends Test                                           
        }
       return r;
      }
-    @SafeVarargs final Bool and(Supplier<Bool>...b) {set(And(b)); return this;}                                         // "And" with short circuit - modify in place
+    @SafeVarargs
+    final Bool and(Supplier<Bool>...b)                                                                                  // "And" with short circuit modify target
+     {x();
+      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
+       {if (!b()) break;                                                                                                // Finish when we know the result
+        set(b[i].get());                                                                                                // Check additional operands
+       }
+      return this;
+     }
 
     //Bool  Nor(boolean       ...b) {return  Or(b).flip();}                                                               // Not of "or"
     //Bool Nand(boolean       ...b) {return And(b).flip();}                                                               // Not of "and"
