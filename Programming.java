@@ -35,14 +35,14 @@ public class Programming extends Test                                           
                                                                                                                         
       if (ex)                                                                                                           // Immediate execution
        {for(int i : range(Start, End))                                                                                  // Iterate over the specified range
-         {index.i(i);                                                                                                   // Set the index to each element of the specified range
+         {index.set(i);                                                                                                 // Set the index to each element of the specified range
           cont.clear();                                                                                                 // Terminate unless told otherwise
           body(index, cont);                                                                                            // Execute the loop
           if (cont.Flip().b()) break;                                                                                   // Terminate the loop unless continuation requested
          }                                                                                                              
        }                                                                                                                
       else                                                                                                              // Machine code
-       {index.i(Start);                                                                                                 // Start index
+       {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         cont.clear();                                                                                                   // Terminate unless told otherwise
@@ -259,11 +259,11 @@ public class Programming extends Test                                           
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
   //Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
 
-    enum Ops {X, i, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};                       // Possible integer operations 
+    enum Ops {X, set, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};                       // Possible integer operations 
 
     Int  X   ()      {return ie(Ops.X      );}                                                                          // Integer operations
-    Int  i   (int I) {return ie(Ops.i   , I);}
-    Int  i   (Int I) {return ie(Ops.i   , I);}
+    Int  set (int I) {return ie(Ops.set , I);}
+    Int  set (Int I) {return ie(Ops.set , I);}
     Int  add (int I) {return ie(Ops.add , I);}
     Int  add (Int I) {return ie(Ops.add , I);}
     Int  add2(Int I) {return ie(Ops.add2, I);}
@@ -303,7 +303,7 @@ public class Programming extends Test                                           
 
     Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
      {switch (Op)
-       {case i   -> {      i  = I;     v = true; }
+       {case set -> {      i  = I;     v = true; }
         case add -> { x(); i += I;     v = true; }
         case sub -> { x(); i -= I;     v = true; }
         case mul -> { x(); i *= I;     v = true; }
@@ -317,8 +317,8 @@ public class Programming extends Test                                           
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable 
      {switch(Op)
-       {case i  -> {i = I.i;              v = I.v; }
-        default -> {I.x(); ex(Op, I.i()); v = true;}
+       {case set -> {i = I.i;              v = I.v; }
+        default  -> {I.x(); ex(Op, I.i()); v = true;}
        }
       return this;
      }
@@ -526,10 +526,10 @@ public class Programming extends Test                                           
     final Int N = P.new Int(10);
     P.new For(N)
      {void body(Int Index, Bool Continue)
-       {c.i(a);
+       {c.set(a);
         c.add(b);
-        a.i(b);
-        b.i(c);
+        a.set(b);
+        b.set(c);
         P.put(c);
         Continue.set();
        }
@@ -559,12 +559,10 @@ public class Programming extends Test                                           
     final Int  N = P.new Int (4);
     P.new For(N)
      {void body(Int Index, Bool Continue)
-       {a.i(Index);
-        a.mod(2);
-        b.set(a);
-        P.new If (b)
-         {void Then() {c.inc();}              
-          void Else() {c.dec(); c.dec();}     
+       {a.set(Index).mod(2);
+        P.new If (b.set(a))
+         {void Then() {c.dec();}              
+          void Else() {c.inc(); c.inc();}     
          };
         P.put(c);
         Continue.set();
@@ -574,10 +572,10 @@ public class Programming extends Test                                           
     P.execute();
     //stop(P.output());
     ok(P.output(), """
--2
--1
--3
--2
+2
+1
+3
+2
 """);
    }
   
