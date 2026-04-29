@@ -110,24 +110,24 @@ public class Programming extends Test                                           
     String     n = null;                                                                                                // An optional name for this variable
     final int id = nextBoolId++;                                                                                        // Unique id for Bool
                                                                                                                         
-    enum Op {Eq, Flip, Ne, Set};                                                                                        // Boolean operation classification by argument types
+    enum Ops {Eq, Flip, Ne, Set};                                                                                       // Boolean operation classification by argument types
 
     Bool      valid() {return new Bool(v);}
 
     Bool           ()          {}
-    Bool           (boolean I) {i(Op.Set, I); i = I; v = true;}
-    Bool           (Bool    I) {i(Op.Set, I); I.x(); i = I.i; v = I.v;}
+    Bool           (boolean I) {       i = I;   v = true;}
+    Bool           (Bool    I) {I.x(); i = I.i; v = true;}
 
-    boolean       b()          {      x();               return i;}
+    boolean       b()          {x(); return i;}
     void          x()          {if (!v) stop("Bool has not been set yet");}
     Bool          X()          {v = true; return this;}
 
-    Bool        set()          {i(Op.Set,  true);  i = true;           v = true; return this;}
-    Bool        set(boolean I) {i(Op.Set,  I);     i = I;              v = true; return this;}
-    Bool        set(Bool    I) {i(Op.Set,  I);     I.x(); i = I.i;     v = I.v;  return this;}
-    Bool        set(Int     I) {i(Op.Set,  I);     I.x(); i = I.i > 0; v = I.v;  return this;}
-    Bool      clear()          {i(Op.Set,  false); i = false;          v = true; return this;}
-    Bool       flip()          {i(Op.Flip); x();   i = !i;                       return this;}
+    Bool        set()          {return ie(Ops.Set,  true); }
+    Bool        set(boolean I) {return ie(Ops.Set,  I);    }
+    Bool        set(Bool    I) {return ie(Ops.Set,  I);    }
+    Bool        set(Int     I) {return ie(Ops.Set,  I);    }
+    Bool      clear()          {return ie(Ops.Set,  false);}
+    Bool       flip()          {return ie(Ops.Flip);       }
 
     Bool        Set()          {return dup().set();}
     Bool        Set(boolean I) {return dup().set(I);}
@@ -135,11 +135,52 @@ public class Programming extends Test                                           
     Bool      Clear()          {return dup().clear();}
     Bool       Flip()          {return dup().flip();}
 
-    Bool         eq(boolean I) {i(Op.Eq,  I);   x(); return new Bool(i == I);}
-    Bool         ne(boolean I) {i(Op.Ne,  I);   x(); return new Bool(i != I);}
+    Bool         eq(boolean I) {return ie(Ops.Eq,  I);}
+    Bool         ne(boolean I) {return ie(Ops.Ne,  I);}
 
-    Bool         eq(Bool    I) {i(Op.Eq,  I); I.x(); return eq(I.i);}
-    Bool         ne(Bool    I) {i(Op.Ne,  I); I.x(); return ne(I.i);}
+    Bool         eq(Bool    I) {return ie(Ops.Eq,  I);}
+    Bool         ne(Bool    I) {return ie(Ops.Ne,  I);}
+
+    Bool ie(Ops Op)            {if (ex) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}             // Execute immediately or create an instruction for machine code to execute later
+    Bool ie(Ops Op, boolean I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Bool    I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Int     I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+
+    Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
+     {switch(Op)                   
+       {case Flip -> {x(); i = !i;                }
+        default   -> stop("Op not implemented:", Op);
+       }
+      return this;
+     }
+
+    Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
+     {switch (Op)
+       {case Set -> {i  = I; v = true; }
+        case Eq  -> {x(); i = i == I; }
+        case Ne  -> {x(); i = i != I; }
+        default  -> stop("Op not implemented:", Op);
+       }
+      return this;
+     }
+
+    Bool ex(Ops Op, Bool I)                                                                                               // Execute a monadic boolean operation on a variable 
+     {switch(Op)
+       {case Set -> {I.x(); i = I.i; v = true; }
+        case Eq  -> {x(); I.x(); i = i == I.i; }
+        case Ne  -> {x(); I.x(); i = i != I.i; }
+        default  -> stop("Op not implemented:", Op);
+       }
+      return this;
+     }
+
+    Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable 
+     {switch(Op)
+       {case Set -> {I.x(); i = I.i > 0; v = true;}
+        default  -> stop("Op not implemented:", Op);
+       }
+      return this;
+     }
 
     //boolean oR(boolean...b)                                                                                             // "Or" with no short circuit
     // {x(); boolean r = b();                                                                                          
@@ -196,26 +237,6 @@ public class Programming extends Test                                           
     public String toString()                                                                                            // Print the boolean
      {return (n == null ? "" : n+"=")+i;                                                                               
      }                                                                                                                 
-                                                                                                                       
-    void i(Op Op)                                                                                                       // Generate instruction 
-     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
-     }                                                                                                                 
-                                                                                                                       
-    void i(Op Op, boolean I)                                                                                            // Generate instruction for single boolean argument
-     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
-     }                                                                                                                 
-                                                                                                                       
-    void i(Op Op, Bool    I)                                                                                            // Generate instruction for single Bool argument
-     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
-     }                                                                                                                 
-                                                                                                                       
-    void i(Op Op, Int     I)                                                                                            // Generate instruction for single Int argument
-     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
-      switch(Op)                   
-       {case Set -> {new I() {void action() {say("CCCC");I.x(); i = I.i > 0; v = true;}};}
-        default  -> stop("Op not implemented:", Op);
-       }
-     }                                                                                                                  
    }                                                                                                                   
                                                                                                                        
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
@@ -296,8 +317,8 @@ public class Programming extends Test                                           
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable 
      {switch(Op)
-       {case i  -> {i = I.i;  v = I.v;   }
-        default -> {I.x(); ex(Op, I.i());}
+       {case i  -> {i = I.i;              v = I.v; }
+        default -> {I.x(); ex(Op, I.i()); v = true;}
        }
       return this;
      }
@@ -374,8 +395,7 @@ public class Programming extends Test                                           
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
                                                                                                                         
   void put(Object...Values) {new I() {void action() {put.push(""+saySb(Values));}};}                                    // Say some values
-  String output()           {return joinLines(put)+"\n";        
-}                                                               // Output from execution
+  String output()           {return put.size() > 0 ? joinLines(put)+"\n" : "";}                                         // Output from execution
                                                                                                                         
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
                                                                                                                         
@@ -533,31 +553,31 @@ public class Programming extends Test                                           
   static void test_mod()
    {final Programming P = new Programming();
     P.ex = false;
-    final Int  a = P.new Int();
-    final Bool c = P.new Bool();
-    final Int  N = P.new Int(10);
+    final Int  a = P.new Int ();
+    final Bool b = P.new Bool();
+    final Int  c = P.new Int (0);
+    final Int  N = P.new Int (4);
     P.new For(N)
      {void body(Int Index, Bool Continue)
        {a.i(Index);
         a.mod(2);
-        c.set(a);
-        P.put(a);
+        b.set(a);
+        P.new If (b)
+         {void Then() {c.inc();}              
+          void Else() {c.dec(); c.dec();}     
+         };
+        P.put(c);
         Continue.set();
        }
      };
+    ok(P.output(), "");
     P.execute();
-    stop(P.output());
+    //stop(P.output());
     ok(P.output(), """
-1
-2
-3
-5
-8
-13
-21
-34
-55
-89
+-2
+-1
+-3
+-2
 """);
    }
   
@@ -567,11 +587,11 @@ public class Programming extends Test                                           
     test_traceNames();                                                                                                  
     test_add();                                                                                                         
     test_fibonnacci();                                                                                                  
+    test_mod();                                                                                                  
    }                                                                                                                    
                                                                                                                         
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();                                                                                                       
-    //test_mod();                                                                                                  
    }                                                                                                                    
                                                                                                                         
   public static void main(String[] args)                                                                                // Test if called as a program
