@@ -262,9 +262,9 @@ public class Programming extends Test                                           
     Int  neg ()      {return ie(Ops.neg    );}
     Int  abs ()      {return ie(Ops.abs    );}
 
-    Int  ie  (Ops Op)        {return ex ? ex(Op   ) : in(Op   );}                                                       // Execute immediately or create an instruction for machine code to execute later
-    Int  ie  (Ops Op, int I) {return ex ? ex(Op, I) : in(Op, I);}
-    Int  ie  (Ops Op, Int I) {return ex ? ex(Op, I) : in(Op, I);}
+    Int ie(Ops Op)        {if (ex) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}                  // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op, int I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op, Int I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {switch(Op)                   
@@ -301,10 +301,6 @@ public class Programming extends Test                                           
        }
       return this;
      }
-
-    Int in(Ops op)        {new I() {void action() {ex(op)   ;}}; return this;}                                          // Generate an line integer instruction 
-    Int in(Ops op, int I) {new I() {void action() {ex(op, I);}}; return this;}
-    Int in(Ops op, Int I) {new I() {void action() {ex(op, I);}}; return this;}
 
     Int  Add (int I) {return dup().add(I);}                                                                             // Duplicate the target so that a copy is modified rather than the original integer 
     Int  Add (Int I) {return dup().add(I);}
