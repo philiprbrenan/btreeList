@@ -194,15 +194,14 @@ public class Programming extends Test                                           
     //Bool Or(boolean...b) {return new Bool(oR(b));}                                                                      // "Or" with no short circuit - duplicate
 
     @SafeVarargs
-    final Bool Or(Supplier<Bool>...b)                                                                                   // "Or" with short circuit
-     {x(); final Bool r = new Bool(b());                                                                                // Start with the current value
+    final Bool or(Supplier<Bool>...b)                                                                                   // "Or" with short circuit
+     {x();                                                                                                              // Start with the current value
       for (int i : range(b.length))                                                                                     // Test each additional value as necessary
-       {if (r.b()) break;                                                                                               // Finish when we know the result
-        r.set(b[i].get());                                                                                              // Check additional operands
+       {if (b()) break;                                                                                               // Finish when we know the result
+        set(b[i].get());                                                                                              // Check additional operands
        }
-      return r;
+      return this;
      }
-    @SafeVarargs final Bool or(Supplier<Bool>...b) {set(Or(b)); return this;}                                           // "Or" with short circuit - modify in place
 
     //Bool anD(boolean...b)                                                                                               // "And" without short circuit
     // {x(); boolean r = b();
@@ -478,8 +477,9 @@ public class Programming extends Test                                           
    {final Programming P = new Programming();
     final Bool b1 = P.new Bool().clear();
     final Bool b2 = P.new Bool().set();
-    ok(b1.Or(  ()->{return b2;}).b() == true);
+    ok(b1.or(  ()->{return b2;}).b() == true);
     //ok(b1.Nor (()->{return b2;}).b() == false);
+    b1.clear();
     ok(b1.And (()->{return b2;}).b() == false);
     //ok(b1.Nand(()->{return b2;}).b() == true);
    }
