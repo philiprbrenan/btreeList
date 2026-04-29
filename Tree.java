@@ -113,8 +113,8 @@ class Tree extends Programming                                                  
    }
 
   class Allocation extends Int                                                                                          // An allocated node that could become a leaf or a branch or a tree base
-   {Allocation(int At) {i(At);}
-    Allocation(Int At) {i(At);}
+   {Allocation(int At) {set(At);}
+    Allocation(Int At) {set(At);}
     Int at()           {return this;}
    }
 
@@ -389,20 +389,20 @@ class Tree extends Programming                                                  
 
         new If (p.notValid().and(()->{return n.valid();}))                                                              // Next free slot because no prev free slot
          {void Then()
-           {r.i(n.position().Sub(Q)); d.set();
+           {r.set(n.position().Sub(Q)); d.set();
            }
          };
         new If (d.Flip().and                                                                                            // Prev free slot because no next free slot
          (()->{return p.valid();},
           ()->{return n.notValid();}))
          {void Then()
-           {r.i(p.position().Sub(Q)); d.set();
+           {r.set(p.position().Sub(Q)); d.set();
            }
          };
         new If (d.Flip())                                                                                               // Choose nearest slot favoring lower slot if they are both the same distance away
          {void Then()
            {final Int P = p.position().Sub(Q), N = n.position().Sub(Q);                                                 // Relative positions
-            r.i(If (P.Neg().le(N), ()->P, ()->N));
+            r.set(If (P.Neg().le(N), ()->P, ()->N));
            }
          };
        }
@@ -689,7 +689,7 @@ class Tree extends Programming                                                  
        }
 
       void pos(Slot At, boolean Above, boolean Below)                                                                   // Specify the position of the location
-       {i(At.i()); above = Above; below = Below;
+       {set(At.i()); above = Above; below = Below;
        }
 
       void above(Slot At) {pos(At, true, false);}                                                                       // Their search key is above this key
@@ -1349,11 +1349,11 @@ class Tree extends Programming                                                  
      {final Int R  = new Int();
       new If (Slots == null)
        {void Then()
-         {R.i(0);
+         {R.set(0);
          }
         void Else()
          {final Int i = Slots.name();
-          R.i(If (Slots.isBranch(), ()->i, ()->i.neg()));
+          R.set(If (Slots.isBranch(), ()->i, ()->i.neg()));
          }
        };
       return R;
