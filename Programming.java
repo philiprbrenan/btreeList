@@ -19,12 +19,15 @@ public class Programming extends Test                                           
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
   final Bool   True = new Bool(true);                                                                                   // Useful constants
   final Bool  False = new Bool(false);
+  final boolean ex;                                                                                                     // Execute immediately if true else generate machine code and execute later
 
   final int maxSteps = 999;                                                                                             // Number of steps permitted in code execution
   int      nextIntId = 0;                                                                                               // Unique id for each Int
   int     nextBoolId = 0;                                                                                               // Unique id for each Bool
-  boolean         ex = true;                                                                                            // Execute immediately if true else generate machine code and execute later
   int             pc;                                                                                                   // Program counter - set to something less than zero to stop with a return code
+
+  Programming()           {this(true);}                                                                                 // Create a program which executes as it is written
+  Programming(boolean Ex) {ex = Ex;}                                                                                    // Create a program as a list of instructins which are executed later
 
 //D1 Programming                                                                                                        // Program structures
 
@@ -391,7 +394,8 @@ public class Programming extends Test                                           
    }
 
   void execute()                                                                                                        // Execute the current code
-   {pc = 0;
+   {if (ex) return;                                                                                                     // The code has already been executed
+    pc = 0;
     final int N = code.size();                                                                                          // Number of instructions
     for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
@@ -466,8 +470,7 @@ public class Programming extends Test                                           
    }
 
   static void test_add()
-   {final Programming P = new Programming();
-    P.ex = false;
+   {final Programming P = new Programming(false);
     final Int a = P.new Int(1);
     final Int b = P.new Int(2);
     final Int c = P.new Int(0);
@@ -479,8 +482,7 @@ public class Programming extends Test                                           
    }
 
   static void test_fibonnacci()
-   {final Programming P = new Programming();
-    P.ex = false;
+   {final Programming P = new Programming(false);
     final Int a = P.new Int(0);
     final Int b = P.new Int(1);
     final Int c = P.new Int(0);
@@ -512,8 +514,7 @@ public class Programming extends Test                                           
    }
 
   static void test_mod()
-   {final Programming P = new Programming();
-    P.ex = false;
+   {final Programming P = new Programming(false);
     final Int  a = P.new Int ();
     final Bool b = P.new Bool();
     final Int  c = P.new Int (0);
