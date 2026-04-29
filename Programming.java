@@ -48,7 +48,7 @@ public class Programming extends Test                                           
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment lop counter
-        new I()
+        new I(true)
          {void action()
            {pc = cont.b() && index.i() < End ? start.offset : end.offset;                                               // Continue while requested and maximum number of iterations has not been  surpassed
            }
@@ -74,13 +74,13 @@ public class Programming extends Test                                           
      else                                                                                                               // Machine code
        {final Label lse = new Label();                                                                                  // Start of else
         final Label end = new Label();                                                                                  // End of if
-        new I()                                                                                                         // Jump to else if condition is false
+        new I(true)                                                                                                     // Jump to else if condition is false
          {void action()
            {if (!Condition.b()) pc = lse.offset;
            }
          };
         Then();                                                                                                         // Then body
-        new I()                                                                                                         // Jump over else to end
+        new I(true)                                                                                                     // Jump over else to end
          {void action()
            {pc = end.offset;
            }
@@ -164,7 +164,7 @@ public class Programming extends Test                                           
       return this;
      }
 
-    Bool ex(Ops Op, Bool I)                                                                                               // Execute a monadic boolean operation on a variable
+    Bool ex(Ops Op, Bool I)                                                                                             // Execute a monadic boolean operation on a variable
      {switch(Op)
        {case set -> {I.x(); i = I.i; v = true; }
         case eq  -> {x(); I.x(); i = i == I.i; }
@@ -186,8 +186,8 @@ public class Programming extends Test                                           
     final Bool or(Supplier<Bool>...b)                                                                                   // "Or" with short circuit
      {x();                                                                                                              // Start with the current value
       for (int i : range(b.length))                                                                                     // Test each additional value as necessary
-       {if (b()) break;                                                                                               // Finish when we know the result
-        set(b[i].get());                                                                                              // Check additional operands
+       {if (b()) break;                                                                                                 // Finish when we know the result
+        set(b[i].get());                                                                                                // Check additional operands
        }
       return this;
      }
@@ -202,6 +202,7 @@ public class Programming extends Test                                           
        }
       return r;
      }
+
     @SafeVarargs
     final Bool and(Supplier<Bool>...b)                                                                                  // "And" with short circuit modify target
      {x();
@@ -214,9 +215,7 @@ public class Programming extends Test                                           
 
     Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}                                                    // Duplicate a valid boolean
 
-    public String toString()                                                                                            // Print the boolean
-     {return (n == null ? "" : n+"=")+i;
-     }
+    public String toString() {return (n == null ? "" : n+"=")+i;}                                                       // Print the boolean
    }
 
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
@@ -235,9 +234,7 @@ public class Programming extends Test                                           
     Int      ()      {}
 
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
-  //Int  max (Int I) {        I.x(); max(I.i);      return mc("max");}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
-  //Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
 
     enum Ops {X, abs, add, add2, dec, div, down, inc, max, min, mod, mul, neg, set, sqrt, sub, up};                     // Possible integer operations
 
@@ -336,20 +333,6 @@ public class Programming extends Test                                           
     Bool ge(Int e){e.x(); return ge(e.i);}
     Bool gt(Int e){e.x(); return gt(e.i);}
 
-    //Bool Eq(int e){  x(); return new Bool(eq(e));}
-    //Bool Ne(int e){  x(); return new Bool(ne(e));}
-    //Bool Le(int e){  x(); return new Bool(le(e));}
-    //Bool Lt(int e){  x(); return new Bool(lt(e));}
-    //Bool Ge(int e){  x(); return new Bool(ge(e));}
-    //Bool Gt(int e){  x(); return new Bool(gt(e));}
-    //
-    //Bool Eq(Int e){e.x(); return Eq(e.i);}
-    //Bool Ne(Int e){e.x(); return Ne(e.i);}
-    //Bool Le(Int e){e.x(); return Le(e.i);}
-    //Bool Lt(Int e){e.x(); return Lt(e.i);}
-    //Bool Ge(Int e){e.x(); return Ge(e.i);}
-    //Bool Gt(Int e){e.x(); return Gt(e.i);}
-
     Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}                                              // Duplicate a valid integer
 
     public String toString()                                                                                            // Print the integer
@@ -396,7 +379,7 @@ public class Programming extends Test                                           
       code.push(this);                                                                                                  // Save instruction
      }
 
-    I() {this(false);}                                                                                                  // Add this instruction to the process's code assunming it will not jump
+    I() {this(false);}                                                                                                  // Add this instruction to the process's code assuning it will not jump
 
     abstract void action();                                                                                             // The action to be performed by the instruction
    }
