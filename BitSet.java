@@ -352,7 +352,7 @@ abstract public class BitSet extends Programming                                
                 K.set();                                                        // Continue the loop
                }
              };
-            n.i(c); C.clear();                                                  // Found the next element
+            n.set(c); C.clear();                                                  // Found the next element
            }
           void Else()
            {moveDownOneLayer(b, p, w);
@@ -387,7 +387,7 @@ abstract public class BitSet extends Programming                                
                     K.set();
                    }
                  };
-                R.i(B);                                                         // Save the result
+                R.set(B);                                                         // Save the result
                 C.clear();                                                      // Finish the loop
                }
               void Else()
@@ -439,7 +439,7 @@ abstract public class BitSet extends Programming                                
         final Pos q = new Pos(b.Inc());
         new If (getBit(q).Flip())                                               // Next bit is zero
          {void Then()
-           {R.i(q.i());                                                         // Location of next bit
+           {R.set(q.i());                                                         // Location of next bit
            }
           void Else()
            {if (oneTreeBit) return;                                             // No more bits to check because the bitset if trivially small
@@ -464,7 +464,7 @@ abstract public class BitSet extends Programming                                
                            }
                          };
                         final Int P = new Int(B.Add(B));                        // Position in parent layer
-                        R.i(P.Add(getBit(new Pos(P)).b() ? 1 : 0));             // Next zero bit from actual bits
+                        R.set(P.Add(getBit(new Pos(P)).b() ? 1 : 0));             // Next zero bit from actual bits
                         C.clear();
                        }
                       void Else()
@@ -493,7 +493,7 @@ abstract public class BitSet extends Programming                                
      {void Then()
        {new If (new Bool(getBit(new Pos(b.Dec()))).flip())                      // Prev bit is zero
          {void Then()
-           {R.i(b.Dec());
+           {R.set(b.Dec());
            }
           void Else()
            {if (oneTreeBit) return;                                             // No more bits to check
@@ -522,7 +522,7 @@ abstract public class BitSet extends Programming                                
                          };
                         final Int P = new Int(B.Add(B));                        // Parent row bits - low position
                         final Int Q = new Int(P.dup().inc());                   // Parent row bits - high position
-                        R.i(P.add(!getBit(new Pos(Q)).b() ? 1 : 0));            // Next zero bit from actual bits
+                        R.set(P.add(!getBit(new Pos(Q)).b() ? 1 : 0));            // Next zero bit from actual bits
                         C.clear();
                        }
                      };
@@ -600,7 +600,7 @@ abstract public class BitSet extends Programming                                
      }
 
     if (one && zero)                                                            // Print zero search tree block if both one and zero bit trees are present
-     {r.i(bitSize2);
+     {r.set(bitSize2);
       s.append("Zero:\n");
       for   (int i : range(1, bitSize))                                         // Each level
        {s.append(f("%4d %4d %4d |", i, p.i(), r.i()));
