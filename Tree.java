@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// Btree with stucks implemented as distributed slots.
+// Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //------------------------------------------------------------------------------
 // redistribute(): block out a range like a perl array to allow rapid unshift and push operations while limiting the sizeo of the gap between adjacent elements to make binary search faster.
@@ -1101,7 +1101,7 @@ class Tree extends Programming                                                  
        {void body(Int i, Bool C)
          {new If (usedSlots(new Slot(i)))                                       // Used slot
            {void Then()
-             {new If (p.Eq(splitSize()-1).or(()->{return p.Eq(splitSize());}))  // Accumulate splitting key as last on left and first on right of split
+             {new If (p.eq(splitSize()-1).or(()->{return p.eq(splitSize());}))  // Accumulate splitting key as last on left and first on right of split
                {void Then()
                  {k.add(keys(new Slot(i)).value());
                  }
