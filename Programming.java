@@ -224,9 +224,10 @@ public class Programming extends Test                                           
     private String     n = null;                                                                                        // An optional name for this variable
     private final int id = nextIntId++;                                                                                 // Unique id for Int
                                                                                                                        
-    Bool    valid() {return new Bool( v);}                                                                              // A valid integer
-    Bool notValid() {return new Bool(!v);}                                                                              // A not valid integer
-    int         i() {x(); return i;}                                                                                    // Current value
+    Bool    valid()  {return new Bool( v);}                                                                             // A valid integer
+    Bool notValid()  {return new Bool(!v);}                                                                             // A not valid integer
+    int         i()  {x(); return i;}                                                                                   // Current value
+    void x       ()  {if (!v) stop("Int has not been set yet");}                                                        // Confirm that the integer has a value 
 
     Int (int I)      {i = I;   v = true;}
     Int (Int I)      {if (I != null) {i = I.i; v = I.v;}}
@@ -237,9 +238,9 @@ public class Programming extends Test                                           
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
   //Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
 
-    enum Ops {X, i, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};
+    enum Ops {X, i, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};                       // Possible integer operations 
 
-    Int  X   ()      {return ie(Ops.X      );}
+    Int  X   ()      {return ie(Ops.X      );}                                                                          // Integer operations
     Int  i   (int I) {return ie(Ops.i   , I);}
     Int  i   (Int I) {return ie(Ops.i   , I);}
     Int  add (int I) {return ie(Ops.add , I);}
@@ -261,13 +262,11 @@ public class Programming extends Test                                           
     Int  neg ()      {return ie(Ops.neg    );}
     Int  abs ()      {return ie(Ops.abs    );}
 
-    void x   ()      {if (!v) stop("Int has not been set yet");}
-
-    Int  ie  (Ops Op)        {return ex ? ex(Op   ) : in(Op   );}
+    Int  ie  (Ops Op)        {return ex ? ex(Op   ) : in(Op   );}                                                       // Execute immediately or create an instruction for machine code to execute later
     Int  ie  (Ops Op, int I) {return ex ? ex(Op, I) : in(Op, I);}
     Int  ie  (Ops Op, Int I) {return ex ? ex(Op, I) : in(Op, I);}
 
-    Int ex(Ops Op)
+    Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {switch(Op)                   
        {case inc -> {x(); i++;                   }
         case dec -> {x(); i--;                   }
@@ -281,7 +280,7 @@ public class Programming extends Test                                           
       return this;
      }
 
-    Int ex(Ops Op, int I)
+    Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
      {switch (Op)
        {case i   -> {      i  = I;     v = true; }
         case add -> { x(); i += I;     v = true; }
@@ -295,7 +294,7 @@ public class Programming extends Test                                           
       return this;
      }
 
-    Int ex(Ops Op, Int I)
+    Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable 
      {switch(Op)
        {case i  -> {i = I.i;  v = I.v;   }
         default -> {I.x(); ex(Op, I.i());}
@@ -303,11 +302,11 @@ public class Programming extends Test                                           
       return this;
      }
 
-    Int in(Ops op)        {new I() {void action() {ex(op)   ;}}; return this;}
+    Int in(Ops op)        {new I() {void action() {ex(op)   ;}}; return this;}                                          // Generate an line integer instruction 
     Int in(Ops op, int I) {new I() {void action() {ex(op, I);}}; return this;}
     Int in(Ops op, Int I) {new I() {void action() {ex(op, I);}}; return this;}
 
-    Int  Add (int I) {return dup().add(I);}
+    Int  Add (int I) {return dup().add(I);}                                                                             // Duplicate the target so that a copy is modified rather than the original integer 
     Int  Add (Int I) {return dup().add(I);}
     Int  Add2(Int I) {return dup().add2(I);}
     Int  Sub (int I) {return dup().sub(I);}
@@ -326,7 +325,7 @@ public class Programming extends Test                                           
     Int  Neg()       {return dup().neg();}
     Int  Abs()       {return dup().abs();}
 
-    Bool eq(int e){  x(); return new Bool(i == e);}
+    Bool eq(int e){  x(); return new Bool(i == e);}                                                                     // Comparisons with a constant integer  
     Bool ne(int e){  x(); return new Bool(i != e);}
     Bool le(int e){  x(); return new Bool(i <= e);}
     Bool lt(int e){  x(); return new Bool(i <  e);}
@@ -334,25 +333,25 @@ public class Programming extends Test                                           
     Bool gt(int e){  x(); return new Bool(i >  e);}
 
     Bool eq(Int e){e.x(); return eq(e.i);}
-    Bool ne(Int e){e.x(); return ne(e.i);}
+    Bool ne(Int e){e.x(); return ne(e.i);}                                                                              // Comparisons with a variable integer
     Bool le(Int e){e.x(); return le(e.i);}
     Bool lt(Int e){e.x(); return lt(e.i);}
     Bool ge(Int e){e.x(); return ge(e.i);}
     Bool gt(Int e){e.x(); return gt(e.i);}
 
-    Bool Eq(int e){  x(); return new Bool(eq(e));}
-    Bool Ne(int e){  x(); return new Bool(ne(e));}
-    Bool Le(int e){  x(); return new Bool(le(e));}
-    Bool Lt(int e){  x(); return new Bool(lt(e));}
-    Bool Ge(int e){  x(); return new Bool(ge(e));}
-    Bool Gt(int e){  x(); return new Bool(gt(e));}
-
-    Bool Eq(Int e){e.x(); return Eq(e.i);}
-    Bool Ne(Int e){e.x(); return Ne(e.i);}
-    Bool Le(Int e){e.x(); return Le(e.i);}
-    Bool Lt(Int e){e.x(); return Lt(e.i);}
-    Bool Ge(Int e){e.x(); return Ge(e.i);}
-    Bool Gt(Int e){e.x(); return Gt(e.i);}
+    //Bool Eq(int e){  x(); return new Bool(eq(e));}
+    //Bool Ne(int e){  x(); return new Bool(ne(e));}
+    //Bool Le(int e){  x(); return new Bool(le(e));}
+    //Bool Lt(int e){  x(); return new Bool(lt(e));}
+    //Bool Ge(int e){  x(); return new Bool(ge(e));}
+    //Bool Gt(int e){  x(); return new Bool(gt(e));}
+    //
+    //Bool Eq(Int e){e.x(); return Eq(e.i);}
+    //Bool Ne(Int e){e.x(); return Ne(e.i);}
+    //Bool Le(Int e){e.x(); return Le(e.i);}
+    //Bool Lt(Int e){e.x(); return Lt(e.i);}
+    //Bool Ge(Int e){e.x(); return Ge(e.i);}
+    //Bool Gt(Int e){e.x(); return Gt(e.i);}
 
     Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}                                              // Duplicate a valid integer
                                                                                                                         
