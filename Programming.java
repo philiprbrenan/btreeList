@@ -33,7 +33,7 @@ public class Programming extends Test                                           
      {final Int  index = new Int();                                                                                     
       final Bool  cont = new Bool();                                                                                    
                                                                                                                         
-      if (ex)                                                                                                           
+      if (ex)                                                                                                           // Immediate execution
        {for(int i : range(Start, End))                                                                                  // Iterate over the specified range
          {index.i(i);                                                                                                   // Set the index to each element of the specified range
           cont.clear();                                                                                                 // Terminate unless told otherwise
@@ -41,7 +41,7 @@ public class Programming extends Test                                           
           if (cont.Flip().b()) break;                                                                                   // Terminate the loop unless continuation requested
          }                                                                                                              
        }                                                                                                                
-      else                                                                                                              
+      else                                                                                                              // Machine code
        {index.i(Start);                                                                                                 // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
@@ -64,11 +64,31 @@ public class Programming extends Test                                           
    }                                                                                                                    
                                                                                                                         
   abstract class If                                                                                                     // If statement
-   {If (boolean condition)                                                                                              
-     {if (condition) Then(); else Else();                                                                               
+   {If (boolean Condition)                                                                                              // A constant that selects code at compile time                                                                                          
+     {if (Condition) Then(); else Else();                                                                               
      }                                                                                                                  
-    If (Bool    condition)                                                                                              
-     {if (condition.b()) Then(); else Else();                                                                           
+    If (Bool    Condition)                                                                                              
+     {if (ex)                                                                                                           // Immediate execution
+       {if (Condition.b()) Then(); else Else();                                                                           
+       }                                                                                                                  
+     else                                                                                                               // Machine code
+       {final Label lse = new Label();                                                                                  // Start of else
+        final Label end = new Label();                                                                                  // End of if
+        new I()                                                                                                         // Jump to else if condition is false            
+         {void action()                                                                                                 
+           {if (!Condition.b()) pc = lse.offset;                                                                        
+           }                                                                                                            
+         };                                                                                                             
+        Then();                                                                                                         // Then body
+        new I()                                                                                                         // Jump over else to end
+         {void action()                                                                                                 
+           {pc = end.offset;                                                                                            
+           }                                                                                                            
+         };      
+        lse.set();                                                                                                      // Start of else
+        Else();                                                                                                         // Else body
+        end.set();                                                                                                      // End of the loop
+       }                                                                                                                  
      }                                                                                                                  
                                                                                                                         
     abstract void Then();                                                                                               // Then clause
@@ -102,11 +122,12 @@ public class Programming extends Test                                           
     void          x()          {if (!v) stop("Bool has not been set yet");}
     Bool          X()          {v = true; return this;}
 
-    Bool        set()          {i(Op.Set,  true);  i = true;  v = true;     return this;}
-    Bool        set(boolean I) {i(Op.Set,  I);     i = I;     v = true;     return this;}
-    Bool        set(Bool    I) {i(Op.Set,  I);     I.x(); i = I.i; v = I.v; return this;}
-    Bool      clear()          {i(Op.Set,  false); i = false; v = true;     return this;}
-    Bool       flip()          {i(Op.Flip); x();   i = !i;                  return this;}
+    Bool        set()          {i(Op.Set,  true);  i = true;           v = true; return this;}
+    Bool        set(boolean I) {i(Op.Set,  I);     i = I;              v = true; return this;}
+    Bool        set(Bool    I) {i(Op.Set,  I);     I.x(); i = I.i;     v = I.v;  return this;}
+    Bool        set(Int     I) {i(Op.Set,  I);     I.x(); i = I.i > 0; v = I.v;  return this;}
+    Bool      clear()          {i(Op.Set,  false); i = false;          v = true; return this;}
+    Bool       flip()          {i(Op.Flip); x();   i = !i;                       return this;}
 
     Bool        Set()          {return dup().set();}
     Bool        Set(boolean I) {return dup().set(I);}
@@ -176,17 +197,25 @@ public class Programming extends Test                                           
      {return (n == null ? "" : n+"=")+i;                                                                               
      }                                                                                                                 
                                                                                                                        
+    void i(Op Op)                                                                                                       // Generate instruction 
+     {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
+     }                                                                                                                 
+                                                                                                                       
     void i(Op Op, boolean I)                                                                                            // Generate instruction for single boolean argument
      {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
      }                                                                                                                 
                                                                                                                        
-    void i(Op Op, Bool    I)                                                                                            // Generate instruction for single boolean argument
+    void i(Op Op, Bool    I)                                                                                            // Generate instruction for single Bool argument
      {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
      }                                                                                                                 
                                                                                                                        
-    void i(Op Op)                                                                                                       // Generate instruction for single boolean argument
+    void i(Op Op, Int     I)                                                                                            // Generate instruction for single Int argument
      {if (!ex) return;                                                                                                  // Avoid generating code when executing directly as the amount of code generated can be large
-     }                                                                                                                 
+      switch(Op)                   
+       {case Set -> {new I() {void action() {say("CCCC");I.x(); i = I.i > 0; v = true;}};}
+        default  -> stop("Op not implemented:", Op);
+       }
+     }                                                                                                                  
    }                                                                                                                   
                                                                                                                        
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
@@ -210,32 +239,36 @@ public class Programming extends Test                                           
 
     enum Ops {X, i, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};
 
-    Int  X   ()      {return ex ? ex(Ops.X      ) : in(Ops.X      );}
-    Int  i   (int I) {return ex ? ex(Ops.i   , I) : in(Ops.i   , I);}
-    Int  i   (Int I) {return ex ? ex(Ops.i   , I) : in(Ops.i   , I);}
-    Int  add (int I) {return ex ? ex(Ops.add , I) : in(Ops.add , I);}
-    Int  add (Int I) {return ex ? ex(Ops.add , I) : in(Ops.add , I);}
-    Int  add2(Int I) {return ex ? ex(Ops.add2, I) : in(Ops.add2, I);}
-    Int  sub (int I) {return ex ? ex(Ops.sub , I) : in(Ops.sub , I);}
-    Int  sub (Int I) {return ex ? ex(Ops.sub , I) : in(Ops.sub , I);}
-    Int  mul (int I) {return ex ? ex(Ops.mul , I) : in(Ops.mul , I);}
-    Int  mul (Int I) {return ex ? ex(Ops.mul , I) : in(Ops.mul , I);}
-    Int  div (int I) {return ex ? ex(Ops.div , I) : in(Ops.div , I);}
-    Int  div (Int I) {return ex ? ex(Ops.div , I) : in(Ops.div , I);}
-    Int  mod (int I) {return ex ? ex(Ops.mod , I) : in(Ops.mod , I);}
-    Int  mod (Int I) {return ex ? ex(Ops.mod , I) : in(Ops.mod , I);}
-    Int  inc ()      {return ex ? ex(Ops.inc    ) : in(Ops.inc    );}
-    Int  dec ()      {return ex ? ex(Ops.dec    ) : in(Ops.dec    );}
-    Int  up  ()      {return ex ? ex(Ops.up     ) : in(Ops.up     );}
-    Int  down()      {return ex ? ex(Ops.down   ) : in(Ops.down   );}
-    Int  sqrt()      {return ex ? ex(Ops.sqrt   ) : in(Ops.sqrt   );}
-    Int  neg ()      {return ex ? ex(Ops.neg    ) : in(Ops.neg    );}
-    Int  abs ()      {return ex ? ex(Ops.abs    ) : in(Ops.abs    );}
+    Int  X   ()      {return ie(Ops.X      );}
+    Int  i   (int I) {return ie(Ops.i   , I);}
+    Int  i   (Int I) {return ie(Ops.i   , I);}
+    Int  add (int I) {return ie(Ops.add , I);}
+    Int  add (Int I) {return ie(Ops.add , I);}
+    Int  add2(Int I) {return ie(Ops.add2, I);}
+    Int  sub (int I) {return ie(Ops.sub , I);}
+    Int  sub (Int I) {return ie(Ops.sub , I);}
+    Int  mul (int I) {return ie(Ops.mul , I);}
+    Int  mul (Int I) {return ie(Ops.mul , I);}
+    Int  div (int I) {return ie(Ops.div , I);}
+    Int  div (Int I) {return ie(Ops.div , I);}
+    Int  mod (int I) {return ie(Ops.mod , I);}
+    Int  mod (Int I) {return ie(Ops.mod , I);}
+    Int  inc ()      {return ie(Ops.inc    );}
+    Int  dec ()      {return ie(Ops.dec    );}
+    Int  up  ()      {return ie(Ops.up     );}
+    Int  down()      {return ie(Ops.down   );}
+    Int  sqrt()      {return ie(Ops.sqrt   );}
+    Int  neg ()      {return ie(Ops.neg    );}
+    Int  abs ()      {return ie(Ops.abs    );}
 
     void x   ()      {if (!v) stop("Int has not been set yet");}
 
-    Int ex(Ops op)
-     {switch(op)                   
+    Int  ie  (Ops Op)        {return ex ? ex(Op   ) : in(Op   );}
+    Int  ie  (Ops Op, int I) {return ex ? ex(Op, I) : in(Op, I);}
+    Int  ie  (Ops Op, Int I) {return ex ? ex(Op, I) : in(Op, I);}
+
+    Int ex(Ops Op)
+     {switch(Op)                   
        {case inc -> {x(); i++;                   }
         case dec -> {x(); i--;                   }
         case up  -> {x(); i  <<= 1;              }
@@ -243,13 +276,13 @@ public class Programming extends Test                                           
         case sqrt-> {x(); i = (int)Math.sqrt(i); }
         case neg -> {x(); i = -i;                }
         case abs -> {x(); i = i < 0 ? -i : i;    }
-        default  -> stop("Op not implemented:", op);
+        default  -> stop("Op not implemented:", Op);
        }
       return this;
      }
 
-    Int ex(Ops op, int I)
-     {switch (op)
+    Int ex(Ops Op, int I)
+     {switch (Op)
        {case i   -> {      i  = I;     v = true; }
         case add -> { x(); i += I;     v = true; }
         case sub -> { x(); i -= I;     v = true; }
@@ -257,15 +290,15 @@ public class Programming extends Test                                           
         case div -> { x(); i /= I;     v = true; }
         case mod -> { x(); i %= I;     v = true; }
         case add2-> { x(); i += I + I; v = true; }
-        default  -> stop("Op not implemented:", op);
+        default  -> stop("Op not implemented:", Op);
        }
       return this;
      }
 
-    Int ex(Ops op, Int I)
-     {switch(op)
+    Int ex(Ops Op, Int I)
+     {switch(Op)
        {case i  -> {i = I.i;  v = I.v;   }
-        default -> {I.x(); ex(op, I.i());}
+        default -> {I.x(); ex(Op, I.i());}
        }
       return this;
      }
@@ -346,7 +379,8 @@ public class Programming extends Test                                           
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
                                                                                                                         
   void put(Object...Values) {new I() {void action() {put.push(""+saySb(Values));}};}                                    // Say some values
-  String output()           {return joinLines(put)+"\n";}                                                               // Output from execution
+  String output()           {return joinLines(put)+"\n";        
+}                                                               // Output from execution
                                                                                                                         
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
                                                                                                                         
@@ -367,7 +401,8 @@ public class Programming extends Test                                           
       code.push(this);                                                                                                  // Save instruction
      }                                                                                                                  
                                                                                                                         
-    I() {this(false);}                                                                                                  // Add this instruction to the process's code assunming it will not jump
+    I() {this(false);}                                         
+                                                                 // Add this instruction to the process's code assunming it will not jump
                                                                                                                         
     abstract void action();                                                                                             // The action to be performed by the instruction
    }                                                                                                                    
@@ -383,7 +418,8 @@ public class Programming extends Test                                           
     final int N = code.size();                                                                                          // Number of instructions
     for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);                                                                                   
-      try                                                                                                               
+      try                                                      
+                                                                 
        {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         i.action();                                                                                                     
        }                                                                                                                
@@ -436,7 +472,8 @@ public class Programming extends Test                                           
   static void test_traceNames()
    {class A
      {void a()
-       {class B
+       {class B                                             
+
          {void b()
            {if (github_actions)
              {ok(traceNamesString(), "main.oldTests.test_traceNames.a.b");
@@ -497,6 +534,37 @@ public class Programming extends Test                                           
 89
 """);
    }
+
+  static void test_mod()
+   {final Programming P = new Programming();
+    P.ex = false;
+    final Int  a = P.new Int();
+    final Bool c = P.new Bool();
+    final Int  N = P.new Int(10);
+    P.new For(N)
+     {void body(Int Index, Bool Continue)
+       {a.i(Index);
+        a.mod(2);
+        c.set(a);
+        P.put(a);
+        Continue.set();
+       }
+     };
+    P.execute();
+    stop(P.output());
+    ok(P.output(), """
+1
+2
+3
+5
+8
+13
+21
+34
+55
+89
+""");
+   }
   
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();                                                                                                 
@@ -508,6 +576,7 @@ public class Programming extends Test                                           
                                                                                                                         
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();                                                                                                       
+    //test_mod();                                                                                                  
    }                                                                                                                    
                                                                                                                         
   public static void main(String[] args)                                                                                // Test if called as a program
