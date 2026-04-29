@@ -1,8 +1,8 @@
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
-//------------------------------------------------------------------------------
-// redistribute(): block out a range like a perl array to allow rapid unshift and push operations while limiting the sizeo of the gap between adjacent elements to make binary search faster.
+//----------------------------------------------------------------------------------------------------------------------
+// redistribute(): block out a range like a perl array to allow rapid unshift and push operations while limiting the size of the gap between adjacent elements to make binary search faster.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -713,10 +713,10 @@ class Tree extends Programming                                                  
            {final Ref<Slot> a = new Ref<>(locateFirstUsedSlot());                                                       // Lower limit
             final Ref<Slot> b = new Ref<>(locateLastUsedSlot ());                                                       // Upper limit
             final Bool      c = new Bool().set();                                                                       // Continue the search unless set
-            new If (c.And(()->{return a.get().eq(Key);})) {void Then() {c.clear(); found(a.get());            }};                                         // Found at the start of the range
-            new If (c.And(()->{return b.get().eq(Key);})) {void Then() {c.clear(); found(b.get());            }};                                         // Found at the end of the range
-            new If (c.And(()->{return a.get().le(Key);})) {void Then() {c.clear(); below(a.get()); all = true;}};                                         // Smaller than any key
-            new If (c.And(()->{return b.get().gt(Key);})) {void Then() {c.clear(); above(b.get()); all = true;}};                                         // Greater than any key
+            new If (c.And(()->{return a.get().eq(Key);})) {void Then() {c.clear(); found(a.get());            }};       // Found at the start of the range
+            new If (c.And(()->{return b.get().eq(Key);})) {void Then() {c.clear(); found(b.get());            }};       // Found at the end of the range
+            new If (c.And(()->{return a.get().le(Key);})) {void Then() {c.clear(); below(a.get()); all = true;}};       // Smaller than any key
+            new If (c.And(()->{return b.get().gt(Key);})) {void Then() {c.clear(); above(b.get()); all = true;}};       // Greater than any key
 
             new If (c)                                                                                                  // Search
              {void Then()
@@ -728,8 +728,8 @@ class Tree extends Programming                                                  
                     final Int Ap = A.Int(), ap = a.get().Int();                                                         // New and current lower limit of range
                     final Int Bp = B.Int(), bp = b.get().Int();                                                         // New and current upper limit of range
                     C.set();                                                                                            // Continue the search unless cleared
-
-                    new If (C.And(()->{return Ap.ne(ap);}, ()->{return A.ge(Key);})) {void Then() {C.clear(); a.set(A);}};                                         // Make sure that the new range is tighter than the existing one
+                                                                                                                        // Make sure that the new range is tighter than the existing one
+                    new If (C.And(()->{return Ap.ne(ap);}, ()->{return A.ge(Key);})) {void Then() {C.clear(); a.set(A);}}; 
                     new If (C.And(()->{return Ap.ne(bp);}, ()->{return A.le(Key);})) {void Then() {C.clear(); b.set(A);}};
                     new If (C.And(()->{return Bp.ne(ap);}, ()->{return B.ge(Key);})) {void Then() {C.clear(); a.set(B);}};
                     new If (C.And(()->{return Bp.ne(bp);}, ()->{return B.le(Key);})) {void Then() {C.clear(); b.set(B);}};
@@ -842,14 +842,14 @@ class Tree extends Programming                                                  
     class Memory extends SlotsMemoryPositions                                                                           // Memory required to hold bytes
      {final ByteBuffer bytes;                                                                                           // Bytes used by this set of slots
 
-      final BitSet usedSlotsBits = new BitSet(us)                                                                                // Bit storage for used slots
-       {void setByte(Int I, byte V) {bytes.put(new Int(posUsedSlots).Add(I).i(), V);}                                            // Save used slot bit
-        byte getByte(Int I)  {return bytes.get(new Int(posUsedSlots).Add(I).i());}                                               // Get used slot bit
-       };
-
-      final BitSet usedRefsBits  = new BitSet(ur)                                                                                // Bit storage for used refs
-       {void setByte(Int I, byte V) {bytes.put(new Int(posUsedRefs).Add(I).i(), V);}                                             // Save used ref bit
-        byte getByte(Int I)  {return bytes.get(new Int(posUsedRefs).Add(I).i());}                                                // Get used ref bit
+      final BitSet usedSlotsBits = new BitSet(us)                                                                       // Bit storage for used slots
+       {void setByte(Int I, byte V) {bytes.put(new Int(posUsedSlots).Add(I).i(), V);}                                   // Save used slot bit
+        byte getByte(Int I)  {return bytes.get(new Int(posUsedSlots).Add(I).i());}                                      // Get used slot bit
+       };                                                                                                               
+                                                                                                                        
+      final BitSet usedRefsBits  = new BitSet(ur)                                                                       // Bit storage for used refs
+       {void setByte(Int I, byte V) {bytes.put(new Int(posUsedRefs).Add(I).i(), V);}                                    // Save used ref bit
+        byte getByte(Int I)  {return bytes.get(new Int(posUsedRefs).Add(I).i());}                                       // Get used ref bit
        };
 
       void copySlots(Memory Memory)                                                                                     // Copy a set of slots from the specified memory into this memory
@@ -887,15 +887,15 @@ class Tree extends Programming                                                  
 
       Bool  usedSlots(Int I) {return usedSlotsBits.getBit(us(I));}                                                      // Value of indexed used slot
       Bool   usedRefs(Int I) {return usedRefsBits .getBit(ur(I));}                                                      // Value of indexed used reference
-      Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}                                          // Value of indexed slot
-      Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}                                          // Value of key via indexed reference
-      Int        name(     ) {return new Int(bytes.getInt(posName));}
-
-      void usedSlots(Int I, Bool V) {usedSlotsBits.set(                    us(I),      V.b());}                                         // Set value of indexed used slot
-      void  usedRefs(Int I, Bool V) {usedRefsBits .set(                    ur(I),      V.b());}                                         // Set value of indexed used reference
-      void     slots(Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());}                                         // Set value of indexed slot
-      void      keys(Int I, Int     V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());}                                         // Set value of key via indexed reference
-      void      name(       Int     V) {bytes.putInt(posName,                          V.i());}                                         // Save the name of the node in memory to assist debugging
+      Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}                          // Value of indexed slot
+      Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}                          // Value of key via indexed reference
+      Int        name(     ) {return new Int(bytes.getInt(posName));}                                                   
+                                                                                                                        
+      void usedSlots(Int I, Bool V) {usedSlotsBits.set(                    us(I),      V.b());}                         // Set value of indexed used slot
+      void  usedRefs(Int I, Bool V) {usedRefsBits .set(                    ur(I),      V.b());}                         // Set value of indexed used reference
+      void     slots(Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());}                         // Set value of indexed slot
+      void      keys(Int I, Int     V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());}                         // Set value of key via indexed reference
+      void      name(       Int     V) {bytes.putInt(posName,                          V.i());}                         // Save the name of the node in memory to assist debugging
 
       void      type(Int Type) {       bytes.putInt(posType, Type.i());}                                                // Type of object in which the slots are embedded
       Int       type() {return new Int(bytes.getInt(posType));}
@@ -1627,7 +1627,7 @@ class Tree extends Programming                                                  
           new If (L.isLeaf())                                                                                           // Merging leaves
            {void Then()
              {final Leaf l = (Leaf)L;
-              final Leaf r = (Leaf)(If (Right.valid(), ()->data(Right), ()->top()));                                         // Right leaf sibling
+              final Leaf r = (Leaf)(If (Right.valid(), ()->data(Right), ()->top()));                                    // Right leaf sibling
               new If (r.mergeFromLeft(l))                                                                               // Merge left sibling into right
                {void Then()
                  {clearSlotAndRef(left);                                                                                // Remove left sibling from parent now that it has been merged with its right sibling
@@ -1638,7 +1638,7 @@ class Tree extends Programming                                                  
              }
             void Else()                                                                                                 // Children are branches
              {final Branch l = (Branch)L;
-              final Branch r = (Branch)(If (Right.valid(), ()->data(Right), ()->top()));                                         // Right leaf sibling
+              final Branch r = (Branch)(If (Right.valid(), ()->data(Right), ()->top()));                                // Right leaf sibling
               new If (r.mergeFromLeft(keys(left), l))                                                                   // Merge left sibling into right
                {void Then()
                  {clearSlotAndRef(left);                                                                                // Remove left sibling from parent now that it has been merged with its right sibling
@@ -1921,7 +1921,7 @@ class Tree extends Programming                                                  
     final Ref<Find> f = new Ref<>();                                                                                    // Find details result
     new If (r != null)                                                                                                  // Non empty tree
      {void Then()
-       {new If (r.isLeaf())                                                                                            // Leaf root
+       {new If (r.isLeaf())                                                                                             // Leaf root
          {void Then()
            {final Leaf L = (Leaf)r;
             L.up(null);
@@ -1948,7 +1948,7 @@ class Tree extends Programming                                                  
      {void body(Int i, Bool C)
        {final Slots.Slot Q = p.get().locateFirstGe(Key);
         final Slots      q = p.get().child(Q);
-        new If (q.isLeaf())                                                                                            // Step down to a leaf
+        new If (q.isLeaf())                                                                                             // Step down to a leaf
          {void Then()
            {final Leaf l = (Leaf)q;
             l.up(p.get()); l.upIndex(Q);                                                                                // Parent of leaf along find path
@@ -1994,7 +1994,7 @@ class Tree extends Programming                                                  
             d.set();                                                                                                    // Success
            }
          };
-        new If (d.Flip().and(()->{return new Bool(F.leaf.up() != null);}, ()->{return F.leaf.up().full().Flip();}))                                           // Leaf is full, parent branch is not full so we can split leaf
+        new If (d.Flip().and(()->{return new Bool(F.leaf.up() != null);}, ()->{return F.leaf.up().full().Flip();}))     // Leaf is full, parent branch is not full so we can split leaf
          {void Then()
            {final Branch b = F.leaf.up();                                                                               // Parent branch
             final Leaf   r = F.leaf;
@@ -2012,8 +2012,8 @@ class Tree extends Programming                                                  
              };
 
             final Slots.Slot K = b.locateFirstGe(Key);                                                                  // Position of leaf in parent
-            new If (d.Flip().and(()->{return b.mergeLeftSibling (K);})) {void Then() {d.set();}};                                         // Merge inserted leaf into prior leaf if possible
-            new If (d.Flip().and(()->{return b.mergeRightSibling(K);})) {void Then() {d.set();}};                                         // Merge inserted leaf into next leaf if possible
+            new If (d.Flip().and(()->{return b.mergeLeftSibling (K);})) {void Then() {d.set();}};                       // Merge inserted leaf into prior leaf if possible
+            new If (d.Flip().and(()->{return b.mergeRightSibling(K);})) {void Then() {d.set();}};                       // Merge inserted leaf into next leaf if possible
             new If (d.Flip().and(()->{return K.valid();}))                                                              // Some where in the body of the parent branch
              {void Then()
                {final Slots.Slot L = K.stepLeft(), R = K.stepRight();                                                   // Further left and right if possible
@@ -2382,7 +2382,7 @@ class Tree extends Programming                                                  
                                  };
                                }
                              };
-                            C.set(f.valid()).flip().and(()->{return p.valid();});                                         // Continue until we find the first leaf
+                            C.set(f.valid()).flip().and(()->{return p.valid();});                                       // Continue until we find the first leaf
                            }
                          };
                        }
