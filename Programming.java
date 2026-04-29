@@ -110,7 +110,7 @@ public class Programming extends Test                                           
     String     n = null;                                                                                                // An optional name for this variable
     final int id = nextBoolId++;                                                                                        // Unique id for Bool
 
-    enum Ops {Eq, Flip, Ne, Set};                                                                                       // Boolean operation classification by argument types
+    enum Ops {eq, flip, ne, set};                                                                                       // Boolean operation classification by argument types
 
     Bool      valid() {return new Bool(v);}
 
@@ -122,12 +122,12 @@ public class Programming extends Test                                           
     void          x()          {if (!v) stop("Bool has not been set yet");}
     Bool          X()          {v = true; return this;}
 
-    Bool        set()          {return ie(Ops.Set,  true); }
-    Bool        set(boolean I) {return ie(Ops.Set,  I);    }
-    Bool        set(Bool    I) {return ie(Ops.Set,  I);    }
-    Bool        set(Int     I) {return ie(Ops.Set,  I);    }
-    Bool      clear()          {return ie(Ops.Set,  false);}
-    Bool       flip()          {return ie(Ops.Flip);       }
+    Bool        set()          {return ie(Ops.set,  true); }
+    Bool        set(boolean I) {return ie(Ops.set,  I);    }
+    Bool        set(Bool    I) {return ie(Ops.set,  I);    }
+    Bool        set(Int     I) {return ie(Ops.set,  I);    }
+    Bool      clear()          {return ie(Ops.set,  false);}
+    Bool       flip()          {return ie(Ops.flip);       }
 
     Bool        Set()          {return dup().set();}
     Bool        Set(boolean I) {return dup().set(I);}
@@ -135,11 +135,11 @@ public class Programming extends Test                                           
     Bool      Clear()          {return dup().clear();}
     Bool       Flip()          {return dup().flip();}
 
-    Bool         eq(boolean I) {return ie(Ops.Eq,  I);}
-    Bool         ne(boolean I) {return ie(Ops.Ne,  I);}
+    Bool         eq(boolean I) {return ie(Ops.eq,  I);}
+    Bool         ne(boolean I) {return ie(Ops.ne,  I);}
 
-    Bool         eq(Bool    I) {return ie(Ops.Eq,  I);}
-    Bool         ne(Bool    I) {return ie(Ops.Ne,  I);}
+    Bool         eq(Bool    I) {return ie(Ops.eq,  I);}
+    Bool         ne(Bool    I) {return ie(Ops.ne,  I);}
 
     Bool ie(Ops Op)            {if (ex) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}             // Execute immediately or create an instruction for machine code to execute later
     Bool ie(Ops Op, boolean I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
@@ -148,7 +148,7 @@ public class Programming extends Test                                           
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {switch(Op)
-       {case Flip -> {x(); i = !i;                }
+       {case flip -> {x(); i = !i;                }
         default   -> stop("Op not implemented:", Op);
        }
       return this;
@@ -156,9 +156,9 @@ public class Programming extends Test                                           
 
     Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
      {switch (Op)
-       {case Set -> {i  = I; v = true; }
-        case Eq  -> {x(); i = i == I; }
-        case Ne  -> {x(); i = i != I; }
+       {case set -> {i  = I; v = true; }
+        case eq  -> {x(); i = i == I; }
+        case ne  -> {x(); i = i != I; }
         default  -> stop("Op not implemented:", Op);
        }
       return this;
@@ -166,9 +166,9 @@ public class Programming extends Test                                           
 
     Bool ex(Ops Op, Bool I)                                                                                               // Execute a monadic boolean operation on a variable
      {switch(Op)
-       {case Set -> {I.x(); i = I.i; v = true; }
-        case Eq  -> {x(); I.x(); i = i == I.i; }
-        case Ne  -> {x(); I.x(); i = i != I.i; }
+       {case set -> {I.x(); i = I.i; v = true; }
+        case eq  -> {x(); I.x(); i = i == I.i; }
+        case ne  -> {x(); I.x(); i = i != I.i; }
         default  -> stop("Op not implemented:", Op);
        }
       return this;
@@ -176,22 +176,11 @@ public class Programming extends Test                                           
 
     Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable
      {switch(Op)
-       {case Set -> {I.x(); i = I.i > 0; v = true;}
+       {case set -> {I.x(); i = I.i > 0; v = true;}
         default  -> stop("Op not implemented:", Op);
        }
       return this;
      }
-
-    //boolean oR(boolean...b)                                                                                             // "Or" with no short circuit
-    // {x(); boolean r = b();
-    //  for (int i : range(b.length))
-    //   {if (r) break;
-    //    r = b[i];
-    //   }
-    //  return r;
-    // }
-    //Bool or(boolean...b) {set(oR(b)); return this;}                                                                     // "Or" with no short circuit - modify in place
-    //Bool Or(boolean...b) {return new Bool(oR(b));}                                                                      // "Or" with no short circuit - duplicate
 
     @SafeVarargs
     final Bool or(Supplier<Bool>...b)                                                                                   // "Or" with short circuit
@@ -203,16 +192,6 @@ public class Programming extends Test                                           
       return this;
      }
 
-    //Bool anD(boolean...b)                                                                                               // "And" without short circuit
-    // {x(); boolean r = b();
-    //  for (int i : range(b.length))
-    //   {if (!r) break;
-    //    r = b[i];
-    //   }
-    //  return new Bool(r);
-    // }
-    //Bool and(boolean...b) {set(anD(b)); return this;}                                                                   // "And" without short circuit - modify in place
-    //Bool And(boolean...b) {return new Bool(anD(b));}                                                                    // "And" without short circuit - duplicate
 
     @SafeVarargs
     final Bool And(Supplier<Bool>...b)                                                                                  // "And" with short circuit
@@ -232,12 +211,6 @@ public class Programming extends Test                                           
        }
       return this;
      }
-
-    //Bool  Nor(boolean       ...b) {return  Or(b).flip();}                                                               // Not of "or"
-    //Bool Nand(boolean       ...b) {return And(b).flip();}                                                               // Not of "and"
-
-    //@SafeVarargs final Bool  Nor(Supplier<Bool>...b) {return  Or(b).flip();}                                            // Not of short circuited "or"
-    //@SafeVarargs final Bool Nand(Supplier<Bool>...b) {return And(b).flip();}                                            // Not of short circuited "and"
 
     Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}                                                    // Duplicate a valid boolean
 
@@ -266,7 +239,7 @@ public class Programming extends Test                                           
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
   //Int  min (Int I) {        I.x(); min(I.i);      return mc("min");}
 
-    enum Ops {X, set, add, add2, sub, mul, div, mod, inc, dec, up, down, sqrt, neg, abs, max, min};                       // Possible integer operations
+    enum Ops {X, abs, add, add2, dec, div, down, inc, max, min, mod, mul, neg, set, sqrt, sub, up};                     // Possible integer operations
 
     Int  X   ()      {return ie(Ops.X      );}                                                                          // Integer operations
     Int  set (int I) {return ie(Ops.set , I);}
@@ -423,8 +396,7 @@ public class Programming extends Test                                           
       code.push(this);                                                                                                  // Save instruction
      }
 
-    I() {this(false);}
-                                                                 // Add this instruction to the process's code assunming it will not jump
+    I() {this(false);}                                                                                                  // Add this instruction to the process's code assunming it will not jump
 
     abstract void action();                                                                                             // The action to be performed by the instruction
    }
@@ -486,10 +458,8 @@ public class Programming extends Test                                           
     final Bool b1 = P.new Bool().clear();
     final Bool b2 = P.new Bool().set();
     ok(b1.or(  ()->{return b2;}).b() == true);
-    //ok(b1.Nor (()->{return b2;}).b() == false);
     b1.clear();
     ok(b1.And (()->{return b2;}).b() == false);
-    //ok(b1.Nand(()->{return b2;}).b() == true);
    }
 
   static void test_traceNames()
