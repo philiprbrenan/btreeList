@@ -472,15 +472,36 @@ public class Program extends Test                                               
    }
 
   static void test_add()
-   {final Program P = new Program(false);
-    final Int a = P.new Int(1);
-    final Int b = P.new Int(2);
-    final Int c = P.new Int(0);
-    c.add(a);
-    c.add(b);
-    ok(c, 0);
+   {final Program P = new Program(false)
+     {void code()
+       {final Int a = new Int(1);
+        final Int b = new Int(0);
+        final Int N = new Int(10);
+        new For(N)
+         {void body(Int Index, Bool Continue)
+           {b.add(a.dup().add(1));
+            put(a, b);
+            Continue.set();
+           }
+         };
+       }
+     };
+    ok(P.nextIntId, 5);
     P.execute();
-    ok(c, 3);
+    ok(P.nextIntId, 5);
+    //stop(P.output());
+    ok(P.output(), """
+1 2
+1 5
+1 9
+1 14
+1 20
+1 27
+1 35
+1 44
+1 54
+1 65
+""");
    }
 
   static void test_fibonnacci()
