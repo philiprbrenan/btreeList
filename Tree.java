@@ -9,7 +9,7 @@ import java.util.*;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-class Tree extends Programming                                                                                          // A tree that translates keys into values to be implemented as an application specific integrated circuit
+class Tree extends Program                                                                                              // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int             maxLeafSize;                                                                                    // The maximum number of entries in a leaf of the tree
   final int           maxBranchSize;                                                                                    // The maximum number of entries in a branch of the tree
   final Stack<Allocation> freeChain = new Stack<>();                                                                    // Unallocated leaves and branches
@@ -729,7 +729,7 @@ class Tree extends Programming                                                  
                     final Int Bp = B.Int(), bp = b.get().Int();                                                         // New and current upper limit of range
                     C.set();                                                                                            // Continue the search unless cleared
                                                                                                                         // Make sure that the new range is tighter than the existing one
-                    new If (C.And(()->{return Ap.ne(ap);}, ()->{return A.ge(Key);})) {void Then() {C.clear(); a.set(A);}}; 
+                    new If (C.And(()->{return Ap.ne(ap);}, ()->{return A.ge(Key);})) {void Then() {C.clear(); a.set(A);}};
                     new If (C.And(()->{return Ap.ne(bp);}, ()->{return A.le(Key);})) {void Then() {C.clear(); b.set(A);}};
                     new If (C.And(()->{return Bp.ne(ap);}, ()->{return B.ge(Key);})) {void Then() {C.clear(); a.set(B);}};
                     new If (C.And(()->{return Bp.ne(bp);}, ()->{return B.le(Key);})) {void Then() {C.clear(); b.set(B);}};
@@ -845,8 +845,8 @@ class Tree extends Programming                                                  
       final BitSet usedSlotsBits = new BitSet(us)                                                                       // Bit storage for used slots
        {void setByte(Int I, byte V) {bytes.put(new Int(posUsedSlots).Add(I).i(), V);}                                   // Save used slot bit
         byte getByte(Int I)  {return bytes.get(new Int(posUsedSlots).Add(I).i());}                                      // Get used slot bit
-       };                                                                                                               
-                                                                                                                        
+       };
+
       final BitSet usedRefsBits  = new BitSet(ur)                                                                       // Bit storage for used refs
        {void setByte(Int I, byte V) {bytes.put(new Int(posUsedRefs).Add(I).i(), V);}                                    // Save used ref bit
         byte getByte(Int I)  {return bytes.get(new Int(posUsedRefs).Add(I).i());}                                       // Get used ref bit
@@ -889,8 +889,8 @@ class Tree extends Programming                                                  
       Bool   usedRefs(Int I) {return usedRefsBits .getBit(ur(I));}                                                      // Value of indexed used reference
       Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}                          // Value of indexed slot
       Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}                          // Value of key via indexed reference
-      Int        name(     ) {return new Int(bytes.getInt(posName));}                                                   
-                                                                                                                        
+      Int        name(     ) {return new Int(bytes.getInt(posName));}
+
       void usedSlots(Int I, Bool V) {usedSlotsBits.set(                    us(I),      V.b());}                         // Set value of indexed used slot
       void  usedRefs(Int I, Bool V) {usedRefsBits .set(                    ur(I),      V.b());}                         // Set value of indexed used reference
       void     slots(Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());}                         // Set value of indexed slot
