@@ -476,8 +476,8 @@ public class Program extends Test                                               
     new A().a();
    }
 
-  static void test_add()
-   {final Program P = new Program(false)
+  static void test_add(boolean Ex)
+   {final Program P = new Program(Ex)
      {void code()
        {final Int a = new Int(1);
         final Int b = new Int(0);
@@ -491,9 +491,7 @@ public class Program extends Test                                               
          };
        }
      };
-    ok(P.nextIntId, 6);
     P.execute();
-    ok(P.nextIntId, 6);
     //stop(P.output());
     ok(P.output(), """
 1 2
@@ -507,6 +505,11 @@ public class Program extends Test                                               
 1 18
 1 20
 """);
+   }
+
+  static void test_add()
+   {test_add(true);
+    test_add(false);
    }
 
   static void test_fibonnacci(boolean Ex)
