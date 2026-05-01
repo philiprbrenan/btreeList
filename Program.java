@@ -547,9 +547,9 @@ public class Program extends Test                                               
         new For(N)
          {void body(Int Index, Bool Continue)
            {a.set(Index).mod(2);
-            new If (b.set(a))
-             {void Then() {c.dec();}
-              void Else() {c.inc(); c.inc();}
+            new If (b.set(a).Flip())
+             {void Then() {c.inc();}
+              void Else() {c.dec(); c.dec();}
              };
             put(c);
             Continue.set();
