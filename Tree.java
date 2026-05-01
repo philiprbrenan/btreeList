@@ -2306,7 +2306,7 @@ class Tree extends Program                                                      
                            {final Int    I = Q.upIndex();                                                               // Not null because we are not at the root
                             final Slots.Slot R = P.new Slot(I).stepRight();                                             // Next sibling to the right
                             final Bool   r = R.valid();                                                                 // Next sibling to the right exists
-                            final Branch b = (Branch)If (r,  ()->P.data(R), ()->P.top());                                        // Must be a branch as we are going up through the tree
+                            final Branch b = (Branch)If (r,  ()->P.data(R), ()->P.top());                               // Must be a branch as we are going up through the tree
                             b.up(p.get());
                             b.upIndex(If (r, ()->R, ()->b.new Slot()));
                             f.set(goFirst(b));
@@ -2452,7 +2452,8 @@ class Tree extends Program                                                      
             P.elementAt(L+2).append("("+s.name()+", "+U+", "+I+")");                                                    // Link to next level
 
             final String um = ""+B.memory.up();                                                                         // Parent up as recorded
-            final String im = ""+B.upIndex();                                                                           // Index in parent up as recorded
+            final Int    ii =    B.upIndex();                                                                           // Index in parent up as recorded
+            final String im = ii.v() ? ""+ii.i() : "0";                                                                 // Index in parent up as string
             P.elementAt(L+3).append("("+s.name()+", "+um+", "+im+")");                                                  // Link to next level
            }
          }
