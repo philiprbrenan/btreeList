@@ -546,10 +546,10 @@ public class Program extends Test                                               
         final Int  N = new Int (4);
         new For(N)
          {void body(Int Index, Bool Continue)
-           {a.set(Index).mod(2);
-            new If (b.set(a).Flip())
-             {void Then() {c.inc();}
-              void Else() {c.dec(); c.dec();}
+           {a.set(Index.Inc()).mod(2);
+            new If (b.set(a).flip())
+             {void Then() {c.dec();}
+              void Else() {c.inc(); c.inc();}
              };
             put(c);
             Continue.set();
