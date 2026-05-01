@@ -218,7 +218,7 @@ public class Program extends Test                                               
 
     Bool dup() {return new Bool(this);}                                                                                 // Duplicate a boolean
 
-    public String toString() {return v ? ""+i : "undefined";}                                                           // Print the boolean
+    public String toString() {return v ? ""+i : "undefined Bool";}                                                      // Print the boolean
    }
 
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
@@ -338,9 +338,7 @@ public class Program extends Test                                               
 
     Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
 
-    public String toString()                                                                                            // Print the integer
-     {return v ? ""+i : "udefined";
-     }
+    public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
    }
 
   class Ref<T>                                                                                                          // A reference to an object
@@ -360,7 +358,16 @@ public class Program extends Test                                               
   static int[]range(Int Limit) {return range(Limit.i());}                                                               // Range of integers
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
 
-  void put(Object...Values) {new I() {void action() {put.push(""+saySb(Values));}};}                                    // Say some values
+  void put(Object...Values)                                                                                             // Say some constant values
+   {if (ex)                      put.push(""+saySb(Values));
+    else new I() {void action() {put.push(""+saySb(Values));}};
+   }
+
+  <T> void put(Supplier<T> Value)                                                                                       // Say a variable value
+   {if (ex)                      put.push(""+saySb(Value.get()));
+    else new I() {void action() {put.push(""+saySb(Value.get()));}};
+   }
+
   String output()           {return put.size() > 0 ? joinLines(put)+"\n" : "";}                                         // Output from execution
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
@@ -515,7 +522,7 @@ public class Program extends Test                                               
             c.add(b);
             a.set(b);
             b.set(c);
-            put(c);
+            put(()->c);
             Continue.set();
            }
          };
