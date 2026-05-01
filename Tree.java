@@ -2604,8 +2604,6 @@ class Tree extends Program                                                      
 
     ok(s.new Slot( 1).locatePrevUsedSlot().notValid(), true);
     ok(s.new Slot(14).locateNextUsedSlot().notValid(), true);
-
-    s.setSlots(0, 15);
    }
 
   static void test_redistribute()
