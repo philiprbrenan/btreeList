@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
-public class Program extends Test                                                                                   // Develop and test a java program to describe a chip and emulate its operation.
+public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
  {final static boolean github_actions   =                                                                               // Whether we are on a github
     "true".equals(System.getenv("GITHUB_ACTIONS"));
   final static long start               = System.nanoTime();                                                            // Start time
@@ -17,8 +17,6 @@ public class Program extends Test                                               
   final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
-  final Bool   True = new Bool(true);                                                                                   // Useful constants
-  final Bool  False = new Bool(false);
   final boolean ex;                                                                                                     // Execute immediately if true else generate machine code and execute later
 
   final int maxSteps = 999;                                                                                             // Number of steps permitted in code execution
@@ -26,12 +24,12 @@ public class Program extends Test                                               
   int     nextBoolId = 0;                                                                                               // Unique id for each Bool
   int             pc;                                                                                                   // Program counter - set to something less than zero to stop with a return code
 
-  Program()           {this(true);}                                                                                 // Create a program which executes as it is written
-  Program(boolean Ex) {ex = Ex; code();}                                                                            // Create a program as a list of instructins which are executed later
+  Program()           {this(true);}                                                                                     // Create a program which executes as it is written
+  Program(boolean Ex) {ex = Ex; code();}                                                                                // Create a program as a list of instructins which are executed later
 
   void code() {}                                                                                                        // Override to provide some code for this program
 
-//D1 Program                                                                                                        // Program structures
+//D1 Program                                                                                                            // Program structures
 
   abstract class For                                                                                                    // For loop
    {For(int Start, int End)                                                                                             // Execute the loop the specified number of times
@@ -120,8 +118,8 @@ public class Program extends Test                                               
     Bool      valid() {return new Bool(v);}
 
     Bool           ()          {}
-    Bool           (boolean I) {       i = I;   v = true;}
-    Bool           (Bool    I) {I.x(); i = I.i; v = true;}
+    Bool           (boolean I) {ie(Ops.set, I);}
+    Bool           (Bool    I) {ie(Ops.set, I);}
 
     boolean       b()          {x(); return i;}
     void          x()          {if (!v) stop("Bool has not been set yet");}
@@ -570,6 +568,18 @@ public class Program extends Test                                               
 """);
    }
 
+  static void test_incremental()
+   {final Program P = new Program(false)
+     {void code()
+       {final Int a = new Int(0);
+                 new I() {void action() {ok(a, 0);}};
+        a.inc(); new I() {void action() {ok(a, 1);}};
+        a.inc(); new I() {void action() {ok(a, 2);}};
+       }
+     };
+    P.execute();
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
@@ -577,6 +587,7 @@ public class Program extends Test                                               
     test_add();
     test_fibonnacci();
     test_mod();
+    test_incremental();
    }
 
   static void newTests()                                                                                                // Tests being worked on
