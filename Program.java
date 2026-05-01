@@ -32,12 +32,12 @@ public class Program extends Test                                               
 //D1 Program                                                                                                            // Program structures
 
   abstract class For                                                                                                    // For loop
-   {For(int Start, int End)                                                                                             // Execute the loop the specified number of times
-     {final Int  index = new Int();
-      final Bool  cont = new Bool();
+   {For(Int Start, Int End)                                                                                             // Execute the loop the specified number of times
+     {final Int index = new Int();
+      final Bool cont = new Bool();
 
       if (ex)                                                                                                           // Immediate execution
-       {for(int i : range(Start, End))                                                                                  // Iterate over the specified range
+       {for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
          {index.set(i);                                                                                                 // Set the index to each element of the specified range
           cont.clear();                                                                                                 // Terminate unless told otherwise
           body(index, cont);                                                                                            // Execute the loop
@@ -53,15 +53,15 @@ public class Program extends Test                                               
         index.inc();                                                                                                    // Increment lop counter
         new I(true)
          {void action()
-           {pc = cont.b() && index.i() < End ? start.offset : end.offset;                                               // Continue while requested and maximum number of iterations has not been  surpassed
+           {pc = cont.b() && index.i() < End.i() ? start.offset : end.offset;                                           // Continue while requested and maximum number of iterations has not been  surpassed
            }
          };
         end.set();                                                                                                      // End of the loop
        }
      }
 
-    For(int End) {this(0, End);}                                                                                        // Execute the loop the specified number of times as long as it returns true
-    For(Int End) {this(0, End.i());}                                                                                    // Execute the loop the specified number of times as long as it returns true
+    For(int End) {this(new Int(0), new Int(End));}                                                                      // Execute the loop the specified number of times as long as it returns true
+    For(Int End) {this(new Int(0),         End);}                                                                       // Execute the loop the specified number of times as long as it returns true
 
     abstract void body(Int Index, Bool Continue);                                                                       // Body of the for loop - execute while in range and continuation requested
    }
@@ -110,7 +110,6 @@ public class Program extends Test                                               
   class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
-    String     n = null;                                                                                                // An optional name for this variable
     final int id = nextBoolId++;                                                                                        // Unique id for Bool
 
     enum Ops {eq, flip, ne, set};                                                                                       // Boolean operation classification by argument types
@@ -122,6 +121,7 @@ public class Program extends Test                                               
     Bool           (Bool    I) {ie(Ops.set, I);}
 
     boolean       b()          {x(); return i;}
+    boolean       v()          {     return v;}
     void          x()          {if (!v) stop("Bool has not been set yet");}
     Bool          X()          {v = true; return this;}
 
@@ -216,24 +216,24 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool dup() {x(); final Bool I = new Bool(i); I.n = n; return I;}                                                    // Duplicate a valid boolean
+    Bool dup() {return new Bool(this);}                                                                                 // Duplicate a boolean
 
-    public String toString() {return (n == null ? "" : n+"=")+i;}                                                       // Print the boolean
+    public String toString() {return v ? ""+i : "undefined";}                                                           // Print the boolean
    }
 
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
-    private String     n = null;                                                                                        // An optional name for this variable
     private final int id = nextIntId++;                                                                                 // Unique id for Int
 
     Bool    valid()  {return new Bool( v);}                                                                             // A valid integer
     Bool notValid()  {return new Bool(!v);}                                                                             // A not valid integer
     int         i()  {x(); return i;}                                                                                   // Current value
+    boolean     v()  {     return v;}                                                                                   // Value has been set
     void x       ()  {if (!v) stop("Int has not been set yet");}                                                        // Confirm that the integer has a value
 
-    Int (int I)      {i = I;   v = true;}
-    Int (Int I)      {if (I != null) {i = I.i; v = I.v;}}
+    Int (int I)      {ie(Ops.set, I);}
+    Int (Int I)      {ie(Ops.set, I);}
     Int      ()      {}
 
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
@@ -336,10 +336,10 @@ public class Program extends Test                                               
     Bool ge(Int e){e.x(); return ge(e.i);}
     Bool gt(Int e){e.x(); return gt(e.i);}
 
-    Int dup() {x(); final Int I = new Int(i); I.v = v; I.n = n; return I;}                                              // Duplicate a valid integer
+    Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
 
     public String toString()                                                                                            // Print the integer
-     {return (n == null ? "" : n+"=")+i;
+     {return v ? ""+i : "udefined";
      }
    }
 
@@ -477,28 +477,28 @@ public class Program extends Test                                               
         final Int N = new Int(10);
         new For(N)
          {void body(Int Index, Bool Continue)
-           {b.add(a.dup().add(1));
+           {b.add(a.dup().inc());
             put(a, b);
             Continue.set();
            }
          };
        }
      };
-    ok(P.nextIntId, 5);
+    ok(P.nextIntId, 6);
     P.execute();
-    ok(P.nextIntId, 5);
+    ok(P.nextIntId, 6);
     //stop(P.output());
     ok(P.output(), """
 1 2
-1 5
-1 9
+1 4
+1 6
+1 8
+1 10
+1 12
 1 14
+1 16
+1 18
 1 20
-1 27
-1 35
-1 44
-1 54
-1 65
 """);
    }
 
