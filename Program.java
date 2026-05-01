@@ -509,8 +509,8 @@ public class Program extends Test                                               
 """);
    }
 
-  static void test_fibonnacci()
-   {final Program P = new Program(false)
+  static void test_fibonnacci(boolean Ex)
+   {final Program P = new Program(Ex)
      {void code()
        {final Int a = new Int(0);
         final Int b = new Int(1);
@@ -544,8 +544,13 @@ public class Program extends Test                                               
 """);
    }
 
-  static void test_mod()
-   {final Program P = new Program(false)
+  static void test_fibonnacci()
+   {test_fibonnacci(true);
+    test_fibonnacci(false);
+   }
+
+  static void test_mod(Boolean Ex)
+   {final Program P = new Program(Ex)
      {void code()
        {final Int  a = new Int ();
         final Bool b = new Bool();
@@ -558,13 +563,12 @@ public class Program extends Test                                               
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
-            put(c);
+            put(()->c);
             Continue.set();
            }
          };
        }
      };
-    ok(P.output(), "");
     P.execute();
     //stop(P.output());
     ok(P.output(), """
@@ -575,16 +579,26 @@ public class Program extends Test                                               
 """);
    }
 
-  static void test_incremental()
-   {final Program P = new Program(false)
+  static void test_mod()
+   {test_mod(true);
+    test_mod(false);
+   }
+
+  static void test_incremental(boolean Ex)
+   {final Program P = new Program(Ex)
      {void code()
        {final Int a = new Int(0);
-                 new I() {void action() {ok(a, 0);}};
-        a.inc(); new I() {void action() {ok(a, 1);}};
-        a.inc(); new I() {void action() {ok(a, 2);}};
+                 put(()->a);
+        a.inc(); put(()->a);
+        a.inc(); put(()->a);
        }
      };
     P.execute();
+   }
+
+  static void test_incremental()
+   {test_incremental(true);
+    test_incremental(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
