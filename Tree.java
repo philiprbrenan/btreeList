@@ -2610,25 +2610,46 @@ class Tree extends Program                                                      
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
     for (int i : range(s.numberOfSlots())) {s.usedSlots(s.new Slot(i)); s.setSlots(i);}
-                                                            //0123456789012345
-                                          ok(s.printSlots(), "XXXXXXXXXXXXXXXX");
-                        s.redistribute(); ok(s.printSlots(), "XXXXXXXXXXXXXXXX");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "XXXXXXXXXXXXXXX.");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), ".XXXXXXXXXXXXXX.");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), ".XXXXXXXXXXXXX..");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "..XXXXXXXXXXXX..");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "..XXXXXXXXXXX...");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "...XXXXXXXXXX...");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "...XXXXXXXXX....");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "X.X.X.X.X.X.X.X.");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), ".X.X.X.X.X.X.X..");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "..X.X.X.X.X.X...");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), ".X..X..X..X..X..");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), ".X...X...X...X..");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "..X....X....X...");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "...X.......X....");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), ".......X........");
-    s.clearFirstSlot(); s.redistribute(); ok(s.printSlots(), "................");
+                                          t.put(s.printSlots());
+                        s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    //stop(t.output());
+    //0123456789012345
+    ok(t.output(), """
+XXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXX.
+.XXXXXXXXXXXXXX.
+.XXXXXXXXXXXXX..
+..XXXXXXXXXXXX..
+..XXXXXXXXXXX...
+...XXXXXXXXXX...
+...XXXXXXXXX....
+X.X.X.X.X.X.X.X.
+.X.X.X.X.X.X.X..
+..X.X.X.X.X.X...
+.X..X..X..X..X..
+.X...X...X...X..
+..X....X....X...
+...X.......X....
+.......X........
+................
+""");
    }
 
   static void test_ifd()
