@@ -14,7 +14,7 @@ public class Program extends Test                                               
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
 
-  Program           program = this;                                                                                     // Redirect one program to another if neccesary to allow components to be tested in isolation and then integrated into a larger program
+  Program           program = this;                                                                                     // Redirect one program to another to allow components to be tested in isolation and then integrated into a larger program.
   public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
   public  int      maxSteps = 999;                                                                                      // Number of steps permitted in code execution
   private int     nextIntId = 0;                                                                                        // Unique id for each Int
@@ -22,8 +22,8 @@ public class Program extends Test                                               
   private int            pc;                                                                                            // Program counter - set to something less than zero to stop with a return code
 
   Program() {code();}                                                                                                   // Create a program which executes as it is written
-  Program(                 boolean Immediate) {                   immediate = Immediate; code();}                       // Create a local  program that executes immediately or later as machine code - but recogize that the immediate mode only affects the local program not any remote program
-  Program(Program Program, boolean Immediate) {program = Program; immediate = Immediate; code();}                       // Create a remote program that executes immediately or later as machine code
+  Program(boolean Immediate) {immediate = Immediate; code();}                                                           // Create a local program that executes immediately or later as machine code - but recogize that the immediate mode only affects the local program not any remote program
+  Program(Program Program)   {program = Program;     code();}                                                           // Access a remote program through this program
 
   void code() {}                                                                                                        // Override to provide some code for this program
   boolean immediate() {return program.immediate;}                                                                       // Excute immediately or later as machine code
@@ -53,7 +53,7 @@ public class Program extends Test                                               
         index.inc();                                                                                                    // Increment lop counter
         new I(true)
          {void action()
-           {program.pc = cont.b() && index.i() < End.i() ? start.offset : end.offset;                                           // Continue while requested and maximum number of iterations has not been  surpassed
+           {pc = cont.b() && index.i() < End.i() ? start.offset : end.offset;                                           // Continue while requested and maximum number of iterations has not been  surpassed
            }
          };
         end.set();                                                                                                      // End of the loop
@@ -79,13 +79,13 @@ public class Program extends Test                                               
         final Label end = new Label();                                                                                  // End of if
         new I(true)                                                                                                     // Jump to else if condition is false
          {void action()
-           {if (!Condition.b()) program.pc = lse.offset;
+           {if (!Condition.b()) pc = lse.offset;
            }
          };
         Then();                                                                                                         // Then body
         new I(true)                                                                                                     // Jump over else to end
          {void action()
-           {program.pc = end.offset;
+           {pc = end.offset;
            }
          };
         lse.set();                                                                                                      // Start of else
@@ -441,26 +441,25 @@ public class Program extends Test                                               
    }
 
   void execute()                                                                                                        // Execute the current code
-   {if (immediate()) return;                                                                                            // The code has already been executed
-    program.pc = 0;
-    final int N = program.code.size();                                                                                  // Number of instructions
-    for(int c = 0; c < program.maxSteps && program.pc >= 0 && program.pc < N; ++c)                                                      // Execute each instruction within a specified number of steps
-     {final I i = program.code.elementAt(program.pc);
+   {if (immediate) return;                                                                                              // The code has already been executed
+    pc = 0;
+    final int N = code.size();                                                                                          // Number of instructions
+    for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
+     {final I i = code.elementAt(pc);
       try
-
-       {program.pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
+       {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         i.action();
        }
       catch(Exception e)
        {stop("Exception:", e, "while executing:", traceBack(e));
        }
-      if (program.code.size() != N) stop("Instruction added during execution");
+      if (code.size() != N) stop("Instruction added during execution");
      }
    }
 
-  void Goto(Label Target) {program.pc = Target.offset;}                                                                         // Goto a label unconditionally
-  void Goto(Label Target, Bool If) {if ( If.b()) program.pc = Target.offset;}                                                   // Goto a label conditionally
-  void Noto(Label Target, Bool If) {if (!If.b()) program.pc = Target.offset;}                                                   // Goto a label conditionally
+  void Goto(Label Target) {program.pc = Target.offset;}                                                                 // Goto a label unconditionally
+  void Goto(Label Target, Bool If) {if ( If.b()) program.pc = Target.offset;}                                           // Goto a label conditionally
+  void Noto(Label Target, Bool If) {if (!If.b()) program.pc = Target.offset;}                                           // Goto a label not unconditionally
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
@@ -637,11 +636,40 @@ public class Program extends Test                                               
        }
      };
     P.execute();
+    //stop(P.output());
+    ok(P.output(), """
+0
+1
+2
+""");
    }
 
   static void test_incremental()
    {test_incremental(true);
     test_incremental(false);
+   }
+
+  static void test_remote()
+   {final Program P = new Program(false)
+     {void code()
+       {final Int a = new Int(1);
+        a.add(2);
+        put(()->a);
+       }
+     };
+    final Program Q = new Program(P)
+     {void code()
+       {final Int a = new Int(1);
+        a.add(3);
+        put(()->a);
+       }
+     };
+    P.execute();
+    //stop(P.output());
+    ok(P.output(), """
+3
+4
+""");
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -656,6 +684,7 @@ public class Program extends Test                                               
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    test_remote();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
