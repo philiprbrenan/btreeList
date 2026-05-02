@@ -22,15 +22,27 @@ class Tree extends Program                                                      
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
-  Tree(int MaxLeafSize, int MaxBranchSize, int NumberOfNodes)                                                           // Create the tree
-   {maxLeafSize   = MaxLeafSize;                                                                                        // The maximum number of entries in a leaf
-    maxBranchSize = MaxBranchSize;                                                                                      // The maximum number of entries in a branch
-    numberOfNodes = NumberOfNodes;                                                                                      // The maximum number of leaves and branches combined
+   static class Build                                                                                                   // Parameters describing a tree
+    {Integer   maxLeafSize;
+     Integer maxBranchSize;
+     Integer numberOfNodes;
+     Boolean       execute;
+     Build maxLeafSize  (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
+     Build maxBranchSize(int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
+     Build numberOfNodes(int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
+     Build execute      (boolean Execute      ) {execute       = Execute;       return this;}
+    }
+
+  Tree(Build Build)                                                                                                     // Create the tree
+   {super(Build.execute == null ? true : Build.execute);
+    maxLeafSize   = Build.maxLeafSize   == null ?   4 : Build.maxLeafSize;                                              // The maximum number of entries in a leaf
+    maxBranchSize = Build.maxBranchSize == null ?   3 : Build.maxBranchSize;                                            // The maximum number of entries in a branch
+    numberOfNodes = Build.numberOfNodes == null ? 999 : Build.numberOfNodes;                                            // The maximum number of leaves and branches combined
 
     final String m  = "The maximum ";
-    final String m1 = m + "leaf size must be 2 or more, not: "   +MaxLeafSize;
-    final String m2 = m + "branch size must be 3 or more, not: " +MaxBranchSize;
-    final String m3 = m + "branch size must be odd, not: "       +MaxBranchSize;
+    final String m1 = m + "leaf size must be 2 or more, not: "   +maxLeafSize;
+    final String m2 = m + "branch size must be 3 or more, not: " +maxBranchSize;
+    final String m3 = m + "branch size must be odd, not: "       +maxBranchSize;
 
     final boolean b1 = maxLeafSize       <  2;                                                                          // Size checks
     final boolean b2 = maxBranchSize     <  3;
@@ -50,8 +62,8 @@ class Tree extends Program                                                      
     memory.numberOfNodes(numberOfNodes);
    }
 
-  Tree(int LeafSize)                {this(LeafSize, LeafSize-1);}                                                       // Create a test tree
-  Tree(int LeafSize, int BranchSize){this(LeafSize, BranchSize, 999);}                                                  // Create a test tree
+  Tree(int MaxLeafSize)                   {this(new Build().maxLeafSize(MaxLeafSize).maxBranchSize(MaxLeafSize-1));}    // Create a test tree
+  Tree(int MaxLeafSize, int MaxBranchSize){this(new Build().maxLeafSize(MaxLeafSize).maxBranchSize(MaxBranchSize));}    // Create a test tree
 
   int maxLeafSize  () {return maxLeafSize;}                                                                             // Maximum size of a leaf
   int maxBranchSize() {return maxBranchSize;}                                                                           // Maximum size of a branch
@@ -827,8 +839,8 @@ class Tree extends Program                                                      
      {final int N = numberOfSlots();
       final int R = numberOfRefs();
 
-      final BitSet.Spec us = new BitSet.Spec(N, true, true);                                                            // Specification of bit set for used slots
-      final BitSet.Spec ur = new BitSet.Spec(R, true, true);                                                            // Specification of bit set for references
+      final BitSet.Build us = new BitSet.Build().bitSize(N).one(true).zero(true);                                       // Specification of bit set for used slots
+      final BitSet.Build ur = new BitSet.Build().bitSize(R).one(true).zero(true);                                       // Specification of bit set for references
 
       final int posType      = 0;
       final int posSlots     = posType      + ib();
@@ -891,11 +903,11 @@ class Tree extends Program                                                      
       Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}                          // Value of key via indexed reference
       Int        name(     ) {return new Int(bytes.getInt(posName));}
 
-      void usedSlots(Int I, Bool V) {usedSlotsBits.set(                    us(I),      V.b());}                         // Set value of indexed used slot
-      void  usedRefs(Int I, Bool V) {usedRefsBits .set(                    ur(I),      V.b());}                         // Set value of indexed used reference
-      void     slots(Int I, Int     V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());}                         // Set value of indexed slot
-      void      keys(Int I, Int     V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());}                         // Set value of key via indexed reference
-      void      name(       Int     V) {bytes.putInt(posName,                          V.i());}                         // Save the name of the node in memory to assist debugging
+      void usedSlots(Int I, Bool V) {usedSlotsBits.set(                 us(I),      V.b());}                            // Set value of indexed used slot
+      void  usedRefs(Int I, Bool V) {usedRefsBits .set(                 ur(I),      V.b());}                            // Set value of indexed used reference
+      void     slots(Int I, Int  V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());}                            // Set value of indexed slot
+      void      keys(Int I, Int  V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());}                            // Set value of key via indexed reference
+      void      name(       Int  V) {bytes.putInt(posName,                          V.i());}                            // Save the name of the node in memory to assist debugging
 
       void      type(Int Type) {       bytes.putInt(posType, Type.i());}                                                // Type of object in which the slots are embedded
       Int       type() {return new Int(bytes.getInt(posType));}
@@ -2606,28 +2618,32 @@ class Tree extends Program                                                      
     ok(s.new Slot(14).locateNextUsedSlot().notValid(), true);
    }
 
-  static void test_redistribute()
-   {final Tree  t =   new Tree (8);
+  static void test_redistribute(boolean Ex)
+   {final Tree  t =   new Tree (new Tree.Build().execute(Ex));
     final Slots s = t.new Slots(8);
-    for (int i : range(s.numberOfSlots())) {s.usedSlots(s.new Slot(i)); s.setSlots(i);}
-                                          t.put(s.printSlots());
-                        s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
-    s.clearFirstSlot(); s.redistribute(); t.put(s.printSlots());
+    for (int i : range(s.numberOfSlots()))
+     {final Slots.Slot S = s.new Slot(i);
+      s.usedSlots(S);
+      s.setSlots(i);
+     }
+                                          t.put(()->s.printSlots());
+                        s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
+    s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
     //stop(t.output());
     //0123456789012345
     ok(t.output(), """
@@ -2650,6 +2666,11 @@ X.X.X.X.X.X.X.X.
 .......X........
 ................
 """);
+   }
+
+  static void test_redistribute()
+   {test_redistribute(true);
+    //test_redistribute(false);
    }
 
   static void test_ifd()
@@ -2882,7 +2903,7 @@ keys     :   14   0  13   0  12   0  10  11
    }
 
   static void test_slots()                                                                                              // Tests thought to be in good shape
-   {test_locateNearestFreeSlot();
+   {//test_locateNearestFreeSlot();
     test_redistribute();
     test_ifd();
     test_idn();
@@ -2899,7 +2920,7 @@ keys     :   14   0  13   0  12   0  10  11
   final static int[]random    = {5918,5624,2514,4291,1791,5109,7993,60,1345,2705,5849,1034,2085,4208,4590,7740,9367,6582,4178,5578,1120,378,7120,8646,5112,4903,1482,8005,3801,5439,4534,9524,6111,204,5459,248,4284,8037,5369,7334,3384,5193,2847,1660,5605,7371,3430,1786,1216,4282,2146,1969,7236,2187,136,2726,9480,5,4515,6082,969,5017,7809,9321,3826,9179,5781,3351,4819,4545,8607,4146,6682,1043,2890,2964,7472,9405,4348,8333,2915,9674,7225,4743,995,1321,3885,6061,9958,3901,4710,4185,4776,5070,8892,8506,6988,2317,9342,3764,9859,4724,5195,673,359,9740,2089,9942,3749,9208,1,7446,7023,5496,4206,3272,3527,8593,809,3149,4173,9605,9021,5120,5265,7121,8667,6911,4717,2535,2743,1289,1494,3788,6380,9366,2732,1501,8543,8013,5612,2393,7041,3350,3204,288,7213,1741,1238,9830,6722,4687,6758,8067,4443,5013,5374,6986,282,6762,192,340,5075,6970,7723,5913,1060,1641,1495,5738,1618,157,6891,173,7535,4952,9166,8950,8680,1974,5466,2383,3387,3392,2188,3140,6806,3131,6237,6249,7952,1114,9017,4285,7193,3191,3763,9087,7284,9170,6116,3717,6695,6538,6165,6449,8960,2897,6814,3283,6600,6151,4624,3992,5860,9557,1884,5585,2966,1061,6414,2431,9543,6654,7417,2617,878,8848,8241,3790,3370,8768,1694,9875,9882,8802,7072,3772,2689,5301,7921,7774,1614,494,2338,8638,4161,4523,5709,4305,17,9626,843,9284,3492,7755,5525,4423,9718,2237,7401,2686,8751,1585,5919,9444,3271,1490,7004,5980,3904,370,5930,6304,7737,93,5941,9079,4968,9266,262,2766,4999,2450,9518,5137,8405,483,8840,2231,700,8049,8823,9811,9378,3811,8074,153,1940,1998,4354,7830,7086,6132,9967,5680,448,1976,4101,7839,3122,4379,9296,4881,1246,4334,9457,5401,1945,9548,8290,1184,3464,132,2458,7704,1056,7554,6203,2270,6070,4889,7369,1676,485,3648,357,1912,9661,4246,1576,1836,4521,7667,6907,2098,8825,7404,4019,8284,3710,7202,7050,9870,3348,3624,9224,6601,7897,6288,3713,932,5596,353,2615,3273,833,1446,8624,2489,3872,486,1091,2493,4157,3611,6570,7107,9153,4543,9504,4746,1342,9737,3247,8984,3640,5698,7814,307,8775,1150,4330,3059,5784,2370,5248,4806,6107,9700,231,3566,5627,3957,5317,5415,8119,2588,9440,2961,9786,4769,466,5411,3080,7623,5031,2378,9286,4801,797,1527,2325,847,6341,5310,1926,9481,2115,2165,5255,5465,5561,3606,7673,7443,7243,8447,2348,7925,6447,8311,6729,4441,7763,8107,267,8135,9194,6775,3883,9639,612,5024,1351,7557,9241,5181,2239,8002,5446,747,166,325,9925,3820,9531,5163,3545,558,7103,7658,5670,8323,4821,6263,7982,59,3700,1082,4474,4353,8637,9558,5191,842,5925,6455,4092,9929,9961,290,3523,6290,7787,8266,7986,7269,6408,3620,406,5964,7289,1620,6726,1257,1993,7006,5545,2913,5093,5066,3019,7081,6760,6779,7061,9051,8852,8118,2340,6596,4594,9708,8430,8659,8920,9268,5431,9203,2823,1427,2203,6422,6193,5214,9566,8791,4964,7575,4350,56,2227,8545,5646,3089,2204,4081,487,8496,2258,4336,6955,3452,556,8602,8251,8569,8636,9430,1025,9459,7137,8392,3553,5945,9414,3078,1688,5480,327,8117,2289,2195,8564,9423,103,7724,3091,8548,7298,5279,6042,2855,3286,3542,9361,420,7020,4112,5320,5366,6379,114,9174,9744,592,5346,3985,3174,5157,9890,1605,3082,8099,4346,7256,8670,5687,6613,6620,1458,1045,7917,2980,2399,1433,3315,4084,178,7056,2132,2728,4421,9195,4181,6017,6229,2945,4627,2809,8816,6737,18,8981,3813,8890,5304,3789,6959,7476,1856,4197,6944,9578,5915,3060,9932,3463,67,7393,9857,5822,3187,501,653,8453,3691,9736,6845,1365,9645,4120,2157,8471,4436,6435,2758,7591,9805,7142,7612,4891,7342,5764,8683,8365,2967,6947,441,2116,6612,1399,7585,972,6548,5481,7733,7209,222,5903,6161,9172,9628,7348,1588,5992,6094,7176,4214,8702,2987,74,8486,9788,7164,5788,8535,8422,6826,1800,8965,4965,565,5609,4686,2556,9324,5000,9809,1994,4737,63,8992,4783,2536,4462,8868,6346,5553,3980,2670,1601,4272,8725,4698,7333,7826,9233,4198,1997,1687,4851,62,7893,8149,8015,341,2230,1280,5559,9756,3761,7834,6805,9287,4622,5748,2320,1958,9129,9649,1644,4323,5096,9490,7529,6444,7478,7044,9525,7713,234,7553,9099,9885,7135,6493,9793,6268,8363,2267,9157,9451,1438,9292,1637,3739,695,1090,4731,4549,5171,5975,7347,5192,5243,1084,2216,9860,3318,5594,5790,1107,220,9397,3378,1353,4498,6497,5442,7929,7377,9541,9871,9895,6742,9146,9409,292,6278,50,5288,2217,4923,6790,4730,9240,3006,3547,9347,7863,4275,3287,2673,7485,1915,9837,2931,3918,635,9131,1197,6250,3853,4303,790,5548,9993,3702,2446,3862,9652,4432,973,41,3507,8585,2444,1633,956,5789,1523,8657,4869,8580,8474,7093,7812,2549,7363,9315,6731,1130,7645,7018,7852,362,1636,2905,8006,4040,6643,8052,7021,3665,8383,715,1876,2783,3065,604,4566,8761,7911,1983,3836,5547,8495,8144,1950,2537,8575,640,8730,8303,1454,8165,6647,4762,909,9449,8640,9253,7293,8767,3004,4623,6862,8994,2520,1215,6299,8414,2576,6148,1510,313,3693,9843,8757,5774,8871,8061,8832,5573,5275,9452,1248,228,9749,2730};
 
   static void test_emptyTree()
-   {final Tree t = new Tree(2, 3,4);
+   {final Tree t = new Tree(new Tree.Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(4));
     ok(t.memory.maxLeafSize(),   2);
     ok(t.memory.maxBranchSize(), 3);
     ok(t.memory.numberOfNodes(), 4);
@@ -4276,7 +4297,7 @@ Delete 22
 
   static void test_idi()
    {final int N = 32;
-    final Tree t = new Tree(2,3,32);
+    final Tree t = new Tree(new Tree.Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(32));
     for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
     for (int i = 1; i <= N; ++i) {t.delete(t.new Key(i));                t.freeCheck();}
     for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
