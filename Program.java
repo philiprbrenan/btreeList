@@ -10,9 +10,7 @@ import java.util.function.Supplier;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final static boolean github_actions   =                                                                               // Whether we are on a github
-    "true".equals(System.getenv("GITHUB_ACTIONS"));
-  final static long start               = System.nanoTime();                                                            // Start time
+ {final static long start               = System.nanoTime();                                                            // Start time
   final static boolean coverageAnalysis = false;                                                                        // Enables coverage checks
   final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
@@ -117,7 +115,7 @@ public class Program extends Test                                               
 
     Bool      valid() {return new Bool(v);}
 
-    Bool           ()          {}
+    Bool           ()          {}                                                                                       // Constructors
     Bool           (boolean I) {ie(Ops.set, I);}
     Bool           (Bool    I) {ie(Ops.set, I);}
 
@@ -234,9 +232,9 @@ public class Program extends Test                                               
     boolean     v()  {     return v;}                                                                                   // Value has been set
     void x       ()  {if (!v) stop("Int has not been set yet");}                                                        // Confirm that the integer has a value
 
+    Int      ()      {}                                                                                                 // Constructors
     Int (int I)      {ie(Ops.set, I);}
     Int (Int I)      {ie(Ops.set, I);}
-    Int      ()      {}
 
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
