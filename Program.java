@@ -14,7 +14,7 @@ public class Program extends Test                                               
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
 
-  Program           program = this;                                                                                     // Redirect one program to another to allow components to be tested in isolation and then integrated into a larger program.
+  Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
   public  int      maxSteps = 999;                                                                                      // Number of steps permitted in code execution
   private int     nextIntId = 0;                                                                                        // Unique id for each Int
@@ -22,12 +22,13 @@ public class Program extends Test                                               
   private int            pc;                                                                                            // Program counter - set to something less than zero to stop with a return code
 
   Program() {code();}                                                                                                   // Create a program which executes as it is written
-  Program(boolean Immediate) {immediate = Immediate; code();}                                                           // Create a local program that executes immediately or later as machine code - but recogize that the immediate mode only affects the local program not any remote program
-  Program(Program Program)   {program = Program;     code();}                                                           // Access a remote program through this program
+  Program(boolean Immediate) {immediate = Immediate; code();}                                                           // Create a local program that executes immediately or later as machine code - the immediate mode only affects the local program
+  Program(Program Program)   {program = Program;     code();}                                                           // Access the specified remote program through this program
 
   void code() {}                                                                                                        // Override to provide some code for this program
-  boolean immediate() {return program.immediate;}                                                                       // Excute immediately or later as machine code
-  Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Excute immediately or later as machine code
+  boolean immediate() {return program.immediate;}                                                                       // Execute immediately or later as machine code
+  Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Execute immediately or later as machine code
+  Program program() {return this;}                                                                                      // Address this program
 
 //D1 Program                                                                                                            // Program structures
 
@@ -219,7 +220,6 @@ public class Program extends Test                                               
     Bool dup() {return new Bool(this);}                                                                                 // Duplicate a boolean
 
     public String toString() {return v ? ""+i : "undefined Bool";}                                                      // Print the boolean
-    Program program() {return Program.this;}                                                                            // Containing program
    }
 
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
@@ -383,7 +383,6 @@ public class Program extends Test                                               
     Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
 
     public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
-    Program program() {return Program.this;}                                                                            // Containing program
    }
 
   class Ref<T>                                                                                                          // A reference to an object
