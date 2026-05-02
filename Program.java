@@ -10,22 +10,24 @@ import java.util.function.Supplier;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final Program     program = this;                                                                                     // Redirect one [rogram to another if necesary t allow componenets to be tested in isolation and then integrated into a larger program
-  final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
+ {final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
-  private final boolean immediate;                                                                                      // Execute immediately if true else generate machine code and execute later
 
-  final int maxSteps = 999;                                                                                             // Number of steps permitted in code execution
-  int      nextIntId = 0;                                                                                               // Unique id for each Int
-  int     nextBoolId = 0;                                                                                               // Unique id for each Bool
-  int             pc;                                                                                                   // Program counter - set to something less than zero to stop with a return code
+  Program           program = this;                                                                                     // Redirect one program to another if neccesary to allow components to be tested in isolation and then integrated into a larger program
+  public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
+  public  int      maxSteps = 999;                                                                                      // Number of steps permitted in code execution
+  private int     nextIntId = 0;                                                                                        // Unique id for each Int
+  private int    nextBoolId = 0;                                                                                        // Unique id for each Bool
+  private int            pc;                                                                                            // Program counter - set to something less than zero to stop with a return code
 
-  Program()           {this(true);}                                                                                     // Create a program which executes as it is written
-  Program(boolean Immediate) {immediate = Immediate; code();}                                                           // Create a program as a list of instructins which are executed later
+  Program() {code();}                                                                                                   // Create a program which executes as it is written
+  Program(                 boolean Immediate) {                   immediate = Immediate; code();}                       // Create a local  program that executes immediately or later as machine code - but recogize that the immediate mode only affects the local program not any remote program
+  Program(Program Program, boolean Immediate) {program = Program; immediate = Immediate; code();}                       // Create a remote program that executes immediately or later as machine code
 
   void code() {}                                                                                                        // Override to provide some code for this program
-  boolean immediate() {return immediate;}                                                                               // Excute immediately or later as machine code
+  boolean immediate() {return program.immediate;}                                                                       // Excute immediately or later as machine code
+  Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Excute immediately or later as machine code
 
 //D1 Program                                                                                                            // Program structures
 
@@ -51,7 +53,7 @@ public class Program extends Test                                               
         index.inc();                                                                                                    // Increment lop counter
         new I(true)
          {void action()
-           {pc = cont.b() && index.i() < End.i() ? start.offset : end.offset;                                           // Continue while requested and maximum number of iterations has not been  surpassed
+           {program.pc = cont.b() && index.i() < End.i() ? start.offset : end.offset;                                           // Continue while requested and maximum number of iterations has not been  surpassed
            }
          };
         end.set();                                                                                                      // End of the loop
@@ -77,13 +79,13 @@ public class Program extends Test                                               
         final Label end = new Label();                                                                                  // End of if
         new I(true)                                                                                                     // Jump to else if condition is false
          {void action()
-           {if (!Condition.b()) pc = lse.offset;
+           {if (!Condition.b()) program.pc = lse.offset;
            }
          };
         Then();                                                                                                         // Then body
         new I(true)                                                                                                     // Jump over else to end
          {void action()
-           {pc = end.offset;
+           {program.pc = end.offset;
            }
          };
         lse.set();                                                                                                      // Start of else
@@ -108,7 +110,7 @@ public class Program extends Test                                               
   class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
-    final int id = nextBoolId++;                                                                                        // Unique id for Bool
+    final int id = program.nextBoolId++;                                                                                // Unique id for Bool
 
     enum Ops {eq, flip, ne, set};                                                                                       // Boolean operation classification by argument types
 
@@ -223,7 +225,7 @@ public class Program extends Test                                               
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
-    private final int id = nextIntId++;                                                                                 // Unique id for Int
+    private final int id = program.nextIntId++;                                                                         // Unique id for Int
 
     Bool    valid()  {return new Bool( v);}                                                                             // A valid integer
     Bool notValid()  {return new Bool(!v);}                                                                             // A not valid integer
@@ -402,11 +404,11 @@ public class Program extends Test                                               
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
 
   <T> void put(Supplier<T> Value)                                                                                       // Say a variable value
-   {if (immediate())             put.push(""+saySb(Value.get()));
-    else new I() {void action() {put.push(""+saySb(Value.get()));}};
+   {if (immediate())             program.put.push(""+saySb(Value.get()));
+    else new I() {void action() {program.put.push(""+saySb(Value.get()));}};
    }
 
-  String output()           {return put.size() > 0 ? joinLines(put)+"\n" : "";}                                         // Output from execution
+  String output()           {return program.put.size() > 0 ? joinLines(program.put)+"\n" : "";}                         // Output from execution
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -422,9 +424,9 @@ public class Program extends Test                                               
      }
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {instructionNumber = program.code.size();                                                                                  // Number each instruction
+     {instructionNumber = program.code.size();                                                                          // Number each instruction
       mightJump = MightJump;
-      program.code.push(this);                                                                                                  // Save instruction
+      program.code.push(this);                                                                                          // Save instruction
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuning it will not jump
@@ -434,19 +436,19 @@ public class Program extends Test                                               
 
   class Label                                                                                                           // Label jump targets in the program
    {int offset;                                                                                                         // The instruction location to which this labels applies
-    Label()    {set(); labels.push(this);}                                                                              // A label assigned to an instruction location
+    Label()    {set(); program.labels.push(this);}                                                                      // A label assigned to an instruction location
     void set() {offset = code.size();}                                                                                  // Reassign the label to an instruction
    }
 
   void execute()                                                                                                        // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed
-    pc = 0;
-    final int N = program.code.size();                                                                                          // Number of instructions
-    for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
-     {final I i = program.code.elementAt(pc);
+    program.pc = 0;
+    final int N = program.code.size();                                                                                  // Number of instructions
+    for(int c = 0; c < program.maxSteps && program.pc >= 0 && program.pc < N; ++c)                                                      // Execute each instruction within a specified number of steps
+     {final I i = program.code.elementAt(program.pc);
       try
 
-       {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
+       {program.pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         i.action();
        }
       catch(Exception e)
@@ -456,9 +458,9 @@ public class Program extends Test                                               
      }
    }
 
-  void Goto(Label Target) {pc = Target.offset;}                                                                         // Goto a label unconditionally
-  void Goto(Label Target, Bool If) {if ( If.b()) pc = Target.offset;}                                                   // Goto a label conditionally
-  void Noto(Label Target, Bool If) {if (!If.b()) pc = Target.offset;}                                                   // Goto a label conditionally
+  void Goto(Label Target) {program.pc = Target.offset;}                                                                         // Goto a label unconditionally
+  void Goto(Label Target, Bool If) {if ( If.b()) program.pc = Target.offset;}                                                   // Goto a label conditionally
+  void Noto(Label Target, Bool If) {if (!If.b()) program.pc = Target.offset;}                                                   // Goto a label conditionally
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
