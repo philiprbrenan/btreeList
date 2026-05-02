@@ -15,40 +15,39 @@ abstract public class BitSet extends Program                                    
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
-  public BitSet(int BitSize, boolean One, boolean Zero)                                                                 // Constructor
-   {bitSize  = nextPowerOfTwo(BitSize);                                                                                 // Record size.
-    bitSize1 = bitSize - 1;
-    bitSize2 = bitSize >>> 1;
-    if (bitSize < 2) stop("Size must be two or more");                                                                  // There is not much point in bit sets with sizes of less than two.
-    zero       = Zero;                                                                                                  // Locate zeroes efficiently
-    one        = One;                                                                                                   // Locate ones efficiently
-    byteSize   = bytesNeeded(BitSize, one, zero);                                                                       // Bytes needed for the bitset and its bit trees
+  static class Build                                                                                                    // Specification of a bitset
+   {int  bitSize = 1;                                                                                                   // Number of bits in the bit set.
+    boolean zero = false;                                                                                               // Able to locate zeros via a tree of bits if set
+    boolean  one = false;                                                                                               // Able to locate ones via a tree of bits if set
+
+    Build bitSize (int     BitSize ) {bitSize  = BitSize ; return this;}
+    Build zero    (boolean Zero    ) {zero     = Zero    ; return this;}
+    Build one     (boolean One     ) {one      = One     ; return this;}
+    int byteSize()                                                                                                      // Bytes needed for the bitset and its bit trees
+     {final int s = zero && one ? 3 : zero || one ? 2 : 1;                                                              // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
+      return (Byte.SIZE - 1 + s * nextPowerOfTwo(bitSize)) / Byte.SIZE;
+     }
+   }
+
+  public BitSet(Build Build)                                                                                            // Constructor
+   {bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
+    bitSize1   = bitSize - 1;
+    bitSize2   = bitSize >>> 1;
+    if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
+    zero       = Build.zero;                                                                                            // Locate zeroes efficiently
+    one        = Build.one;                                                                                             // Locate ones efficiently
+    byteSize   = Build.byteSize();                                                                                      // Bytes needed for the bitset and its bit trees
     oneTreeBit = bitSize <= 2;                                                                                          // At most only one tree bit present
    }
 
-  public BitSet(Spec Spec)                                                                                              // Constructor using a specification
-   {this(Spec.bitSize(), Spec.one(), Spec.zero());                                                                      // Record size.
-   }
-
-  public BitSet(int BitSize)              {this(BitSize, false, false);}                                                // Constructor to create a bitset without the ability locate zeroes or ones
-  public BitSet(int BitSize, boolean One) {this(BitSize, One,   false);}                                                // Constructor to create a bit set with optionally the ability to locate ones
+  public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
+  public BitSet(int BitSize, boolean One) {this(new Build().bitSize(BitSize).one(One));}                                // Constructor to create a bit set with optionally the ability to locate ones
 
   abstract void setByte(Int Index, byte Value);                                                                         // Write byte to storage backend.
   abstract byte getByte(Int Index);                                                                                     // Read byte from storage backend.
 
-  public static int bytesNeeded(int Size, boolean One, boolean Zero)                                                    // Number of bytes needed for a bit set of specified size with or without the ability to locate zeroes and ones
-   {final int b = Byte.SIZE;
-          int s = 1; if (Zero) s++; if (One) s++;                                                                       // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
-    return (b - 1 + s * nextPowerOfTwo(Size)) / b;
-   }
-
-  public static int bytesNeeded(int Size)                                                                               // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
-   {return bytesNeeded(Size, false, false);
-   }
-
-  public static int bytesNeeded(int Size, boolean One)                                                                  // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
-   {return bytesNeeded(Size, One,   false);
-   }
+  public static int bytesNeeded(int Size)              {return new Build().bitSize(Size)         .byteSize();}          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
+  public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
 
   public  int size()                  {return bitSize;}                                                                 // Bit set size.
   private Int bitOffset(Int bitIndex) {return new Int(bitIndex.i() &   7);}                                             // Offset inside byte.
@@ -58,6 +57,7 @@ abstract public class BitSet extends Program                                    
    {new If (Index.lt(0))
      {void Then() {stop("BitSet index cannot be negative:", Index);}
      };
+
     new If(Index.ge(bitSize))
      {void Then()
        {stop("BitSet index cannot be greater than or equal to:",
@@ -80,27 +80,6 @@ abstract public class BitSet extends Program                                    
        {stop("This bitset does not have the ability to search for zeroes");
        }
      };
-   }
-
-  static class Spec                                                                                                     // Specification of a bitset
-   {private final int  bitSize;                                                                                         // Number of bits in the bit set.
-    private final int byteSize;                                                                                         // Number of bytes in the bit set.
-    private final boolean zero;                                                                                         // Able to locate zeros via a tree of bits if set
-    private final boolean  one;                                                                                         // Able to locate ones via a tree of bits if set
-
-    public Spec(int Size, boolean One, boolean Zero)
-     { bitSize = Size;
-      byteSize = bytesNeeded(Size, One, Zero);                                                                          // Number of bytes needed for a bit set of specified size with or without the ability to locate zeroes and ones
-          zero = Zero;
-           one = One;
-     }
-    public Spec(int Size, boolean One) {this(Size, One,   false);}
-    public Spec(int Size)              {this(Size, false, false);}
-
-    public int bitSize () {return bitSize;}
-    public int byteSize() {return byteSize;}
-    public boolean zero() {return zero;}
-    public boolean one () {return one;}
    }
 
   class Pos extends Int                                                                                                 // A position of a bit in the bit set
@@ -549,10 +528,10 @@ abstract public class BitSet extends Program                                    
   public boolean integrity() {return integrity(true);}                                                                  // Do an integrity check on the bitset to detect corruption
 
   public boolean integrity(boolean Stop)                                                                                // Do an integrity check on the bitset to detect corruption and stop on failures unless specified otherwise
-   {final BitSet.Spec spec = new BitSet.Spec(bitSize, one, zero);                                                       // Specify bit set
-    final byte[]     bytes = new byte[spec.byteSize];                                                                   // Allocate backing storage.
+   {final Build  build = new Build().bitSize(bitSize).one(one).zero(zero);                                              // Specify bit set
+    final byte[] bytes = new byte[build.byteSize()];                                                                    // Allocate backing storage.
 
-    final BitSet b = new BitSet(spec)                                                                                   // Create an identical bitset
+    final BitSet b = new BitSet(build)                                                                                  // Create an identical bitset
      {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}                                                   // Backend write.
       byte getByte(Int Index)      {return bytes[Index.i()];}                                                           // Backend read.
      };
@@ -620,10 +599,10 @@ abstract public class BitSet extends Program                                    
 //D1 Tests                                                                                                              // Tests
 
   static BitSet test_bits(int N, boolean One, boolean Zero)                                                             // Create test bitset.
-   {final BitSet.Spec spec = new BitSet.Spec(N, One, Zero);                                                             // Allocate backing storage.
-    final byte[]     bytes = new byte[spec.byteSize()];                                                                 // Allocate backing storage.
+   {final Build build = new Build().bitSize(N).one(One).zero(Zero);                                                     // Allocate backing storage.
+    final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
 
-    final BitSet b = new BitSet(spec)                                                                                   // Create a bit set
+    final BitSet b = new BitSet(build)                                                                                  // Create a bit set
      {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}                                                   // Backend write.
       byte getByte(Int Index)      {return bytes[Index.i()];}                                                           // Backend read.
      };
@@ -634,10 +613,10 @@ abstract public class BitSet extends Program                                    
    {final BitSet b = test_bits(23, true, false);                                                                        // Get test bitset.
     final int N = b.size();                                                                                             // Get logical size.
 
-    for (int i = 0; i < N; i++) b.setBit(b.new Pos(b.new Int(i)), i % 2 == 0);                                            // Set alternating bits.
+    for (int i = 0; i < N; i++) b.setBit(b.new Pos(b.new Int(i)), i % 2 == 0);                                          // Set alternating bits.
 
-    ok(b.getBit(b.new Pos(b.new Int(4))), true);                                                                          // Verify bit 4.
-    ok(b.getBit(b.new Pos(b.new Int(5))), false);                                                                         // Verify bit 5.
+    ok(b.getBit(b.new Pos(b.new Int(4))), true);                                                                        // Verify bit 4.
+    ok(b.getBit(b.new Pos(b.new Int(5))), false);                                                                       // Verify bit 5.
    }
 
   static void test_prevNext()                                                                                           // Test tree of searchable one bits
@@ -647,7 +626,7 @@ abstract public class BitSet extends Program                                    
 
     for (int i : s) b.set(b.new Pos(b.new Int(i)), true);
 
-                                            //stop(b);
+    //stop(b);
     ok(b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
@@ -819,10 +798,10 @@ Zero:
 
   static void test_integrity()
    {final int N = 8;                                                                                                    // Test size.
-    final BitSet.Spec spec = new BitSet.Spec(N, true);                                                                  // Allocate backing storage.
-    final byte[]bytes = new byte[spec.byteSize()];                                                                      // Allocate backing storage.
+    final Build build = new Build().bitSize(N).one(true);                                                               // Allocate backing storage.
+    final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
 
-    final BitSet b = new BitSet(spec)                                                                                   // Create a bit set using the backing storage
+    final BitSet b = new BitSet(build)                                                                                  // Create a bit set using the backing storage
      {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}                                                   // Backend write.
       byte getByte(Int Index)      {return bytes[Index.i()];}                                                           // Backend read.
      };
