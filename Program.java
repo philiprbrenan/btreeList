@@ -10,7 +10,8 @@ import java.util.function.Supplier;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
+ {final Program     program = this;                                                                                     // Redirect one [rogram to another if necesary t allow componenets to be tested in isolation and then integrated into a larger program
+  final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
   private final boolean immediate;                                                                                      // Execute immediately if true else generate machine code and execute later
@@ -421,9 +422,9 @@ public class Program extends Test                                               
      }
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {instructionNumber = code.size();                                                                                  // Number each instruction
+     {instructionNumber = program.code.size();                                                                                  // Number each instruction
       mightJump = MightJump;
-      code.push(this);                                                                                                  // Save instruction
+      program.code.push(this);                                                                                                  // Save instruction
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuning it will not jump
@@ -440,9 +441,9 @@ public class Program extends Test                                               
   void execute()                                                                                                        // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed
     pc = 0;
-    final int N = code.size();                                                                                          // Number of instructions
+    final int N = program.code.size();                                                                                          // Number of instructions
     for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
-     {final I i = code.elementAt(pc);
+     {final I i = program.code.elementAt(pc);
       try
 
        {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
@@ -451,7 +452,7 @@ public class Program extends Test                                               
       catch(Exception e)
        {stop("Exception:", e, "while executing:", traceBack(e));
        }
-      if (code.size() != N) stop("Instruction added during execution");
+      if (program.code.size() != N) stop("Instruction added during execution");
      }
    }
 
