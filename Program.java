@@ -10,9 +10,7 @@ import java.util.function.Supplier;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final static long start               = System.nanoTime();                                                            // Start time
-  final static boolean coverageAnalysis = false;                                                                        // Enables coverage checks
-  final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
+ {final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
   private final boolean immediate;                                                                                      // Execute immediately if true else generate machine code and execute later
