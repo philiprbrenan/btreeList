@@ -17,7 +17,7 @@ public class Program extends Test                                               
   final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<String>   put = new Stack<>();                                                                            // Output from execution
-  final boolean ex;                                                                                                     // Execute immediately if true else generate machine code and execute later
+  private final boolean immediate;                                                                                      // Execute immediately if true else generate machine code and execute later
 
   final int maxSteps = 999;                                                                                             // Number of steps permitted in code execution
   int      nextIntId = 0;                                                                                               // Unique id for each Int
@@ -25,9 +25,10 @@ public class Program extends Test                                               
   int             pc;                                                                                                   // Program counter - set to something less than zero to stop with a return code
 
   Program()           {this(true);}                                                                                     // Create a program which executes as it is written
-  Program(boolean Ex) {ex = Ex; code();}                                                                                // Create a program as a list of instructins which are executed later
+  Program(boolean Immediate) {immediate = Immediate; code();}                                                           // Create a program as a list of instructins which are executed later
 
   void code() {}                                                                                                        // Override to provide some code for this program
+  boolean immediate() {return immediate;}                                                                               // Excute immediately or later as machine code
 
 //D1 Program                                                                                                            // Program structures
 
@@ -36,7 +37,7 @@ public class Program extends Test                                               
      {final Int index = new Int();
       final Bool cont = new Bool();
 
-      if (ex)                                                                                                           // Immediate execution
+      if (immediate())                                                                                                  // Immediate execution
        {for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
          {index.set(i);                                                                                                 // Set the index to each element of the specified range
           cont.clear();                                                                                                 // Terminate unless told otherwise
@@ -71,7 +72,7 @@ public class Program extends Test                                               
      {if (Condition) Then(); else Else();
      }
     If (Bool    Condition)
-     {if (ex)                                                                                                           // Immediate execution
+     {if (immediate())                                                                                                  // Immediate execution
        {if (Condition.b()) Then(); else Else();
        }
      else                                                                                                               // Machine code
@@ -144,10 +145,10 @@ public class Program extends Test                                               
     Bool         eq(Bool    I) {return ie(Ops.eq,  I);}
     Bool         ne(Bool    I) {return ie(Ops.ne,  I);}
 
-    Bool ie(Ops Op)            {if (ex) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}             // Execute immediately or create an instruction for machine code to execute later
-    Bool ie(Ops Op, boolean I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Bool    I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Int     I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op)            {if (immediate()) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}    // Execute immediately or create an instruction for machine code to execute later
+    Bool ie(Ops Op, boolean I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Bool    I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Int     I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {switch(Op)
@@ -219,6 +220,7 @@ public class Program extends Test                                               
     Bool dup() {return new Bool(this);}                                                                                 // Duplicate a boolean
 
     public String toString() {return v ? ""+i : "undefined Bool";}                                                      // Print the boolean
+    Program program() {return Program.this;}                                                                            // Containing program
    }
 
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
@@ -239,7 +241,7 @@ public class Program extends Test                                               
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
 
-    enum Ops {X, abs, add, add2, dec, div, down, inc, max, min, mod, mul, neg, set, sqrt, sub, up};                     // Possible integer operations
+    enum Ops {X, abs, add, add2, dec, div, down, eq, ge, gt, inc, le, lt, max, min, mod, mul, neg, ne, set, sqrt, sub, up}; // Possible integer operations
 
     Int  X   ()      {return ie(Ops.X      );}                                                                          // Integer operations
     Int  set (int I) {return ie(Ops.set , I);}
@@ -263,9 +265,9 @@ public class Program extends Test                                               
     Int  neg ()      {return ie(Ops.neg    );}
     Int  abs ()      {return ie(Ops.abs    );}
 
-    Int ie(Ops Op)        {if (ex) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}                  // Execute immediately or create an instruction for machine code to execute later
-    Int ie(Ops Op, int I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
-    Int ie(Ops Op, Int I) {if (ex) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op)        {if (immediate()) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}         // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op, int I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op, Int I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {switch(Op)
@@ -322,23 +324,67 @@ public class Program extends Test                                               
     Int  Neg()       {return dup().neg();}
     Int  Abs()       {return dup().abs();}
 
-    Bool eq(int e){  x(); return new Bool(i == e);}                                                                     // Comparisons with a constant integer
-    Bool ne(int e){  x(); return new Bool(i != e);}
-    Bool le(int e){  x(); return new Bool(i <= e);}
-    Bool lt(int e){  x(); return new Bool(i <  e);}
-    Bool ge(int e){  x(); return new Bool(i >= e);}
-    Bool gt(int e){  x(); return new Bool(i >  e);}
+    Bool eq(int I) {return bie(Ops.eq, I);}                                                                             // Comparisons with a constant integer
+    Bool ne(int I) {return bie(Ops.ne, I);}
+    Bool le(int I) {return bie(Ops.le, I);}
+    Bool lt(int I) {return bie(Ops.lt, I);}
+    Bool ge(int I) {return bie(Ops.ge, I);}
+    Bool gt(int I) {return bie(Ops.gt, I);}
 
-    Bool eq(Int e){e.x(); return eq(e.i);}
-    Bool ne(Int e){e.x(); return ne(e.i);}                                                                              // Comparisons with a variable integer
-    Bool le(Int e){e.x(); return le(e.i);}
-    Bool lt(Int e){e.x(); return lt(e.i);}
-    Bool ge(Int e){e.x(); return ge(e.i);}
-    Bool gt(Int e){e.x(); return gt(e.i);}
+    Bool eq(Int I) {return bie(Ops.eq, I);}                                                                             // Comparisons with a variable integer
+    Bool ne(Int I) {return bie(Ops.ne, I);}
+    Bool le(Int I) {return bie(Ops.le, I);}
+    Bool lt(Int I) {return bie(Ops.lt, I);}
+    Bool ge(Int I) {return bie(Ops.ge, I);}
+    Bool gt(Int I) {return bie(Ops.gt, I);}
+
+    Bool bie(Ops Op, int I)
+     {final Bool b = new Bool();
+      if (immediate()) bex(Op, b, I);
+      else new I()
+       {void action()
+         {bex(Op, b, I);
+         }
+       };
+      return b;
+     } // Execute immediately or create an instruction for machine code to execute later
+    Bool bie(Ops Op, Int I)
+     {final Bool b = new Bool();
+      if (immediate()) bex(Op, b, I);
+      else new I() {void action() {bex(Op, b, I);}};
+      return b;
+     }
+
+    void bex(Ops Op, Bool B, int I)
+     {x();
+      switch(Op)
+       {case eq -> B.set(i == I);
+        case ne -> B.set(i != I);
+        case le -> B.set(i <= I);
+        case lt -> B.set(i <  I);
+        case ge -> B.set(i >= I);
+        case gt -> B.set(i >  I);
+        default  -> stop("Op not implemented:", Op);
+       }
+     }
+
+    void bex(Ops Op, Bool B, Int I)
+     {x(); I.x();
+      switch(Op)
+       {case eq -> B.set(i == I.i);
+        case ne -> B.set(i != I.i);
+        case le -> B.set(i <= I.i);
+        case lt -> B.set(i <  I.i);
+        case ge -> B.set(i >= I.i);
+        case gt -> B.set(i >  I.i);
+        default  -> stop("Op not implemented:", Op);
+       }
+     }
 
     Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
 
     public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
+    Program program() {return Program.this;}                                                                            // Containing program
    }
 
   class Ref<T>                                                                                                          // A reference to an object
@@ -358,13 +404,8 @@ public class Program extends Test                                               
   static int[]range(Int Limit) {return range(Limit.i());}                                                               // Range of integers
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
 
-  void put(Object...Values)                                                                                             // Say some constant values
-   {if (ex)                      put.push(""+saySb(Values));
-    else new I() {void action() {put.push(""+saySb(Values));}};
-   }
-
   <T> void put(Supplier<T> Value)                                                                                       // Say a variable value
-   {if (ex)                      put.push(""+saySb(Value.get()));
+   {if (immediate())             put.push(""+saySb(Value.get()));
     else new I() {void action() {put.push(""+saySb(Value.get()));}};
    }
 
@@ -401,7 +442,7 @@ public class Program extends Test                                               
    }
 
   void execute()                                                                                                        // Execute the current code
-   {if (ex) return;                                                                                                     // The code has already been executed
+   {if (immediate()) return;                                                                                            // The code has already been executed
     pc = 0;
     final int N = code.size();                                                                                          // Number of instructions
     for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
@@ -485,7 +526,7 @@ public class Program extends Test                                               
         new For(N)
          {void body(Int Index, Bool Continue)
            {b.add(a.dup().inc());
-            put(a, b);
+            put(()->saySb(a, b));
             Continue.set();
            }
          };
