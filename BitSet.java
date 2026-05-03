@@ -100,6 +100,7 @@ abstract public class BitSet extends Program                                    
   private Bool getBitNC(Pos Index)                                                                                      // Get bit value at an index without checking that the index is valid
    {final Int bIndex = byteIndex(Index.position());                                                                     // Compute byte position.
     final Int offset = bitOffset(Index.position());                                                                     // Compute bit offset.
+
     final byte b = getByte(bIndex);                                                                                     // Load byte.
     return new Bool(((b >>> offset.i()) & 1) != 0);                                                                     // Extract bit.
    }
