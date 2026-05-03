@@ -32,7 +32,8 @@ abstract public class BitSet extends Program                                    
      }
    }
 
-  public BitSet(Build Build)                                                                                      // Constructor
+  @SuppressWarnings("this-escape")
+  public BitSet(Build Build)                                                                                            // Constructor
    {bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
     bitSize1   = bitSize - 1;
     bitSize2   = bitSize >>> 1;
@@ -91,7 +92,7 @@ abstract public class BitSet extends Program                                    
     public Pos()             {super();}                                                                                 // Construct an invalid bit position
     public Pos(int Position) {super(Position);}                                                                         // Construct a valid bit position
     public Pos(Int Position) {super(Position);}                                                                         // Construct a bit position
-    public String toString() {return "Pos: "+i();}                                                                      // Print a bit position
+    public String toString() {return "Pos: "+super.toString();}                                                         // Print a bit position
    }
 
 //D2 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
