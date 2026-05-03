@@ -35,6 +35,24 @@ public class Program extends Test                                               
   void         ai() {if (program.executing != null) stop("Allocation within an instruction");}                          // An executing program cannot be exetended by adding new data or instructionsexecutingOrInterpreting();
   void executingOrInterpreting() {if (!immediate() && !executing()) stop("Not executing or interpreting");}             // Use standard Java operators rather than this class to execute code that is not executed as machine conde
 
+  boolean trace = false;                                                                                                // Trace if true
+  final Stack<String> traceLog = new Stack<>();                                                                         // Trace of execution if requested
+
+  void trace(String Message, String Location)                                                                           // Trace an operation
+   {if (trace)
+     {if (Location == null) traceLog.push(Message);
+      else                  traceLog.push(f("%-32s  %s", Message, Location));
+     }
+   }
+
+  void trace(String Message) {trace(Message, null);}                                                                    // Trace an operation
+
+  String trace()
+   {final StringBuilder s = new StringBuilder();
+    final int N = traceLog.size(); if (N == 0) return "";
+    for(int i = 0; i < N; ++i) s.append(f("%4d  %s\n", i, traceLog.elementAt(i)));
+    return ""+s;
+   }
 
 //D1 Program                                                                                                            // Program structures
 
@@ -45,8 +63,9 @@ public class Program extends Test                                               
 
       if (immediate())                                                                                                  // Immediate execution
        {for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
-         {index.set(i);                                                                                                 // Set the index to each element of the specified range
+         {trace("For "+i);
           cont.clear();                                                                                                 // Terminate unless told otherwise
+          index.set(i);                                                                                                 // Set the index to each element of the specified range
           body(index, cont);                                                                                            // Execute the loop
           if (cont.Flip().b()) break;                                                                                   // Terminate the loop unless continuation requested
          }
@@ -55,6 +74,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
+        trace("For "+index.i);
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment lop counter
@@ -79,7 +99,14 @@ public class Program extends Test                                               
      }
     If (Bool    Condition)
      {if (immediate())                                                                                                  // Immediate execution
-       {if (Condition.b()) Then(); else Else();
+       {if (Condition.b())
+         {trace("Then");
+          Then();
+         }
+        else
+         {trace("Else");
+          Else();
+         }
        }
      else                                                                                                               // Machine code
        {final Label lse = new Label();                                                                                  // Start of else
@@ -89,6 +116,7 @@ public class Program extends Test                                               
            {if (!Condition.b()) pc = lse.offset;
            }
          };
+        trace("Then2");
         Then();                                                                                                         // Then body
         new I(true)                                                                                                     // Jump over else to end
          {void action()
@@ -96,6 +124,7 @@ public class Program extends Test                                               
            }
          };
         lse.set();                                                                                                      // Start of else
+        trace("Else2");
         Else();                                                                                                         // Else body
         end.set();                                                                                                      // End of the loop
        }
@@ -118,6 +147,7 @@ public class Program extends Test                                               
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = program.nextBoolId++;                                                                                // Unique id for Bool
+    private final String traceComment = trace ? traceComment() : null;                                                  // Location
 
     enum Ops {eq, flip, ne, set};                                                                                       // Boolean operation classification by argument types
 
@@ -158,6 +188,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {executingOrInterpreting();
+      trace("Bool1 "+Op+" "+this, traceComment);
       switch(Op)
        {case flip -> {x(); i = !i;                }
         default   -> stop("Op not implemented:", Op);
@@ -167,6 +198,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
      {executingOrInterpreting();
+      trace("Bool2 "+Op+" "+this+" "+I, traceComment);
       switch (Op)
        {case set -> {i  = I; v = true; }
         case eq  -> {x(); i = i == I; }
@@ -178,6 +210,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op, Bool I)                                                                                             // Execute a monadic boolean operation on a variable
      {executingOrInterpreting();
+      trace("Bool3 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {I.x(); i = I.i; v = true; }
         case eq  -> {x(); I.x(); i = i == I.i; }
@@ -189,6 +222,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable
      {executingOrInterpreting();
+      trace("Bool4 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {I.x(); i = I.i > 0; v = true;}
         default  -> stop("Op not implemented:", Op);
@@ -236,6 +270,7 @@ public class Program extends Test                                               
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
     private final int id = program.nextIntId++;                                                                         // Unique id for Int
+    private final String traceComment = trace ? traceComment() : null;                                                  // Location
 
     Bool    valid()  {return new Bool( v);}                                                                             // A valid integer
     Bool notValid()  {return new Bool(!v);}                                                                             // A not valid integer
@@ -280,6 +315,7 @@ public class Program extends Test                                               
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingOrInterpreting();
+      trace("Int1 "+Op, traceComment);
       switch(Op)
        {case inc -> {x(); i++;                   }
         case dec -> {x(); i--;                   }
@@ -295,6 +331,7 @@ public class Program extends Test                                               
 
     Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
      {executingOrInterpreting();
+      trace("Int2 "+Op+" "+this+" "+I, traceComment);
       switch (Op)
        {case set -> {      i  = I;     v = true; }
         case add -> { x(); i += I;     v = true; }
@@ -310,6 +347,7 @@ public class Program extends Test                                               
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
      {executingOrInterpreting();
+      trace("Int3 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {i = I.i;              v = I.v; }
         default  -> {I.x(); ex(Op, I.i()); v = true;}
@@ -369,6 +407,7 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, int I)
      {x();
+      trace("Int3 "+Op+" "+this+" "+B+" "+I, traceComment);
       switch(Op)
        {case eq -> B.set(i == I);
         case ne -> B.set(i != I);
@@ -382,6 +421,7 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, Int I)
      {x(); I.x();
+      trace("Int4 "+Op+" "+this+" "+B+" "+I, traceComment);
       switch(Op)
        {case eq -> B.set(i == I.i);
         case ne -> B.set(i != I.i);
@@ -428,12 +468,9 @@ public class Program extends Test                                               
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber;                                                                                        // The number of this instruction
-    final boolean     mightJump;                                                                                        // The instruction might cause a jump
-    final String      traceBack = traceBack();                                                                          // Line at which this instruction was created
-
-    final String traceBackOnOneLine()                                                                                   // Line at which this instruction was created represented with out new lines
-     {return traceBack.replace("\n", "|").trim();
-     }
+    final boolean   mightJump;                                                                                          // The instruction might cause a jump
+    final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
+    final String traceComment = traceComment();                                                                         // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
      {ai(); if  (immediate()) stop("Cannot add instructions during progam interpretation");
@@ -506,26 +543,6 @@ public class Program extends Test                                               
     ok(b1.or(  ()->{return b2;}).b() == true);
     b1.clear();
     ok(b1.And (()->{return b2;}).b() == false);
-   }
-
-  static void test_traceNames()
-   {class A
-     {void a()
-       {class B
-
-         {void b()
-           {if (github_actions)
-             {ok(traceNamesString(), "main.oldTests.test_traceNames.a.b");
-             }
-            else
-             {ok(traceNamesString(), "main.newTests.oldTests.test_traceNames.a.b");
-             }
-           }
-         }
-        new B().b();
-       }
-     }
-    new A().a();
    }
 
   static void test_add(boolean Ex)
@@ -639,10 +656,11 @@ public class Program extends Test                                               
     test_mod(false);
    }
 
-  static void test_incremental(boolean Ex)
+  static Program test_incremental(boolean Ex)
    {final Program P = new Program(Ex)
      {void code()
-       {final Int a = new Int(0);
+       {trace = true;
+        final Int a = new Int(0);
                  put(()->a);
         a.inc(); put(()->a);
         a.inc(); put(()->a);
@@ -655,11 +673,12 @@ public class Program extends Test                                               
 1
 2
 """);
+    return P;
    }
 
   static void test_incremental()
-   {test_incremental(true);
-    test_incremental(false);
+   {final Program p = test_incremental(true), q = test_incremental(false);
+    ok(p.trace(), q.trace());
    }
 
   static void test_remote()
@@ -688,7 +707,6 @@ public class Program extends Test                                               
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
-    test_traceNames();
     test_add();
     test_fibonnacci();
     test_mod();
