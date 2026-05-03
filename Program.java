@@ -16,6 +16,7 @@ public class Program extends Test                                               
 
   Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
+  public  boolean executing = false;                                                                                    // Whether we are currrently executing a machine code instruction
   public  int      maxSteps = 999;                                                                                      // Number of steps permitted in code execution
   private int     nextIntId = 0;                                                                                        // Unique id for each Int
   private int    nextBoolId = 0;                                                                                        // Unique id for each Bool
@@ -28,7 +29,9 @@ public class Program extends Test                                               
   void code() {}                                                                                                        // Override to provide some code for this program
   boolean immediate() {return program.immediate;}                                                                       // Execute immediately or later as machine code
   Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Execute immediately or later as machine code
+  void    program(Program Program) {program = Program;}                                                                 // Set remote program to accept subsequent code
   Program program() {return this;}                                                                                      // Address this program
+  void         ai() {if (program.executing) stop("Allocation within an instruction");}                                  // An executing program cannot be exetended by adding new data or instructions
 
 //D1 Program                                                                                                            // Program structures
 
@@ -117,23 +120,23 @@ public class Program extends Test                                               
 
     Bool      valid() {return new Bool(v);}
 
-    Bool           ()          {}                                                                                       // Constructors
-    Bool           (boolean I) {ie(Ops.set, I);}
-    Bool           (Bool    I) {ie(Ops.set, I);}
+    Bool           ()          {ai(); }                                                                                 // Constructors
+    Bool           (boolean I) {ai(); ie(Ops.set, I);}
+    Bool           (Bool    I) {ai(); ie(Ops.set, I);}
 
     boolean       b()          {x(); return i;}
     boolean       v()          {     return v;}
-    void          x()          {if (!v) stop("Bool has not been set yet");}
+    void          x()          {if (!v) stop("Bool has not been set yet");}                                             // Check a value has been set for the boolean
     Bool          X()          {v = true; return this;}
 
-    Bool        set()          {return ie(Ops.set,  true); }
+    Bool        set()          {return ie(Ops.set,  true); }                                                            // Boolean operations which modify the target
     Bool        set(boolean I) {return ie(Ops.set,  I);    }
     Bool        set(Bool    I) {return ie(Ops.set,  I);    }
     Bool        set(Int     I) {return ie(Ops.set,  I);    }
     Bool      clear()          {return ie(Ops.set,  false);}
     Bool       flip()          {return ie(Ops.flip);       }
 
-    Bool        Set()          {return dup().set();}
+    Bool        Set()          {return dup().set();}                                                                    // Boolen operations that modify a copy of the target
     Bool        Set(boolean I) {return dup().set(I);}
     Bool        Set(Bool    I) {return dup().set(I);}
     Bool      Clear()          {return dup().clear();}
@@ -233,9 +236,9 @@ public class Program extends Test                                               
     boolean     v()  {     return v;}                                                                                   // Value has been set
     void x       ()  {if (!v) stop("Int has not been set yet");}                                                        // Confirm that the integer has a value
 
-    Int      ()      {}                                                                                                 // Constructors
-    Int (int I)      {ie(Ops.set, I);}
-    Int (Int I)      {ie(Ops.set, I);}
+    Int      ()      {ai(); }                                                                                           // Constructors
+    Int (int I)      {ai(); ie(Ops.set, I);}
+    Int (Int I)      {ai(); ie(Ops.set, I);}
 
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
@@ -387,10 +390,10 @@ public class Program extends Test                                               
 
   class Ref<T>                                                                                                          // A reference to an object
    {T i;                                                                                                                // Value of the object
-    Ref()              {i = null;}                                                                                      // Create a null reference
-    Ref(T I)           {i = I;}                                                                                         // Create a reference to the object
-    void set(T I)      {i = I;}                                                                                         // Set the refernce
-    void set(Ref<T> I) {i = I.get();}                                                                                   // Set the refernce
+    Ref()              {ai(); i = null;}                                                                                // Create a null reference
+    Ref(T I)           {ai(); i = I;}                                                                                   // Create a reference to the object
+    void set(T I)      {      i = I;}                                                                                   // Set the refernce
+    void set(Ref<T> I) {      i = I.get();}                                                                             // Set the refernce
     T    get()         {return i;}                                                                                      // Dereference the reference
     Bool valid()       {return new Bool(i != null);}                                                                    // Check that the refence is valid
 
@@ -423,7 +426,8 @@ public class Program extends Test                                               
      }
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {instructionNumber = program.code.size();                                                                          // Number each instruction
+     {ai();
+      instructionNumber = program.code.size();                                                                          // Number each instruction
       mightJump = MightJump;
       program.code.push(this);                                                                                          // Save instruction
      }
@@ -442,17 +446,17 @@ public class Program extends Test                                               
   void execute()                                                                                                        // Execute the current code
    {if (immediate) return;                                                                                              // The code has already been executed
     pc = 0;
-    final int N = code.size();                                                                                          // Number of instructions
-    for(int c = 0; c < maxSteps && pc >= 0 && pc < N; ++c)                                                              // Execute each instruction within a specified number of steps
+    for(int c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                             // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
       try
        {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
+        executing = true;
         i.action();
+        executing = false;
        }
       catch(Exception e)
        {stop("Exception:", e, "while executing:", traceBack(e));
        }
-      if (code.size() != N) stop("Instruction added during execution");
      }
    }
 
