@@ -293,8 +293,7 @@ public class Test                                                               
 //D1 Traceback                                                                                                          // Trace back so we know where we are
 
   static Stack<String> traceNames()                                                                                     // Containing method names
-   {final Exception e = new Exception();
-    final StackTraceElement[]  t = e.getStackTrace();
+   {final StackTraceElement[]  t = Thread.currentThread().getStackTrace();
     final Stack<String>        T = new Stack<>();
 
     for(StackTraceElement s : t)
@@ -388,7 +387,7 @@ public class Test                                                               
    }
 
   static String testLine()                                                                                              // Locate line associated with the current test
-   {final StackTraceElement[] t = new Exception().getStackTrace();
+   {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     final String T = currentTestName();                                                                                 // Current test name
     for(int i = 0; i < t.length; ++i)
      {final StackTraceElement s = t[i];
@@ -426,7 +425,7 @@ public class Test                                                               
    }
 
   static String callerFileAndLine2()                                                                                    // Locate file and line number of caller of caller
-   {final StackTraceElement[] t = new Exception().getStackTrace();
+   {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     if (t.length < 3) return null;
     final StackTraceElement s = t[2];
     final String f = s.getFileName();
@@ -436,8 +435,17 @@ public class Test                                                               
    }
 
   static String traceComment()                                                                                          // Trace back comment
-   {final String t = traceBack();
-    return " /* "+t.replaceAll("\\n", " ")+" */";                                                                       // Finish a statement and show where it came from
+   {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
+    final StringBuilder       S = new StringBuilder();
+
+    for(StackTraceElement s : t)
+     {final String m = s.getMethodName();
+      if (m.equals("<init>") || m.equals("traceComment") || m.equals("getStackTrace")) continue;
+      final String f = s.getFileName();
+      final int    l = s.getLineNumber();
+      S.append(f("%s:%04d:%s; ", f, l, m));
+     }
+    return " /* "+S+" */";                                                                                              // Finish a statement and show where it came from
    }
 
 //D1 Coverage                                                                                                           // Analyze code coverage
