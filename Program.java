@@ -27,11 +27,14 @@ public class Program extends Test                                               
   Program(Program Program)   {program = Program;     code();}                                                           // Access the specified remote program through this program
 
   void code() {}                                                                                                        // Override to provide some code for this program
-  boolean immediate() {return program.immediate;}                                                                       // Execute immediately or later as machine code
-  Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Execute immediately or later as machine code
+  boolean immediate() {return program.immediate;}                                                                       // Executing immediately via interpretation
+  boolean executing() {return program.executing != null;}                                                               // Executing machine code
+  Program   program() {return program;}                                                                                 // Address this program
+  Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Request immediate execution via interpretation
   final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code. Set final to prevent this-escape error in derived classes
-  Program program() {return this;}                                                                                      // Address this program
-  void         ai() {if (program.executing != null) stop("Allocation within an instruction");}                          // An executing program cannot be exetended by adding new data or instructions
+  void         ai() {if (program.executing != null) stop("Allocation within an instruction");}                          // An executing program cannot be exetended by adding new data or instructionsexecutingOrInterpreting();
+  void executingOrInterpreting() {if (!immediate() && !executing()) stop("Not executing or interpreting");}             // Use standard Java operators rather than this class to execute code that is not executed as machine conde
+
 
 //D1 Program                                                                                                            // Program structures
 
@@ -154,7 +157,8 @@ public class Program extends Test                                               
     Bool ie(Ops Op, Int     I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
-     {switch(Op)
+     {executingOrInterpreting();
+      switch(Op)
        {case flip -> {x(); i = !i;                }
         default   -> stop("Op not implemented:", Op);
        }
@@ -162,7 +166,8 @@ public class Program extends Test                                               
      }
 
     Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
-     {switch (Op)
+     {executingOrInterpreting();
+      switch (Op)
        {case set -> {i  = I; v = true; }
         case eq  -> {x(); i = i == I; }
         case ne  -> {x(); i = i != I; }
@@ -172,7 +177,8 @@ public class Program extends Test                                               
      }
 
     Bool ex(Ops Op, Bool I)                                                                                             // Execute a monadic boolean operation on a variable
-     {switch(Op)
+     {executingOrInterpreting();
+      switch(Op)
        {case set -> {I.x(); i = I.i; v = true; }
         case eq  -> {x(); I.x(); i = i == I.i; }
         case ne  -> {x(); I.x(); i = i != I.i; }
@@ -182,7 +188,8 @@ public class Program extends Test                                               
      }
 
     Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable
-     {switch(Op)
+     {executingOrInterpreting();
+      switch(Op)
        {case set -> {I.x(); i = I.i > 0; v = true;}
         default  -> stop("Op not implemented:", Op);
        }
@@ -272,7 +279,8 @@ public class Program extends Test                                               
     Int ie(Ops Op, Int I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
-     {switch(Op)
+     {executingOrInterpreting();
+      switch(Op)
        {case inc -> {x(); i++;                   }
         case dec -> {x(); i--;                   }
         case up  -> {x(); i  <<= 1;              }
@@ -286,7 +294,8 @@ public class Program extends Test                                               
      }
 
     Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
-     {switch (Op)
+     {executingOrInterpreting();
+      switch (Op)
        {case set -> {      i  = I;     v = true; }
         case add -> { x(); i += I;     v = true; }
         case sub -> { x(); i -= I;     v = true; }
@@ -300,7 +309,8 @@ public class Program extends Test                                               
      }
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
-     {switch(Op)
+     {executingOrInterpreting();
+      switch(Op)
        {case set -> {i = I.i;              v = I.v; }
         default  -> {I.x(); ex(Op, I.i()); v = true;}
        }
@@ -444,7 +454,7 @@ public class Program extends Test                                               
    }
 
   void execute()                                                                                                        // Execute the current code
-   {if (immediate) return;                                                                                              // The code has already been executed
+   {if (immediate) return;                                                                                              // The code has already been executed interpretively
     pc = 0;
     for(int c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                             // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
