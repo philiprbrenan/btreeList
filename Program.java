@@ -29,7 +29,7 @@ public class Program extends Test                                               
   void code() {}                                                                                                        // Override to provide some code for this program
   boolean immediate() {return program.immediate;}                                                                       // Execute immediately or later as machine code
   Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Execute immediately or later as machine code
-  void    program(Program Program) {program = Program;}                                                                 // Set remote program to accept subsequent code
+  final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code
   Program program() {return this;}                                                                                      // Address this program
   void         ai() {if (program.executing) stop("Allocation within an instruction");}                                  // An executing program cannot be exetended by adding new data or instructions
 
