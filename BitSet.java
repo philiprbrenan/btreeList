@@ -19,17 +19,20 @@ abstract public class BitSet extends Program                                    
    {int  bitSize = 1;                                                                                                   // Number of bits in the bit set.
     boolean zero = false;                                                                                               // Able to locate zeros via a tree of bits if set
     boolean  one = false;                                                                                               // Able to locate ones via a tree of bits if set
+    Program program = null;                                                                                             // Program whose code is to be written to
 
-    Build bitSize (int     BitSize ) {bitSize  = BitSize ; return this;}
-    Build zero    (boolean Zero    ) {zero     = Zero    ; return this;}
-    Build one     (boolean One     ) {one      = One     ; return this;}
+    Build bitSize (int     BitSize ) {bitSize  = BitSize; return this;}
+    Build zero    (boolean Zero    ) {zero     = Zero   ; return this;}
+    Build one     (boolean One     ) {one      = One    ; return this;}
+    Build program (Program Program ) {program  = Program; return this;}
+
     int byteSize()                                                                                                      // Bytes needed for the bitset and its bit trees
      {final int s = zero && one ? 3 : zero || one ? 2 : 1;                                                              // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
       return (Byte.SIZE - 1 + s * nextPowerOfTwo(bitSize)) / Byte.SIZE;
      }
    }
 
-  public BitSet(Build Build)                                                                                            // Constructor
+  public BitSet(Build Build)                                                                                      // Constructor
    {bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
     bitSize1   = bitSize - 1;
     bitSize2   = bitSize >>> 1;
@@ -38,6 +41,7 @@ abstract public class BitSet extends Program                                    
     one        = Build.one;                                                                                             // Locate ones efficiently
     byteSize   = Build.byteSize();                                                                                      // Bytes needed for the bitset and its bit trees
     oneTreeBit = bitSize <= 2;                                                                                          // At most only one tree bit present
+    if (Build.program != null) program(Build.program);                                                                  // Target program
    }
 
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
