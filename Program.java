@@ -16,7 +16,7 @@ public class Program extends Test                                               
 
   Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
-  public  boolean executing = false;                                                                                    // Whether we are currrently executing a machine code instruction
+  public  I       executing = null;                                                                                     // Instruction being currently executed
   public  int      maxSteps = 999;                                                                                      // Number of steps permitted in code execution
   private int     nextIntId = 0;                                                                                        // Unique id for each Int
   private int    nextBoolId = 0;                                                                                        // Unique id for each Bool
@@ -29,9 +29,9 @@ public class Program extends Test                                               
   void code() {}                                                                                                        // Override to provide some code for this program
   boolean immediate() {return program.immediate;}                                                                       // Execute immediately or later as machine code
   Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Execute immediately or later as machine code
-  final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code
+  final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code. Set final to prevent this-escape error in derived classes
   Program program() {return this;}                                                                                      // Address this program
-  void         ai() {if (program.executing) stop("Allocation within an instruction");}                                  // An executing program cannot be exetended by adding new data or instructions
+  void         ai() {if (program.executing != null) stop("Allocation within an instruction");}                          // An executing program cannot be exetended by adding new data or instructions
 
 //D1 Program                                                                                                            // Program structures
 
@@ -426,7 +426,7 @@ public class Program extends Test                                               
      }
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {ai();
+     {ai(); if  (immediate()) stop("Cannot add instructions during progam interpretation");
       instructionNumber = program.code.size();                                                                          // Number each instruction
       mightJump = MightJump;
       program.code.push(this);                                                                                          // Save instruction
@@ -450,9 +450,9 @@ public class Program extends Test                                               
      {final I i = code.elementAt(pc);
       try
        {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
-        executing = true;
+        executing = i;
         i.action();
-        executing = false;
+        executing = null;
        }
       catch(Exception e)
        {stop("Exception:", e, "while executing:", traceBack(e));
