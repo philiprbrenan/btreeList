@@ -63,7 +63,7 @@ public class Program extends Test                                               
 
       if (immediate())                                                                                                  // Immediate execution
        {for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
-         {trace("For "+i);
+         {if (trace) trace("For "+i);
           cont.clear();                                                                                                 // Terminate unless told otherwise
           index.set(i);                                                                                                 // Set the index to each element of the specified range
           body(index, cont);                                                                                            // Execute the loop
@@ -74,7 +74,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        trace("For "+index.i);
+        if (trace) trace("For "+index.i);
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment lop counter
@@ -100,11 +100,11 @@ public class Program extends Test                                               
     If (Bool    Condition)
      {if (immediate())                                                                                                  // Immediate execution
        {if (Condition.b())
-         {trace("Then");
+         {if (trace) trace("Then");
           Then();
          }
         else
-         {trace("Else");
+         {if (trace) trace("Else");
           Else();
          }
        }
@@ -116,7 +116,7 @@ public class Program extends Test                                               
            {if (!Condition.b()) pc = lse.offset;
            }
          };
-        trace("Then2");
+        if (trace) trace("Then2");
         Then();                                                                                                         // Then body
         new I(true)                                                                                                     // Jump over else to end
          {void action()
@@ -124,7 +124,7 @@ public class Program extends Test                                               
            }
          };
         lse.set();                                                                                                      // Start of else
-        trace("Else2");
+        if (trace) trace("Else2");
         Else();                                                                                                         // Else body
         end.set();                                                                                                      // End of the loop
        }
@@ -188,7 +188,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {executingOrInterpreting();
-      trace("Bool1 "+Op+" "+this, traceComment);
+      if (trace) trace("Bool1 "+Op+" "+this, traceComment);
       switch(Op)
        {case flip -> {x(); i = !i;                }
         default   -> stop("Op not implemented:", Op);
@@ -198,7 +198,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
      {executingOrInterpreting();
-      trace("Bool2 "+Op+" "+this+" "+I, traceComment);
+      if (trace) trace("Bool2 "+Op+" "+this+" "+I, traceComment);
       switch (Op)
        {case set -> {i  = I; v = true; }
         case eq  -> {x(); i = i == I; }
@@ -210,7 +210,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op, Bool I)                                                                                             // Execute a monadic boolean operation on a variable
      {executingOrInterpreting();
-      trace("Bool3 "+Op+" "+this+" "+I, traceComment);
+      if (trace) trace("Bool3 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {I.x(); i = I.i; v = true; }
         case eq  -> {x(); I.x(); i = i == I.i; }
@@ -222,7 +222,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable
      {executingOrInterpreting();
-      trace("Bool4 "+Op+" "+this+" "+I, traceComment);
+      if (trace) trace("Bool4 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {I.x(); i = I.i > 0; v = true;}
         default  -> stop("Op not implemented:", Op);
@@ -315,7 +315,7 @@ public class Program extends Test                                               
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingOrInterpreting();
-      trace("Int1 "+Op, traceComment);
+      if (trace) trace("Int1 "+Op, traceComment);
       switch(Op)
        {case inc -> {x(); i++;                   }
         case dec -> {x(); i--;                   }
@@ -331,7 +331,7 @@ public class Program extends Test                                               
 
     Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
      {executingOrInterpreting();
-      trace("Int2 "+Op+" "+this+" "+I, traceComment);
+      if (trace) trace("Int2 "+Op+" "+this+" "+I, traceComment);
       switch (Op)
        {case set -> {      i  = I;     v = true; }
         case add -> { x(); i += I;     v = true; }
@@ -347,7 +347,7 @@ public class Program extends Test                                               
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
      {executingOrInterpreting();
-      trace("Int3 "+Op+" "+this+" "+I, traceComment);
+      if (trace) trace("Int3 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {i = I.i;              v = I.v; }
         default  -> {I.x(); ex(Op, I.i()); v = true;}
@@ -407,7 +407,7 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, int I)
      {x();
-      trace("Int3 "+Op+" "+this+" "+B+" "+I, traceComment);
+      if (trace) trace("Int3 "+Op+" "+this+" "+B+" "+I, traceComment);
       switch(Op)
        {case eq -> B.set(i == I);
         case ne -> B.set(i != I);
@@ -421,7 +421,7 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, Int I)
      {x(); I.x();
-      trace("Int4 "+Op+" "+this+" "+B+" "+I, traceComment);
+      if (trace) trace("Int4 "+Op+" "+this+" "+B+" "+I, traceComment);
       switch(Op)
        {case eq -> B.set(i == I.i);
         case ne -> B.set(i != I.i);
