@@ -37,8 +37,9 @@ public class Program extends Test                                               
 
   boolean trace = false;                                                                                                // Trace if true
   final Stack<String> traceLog = new Stack<>();                                                                         // Trace of execution if requested
+  Program trace(boolean Trace) {trace = Trace; return this;}                                                            // Trace an operation
 
-  void trace(String Message, String Location)                                                                           // Trace an operation
+  void trace(String Message, String Location)                                                                           // Write a trace message
    {if (trace)
      {if (Location == null) traceLog.push(Message);
       else                  traceLog.push(f("%-32s  %s", Message, Location));
@@ -149,7 +150,7 @@ public class Program extends Test                                               
     final int id = program.nextBoolId++;                                                                                // Unique id for Bool
     private final String traceComment = trace ? traceComment() : null;                                                  // Location
 
-    enum Ops {eq, flip, ne, set};                                                                                       // Boolean operation classification by argument types
+    enum Ops {and, eq, flip, ne, or, set};                                                                                       // Boolean operation classification by argument types
 
     Bool      valid() {return new Bool(v);}
 
@@ -188,77 +189,92 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {executingOrInterpreting();
-      if (trace) trace("Bool1 "+Op+" "+this, traceComment);
       switch(Op)
        {case flip -> {x(); i = !i;                }
         default   -> stop("Op not implemented:", Op);
        }
+      if (trace) trace("Bool1 "+Op+" "+this, traceComment);
       return this;
      }
 
     Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
      {executingOrInterpreting();
-      if (trace) trace("Bool2 "+Op+" "+this+" "+I, traceComment);
       switch (Op)
        {case set -> {i  = I; v = true; }
         case eq  -> {x(); i = i == I; }
         case ne  -> {x(); i = i != I; }
         default  -> stop("Op not implemented:", Op);
        }
+      if (trace) trace("Bool2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
     Bool ex(Ops Op, Bool I)                                                                                             // Execute a monadic boolean operation on a variable
      {executingOrInterpreting();
-      if (trace) trace("Bool3 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {I.x(); i = I.i; v = true; }
         case eq  -> {x(); I.x(); i = i == I.i; }
         case ne  -> {x(); I.x(); i = i != I.i; }
         default  -> stop("Op not implemented:", Op);
        }
+      if (trace) trace("Bool3 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
     Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable
      {executingOrInterpreting();
-      if (trace) trace("Bool4 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {I.x(); i = I.i > 0; v = true;}
         default  -> stop("Op not implemented:", Op);
        }
+      if (trace) trace("Bool4 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
     @SafeVarargs
     final Bool or(Supplier<Bool>...b)                                                                                   // "Or" with short circuit
-     {x();                                                                                                              // Start with the current value
-      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
-       {if (b()) break;                                                                                                 // Finish when we know the result
-        set(b[i].get());                                                                                                // Check additional operands
-       }
+     {if (immediate()) orEx(b); else new I() {void action() {orEx(b);}};
       return this;
      }
 
+    @SafeVarargs
+    final void orEx(Supplier<Bool>...b)                                                                                 // "Or" with short circuit
+     {x();                                                                                                              // Start with the current value
+      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
+       {if (b()) break;                                                                                                 // Finish when we know the result
+        ex(Ops.set, b[i].get());                                                                                                // Check additional operands
+       }
+     }
 
     @SafeVarargs
     final Bool And(Supplier<Bool>...b)                                                                                  // "And" with short circuit
-     {x(); final Bool r = new Bool(b());                                                                                // Start with the current value
-      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
-       {if (!r.b()) break;                                                                                              // Finish when we know the result
-        r.set(b[i].get());                                                                                              // Check additional operands
-       }
+     {final Bool r = new Bool();
+      if (immediate()) AndEx(r, b); else new I() {void action() {AndEx(r, b);}};
       return r;
      }
 
     @SafeVarargs
+    final void AndEx(Bool r, Supplier<Bool>...b)                                                                        // "And" with short circuit
+     {x(); r.set(b());                                                                                                  // Start with the current value
+      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
+       {if (!r.b()) break;                                                                                              // Finish when we know the result
+        r.set(b[i].get());                                                                                              // Check additional operands
+       }
+     }
+
+    @SafeVarargs
     final Bool and(Supplier<Bool>...b)                                                                                  // "And" with short circuit modify target
+     {if (immediate()) andEx(b); else new I() {void action() {andEx(b);}};
+      return this;
+     }
+
+    @SafeVarargs
+    final void andEx(Supplier<Bool>...b)                                                                                  // "And" with short circuit modify target
      {x();
       for (int i : range(b.length))                                                                                     // Test each additional value as necessary
        {if (!b()) break;                                                                                                // Finish when we know the result
-        set(b[i].get());                                                                                                // Check additional operands
+        ex(Ops.set, b[i].get());                                                                                                // Check additional operands
        }
-      return this;
      }
 
     Bool dup() {return new Bool(this);}                                                                                 // Duplicate a boolean
@@ -315,7 +331,6 @@ public class Program extends Test                                               
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingOrInterpreting();
-      if (trace) trace("Int1 "+Op, traceComment);
       switch(Op)
        {case inc -> {x(); i++;                   }
         case dec -> {x(); i--;                   }
@@ -326,12 +341,12 @@ public class Program extends Test                                               
         case abs -> {x(); i = i < 0 ? -i : i;    }
         default  -> stop("Op not implemented:", Op);
        }
+      if (trace) trace("Int1 "+Op, traceComment);
       return this;
      }
 
     Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
      {executingOrInterpreting();
-      if (trace) trace("Int2 "+Op+" "+this+" "+I, traceComment);
       switch (Op)
        {case set -> {      i  = I;     v = true; }
         case add -> { x(); i += I;     v = true; }
@@ -342,16 +357,17 @@ public class Program extends Test                                               
         case add2-> { x(); i += I + I; v = true; }
         default  -> stop("Op not implemented:", Op);
        }
+      if (trace) trace("Int2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
      {executingOrInterpreting();
-      if (trace) trace("Int3 "+Op+" "+this+" "+I, traceComment);
       switch(Op)
        {case set -> {i = I.i;              v = I.v; }
         default  -> {I.x(); ex(Op, I.i()); v = true;}
        }
+      if (trace) trace("Int3 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
@@ -515,34 +531,47 @@ public class Program extends Test                                               
 
   static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
-  static void test_programming()
-   {final Program p = new Program();
-    final Int         i = p.new Int(0);
-    class test_programming
-     {test_programming(int N)
-       {p.new For(N)
-         {void body(Int Index, Bool Continue)
-           {p.new If (Index.Mod(2).eq(0))
-             {void Then() {i.add(Index);}
-              void Else() {i.sub(Index);}
-             };
-            Continue.set();
-           }
+  static void test_programming(boolean Ex)
+   {final Program P = new Program();
+    final Int     i = P.new Int(0);
+    final Int     N = P.new Int(11);
+    P.trace(true);
+    P.new For(N)
+     {void body(Int Index, Bool Continue)
+       {P.new If (Index.Mod(2).eq(0))
+         {void Then() {i.add(Index);}
+          void Else() {i.sub(Index);}
          };
+        Continue.set();
        }
-     }
-    new test_programming(11);
+     };
+    P.execute();
     ok(i, 5);
     ok(i.valid().b());
    }
 
+  static void test_programming()
+   {test_programming(true);
+    test_programming(false);
+   }
+
+  static void test_bool(boolean Ex)
+   {final Program  P = new Program(Ex);
+    final Bool z = P.new Bool().clear();
+    final Bool o = P.new Bool().set();
+
+    final Bool O = P.new Bool().set(z);
+               O.or(()->o);
+    P.put(()->O);
+    final Bool A = P.new Bool().set(o);
+               A.and(()->z);
+    P.put(()->A);
+    P.execute();
+   }
+
   static void test_bool()
-   {final Program P = new Program();
-    final Bool b1 = P.new Bool().clear();
-    final Bool b2 = P.new Bool().set();
-    ok(b1.or(  ()->{return b2;}).b() == true);
-    b1.clear();
-    ok(b1.And (()->{return b2;}).b() == false);
+   {test_bool(true);
+    test_bool(false);
    }
 
   static void test_add(boolean Ex)
@@ -681,8 +710,8 @@ public class Program extends Test                                               
     ok(p.trace(), q.trace());
    }
 
-  static void test_remote()
-   {final Program P = new Program(false)
+  static void test_remote(boolean Ex)
+   {final Program P = new Program(Ex)
      {void code()
        {final Int a = new Int(1);
         a.add(2);
@@ -704,6 +733,11 @@ public class Program extends Test                                               
 """);
    }
 
+  static void test_remote()
+   {test_remote(true);                                                                                //
+    test_remote(false);                                                                                //
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
@@ -711,11 +745,11 @@ public class Program extends Test                                               
     test_fibonnacci();
     test_mod();
     test_incremental();
+    test_remote();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    test_remote();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
