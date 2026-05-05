@@ -32,7 +32,7 @@ public class Program extends Test                                               
   Program   program() {return program;}                                                                                 // Address this program
   Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Request immediate execution via interpretation
   final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code. Set final to prevent this-escape error in derived classes
-  void         ai() {if (program.executing != null) stop("Allocation within an instruction");}                          // An executing program cannot be exetended by adding new data or instructionsexecutingOrInterpreting();
+  void  ai() {if (program.executing != null) stop("Allocation within an instruction");}                                 // An executing program cannot be exetended by adding new data or instructionsexecutingOrInterpreting();
   void executingOrInterpreting() {if (!immediate() && !executing()) stop("Not executing or interpreting");}             // Use standard Java operators rather than this class to execute code that is not executed as machine conde
 
   boolean trace = false;                                                                                                // Trace if true
@@ -300,8 +300,9 @@ public class Program extends Test                                               
 
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
-
-    enum Ops {X, abs, add, add2, dec, div, down, eq, ge, gt, inc, le, lt, max, min, mod, mul, neg, ne, set, sqrt, sub, up}; // Possible integer operations
+                                                                                                                        // Possible integer operations
+    enum Ops {X, abs, add, add2, bclr, bget, bset, dec, div, down, eq, ge, gt, inc, le, lt,
+       max, min, mod, mul, neg, ne, set, sqrt, sub, up};
 
     Int  X   ()      {return ie(Ops.X      );}                                                                          // Integer operations
     Int  set (int I) {return ie(Ops.set , I);}
@@ -331,15 +332,16 @@ public class Program extends Test                                               
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingOrInterpreting();
+      x();
       switch(Op)
-       {case inc -> {x(); i++;                   }
-        case dec -> {x(); i--;                   }
-        case up  -> {x(); i  <<= 1;              }
-        case down-> {x(); i >>>= 1;              }
-        case sqrt-> {x(); i = (int)Math.sqrt(i); }
-        case neg -> {x(); i = -i;                }
-        case abs -> {x(); i = i < 0 ? -i : i;    }
-        default  -> stop("Op not implemented:", Op);
+       {case inc  -> {i++;                   }
+        case dec  -> {i--;                   }
+        case up   -> {i  <<= 1;              }
+        case down -> {i >>>= 1;              }
+        case sqrt -> {i = (int)Math.sqrt(i); }
+        case neg  -> {i = -i;                }
+        case abs  -> {i = i < 0 ? -i : i;    }
+        default   -> stop("Op not implemented:", Op);
        }
       if (trace) trace("Int1 "+Op, traceComment);
       return this;
@@ -348,15 +350,16 @@ public class Program extends Test                                               
     Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
      {executingOrInterpreting();
       switch (Op)
-       {case set -> {      i  = I;     v = true; }
-        case add -> { x(); i += I;     v = true; }
-        case sub -> { x(); i -= I;     v = true; }
-        case mul -> { x(); i *= I;     v = true; }
-        case div -> { x(); i /= I;     v = true; }
-        case mod -> { x(); i %= I;     v = true; }
-        case add2-> { x(); i += I + I; v = true; }
-        default  -> stop("Op not implemented:", Op);
+       {case set  -> {      i  = I;}
+        case add  -> { x(); i += I;}
+        case sub  -> { x(); i -= I;}
+        case mul  -> { x(); i *= I;}
+        case div  -> { x(); i /= I;}
+        case mod  -> { x(); i %= I;}
+        case add2 -> { x(); i += I + I;}
+        default   -> stop("Op not implemented:", Op);
        }
+      v = true;
       if (trace) trace("Int2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
@@ -371,24 +374,24 @@ public class Program extends Test                                               
       return this;
      }
 
-    Int  Add (int I) {return dup().add(I);}                                                                             // Duplicate the target so that a copy is modified rather than the original integer
-    Int  Add (Int I) {return dup().add(I);}
+    Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
+    Int  Add (Int I) {return dup().add(I) ;}
     Int  Add2(Int I) {return dup().add2(I);}
-    Int  Sub (int I) {return dup().sub(I);}
-    Int  Sub (Int I) {return dup().sub(I);}
-    Int  Mul (int I) {return dup().mul(I);}
-    Int  Mul (Int I) {return dup().mul(I);}
-    Int  Div (int I) {return dup().div(I);}
-    Int  Div (Int I) {return dup().div(I);}
-    Int  Mod (int I) {return dup().mod(I);}
-    Int  Mod (Int I) {return dup().mod(I);}
-    Int  Inc ()      {return dup().add(1);}
-    Int  Dec ()      {return dup().sub(1);}
-    Int  Up  ()      {return dup().up();}
-    Int  Down()      {return dup().down();}
-    Int  Sqrt()      {return dup().sqrt();}
-    Int  Neg()       {return dup().neg();}
-    Int  Abs()       {return dup().abs();}
+    Int  Sub (int I) {return dup().sub(I) ;}
+    Int  Sub (Int I) {return dup().sub(I) ;}
+    Int  Mul (int I) {return dup().mul(I) ;}
+    Int  Mul (Int I) {return dup().mul(I) ;}
+    Int  Div (int I) {return dup().div(I) ;}
+    Int  Div (Int I) {return dup().div(I) ;}
+    Int  Mod (int I) {return dup().mod(I) ;}
+    Int  Mod (Int I) {return dup().mod(I) ;}
+    Int  Inc ()      {return dup().add(1) ;}
+    Int  Dec ()      {return dup().sub(1) ;}
+    Int  Up  ()      {return dup().up()   ;}
+    Int  Down()      {return dup().down() ;}
+    Int  Sqrt()      {return dup().sqrt() ;}
+    Int  Neg()       {return dup().neg()  ;}
+    Int  Abs()       {return dup().abs()  ;}
 
     Bool eq(int I) {return bie(Ops.eq, I);}                                                                             // Comparisons with a constant integer
     Bool ne(int I) {return bie(Ops.ne, I);}
@@ -414,6 +417,7 @@ public class Program extends Test                                               
        };
       return b;
      } // Execute immediately or create an instruction for machine code to execute later
+
     Bool bie(Ops Op, Int I)
      {final Bool b = new Bool();
       if (immediate()) bex(Op, b, I);
@@ -450,6 +454,32 @@ public class Program extends Test                                               
      }
 
     Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
+
+    Int  bclr (Int I) {if (immediate()) bclrEx(I); else new I() {void action() {bclrEx(I);}}; return this;}
+    Int  bset (Int I) {if (immediate()) bsetEx(I); else new I() {void action() {bsetEx(I);}}; return this;}
+    Int  bset (Int I, boolean V)
+     {if (immediate())             bsetEx(I, V);
+      else new I() {void action() {bsetEx(I, V);}};
+      return this;
+     }
+    Int  bset (Int I, Bool V)
+     {if (immediate())             bsetEx(I, V);
+      else new I() {void action() {bsetEx(I, V);}};
+      return this;
+     }
+    void bget(Bool B, Int I)
+     {if (immediate()) bgetEx(B, I); else new I() {void action() {bgetEx(B, I);}};
+     }
+    void bclrEx(Int I)            {x(); I.x();        ex(Int .Ops.set, clrBit(i(), I.i()));}
+    void bsetEx(Int I)            {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i()));}
+    void bsetEx(Int I, boolean V) {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i(), V));}
+    void bsetEx(Int I, Bool    V) {x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}
+    void bgetEx(Bool B, Int    I) {x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}
+
+    boolean getBit(int value, int index)              {return ((value >>> index) & 1) > 0;}                             // Extract a bit from an integer
+    int     setBit(int value, int index)              {return value |  (1 << index);}                                   // Set a bit in an integer
+    int     clrBit(int value, int index)              {return value & ~(1 << index);}                                   // Clear a bit in an integer
+    int     setBit(int value, int index, boolean bit) {return bit ? setBit(value, index) : clrBit(value, index);}       // Set or clear a bit in an integer
 
     public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
    }
@@ -733,6 +763,57 @@ public class Program extends Test                                               
 """);
    }
 
+  static void test_bits(boolean Ex)
+   {final Program P = new Program(Ex)
+     {void code()
+       {new For(new Int(2))
+         {void body(Int Index, Bool Continue)
+           {final Int a = new Int(0);
+            a.set(0);
+            a.bset(new Int(0));                 put(()->a);
+            a.bset(new Int(1));                 put(()->a);
+            a.bset(new Int(2));                 put(()->a);
+            a.bclr(new Int(0));                 put(()->a);
+            a.bclr(new Int(1));                 put(()->a);
+            a.bclr(new Int(2));                 put(()->a);
+            a.bset(new Int(3), new Bool(true)); put(()->a);
+            final Bool b = new Bool();
+            a.bget(b, new Int(2));              put(()->b);
+            a.bget(b, new Int(3));              put(()->b);
+            Continue.set();
+           }
+         };
+       }
+     };
+    P.execute();
+    //stop(P.output());
+    ok(P.output(), """
+1
+3
+7
+6
+4
+0
+8
+false
+true
+1
+3
+7
+6
+4
+0
+8
+false
+true
+""");
+   }
+
+  static void test_bits()
+   {//test_bits(true);
+    test_bits(false);
+   }
+
   static void test_remote()
    {test_remote(true);                                                                                //
     test_remote(false);                                                                                //
@@ -746,6 +827,7 @@ public class Program extends Test                                               
     test_mod();
     test_incremental();
     test_remote();
+    test_bits();
    }
 
   static void newTests()                                                                                                // Tests being worked on
