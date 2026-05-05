@@ -628,8 +628,8 @@ abstract public class BitSet extends Program                                    
     final int N = b.size();                                                                                             // Get logical size.
     b.immediate(Ex);
     for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), i % 2 == 0);                                                     // Set alternating bits.
-    final Bool b4 = b.getBit(b.new Pos(b.new Int(4)));                                              // Get bit 5.
-    final Bool b5 = b.getBit(b.new Pos(b.new Int(5)));                                              // Get bit 5.
+    final Bool b4 = b.getBit(b.new Pos(b.new Int(4)));                                                                  // Get bit 4.
+    final Bool b5 = b.getBit(b.new Pos(b.new Int(5)));                                                                  // Get bit 5.
     b.put(()->b4);                                                                                                      // Verify bit 4.
     b.put(()->b5);                                                                                                      // Verify bit 5.
     b.execute();
