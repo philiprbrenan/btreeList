@@ -48,15 +48,15 @@ abstract public class BitSet extends Program                                    
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
   public BitSet(int BitSize, boolean One) {this(new Build().bitSize(BitSize).one(One));}                                // Constructor to create a bit set with optionally the ability to locate ones
 
-  abstract void setByte(Int Index, byte Value);                                                                         // Write byte to storage backend.
-  abstract byte getByte(Int Index);                                                                                     // Read byte from storage backend.
+  abstract void setByte(Int Index, Int Value);                                                                          // Write byte to storage backend.
+  abstract int  getByte(Int Index);                                                                                     // Read byte from storage backend.
 
   public static int bytesNeeded(int Size)              {return new Build().bitSize(Size)         .byteSize();}          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
   public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
 
   public  int size()                  {return bitSize;}                                                                 // Bit set size.
-  private Int bitOffset(Int bitIndex) {return new Int(bitIndex.i() &   7);}                                             // Offset inside byte.
-  private Int byteIndex(Int bitIndex) {return new Int(bitIndex.i() >>> 3);}                                             // Byte index in storage.
+  private Int bitOffset(Int bitIndex) {return bitIndex.Mod(Byte.SIZE);}                                                 // Offset inside byte.
+  private Int byteIndex(Int bitIndex) {return bitIndex.Div(Byte.SIZE);}                                                 // Byte index in storage.
 
   private void checkIndex(Int Index)                                                                                    // Check that a bit index is valid
    {new If (Index.lt(0))
@@ -98,29 +98,37 @@ abstract public class BitSet extends Program                                    
 //D2 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
   public Bool getBit(Pos Index)                                                                                         // Get bit value at an index after checking that the index is valid
-   {checkIndex(Index.position());
+   {if (immediate()) checkIndex(Index.position());
     return getBitNC(Index);
    }
 
   private Bool getBitNC(Pos Index)                                                                                      // Get bit value at an index without checking that the index is valid
-   {final Int bIndex = byteIndex(Index.position());                                                                     // Compute byte position.
-    final Int offset = bitOffset(Index.position());                                                                     // Compute bit offset.
+   {final Int bIndex = byteIndex(Index.position());                                                                     // Compute byte position
+    final Int offset = bitOffset(Index.position());                                                                     // Compute bit offset
 
-    final byte b = getByte(bIndex);                                                                                     // Load byte.
-    return new Bool(((b >>> offset.i()) & 1) != 0);                                                                     // Extract bit.
+    final Int b = new Int();                                                                                            // Load byte
+    if (immediate())             b.ex(Int.Ops.set, getByte(bIndex));                                                    // Extract bit
+    else new I() {void action() {b.ex(Int.Ops.set, getByte(bIndex));}};                                                 // Extract bit
+
+    final Bool r = new Bool();                                                                                          // Result  bit
+    b.bget(r, offset);                                                                                                  // Extract bit
+    return r;                                                                                                           // Result bit
    }
 
   void setBit(Pos Index, boolean Value)                                                                                 // Set bit value.
-   {checkIndex(Index.position());
+   {if (immediate()) checkIndex(Index.position());                                                                      // Rely on immediate execution to catch indexing errors
     setBitNC(Index, Value);                                                                                             // Set bit value without index checks
    }
 
   private void setBitNC(Pos Index, boolean Value)                                                                       // Set bit value without checking index
    {final Int bIndex = byteIndex(Index.position());                                                                     // Compute byte position.
     final Int offset = bitOffset(Index.position());                                                                     // Compute bit offset.
-    final byte     b = getByte(bIndex);                                                                                 // Load byte.
-    final int      i = offset.i();                                                                                      // Offset within byte
-    setByte(bIndex, (byte) (Value ? b | (1 << i) : b & ~(1 << i)));                                                     // Modify bit.
+    final Int b = new Int();                                                                                            // Load byte
+    if (immediate())             b.ex(Int.Ops.set, getByte(bIndex));                                                    // Extract bit
+    else new I() {void action() {b.ex(Int.Ops.set, getByte(bIndex));}};                                                 // Extract bit
+                                 b.bset(offset, Value);                                                                 // Modify byte
+    if (immediate())             setByte(bIndex, b);                                                                    // Save modified byte
+    else new I() {void action() {setByte(bIndex, b);}};                                                                 // Save modified byte
    }
 
   public void clear(Pos Index) {set(Index, false);}                                                                     // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
@@ -259,9 +267,10 @@ abstract public class BitSet extends Program                                    
    }
 
   public void initialize()                                                                                              // Clear all bits.
-   {new For(byteSize)                                                                                                   // Step from root to leaf
+   {final Int z = new Int(0);
+     new For(byteSize)                                                                                                   // Step from root to leaf
      {void body(Int i, Bool C)
-       {setByte(i, (byte)0);
+       {setByte(i, z);
         C.set();
        }
      };
@@ -537,8 +546,8 @@ abstract public class BitSet extends Program                                    
     final byte[] bytes = new byte[build.byteSize()];                                                                    // Allocate backing storage.
 
     final BitSet b = new BitSet(build)                                                                                  // Create an identical bitset
-     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}                                                   // Backend write.
-      byte getByte(Int Index)      {return bytes[Index.i()];}                                                           // Backend read.
+     {void setByte(Int Index, Int Value) {bytes[Index.i()] = (byte)Value.i();}                                          // Backend write.
+      int  getByte(Int Index)     {return bytes[Index.i()];}                                                            // Backend read.
      };
 
     b.initialize();
@@ -574,7 +583,7 @@ abstract public class BitSet extends Program                                    
         if (!one && !zero) break;                                                                                       // Only print the first line if there are no tree bits
        }
       s.append("\n");
-      if (i == 1)                                                                                                       // The first line is the actual bits
+      if (i == 1)                                                                                                       // The first line is the actual bitsw
        {if      (one)  s.append("One:\n");                                                                              // One tree present so it comes next
         else if (zero) s.append("Zero:\n");                                                                             // Zero tree present and no One tree present so the zero tree comes next
        }
@@ -608,20 +617,33 @@ abstract public class BitSet extends Program                                    
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
 
     final BitSet b = new BitSet(build)                                                                                  // Create a bit set
-     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}                                                   // Backend write.
-      byte getByte(Int Index)      {return bytes[Index.i()];}                                                           // Backend read.
+     {void setByte(Int Index, Int Value) {bytes[Index.i()] = (byte)Value.i();}                                          // Backend write.
+      int  getByte(Int Index)     {return bytes[Index.i()];}                                                            // Backend read.
      };
     return b;                                                                                                           // Return test bitset.
    }
 
-  static void test_bitSet()                                                                                             // Test bit manipulation.
+  static void test_bitSet(boolean Ex)                                                                                   // Test bit manipulation.
    {final BitSet b = test_bits(23, true, false);                                                                        // Get test bitset.
     final int N = b.size();                                                                                             // Get logical size.
+    b.immediate(Ex);
+    for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), i % 2 == 0);                                                     // Set alternating bits.
+    final Bool b4 = b.getBit(b.new Pos(b.new Int(4)));                                              // Get bit 5.
+    final Bool b5 = b.getBit(b.new Pos(b.new Int(5)));                                              // Get bit 5.
+    b.put(()->b4);                                                                                                      // Verify bit 4.
+    b.put(()->b5);                                                                                                      // Verify bit 5.
+    b.execute();
 
-    for (int i = 0; i < N; i++) b.setBit(b.new Pos(b.new Int(i)), i % 2 == 0);                                          // Set alternating bits.
+    //stop(b.output());
+    ok(b.output(), """
+true
+false
+""");
+   }
 
-    ok(b.getBit(b.new Pos(b.new Int(4))), true);                                                                        // Verify bit 4.
-    ok(b.getBit(b.new Pos(b.new Int(5))), false);                                                                       // Verify bit 5.
+  static void test_bitSet()                                                                                             // Test bit manipulation.
+   {test_bitSet(true);
+    test_bitSet(false);
    }
 
   static void test_prevNext()                                                                                           // Test tree of searchable one bits
@@ -807,8 +829,8 @@ Zero:
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
 
     final BitSet b = new BitSet(build)                                                                                  // Create a bit set using the backing storage
-     {void setByte(Int Index, byte Value) {bytes[Index.i()] = Value;}                                                   // Backend write.
-      byte getByte(Int Index)      {return bytes[Index.i()];}                                                           // Backend read.
+     {void setByte(Int Index, Int Value) {bytes[Index.i()] = (byte)Value.i();}                                          // Backend write.
+      int  getByte(Int Index)     {return bytes[Index.i()];}                                                            // Backend read.
      };
 
     b.initialize();
