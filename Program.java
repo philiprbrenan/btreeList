@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Machine level programming in Java
+// Machine level programming in Java       S-57504017 is your PIN. This one-time PIN is only valid for 3 hours.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
  {final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
-  final Stack<String>   put = new Stack<>();                                                                            // Output from execution
+  final Stack<StringBuilder> put = new Stack<>();                                                                       // Output from execution
 
   Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
@@ -32,8 +32,11 @@ public class Program extends Test                                               
   Program   program() {return program;}                                                                                 // Address this program
   Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Request immediate execution via interpretation
   final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code. Set final to prevent this-escape error in derived classes
-  void  ai() {if (program.executing != null) stop("Allocation within an instruction");}                                 // An executing program cannot be exetended by adding new data or instructionsexecutingOrInterpreting();
   void executingOrInterpreting() {if (!immediate() && !executing()) stop("Not executing or interpreting");}             // Use standard Java operators rather than this class to execute code that is not executed as machine conde
+  void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructionse
+   {final I i = program.executing;
+    if (i != null) stop("Allocation within an instruction while executing:", i.traceBack);
+   }
 
   boolean trace = false;                                                                                                // Trace if true
   final Stack<String> traceLog = new Stack<>();                                                                         // Trace of execution if requested
@@ -501,12 +504,36 @@ public class Program extends Test                                               
   static int[]range(Int Limit) {return range(Limit.i());}                                                               // Range of integers
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
 
-  <T> void put(Supplier<T> Value)                                                                                       // Say a variable value
-   {if (immediate())             program.put.push(""+saySb(Value.get()));
-    else new I() {void action() {program.put.push(""+saySb(Value.get()));}};
+  void put()                                                                                                            // Say a variable value on a separate line
+   {if (immediate())             program.put.push(new StringBuilder("\n"));
+    else new I() {void action() {program.put.push(new StringBuilder("\n"));}};
    }
 
-  String output()           {return program.put.size() > 0 ? joinLines(program.put)+"\n" : "";}                         // Output from execution
+  <T> void put(Supplier<T> Value)                                                                                       // Say a variable value on a separate line
+   {if (immediate())             program.put.push(new StringBuilder(""+saySb(Value.get()+"\n")));
+    else new I() {void action() {program.put.push(new StringBuilder(""+saySb(Value.get()+"\n")));}};
+   }
+
+  <T> void Put(Supplier<T> Value)                                                                                       // Say a variable value on the same line
+   {if (immediate())             push(saySb(Value.get()));
+    else new I() {void action() {push(saySb(Value.get()));}};
+   }
+
+  void push(StringBuilder Value)                                                                                        // Say on the same line
+   {final Stack<StringBuilder> p = program.put;
+say("AAAA", Value);
+    if (p.size() == 0) p.push(Value);
+    final StringBuilder q = p.lastElement();
+    final int           l = q.length();
+    if (l > 0 && q.charAt(l-1) == '\n') p.push(Value);
+    else if (l == 0)     q.append(Value);
+    else {q.append(" "); q.append(Value);}
+   }
+
+  String output()                                                                                                       // Output from execution
+   {final String r = program.put.size() > 0 ? joinStringBuilders(program.put, "") : "";
+    return r.replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");
+   }
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -525,7 +552,7 @@ public class Program extends Test                                               
       program.code.push(this);                                                                                          // Save instruction
      }
 
-    I() {this(false);}                                                                                                  // Add this instruction to the process's code assuning it will not jump
+    I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
 
     abstract void action();                                                                                             // The action to be performed by the instruction
    }
