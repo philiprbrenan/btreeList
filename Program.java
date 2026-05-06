@@ -185,10 +185,10 @@ public class Program extends Test                                               
     Bool         eq(Bool    I) {return ie(Ops.eq,  I);}
     Bool         ne(Bool    I) {return ie(Ops.ne,  I);}
 
-    Bool ie(Ops Op)            {if (immediate()) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}    // Execute immediately or create an instruction for machine code to execute later
-    Bool ie(Ops Op, boolean I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Bool    I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Int     I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op)            {new I() {void action() {ex(Op   );}}; return this;}                                     // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
+    Bool ie(Ops Op, boolean I) {new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Bool    I) {new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Int     I) {new I() {void action() {ex(Op, I);}}; return this;}
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {executingOrInterpreting();
@@ -214,14 +214,7 @@ public class Program extends Test                                               
 
     Bool ex(Ops Op, Bool I)                                                                                             // Execute a monadic boolean operation on a variable
      {executingOrInterpreting();
-      switch(Op)
-       {case set -> {I.x(); i = I.i; v = true; }
-        case eq  -> {x(); I.x(); i = i == I.i; }
-        case ne  -> {x(); I.x(); i = i != I.i; }
-        default  -> stop("Op not implemented:", Op);
-       }
-      if (trace) trace("Bool3 "+Op+" "+this+" "+I, traceComment);
-      return this;
+      I.x(); return ex(Op, I.i);
      }
 
     Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable
@@ -234,11 +227,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    @SafeVarargs
-    final Bool or(Supplier<Bool>...b)                                                                                   // "Or" with short circuit
-     {if (immediate()) orEx(b); else new I() {void action() {orEx(b);}};
-      return this;
-     }
+    @SafeVarargs final Bool or(Supplier<Bool>...b) {new I() {void action() {orEx(b);}}; return this;}                   // "Or" with short circuit
 
     @SafeVarargs
     final void orEx(Supplier<Bool>...b)                                                                                 // "Or" with short circuit
@@ -252,7 +241,7 @@ public class Program extends Test                                               
     @SafeVarargs
     final Bool And(Supplier<Bool>...b)                                                                                  // "And" with short circuit
      {final Bool r = new Bool();
-      if (immediate()) AndEx(r, b); else new I() {void action() {AndEx(r, b);}};
+      new I() {void action() {AndEx(r, b);}};
       return r;
      }
 
@@ -267,7 +256,7 @@ public class Program extends Test                                               
 
     @SafeVarargs
     final Bool and(Supplier<Bool>...b)                                                                                  // "And" with short circuit modify target
-     {if (immediate()) andEx(b); else new I() {void action() {andEx(b);}};
+     {new I() {void action() {andEx(b);}};
       return this;
      }
 
@@ -329,9 +318,9 @@ public class Program extends Test                                               
     Int  neg ()      {return ie(Ops.neg    );}
     Int  abs ()      {return ie(Ops.abs    );}
 
-    Int ie(Ops Op)        {if (immediate()) ex(Op   ); else new I() {void action() {ex(Op   );}}; return this;}         // Execute immediately or create an instruction for machine code to execute later
-    Int ie(Ops Op, int I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
-    Int ie(Ops Op, Int I) {if (immediate()) ex(Op, I); else new I() {void action() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op)        {new I() {void action() {ex(Op   );}}; return this;}                                          // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op, int I) {new I() {void action() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op, Int I) {new I() {void action() {ex(Op, I);}}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingOrInterpreting();
@@ -410,51 +399,30 @@ public class Program extends Test                                               
     Bool ge(Int I) {return bie(Ops.ge, I);}
     Bool gt(Int I) {return bie(Ops.gt, I);}
 
-    Bool bie(Ops Op, int I)
+    Bool bie(Ops Op, int I)                                                                                             // Execute immediately or create an instruction for machine code to execute later
      {final Bool b = new Bool();
-      if (immediate()) bex(Op, b, I);
-      else new I()
-       {void action()
-         {bex(Op, b, I);
-         }
-       };
-      return b;
-     } // Execute immediately or create an instruction for machine code to execute later
-
-    Bool bie(Ops Op, Int I)
-     {final Bool b = new Bool();
-      if (immediate()) bex(Op, b, I);
-      else new I() {void action() {bex(Op, b, I);}};
+      assert !executing();
+      new I() {void action() {bex(Op, b, I);}};
       return b;
      }
+
+    Bool bie(Ops Op, Int I) {I.x(); return bie(Op, I.i);}
 
     void bex(Ops Op, Bool B, int I)
      {x();
       if (trace) trace("Int3 "+Op+" "+this+" "+B+" "+I, traceComment);
       switch(Op)
-       {case eq -> B.set(i == I);
-        case ne -> B.set(i != I);
-        case le -> B.set(i <= I);
-        case lt -> B.set(i <  I);
-        case ge -> B.set(i >= I);
-        case gt -> B.set(i >  I);
+       {case eq -> B.ex(Bool.Ops.set, i == I);
+        case ne -> B.ex(Bool.Ops.set, i != I);
+        case le -> B.ex(Bool.Ops.set, i <= I);
+        case lt -> B.ex(Bool.Ops.set, i <  I);
+        case ge -> B.ex(Bool.Ops.set, i >= I);
+        case gt -> B.ex(Bool.Ops.set, i >  I);
         default  -> stop("Op not implemented:", Op);
        }
      }
 
-    void bex(Ops Op, Bool B, Int I)
-     {x(); I.x();
-      if (trace) trace("Int4 "+Op+" "+this+" "+B+" "+I, traceComment);
-      switch(Op)
-       {case eq -> B.set(i == I.i);
-        case ne -> B.set(i != I.i);
-        case le -> B.set(i <= I.i);
-        case lt -> B.set(i <  I.i);
-        case ge -> B.set(i >= I.i);
-        case gt -> B.set(i >  I.i);
-        default  -> stop("Op not implemented:", Op);
-       }
-     }
+    void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
     Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
 
@@ -545,7 +513,7 @@ public class Program extends Test                                               
     final String traceComment = traceComment();                                                                         // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {ai(); if  (immediate()) stop("Cannot add instructions during progam interpretation");
+     {ai(); if  (executing()) stop("Cannot add instructions during progam execution");
       instructionNumber = program.code.size();                                                                          // Number each instruction - hwever this only mke sens in delayed execution mode
       mightJump = MightJump;
 
@@ -596,7 +564,12 @@ public class Program extends Test                                               
     P.trace(true);
     P.new For(N)
      {void body(Int Index, Bool Continue)
-       {P.new If (Index.Mod(2).eq(0))
+       {assert !P.executing();
+        final Int  m = P.new Int();
+        final Bool z = P.new Bool();
+        m.set(Index.Mod(2));
+        z.set(m.eq(0));
+        P.new If (z)
          {void Then() {i.add(Index);}
           void Else() {i.sub(Index);}
          };
