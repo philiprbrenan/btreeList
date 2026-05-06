@@ -66,6 +66,8 @@ public class Test                                                               
     return joinStrings(t, join);
    }
 
+  static String joinStringBuilderLines(Stack<StringBuilder> S) {return joinStringBuilders(S, "\n");}
+
   static String joinStrings(Set<String> S, String join)                                                                 // Perl join
    {final StringJoiner t = new StringJoiner(join);
     for (String s: S) t.add(s);
