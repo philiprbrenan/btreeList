@@ -48,15 +48,20 @@ abstract public class BitSet extends Program                                    
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
   public BitSet(int BitSize, boolean One) {this(new Build().bitSize(BitSize).one(One));}                                // Constructor to create a bit set with optionally the ability to locate ones
 
-  abstract void setByte(Int Index, Int Value);                                                                          // Write byte to storage backend.
-  abstract int  getByte(Int Index);                                                                                     // Read byte from storage backend.
+  abstract void setByte(int Index, int Value);                                                                          // Write byte to storage backend.
+  abstract int  getByte(int Index);                                                                                     // Backend read to examine results.
+
+  void setByte(Int Index, Int Value) {setByte(Index.i(), Value.i());}                                                   // Write byte to storage backend.
+  int  getByte(Int Index)            {return getByte(Index.i());}                                                       // Read byte from storage backend.
 
   public static int bytesNeeded(int Size)              {return new Build().bitSize(Size)         .byteSize();}          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
   public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
 
-  public  int size()                  {return bitSize;}                                                                 // Bit set size.
-  private Int bitOffset(Int bitIndex) {return bitIndex.Mod(Byte.SIZE);}                                                 // Offset inside byte.
-  private Int byteIndex(Int bitIndex) {return bitIndex.Div(Byte.SIZE);}                                                 // Byte index in storage.
+  public  int size()                  {return bitSize;}                                                                 // Bit set size
+  private Int bitOffset(Int bitIndex) {return bitIndex.Mod(Byte.SIZE);}                                                 // Offset inside byte
+  private Int byteIndex(Int bitIndex) {return bitIndex.Div(Byte.SIZE);}                                                 // Byte index in storage
+  private int bitOffset(int bitIndex) {return bitIndex % Byte.SIZE;}                                                    // Offset inside byte
+  private int byteIndex(int bitIndex) {return bitIndex / Byte.SIZE;}                                                    // Byte index in storage
 
   private void checkIndex(Int Index)                                                                                    // Check that a bit index is valid
    {new If (Index.lt(0))
@@ -115,6 +120,14 @@ abstract public class BitSet extends Program                                    
     return r;                                                                                                           // Result bit
    }
 
+  private boolean getBitNC(int Index)                                                                                   // Get bit value at an index without checking that the index is valid.
+   {final int bIndex = byteIndex(Index);                                                                                // Compute byte position
+    final int offset = bitOffset(Index);                                                                                // Compute bit offset
+
+    final int b = getByte(bIndex);                                                                                      // Byte
+    return Program.Int.getBit(b, offset);                                                                               // Bit
+   }
+
   void setBit(Pos Index, Bool Value)                                                                                    // Set bit value.
    {if (immediate()) checkIndex(Index.position());                                                                      // Rely on immediate execution to catch indexing errors
     setBitNC(Index, Value);                                                                                             // Set bit value without index checks
@@ -166,7 +179,7 @@ abstract public class BitSet extends Program                                    
            }
          };
         moveDownOneLayer(b, p, w);                                                                                      // Next level up
-        c.and(()->{return w.gt(0);});                                                                                   // As long as we are in a valid level
+        c.and(w.gt(0));                                                                                                 // As long as we are in a valid level
        }
      };
    }
@@ -183,19 +196,19 @@ abstract public class BitSet extends Program                                    
         final Int  q = p.Add(w).add(B);
         final Int  Q = p.Add2(B);
         c.set();                                                                                                        // Complete early if we found a bit that does not need setting
-        new If (B.Up().inc().lt(w).and(                                                                                 // Check both bits in the previous row are off
-              ()->{return getBitNC(new Pos(Q      )).Flip();},
-              ()->{return getBitNC(new Pos(Q.Inc())).Flip();}))
+        assert !executing();
+                // b ?
+        new If (B.Up().inc().lt(w).and(getBitNC(new Pos(Q)).Flip(), getBitNC(new Pos(Q.Inc())).Flip()))                 // Check both bits in the previous row are off
          {void Then()
            {final Pos r = new Pos(q);
             new If (getBitNC(r).Flip())
              {void Then() {c.clear();}                                                                                  // Bit is already correctly set so there is nothing more to do
-              void Else() {setBitNC(r, new Bool(false));}                                                                         // Clear set bit along path to root
+              void Else() {setBitNC(r, new Bool(false));}                                                               // Clear set bit along path to root
              };
            }
          };
         moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        c.and(()->{return w.gt(0);});                                                                                   // As long as we are in a valid level
+        c.and(w.gt(0));                                                                                                 // As long as we are in a valid level
        }
      };
    }
@@ -221,7 +234,7 @@ abstract public class BitSet extends Program                                    
           void Else() {setBitNC(q, new Bool(true));}
          };
         moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        c.and(()->{return w.gt(0);});                                                                                   // As long as we are in a valid level
+        c.and(w.gt(0));                                                                                             // As long as we are in a valid level
        }
      };
    }
@@ -232,8 +245,7 @@ abstract public class BitSet extends Program                                    
     final Int b = Index.position().Down();                                                                              // Index of bit in child layer
     final Int B = b.Up();                                                                                               // Position in layer above
 
-    new If (getBitNC(new Pos(B)).and(
-            ()->{return getBitNC(new Pos(B.Inc()));}))                                                                  // Check there is a zero
+    new If (getBitNC(new Pos(B)).and(getBitNC(new Pos(B.Inc()))))                                                       // Check there is a zero
      {void Then()
        {final Pos r = new Pos(p.Add(b));                                                                                // Position in first layer of Zero tree
         new If (getBitNC(r))                                                                                            // Bit is not already correctly set to show no path so there is nothing more to do
@@ -246,8 +258,7 @@ abstract public class BitSet extends Program                                    
                 moveDownOneLayer(b, p, w);                                                                              // Index of bit in child layer, position in child layer, width of child layer
                 final Int  Q = P.Add(b).add(b);
                 c.set();                                                                                                // Complete early if we found a bit that does not need setting
-                new If (getBitNC(new Pos(Q)).or(
-                        ()->{return getBitNC(new Pos(Q.Inc()));}))
+                new If (getBitNC(new Pos(Q)).or(getBitNC(new Pos(Q.Inc()))))
                  {void Then() {c.clear();}                                                                              // There is a one in the upper row so we do not need to clear further down
                   void Else()                                                                                           // Need to show that there are no ones in the upper row
                    {final Pos r = new Pos(p.Add(b));                                                                    // Bit to set
@@ -257,7 +268,7 @@ abstract public class BitSet extends Program                                    
                      };
                    }
                  };
-                c.and(()->{return w.gt(0);});                                                                           // As long as we are in a valid level
+                c.and(w.gt(0));                                                                                         // As long as we are in a valid level
                }
              };
            }
@@ -267,7 +278,7 @@ abstract public class BitSet extends Program                                    
    }
 
   public void initialize()                                                                                              // Clear all bits.
-   {new For(bitSize)                                                                                                  // Step from root to leaf
+   {new For(bitSize)                                                                                                    // Step from root to leaf
      {void body(Int I, Bool C)
        {setBitNC(new Pos(I), new Bool(false));
         C.set();
@@ -335,7 +346,7 @@ abstract public class BitSet extends Program                                    
      {void body(Int i, Bool C)                                                                                          // Traverse down through the tree
        {final Int  c = new Int(b.Add(1));                                                                               // Is there a path down from the next bit?
         C.set();                                                                                                        // Whether we are done yet
-        new If (c.lt(w).and(()->{return getBitNC(new Pos(p.Add(c)));}))                                                 // Found next up bit
+        new If (c.lt(w).and(getBitNC(new Pos(p.Add(c)))))                                                               // Found next up bit
          {void Then()
            {new For(i)                                                                                                  // Step down to the leaves
              {void body(Int j, Bool K)                                                                                  // Step down to the leaves
@@ -370,7 +381,7 @@ abstract public class BitSet extends Program                                    
          {void body(Int i, Bool C)
            {final Int  B = new Int(b.Dec());                                                                            // Is there a path down from the next bit?
             C.set();                                                                                                    // Whether we have arrived at a bit that is already correctly set
-            new If (b.gt(0).and(()->{return getBitNC(new Pos(p.Add(B)));}))                                             // Found next down bit
+            new If (b.gt(0).and(getBitNC(new Pos(p.Add(B)))))                                                           // Found next down bit
              {void Then()
                {new For(i)                                                                                              // Step down to the leaves
                  {void body(Int j, Bool K)
@@ -545,8 +556,8 @@ abstract public class BitSet extends Program                                    
     final byte[] bytes = new byte[build.byteSize()];                                                                    // Allocate backing storage.
 
     final BitSet b = new BitSet(build)                                                                                  // Create an identical bitset
-     {void setByte(Int Index, Int Value) {say("AAAA", Index, Value);bytes[Index.i()] = (byte)Value.i();}                // Backend write.
-      int  getByte(Int Index)     {return bytes[Index.i()];}                                                            // Backend read.
+     {void setByte(int Index, int Value) {say("AAAA", Index, Value); bytes[Index] = (byte)Value;}                       // Backend write.
+      int  getByte(int Index)            {return bytes[Index];}                                                         // Backend read.
      };
 
     b.initialize();
@@ -567,18 +578,18 @@ abstract public class BitSet extends Program                                    
 
 //D1 Print                                                                                                              // Print the bit set
 
-  public String toString()                                                                                              // Print levels in bit tree
+  public String toString()                                                                                              // Print bit set so we can visualize it. This will not be available on the chip so we use normal Java
    {final StringBuilder s = new StringBuilder();
-    final Int p = new Int(0), r = new Int(bitSize);
+    int p = 0, r = bitSize;
 
     s.append("BitSet          ");                                                                                       // Title
     for   (int i : range(bitSize)) s.append(f(" %2d", i));                                                              // Positions of bits
     s.append("\n");
 
     for   (int i : range(1, bitSize))                                                                                   // Print the first line and the first bit tree if present
-     {s.append(f("%4d %4d %4d |", i, p.i(), r.i()));
-      for (int j : range(r.i()))                                                                                        // Bits in level
-       {s.append(f("  %1d", getBitNC(new Pos(p.Add(j))).b() ? 1 : 0));
+     {s.append(f("%4d %4d %4d |", i, p, r));
+      for (int j : range(r))                                                                                            // Bits in level
+       {s.append(f("  %1d", getBitNC(p + j) ? 1 : 0));
         if (!one && !zero) break;                                                                                       // Only print the first line if there are no tree bits
        }
       s.append("\n");
@@ -586,24 +597,24 @@ abstract public class BitSet extends Program                                    
        {if      (one)  s.append("One:\n");                                                                              // One tree present so it comes next
         else if (zero) s.append("Zero:\n");                                                                             // Zero tree present and no One tree present so the zero tree comes next
        }
-      p.add(r);
-      r.down();
-      if (r.eq(0).b()) break;                                                                                           // Reached the leaves
+      p += r;
+      r >>>= 1;
+      if (r ==  0) break;                                                                                               // Reached the leaves
      }
 
     if (one && zero)                                                                                                    // Print zero search tree block if both one and zero bit trees are present
-     {r.set(bitSize2);
+     {r = bitSize2;
       s.append("Zero:\n");
       for   (int i : range(1, bitSize))                                                                                 // Each level
-       {s.append(f("%4d %4d %4d |", i, p.i(), r.i()));
+       {s.append(f("%4d %4d %4d |", i, p, r));
         for (int j : range(r))                                                                                          // Bits in level
-         {s.append(f("  %1d", getBitNC(new Pos(p.Add(j))).b() ? 1 : 0));
+         {s.append(f("  %1d", getBitNC(p + j) ? 1 : 0));
           if (!one && !zero) break;                                                                                     // Only print the first line if there are no tree bits
          }
         s.append("\n");
-        p.add(r);
-        r.down();
-        if (r.eq(0).b()) break;                                                                                         // Reached the leaves
+        p += r;
+        r >>>= 1;
+        if (r == 0) break;                                                                                              // Reached the leaves
        }
      }
     return ""+s;
@@ -616,8 +627,8 @@ abstract public class BitSet extends Program                                    
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
 
     final BitSet b = new BitSet(build)                                                                                  // Create a bit set
-     {void setByte(Int Index, Int Value) {bytes[Index.i()] = (byte)Value.i();}                                          // Backend write.
-      int  getByte(Int Index)     {return bytes[Index.i()];}                                                            // Backend read.
+     {void setByte(int Index, int Value) {bytes[Index] = (byte)Value;}                                                  // Backend write.
+      int  getByte(int Index)     {return bytes[Index];}                                                                // Backend read.
      };
     return b;                                                                                                           // Return test bitset.
    }
@@ -648,13 +659,14 @@ false
   static void test_prevNext(boolean Ex)                                                                                 // Test tree of searchable one bits
    {final BitSet b = test_bits(32, true, true);
     b.immediate(Ex);
-    b.trace(true);
+    //b.trace(true);
     b.initialize();
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
     for (int i : s) b.set(b.new Pos(b.new Int(i)), b.new Bool(true));
     b.put(()->b);
 
+    final Pos p = b.new Pos(); p.set(1);  b.Put(()->b.nextOne(p).position());
     for (int i : range(13))     b.Put(()->b.nextOne(b.new Pos(i)).position());
     for (int i : range(13, 19)) b.Put(()->b.nextOne(b.new Pos(i)).position());
     for (int i : range(19, 24)) b.Put(()->b.nextOne(b.new Pos(i)).position());
@@ -702,7 +714,7 @@ false
 
     b.execute();
     //stop(b.output());
-    say("AAAA", b.trace());
+    assert !b.executing();
     ok(""+b.output(), """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
@@ -863,8 +875,8 @@ Zero:
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
 
     final BitSet b = new BitSet(build)                                                                                  // Create a bit set using the backing storage
-     {void setByte(Int Index, Int Value) {bytes[Index.i()] = (byte)Value.i();}                                          // Backend write.
-      int  getByte(Int Index)     {return bytes[Index.i()];}                                                            // Backend read.
+     {void setByte(int Index, int Value) {bytes[Index] = (byte)Value;}                                                  // Backend write.
+      int  getByte(int Index)            {assert !executing(); return bytes[Index];}                                    // Backend read to examine results.
      };
 
     b.initialize();
