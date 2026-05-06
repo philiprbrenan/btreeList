@@ -521,7 +521,6 @@ public class Program extends Test                                               
 
   void push(StringBuilder Value)                                                                                        // Say on the same line
    {final Stack<StringBuilder> p = program.put;
-say("AAAA", Value);
     if (p.size() == 0) p.push(Value);
     final StringBuilder q = p.lastElement();
     final int           l = q.length();
@@ -547,9 +546,11 @@ say("AAAA", Value);
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
      {ai(); if  (immediate()) stop("Cannot add instructions during progam interpretation");
-      instructionNumber = program.code.size();                                                                          // Number each instruction
+      instructionNumber = program.code.size();                                                                          // Number each instruction - hwever this only mke sens in delayed execution mode
       mightJump = MightJump;
-      program.code.push(this);                                                                                          // Save instruction
+
+      if (immediate()) {executing = this; action(); executing = null;}                                                  // Execute instruction immediately via interpretation if in immediate execution mode
+      else  {program.code.push(this);}                                                                                                            // Save intruction in program for later execution if in delayed == non immediate execution mode
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
