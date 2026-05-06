@@ -2,6 +2,7 @@
 // Machine level programming in Java       S-57504017 is your PIN. This one-time PIN is only valid for 3 hours.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //----------------------------------------------------------------------------------------------------------------------
+// Remove short circuit "and" and "or": replace with block with exits to avoid instructions within instructions via suppliers
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -17,7 +18,7 @@ public class Program extends Test                                               
   Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
   public  I       executing = null;                                                                                     // Instruction being currently executed
-  public  int      maxSteps = 999;                                                                                      // Number of steps permitted in code execution
+  public  int      maxSteps = 9999;                                                                                     // Number of steps permitted in code execution
   private int     nextIntId = 0;                                                                                        // Unique id for each Int
   private int    nextBoolId = 0;                                                                                        // Unique id for each Bool
   private int            pc;                                                                                            // Program counter - set to something less than zero to stop with a return code
@@ -34,8 +35,9 @@ public class Program extends Test                                               
   final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code. Set final to prevent this-escape error in derived classes
   void executingOrInterpreting() {if (!immediate() && !executing()) stop("Not executing or interpreting");}             // Use standard Java operators rather than this class to execute code that is not executed as machine conde
   void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructionse
-   {final I i = program.executing;
-    if (i != null) stop("Allocation within an instruction while executing:", i.traceBack);
+   {final I      i = program.executing;
+    final String m = immediate() ? "immediate" : "delayed";
+    if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
 
   boolean trace = false;                                                                                                // Trace if true
@@ -153,7 +155,7 @@ public class Program extends Test                                               
     final int id = program.nextBoolId++;                                                                                // Unique id for Bool
     private final String traceComment = trace ? traceComment() : null;                                                  // Location
 
-    enum Ops {and, eq, flip, ne, or, set};                                                                                       // Boolean operation classification by argument types
+    enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
     Bool      valid() {return new Bool(v);}
 
@@ -234,8 +236,21 @@ public class Program extends Test                                               
      {x();                                                                                                              // Start with the current value
       for (int i : range(b.length))                                                                                     // Test each additional value as necessary
        {if (b()) break;                                                                                                 // Finish when we know the result
-        ex(Ops.set, b[i].get());                                                                                                // Check additional operands
+        ex(Ops.set, b[i].get());                                                                                        // Check additional operands
        }
+     }
+
+    Bool or(Bool...b)                                                                                                   // "Or" without short circuit. Modifies the target.
+     {new I()
+       {void action()
+         {x();
+          for (int j : range(b.length))
+           {b[j].x();
+            if (b[j].i) i = true;
+           }
+         }
+       };
+      return this;
      }
 
     @SafeVarargs
@@ -261,12 +276,25 @@ public class Program extends Test                                               
      }
 
     @SafeVarargs
-    final void andEx(Supplier<Bool>...b)                                                                                  // "And" with short circuit modify target
-     {x();
+    final void andEx(Supplier<Bool>...b)                                                                                // "And" with short circuit modify target
+      {x();
       for (int i : range(b.length))                                                                                     // Test each additional value as necessary
        {if (!b()) break;                                                                                                // Finish when we know the result
-        ex(Ops.set, b[i].get());                                                                                                // Check additional operands
+        ex(Ops.set, b[i].get());                                                                                        // Check additional operands
        }
+     }
+
+    Bool and(Bool...b)                                                                                                  // "And" without short circuit. Modifies the target.
+     {new I()
+       {void action()
+         {x();
+          for (int j : range(b.length))
+           {b[j].x();
+            if (!b[j].i) i = false;
+           }
+         }
+       };
+      return this;
      }
 
     Bool dup() {return new Bool(this);}                                                                                 // Duplicate a boolean
@@ -358,12 +386,7 @@ public class Program extends Test                                               
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
      {executingOrInterpreting();
-      switch(Op)
-       {case set -> {i = I.i;              v = I.v; }
-        default  -> {I.x(); ex(Op, I.i()); v = true;}
-       }
-      if (trace) trace("Int3 "+Op+" "+this+" "+I, traceComment);
-      return this;
+      I.x(); return ex(Op, I.i());
      }
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
@@ -406,7 +429,12 @@ public class Program extends Test                                               
       return b;
      }
 
-    Bool bie(Ops Op, Int I) {I.x(); return bie(Op, I.i);}
+    Bool bie(Ops Op, Int I)
+     {final Bool b = new Bool();
+      assert !executing();
+      new I() {void action() {I.x(); bex(Op, b, I);}};
+      return b;
+     }
 
     void bex(Ops Op, Bool B, int I)
      {x();
@@ -426,7 +454,7 @@ public class Program extends Test                                               
 
     Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
 
-    Int  bclr (Int I) {if (immediate()) bclrEx(I); else new I() {void action() {bclrEx(I);}}; return this;}
+    Int  bclr (Int I) {if (immediate()) bclrEx(I); else new I() {void action() {bclrEx(I);}}; return this;}             // Set and get a bit
     Int  bset (Int I) {if (immediate()) bsetEx(I); else new I() {void action() {bsetEx(I);}}; return this;}
     Int  bset (Int I, boolean V)
      {if (immediate())             bsetEx(I, V);
@@ -447,10 +475,10 @@ public class Program extends Test                                               
     void bsetEx(Int I, Bool    V) {x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}
     void bgetEx(Bool B, Int    I) {x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}
 
-    boolean getBit(int value, int index)              {return ((value >>> index) & 1) > 0;}                             // Extract a bit from an integer
-    int     setBit(int value, int index)              {return value |  (1 << index);}                                   // Set a bit in an integer
-    int     clrBit(int value, int index)              {return value & ~(1 << index);}                                   // Clear a bit in an integer
-    int     setBit(int value, int index, boolean bit) {return bit ? setBit(value, index) : clrBit(value, index);}       // Set or clear a bit in an integer
+    static boolean getBit(int value, int index)              {return ((value >>> index) & 1) > 0;}                      // Extract a bit from an integer
+    static int     setBit(int value, int index)              {return value |  (1 << index);}                            // Set a bit in an integer
+    static int     clrBit(int value, int index)              {return value & ~(1 << index);}                            // Clear a bit in an integer
+    static int     setBit(int value, int index, boolean bit) {return bit ? setBit(value, index) : clrBit(value, index);}// Set or clear a bit in an integer
 
     public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
    }
@@ -473,23 +501,20 @@ public class Program extends Test                                               
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
 
   void put()                                                                                                            // Say a variable value on a separate line
-   {if (immediate())             program.put.push(new StringBuilder("\n"));
-    else new I() {void action() {program.put.push(new StringBuilder("\n"));}};
+   {new I() {void action() {push(new StringBuilder("\n"));}};
    }
 
-  <T> void put(Supplier<T> Value)                                                                                       // Say a variable value on a separate line
-   {if (immediate())             program.put.push(new StringBuilder(""+saySb(Value.get()+"\n")));
-    else new I() {void action() {program.put.push(new StringBuilder(""+saySb(Value.get()+"\n")));}};
+  <T> void put(T Value)                                                                                                 // Say a variable value on a separate line
+   {new I() {void action() {push(saySb(Value).append("\n"));}};
    }
 
-  <T> void Put(Supplier<T> Value)                                                                                       // Say a variable value on the same line
-   {if (immediate())             push(saySb(Value.get()));
-    else new I() {void action() {push(saySb(Value.get()));}};
+  <T> void Put(T Value)                                                                                                 // Say a variable value on the same line
+   {new I() {void action() {push(saySb(Value));}};
    }
 
   void push(StringBuilder Value)                                                                                        // Say on the same line
    {final Stack<StringBuilder> p = program.put;
-    if (p.size() == 0) p.push(Value);
+    if (p.size() == 0) {p.push(Value); return;}
     final StringBuilder q = p.lastElement();
     final int           l = q.length();
     if (l > 0 && q.charAt(l-1) == '\n') p.push(Value);
@@ -535,7 +560,8 @@ public class Program extends Test                                               
   void execute()                                                                                                        // Execute the current code
    {if (immediate) return;                                                                                              // The code has already been executed interpretively
     pc = 0;
-    for(int c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                             // Execute each instruction within a specified number of steps
+    int c, N;
+    for(c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                                 // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
       try
        {pc++;                                                                                                           // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
@@ -547,6 +573,7 @@ public class Program extends Test                                               
        {stop("Exception:", e, "while executing:", traceBack(e));
        }
      }
+    if (c >= maxSteps) stop("Out of steps after step:", c);
    }
 
   void Goto(Label Target) {program.pc = Target.offset;}                                                                 // Goto a label unconditionally
@@ -592,11 +619,11 @@ public class Program extends Test                                               
     final Bool o = P.new Bool().set();
 
     final Bool O = P.new Bool().set(z);
-               O.or(()->o);
-    P.put(()->O);
+               O.or(o);
+    P.put(O);
     final Bool A = P.new Bool().set(o);
-               A.and(()->z);
-    P.put(()->A);
+               A.and(z);
+    P.put(A);
     P.execute();
    }
 
@@ -614,7 +641,8 @@ public class Program extends Test                                               
         new For(N)
          {void body(Int Index, Bool Continue)
            {b.add(a.dup().inc());
-            put(()->saySb(a, b));
+            Put(a);
+            put(b);
             Continue.set();
            }
          };
@@ -654,7 +682,7 @@ public class Program extends Test                                               
             c.add(b);
             a.set(b);
             b.set(c);
-            put(()->c);
+            put(c);
             Continue.set();
            }
          };
@@ -695,7 +723,7 @@ public class Program extends Test                                               
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
-            put(()->c);
+            put(c);
             Continue.set();
            }
          };
@@ -721,9 +749,9 @@ public class Program extends Test                                               
      {void code()
        {trace = true;
         final Int a = new Int(0);
-                 put(()->a);
-        a.inc(); put(()->a);
-        a.inc(); put(()->a);
+                 put(a);
+        a.inc(); put(a);
+        a.inc(); put(a);
        }
      };
     P.execute();
@@ -746,14 +774,14 @@ public class Program extends Test                                               
      {void code()
        {final Int a = new Int(1);
         a.add(2);
-        put(()->a);
+        put(a);
        }
      };
     final Program Q = new Program(P)
      {void code()
        {final Int a = new Int(1);
         a.add(3);
-        put(()->a);
+        put(a);
        }
      };
     P.execute();
@@ -771,16 +799,16 @@ public class Program extends Test                                               
          {void body(Int Index, Bool Continue)
            {final Int a = new Int(0);
             a.set(0);
-            a.bset(new Int(0));                 put(()->a);
-            a.bset(new Int(1));                 put(()->a);
-            a.bset(new Int(2));                 put(()->a);
-            a.bclr(new Int(0));                 put(()->a);
-            a.bclr(new Int(1));                 put(()->a);
-            a.bclr(new Int(2));                 put(()->a);
-            a.bset(new Int(3), new Bool(true)); put(()->a);
+            a.bset(new Int(0));                 put(a);
+            a.bset(new Int(1));                 put(a);
+            a.bset(new Int(2));                 put(a);
+            a.bclr(new Int(0));                 put(a);
+            a.bclr(new Int(1));                 put(a);
+            a.bclr(new Int(2));                 put(a);
+            a.bset(new Int(3), new Bool(true)); put(a);
             final Bool b = new Bool();
-            a.bget(b, new Int(2));              put(()->b);
-            a.bget(b, new Int(3));              put(()->b);
+            a.bget(b, new Int(2));              put(b);
+            a.bget(b, new Int(3));              put(b);
             Continue.set();
            }
          };
