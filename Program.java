@@ -3,6 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
 //----------------------------------------------------------------------------------------------------------------------
 // Remove short circuit "and" and "or": replace with block with exits to avoid instructions within instructions via suppliers
+// Remove ref and return two arguments instead: the value if valid, a bool indicating whether the returned vlue is valid or not
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -165,7 +166,7 @@ public class Program extends Test                                               
 
     boolean       b()          {x(); return i;}
     boolean       v()          {     return v;}
-    void          x()          {if (!v) stop("Bool has not been set yet");}                                             // Check a value has been set for the boolean
+    void          x()          {if (!v) variableNotSet("Bool");}                                                        // Check a value has been set for the boolean
     Bool          X()          {v = true; return this;}
 
     Bool        set()          {return ie(Ops.set,  true); }                                                            // Boolean operations which modify the target
@@ -313,7 +314,7 @@ public class Program extends Test                                               
     Bool notValid()  {return new Bool(!v);}                                                                             // A not valid integer
     int         i()  {x(); return i;}                                                                                   // Current value
     boolean     v()  {     return v;}                                                                                   // Value has been set
-    void x       ()  {if (!v) stop("Int has not been set yet");}                                                        // Confirm that the integer has a value
+    void        x()  {if (!v) variableNotSet("Int");}                                                                   // Check a value has been set for the integer
 
     Int      ()      {ai(); }                                                                                           // Constructors
     Int (int I)      {ai(); ie(Ops.set, I);}
@@ -425,14 +426,12 @@ public class Program extends Test                                               
 
     Bool bie(Ops Op, int I)                                                                                             // Execute immediately or create an instruction for machine code to execute later
      {final Bool b = new Bool();
-      assert !executing();
       new I() {void action() {bex(Op, b, I);}};
       return b;
      }
 
     Bool bie(Ops Op, Int I)
      {final Bool b = new Bool();
-      assert !executing();
       new I() {void action() {I.x(); bex(Op, b, I);}};
       return b;
      }
@@ -455,23 +454,25 @@ public class Program extends Test                                               
 
     Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
 
-    Int  bclr (Int I) {if (immediate()) bclrEx(I); else new I() {void action() {bclrEx(I);}}; return this;}             // Set and get a bit
-    Int  bset (Int I) {if (immediate()) bsetEx(I); else new I() {void action() {bsetEx(I);}}; return this;}
-    Int  bset (Int I, boolean V)
+    Int  bclr (Int I) {new I() {void action() {bclrEx(I);}}; return this;}                                              // Clear the indicated bit
+    Int  bset (Int I) {new I() {void action() {bsetEx(I);}}; return this;}                                              // Set the indicated bit
+    Int  bset (Int I, boolean V)                                                                                        // Set the indicated bit in the integer to the specified value
      {new I() {void action() {bsetEx(I, V);}};
       return this;
      }
-    Int  bset (Int I, Bool V)
+    Int  bset (Int I, Bool V)                                                                                           // Set the indicated bit in the integer to the specified value
      {new I() {void action() {bsetEx(I, V);}};
       return this;
      }
-    void bget(Bool B, Int I)
-     {new I() {void action() {bgetEx(B, I);}};
+    Bool bget(Int I)                                                                                                    // Get the indicated bit from the integer
+     {final Bool B = new Bool();
+      new I() {void action() {bgetEx(B, I);}};
+      return B;
      }
-    void bclrEx(Int I)            {x(); I.x();        ex(Int .Ops.set, clrBit(i(), I.i()));}
-    void bsetEx(Int I)            {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i()));}
-    void bsetEx(Int I, boolean V) {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i(), V));}
-    void bsetEx(Int I, Bool    V) {x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}
+    void bclrEx(Int I)            {x(); I.x();        ex(Int .Ops.set, clrBit(i(), I.i()));}                            // Clear the specified bit
+    void bsetEx(Int I)            {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i()));}                            // Set the indicated bit in the integer
+    void bsetEx(Int I, boolean V) {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i(), V));}                         // Set the indicated bit in the integer to the specified value
+    void bsetEx(Int I, Bool    V) {x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}                     // Get the indicated bit in the integer
     void bgetEx(Bool B, Int    I) {x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}
 
     static boolean getBit(int value, int index)              {return ((value >>> index) & 1) > 0;}                      // Extract a bit from an integer
@@ -537,7 +538,7 @@ public class Program extends Test                                               
     final String traceComment = traceComment();                                                                         // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {ai(); if  (executing()) stop("Cannot add instructions during progam execution");
+     {ai(); //if  (executing()) stop("Cannot add instructions during progam execution");
       instructionNumber = program.code.size();                                                                          // Number each instruction - hwever this only mke sens in delayed execution mode
       mightJump = MightJump;
 
@@ -578,6 +579,15 @@ public class Program extends Test                                               
   void Goto(Label Target) {program.pc = Target.offset;}                                                                 // Goto a label unconditionally
   void Goto(Label Target, Bool If) {if ( If.b()) program.pc = Target.offset;}                                           // Goto a label conditionally
   void Noto(Label Target, Bool If) {if (!If.b()) program.pc = Target.offset;}                                           // Goto a label not unconditionally
+
+  void variableNotSet(String Type)                                                                                      // Variable not yet set message
+   {final I i = program.executing;
+    final String m = "has not been set yet";
+    if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With trace back on failing instruction if possibep
+    else           stop(Type, m);                                                                                       // No traceback available
+   }
+
+  <A, B> void ok(Supplier<A> a, B b) {new I() {void action() {ok(a.get(), b);}};}                                       // Test a result of delayed execution against a known result while the program is still executing
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
@@ -798,47 +808,25 @@ public class Program extends Test                                               
          {void body(Int Index, Bool Continue)
            {final Int a = new Int(0);
             a.set(0);
-            a.bset(new Int(0));                 put(a);
-            a.bset(new Int(1));                 put(a);
-            a.bset(new Int(2));                 put(a);
-            a.bclr(new Int(0));                 put(a);
-            a.bclr(new Int(1));                 put(a);
-            a.bclr(new Int(2));                 put(a);
-            a.bset(new Int(3), new Bool(true)); put(a);
-            final Bool b = new Bool();
-            a.bget(b, new Int(2));              put(b);
-            a.bget(b, new Int(3));              put(b);
+            a.bset(new Int(0));                 ok(()->a, 1);
+            a.bset(new Int(1));                 ok(()->a, 3);
+            a.bset(new Int(2));                 ok(()->a, 7);
+            a.bclr(new Int(0));                 ok(()->a, 6);
+            a.bclr(new Int(1));                 ok(()->a, 4);
+            a.bclr(new Int(2));                 ok(()->a, 0);
+            a.bset(new Int(3), new Bool(true)); ok(()->a, 8);
+            final Bool b = a.bget(new Int(2));  ok(()->b, false);
+            final Bool c = a.bget(new Int(3));  ok(()->c, true);
             Continue.set();
            }
          };
        }
      };
     P.execute();
-    //stop(P.output());
-    ok(P.output(), """
-1
-3
-7
-6
-4
-0
-8
-false
-true
-1
-3
-7
-6
-4
-0
-8
-false
-true
-""");
    }
 
   static void test_bits()
-   {//test_bits(true);
+   {test_bits(true);
     test_bits(false);
    }
 
