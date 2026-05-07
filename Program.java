@@ -205,11 +205,12 @@ public class Program extends Test                                               
     Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
      {executingOrInterpreting();
       switch (Op)
-       {case set -> {i  = I; v = true; }
+       {case set -> {i  = I;          }
         case eq  -> {x(); i = i == I; }
         case ne  -> {x(); i = i != I; }
         default  -> stop("Op not implemented:", Op);
        }
+      v = true;
       if (trace) trace("Bool2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
@@ -457,17 +458,15 @@ public class Program extends Test                                               
     Int  bclr (Int I) {if (immediate()) bclrEx(I); else new I() {void action() {bclrEx(I);}}; return this;}             // Set and get a bit
     Int  bset (Int I) {if (immediate()) bsetEx(I); else new I() {void action() {bsetEx(I);}}; return this;}
     Int  bset (Int I, boolean V)
-     {if (immediate())             bsetEx(I, V);
-      else new I() {void action() {bsetEx(I, V);}};
+     {new I() {void action() {bsetEx(I, V);}};
       return this;
      }
     Int  bset (Int I, Bool V)
-     {if (immediate())             bsetEx(I, V);
-      else new I() {void action() {bsetEx(I, V);}};
+     {new I() {void action() {bsetEx(I, V);}};
       return this;
      }
     void bget(Bool B, Int I)
-     {if (immediate()) bgetEx(B, I); else new I() {void action() {bgetEx(B, I);}};
+     {new I() {void action() {bgetEx(B, I);}};
      }
     void bclrEx(Int I)            {x(); I.x();        ex(Int .Ops.set, clrBit(i(), I.i()));}
     void bsetEx(Int I)            {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i()));}
