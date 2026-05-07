@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Machine level programming in Java       S-57504017 is your PIN. This one-time PIN is only valid for 3 hours.
-// Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2025
+// Machine level programming in Java
+// Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Remove short circuit "and" and "or": replace with block with exits to avoid instructions within instructions via suppliers
 // Remove ref and return two arguments instead: the value if valid, a bool indicating whether the returned vlue is valid or not
@@ -158,8 +158,6 @@ public class Program extends Test                                               
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
-    Bool      valid() {return new Bool(v);}
-
     Bool           ()          {ai(); }                                                                                 // Constructors
     Bool           (boolean I) {ai(); ie(Ops.set, I);}
     Bool           (Bool    I) {ai(); ie(Ops.set, I);}
@@ -310,8 +308,6 @@ public class Program extends Test                                               
     private final int id = program.nextIntId++;                                                                         // Unique id for Int
     private final String traceComment = trace ? traceComment() : null;                                                  // Location
 
-    Bool    valid()  {return new Bool( v);}                                                                             // A valid integer
-    Bool notValid()  {return new Bool(!v);}                                                                             // A not valid integer
     int         i()  {x(); return i;}                                                                                   // Current value
     boolean     v()  {     return v;}                                                                                   // Value has been set
     void        x()  {if (!v) variableNotSet("Int");}                                                                   // Check a value has been set for the integer
@@ -594,27 +590,28 @@ public class Program extends Test                                               
   static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   static void test_programming(boolean Ex)
-   {final Program P = new Program();
-    final Int     i = P.new Int(0);
-    final Int     N = P.new Int(11);
-    P.trace(true);
-    P.new For(N)
-     {void body(Int Index, Bool Continue)
-       {assert !P.executing();
-        final Int  m = P.new Int();
-        final Bool z = P.new Bool();
-        m.set(Index.Mod(2));
-        z.set(m.eq(0));
-        P.new If (z)
-         {void Then() {i.add(Index);}
-          void Else() {i.sub(Index);}
+   {final Program P = new Program()
+     {void code()
+       {final Int i = new Int(0);
+        final Int N = new Int(11);
+        new For(N)
+         {void body(Int Index, Bool Continue)
+           {final Int  m = new Int();
+            final Bool z = new Bool();
+            m.set(Index.Mod(2));
+            z.set(m.eq(0));
+            new If (z)
+             {void Then() {i.add(Index);}
+              void Else() {i.sub(Index);}
+             };
+            Continue.set();
+           }
          };
-        Continue.set();
+        ok(()->i, 5);
+        ok(()->i.v, true);
        }
      };
     P.execute();
-    ok(i, 5);
-    ok(i.valid().b());
    }
 
   static void test_programming()
@@ -623,16 +620,19 @@ public class Program extends Test                                               
    }
 
   static void test_bool(boolean Ex)
-   {final Program  P = new Program(Ex);
-    final Bool z = P.new Bool().clear();
-    final Bool o = P.new Bool().set();
+   {final Program  P = new Program(Ex)
+     {void code()
+       {final Bool z = new Bool().clear();
+        final Bool o = new Bool().set();
 
-    final Bool O = P.new Bool().set(z);
-               O.or(o);
-    P.put(O);
-    final Bool A = P.new Bool().set(o);
-               A.and(z);
-    P.put(A);
+        final Bool O = new Bool().set(z);
+                   O.or(o);
+        put(O);
+        final Bool A = new Bool().set(o);
+                   A.and(z);
+        put(A);
+       }
+     };
     P.execute();
    }
 
@@ -831,8 +831,8 @@ public class Program extends Test                                               
    }
 
   static void test_remote()
-   {test_remote(true);                                                                                //
-    test_remote(false);                                                                                //
+   {test_remote(true);
+    test_remote(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
