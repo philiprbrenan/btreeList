@@ -108,15 +108,16 @@ abstract public class BitSet extends Program                                    
    }
 
   private Bool getBitNC(Pos Index)                                                                                      // Get bit value at an index without checking that the index is valid
-   {final Int bIndex = byteIndex(Index.position());                                                                     // Compute byte position
-    final Int offset = bitOffset(Index.position());                                                                     // Compute bit offset
+   {final Int bIndex = new Int();                                                                                       // Byte position
+    final Int offset = new Int();                                                                                       // Bit offset
+    new I() {void action() {bIndex.set(byteIndex(Index.position()));}};                                                 // Compute byte position
+    new I() {void action() {offset.set(bitOffset(Index.position()));}};                                                 // Compute bit offset
 
-    final Int b = new Int();                                                                                            // Load byte
-    if (immediate())             b.ex(Int.Ops.set, getByte(bIndex));                                                    // Extract bit
-    else new I() {void action() {b.ex(Int.Ops.set, getByte(bIndex));}};                                                 // Extract bit
+    final Int b = new Int();                                                                                            // Extract byte
+    new I() {void action() {b.set(getByte(bIndex));}};
 
     final Bool r = new Bool();                                                                                          // Result  bit
-    b.bget(r, offset);                                                                                                  // Extract bit
+    new I() {void action() {b.bget(r, offset);}};                                                                       // Extract bit
     return r;                                                                                                           // Result bit
    }
 
@@ -335,7 +336,7 @@ abstract public class BitSet extends Program                                    
 
   public Pos nextOne(Pos Index)                                                                                         // Find the index of the next set bit above the specified bit
    {checkOne();
-    checkIndex(Index.position());
+    if (immediate()) checkIndex(Index.position());
 
     final Int b = Index.position();                                                                                     // Position in layer
     final Int w = new Int(bitSize);                                                                                     // Width of layer
@@ -351,7 +352,10 @@ abstract public class BitSet extends Program                                    
            {new For(i)                                                                                                  // Step down to the leaves
              {void body(Int j, Bool K)                                                                                  // Step down to the leaves
                {moveUpOneLayer(c, p, w);                                                                                // Move up to next layer
-                c.add(getBitNC(new Pos(p.Add(c))).b() ? 0 : 1);                                                         // Follow path as low as possible
+                new If (getBitNC(new Pos(p.Add(c))).flip())                                                             // Follow path as low as possible
+                 {void Then() {c.inc();}
+                 };
+//              c.add(getBitNC(new Pos(p.Add(c))).b() ? 0 : 1);                                                         // Follow path as low as possible
                 K.set();                                                                                                // Continue the loop
                }
              };
@@ -369,7 +373,7 @@ abstract public class BitSet extends Program                                    
 
   public Pos prevOne(Pos Index)                                                                                         // Find the index of the previous set bit below the specified bit
    {checkOne();
-    checkIndex(Index.position());
+    if (immediate()) checkIndex(Index.position());
     final Int b = new Int(Index.position());                                                                            // Position in layer
     final Int w = new Int(bitSize);                                                                                     // Width of layer
     final Int p = new Int(0);                                                                                           // Offset of layer
@@ -386,7 +390,10 @@ abstract public class BitSet extends Program                                    
                {new For(i)                                                                                              // Step down to the leaves
                  {void body(Int j, Bool K)
                    {moveUpOneLayer(B, p, w);
-                    B.add(getBitNC(new Pos(p.Add(B).inc())).b() ? 1 : 0);                                               // Follow path to actual bits
+                    new If (getBitNC(new Pos(p.Add(B).inc())))                                                          // Follow path as low as possible
+                     {void Then() {B.inc();}
+                     };
+                    //B.add(getBitNC(new Pos(p.Add(B).inc())).b() ? 1 : 0);                                               // Follow path to actual bits
                     K.set();
                    }
                  };
@@ -432,7 +439,7 @@ abstract public class BitSet extends Program                                    
 
   public Pos nextZero(Pos Index)                                                                                        // Find the index of the next set bit above the specified bit
    {checkZero();
-    checkIndex(Index.position());
+    if (immediate()) checkIndex(Index.position());
     final Int R = new Int();                                                                                            // Result
     final Int b = new Int(Index.position());                                                                            // Offset in bits in the current layer
     new If (b.ne(bitSize1))                                                                                             // Not last bit so there might be a next bit
@@ -442,7 +449,7 @@ abstract public class BitSet extends Program                                    
         final Pos q = new Pos(b.Inc());
         new If (getBit(q).Flip())                                                                                       // Next bit is zero
          {void Then()
-           {R.set(q.i());                                                                                               // Location of next bit
+           {R.set(q);                                                                                                   // Location of next bit
            }
           void Else()
            {if (oneTreeBit) return;                                                                                     // No more bits to check because the bitset if trivially small
@@ -462,12 +469,18 @@ abstract public class BitSet extends Program                                    
                        {new For(i)                                                                                      // Step down to the leaves
                          {void body(Int j, Bool K)                                                                      // Step down to the leaves
                            {moveUpOneLayer(B, p, w);                                                                    // Move up one layer
-                            B.add(getBitNC(new Pos(p.Add(B))).b() ? 0 : 1);                                             // Follow path as low as possible
+                            new If (getBitNC(new Pos(p.Add(B))).flip())                                                 // Follow path as low as possible
+                             {void Then() {B.inc();}
+                             };
+                            //B.add(getBitNC(new Pos(p.Add(B))).b() ? 0 : 1);                                             // Follow path as low as possible
                             K.set();
                            }
                          };
-                        final Int P = new Int(B.Add(B));                                                                // Position in parent layer
-                        R.set(P.Add(getBit(new Pos(P)).b() ? 1 : 0));                                                     // Next zero bit from actual bits
+                        final Pos P = new Pos(new Int(B.Add(B)));                                                       // Address next level of bits in tree
+                        new If (getBit(P))                                                                              // Next zero bit from actual bits
+                         {void Then() {R.set(P).inc();}
+                         };
+                        //R.set(P.Add(getBit(new Pos(P)).b() ? 1 : 0));                                                     // Next zero bit from actual bits
                         C.clear();
                        }
                       void Else()
@@ -640,8 +653,8 @@ abstract public class BitSet extends Program                                    
     for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), b.new Bool(i % 2 == 0));                                           // Set alternating bits.
     final Bool b4 = b.getBit(b.new Pos(b.new Int(4)));                                                                  // Get bit 4.
     final Bool b5 = b.getBit(b.new Pos(b.new Int(5)));                                                                  // Get bit 5.
-    b.put(()->b4);                                                                                                      // Verify bit 4.
-    b.put(()->b5);                                                                                                      // Verify bit 5.
+    b.put(b4);                                                                                                      // Verify bit 4.
+    b.put(b5);                                                                                                      // Verify bit 5.
     b.execute();
 
     //stop(b.output());
@@ -664,52 +677,51 @@ false
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
     for (int i : s) b.set(b.new Pos(b.new Int(i)), b.new Bool(true));
-    b.put(()->b);
+    b.put(b);
 
-    final Pos p = b.new Pos(); p.set(1);  b.Put(()->b.nextOne(p).position());
-    for (int i : range(13))     b.Put(()->b.nextOne(b.new Pos(i)).position());
-    for (int i : range(13, 19)) b.Put(()->b.nextOne(b.new Pos(i)).position());
-    for (int i : range(19, 24)) b.Put(()->b.nextOne(b.new Pos(i)).position());
-    for (int i : range(23, 28)) b.Put(()->b.nextOne(b.new Pos(i)).position());
-                                b.Put(()->b.nextOne(b.new Pos(28)).position());
-                                b.Put(()->b.nextOne(b.new Pos(29)).position());
-                                b.Put(()->b.nextOne(b.new Pos(30)).position());
-                                b.Put(()->b.nextOne(b.new Pos(31)).notValid());
+    for (int i : range(13))     b.Put(b.nextOne(b.new Pos(i)).position());
+    for (int i : range(13, 19)) b.Put(b.nextOne(b.new Pos(i)).position());
+    for (int i : range(19, 24)) b.Put(b.nextOne(b.new Pos(i)).position());
+    for (int i : range(23, 28)) b.Put(b.nextOne(b.new Pos(i)).position());
+                                b.Put(b.nextOne(b.new Pos(28)).position());
+                                b.Put(b.nextOne(b.new Pos(29)).position());
+                                b.Put(b.nextOne(b.new Pos(30)).position());
+                                b.Put(b.nextOne(b.new Pos(31)).notValid());
                                 b.put();
-    for (int i : range(14))     b.Put(()->b.prevOne(b.new Pos(i)).notValid());
+    for (int i : range(14))     b.Put(b.prevOne(b.new Pos(i)).notValid());
                                 b.put();
-    for (int i : range(14, 20)) b.Put(()->b.prevOne(b.new Pos(i)).position());
-    for (int i : range(20, 24)) b.Put(()->b.prevOne(b.new Pos(i)).position());
-    for (int i : range(25, 29)) b.Put(()->b.prevOne(b.new Pos(i)).position());
-                                b.Put(()->b.prevOne(b.new Pos(30)).position());
-                                b.Put(()->b.prevOne(b.new Pos(31)).position());
+    for (int i : range(14, 20)) b.Put(b.prevOne(b.new Pos(i)).position());
+    for (int i : range(20, 24)) b.Put(b.prevOne(b.new Pos(i)).position());
+    for (int i : range(25, 29)) b.Put(b.prevOne(b.new Pos(i)).position());
+                                b.Put(b.prevOne(b.new Pos(30)).position());
+                                b.Put(b.prevOne(b.new Pos(31)).position());
                                 b.put();
 
-    b.Put(()->b.firstOne().position());
-    b.Put(()->b.lastOne() .position());
+    b.Put(b.firstOne().position());
+    b.Put(b.lastOne() .position());
     b.put();
 
-    for (int i : range(12))     b.Put(()->b.nextZero(b.new Pos( i)).position());
-                                b.Put(()->b.nextZero(b.new Pos(12)).position());
-    for (int i : range(13, 18)) b.Put(()->b.nextZero(b.new Pos( i)).position());
-    for (int i : range(19, 23)) b.Put(()->b.nextZero(b.new Pos( i)).position());
-    for (int i : range(23, 28)) b.Put(()->b.nextZero(b.new Pos( i)).position());
+    for (int i : range(12))     b.Put(b.nextZero(b.new Pos( i)).position());
+                                b.Put(b.nextZero(b.new Pos(12)).position());
+    for (int i : range(13, 18)) b.Put(b.nextZero(b.new Pos( i)).position());
+    for (int i : range(19, 23)) b.Put(b.nextZero(b.new Pos( i)).position());
+    for (int i : range(23, 28)) b.Put(b.nextZero(b.new Pos( i)).position());
                                 b.put();
-    for (int i : range(29, 32)) b.Put(()->b.nextZero(b.new Pos( i)).notValid());
+    for (int i : range(29, 32)) b.Put(b.nextZero(b.new Pos( i)).notValid());
 
-                                b.Put(()->b.prevZero(b.new Pos(b.new Int(0))).notValid());
+                                b.Put(b.prevZero(b.new Pos(b.new Int(0))).notValid());
                                 b.put();
-    for (int i : range( 1, 14)) b.Put(()->b.prevZero(b.new Pos( i)).position());
-                                b.Put(()->b.prevZero(b.new Pos(14)).position());
-    for (int i : range(15, 19)) b.Put(()->b.prevZero(b.new Pos( i)).position());
-                                b.Put(()->b.prevZero(b.new Pos(20)).position());
-    for (int i : range(21, 24)) b.Put(()->b.prevZero(b.new Pos( i)).position());
-    for (int i : range(24, 30)) b.Put(()->b.prevZero(b.new Pos( i)).position());
-    for (int i : range(30, 32)) b.Put(()->b.prevZero(b.new Pos( i)).position());
+    for (int i : range( 1, 14)) b.Put(b.prevZero(b.new Pos( i)).position());
+                                b.Put(b.prevZero(b.new Pos(14)).position());
+    for (int i : range(15, 19)) b.Put(b.prevZero(b.new Pos( i)).position());
+                                b.Put(b.prevZero(b.new Pos(20)).position());
+    for (int i : range(21, 24)) b.Put(b.prevZero(b.new Pos( i)).position());
+    for (int i : range(24, 30)) b.Put(b.prevZero(b.new Pos( i)).position());
+    for (int i : range(30, 32)) b.Put(b.prevZero(b.new Pos( i)).position());
                                 b.put();
 
-    b.Put(()->b.firstZero().position());
-    b.Put(()->b.lastZero() .position());
+    b.Put(b.firstZero().position());
+    b.Put(b.lastZero() .position());
     b.put();
 
     b.execute();
@@ -1232,7 +1244,7 @@ Zero:
 
   static void newTests()                                                                                                // Tests under development.
    {//oldTests();                                                                                                     // Run baseline tests.
-    test_prevNext();
+    test_prevNext(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
