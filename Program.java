@@ -3,7 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Remove short circuit "and" and "or": replace with block with exits to avoid instructions within instructions via suppliers
-// Remove ref and return two arguments instead: the value if valid, a bool indicating whether the returned vlue is valid or not
+//+ Remove ref
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -141,14 +141,14 @@ public class Program extends Test                                               
              void Else() {}                                                                                             // Else clause
    }
 
-  <T> T If(Bool Choice, Supplier<T> Then, Supplier<T> Else)                                                             // Choose between two alternatives
-   {final Ref<T>r = new Ref<>();
-    new If (Choice)
-     {void Then() {r.set(Then.get());}
-      void Else() {r.set(Else.get());}
-     };
-    return r.get();
-   }
+//  <T> T If(Bool Choice, Supplier<T> Then, Supplier<T> Else)                                                             // Choose between two alternatives
+//   {final Ref<T>r = new Ref<>();
+//    new If (Choice)
+//     {void Then() {r.set(Then.get());}
+//      void Else() {r.set(Else.get());}
+//     };
+//    return r.get();
+//   }
 
   class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
@@ -297,7 +297,9 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool dup() {return new Bool(this);}                                                                                 // Duplicate a boolean
+    Bool dup   ()       {                                                                        return new Bool(this);}// Duplicate a boolean so that the duplicated version can be modified without modifying the original
+    Bool copy  (Bool I) {                           new I() {void action() {i = I.i; v = I.v;}}; return this;}          // Copy the state of a boolean without regard as to whether it is valid or not
+    Bool valid()        {final Bool b = new Bool(); new I() {void action() {b.set(v);        }}; return b;}             // Whether the integer is valid or not
 
     public String toString() {return v ? ""+i : "undefined Bool";}                                                      // Print the boolean
    }
@@ -448,7 +450,9 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
-    Int dup() {return new Int(this);}                                                                                   // Duplicate an integer
+    Int dup   ()      {                                                                           return new Int(this);}// Duplicate an integer so that the duplicated version can be modified without modifying the original
+    Int copy  (Int I) {                           new I() {void action() {i = I.i; v = I.v;}};    return this;}         // Copy the state of an integer without regard as to whether it is valid or not
+    Bool valid()      {final Bool b = new Bool(); new I() {void action() {b.i = v; b.v = true;}}; return b;}            // Whether the integer is valid or not
 
     Int  bclr (Int I) {new I() {void action() {bclrEx(I);}}; return this;}                                              // Clear the indicated bit
     Int  bset (Int I) {new I() {void action() {bsetEx(I);}}; return this;}                                              // Set the indicated bit
@@ -479,19 +483,19 @@ public class Program extends Test                                               
     public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
    }
 
-  class Ref<T>                                                                                                          // A reference to an object
-   {T i;                                                                                                                // Value of the object
-    Ref()              {ai(); i = null;}                                                                                // Create a null reference
-    Ref(T I)           {ai(); i = I;}                                                                                   // Create a reference to the object
-    void set(T I)      {      i = I;}                                                                                   // Set the refernce
-    void set(Ref<T> I) {      i = I.get();}                                                                             // Set the refernce
-    T    get()         {return i;}                                                                                      // Dereference the reference
-    Bool valid()       {return new Bool(i != null);}                                                                    // Check that the refence is valid
-
-    public String toString()                                                                                            // Print the reference
-     {return i == null ? "null" : "ref("+i+")";
-     }
-   }
+//  class Ref<T>                                                                                                          // A reference to an object
+//   {T i;                                                                                                                // Value of the object
+//    Ref()              {ai(); i = null;}                                                                                // Create a null reference
+//    Ref(T I)           {ai(); i = I;}                                                                                   // Create a reference to the object
+//    void set(T I)      {      i = I;}                                                                                   // Set the refernce
+//    void set(Ref<T> I) {      i = I.get();}                                                                             // Set the refernce
+//    T    get()         {return i;}                                                                                      // Dereference the reference
+//    Bool valid()       {return new Bool(i != null);}                                                                    // Check that the refence is valid
+//
+//    public String toString()                                                                                            // Print the reference
+//     {return i == null ? "null" : "ref("+i+")";
+//     }
+//   }
 
   static int[]range(Int Limit) {return range(Limit.i());}                                                               // Range of integers
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
@@ -778,29 +782,6 @@ public class Program extends Test                                               
     ok(p.trace(), q.trace());
    }
 
-  static void test_remote(boolean Ex)
-   {final Program P = new Program(Ex)
-     {void code()
-       {final Int a = new Int(1);
-        a.add(2);
-        put(a);
-       }
-     };
-    final Program Q = new Program(P)
-     {void code()
-       {final Int a = new Int(1);
-        a.add(3);
-        put(a);
-       }
-     };
-    P.execute();
-    //stop(P.output());
-    ok(P.output(), """
-3
-4
-""");
-   }
-
   static void test_bits(boolean Ex)
    {final Program P = new Program(Ex)
      {void code()
@@ -830,9 +811,43 @@ public class Program extends Test                                               
     test_bits(false);
    }
 
+  static void test_remote(boolean Ex)
+   {final Program P = new Program(Ex)
+     {void code()
+       {final Int a = new Int(1);
+        a.add(2);
+        ok(()->a, 3);
+       }
+     };
+    final Program Q = new Program(P)
+     {void code()
+       {final Int a = new Int(1);
+        a.add(3);
+        ok(()->a, 4);
+       }
+     };
+    P.execute();
+   }
+
   static void test_remote()
    {test_remote(true);
     test_remote(false);
+   }
+
+  static void test_copy(boolean Ex)
+   {final Program P = new Program(Ex)
+     {void code()
+       {final Int  a = new Int();
+        final Bool b = a.valid();
+        ok(()->b, false);
+       }
+     };
+    P.execute();
+   }
+
+  static void test_copy()
+   {test_copy(true);
+    test_copy(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -844,6 +859,7 @@ public class Program extends Test                                               
     test_incremental();
     test_remote();
     test_bits();
+    test_copy();
    }
 
   static void newTests()                                                                                                // Tests being worked on
