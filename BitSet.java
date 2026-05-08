@@ -302,7 +302,7 @@ abstract public class BitSet extends Program                                    
     final Pos r = new Pos();
     new If (getBit(p))
      {void Then() {r.set(p);}
-      void Else() {nextOne(p, r);}
+      void Else() {r.copy(nextOne(p));}
      };
     return r;                                                                                                           // Result is valid if found
    }
@@ -313,15 +313,15 @@ abstract public class BitSet extends Program                                    
     final Pos r = new Pos();
     new If (getBit(p))
      {void Then() {r.set(p);}
-      void Else() {prevOne(p, r);}
+      void Else() {r.copy(prevOne(p));}
      };
     return r;                                                                                                           // Result is valid if found
    }
 
-  public Pos nextOne(Pos Start, Pos Next)                                                                               // Find the index of the next set bit above the specified start bit
+  public Pos nextOne(Pos Start)                                                                                         // Find the index of the next set bit above the specified start bit
    {checkOne();
     if (immediate()) checkIndex(Start.position());
-    Next.invalidate();                                                                                                  // Invalid indicates not found
+    final Pos Next = new Pos();                                                                                         // Invalid indicates not found
 
     final Int b = Start.position();                                                                                     // Position in layer
     final Int w = new Int(bitSize);                                                                                     // Width of layer
@@ -358,10 +358,10 @@ abstract public class BitSet extends Program                                    
     return Next;                                                                                                        // Result is valid if found
    }
 
-  public Pos prevOne(Pos Start, Pos Prev)                                                                               // Find the index of the previous set bit below the specified bit
+  public Pos prevOne(Pos Start)                                                                                         // Find the index of the previous set bit below the specified bit
    {checkOne();
     if (immediate()) checkIndex(Start.position());
-    Prev.invalidate();                                                                                                  // Invalid indicates not found
+    final Pos Prev = new Pos();                                                                                         // Invalid indicates not found
     final Int b = new Int(Start.position());                                                                            // Position in layer
     final Int w = new Int(bitSize);                                                                                     // Width of layer
     final Int p = new Int(0);                                                                                           // Offset of layer
@@ -406,7 +406,7 @@ abstract public class BitSet extends Program                                    
     final Pos p = new Pos(new Int(0));
     final Pos r = new Pos();
     new If (getBit(p))
-     {void Then() {nextZero(p, r);}
+     {void Then() {r.copy(nextZero(p));}
       void Else() {r.set(p);          }
      };
     return r;                                                                                                           // Result is valid if found
@@ -417,16 +417,16 @@ abstract public class BitSet extends Program                                    
     final Pos p = new Pos(bitSize1);
     final Pos r = new Pos();
     new If (getBit(p))
-     {void Then() {prevZero(p, r);}
+     {void Then() {r.copy(prevZero(p));}
       void Else() {r.set(p);          }
      };
     return r;                                                                                                           // Result is valid if found
    }
 
-  public Pos nextZero(Pos Start, Pos Next)                                                                              // Find the index of the next set bit above the specified bit
+  public Pos nextZero(Pos Start)                                                                                        // Find the index of the next set bit above the specified bit
    {checkZero();
     if (immediate()) checkIndex(Start.position());
-    Next.invalidate();                                                                                                  // Invalid indicates not found
+    final Pos Next = new Pos();                                                                                         // Invalid indicates not found
 
     final Int b = new Int(Start.position());                                                                            // Offset in bits in the current layer
     new If (b.ne(bitSize1))                                                                                             // Not last bit so there might be a next bit
@@ -487,10 +487,10 @@ abstract public class BitSet extends Program                                    
     return Next;                                                                                                        // Result is valid if found
    }
 
-  public Pos prevZero(Pos Start, Pos Prev)                                                                              // Find the index of the previous set bit below the specified bit
+  public Pos prevZero(Pos Start)                                                                                        // Find the index of the previous set bit below the specified bit
    {checkZero();
     if (immediate()) checkIndex(Start.position());
-    Prev.invalidate();                                                                                                  // Invalid indicates not found
+    final Pos Prev = new Pos();                                                                                         // Invalid indicates not found
 
     final Int b = new Int(Start.position());
     new If (b.ne(0))                                                                                                    // Not the first bit so there might be a previous bit
@@ -692,55 +692,54 @@ Zero:
 
     if (true)
      {final Pos q;
-      q = b.prevZero(b.new Pos(14), b.new Pos());
+      q = b.prevZero(b.new Pos(14));
       b.ok(()->q.i(), 12);
      }
 
-    for (int i : range(13))     {final Pos q = b.nextOne(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), 13);}
-    for (int i : range(13, 19)) {final Pos q = b.nextOne(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), 19);}
-    for (int i : range(19, 24)) {final Pos q = b.nextOne(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), 24);}
-    for (int i : range(23, 28)) {final Pos q = b.nextOne(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i+1);}
-                                {final Pos q = b.nextOne(b.new Pos(28), b.new Pos()); b.ok(()->q.i(), 30);}
-                                {final Pos q = b.nextOne(b.new Pos(29), b.new Pos()); b.ok(()->q.i(), 30);}
-                                {final Pos q = b.nextOne(b.new Pos(30), b.new Pos()); b.ok(()->q.i(), 31);}
-                                {final Pos q = b.nextOne(b.new Pos(31), b.new Pos()); b.ok(()->q.v(), false);}
+    for (int i : range(13))     {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(),  13);}
+    for (int i : range(13, 19)) {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(),  19);}
+    for (int i : range(19, 24)) {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(),  24);}
+    for (int i : range(23, 28)) {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(), i+1);}
+                                {final Pos q = b.nextOne(b.new Pos(28)); b.ok(()->q.i(),  30);}
+                                {final Pos q = b.nextOne(b.new Pos(29)); b.ok(()->q.i(),  30);}
+                                {final Pos q = b.nextOne(b.new Pos(30)); b.ok(()->q.i(),  31);}
+                                {final Pos q = b.nextOne(b.new Pos(31)); b.ok(()->q.v(), false);}
 
-    for (int i : range(14))     {final Pos q = b.prevOne(b.new Pos( i), b.new Pos()); b.ok(()->q.v(), false);}
+    for (int i : range(14))     {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.v(), false);}
 
-    for (int i : range(14, 20)) {final Pos q = b.prevOne(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), 13);}
-    for (int i : range(20, 24)) {final Pos q = b.prevOne(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), 19);}
-    for (int i : range(25, 29)) {final Pos q = b.prevOne(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i-1);}
-                                {final Pos q = b.prevOne(b.new Pos(30), b.new Pos()); b.ok(()->q.i(), 28);}
-                                {final Pos q = b.prevOne(b.new Pos(31), b.new Pos()); b.ok(()->q.i(), 30);}
+    for (int i : range(14, 20)) {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.i(),  13);}
+    for (int i : range(20, 24)) {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.i(),  19);}
+    for (int i : range(25, 29)) {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.i(), i-1);}
+                                {final Pos q = b.prevOne(b.new Pos(30)); b.ok(()->q.i(),  28);}
+                                {final Pos q = b.prevOne(b.new Pos(31)); b.ok(()->q.i(),  30);}
 
                                 {final Pos q = b.firstOne(); b.ok(()->q.i(), 13);}
                                 {final Pos q = b. lastOne(); b.ok(()->q.i(), 31);}
 
-    for (int i : range(12))     {final Pos q = b.nextZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i+1);}
-                                {final Pos q = b.nextZero(b.new Pos(12), b.new Pos()); b.ok(()->q.i(),  14);}
-    for (int i : range(13, 18)) {final Pos q = b.nextZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i+1);}
-    for (int i : range(19, 23)) {final Pos q = b.nextZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i+1);}
-    for (int i : range(23, 28)) {final Pos q = b.nextZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(),  29);}
-    for (int i : range(29, 32)) {final Pos q = b.nextZero(b.new Pos( i), b.new Pos()); b.ok(()->q.v(), false);}
+    for (int i : range(12))     {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(), i+1);}
+                                {final Pos q = b.nextZero(b.new Pos(12)); b.ok(()->q.i(),  14);}
+    for (int i : range(13, 18)) {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(), i+1);}
+    for (int i : range(19, 23)) {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(), i+1);}
+    for (int i : range(23, 28)) {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(),  29);}
+    for (int i : range(29, 32)) {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.v(), false);}
 
 
-                                {final Pos q = b.prevZero(b.new Pos(b.new Int(0)), b.new Pos()); b.ok(()->q.v(), false);}
+                                {final Pos q = b.prevZero(b.new Pos( 0)); b.ok(()->q.v(), false);}
+    for (int i : range( 1, 14)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(), i-1);}
 
-    for (int i : range( 1, 14)) {final Pos q = b.prevZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i-1);}
-
-                                {final Pos q = b.prevZero(b.new Pos(14), b.new Pos()); b.ok(()->q.i(),  12);}
-    for (int i : range(15, 19)) {final Pos q = b.prevZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i-1);}
-                                {final Pos q = b.prevZero(b.new Pos(20), b.new Pos()); b.ok(()->q.i(),  18);}
-    for (int i : range(21, 24)) {final Pos q = b.prevZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(), i-1);}
-    for (int i : range(24, 30)) {final Pos q = b.prevZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(),  23);}
-    for (int i : range(30, 32)) {final Pos q = b.prevZero(b.new Pos( i), b.new Pos()); b.ok(()->q.i(),  29);}
+                                {final Pos q = b.prevZero(b.new Pos(14)); b.ok(()->q.i(),  12);}
+    for (int i : range(15, 19)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(), i-1);}
+                                {final Pos q = b.prevZero(b.new Pos(20)); b.ok(()->q.i(),  18);}
+    for (int i : range(21, 24)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(), i-1);}
+    for (int i : range(24, 30)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(),  23);}
+    for (int i : range(30, 32)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(),  29);}
 
                                 {final Pos q = b.firstZero(); b.ok(()->q.i(),  0);}
                                 {final Pos q = b. lastZero(); b.ok(()->q.i(), 29);}
 
     b.execute();
    }
-/*
+
   static void test_prevNext()                                                                                           // Test tree of searchable one bits
    {test_prevNext(true);
     test_prevNext(false);
@@ -751,8 +750,8 @@ Zero:
     final BitSet b = test_bits(N, true, true);
     b.immediate(Ex);
     b.initialize();
-    if (!Ex) stop(b);
-    ok(b, """
+
+    b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
 One:
@@ -768,7 +767,7 @@ Zero:
 """);
     for (int i : range(N)) b.set(b.new Pos(i), b.new Bool((i / 4) % 2 == 0));
     //stop(b);
-    ok(b, """
+    b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  1  1  1  1  0  0  0  0  1  1  1  1  0  0  0  0
 One:
@@ -783,31 +782,31 @@ Zero:
    4   45    1 |  1
 """);
 
-    for (int i : range( 3))     ok(b.nextOne(b.new Pos(i)).position(), b.new Int(i).inc());
-    for (int i : range( 4,  8)) ok(b.nextOne(b.new Pos(i)).position(), 8);
-    for (int i : range( 7, 11)) ok(b.nextOne(b.new Pos(i)).position(), b.new Int(i).inc());
-    for (int i : range(11, 16)) ok(b.nextOne(b.new Pos(i)).notValid());
+    for (int i : range( 3))     {final Pos q = b.nextOne(b.new Pos(i)); b.ok(()->q.i(),    i+1);}
+    for (int i : range( 4,  8)) {final Pos q = b.nextOne(b.new Pos(i)); b.ok(()->q.i(),      8);}
+    for (int i : range( 7, 11)) {final Pos q = b.nextOne(b.new Pos(i)); b.ok(()->q.i(),    i+1);}
+    for (int i : range(11, 16)) {final Pos q = b.nextOne(b.new Pos(i)); b.ok(()->q.v(),  false);}   // notValid  ???
 
-                                ok(b.prevOne(b.new Pos(b.new Int(0))).notValid());
-    for (int i : range( 1,  5)) ok(b.prevOne(b.new Pos(i)).position(), b.new Int(i).dec());
-    for (int i : range( 4,  9)) ok(b.prevOne(b.new Pos(i)).position(), 3);
-    for (int i : range( 9, 12)) ok(b.prevOne(b.new Pos(i)).position(), b.new Int(i).dec());
-    for (int i : range(12, 16)) ok(b.prevOne(b.new Pos(i)).position(), 11);
-    ok(b.firstOne().position(),   0);
-    ok(b.lastOne().position(),    11);
+                                {final Pos q = b.prevOne(b.new Pos(0)); b.ok(()->q.v(),  false);}
+    for (int i : range( 1,  5)) {final Pos q = b.prevOne(b.new Pos(i)); b.ok(()->q.i(),    i-1);}
+    for (int i : range( 4,  9)) {final Pos q = b.prevOne(b.new Pos(i)); b.ok(()->q.i(),      3);}
+    for (int i : range( 9, 12)) {final Pos q = b.prevOne(b.new Pos(i)); b.ok(()->q.i(),    i-1);}
+    for (int i : range(12, 16)) {final Pos q = b.prevOne(b.new Pos(i)); b.ok(()->q.i(),     11);}
+                                {final Pos q = b.firstOne();            b.ok(()->q.i(),      0);}
+                                {final Pos q = b.lastOne ();            b.ok(()->q.i(),     11);}
 
-    for (int i : range( 3))     ok(b.nextZero(b.new Pos( i)).position(), 4);
-    for (int i : range( 3,  7)) ok(b.nextZero(b.new Pos( i)).position(), b.new Int(i).inc());
-    for (int i : range( 7, 11)) ok(b.nextZero(b.new Pos( i)).position(), 12);
-    for (int i : range(11, 15)) ok(b.nextZero(b.new Pos( i)).position(), b.new Int(i).inc());
-                                ok(b.nextZero(b.new Pos(15)).notValid());
+    for (int i : range( 3))     {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(),    4);}
+    for (int i : range( 3,  7)) {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(),  i+1);}
+    for (int i : range( 7, 11)) {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(),   12);}
+    for (int i : range(11, 15)) {final Pos q = b.nextZero(b.new Pos( i)); b.ok(()->q.i(),   i+1);}
+                                {final Pos q = b.nextZero(b.new Pos(15)); b.ok(()->q.v(), false);}
 
-    for (int i : range( 5))     ok(b.prevZero(b.new Pos( 0)).notValid());
-    for (int i : range( 5,  9)) ok(b.prevZero(b.new Pos( i)).position(), b.new Int(i).dec());
-    for (int i : range( 8, 12)) ok(b.prevZero(b.new Pos( i)).position(), 7);
-    for (int i : range(13, 16)) ok(b.prevZero(b.new Pos( i)).position(), b.new Int(i).dec());
-    ok(b.firstZero().position(),  4);
-    ok(b.lastZero ().position(), 15);
+    for (int i : range( 5))     {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.v(), false);}
+    for (int i : range( 5,  9)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(),   i-1);}
+    for (int i : range( 8, 12)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(),     7);}
+    for (int i : range(13, 16)) {final Pos q = b.prevZero(b.new Pos( i)); b.ok(()->q.i(),   i-1);}
+                                {final Pos q = b.firstZero();             b.ok(()->q.i(),      4);}
+                                {final Pos q = b.lastZero ();             b.ok(()->q.i(),     15);}
    }
 
   static void test_prevNext01()                                                                                         // Test tree of searchable one bits
@@ -817,25 +816,14 @@ Zero:
 
   static void test_prevNext10(boolean Ex)                                                                               // Test tree of searchable one bits
    {final int N = 16;
-     final BitSet b = test_bits(N, true, true);
+    final BitSet b = test_bits(N, true, true);
     b.immediate(Ex);
     b.initialize();
     for (int i : range(N)) b.set(b.new Pos(i), b.new Bool((i / 4) % 2 == 1));
 
-                                            //stop(b);
+   //stop(b);
 
-    for (int i : range( 3))     ok(b.nextZero(b.new Pos(i)).position(), b.new Int(i).inc());
-    for (int i : range( 3, 8))  ok(b.nextZero(b.new Pos(i)).position(), 8);
-    for (int i : range( 7, 11)) ok(b.nextZero(b.new Pos(i)).position(), b.new Int(i).inc());
-    for (int i : range(11, 16)) ok(b.nextZero(b.new Pos(i)).notValid());
-
-                                ok(b.prevZero(b.new Pos(b.new Int(0))).notValid());
-    for (int i : range( 1,  5)) ok(b.prevZero(b.new Pos(i)).position(), b.new Int(i).dec());
-    for (int i : range( 4,  8)) ok(b.prevZero(b.new Pos(i)).position(), 3);
-    for (int i : range( 9, 13)) ok(b.prevZero(b.new Pos(i)).position(), b.new Int(i).dec());
-    for (int i : range(12, 16)) ok(b.prevZero(b.new Pos(i)).position(), 11);
-
-    ok(b, """
+    b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  0  0  0  0  1  1  1  1  0  0  0  0  1  1  1  1
 One:
@@ -850,18 +838,29 @@ Zero:
    4   45    1 |  1
 """);
 
-    for (int i : range( 4))     ok(b.nextOne(b.new Pos(b.new Int( i))).position(), 4);
-    for (int i : range( 3,  7)) ok(b.nextOne(b.new Pos(b.new Int( i))).position(), b.new Int(i).inc());
-    for (int i : range( 7, 12)) ok(b.nextOne(b.new Pos(b.new Int( i))).position(), 12);
-    for (int i : range(11, 15)) ok(b.nextOne(b.new Pos(b.new Int( i))).position(), b.new Int(i).inc());
-                                ok(b.nextOne(b.new Pos(b.new Int(15))).notValid());
+    for (int i : range( 3))     {final Pos q = b.nextZero(b.new Pos(i)); b.ok(()->q.i(), i+1);}
+    for (int i : range( 3, 8))  {final Pos q = b.nextZero(b.new Pos(i)); b.ok(()->q.i(),   8);}
+    for (int i : range( 7, 11)) {final Pos q = b.nextZero(b.new Pos(i)); b.ok(()->q.i(), i+1);}
+    for (int i : range(11, 16)) {final Pos q = b.nextZero(b.new Pos(i)); b.ok(()->q.v(), false);}
 
-    for (int i : range( 5))     ok(b.prevOne(b.new Pos(b.new Int( i))).notValid());
-    for (int i : range( 5,  8)) ok(b.prevOne(b.new Pos(b.new Int( i))).position(), b.new Int(i).dec());
-    for (int i : range( 8, 13)) ok(b.prevOne(b.new Pos(b.new Int( i))).position(), 7);
-    for (int i : range(13, 16)) ok(b.prevOne(b.new Pos(b.new Int( i))).position(), b.new Int(i).dec());
-    ok(b.firstOne().position(),   4);
-    ok(b.lastOne().position(),    15);
+                                {final Pos q = b.prevZero(b.new Pos(0)); b.ok(()->q.v(), false);}
+    for (int i : range( 1,  5)) {final Pos q = b.prevZero(b.new Pos(i)); b.ok(()->q.i(),  i-1);}
+    for (int i : range( 4,  8)) {final Pos q = b.prevZero(b.new Pos(i)); b.ok(()->q.i(),   3);}
+    for (int i : range( 9, 13)) {final Pos q = b.prevZero(b.new Pos(i)); b.ok(()->q.i(), i-1);}
+    for (int i : range(12, 16)) {final Pos q = b.prevZero(b.new Pos(i)); b.ok(()->q.i(),  11);}
+
+    for (int i : range( 4))     {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(),   4);}
+    for (int i : range( 3,  7)) {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(), i+1);}
+    for (int i : range( 7, 12)) {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(),  12);}
+    for (int i : range(11, 15)) {final Pos q = b.nextOne(b.new Pos( i)); b.ok(()->q.i(), i+1);}
+                                {final Pos q = b.nextOne(b.new Pos(15)); b.ok(()->q.v(), false);}
+
+    for (int i : range( 5))     {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.v(), false);}
+    for (int i : range( 5,  8)) {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.i(), i-1);}
+    for (int i : range( 8, 13)) {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.i(),   7);}
+    for (int i : range(13, 16)) {final Pos q = b.prevOne(b.new Pos( i)); b.ok(()->q.i(), i-1);}
+                                {final Pos q = b.firstOne();             b.ok(()->q.i(),   4);}
+                                {final Pos q = b.lastOne();              b.ok(()->q.i(),  15);}
    }
 
   static void test_prevNext10()                                                                                         // Test tree of searchable one bits
@@ -869,150 +868,23 @@ Zero:
     test_prevNext10(false);
    }
 
-  static void test_integrity()
-   {final int N = 8;                                                                                                    // Test size.
-    final Build build = new Build().bitSize(N).one(true);                                                               // Allocate backing storage.
-    final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
-
-    final BitSet b = new BitSet(build)                                                                                  // Create a bit set using the backing storage
-     {void setByte(int Index, int Value) {bytes[Index] = (byte)Value;}                                                  // Backend write.
-      int  getByte(int Index)            {assert !executing(); return bytes[Index];}                                    // Backend read to examine results.
-     };
-
-    b.initialize();
-    b.set(b.new Pos(1), b.new Bool(true)); b.set(b.new Pos(3), b.new Bool(true));
-    ok(b.integrity());
-    b.setBit(b.new Pos(7), b.new Bool(true));
-    ok(!b.integrity(false));
-   }
-
-  static void test_initialize()
-   {final BitSet b = test_bits(8, true, false);
-
-    b.set(b.new Pos(1), b.new Bool(true)); b.set(b.new Pos(3), b.new Bool(true));
-    ok(b.integrity());
-    b.initialize();
-    ok(b.integrity());
-   }
-
-  static void test_oneZero()
+  static void test_oneZero(boolean Ex)
    {final int N = 8;
     final BitSet b = test_bits(N, true, true);
+    b.immediate(Ex);
     b.initialize();
     final StringBuilder s = new StringBuilder();
-    s.append("Start:\n"+b);
+    b.new I() {void action() {s.append("Start:\n"+b);}};
 
     for (int i : range(N))
      {b.set(b.new Pos(i), b.new Bool(true));
-      s.append("Set: "+i+"\n"+b);
+      b.new I() {void action() {s.append("Set: "+i+"\n"+b);}};
      }
-    //stop(s);
-    ok(s, """
-Start:
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  0  0  0  0  0  0  0  0
-One:
-   2    8    4 |  0  0  0  0
-   3   12    2 |  0  0
-   4   14    1 |  0
-Zero:
-   1   15    4 |  1  1  1  1
-   2   19    2 |  1  1
-   3   21    1 |  1
-Set: 0
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  0  0  0  0  0  0  0
-One:
-   2    8    4 |  1  0  0  0
-   3   12    2 |  1  0
-   4   14    1 |  1
-Zero:
-   1   15    4 |  1  1  1  1
-   2   19    2 |  1  1
-   3   21    1 |  1
-Set: 1
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  1  0  0  0  0  0  0
-One:
-   2    8    4 |  1  0  0  0
-   3   12    2 |  1  0
-   4   14    1 |  1
-Zero:
-   1   15    4 |  0  1  1  1
-   2   19    2 |  1  1
-   3   21    1 |  1
-Set: 2
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  1  1  0  0  0  0  0
-One:
-   2    8    4 |  1  1  0  0
-   3   12    2 |  1  0
-   4   14    1 |  1
-Zero:
-   1   15    4 |  0  1  1  1
-   2   19    2 |  1  1
-   3   21    1 |  1
-Set: 3
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  1  1  1  0  0  0  0
-One:
-   2    8    4 |  1  1  0  0
-   3   12    2 |  1  0
-   4   14    1 |  1
-Zero:
-   1   15    4 |  0  0  1  1
-   2   19    2 |  0  1
-   3   21    1 |  1
-Set: 4
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  1  1  1  1  0  0  0
-One:
-   2    8    4 |  1  1  1  0
-   3   12    2 |  1  1
-   4   14    1 |  1
-Zero:
-   1   15    4 |  0  0  1  1
-   2   19    2 |  0  1
-   3   21    1 |  1
-Set: 5
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  1  1  1  1  1  0  0
-One:
-   2    8    4 |  1  1  1  0
-   3   12    2 |  1  1
-   4   14    1 |  1
-Zero:
-   1   15    4 |  0  0  0  1
-   2   19    2 |  0  1
-   3   21    1 |  1
-Set: 6
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  1  1  1  1  1  1  0
-One:
-   2    8    4 |  1  1  1  1
-   3   12    2 |  1  1
-   4   14    1 |  1
-Zero:
-   1   15    4 |  0  0  0  1
-   2   19    2 |  0  1
-   3   21    1 |  1
-Set: 7
-BitSet            0  1  2  3  4  5  6  7
-   1    0    8 |  1  1  1  1  1  1  1  1
-One:
-   2    8    4 |  1  1  1  1
-   3   12    2 |  1  1
-   4   14    1 |  1
-Zero:
-   1   15    4 |  0  0  0  0
-   2   19    2 |  0  0
-   3   21    1 |  0
-""");
-
     for (int i : range(N))
      {b.set(b.new Pos(i), b.new Bool(false));
-      s.append("Clear: "+i+"\n"+b);
+      b.new I() {void action() {s.append("Clear: "+i+"\n"+b);}};
      }
+    b.execute();
     //stop(s);
     ok(""+s, """
 Start:
@@ -1205,6 +1077,11 @@ Zero:
 """);
    }
 
+  static void test_oneZero()                                                                                            // Test tree of searchable one bits
+   {test_oneZero(true);
+    test_oneZero(false);
+   }
+
   static void test_fullEmpty()
    {final int N = 16;
     final BitSet b = test_bits(N, true, true);
@@ -1222,18 +1099,14 @@ Zero:
    {test_bitSet();
     test_prevNext01();
     test_prevNext();
-    test_integrity();
-    test_initialize();
-    test_oneZero();
     test_prevNext01();
     test_prevNext10();
+    test_oneZero();
     test_fullEmpty();
    }
-*/
+
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                     // Run baseline tests.
-    test_prevNext(true);
-    test_prevNext(false);
+   {oldTests();                                                                                                         // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
