@@ -17,7 +17,7 @@ public class Program extends Test                                               
   final Stack<StringBuilder> put = new Stack<>();                                                                       // Output from execution
 
   Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
-  public  boolean immediate = true;                                                                                     // Execute immediately if true else generate machine code and execute later
+  public  boolean immediate = true;                                                                                     // Exeute immediately if true else generate machine code and execute later
   public  I       executing = null;                                                                                     // Instruction being currently executed
   public  int      maxSteps = 9999;                                                                                     // Number of steps permitted in code execution
   private int     nextIntId = 0;                                                                                        // Unique id for each Int
@@ -82,12 +82,17 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         if (trace) trace("For "+index.i);
+        new I(true)
+         {void action()
+           {if (index.i() >=  End.i()) pc = end.offset;                                                                 // Index ut of range
+           }
+         };
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment lop counter
         new I(true)
          {void action()
-           {pc = cont.b() && index.i() < End.i() ? start.offset : end.offset;                                           // Continue while requested and maximum number of iterations has not been  surpassed
+           {pc = cont.b() ? start.offset : end.offset;                                                                  // Continue while requested
            }
          };
         end.set();                                                                                                      // End of the loop
@@ -299,7 +304,9 @@ public class Program extends Test                                               
 
     Bool dup   ()       {                                                                        return new Bool(this);}// Duplicate a boolean so that the duplicated version can be modified without modifying the original
     Bool copy  (Bool I) {                           new I() {void action() {i = I.i; v = I.v;}}; return this;}          // Copy the state of a boolean without regard as to whether it is valid or not
-    Bool valid()        {final Bool b = new Bool(); new I() {void action() {b.set(v);        }}; return b;}             // Whether the integer is valid or not
+    Bool valid     ()   {final Bool b = new Bool(); new I() {void action() {b.set(v);        }}; return b;}             // Whether the boolean is valid
+    Bool notValid  ()   {final Bool b = new Bool(); new I() {void action() {b.set(!v);       }}; return b;}             // Whether the boolean is invalid
+    Bool invalidate()   {                           new I() {void action() {v = false;}};        return this;}          // Invalidate the boolean
 
     public String toString() {return v ? ""+i : "undefined Bool";}                                                      // Print the boolean
    }
@@ -450,9 +457,11 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
-    Int dup   ()      {                                                                           return new Int(this);}// Duplicate an integer so that the duplicated version can be modified without modifying the original
-    Int copy  (Int I) {                           new I() {void action() {i = I.i; v = I.v;}};    return this;}         // Copy the state of an integer without regard as to whether it is valid or not
-    Bool valid()      {final Bool b = new Bool(); new I() {void action() {b.i = v; b.v = true;}}; return b;}            // Whether the integer is valid or not
+    Int dup   ()      {return new Int(this);}                                                                           // Duplicate an integer so that the duplicated version can be modified without modifying the original
+    Int copy  (Int I) {                           new I() {void action() {i = I.i; v = I.v;}};     return this;}        // Copy the state of an integer without regard as to whether it is valid or not
+    Bool valid    ()  {final Bool b = new Bool(); new I() {void action() {b.i =  v; b.v = true;}}; return b;}           // Whether the integer is valid
+    Bool notValid ()  {final Bool b = new Bool(); new I() {void action() {b.i = !v; b.v = true;}}; return b;}           // Whether the integer is invalid
+    Int invalidate()  {                           new I() {void action() {v = false;}};            return this;}        // Invalidate the integer
 
     Int  bclr (Int I) {new I() {void action() {bclrEx(I);}}; return this;}                                              // Clear the indicated bit
     Int  bset (Int I) {new I() {void action() {bsetEx(I);}}; return this;}                                              // Set the indicated bit
@@ -570,7 +579,8 @@ public class Program extends Test                                               
         executing = null;
        }
       catch(Exception e)
-       {stop("Exception:", e, "while executing:", traceBack(e));
+       {if (executing == null) stop("Exception:", e, "while executing:", traceBack(e));
+        else stop("Exception:", e, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(e));
        }
      }
     if (c >= maxSteps) stop("Out of steps after step:", c);
@@ -838,8 +848,21 @@ public class Program extends Test                                               
    {final Program P = new Program(Ex)
      {void code()
        {final Int  a = new Int();
-        final Bool b = a.valid();
-        ok(()->b, false);
+        final Int  A = new Int();
+        A.copy(a);
+        final Bool a1 = a.valid();    ok(()->a1, false);
+        final Bool A1 = A.valid();    ok(()->A1, false);
+        final Bool B1 = A.notValid(); ok(()->B1, true);
+        a.set(1);
+        A.copy(a);
+        final Bool a2 = a.valid();    ok(()->a2, true);
+        final Bool A2 = A.valid();    ok(()->A2, true);
+        final Bool B2 = A.notValid(); ok(()->B2, false);
+        a.invalidate();
+        A.copy(a);
+        final Bool a3 = a.valid();    ok(()->a3, false);
+        final Bool A3 = A.valid();    ok(()->A3, false);
+        final Bool B3 = A.notValid(); ok(()->B3, true);
        }
      };
     P.execute();
