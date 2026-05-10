@@ -17,6 +17,7 @@ public class Program extends Test                                               
   final Stack<StringBuilder> put = new Stack<>();                                                                       // Output from execution
 
   Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
+  ByteMemory     byteMemory;                                                                                            // Optional memory associated with the program
   public  boolean immediate = true;                                                                                     // Exeute immediately if true else generate machine code and execute later
   public  I       executing = null;                                                                                     // Instruction being currently executed
   public  int      maxSteps = 9999;                                                                                     // Number of steps permitted in code execution
@@ -146,14 +147,13 @@ public class Program extends Test                                               
              void Else() {}                                                                                             // Else clause
    }
 
-//  <T> T If(Bool Choice, Supplier<T> Then, Supplier<T> Else)                                                             // Choose between two alternatives
-//   {final Ref<T>r = new Ref<>();
-//    new If (Choice)
-//     {void Then() {r.set(Then.get());}
-//      void Else() {r.set(Else.get());}
-//     };
-//    return r.get();
-//   }
+  <T extends Int> T If(Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                          // Choose between two alternatives
+   {new If (Choice)
+     {void Then() {Set.set(Then.get());}
+      void Else() {Set.set(Else.get());}
+     };
+    return Set;
+   }
 
   class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
@@ -166,7 +166,6 @@ public class Program extends Test                                               
     Bool           ()          {ai(); }                                                                                 // Constructors
     Bool           (boolean I) {ai(); ie(Ops.set, I);}
     Bool           (Bool    I) {ai(); ie(Ops.set, I);}
-
     boolean       b()          {x(); return i;}
     boolean       v()          {     return v;}
     void          x()          {if (!v) variableNotSet("Bool");}                                                        // Check a value has been set for the boolean
@@ -492,19 +491,117 @@ public class Program extends Test                                               
     public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
    }
 
-//  class Ref<T>                                                                                                          // A reference to an object
-//   {T i;                                                                                                                // Value of the object
-//    Ref()              {ai(); i = null;}                                                                                // Create a null reference
-//    Ref(T I)           {ai(); i = I;}                                                                                   // Create a reference to the object
-//    void set(T I)      {      i = I;}                                                                                   // Set the refernce
-//    void set(Ref<T> I) {      i = I.get();}                                                                             // Set the refernce
-//    T    get()         {return i;}                                                                                      // Dereference the reference
-//    Bool valid()       {return new Bool(i != null);}                                                                    // Check that the refence is valid
-//
-//    public String toString()                                                                                            // Print the reference
-//     {return i == null ? "null" : "ref("+i+")";
-//     }
-//   }
+  class ByteMemory                                                                                                      // Bytes being used as the main memory program
+   {byte[]bytes;                                                                                                        // Bytes of main memory
+    int start;                                                                                                          // Start position in the main memory
+    int width;                                                                                                          // Width of the subset of main memory in use
+
+    ByteMemory(int Length, int Start, int Width)                                                                        // Create the memory
+     {if (Start < 0) stop("Start too small:", start);
+      if (Start + Width > Length-1) stop("Start+width to big:", Start, "plus", Width, "equals", Start+Width, "exceeds:", Length);
+      start = Start; width = Width; bytes = new byte[Length];                                                           // Allocate memory
+     }
+
+    ByteMemory(ByteMemory Memory, int Start, int Width)                                                                 // Subset an existing memory
+     {this(Memory.size(), Memory.start+Start, Width);                                                                   // Subset is relatve to existing subset
+       bytes = Memory.bytes;                                                                                            // Replace new memory wth existing memory
+     }
+
+    int size() {return bytes.length;}                                                                                   // Size of memory
+
+    Int getByte(Int I)                                                                                                  // Get the byte at the indicated position relative to the start
+     {if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
+      final Int r = new Int();
+      new I() {void action() {r.set(bytes[start+I.i()]);}};
+      return r;
+     }
+
+    Int getInt(Int I)                                                                                                   // Get the int at the indicated position relative to the start
+     {final int N = Integer.BYTES;
+      I.x();
+      if (immediate() && I.i()+N-1 >= width)                                                                            // Check width
+       {stop("Index to big to get an  integer from memory. Index:", I.i(), "width:", width);
+       }
+      final Int r = new Int();
+      new I()
+       {void action()
+         {final int p = start+I.i();
+          final int a = bytes[p+0];// <<  0;
+          final int b = bytes[p+1];// <<  8;
+          final int c = bytes[p+2];// << 16;
+          final int d = bytes[p+3];// << 24;
+          final int R = d | c | b | a;
+          r.ex(Int.Ops.set, R);
+         }
+       };
+      return r;
+     }
+
+    Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specfied byte at the specified position within the byte
+     {I.x(); J.x();
+      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
+      if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);         // Check width
+      final Bool r = new Bool();
+      new I()
+       {void action()
+         {final int p = start+I.i();
+          final int b = bytes[p];
+          r.ex(Bool.Ops.set, Int.getBit(b, J.i()));
+         }
+       };
+      return r;
+     }
+
+    ByteMemory putByte(Int I, Int J)                                                                                    // Put the byte at the indicated position relative to the start to the specified value
+     {I.x(); J.x();
+      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
+      if (immediate() && J.i() < 0) stop("Negative byte:", J.i());
+      if (immediate() && J.i() >= powerTwo(Byte.SIZE)) stop("Too big for a byte:", J.i());
+      new I() {void action() {bytes[start+I.i()] = (byte)J.i();}};
+      return this;
+     }
+
+    ByteMemory putInt(Int I, Int J)                                                                                     // Put the int at the indicated position relative to the start to the specified value
+     {final int N = Integer.BYTES;
+      I.x();
+      if (immediate() && I.i()+N-1 >= width)                                                                            // Check width
+       {stop("Index to big to get an  integer from memory. Index:", I.i(), "width:", width);
+       }
+      new I()
+       {void action()
+         {final int p = start+I.i(), v = J.i();
+          bytes[p+0] = (byte)((v >>>  0) & 0xFF);
+          bytes[p+1] = (byte)((v >>>  8) & 0xFF);
+          bytes[p+2] = (byte)((v >>> 16) & 0xFF);
+          bytes[p+3] = (byte)((v >>> 24) & 0xFF);
+         }
+       };
+      return this;
+     }
+
+    ByteMemory putBool(Int I, Int J, Bool K)                                                                            // Put the bit at the indicated position in the byte at the specified position to the specified value
+     {I.x(); J.x(); K.x();
+      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
+      if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);         // Check width
+      new I()
+       {void action()
+         {final int p = start+I.i();
+          final int b = bytes[p];
+          final int B = Int.setBit(b, J.i(), K.b());
+          bytes[p] = (byte)B;
+         }
+       };
+      return this;
+     }
+
+    public String toString()
+     {final StringBuilder s = new StringBuilder();
+      for (int i = start; i < start+width; i++) s.append(f("%4d %3d\n", i, bytes[i]));
+      return ""+s;
+     }
+   }
+
+//D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
   static int[]range(Int Limit) {return range(Limit.i());}                                                               // Range of integers
   static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
@@ -873,6 +970,33 @@ public class Program extends Test                                               
     test_copy(false);
    }
 
+  static void test_byteMemory(boolean Ex)
+   {final Program P = new Program(Ex)
+     {void code()
+       {final ByteMemory m = byteMemory = new ByteMemory(16, 4, 8);
+        m.putInt(new Int(0), new Int(1));
+        m.putInt(new Int(4), new Int(2));
+        final Int a = m.getInt(new Int(0));
+        final Int b = m.getInt(new Int(4));
+        ok(()->a.i(), 1);
+        ok(()->b.i(), 2);
+        m.start += Integer.BYTES;
+        final Bool c = m.getBool(new Int(0), new Int(0)); ok(()->c.b(), false);
+        final Bool d = m.getBool(new Int(0), new Int(1)); ok(()->d.b(), true );
+        final Bool e = m.getBool(new Int(0), new Int(2)); ok(()->e.b(), false);
+        m.putBool(new Int(0), new Int(0), new Bool(true));
+        final Int f = m.getInt(new Int(0));
+        ok(()->f.i(), 3);
+       }
+     };
+    P.execute();
+   }
+
+  static void test_byteMemory()
+   {test_byteMemory(true);
+    test_byteMemory(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
@@ -883,10 +1007,13 @@ public class Program extends Test                                               
     test_remote();
     test_bits();
     test_copy();
+    test_byteMemory();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    //test_byteMemory();
+    test_byteMemory(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
