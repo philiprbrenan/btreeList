@@ -498,19 +498,21 @@ public class Program extends Test                                               
 
     ByteMemory(int Length, int Start, int Width)                                                                        // Create the memory
      {if (Start < 0) stop("Start too small:", start);
-      if (Start + Width > Length-1) stop("Start+width to big:", Start, "plus", Width, "equals", Start+Width, "exceeds:", Length);
+      if (Start + Width > Length-1)
+       {stop("Start+width to big:", Start, "plus", Width, "equals", Start+Width, "exceeds:", Length);
+       }
       start = Start; width = Width; bytes = new byte[Length];                                                           // Allocate memory
      }
 
-    ByteMemory(ByteMemory Memory, int Start, int Width)                                                                 // Subset an existing memory
-     {this(Memory.size(), Memory.start+Start, Width);                                                                   // Subset is relatve to existing subset
+    ByteMemory(ByteMemory Memory, int Start, int Width)                                                                 // Subset of an existing memory
+     {this(Memory.size(), Memory.start+Start, Width);                                                                   // Subset is relative to an existing subset
        bytes = Memory.bytes;                                                                                            // Replace new memory wth existing memory
      }
 
     int size() {return bytes.length;}                                                                                   // Size of memory
 
     Int getByte(Int I)                                                                                                  // Get the byte at the indicated position relative to the start
-     {if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
+     {if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);
       final Int r = new Int();
       new I() {void action() {r.set(bytes[start+I.i()]);}};
       return r;
@@ -519,7 +521,7 @@ public class Program extends Test                                               
     Int getInt(Int I)                                                                                                   // Get the int at the indicated position relative to the start
      {final int N = Integer.BYTES;
       I.x();
-      if (immediate() && I.i()+N-1 >= width)                                                                            // Check width
+      if (immediate() && I.i()+N-1 >= width)
        {stop("Index to big to get an  integer from memory. Index:", I.i(), "width:", width);
        }
       final Int r = new Int();
@@ -537,10 +539,10 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specfied byte at the specified position within the byte
+    Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
      {I.x(); J.x();
-      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
-      if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);         // Check width
+      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);
+      if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);
       final Bool r = new Bool();
       new I()
        {void action()
@@ -552,19 +554,19 @@ public class Program extends Test                                               
       return r;
      }
 
-    ByteMemory putByte(Int I, Int J)                                                                                    // Put the byte at the indicated position relative to the start to the specified value
+    ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
      {I.x(); J.x();
-      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
+      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);
       if (immediate() && J.i() < 0) stop("Negative byte:", J.i());
       if (immediate() && J.i() >= powerTwo(Byte.SIZE)) stop("Too big for a byte:", J.i());
       new I() {void action() {bytes[start+I.i()] = (byte)J.i();}};
       return this;
      }
 
-    ByteMemory putInt(Int I, Int J)                                                                                     // Put the int at the indicated position relative to the start to the specified value
+    ByteMemory putInt(Int I, Int J)                                                                                     // Set the int at the indicated position relative to the start to the specified value
      {final int N = Integer.BYTES;
       I.x();
-      if (immediate() && I.i()+N-1 >= width)                                                                            // Check width
+      if (immediate() && I.i()+N-1 >= width)
        {stop("Index to big to get an  integer from memory. Index:", I.i(), "width:", width);
        }
       new I()
@@ -579,10 +581,10 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory putBool(Int I, Int J, Bool K)                                                                            // Put the bit at the indicated position in the byte at the specified position to the specified value
+    ByteMemory putBool(Int I, Int J, Bool K)                                                                            // Set the bit at the indicated position in the byte at the specified position to the specified value
      {I.x(); J.x(); K.x();
-      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);               // Check width
-      if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);         // Check width
+      if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);
+      if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);
       new I()
        {void action()
          {final int p = start+I.i();
@@ -594,7 +596,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    public String toString()
+    public String toString()                                                                                            // Print memory
      {final StringBuilder s = new StringBuilder();
       for (int i = start; i < start+width; i++) s.append(f("%4d %3d\n", i, bytes[i]));
       return ""+s;
