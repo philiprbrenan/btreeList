@@ -2,8 +2,6 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Remove short circuit "and" and "or": replace with block with exits to avoid instructions within instructions via suppliers
-//+ Remove ref
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -491,22 +489,50 @@ public class Program extends Test                                               
     public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
    }
 
+//D1 Byte Memory                                                                                                        // Operations on memory backed by bytes
+
   class ByteMemory                                                                                                      // Bytes being used as the main memory program
    {byte[]bytes;                                                                                                        // Bytes of main memory
     int start;                                                                                                          // Start position in the main memory
     int width;                                                                                                          // Width of the subset of main memory in use
+    int allocated;                                                                                                      // Amunt used by allocations
 
     ByteMemory(int Length, int Start, int Width)                                                                        // Create the memory
      {if (Start < 0) stop("Start too small:", start);
       if (Start + Width > Length-1)
-       {stop("Start+width to big:", Start, "plus", Width, "equals", Start+Width, "exceeds:", Length);
+       {stop("Start+width too big, start:", Start, "plus width:", Width, "equals", Start+Width,
+             "exceeds size:", Length, this);
        }
       start = Start; width = Width; bytes = new byte[Length];                                                           // Allocate memory
      }
 
-    ByteMemory(ByteMemory Memory, int Start, int Width)                                                                 // Subset of an existing memory
-     {this(Memory.size(), Memory.start+Start, Width);                                                                   // Subset is relative to an existing subset
-       bytes = Memory.bytes;                                                                                            // Replace new memory wth existing memory
+    ByteMemory(int Length) {this(Length, 0, Length);}                                                                   // All of the memory
+
+    ByteMemory(ByteMemory ByteMemory, int Start, int Width)                                                             // Subset of an existing memory
+     {this(ByteMemory.size(), ByteMemory.start+Start, Width);                                                           // Subset is relative to an existing subset
+      if (Start + Width > ByteMemory.width)
+       {stop("Start+width too big start:", Start, "plus width:", Width, "equals", Start+Width,
+             "exceeds width:", ByteMemory.width, this);
+       }
+       bytes = ByteMemory.bytes;                                                                                        // Replace new memory wth existing memory
+     }
+
+    ByteMemory duplicate()                                                                                              // Duplicate this memory
+     {final ByteMemory m = new ByteMemory(size(), start, width);
+      new I() {void action() {System.arraycopy(bytes, start, m.bytes, start, width);}};
+      return this;
+     }
+
+    ByteMemory copy(ByteMemory ByteMemory)                                                                              // Copy the specified memeory into this memory if it has the same width
+     {final ByteMemory m = ByteMemory;
+      if (width != m.width) stop("Different  widths:", width, m.width);
+      new I() {void action() {System.arraycopy(bytes, start, m.bytes, m.start, width);}};
+      return this;
+     }
+
+    ByteMemory invalidate()                                                                                             // Invalidate memory by setting it values unlikely to be valid
+     {new I() {void action() {Arrays.fill(bytes, start, start+width, (byte)-1);}};
+      return this;
      }
 
     int size() {return bytes.length;}                                                                                   // Size of memory
@@ -520,7 +546,7 @@ public class Program extends Test                                               
 
     Int getInt(Int I)                                                                                                   // Get the int at the indicated position relative to the start
      {final int N = Integer.BYTES;
-      I.x();
+      if (immediate()) I.x();
       if (immediate() && I.i()+N-1 >= width)
        {stop("Index to big to get an  integer from memory. Index:", I.i(), "width:", width);
        }
@@ -528,10 +554,10 @@ public class Program extends Test                                               
       new I()
        {void action()
          {final int p = start+I.i();
-          final int a = bytes[p+0];// <<  0;
-          final int b = bytes[p+1];// <<  8;
-          final int c = bytes[p+2];// << 16;
-          final int d = bytes[p+3];// << 24;
+          final int a = bytes[p+0];
+          final int b = bytes[p+1];
+          final int c = bytes[p+2];
+          final int d = bytes[p+3];
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
          }
@@ -540,7 +566,7 @@ public class Program extends Test                                               
      }
 
     Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
-     {I.x(); J.x();
+     {if (immediate()) {I.x(); J.x();}
       if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);
       if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);
       final Bool r = new Bool();
@@ -555,7 +581,7 @@ public class Program extends Test                                               
      }
 
     ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
-     {I.x(); J.x();
+     {if (immediate()) {I.x(); J.x();}
       if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);
       if (immediate() && J.i() < 0) stop("Negative byte:", J.i());
       if (immediate() && J.i() >= powerTwo(Byte.SIZE)) stop("Too big for a byte:", J.i());
@@ -565,7 +591,8 @@ public class Program extends Test                                               
 
     ByteMemory putInt(Int I, Int J)                                                                                     // Set the int at the indicated position relative to the start to the specified value
      {final int N = Integer.BYTES;
-      I.x();
+      if (immediate()) {I.x(); J.x();}
+
       if (immediate() && I.i()+N-1 >= width)
        {stop("Index to big to get an  integer from memory. Index:", I.i(), "width:", width);
        }
@@ -582,7 +609,7 @@ public class Program extends Test                                               
      }
 
     ByteMemory putBool(Int I, Int J, Bool K)                                                                            // Set the bit at the indicated position in the byte at the specified position to the specified value
-     {I.x(); J.x(); K.x();
+     {if (immediate()) {I.x(); J.x(); K.x();}
       if (immediate() && I.i() >= width) stop("Index to big for memory. Index:", I.i(), "width:", width);
       if (immediate() && J.i() >= Byte.SIZE) stop("Index to big for byte. Index:", J.i(), "width:", Byte.SIZE);
       new I()
@@ -596,8 +623,29 @@ public class Program extends Test                                               
       return this;
      }
 
+    ByteMemory alloc(int N)
+     {if (allocated + N > width)  stop("No room for Bool allocation of:", N, "bytes");
+      final ByteMemory m = new ByteMemory(this, allocated, N); allocated += N;
+      return m;
+     }
+
+    ByteMemory allocBool() {return alloc(1);}                                                                           // Allocate one  bool
+    ByteMemory allocBool(int N)                                                                                         // Allocate some bools
+     {if (executing()) stop("Cannot allocate during delayed execution");
+      final int b = Integer.BYTES;
+      final int B = N / b + (N % b == 0 ? 0 : 1);
+      return alloc(B);
+     }
+
+    ByteMemory allocByte()      {return alloc(1);}                                                                      // Allocate one byte
+    ByteMemory allocByte(int N) {return alloc(N);}                                                                      // Allocate some bytes
+
+    ByteMemory allocInt()       {return allocInt(1);}                                                                   // Allocate one Int
+    ByteMemory allocInt(int N)  {return alloc(N * Integer.BYTES);}                                                      // Allocate some Ints
+
     public String toString()                                                                                            // Print memory
      {final StringBuilder s = new StringBuilder();
+      s.append("ByteMemory length: "+bytes.length+", start: "+ start+", width: "+width+", allocated: "+allocated+"\n");
       for (int i = start; i < start+width; i++) s.append(f("%4d %3d\n", i, bytes[i]));
       return ""+s;
      }
@@ -972,23 +1020,29 @@ public class Program extends Test                                               
     test_copy(false);
    }
 
-  static void test_byteMemory(boolean Ex)
+  static void test_byteMemory(boolean Ex)                                                                               // Allocations within byte memory
    {final Program P = new Program(Ex)
      {void code()
-       {final ByteMemory m = byteMemory = new ByteMemory(16, 4, 8);
-        m.putInt(new Int(0), new Int(1));
-        m.putInt(new Int(4), new Int(2));
-        final Int a = m.getInt(new Int(0));
-        final Int b = m.getInt(new Int(4));
-        ok(()->a.i(), 1);
-        ok(()->b.i(), 2);
-        m.start += Integer.BYTES;
-        final Bool c = m.getBool(new Int(0), new Int(0)); ok(()->c.b(), false);
-        final Bool d = m.getBool(new Int(0), new Int(1)); ok(()->d.b(), true );
-        final Bool e = m.getBool(new Int(0), new Int(2)); ok(()->e.b(), false);
-        m.putBool(new Int(0), new Int(0), new Bool(true));
-        final Int f = m.getInt(new Int(0));
-        ok(()->f.i(), 3);
+       {new For(2)
+         {void body(Int Index, Bool Continue)
+           {final ByteMemory m = byteMemory = new ByteMemory(16, 4, 8);
+            final Int  i0 = new Int(0), i1 = new Int(1), i2 = new Int(2), i3 = new Int(3), i4 = new Int(4);
+            final Bool b0 = new Bool(false), b1 = new Bool(true);
+            m.putInt(i0, i1);
+            m.putInt(i4, i2);
+            final Int a = m.getInt(i0);
+            final Int b = m.getInt(i4);
+            ok(()->a.i(), 1);
+            ok(()->b.i(), 2);
+            final ByteMemory m0 = m.allocInt();                                                                         // Allocate the integers
+            final ByteMemory m1 = m.allocInt();
+            final Bool c = m1.getBool(i0, i0); ok(()->c.b(), false);                                                    // Get bits in second integer
+            final Bool d = m1.getBool(i0, i1); ok(()->d.b(), true );
+            final Bool e = m1.getBool(i0, i2); ok(()->e.b(), false);
+                           m1.putBool(i0, i0, b1);
+            final Int  f = m1.getInt (i0);     ok(()->f.i(), 3);
+           }
+         };
        }
      };
     P.execute();
@@ -1014,8 +1068,7 @@ public class Program extends Test                                               
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_byteMemory();
-    test_byteMemory(true);
+    test_byteMemory();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
