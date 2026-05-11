@@ -1,4 +1,4 @@
-# Test 2026-05-10 at 05:01:05
+# Test 2026-05-11 at 01:43:56
 
 name: Test
 run-name: btreeList
@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        task: [BitSet, Program, Test, Tree]
+        task: [BitSet, Program, Slots, Test, Tree]
 
     steps:
     - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     - name: Position files in package
       run: |
         mkdir -p com/AppaApps/Silicon
-        cp BitSet.java Program.java Test.java Tree.java com/AppaApps/Silicon
+        cp BitSet.java Program.java Slots.java Test.java Tree.java com/AppaApps/Silicon
         tree
 
     - name: Java
@@ -54,6 +54,12 @@ jobs:
       if: matrix.task == 'Program'
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program
+
+
+    - name: Test Slots
+      if: matrix.task == 'Slots'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots
 
 
     - name: Test Test
