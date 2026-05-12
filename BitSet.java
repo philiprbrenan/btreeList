@@ -11,6 +11,7 @@ public class BitSet extends Program                                             
   final  int byteSize;                                                                                                  // Number of bytes in the bit set.
   final  boolean oneTreeBit;                                                                                            // At most only one tree bit present
   final  boolean zero, one;                                                                                             // Able to locate zeros and ones via a tree of bits if set
+  ByteMemory.Ref memoryRef;                                                                                             // Memory to use
   static boolean debug;                                                                                                 // Debug if true
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
@@ -19,12 +20,13 @@ public class BitSet extends Program                                             
    {int  bitSize = 1;                                                                                                   // Number of bits in the bit set.
     boolean zero = false;                                                                                               // Able to locate zeros via a tree of bits if set
     boolean  one = false;                                                                                               // Able to locate ones via a tree of bits if set
-    Program program = null;                                                                                             // Program whose code is to be written to
+    Program program                  = null;                                                                            // Program whose code is to be written into.
+    Program.ByteMemory.Ref memoryRef = null;                                                                            // Program memory to be used
 
     Build bitSize (int     BitSize ) {bitSize  = BitSize; return this;}
     Build zero    (boolean Zero    ) {zero     = Zero   ; return this;}
     Build one     (boolean One     ) {one      = One    ; return this;}
-    Build program (Program Program ) {program  = Program; return this;}
+    Build memory  (Program.ByteMemory.Ref Ref) {memoryRef = Ref; return this;}
 
     int byteSize()                                                                                                      // Bytes needed for the bitset and its bit trees
      {final int s = zero && one ? 3 : zero || one ? 2 : 1;                                                              // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
@@ -42,8 +44,8 @@ public class BitSet extends Program                                             
     one        = Build.one;                                                                                             // Locate ones efficiently
     byteSize   = Build.byteSize();                                                                                      // Bytes needed for the bitset and its bit trees
     oneTreeBit = bitSize <= 2;                                                                                          // At most only one tree bit present
-    if (Build.program != null) program(Build.program);                                                                  // Target program
-    byteMemory = new ByteMemory(byteSize);                                                                              // Allocate backing memory
+    if (Build.memoryRef != null) {program(Build.memoryRef.program()); memoryRef = Build.memoryRef;}                     // Use memory supplied by caller
+    else {byteMemory = new ByteMemory(byteSize); memoryRef = byteMemory.new Ref(0);}                                    // Allocate default backing memory
    }
 
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
@@ -53,10 +55,6 @@ public class BitSet extends Program                                             
   public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
 
   public  int size()                  {return bitSize;}                                                                 // Bit set size
-  private Int bitOffset(Int bitIndex) {return bitIndex.Mod(Byte.SIZE);}                                                 // Offset inside byte
-  private Int byteIndex(Int bitIndex) {return bitIndex.Div(Byte.SIZE);}                                                 // Byte index in storage
-  private int bitOffset(int bitIndex) {return bitIndex % Byte.SIZE;}                                                    // Offset inside byte
-  private int byteIndex(int bitIndex) {return bitIndex / Byte.SIZE;}                                                    // Byte index in storage
 
   private void checkIndex(Int Index)                                                                                    // Check that a bit index is valid
    {new If (Index.lt(0))
@@ -102,11 +100,11 @@ public class BitSet extends Program                                             
     return getBitNC(Index);
    }
 
-  private Bool    getBitNC(Pos Index) {return program.byteMemory.getBool(Index);}                                       // Get bit value at an index without checking that the index is valid
-  private boolean getBitNC(int Index) {return program.byteMemory.getBool(new Int(Index)).b();}                          // Get bit value at an index without checking that the index is valid
+  private Bool    getBitNC(Pos Index) {return memoryRef.getBool(Index);}                                                // Get bit value at an index without checking that the index is valid
+  private boolean getBitNC(int Index) {return memoryRef.getBool(new Int(Index)).b();}                                   // Get bit value at an index without checking that the index is valid
 
-  void setBit  (Pos Index, Bool Value) {program.byteMemory.putBool(Index, Value);}                                      // Set bit value.
-  void setBitNC(Pos Index, Bool Value) {program.byteMemory.putBool(Index, Value);}                                      // Set bit value without checking index
+  void setBit  (Pos Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value.
+  void setBitNC(Pos Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value without checking index
 
   public void clear(Pos Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
   public void set  (Pos Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
@@ -562,7 +560,7 @@ public class BitSet extends Program                                             
     for   (int i : range(1, bitSize))                                                                                   // Print the first line and the first bit tree if present
      {s.append(f("%4d %4d %4d |", i, p, r));
       for (int j : range(r))                                                                                            // Bits in level
-       {s.append(f("  %1d", byteMemory.getBool(p + j) ? 1 : 0));
+       {s.append(f("  %1d", memoryRef.getBool(p + j) ? 1 : 0));
         if (!one && !zero) break;                                                                                       // Only print the first line if there are no tree bits
        }
       s.append("\n");
@@ -581,7 +579,7 @@ public class BitSet extends Program                                             
       for   (int i : range(1, bitSize))                                                                                 // Each level
        {s.append(f("%4d %4d %4d |", i, p, r));
         for (int j : range(r))                                                                                          // Bits in level
-         {s.append(f("  %1d", byteMemory.getBool(p + j) ? 1 : 0));
+         {s.append(f("  %1d", memoryRef.getBool(p + j) ? 1 : 0));
           if (!one && !zero) break;                                                                                     // Only print the first line if there are no tree bits
          }
         s.append("\n");
