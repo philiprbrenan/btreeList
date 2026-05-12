@@ -576,6 +576,24 @@ public class Program extends Test                                               
 
     ByteMemory putBool(Int I, Bool K) {putBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE), K); return this;}                    // Set the bit at the bit indexed position
 
+    class Ref                                                                                                           // Reference into memory
+     {final Int offset;                                                                                                 // Offset of this reference in memory
+      final ByteMemory m = ByteMemory.this;
+      Ref(int Offset) {offset = new Int(Offset);}                                                                       // Offset this ref
+
+      Ref  copy(Ref Source, Int Width)      {m.copy(Source.offset, offset, Width); return this;}                        // Copy the specified memory
+      Ref  invalidate(Int Width)            {m.invalidate(offset, Width);    return this;}                              // Invalidate memory by setting it values unlikely to be valid
+      Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
+      Int      getInt(Int I)                {return m.getInt (I.Add(offset));}                                          // Get the int at the indicated position
+      Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
+      Bool    getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                           // Get the bit at the bit indexed location
+      boolean getBool(int I)                {return m.getBool(new Int(I).add(offset)).b();}                             // Get the bit at the bit indexed location - debugging
+      Ref     putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);    return this;}                              // Set the byte at the indicated position relative to the start to the specified value
+      Ref     putInt (Int I, Int J)         {m.putByte(I.Add(offset), J);    return this;}                              // Set the int at the indicated position relative to the start to the specified value
+      Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K); return this;}                              // Set the bit at the indicated position in the byte at the specified position to the specified value
+      Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE), K)); return this;}                  // Set the bit at the bit indexed position
+     }
+
     public String toString()                                                                                            // Print memory
      {final StringBuilder s = new StringBuilder();
       for (int i = 0, N = size(); i < N; i++) s.append(f("%4d %3d\n", i, bytes[i]));
@@ -956,10 +974,10 @@ public class Program extends Test                                               
   static void test_byteMemory(boolean Ex)
    {final Program P = new Program(Ex)
      {void code()
-       {new For(2)
+       {final ByteMemory m = byteMemory = new ByteMemory(16);
+        new For(2)
          {void body(Int Index, Bool Continue)
-           {final ByteMemory m = byteMemory = new ByteMemory(16);
-            m.putInt(new Int(0), new Int(1));
+           {m.putInt(new Int(0), new Int(1));
             m.putInt(new Int(4), new Int(2));
             final Int a = m.getInt(new Int(0)); ok(()->a.i(), 1);
             final Int b = m.getInt(new Int(4)); ok(()->b.i(), 2);
@@ -988,6 +1006,43 @@ public class Program extends Test                                               
     test_byteMemory(false);
    }
 
+  static void test_byteMemoryRef(boolean Ex)
+   {final Program P = new Program(Ex)
+     {void code()
+       {new For(2)
+         {void body(Int Index, Bool Continue)
+           {final ByteMemory     M = byteMemory = new ByteMemory(16);
+            final ByteMemory.Ref m = M.new Ref(8);
+            m.putInt(new Int(0), new Int(1));
+            m.putInt(new Int(4), new Int(2));
+            final Int a = m.getInt(new Int(0)); ok(()->a.i(), 1);
+            final Int b = m.getInt(new Int(4)); ok(()->b.i(), 2);
+
+            final Bool c = m.getBool(new Int(4), new Int(0)); ok(()->c.b(), false);
+            final Bool d = m.getBool(new Int(4), new Int(1)); ok(()->d.b(), true );
+            final Bool e = m.getBool(new Int(4), new Int(2)); ok(()->e.b(), false);
+                           m.putBool(new Int(4), new Int(0), new Bool(true));
+            final Int  f = m.getInt (new Int(4));             ok(()->f.i(), 3);
+
+                           m.putBool(new Int(32), new Bool(false));
+            final Bool C = m.getBool(new Int(32)); ok(()->C.b(), false);
+            final Bool D = m.getBool(new Int(33)); ok(()->D.b(), true );
+            final Bool E = m.getBool(new Int(34)); ok(()->E.b(), false);
+           }
+         };
+       }
+     };
+    P.execute();
+    say("AAAA", P.byteMemory);
+    ok(P.byteMemory.getBool(64+32), false);
+    ok(P.byteMemory.getBool(64+33), true);
+   }
+
+  static void test_byteMemoryRef()
+   {test_byteMemoryRef(true);
+    test_byteMemoryRef(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
@@ -999,6 +1054,7 @@ public class Program extends Test                                               
     test_bits();
     test_copy();
     test_byteMemory();
+    test_byteMemoryRef();
    }
 
   static void newTests()                                                                                                // Tests being worked on
