@@ -562,7 +562,7 @@ public class BitSet extends Program                                             
     for   (int i : range(1, bitSize))                                                                                   // Print the first line and the first bit tree if present
      {s.append(f("%4d %4d %4d |", i, p, r));
       for (int j : range(r))                                                                                            // Bits in level
-       {s.append(f("  %1d", getBitNC(p + j) ? 1 : 0));
+       {s.append(f("  %1d", byteMemory.getBool(p + j) ? 1 : 0));
         if (!one && !zero) break;                                                                                       // Only print the first line if there are no tree bits
        }
       s.append("\n");
@@ -581,7 +581,7 @@ public class BitSet extends Program                                             
       for   (int i : range(1, bitSize))                                                                                 // Each level
        {s.append(f("%4d %4d %4d |", i, p, r));
         for (int j : range(r))                                                                                          // Bits in level
-         {s.append(f("  %1d", getBitNC(p + j) ? 1 : 0));
+         {s.append(f("  %1d", byteMemory.getBool(p + j) ? 1 : 0));
           if (!one && !zero) break;                                                                                     // Only print the first line if there are no tree bits
          }
         s.append("\n");
