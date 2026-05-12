@@ -6,7 +6,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;                                                                                                     // Standard utility library.
 
-abstract public class BitSet extends Program                                                                            // Abstract fixed-size bit set using byte-level storage.
+public class BitSet extends Program                                                                                     // Abstract fixed-size bit set using byte-level storage.
  {final  int bitSize, bitSize1, bitSize2;                                                                               // Number of bits in the bit set.
   final  int byteSize;                                                                                                  // Number of bytes in the bit set.
   final  boolean oneTreeBit;                                                                                            // At most only one tree bit present
@@ -43,16 +43,11 @@ abstract public class BitSet extends Program                                    
     byteSize   = Build.byteSize();                                                                                      // Bytes needed for the bitset and its bit trees
     oneTreeBit = bitSize <= 2;                                                                                          // At most only one tree bit present
     if (Build.program != null) program(Build.program);                                                                  // Target program
+    byteMemory = new ByteMemory(byteSize);                                                                              // Allocate backing memory
    }
 
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
   public BitSet(int BitSize, boolean One) {this(new Build().bitSize(BitSize).one(One));}                                // Constructor to create a bit set with optionally the ability to locate ones
-
-  abstract void setByte(int Index, int Value);                                                                          // Write byte to storage backend.
-  abstract int  getByte(int Index);                                                                                     // Backend read to examine results.
-
-  void setByte(Int Index, Int Value) {setByte(Index.i(), Value.i());}                                                   // Write byte to storage backend.
-  int  getByte(Int Index)            {return getByte(Index.i());}                                                       // Read byte from storage backend.
 
   public static int bytesNeeded(int Size)              {return new Build().bitSize(Size)         .byteSize();}          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
   public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
@@ -107,38 +102,11 @@ abstract public class BitSet extends Program                                    
     return getBitNC(Index);
    }
 
-  private Bool getBitNC(Pos Index)                                                                                      // Get bit value at an index without checking that the index is valid
-   {final Int P      = new Int(Index.position());                                                                       // Bit offset
-    final Int bIndex = new Int(byteIndex(P));                                                                           // Compute byte position
-    final Int offset = new Int(bitOffset(P));                                                                           // Compute bit offset
+  private Bool    getBitNC(Pos Index) {return program.byteMemory.getBool(Index);}                                       // Get bit value at an index without checking that the index is valid
+  private boolean getBitNC(int Index) {return program.byteMemory.getBool(new Int(Index)).b();}                          // Get bit value at an index without checking that the index is valid
 
-    final Int b = new Int();                                                                                            // Extract byte
-    new I() {void action() {b.ex(Int.Ops.set, getByte(bIndex));}};
-
-    return new Bool(b.bget(offset));                                                                                    // Result  bit
-   }
-
-  private boolean getBitNC(int Index)                                                                                   // Get bit value at an index without checking that the index is valid.
-   {final int bIndex = byteIndex(Index);                                                                                // Compute byte position
-    final int offset = bitOffset(Index);                                                                                // Compute bit offset
-
-    final int b = getByte(bIndex);                                                                                      // Byte
-    return Program.Int.getBit(b, offset);                                                                               // Bit
-   }
-
-  void setBit(Pos Index, Bool Value)                                                                                    // Set bit value.
-   {if (immediate()) checkIndex(Index.position());                                                                      // Rely on immediate execution to catch indexing errors
-    setBitNC(Index, Value);                                                                                             // Set bit value without index checks
-   }
-
-  private void setBitNC(Pos Index, Bool Value)                                                                          // Set bit value without checking index
-   {final Int bIndex = byteIndex(Index.position());                                                                     // Compute byte position.
-    final Int offset = bitOffset(Index.position());                                                                     // Compute bit offset.
-    final Int b = new Int();                                                                                            // Load byte
-    new I() {void action() {b.ex(Int.Ops.set, getByte(bIndex));}};                                                      // Extract bit
-    b.bset(offset, Value);                                                                                              // Modify byte
-    new I() {void action() {setByte(bIndex, b);}};                                                                      // Save modified byte
-   }
+  void setBit  (Pos Index, Bool Value) {program.byteMemory.putBool(Index, Value);}                                      // Set bit value.
+  void setBitNC(Pos Index, Bool Value) {program.byteMemory.putBool(Index, Value);}                                      // Set bit value without checking index
 
   public void clear(Pos Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
   public void set  (Pos Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
@@ -563,10 +531,7 @@ abstract public class BitSet extends Program                                    
    {final Build  build = new Build().bitSize(bitSize).one(one).zero(zero);                                              // Specify bit set
     final byte[] bytes = new byte[build.byteSize()];                                                                    // Allocate backing storage.
 
-    final BitSet b = new BitSet(build)                                                                                  // Create an identical bitset
-     {void setByte(int Index, int Value) {say("AAAA", Index, Value); bytes[Index] = (byte)Value;}                       // Backend write.
-      int  getByte(int Index)            {return bytes[Index];}                                                         // Backend read.
-     };
+    final BitSet b = new BitSet(build);                                                                                  // Create an identical bitset
 
     b.initialize();
     for (int i : range(bitSize)) b.set(new Pos(i), getBit(new Pos(i)));                                                 // Load bit set
@@ -633,11 +598,7 @@ abstract public class BitSet extends Program                                    
   static BitSet test_bits(int N, boolean One, boolean Zero)                                                             // Create test bitset.
    {final Build build = new Build().bitSize(N).one(One).zero(Zero);                                                     // Allocate backing storage.
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
-
-    final BitSet b = new BitSet(build)                                                                                  // Create a bit set
-     {void setByte(int Index, int Value) {bytes[Index] = (byte)Value;}                                                  // Backend write.
-      int  getByte(int Index)     {return bytes[Index];}                                                                // Backend read.
-     };
+    final BitSet    b = new BitSet(build);                                                                              // Create a bit set
     return b;                                                                                                           // Return test bitset.
    }
 
@@ -645,11 +606,11 @@ abstract public class BitSet extends Program                                    
    {final BitSet b = test_bits(23, true, false);                                                                        // Get test bitset.
     final int N = b.size();                                                                                             // Get logical size.
     b.immediate(Ex);
-    for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), b.new Bool(i % 2 == 0));                                           // Set alternating bits.
+    for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), b.new Bool(i % 2 == 0));                                         // Set alternating bits.
     final Bool b4 = b.getBit(b.new Pos(b.new Int(4)));                                                                  // Get bit 4.
     final Bool b5 = b.getBit(b.new Pos(b.new Int(5)));                                                                  // Get bit 5.
-    b.put(b4);                                                                                                      // Verify bit 4.
-    b.put(b5);                                                                                                      // Verify bit 5.
+    b.put(b4);                                                                                                          // Verify bit 4.
+    b.put(b5);                                                                                                          // Verify bit 5.
     b.execute();
 
     //stop(b.output());
