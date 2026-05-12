@@ -532,7 +532,7 @@ public class Program extends Test                                               
      }
 
     Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
-     { Bool r = new Bool();
+     {Bool r = new Bool();
       new I()
        {void action()
          {r.ex(Bool.Ops.set, Int.getBit(bytes[I.i()], J.i()));
@@ -541,7 +541,8 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool getBool(Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                           // Get the bit at the bit indexed location
+    Bool    getBool(Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                        // Get the bit at the bit indexed location
+    boolean getBool(int I) {return Int.getBit(bytes[I / Byte.SIZE], I % Byte.SIZE);}                                    // Get the bit at the bit indexed location - debugging
 
     ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
      {new I() {void action() {bytes[I.i()] = (byte)J.i();}};
@@ -978,6 +979,8 @@ public class Program extends Test                                               
        }
      };
     P.execute();
+    ok(P.byteMemory.getBool(32), false);
+    ok(P.byteMemory.getBool(33), true);
    }
 
   static void test_byteMemory()
