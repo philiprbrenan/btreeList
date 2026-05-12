@@ -259,6 +259,13 @@ public class Test                                                               
    {return Integer.parseInt(dec.replaceAll("[^0-9]", ""));
    }
 
+//D1 Bit routines                                                                                                       // Routines operating on bits
+
+  static boolean getBit(int value, int index)              {return ((value >>> index) & 1) > 0;}                        // Extract a bit from an integer
+  static int     setBit(int value, int index)              {return value |  (1 << index);}                              // Set a bit in an integer
+  static int     clrBit(int value, int index)              {return value & ~(1 << index);}                              // Clear a bit in an integer
+  static int     setBit(int value, int index, boolean bit) {return bit ? setBit(value, index) : clrBit(value, index);}  // Set or clear a bit in an integer
+
 //D1 Array routines                                                                                                     // Routines operating on arrays
 
   static int[]range(int Limit)                                                                                          // Range of integers
