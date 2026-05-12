@@ -411,7 +411,7 @@ class Slots extends Program                                                     
         C.set();
        }
      };
-   }
+   }                                                                                                              byteMemory.getBool
 
   Bool mergeBack(Slots Left, Slots Right)                                                                               // Merge the specified slots back into the current set of slots
    {Left.compactLeft(); Right.compactRight();
