@@ -486,15 +486,28 @@ public class Program extends Test                                               
 
 //D1 Byte Memory                                                                                                        // Operations on memory backed by bytes
 
+  static int ib()      {return Integer.BYTES;}                                                                          // Number of bytes in an integer
+  static int ib(int I) {return I * ib();}                                                                               // Number of bytes in a number of integers
+  static Int ib(Int I) {return I.Mul(ib());}                                                                            // Number of bytes in a number of integers
+
   class ByteMemory                                                                                                      // Bytes being used as the main memory program
    {byte[]bytes;                                                                                                        // Bytes of main memory
 
     ByteMemory(int Length) {bytes = new byte[Length];}                                                                  // Create the memory
 
     ByteMemory copy(Int Source, Int Target, Int Width)                                                                  // Copy the specified memory
-     {new I() {void action() {System.arraycopy(bytes, Source.i(), bytes, Target.i(), Width.i());}};
+     {new I() {void action() {say("AAAA", Start, Width); }};
+      new I() {void action() {System.arraycopy(bytes, Source.i(), bytes, Target.i(), Width.i());}};
       return this;
      }
+
+    ByteMemory clear(int Start, int Width)                                                                              // Clear memory by setting its bytes to zero
+     {new I() {void action() {say("AAAA", Start, Width); }};
+      new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)0);}};
+      return this;
+     }
+                                                                                                                        // Clear memory by setting its bytes to zero
+    ByteMemory clear(Int Start, Int Width) {return invalidate(Start.i(),  Width.i());}
 
     ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
      {new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);}};
@@ -582,8 +595,10 @@ public class Program extends Test                                               
       Program    program()    {return Program.this;}
 
       Ref  copy(Ref Source, Int Width)      {m.copy(Source.offset, offset, Width);       return this;}                  // Copy the specified memory
-      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);            return this;}                  // Invalidate memory by setting it values unlikely to be valid
-      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);            return this;}                  // Invalidate memory by setting it values unlikely to be valid
+      Ref  clear     (Int Width)            {m.clear(offset,     Width);                 return this;}                  // Clear memory by setting its bytes to zero
+      Ref  clear     (int Width)            {m.clear(offset.i(), Width);                 return this;}                  // Clear memory by setting its bytes to zero
+      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);            return this;}                  // Invalidate memory by setting its bytes to s values unlikely to be valid
+      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);            return this;}                  // Invalidate memory by setting its bytes to s values unlikely to be valid
       Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
       Int      getInt(Int I)                {return m.getInt (I.Add(offset));}                                          // Get the int at the indicated position
       Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
@@ -1043,6 +1058,24 @@ public class Program extends Test                                               
     test_byteMemoryRef(false);
    }
 
+  static void test_invalidate(boolean Ex)
+   {final Program P = new Program(Ex)
+     {void code()
+       {final ByteMemory     M = byteMemory = new ByteMemory(16);
+        final ByteMemory.Ref m = M.new Ref(8);
+        m.invalidate(new Int(8));
+        m.clear     (new Int(4));
+       }
+     };
+    P.execute();
+    stop(P.byteMemory);
+   }
+
+  static void test_invalidate()
+   {test_invalidate(true);
+    test_invalidate(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
@@ -1055,6 +1088,7 @@ public class Program extends Test                                               
     test_copy();
     test_byteMemory();
     test_byteMemoryRef();
+    test_invalidate();
    }
 
   static void newTests()                                                                                                // Tests being worked on
