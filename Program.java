@@ -493,7 +493,7 @@ public class Program extends Test                                               
   class ByteMemory                                                                                                      // Bytes being used as the main memory program
    {byte[]bytes;                                                                                                        // Bytes of main memory
 
-    ByteMemory(int Length) {bytes = new byte[Length];}                                                                  // Create the memory
+    ByteMemory(int Length) {bytes = new byte[Length];  clear(0, Length);}                                               // Create the memory
 
     ByteMemory copy(Int Source, Int Target, Int Width)                                                                  // Copy the specified memory
      {new I() {void action() {System.arraycopy(bytes, Source.i(), bytes, Target.i(), Width.i());}};
