@@ -9,41 +9,43 @@ import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 class Slots extends Program                                                                                             // A tree that translates keys into values to be implemented as an application specific integrated circuit
- {final int        numberOfRefs;                                                                                        // The maximum number of references maintained by these slots
-  final ByteMemory byteMemory;                                                                                          // Memory used by slots
+ {final int numberOfRefs;                                                                                               // The maximum number of references maintained by these slots
+  final int size;                                                                                                       // Number of bytes needed to hold slots
+  ByteMemory.Ref byteMemory = null;                                                                                     // Byte memory reference containing the slots
+
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
-  Slots(int NumberOfRefs, ByteMemory ByteMemory)                                                                        // Create the slots using the specified allocation in memory
+  Slots(int NumberOfRefs, ByteMemory.Ref ByteMemory)                                                                    // Create the slots using the specified allocation in memory
    {numberOfRefs = NumberOfRefs; byteMemory = ByteMemory;
+    size = new SlotsMemoryPositions().size;
    }
-
   //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
 
-  Slots duplicateSlots()                                                                                                // Copy the source slots
-   {final Slots t = new Slots(numberOfRefs, byteMemory);
-    System.arraycopy(byteMemory.bytes, byteMemory.start, t.byteMemory.bytes, byteMemory.start, byteMemory.width);
-    return t;                                                                                                           // The copied slots
-   }
+//  Slots duplicateSlots()                                                                                                // Copy the source slots
+//   {final Slots t = new Slots(numberOfRefs, byteMemory);
+//    System.arraycopy(byteMemory.bytes, byteMemory.start, t.byteMemory.bytes, byteMemory.start, byteMemory.width);
+//    return t;                                                                                                           // The copied slots
+//   }
+//
+//  Slots copySlots(Slots Source)                                                                                         // Copy the source slots
+//   {final int n = numberOfRefs, N = Source.numberOfRefs, w = byteMemory.width, W = Source.byteMemory.width;
+//    if (n != N) stop("Different number of refs:", n, N);
+//    if (w != W) stop("Different widths:", w, W);
+//    System.arraycopy(Source.byteMemory.bytes, Source.byteMemory.start, byteMemory.bytes, byteMemory.start, w);
+//    return this;                                                                                                        // The copied slots
+//   }
 
-  Slots copySlots(Slots Source)                                                                                         // Copy the source slots
-   {final int n = numberOfRefs, N = Source.numberOfRefs, w = byteMemory.width, W = Source.byteMemory.width;
-    if (n != N) stop("Different number of refs:", n, N);
-    if (w != W) stop("Different widths:", w, W);
-    System.arraycopy(Source.byteMemory.bytes, Source.byteMemory.start, byteMemory.bytes, byteMemory.start, w);
-    return this;                                                                                                        // The copied slots
-   }
-
-  void invalidateMemory() {byteMemory.invalidate();}                                                                    // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-  int numberOfRefs () {return numberOfRefs();}                                                                          // The number of references in the slots definition
-  int numberOfSlots() {return numberOfRefs()<<1;}                                                                       // Number of slots from number of refs
+  void invalidateMemory() {byteMemory.invalidate(size);}                                                                // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
+  int numberOfRefs ()       {return numberOfRefs();}                                                                       // The number of references in the slots definition
+  int numberOfSlots()       {return numberOfRefs()<<1;}                                                                    // Number of slots from number of refs
   int redistributionWidth() {return (int)java.lang.Math.sqrt(numberOfRefs());}                                          // Redistribute if the next slot is further than this
-
+/*
   void initialize()                                                                                                     // Clear all the slots
    {memory.usedSlotsBits.initialize();
     memory.usedRefsBits .initialize();
    }
-
+*/
   class slot extends Int                                                                                                // A dereferenced slot
    {slot()           {super();}                                                                                         // A not valid dereferenced slot
     slot(int Value)  {super(Value);}                                                                                    // A valid dereferenced slot
@@ -53,7 +55,7 @@ class Slots extends Program                                                     
      {return "slot: "+i();
      }
    }
-
+/*
   class Slot extends Int                                                                                                // A reference to a slot
    {Slot()            {super();}                                                                                        // An invalid slot
     Slot(int Value)   {super(Value);}                                                                                   // A valid slot
@@ -411,7 +413,7 @@ class Slots extends Program                                                     
         C.set();
        }
      };
-   }                                                                                                              byteMemory.getBool
+   }
 
   Bool mergeBack(Slots Left, Slots Right)                                                                               // Merge the specified slots back into the current set of slots
    {Left.compactLeft(); Right.compactRight();
@@ -655,7 +657,7 @@ class Slots extends Program                                                     
    }
 
 //D2 Memory                                                                                                             // Read and write from an array of bytes
-
+*/
   class SlotsMemoryPositions                                                                                            // Positions of fields in memory
    {final int N = numberOfSlots();
     final int R = numberOfRefs();
@@ -671,7 +673,7 @@ class Slots extends Program                                                     
     final int posName      = posKeys      + ib(R);
     final int size         = posName      + ib();
   }
-
+/*
   class Memory extends SlotsMemoryPositions                                                                             // Memory required to hold bytes
   {final ByteBuffer bytes;                                                                                              // Bytes used by this set of slots
 
@@ -733,11 +735,17 @@ class Slots extends Program                                                     
     void      type(Int Type) {       bytes.putInt(posType, Type.i());}                                                  // Type of object in which the slots are embedded
     Int       type() {return new Int(bytes.getInt(posType));}
    }
+*/
 
 //D1 Tests                                                                                                              // Tests
 
 //D2 Slots                                                                                                              // Test the slots
 
+  static void test_slots()
+   {final Slots s = new Slots(8);
+    s.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
+   }
+/*
   static void test_locateNearestFreeSlot()
    {final Slots s = new Slots(8);
     s.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
@@ -1050,21 +1058,22 @@ keys     :   14   0  13   0  12   0  10  11
 """);
     ok(B.type(), 11);
    }
-
+*/
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {//test_locateNearestFreeSlot();
-    test_redistribute();
-    test_ifd();
-    test_idn();
-    test_tooManySearches();
-    test_locateFirstGeKey();
-    test_compactLeft();
-    test_compactRight();
-    test_memory();
+   {////test_locateNearestFreeSlot();
+    //test_redistribute();
+    //test_ifd();
+    //test_idn();
+    //test_tooManySearches();
+    //test_locateFirstGeKey();
+    //test_compactLeft();
+    //test_compactRight();
+    //test_memory();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_slots();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
