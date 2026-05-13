@@ -7,11 +7,11 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;                                                                                                     // Standard utility library.
 
 public class BitSet extends Program                                                                                     // Abstract fixed-size bit set using byte-level storage.
- {final  int bitSize, bitSize1, bitSize2;                                                                               // Number of bits in the bit set.
-  final  int byteSize;                                                                                                  // Number of bytes in the bit set.
-  final  boolean oneTreeBit;                                                                                            // At most only one tree bit present
-  final  boolean zero, one;                                                                                             // Able to locate zeros and ones via a tree of bits if set
-  ByteMemory.Ref memoryRef;                                                                                             // Memory to use
+ {final int bitSize, bitSize1, bitSize2;                                                                                // Number of bits in the bit set.
+  final int byteSize;                                                                                                   // Number of bytes in the bit set.
+  final boolean oneTreeBit;                                                                                             // At most only one tree bit present
+  final boolean zero, one;                                                                                              // Able to locate zeros and ones via a tree of bits if set
+  final ByteMemory.Ref memoryRef;                                                                                       // Memory to use
   static boolean debug;                                                                                                 // Debug if true
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
