@@ -11,15 +11,33 @@ import java.util.function.Supplier;
 class Slots extends Program                                                                                             // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int numberOfRefs;                                                                                               // The maximum number of references maintained by these slots
   final int size;                                                                                                       // Number of bytes needed to hold slots
-  ByteMemory.Ref byteMemory = null;                                                                                     // Byte memory reference containing the slots
-
+  final SlotsMemoryPositions slotsMemoryPositions;                                                                     // Memory layout
+  ByteMemory.Ref byteMemoryRef = null;                                                                                  // Byte memory reference containing the slots
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
-  Slots(int NumberOfRefs, ByteMemory.Ref ByteMemory)                                                                    // Create the slots using the specified allocation in memory
-   {numberOfRefs = NumberOfRefs; byteMemory = ByteMemory;
-    size = new SlotsMemoryPositions().size;
+  static class Build                                                                                                    // Specification of slots
+   {int numberOfRefs = 2;                                                                                              // Number of refernces in the slots
+    Program.ByteMemory.Ref memoryRef = null;                                                                            // Program memory to be used
+
+    Build numberOfRefs (int           NumberOfRefs) {numberOfRefs = NumberOfRefs; return this;}
+    Build memory       (Program.ByteMemory.Ref Ref) {memoryRef = Ref;    return this;}
    }
+
+  Slots(Build Build)                                                                                                    // Create the slots
+   {numberOfRefs         = Build.numberOfRefs;
+    slotsMemoryPositions = new SlotsMemoryPositions();                                                                  // Memory layout
+    size                 = slotsMemoryPositions.size;
+    if (Build.memoryRef != null) byteMemoryRef = Build.memoryRef;                                                       // Use supplied memeory
+    else
+     {byteMemory    = new ByteMemory(size);                                                                             // Use local memory as no global memeory supplied
+      byteMemoryRef = byteMemory.new Ref(0);                                                                            // Reference to local memory
+     }
+   }
+
+  Slots(int NumberOfRefs) {this(new Build().numberOfRefs(NumberOfRefs));}                                               // Create the slots in local memory for testing
+
+
   //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
 
 //  Slots duplicateSlots()                                                                                                // Copy the source slots
@@ -36,9 +54,9 @@ class Slots extends Program                                                     
 //    return this;                                                                                                        // The copied slots
 //   }
 
-  void invalidateMemory() {byteMemory.invalidate(size);}                                                                // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-  int numberOfRefs ()       {return numberOfRefs();}                                                                       // The number of references in the slots definition
-  int numberOfSlots()       {return numberOfRefs()<<1;}                                                                    // Number of slots from number of refs
+  void invalidateMemory()   {byteMemoryRef.invalidate(size);}                                                           // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
+  int numberOfRefs ()       {return numberOfRefs;}                                                                      // The number of references in the slots definition
+  int numberOfSlots()       {return numberOfRefs()<<1;}                                                                 // Number of slots from number of refs
   int redistributionWidth() {return (int)java.lang.Math.sqrt(numberOfRefs());}                                          // Redistribute if the next slot is further than this
 /*
   void initialize()                                                                                                     // Clear all the slots
@@ -743,7 +761,7 @@ class Slots extends Program                                                     
 
   static void test_slots()
    {final Slots s = new Slots(8);
-    s.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
+    //s.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
    }
 /*
   static void test_locateNearestFreeSlot()
