@@ -37,7 +37,6 @@ class Slots extends Program                                                     
 
   Slots(int NumberOfRefs) {this(new Build().numberOfRefs(NumberOfRefs));}                                               // Create the slots in local memory for testing
 
-
   //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
 
 //  Slots duplicateSlots()                                                                                                // Copy the source slots
