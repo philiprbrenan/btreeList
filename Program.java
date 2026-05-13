@@ -496,25 +496,25 @@ public class Program extends Test                                               
     ByteMemory(int Length) {bytes = new byte[Length];}                                                                  // Create the memory
 
     ByteMemory copy(Int Source, Int Target, Int Width)                                                                  // Copy the specified memory
-     {new I() {void action() {say("AAAA", Start, Width); }};
-      new I() {void action() {System.arraycopy(bytes, Source.i(), bytes, Target.i(), Width.i());}};
+     {new I() {void action() {System.arraycopy(bytes, Source.i(), bytes, Target.i(), Width.i());}};
       return this;
      }
 
     ByteMemory clear(int Start, int Width)                                                                              // Clear memory by setting its bytes to zero
-     {new I() {void action() {say("AAAA", Start, Width); }};
-      new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)0);}};
+     {new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)0);}};
       return this;
      }
                                                                                                                         // Clear memory by setting its bytes to zero
-    ByteMemory clear(Int Start, Int Width) {return invalidate(Start.i(),  Width.i());}
+    ByteMemory clear(Int Start, Int Width) {return clear(Start.i(),  Width.i());}
 
     ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
      {new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);}};
       return this;
      }
 
-    ByteMemory invalidate(Int Start, Int Width) {return invalidate(Start.i(),  Width.i());}
+    ByteMemory invalidate(Int Start, Int Width) {return invalidate(
+      Start.i(),
+      Width.i());}
 
     int size() {return bytes.length;}                                                                                   // Size of memory
 
@@ -1068,7 +1068,24 @@ public class Program extends Test                                               
        }
      };
     P.execute();
-    stop(P.byteMemory);
+    ok(P.byteMemory, """
+   0   0
+   1   0
+   2   0
+   3   0
+   4   0
+   5   0
+   6   0
+   7   0
+   8   0
+   9   0
+  10   0
+  11   0
+  12  -1
+  13  -1
+  14  -1
+  15  -1
+""");
    }
 
   static void test_invalidate()
