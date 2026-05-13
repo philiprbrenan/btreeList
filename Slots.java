@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Distributed slots used t hold the key of the Btree
+// Distributed slots used to hold the key of the Btree
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -12,13 +12,14 @@ class Slots extends Program                                                     
  {final int numberOfRefs;                                                                                               // The maximum number of references maintained by these slots
   final int size;                                                                                                       // Number of bytes needed to hold slots
   final BitSet usedSlots;                                                                                               // The slots in use.  Thre are more slotsthan refernces os that they can be distributed with intervening empty slots to make insertions faster,
-  final BitSet usedRefs;                                                                                                // The references in use.
+  final BitSet usedKeys;                                                                                                // The references in use.
   ByteMemory.Ref byteMemoryRef = null;                                                                                  // Byte memory reference containing the slots
   final SlotsMemoryPositions slotsMemoryPositions;                                                                      // Memory layout
   final ByteMemory.Ref refSlots;                                                                                        // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
   final ByteMemory.Ref refUsedSlots;                                                                                    // Slots in use
-  final ByteMemory.Ref refUsedRefs;                                                                                     // References in use.  There are fewer references than slots to make insertions faster
+  final ByteMemory.Ref refUsedKeys;                                                                                     // References in use.  There are fewer references than slots to make insertions faster
   final ByteMemory.Ref refKeys;                                                                                         // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
+  final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
@@ -41,15 +42,31 @@ class Slots extends Program                                                     
      }
     refSlots     = byteMemoryRef;                                                                                       // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refUsedSlots = byteMemoryRef.step(slotsMemoryPositions.posUsedSlots);                                               // Slots in use
-    refUsedRefs  = byteMemoryRef.step(slotsMemoryPositions.posUsedRefs);                                                // References in use.  There are fewer references than slots to make insertions faster
+    refUsedKeys  = byteMemoryRef.step(slotsMemoryPositions.posusedKeys);                                                // References in use.  There are fewer references than slots to make insertions faster
     refKeys      = byteMemoryRef.step(slotsMemoryPositions.posKeys);                                                    // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
     usedSlots    = new BitSet(slotsMemoryPositions.us.memory(refUsedSlots));                                            // Create bitsets to reference the program and memory used by this program
-    usedRefs     = new BitSet(slotsMemoryPositions.ur.memory(refUsedRefs));
+    usedKeys     = new BitSet(slotsMemoryPositions.ur.memory(refUsedKeys));
     usedSlots.initialize();                                                                                             // Initialize the bitsets
-    usedRefs .initialize();
+    usedKeys .initialize();
    }
 
   Slots(int NumberOfRefs) {this(new Build().numberOfRefs(NumberOfRefs));}                                               // Create the slots in local memory for testing
+/*
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
+usedKeys :    X   X   X   X   X   X   X   X
+keys     :   14  13  16  15  18  17  12  11
+*/
+  void putSlot(Int Index, Int Value) {refSlots.putInt(Index, Value);      usedSlots.setBit(usedSlots.new Pos(Index), new Bool(true));}     // Set a slot
+  void delSlot(Int Index)            {refSlots.putInt(Index, new Int(0)); usedSlots.setBit(usedSlots.new Pos(Index), new Bool(false));}    // Clear a slot
+  void putKey (Int Index, Int Key)   {refKeys .putInt(Index, Key);        usedKeys .setBit(usedKeys .new Pos(Index), new Bool(true));}     // Set a key
+  void delKey (Int Index)            {refKeys .putInt(Index, new Int(0)); usedKeys .setBit(usedKeys .new Pos(Index), new Bool(false));}    // Clear a key
+
+  Bool getSlotInUse(Int Index)       {return usedSlots   .getBit(usedSlots   .new Pos(Index));}                         // Check whether a slot is in use
+  Int  getSlotValue(Int Index)       {return refUsedSlots.getInt(                     Index );}                         // Index to keys from slot
+  Bool getKeyInUse (Int Index)       {return usedKeys    .getBit(usedKeys    .new Pos(Index));}                         // Check whether a key is in use
+  Int  getKeyValue (Int Index)       {return refUsedKeys .getInt(                     Index );}                         // Value of referenced key
 
   //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
 
@@ -74,7 +91,7 @@ class Slots extends Program                                                     
 /*
   void initialize()                                                                                                     // Clear all the slots
    {memory.usedSlotsBits.initialize();
-    memory.usedRefsBits .initialize();
+    memory.usedKeysBits .initialize();
    }
 */
   class slot extends Int                                                                                                // A dereferenced slot
@@ -187,12 +204,12 @@ class Slots extends Program                                                     
 
   slot     slots(Slot I) {return  new slot(memory.slots    (I));}                                                       // The indexed slot
   Bool usedSlots(Slot I) {return           memory.usedSlots(I);}                                                        // The indexed slot usage indicator
-  Bool  usedRefs(slot I) {return           memory.usedRefs (I);}                                                        // The indexed reference usage indicator
+  Bool  usedKeys(slot I) {return           memory.usedKeys (I);}                                                        // The indexed reference usage indicator
   Key       keys(Slot I) {return   new Key(memory.keys(memory.slots(I)));}                                              // The indexed key
 
   void     slots(Slot I, slot   Ref) {memory.slots    (I, Ref.value());}                                                // The indexed slot
   void usedSlots(Slot I, Bool Value) {memory.usedSlots(I, Value);}                                                      // The indexed slot usage indicator
-  void  usedRefs(slot I, Bool Value) {memory.usedRefs (I, Value);}                                                      // The indexed reference usage indicator
+  void  usedKeys(slot I, Bool Value) {memory.usedKeys (I, Value);}                                                      // The indexed reference usage indicator
   void      keys(Slot I, Key    Key) {memory.keys(memory.slots(I), Key);}                                               // The indexed key
 
   Key  key(slot I) {return new Key(memory.keys(I));}                                                                    // Get the key directly
@@ -211,7 +228,7 @@ class Slots extends Program                                                     
 
     new If (I.valid())
      {void Then()
-       {usedRefs(I, new Bool(true));
+       {usedKeys(I, new Bool(true));
        }
       void Else()
        {stop("No more slots available in this set of slots");
@@ -220,7 +237,7 @@ class Slots extends Program                                                     
     return I;
    }
 
-  void freeRef(slot Ref) {usedRefs(Ref, new Bool(false));}                                                              // Free a reference to one of the keys in the slots
+  void freeRef(slot Ref) {usedKeys(Ref, new Bool(false));}                                                              // Free a reference to one of the keys in the slots
 
 //D2 Statistics                                                                                                         // Query the state of the slots
 
@@ -286,7 +303,7 @@ class Slots extends Program                                                     
    }
 
   slot locateFirstEmptyRef()                                                                                            // Absolute position of the first empty reference
-   {final BitSet.Pos p = memory.usedRefsBits.firstZero();
+   {final BitSet.Pos p = memory.usedKeysBits.firstZero();
     return If (p.valid(), new slot(), ()->new slot(p.position()), ()->new slot());
    }
 
@@ -362,7 +379,7 @@ class Slots extends Program                                                     
 
   void compactSlot(Slot P, slot Q, Key K)                                                                               // Compact a slot
    {usedSlots(P, new Bool(true));
-     usedRefs(Q, new Bool(true));
+     usedKeys(Q, new Bool(true));
         slots(P, Q);
          keys(P, K);
    }
@@ -417,7 +434,7 @@ class Slots extends Program                                                     
      {void Then()
        {    slots(I, S.    slots(I));
         usedSlots(I, S.usedSlots(I));
-         usedRefs(J, S. usedRefs(J));
+         usedKeys(J, S. usedKeys(J));
              keys(I, S.     keys(I));
         m.set();
        }
@@ -438,7 +455,7 @@ class Slots extends Program                                                     
         new If (c)                                                                                                      // Reset center
          {void Then()
            {usedSlots(I, new Bool(false));
-            usedRefs (J, new Bool(false));
+            usedKeys (J, new Bool(false));
            }
          };
         C.set();
@@ -654,13 +671,14 @@ class Slots extends Program                                                     
      };
     return C;                                                                                                           // Wether the key was found and deleted
    }
+*/
 
 //D2 Print                                                                                                              // Print the slots
 
   String printSlots()                                                                                                   // Print the occupancy of each slot
    {final StringBuilder s = new StringBuilder();
     for (int i : range(numberOfSlots()))
-     {s.append(usedSlots(new Slot(i)).b() ? "X" : ".");
+     {s.append(getSlotInUse(new Int(i)).b() ? "X" : ".");
      }
     return ""+s;
    }
@@ -669,26 +687,25 @@ class Slots extends Program                                                     
    {final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlots());
     final int[]R = range(numberOfRefs());
-    s.append(f("Slots    : name: %2d, type: %2d, refs: %2d\n",                                                          // Title line
-                            name().i(), type().i(), numberOfRefs));
+    s.append(f("Slots    : refs: %2d\n", numberOfRefs));                                                                // Title
     s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
-    s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, slots(new Slot(i)).i()));
-    s.append("\nusedSlots: "); for (int i : N) s.append(             usedSlots(new Slot(i)).b() ? "   X" : "   .");
-    s.append("\nusedRefs : "); for (int i : R) s.append(             usedRefs (new slot(i)).b() ? "   X" : "   .");
-    s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey,   key(new slot(i)).valid().b() ? key(new slot(i)).i() : 0));
+    s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, getSlotValue(new Int(i)).i()));
+    s.append("\nusedSlots: "); for (int i : N) s.append(                 usedSlots.getBit(usedSlots.new Pos(i)).b() ? "   X" : "   .");
+    s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys .getBit(usedKeys .new Pos(i)).b() ? "   X" : "   .");
+    s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey, getKeyValue (new Int(i)).i()));
     return ""+s+"\n";
    }
 
   String printInOrder()                                                                                                 // Print the values in the used slots in order
    {final StringJoiner s = new StringJoiner(", ");
     for (int i : range(numberOfSlots()))
-     {if (usedSlots(new Slot(i)).b()) s.add(""+keys(new Slot(i)).i());
+     {if (usedSlots.getBit(usedSlots.new Pos(i)).b()) s.add(""+getKeyValue(new Int(i)).i());
      }
     return ""+s;
    }
 
 //D2 Memory                                                                                                             // Read and write from an array of bytes
-*/
+
   class SlotsMemoryPositions                                                                                            // Positions of fields in memory
    {final int N = numberOfSlots();
     final int R = numberOfRefs();
@@ -698,8 +715,8 @@ class Slots extends Program                                                     
 
     final int posSlots     = 0;                                                                                         // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     final int posUsedSlots = posSlots     + ib(N);                                                                      // Slots in use
-    final int posUsedRefs  = posUsedSlots + us.byteSize();                                                              // References in use.  There are fewer references than slots to make insertions faster
-    final int posKeys      = posUsedRefs  + ur.byteSize();                                                              // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
+    final int posusedKeys  = posUsedSlots + us.byteSize();                                                              // References in use.  There are fewer references than slots to make insertions faster
+    final int posKeys      = posusedKeys  + ur.byteSize();                                                              // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
     final int size         = posKeys      + ib(N);                                                                      // Size of slots
   }
 /*
@@ -711,9 +728,9 @@ class Slots extends Program                                                     
       int  getByte(int I) {return bytes.get(new Int(posUsedSlots).Add(I).i());}                                         // Get used slot bit
     };
 
-    final BitSet usedRefsBits  = new BitSet(ur)                                                                         // Bit storage for used refs
-    {void setByte(int I, int V) {bytes.put(new Int(posUsedRefs).Add(I).i(), (byte)V);}                                  // Save used ref bit
-      int  getByte(int I) {return bytes.get(new Int(posUsedRefs).Add(I).i());}                                          // Get used ref bit
+    final BitSet usedKeysBits  = new BitSet(ur)                                                                         // Bit storage for used refs
+    {void setByte(int I, int V) {bytes.put(new Int(posusedKeys).Add(I).i(), (byte)V);}                                  // Save used ref bit
+      int  getByte(int I) {return bytes.get(new Int(posusedKeys).Add(I).i());}                                          // Get used ref bit
     };
 
     void copySlots(Memory Memory)                                                                                       // Copy a set of slots from the specified memory into this memory
@@ -747,16 +764,16 @@ class Slots extends Program                                                     
     Memory(ByteBuffer Bytes) {bytes = Bytes;}                                                                           // Use a specified memory
 
     BitSet.Pos   us(Int I) {return usedSlotsBits.new Pos(I);}                                                           // A slot position in the used slots
-    BitSet.Pos   ur(Int I) {return usedRefsBits .new Pos(I);}                                                           // A slot position in the references
+    BitSet.Pos   ur(Int I) {return usedKeysBits .new Pos(I);}                                                           // A slot position in the references
 
     Bool  usedSlots(Int I) {return usedSlotsBits.getBit(us(I));}                                                        // Value of indexed used slot
-    Bool   usedRefs(Int I) {return usedRefsBits .getBit(ur(I));}                                                        // Value of indexed used reference
+    Bool   usedKeys(Int I) {return usedKeysBits .getBit(ur(I));}                                                        // Value of indexed used reference
     Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}                            // Value of indexed slot
     Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}                            // Value of key via indexed reference
     Int        name(     ) {return new Int(bytes.getInt(posName));}
 
     void usedSlots(Int I, Bool V) {usedSlotsBits.set(                 us(I),      V);}                                  // Set value of indexed used slot
-    void  usedRefs(Int I, Bool V) {usedRefsBits .set(                 ur(I),      V);}                                  // Set value of indexed used reference
+    void  usedKeys(Int I, Bool V) {usedKeysBits .set(                 ur(I),      V);}                                  // Set value of indexed used reference
     void     slots(Int I, Int  V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());}                              // Set value of indexed slot
     void      keys(Int I, Int  V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());}                              // Set value of key via indexed reference
     void      name(       Int  V) {bytes.putInt(posName,                          V.i());}                              // Save the name of the node in memory to assist debugging
@@ -772,18 +789,13 @@ class Slots extends Program                                                     
 
   static void test_slots()
    {final Slots s = new Slots(8);
-    s.refSlots    .putInt(s.new Int(0), s.new Int(11));
-    s.refSlots    .putInt(s.new Int(1), s.new Int(22));
-    s.refUsedSlots.putInt(s.new Int(0), s.new Int(33));
-    s.refUsedSlots.putInt(s.new Int(1), s.new Int(44));
-    s.refUsedRefs .putInt(s.new Int(0), s.new Int(55));
-    s.refUsedRefs .putInt(s.new Int(1), s.new Int(66));
-    s.refKeys     .putInt(s.new Int(0), s.new Int(77));
-    s.refKeys     .putInt(s.new Int(1), s.new Int(88));
-    s.refKeys     .putInt(s.new Int(2), s.new Int(99));
-    s.refKeys     .putInt(s.new Int(3), s.new Int(111));
-    //stop(s.byteMemory.toString());
-    //stop(md5Sum(s.byteMemory.toString()));
+    //s.putSlot(s.new Int(2), s.new Int(3));
+    //s.putSlot(s.new Int(0), s.new Int(1));
+    //s.putKey (s.new Int(1), s.new Int(11));
+    //s.putKey (s.new Int(3), s.new Int(22));
+    say(s);
+    stop(s.byteMemory.toString());
+    stop(md5Sum(s.byteMemory.toString()));
     ok(md5Sum(s.byteMemory.toString()), "21d5a69403eb1b68d460912f255bd0b6");
    }
 
@@ -898,7 +910,7 @@ Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
 usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
-usedRefs :    X   X   X   X   X   X   X   X
+usedKeys :    X   X   X   X   X   X   X   X
 keys     :   14  13  16  15  18  17  12  11
 """);
     ok(s.locate(t.new Key(11)).i(),  5);
@@ -961,16 +973,16 @@ keys     :   14  13  16  15  18  17  12  11
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), t.new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.new Bool(true)); s.key(s.new slot(7), t.new Key(22));
-    s.usedSlots(s.new Slot( 5), t.new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.new Bool(true)); s.key(s.new slot(4), t.new Key(24));
-    s.usedSlots(s.new Slot( 9), t.new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.new Bool(true)); s.key(s.new slot(2), t.new Key(26));
-    s.usedSlots(s.new Slot(14), t.new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.new Bool(true)); s.key(s.new slot(0), t.new Key(28));
+    s.usedSlots(s.new Slot( 1), t.new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedKeys(s.new slot(7), t.new Bool(true)); s.key(s.new slot(7), t.new Key(22));
+    s.usedSlots(s.new Slot( 5), t.new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedKeys(s.new slot(4), t.new Bool(true)); s.key(s.new slot(4), t.new Key(24));
+    s.usedSlots(s.new Slot( 9), t.new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedKeys(s.new slot(2), t.new Bool(true)); s.key(s.new slot(2), t.new Key(26));
+    s.usedSlots(s.new Slot(14), t.new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedKeys(s.new slot(0), t.new Bool(true)); s.key(s.new slot(0), t.new Key(28));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
-usedRefs :    X   .   X   .   X   .   .   X
+usedKeys :    X   .   X   .   X   .   .   X
 keys     :   28   0  26   0  24   0   0  22
 """);
     ok(s.locateFirstGe(t.new Key(23)).i(),    5);
@@ -983,16 +995,16 @@ keys     :   28   0  26   0  24   0   0  22
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), t.new Bool(true));; s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.new Bool(true));; s.key(s.new slot(7), t.new Key(11));
-    s.usedSlots(s.new Slot( 5), t.new Bool(true));; s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.new Bool(true));; s.key(s.new slot(4), t.new Key(12));
-    s.usedSlots(s.new Slot( 9), t.new Bool(true));; s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.new Bool(true));; s.key(s.new slot(2), t.new Key(13));
-    s.usedSlots(s.new Slot(14), t.new Bool(true));; s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.new Bool(true));; s.key(s.new slot(0), t.new Key(14));
+    s.usedSlots(s.new Slot( 1), t.new Bool(true));; s.slots(s.new Slot( 1), s.new slot(7)); s.usedKeys(s.new slot(7), t.new Bool(true));; s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), t.new Bool(true));; s.slots(s.new Slot( 5), s.new slot(4)); s.usedKeys(s.new slot(4), t.new Bool(true));; s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), t.new Bool(true));; s.slots(s.new Slot( 9), s.new slot(2)); s.usedKeys(s.new slot(2), t.new Bool(true));; s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), t.new Bool(true));; s.slots(s.new Slot(14), s.new slot(0)); s.usedKeys(s.new slot(0), t.new Bool(true));; s.key(s.new slot(0), t.new Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
-usedRefs :    X   .   X   .   X   .   .   X
+usedKeys :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
     s.compactLeft();
@@ -1002,7 +1014,7 @@ Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
-usedRefs :    X   X   X   X   .   .   .   .
+usedKeys :    X   X   X   X   .   .   .   .
 keys     :   11  12  13  14   0   0   0   0
 """);
    }
@@ -1011,16 +1023,16 @@ keys     :   11  12  13  14   0   0   0   0
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8);
 
-    s.usedSlots(s.new Slot( 1), t.new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.new Bool(true)); s.key(s.new slot(7), t.new Key(11));
-    s.usedSlots(s.new Slot( 5), t.new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.new Bool(true)); s.key(s.new slot(4), t.new Key(12));
-    s.usedSlots(s.new Slot( 9), t.new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.new Bool(true)); s.key(s.new slot(2), t.new Key(13));
-    s.usedSlots(s.new Slot(14), t.new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.new Bool(true)); s.key(s.new slot(0), t.new Key(14));
+    s.usedSlots(s.new Slot( 1), t.new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedKeys(s.new slot(7), t.new Bool(true)); s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), t.new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedKeys(s.new slot(4), t.new Bool(true)); s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), t.new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedKeys(s.new slot(2), t.new Bool(true)); s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), t.new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedKeys(s.new slot(0), t.new Bool(true)); s.key(s.new slot(0), t.new Key(14));
     ok(s, """
 Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
-usedRefs :    X   .   X   .   X   .   .   X
+usedKeys :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
     s.compactRight();
@@ -1029,7 +1041,7 @@ Slots    : name:  0, type:  0, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
-usedRefs :    .   .   .   .   X   X   X   X
+usedKeys :    .   .   .   .   X   X   X   X
 keys     :    0   0   0   0  11  12  13  14
 """);
 
@@ -1041,17 +1053,17 @@ keys     :    0   0   0   0  11  12  13  14
    {final Tree  t =   new Tree (8);
     final Slots s = t.new Slots(8, ByteBuffer.allocate(200));
 
-    s.usedSlots(s.new Slot( 1), t.new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.new Bool(true)); s.key(s.new slot(7), t.new Key(11));
-    s.usedSlots(s.new Slot( 5), t.new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.new Bool(true)); s.key(s.new slot(4), t.new Key(12));
-    s.usedSlots(s.new Slot( 9), t.new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.new Bool(true)); s.key(s.new slot(2), t.new Key(13));
-    s.usedSlots(s.new Slot(14), t.new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.new Bool(true)); s.key(s.new slot(0), t.new Key(14));
+    s.usedSlots(s.new Slot( 1), t.new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedKeys(s.new slot(7), t.new Bool(true)); s.key(s.new slot(7), t.new Key(11));
+    s.usedSlots(s.new Slot( 5), t.new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedKeys(s.new slot(4), t.new Bool(true)); s.key(s.new slot(4), t.new Key(12));
+    s.usedSlots(s.new Slot( 9), t.new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedKeys(s.new slot(2), t.new Bool(true)); s.key(s.new slot(2), t.new Key(13));
+    s.usedSlots(s.new Slot(14), t.new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedKeys(s.new slot(0), t.new Bool(true)); s.key(s.new slot(0), t.new Key(14));
     s.type     (t.new Int (11));
     ok(s, """
 Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
-usedRefs :    X   .   X   .   X   .   .   X
+usedKeys :    X   .   X   .   X   .   .   X
 keys     :   14   0  13   0  12   0   0  11
 """);
 
@@ -1074,13 +1086,13 @@ keys     :   14   0  13   0  12   0   0  11
     ok(m.usedSlots   (t.new Int(4)), false);
     ok(m.usedSlots   (t.new Int(5)), true);
     ok(m.usedSlots   (t.new Int(6)), false);
-    ok(m.usedRefs    (t.new Int(0)), true);
-    ok(m.usedRefs    (t.new Int(1)), false);
-    ok(m.usedRefs    (t.new Int(2)), true);
-    ok(m.usedRefs    (t.new Int(3)), false);
-    ok(m.usedRefs    (t.new Int(4)), true);
-    ok(m.usedRefs    (t.new Int(5)), false);
-    ok(m.usedRefs    (t.new Int(6)), false);
+    ok(m.usedKeys    (t.new Int(0)), true);
+    ok(m.usedKeys    (t.new Int(1)), false);
+    ok(m.usedKeys    (t.new Int(2)), true);
+    ok(m.usedKeys    (t.new Int(3)), false);
+    ok(m.usedKeys    (t.new Int(4)), true);
+    ok(m.usedKeys    (t.new Int(5)), false);
+    ok(m.usedKeys    (t.new Int(6)), false);
     ok(m.keys        (t.new Int(0)), 14);
     ok(m.keys        (t.new Int(1)),  0);
     ok(m.keys        (t.new Int(2)), 13);
@@ -1091,7 +1103,7 @@ keys     :   14   0  13   0  12   0   0  11
 
     m.slots    (t.new Int(13), t.new Int(6));
     m.usedSlots(t.new Int(13), t.new Bool(true));
-    m.usedRefs (t.new Int( 6), t.new Bool(true));
+    m.usedKeys (t.new Int( 6), t.new Bool(true));
     m.keys     (t.new Int( 6), t.new Int(10));
 
     ok(B, """
@@ -1099,7 +1111,7 @@ Slots    : name:  0, type: 11, refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   6   0   0
 usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   X   .
-usedRefs :    X   .   X   .   X   .   X   X
+usedKeys :    X   .   X   .   X   .   X   X
 keys     :   14   0  13   0  12   0  10  11
 """);
     ok(B.type(), 11);
