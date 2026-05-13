@@ -94,10 +94,6 @@ class Tree extends Program                                                      
 
   enum AllocationType {Leaf, Branch}                                                                                          // Types of nodes stored in backing memory
 
-  static int ib()      {return Integer.BYTES;}                                                                          // Number of bytes in an integer
-  static int ib(int I) {return I * ib();}                                                                               // Number of bytes in a number of integers
-  static Int ib(Int I) {return I.Mul(ib());}                                                                            // Number of bytes in a number of integers
-
   static class TreeMemoryPositions                                                                                      // Memory positions of fields describing the tree
    {final int posRoot          = 0;
     final int posMaxLeafSize   = posRoot          + ib();                                                               // The maximum number of entries in a leaf
