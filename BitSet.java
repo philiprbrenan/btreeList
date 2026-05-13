@@ -44,8 +44,8 @@ public class BitSet extends Program                                             
     one        = Build.one;                                                                                             // Locate ones efficiently
     byteSize   = Build.byteSize();                                                                                      // Bytes needed for the bitset and its bit trees
     oneTreeBit = bitSize <= 2;                                                                                          // At most only one tree bit present
-    if (Build.memoryRef != null) {program(Build.memoryRef.program()); memoryRef = Build.memoryRef;}                     // Use memory supplied by caller
-    else {byteMemory = new ByteMemory(byteSize); memoryRef = byteMemory.new Ref(0);}                                    // Allocate default backing memory
+    if (Build.memoryRef != null) {program(Build.memoryRef.program()); memoryRef = Build.memoryRef;}                     // Use memory supplied by caller and program owning memory
+    else {byteMemory = new ByteMemory(byteSize); memoryRef = byteMemory.new Ref(0);}                                    // Allocate default backing memory and write code into this program - useful during testing
    }
 
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
