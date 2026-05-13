@@ -43,10 +43,10 @@ class Slots extends Program                                                     
     refUsedSlots = byteMemoryRef.step(slotsMemoryPositions.posUsedSlots);                                               // Slots in use
     refUsedRefs  = byteMemoryRef.step(slotsMemoryPositions.posUsedRefs);                                                // References in use.  There are fewer references than slots to make insertions faster
     refKeys      = byteMemoryRef.step(slotsMemoryPositions.posKeys);                                                    // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
-    usedSlots    = new BitSet(slotsMemoryPositions.us);
-    usedRefs     = new BitSet(slotsMemoryPositions.ur);
-
-    usedSlots.program = usedRefs.program = program = byteMemoryRef.program();
+    usedSlots    = new BitSet(slotsMemoryPositions.us.memory(refUsedSlots));                                            // Create bitsets to reference the program and memory used by this program
+    usedRefs     = new BitSet(slotsMemoryPositions.ur.memory(refUsedRefs));
+    usedSlots.initialize();                                                                                             // Initialize the bitsets
+    usedRefs .initialize();
    }
 
   Slots(int NumberOfRefs) {this(new Build().numberOfRefs(NumberOfRefs));}                                               // Create the slots in local memory for testing
@@ -784,7 +784,7 @@ class Slots extends Program                                                     
     s.refKeys     .putInt(s.new Int(3), s.new Int(111));
     //stop(s.byteMemory.toString());
     //stop(md5Sum(s.byteMemory.toString()));
-    ok(md5Sum(s.byteMemory.toString()), "30cfe9584d6f5c1131ea30a24d4c2664");
+    ok(md5Sum(s.byteMemory.toString()), "21d5a69403eb1b68d460912f255bd0b6");
    }
 
   static void test_slots2()
