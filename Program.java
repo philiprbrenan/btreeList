@@ -613,6 +613,12 @@ public class Program extends Test                                               
       Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
       boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
+
+      Ref step(int Width)                                                                                               // Step up from an existing ref to make a new one
+       {final int s = offset.Add(Width).i();
+        if (s > size()) stop("Stepping beyond end of memory, start:", offset, "width:", Width, "length:", size());
+        return new Ref(s);
+       }
      }
 
     public String toString()                                                                                            // Print memory
