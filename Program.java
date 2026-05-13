@@ -501,20 +501,25 @@ public class Program extends Test                                               
      }
 
     ByteMemory clear(int Start, int Width)                                                                              // Clear memory by setting its bytes to zero
-     {new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)0);}};
+     {Arrays.fill(bytes, Start,  Start+Width, (byte)0);
       return this;
      }
-                                                                                                                        // Clear memory by setting its bytes to zero
-    ByteMemory clear(Int Start, Int Width) {return clear(Start.i(),  Width.i());}
+
+    ByteMemory clear(Int Start, Int Width)
+     {final Int w = Start.Add(Width);
+      new I() {void action() {Arrays.fill(bytes, Start.i(),  w.i(), (byte)0);}};
+      return this;
+     }
 
     ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
-     {new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);}};
+     {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
       return this;
      }
 
-    ByteMemory invalidate(Int Start, Int Width) {return invalidate(
-      Start.i(),
-      Width.i());}
+    ByteMemory invalidate(Int Start, Int Width)
+     {new I() {void action() {invalidate(Start.i(),  Width.i());}};
+      return this;
+     }
 
     int size() {return bytes.length;}                                                                                   // Size of memory
 
