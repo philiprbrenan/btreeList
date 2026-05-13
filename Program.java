@@ -496,10 +496,12 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory invalidate(Int Start, Int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
-     {new I() {void action() {Arrays.fill(bytes, Start.i(),  Start.i()+Width.i(), (byte)-1);}};
+    ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
+     {new I() {void action() {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);}};
       return this;
      }
+
+    ByteMemory invalidate(Int Start, Int Width) {return invalidate(Start.i(),  Width.i());}
 
     int size() {return bytes.length;}                                                                                   // Size of memory
 
@@ -579,15 +581,16 @@ public class Program extends Test                                               
       ByteMemory byteMemory() {return ByteMemory.this;}
       Program    program()    {return Program.this;}
 
-      Ref  copy(Ref Source, Int Width)      {m.copy(Source.offset, offset, Width); return this;}                        // Copy the specified memory
-      Ref  invalidate(Int Width)            {m.invalidate(offset, Width);    return this;}                              // Invalidate memory by setting it values unlikely to be valid
+      Ref  copy(Ref Source, Int Width)      {m.copy(Source.offset, offset, Width);       return this;}                  // Copy the specified memory
+      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);            return this;}                  // Invalidate memory by setting it values unlikely to be valid
+      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);            return this;}                  // Invalidate memory by setting it values unlikely to be valid
       Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
       Int      getInt(Int I)                {return m.getInt (I.Add(offset));}                                          // Get the int at the indicated position
       Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
       Bool    getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                           // Get the bit at the bit indexed location
-      Ref     putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);    return this;}                              // Set the byte at the indicated position relative to the start to the specified value
-      Ref     putInt (Int I, Int J)         {m.putByte(I.Add(offset), J);    return this;}                              // Set the int at the indicated position relative to the start to the specified value
-      Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K); return this;}                              // Set the bit at the indicated position in the byte at the specified position to the specified value
+      Ref     putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                return this;}                  // Set the byte at the indicated position relative to the start to the specified value
+      Ref     putInt (Int I, Int J)         {m.putByte(I.Add(offset), J);                return this;}                  // Set the int at the indicated position relative to the start to the specified value
+      Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
       boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
      }
