@@ -25,7 +25,7 @@ public class Program extends Test                                               
 
   Program() {code();}                                                                                                   // Create a program which executes as it is written
   Program(boolean Immediate) {immediate = Immediate; code();}                                                           // Create a local program that executes immediately or later as machine code - the immediate mode only affects the local program
-  Program(Program Program)   {program = Program;     code();}                                                           // Access the specified remote program through this program
+  Program(Program Program)   {program   = Program;   code();}                                                           // Access the specified remote program through this program
 
   void code() {}                                                                                                        // Override to provide some code for this program
   boolean immediate() {return program.immediate;}                                                                       // Executing immediately via interpretation
@@ -614,7 +614,7 @@ public class Program extends Test                                               
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
       boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
 
-      Ref step(int Width)                                                                                               // Step up from an existing ref to make a new one
+      Ref step(int Width)                                                                                               // Step up from an existing ref to make a new one - only while not executing
        {final int s = offset.Add(Width).i();
         if (s > size()) stop("Stepping beyond end of memory, start:", offset, "width:", Width, "length:", size());
         return new Ref(s);
