@@ -803,11 +803,7 @@ keys     :   14  13  16  15  18  17  12  11
         putSlot(new Int(0), new Int(1));
         putKey (new Int(1), new Int(11));
         putKey (new Int(3), new Int(22));
-        execute();
-       }
-     };
-    //stop(s);
-    ok(s, """
+        ok(()->this, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -815,6 +811,20 @@ usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
+        delSlot(new Int(2));
+        delKey (new Int(3));
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   X   .   .   .   .   .   .
+keys     :    0  11   0   0   0   0   0   0
+""");
+        execute();
+       }
+     };
+    //stop(s);
    }
 
   static void test_slots()
