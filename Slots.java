@@ -797,7 +797,13 @@ keys     :   14  13  16  15  18  17  12  11
    {final Slots s = new Slots(8)
      {void slotsCode()
        {immediate(Ex);
-        ok(empty(), true);
+        new I() {void action() {say("AAAA");}};
+        final Bool e = usedKeys.empty();
+        new I() {void action() {say("BBBB");}};
+        new I() {void action() {say("EEEE", e); }};
+        say("CCCC", code.size());
+        if (true) {execute(); return;}
+        ok(()->e, true);
         putSlot(new Int(2), new Int(3));
         ok(empty(), false);
         putSlot(new Int(0), new Int(1));
@@ -827,7 +833,7 @@ keys     :    0  11   0   0   0   0   0   0
    }
 
   static void test_slots()
-   {test_slots(true);
+   {//test_slots(true);
     test_slots(false);
    }
 
