@@ -568,6 +568,7 @@ public class Program extends Test                                               
      {new I()
        {void action()
          {final int p = I.i(), v = J.i();
+          say("PPPP", p, v);
           bytes[p+0] = (byte)((v >>>  0) & 0xFF);
           bytes[p+1] = (byte)((v >>>  8) & 0xFF);
           bytes[p+2] = (byte)((v >>> 16) & 0xFF);
@@ -609,7 +610,7 @@ public class Program extends Test                                               
       Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
       Bool    getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                           // Get the bit at the bit indexed location
       Ref     putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                return this;}                  // Set the byte at the indicated position relative to the start to the specified value
-      Ref     putInt (Int I, Int J)         {m.putByte(I.Add(offset), J);                return this;}                  // Set the int at the indicated position relative to the start to the specified value
+      Ref     putInt (Int I, Int J)         {m.putInt (I.Add(offset), J);                return this;}                  // Set the int at the indicated position relative to the start to the specified value
       Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
       boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
@@ -618,6 +619,11 @@ public class Program extends Test                                               
        {final int s = offset.Add(Width).i();
         if (s > size()) stop("Stepping beyond end of memory, start:", offset, "width:", Width, "length:", size());
         return new Ref(s);
+       }
+
+      public String toString()                                                                                            // Print memory
+       {final StringBuilder s = saySb("Ref: " , offset.i());
+        return ""+s;
        }
      }
 
