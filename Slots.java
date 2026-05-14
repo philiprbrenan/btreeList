@@ -71,10 +71,13 @@ keys     :   14  13  16  15  18  17  12  11
   Bool getKeyInUse (Int Index)       {return usedKeys .getBit(usedKeys    .new Pos(Index));}                            // Check whether a key is in use
   Int  getKeyValue (Int Index)       {return refKeys  .getInt(                     Index );}                            // Value of referenced key
 
-  boolean getSlotInUse(int Index)    {return usedSlots.getBitNC(Index);}                                                  // Check whether a slot is in use
+  boolean getSlotInUse(int Index)    {return usedSlots.getBitNC(Index);}                                                // Check whether a slot is in use
   int     getSlotValue(int Index)    {return refSlots .getInt(Index);}                                                  // Index to keys from slot
-  boolean getKeyInUse (int Index)    {return usedKeys .getBitNC(Index);}                                                  // Check whether a key is in use
+  boolean getKeyInUse (int Index)    {return usedKeys .getBitNC(Index);}                                                // Check whether a key is in use
   int     getKeyValue (int Index)    {return refKeys  .getInt(Index);}                                                  // Value of referenced key
+
+  Bool empty() {return usedKeys.empty();}                                                                               // All bits in the corresponding bitset are unused so the Slots must be empty
+  Bool full () {return usedKeys.full ();}                                                                               // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
 
   //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
 
@@ -259,11 +262,6 @@ keys     :   14  13  16  15  18  17  12  11
      };
     return n;
    }
-
-  Bool empty()    {return memory.usedSlotsBits.empty();}                                                                // All bits in the corresponding bitset are unused so the Slots must be empty
-  Bool full ()    {return countUsed().eq(numberOfRefs());}                                                              // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Bool isBranch() {return new Bool(this instanceof Branch);}                                                            // Is this set of slots implemented in a branch
-  Bool isLeaf()   {return new Bool(this instanceof Leaf);}                                                              // Is this set of slots implemented in a leaf
 
 //D2 Low level operations                                                                                               // Low level operations on slots
 
@@ -799,6 +797,8 @@ keys     :   14  13  16  15  18  17  12  11
    {final Slots s = new Slots(8)
      {void slotsCode()
        {immediate(Ex);
+        ok(()->empty(), true);
+        ok(()->empty(), false);
         putSlot(new Int(2), new Int(3));
         putSlot(new Int(0), new Int(1));
         putKey (new Int(1), new Int(11));
@@ -824,7 +824,6 @@ keys     :    0  11   0   0   0   0   0   0
         execute();
        }
      };
-    //stop(s);
    }
 
   static void test_slots()
