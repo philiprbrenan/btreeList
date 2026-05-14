@@ -568,7 +568,6 @@ public class Program extends Test                                               
      {new I()
        {void action()
          {final int p = I.i(), v = J.i();
-          say("PPPP", p, v);
           bytes[p+0] = (byte)((v >>>  0) & 0xFF);
           bytes[p+1] = (byte)((v >>>  8) & 0xFF);
           bytes[p+2] = (byte)((v >>> 16) & 0xFF);
@@ -594,6 +593,7 @@ public class Program extends Test                                               
 
     class Ref                                                                                                           // Reference into memory
      {final Int offset;                                                                                                 // Offset of this reference in memory
+      final int N = Integer.BYTES;
       final ByteMemory m = ByteMemory.this;
       Ref(int Offset) {offset = new Int(Offset);}                                                                       // Offset this ref
 
@@ -606,11 +606,11 @@ public class Program extends Test                                               
       Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);            return this;}                  // Invalidate memory by setting its bytes to s values unlikely to be valid
       Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);            return this;}                  // Invalidate memory by setting its bytes to s values unlikely to be valid
       Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
-      Int      getInt(Int I)                {return m.getInt (I.Add(offset));}                                          // Get the int at the indicated position
+      Int      getInt(Int I)                {return m.getInt (I.Mul(N).add(offset));}                                   // Get the int at the indicated position
       Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
       Bool    getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                           // Get the bit at the bit indexed location
       Ref     putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                return this;}                  // Set the byte at the indicated position relative to the start to the specified value
-      Ref     putInt (Int I, Int J)         {m.putInt (I.Add(offset), J);                return this;}                  // Set the int at the indicated position relative to the start to the specified value
+      Ref     putInt (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);         return this;}                  // Set the int at the indicated position relative to the start to the specified value
       Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
       boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
@@ -1047,15 +1047,15 @@ public class Program extends Test                                               
         new For(2)
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
-            m.putInt(new Int(4), new Int(2));
+            m.putInt(new Int(1), new Int(2));
             final Int a = m.getInt(new Int(0)); ok(()->a.i(), 1);
-            final Int b = m.getInt(new Int(4)); ok(()->b.i(), 2);
+            final Int b = m.getInt(new Int(1)); ok(()->b.i(), 2);
 
             final Bool c = m.getBool(new Int(4), new Int(0)); ok(()->c.b(), false);
             final Bool d = m.getBool(new Int(4), new Int(1)); ok(()->d.b(), true );
             final Bool e = m.getBool(new Int(4), new Int(2)); ok(()->e.b(), false);
                            m.putBool(new Int(4), new Int(0), new Bool(true));
-            final Int  f = m.getInt (new Int(4));             ok(()->f.i(), 3);
+            final Int  f = m.getInt (new Int(1));             ok(()->f.i(), 3);
 
                            m.putBool(new Int(32), new Bool(false));
             final Bool C = m.getBool(new Int(32)); ok(()->C.b(), false);
