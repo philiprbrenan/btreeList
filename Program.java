@@ -83,7 +83,7 @@ public class Program extends Test                                               
         if (trace) trace("For "+index.i);
         new I(true)
          {void action()
-           {if (index.i() >=  End.i()) pc = end.offset;                                                                 // Index ut of range
+           {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
            }
          };
         cont.clear();                                                                                                   // Terminate unless told otherwise
@@ -91,7 +91,7 @@ public class Program extends Test                                               
         index.inc();                                                                                                    // Increment lop counter
         new I(true)
          {void action()
-           {pc = cont.b() ? start.offset : end.offset;                                                                  // Continue while requested
+           {program().pc = cont.b() ? start.offset : end.offset;                                                        // Continue while requested
            }
          };
         end.set();                                                                                                      // End of the loop
@@ -124,14 +124,14 @@ public class Program extends Test                                               
         final Label end = new Label();                                                                                  // End of if
         new I(true)                                                                                                     // Jump to else if condition is false
          {void action()
-           {if (!Condition.b()) pc = lse.offset;
+           {if (!Condition.b()) program().pc = lse.offset;
            }
          };
         if (trace) trace("Then2");
         Then();                                                                                                         // Then body
         new I(true)                                                                                                     // Jump over else to end
          {void action()
-           {pc = end.offset;
+           {program().pc = end.offset;
            }
          };
         lse.set();                                                                                                      // Start of else
@@ -695,7 +695,7 @@ public class Program extends Test                                               
       mightJump = MightJump;
 
       if (immediate()) {executing = this; action(); executing = null;}                                                  // Execute instruction immediately via interpretation if in immediate execution mode
-      else  {program.code.push(this);}                                                                                                            // Save intruction in program for later execution if in delayed == non immediate execution mode
+      else  {program().code.push(this);}                                                                                // Save intruction in program for later execution if in delayed == non immediate execution mode
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
@@ -705,8 +705,8 @@ public class Program extends Test                                               
 
   class Label                                                                                                           // Label jump targets in the program
    {int offset;                                                                                                         // The instruction location to which this labels applies
-    Label()    {set(); program.labels.push(this);}                                                                      // A label assigned to an instruction location
-    void set() {offset = code.size();}                                                                                  // Reassign the label to an instruction
+    Label()    {set(); program().labels.push(this);}                                                                    // A label assigned to an instruction location
+    void set() {offset = program().code.size();}                                                                        // Reassign the label to an instruction
    }
 
   void execute()                                                                                                        // Execute the current code
