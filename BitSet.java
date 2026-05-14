@@ -370,7 +370,7 @@ public class BitSet extends Program                                             
 
   public Pos firstZero()                                                                                                // Find the index of the first set bit
    {checkZero();
-    final Pos p = new Pos(new Int(0));
+    final Pos p = new Pos(0);
     final Pos r = new Pos();
     new If (getBit(p))
      {void Then() {r.copy(nextZero(p));}
