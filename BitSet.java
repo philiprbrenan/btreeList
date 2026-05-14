@@ -101,8 +101,8 @@ public class BitSet extends Program                                             
     return getBitNC(Index);
    }
 
-  private Bool    getBitNC(Pos Index) {return memoryRef.getBool(Index);}                                                // Get bit value at an index without checking that the index is valid
-  private boolean getBitNC(int Index) {return memoryRef.getBool(new Int(Index)).b();}                                   // Get bit value at an index without checking that the index is valid
+  Bool    getBitNC(Pos Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
+  boolean getBitNC(int Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
 
   void setBit  (Pos Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value.
   void setBitNC(Pos Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value without checking index
