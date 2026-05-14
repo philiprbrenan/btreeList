@@ -797,9 +797,9 @@ keys     :   14  13  16  15  18  17  12  11
    {final Slots s = new Slots(8)
      {void slotsCode()
        {immediate(Ex);
-        ok(()->empty(), true);
-        ok(()->empty(), false);
+        ok(empty(), true);
         putSlot(new Int(2), new Int(3));
+        ok(empty(), false);
         putSlot(new Int(0), new Int(1));
         putKey (new Int(1), new Int(11));
         putKey (new Int(3), new Int(22));
