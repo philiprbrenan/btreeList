@@ -532,6 +532,7 @@ public class Program extends Test                                               
     Int getInt(Int I)                                                                                                   // Get the int at the indicated position
      {final int N = Integer.BYTES;
       final Int r = new Int();
+      say("AAAA", r);
       new I()
        {void action()
          {final int p = I.i();
@@ -541,9 +542,19 @@ public class Program extends Test                                               
           final int d = bytes[p+3];
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
+      say("BBBB", R);
          }
        };
+      say("CCCC", r);
       return r;
+     }
+
+    int getInt(int I)                                                                                                   // Get the int at the indicated position
+     {final int a = bytes[I+0];
+      final int b = bytes[I+1];
+      final int c = bytes[I+2];
+      final int d = bytes[I+3];
+      return d | c | b | a;
      }
 
     Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
@@ -613,6 +624,7 @@ public class Program extends Test                                               
       Ref     putInt (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);         return this;}                  // Set the int at the indicated position relative to the start to the specified value
       Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
+      int      getInt(int I)                {return m.getInt (I*N+offset.i());}                                         // Get the int at the indicated position
       boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
 
       Ref step(int Width)                                                                                               // Step up from an existing ref to make a new one - only while not executing
@@ -699,6 +711,7 @@ public class Program extends Test                                               
 
   void execute()                                                                                                        // Execute the current code
    {if (immediate) return;                                                                                              // The code has already been executed interpretively
+    if (code.size() == 0) stop("No code to execute");
     pc = 0;
     int c, N;
     for(c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                                 // Execute each instruction within a specified number of steps
