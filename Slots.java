@@ -22,6 +22,13 @@ class Slots extends Program                                                     
   final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout the slots
+/*
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
+usedKeys :    X   X   X   X   X   X   X   X
+keys     :   14  13  16  15  18  17  12  11
+*/
 
   static class Build                                                                                                    // Specification of slots
    {int numberOfRefs = 2;                                                                                               // Number of refernces in the slots
@@ -48,16 +55,12 @@ class Slots extends Program                                                     
     usedKeys     = new BitSet(slotsMemoryPositions.ur.memory(refUsedKeys));
     usedSlots.initialize();                                                                                             // Initialize the bitsets
     usedKeys .initialize();
+    slotsCode();                                                                                                        // Generate code if any coide has been supplied
    }
 
+  void slotsCode() {}                                                                                                   // Override this method to provide code for testing the slots
+
   Slots(int NumberOfRefs) {this(new Build().numberOfRefs(NumberOfRefs));}                                               // Create the slots in local memory for testing
-/*
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
-usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
-usedKeys :    X   X   X   X   X   X   X   X
-keys     :   14  13  16  15  18  17  12  11
-*/
   void putSlot(Int Index, Int Value) {refSlots.putInt(Index, Value);      usedSlots.setBit(usedSlots.new Pos(Index), new Bool(true));}     // Set a slot
   void delSlot(Int Index)            {refSlots.putInt(Index, new Int(0)); usedSlots.setBit(usedSlots.new Pos(Index), new Bool(false));}    // Clear a slot
   void putKey (Int Index, Int Key)   {refKeys .putInt(Index, Key);        usedKeys .setBit(usedKeys .new Pos(Index), new Bool(true));}     // Set a key
@@ -67,6 +70,11 @@ keys     :   14  13  16  15  18  17  12  11
   Int  getSlotValue(Int Index)       {return refSlots .getInt(                     Index );}                            // Index to keys from slot
   Bool getKeyInUse (Int Index)       {return usedKeys .getBit(usedKeys    .new Pos(Index));}                            // Check whether a key is in use
   Int  getKeyValue (Int Index)       {return refKeys  .getInt(                     Index );}                            // Value of referenced key
+
+  boolean getSlotInUse(int Index)    {return usedSlots.getBitNC(Index);}                                                  // Check whether a slot is in use
+  int     getSlotValue(int Index)    {return refSlots .getInt(Index);}                                                  // Index to keys from slot
+  boolean getKeyInUse (int Index)    {return usedKeys .getBitNC(Index);}                                                  // Check whether a key is in use
+  int     getKeyValue (int Index)    {return refKeys  .getInt(Index);}                                                  // Value of referenced key
 
   //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
 
@@ -689,10 +697,10 @@ keys     :   14  13  16  15  18  17  12  11
     final int[]R = range(numberOfRefs());
     s.append(f("Slots    : refs: %2d\n", numberOfRefs));                                                                // Title
     s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
-    s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, getSlotValue(new Int(i)).i()));
-    s.append("\nusedSlots: "); for (int i : N) s.append(                 usedSlots.getBit(usedSlots.new Pos(i)).b() ? "   X" : "   .");
-    s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys .getBit(usedKeys .new Pos(i)).b() ? "   X" : "   .");
-    s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey, getKeyValue (new Int(i)).i()));
+    s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, getSlotValue(i)));
+    s.append("\nusedSlots: "); for (int i : N) s.append(                 usedSlots.getBitNC(i) ? "   X" : "   .");
+    s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys .getBitNC(i) ? "   X" : "   .");
+    s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey, getKeyValue(i)));
     return ""+s+"\n";
    }
 
@@ -787,12 +795,17 @@ keys     :   14  13  16  15  18  17  12  11
 
 //D2 Slots                                                                                                              // Test the slots
 
-  static void test_slots()
-   {final Slots s = new Slots(8);
-    s.putSlot(s.new Int(2), s.new Int(3));
-    s.putSlot(s.new Int(0), s.new Int(1));
-    s.putKey (s.new Int(1), s.new Int(11));
-    s.putKey (s.new Int(3), s.new Int(22));
+  static void test_slots(boolean Ex)
+   {final Slots s = new Slots(8)
+     {void slotsCode()
+       {immediate(Ex);
+        putSlot(new Int(2), new Int(3));
+        putSlot(new Int(0), new Int(1));
+        putKey (new Int(1), new Int(11));
+        putKey (new Int(3), new Int(22));
+        execute();
+       }
+     };
     //stop(s);
     ok(s, """
 Slots    : refs:  8
@@ -802,6 +815,11 @@ usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
+   }
+
+  static void test_slots()
+   {test_slots(true);
+    test_slots(false);
    }
 
   static void test_slots2()
