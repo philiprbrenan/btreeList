@@ -43,7 +43,6 @@ class Slots extends Program                                                     
     refSlots     = byteMemoryRef;                                                                                       // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refUsedSlots = byteMemoryRef.step(slotsMemoryPositions.posUsedSlots);                                               // Slots in use
     refUsedKeys  = byteMemoryRef.step(slotsMemoryPositions.posusedKeys);                                                // References in use.  There are fewer references than slots to make insertions faster
-say("AAAA", refUsedSlots, refUsedKeys);
     refKeys      = byteMemoryRef.step(slotsMemoryPositions.posKeys);                                                    // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
     usedSlots    = new BitSet(slotsMemoryPositions.us.memory(refUsedSlots));                                            // Create bitsets to reference the program and memory used by this program
     usedKeys     = new BitSet(slotsMemoryPositions.ur.memory(refUsedKeys));
@@ -791,13 +790,18 @@ keys     :   14  13  16  15  18  17  12  11
   static void test_slots()
    {final Slots s = new Slots(8);
     s.putSlot(s.new Int(2), s.new Int(3));
-    //s.putSlot(s.new Int(0), s.new Int(1));
-    //s.putKey (s.new Int(1), s.new Int(11));
-    //s.putKey (s.new Int(3), s.new Int(22));
-    stop(s, s.byteMemory);
-    //stop(s.byteMemory.toString());
-    //stop(md5Sum(s.byteMemory.toString()));
-    //ok(md5Sum(s.byteMemory.toString()), "21d5a69403eb1b68d460912f255bd0b6");
+    s.putSlot(s.new Int(0), s.new Int(1));
+    s.putKey (s.new Int(1), s.new Int(11));
+    s.putKey (s.new Int(3), s.new Int(22));
+    //stop(s);
+    ok(s, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slots    :    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   X   .   X   .   .   .   .
+keys     :    0  11   0  22   0   0   0   0
+""");
    }
 
   static void test_slots2()
