@@ -267,10 +267,13 @@ public class BitSet extends Program                                             
    {checkOne();
     final Pos p = new Pos(0);
     final Pos r = new Pos();
+
+    new I() {void action() {say("BBBB start", r); }};
     new If (getBit(p))
-     {void Then() {r.set(p);}
-      void Else() {r.copy(nextOne(p));}
+     {void Then() {r.set(p);           new I() {void action() {say("BBBB bitset then"); }};  }
+      void Else() {r.copy(nextOne(p)); new I() {void action() {say("BBBB bitset else"); }};  }
      };
+    new I() {void action() {say("BBBB end", r); }};
     return r;                                                                                                           // Result is valid if found
    }
 
