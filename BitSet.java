@@ -55,7 +55,7 @@ public class BitSet extends Program                                             
   public static int bytesNeeded(int Size)              {return new Build().bitSize(Size)         .byteSize();}          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
   public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
 
-  public  int size()                  {return bitSize;}                                                                 // Bit set size
+  public  int size() {return bitSize;}                                                                                  // Bit set size
 
   private void checkIndex(Int Index)                                                                                    // Check that a bit index is valid
    {new If (Index.lt(0))
@@ -265,7 +265,7 @@ public class BitSet extends Program                                             
 
   public Pos firstOne()                                                                                                 // Find the index of the first set bit
    {checkOne();
-    final Pos p = new Pos(new Int(0));
+    final Pos p = new Pos(0);
     final Pos r = new Pos();
     new If (getBit(p))
      {void Then() {r.set(p);}
@@ -276,7 +276,7 @@ public class BitSet extends Program                                             
 
   public Pos lastOne()                                                                                                  // Find the index of the last set bit
    {checkOne();
-    final Pos p = new Pos(new Int(bitSize1));
+    final Pos p = new Pos(bitSize1);
     final Pos r = new Pos();
     new If (getBit(p))
      {void Then() {r.set(p);}
