@@ -46,6 +46,7 @@ public class BitSet extends Program                                             
     oneTreeBit = bitSize <= 2;                                                                                          // At most only one tree bit present
     if (Build.memoryRef != null) {program(Build.memoryRef.program()); memoryRef = Build.memoryRef;}                     // Use memory supplied by caller and program owning memory
     else {byteMemory = new ByteMemory(byteSize); memoryRef = byteMemory.new Ref(0);}                                    // Allocate default backing memory and write code into this program - useful during testing
+    initialize();                                                                                                       // Initialize the bit set
    }
 
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
@@ -627,8 +628,6 @@ false
    {final BitSet b = test_bits(32, true, true);
     b.immediate(Ex);
     b.maxSteps = 99999;
-    //b.trace(true);
-    b.initialize();
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
     for (int i : s) b.set(b.new Pos(b.new Int(i)), b.new Bool(true));
@@ -708,7 +707,6 @@ Zero:
    {final int N = 16;
     final BitSet b = test_bits(N, true, true);
     b.immediate(Ex);
-    b.initialize();
 
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
@@ -777,7 +775,6 @@ Zero:
    {final int N = 16;
     final BitSet b = test_bits(N, true, true);
     b.immediate(Ex);
-    b.initialize();
     for (int i : range(N)) b.set(b.new Pos(i), b.new Bool((i / 4) % 2 == 1));
 
    //stop(b);
@@ -831,7 +828,6 @@ Zero:
    {final int N = 8;
     final BitSet b = test_bits(N, true, true);
     b.immediate(Ex);
-    b.initialize();
     final StringBuilder s = new StringBuilder();
     b.new I() {void action() {s.append("Start:\n"+b);}};
 
@@ -1044,7 +1040,6 @@ Zero:
   static void test_fullEmpty()
    {final int N = 16;
     final BitSet b = test_bits(N, true, true);
-    b.initialize();
     ok(b.empty());
     for (int i : range(N))
      {ok(b.full().Flip());
