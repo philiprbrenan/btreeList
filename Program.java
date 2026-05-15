@@ -299,11 +299,11 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool dup   ()       {                                                                        return new Bool(this);}// Duplicate a boolean so that the duplicated version can be modified without modifying the original
-    Bool copy  (Bool I) {                           new I() {void action() {i = I.i; v = I.v;}}; return this;}          // Copy the state of a boolean without regard as to whether it is valid or not
-    Bool valid     ()   {final Bool b = new Bool(); new I() {void action() {b.set(v);        }}; return b;}             // Whether the boolean is valid
-    Bool notValid  ()   {final Bool b = new Bool(); new I() {void action() {b.set(!v);       }}; return b;}             // Whether the boolean is invalid
-    Bool invalidate()   {                           new I() {void action() {v = false;}};        return this;}          // Invalidate the boolean
+    Bool dup   ()       {                                             return new Bool(this);}                           // Duplicate a boolean so that the duplicated version can be modified without modifying the original
+    Bool copy  (Bool I) {new I() {void action() {i = I.i; v = I.v;}}; return this;}                                     // Copy the state of a boolean without regard as to whether it is valid or not
+    Bool valid     ()   {return new Bool( v);}                                                                          // Whether the boolean is valid
+    Bool notValid  ()   {return new Bool(!v);}                                                                          // Whether the boolean is invalid
+    Bool invalidate()   {new I() {void action() {v = false;}};        return this;}                                     // Invalidate the boolean
 
     public String toString() {return v ? ""+i : "undefined Bool";}                                                      // Print the boolean
    }
@@ -454,11 +454,11 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
-    Int dup   ()      {return new Int(this);}                                                                           // Duplicate an integer so that the duplicated version can be modified without modifying the original
-    Int copy  (Int I) {                           new I() {void action() {i = I.i; v = I.v;}};     return this;}        // Copy the state of an integer without regard as to whether it is valid or not
-    Bool valid    ()  {final Bool b = new Bool(); new I() {void action() {b.i =  v; b.v = true;}}; return b;}           // Whether the integer is valid
-    Bool notValid ()  {final Bool b = new Bool(); new I() {void action() {b.i = !v; b.v = true;}}; return b;}           // Whether the integer is invalid
-    Int invalidate()  {                           new I() {void action() {v = false;}};            return this;}        // Invalidate the integer
+    Int  dup       () {return new Int(this);}                                                                           // Duplicate an integer so that the duplicated version can be modified without modifying the original
+    Int  copy (Int I) {                           new I() {void action() {i = I.i; v = I.v;}};     return this;}        // Copy the state of an integer without regard as to whether it is valid or not
+    Bool valid     () {final Bool b = new Bool(); new I() {void action() {b.i =  v; b.v = true;}}; return b;}           // Whether the integer is valid
+    Bool notValid  () {final Bool b = new Bool(); new I() {void action() {b.i = !v; b.v = true;}}; return b;}           // Whether the integer is invalid
+    Int  invalidate() {                           new I() {void action() {v = false;}};            return this;}        // Invalidate the integer
 
     Int  bclr (Int I) {new I() {void action() {bclrEx(I);}}; return this;}                                              // Clear the indicated bit
     Int  bset (Int I) {new I() {void action() {bsetEx(I);}}; return this;}                                              // Set the indicated bit
