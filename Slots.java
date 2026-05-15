@@ -96,23 +96,20 @@ class Slots extends Program                                                     
   Int locateFirstUsedSlot() {return usedSlots.firstOne().position();}                                                   // First available slot
   Int locateLastUsedSlot()  {return usedSlots.lastOne().position();}                                                    // Absolute position of the last slot in use
 
-
   Int locateFirstUnusedKey()                                                                                            // Absolute position of the first unused key
    {final BitSet.Pos p = usedKeys.firstZero();
     final Int        f = new Int(); new If (p.valid()) {void Then() {f.set(p);}}; return f;
    }
 
-//  Slot stepLeft()                                                                                                     // Step left to prior occupied slot assuming that such a step is possible
-//   {final BitSet.Pos q = usedSlots.new Pos(value());
-//    final BitSet.Pos p = usedSlots.prevOne(q);
-//    return valid_Slot(p.valid(), ()->p.position());
-//   }
-//
-//  Slot stepRight()                                                                                                    // Step right to the next occupied slot assuming that such a step is possible
-//   {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
-//    final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-//    return valid_Slot(p.valid(), ()->p.position());
-//   }
+  Int stepLeft(Int Start)                                                                                               // Step left to prior occupied slot assuming that such a step is possible
+   {final BitSet.Pos q = usedSlots.new Pos(Start);
+    return usedSlots.prevOne(q).position();
+   }
+
+  Int stepRight(Int Start)                                                                                              // Step right to the next occupied slot assuming that such a step is possible
+   {final BitSet.Pos q = usedSlots.new Pos(Start);
+    return usedSlots.nextOne(q).position();
+   }
 
 /*
 
