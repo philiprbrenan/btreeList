@@ -22,13 +22,6 @@ class Slots extends Program                                                     
   final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout the slots
-/*
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
-usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
-usedKeys :    X   X   X   X   X   X   X   X
-keys     :   14  13  16  15  18  17  12  11
-*/
 
   static class Build                                                                                                    // Specification of slots
    {int numberOfRefs = 2;                                                                                               // Number of refernces in the slots
@@ -99,12 +92,34 @@ keys     :   14  13  16  15  18  17  12  11
   int numberOfRefs ()       {return numberOfRefs;}                                                                      // The number of references in the slots definition
   int numberOfSlots()       {return numberOfRefs()<<1;}                                                                 // Number of slots from number of refs
   int redistributionWidth() {return (int)java.lang.Math.sqrt(numberOfRefs());}                                          // Redistribute if the next slot is further than this
+
+  Int locateFirstUsedSlot()                                                                                             // First available slot
+   {final BitSet.Pos p = usedSlots.firstOne();
+    final Int f = new Int();
+    new If (p.valid()) {void Then() {f.set(p);}};
+    return f;
+   }
+
+  Int locateLastUsedSlot()                                                                                              // Absolute position of the last slot in use
+   {final BitSet.Pos p = usedSlots.lastOne();
+    final Int        f = new Int();
+    new If (p.valid()) {void Then() {f.set(p);}};
+    return f;
+   }
+
+  Int locateFirstUnusedKey()                                                                                            // Absolute position of the first unused key
+   {final BitSet.Pos p = usedKeys.firstZero();
+    final Int        f = new Int();
+    new If (p.valid()) {void Then() {f.set(p);}};
+    return f;
+   }
+
 /*
   void initialize()                                                                                                     // Clear all the slots
    {memory.usedSlotsBits.initialize();
     memory.usedKeysBits .initialize();
    }
-*/
+
   class slot extends Int                                                                                                // A dereferenced slot
    {slot()           {super();}                                                                                         // A not valid dereferenced slot
     slot(int Value)  {super(Value);}                                                                                    // A valid dereferenced slot
@@ -114,7 +129,7 @@ keys     :   14  13  16  15  18  17  12  11
      {return "slot: "+i();
      }
    }
-/*
+
   class Slot extends Int                                                                                                // A reference to a slot
    {Slot()            {super();}                                                                                        // An invalid slot
     Slot(int Value)   {super(Value);}                                                                                   // A valid slot
@@ -803,8 +818,13 @@ keys     :   14  13  16  15  18  17  12  11
         final Bool E = usedSlots.empty(); ok(()->E, false);
         final Bool F = usedSlots.full (); ok(()->F, false);
         putSlot(new Int(0), new Int(1));
+
+        final Int fs = locateFirstUsedSlot(); ok(()->fs, 0);
+        final Int ls = locateLastUsedSlot (); ok(()->ls, 2);
+
         putKey (new Int(1), new Int(11));
         putKey (new Int(3), new Int(22));
+
         ok(()->this, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -826,6 +846,11 @@ keys     :    0  11   0   0   0   0   0   0
         for (int i = 0, N = numberOfRefs(); i < N; i++) putKey (new Int(i), new Int(i+1));
         final Bool re = usedKeys.empty(); ok(()->re, false);
         final Bool rf = usedKeys.full (); ok(()->rf, true);
+
+        delKey(new Int(3)); final Int k1 = locateFirstUnusedKey(); ok(()->k1, 3);
+        delKey(new Int(4)); final Int k2 = locateFirstUnusedKey(); ok(()->k2, 3);
+        delKey(new Int(2)); final Int k3 = locateFirstUnusedKey(); ok(()->k3, 2);
+
         execute();
        }
      };
