@@ -137,6 +137,21 @@ class Slots extends Program                                                     
     return r;
    }
 
+  Int allocKey()                                                                                                        // Allocate a key
+   {final Int I = locateFirstUnusedKey();
+    new If (I.valid())                                                                                                  // Found an empty key
+     {void Then()
+       {usedKeys.set(usedKeys.new Pos(I), new Bool(true));
+       }
+      void Else()                                                                                                       // No more keys slots available
+       {new I() {void action() {stop("No more slots available in this set of slots");}};
+       }
+     };
+    return I;
+   }
+
+  void freeRef(Int Key) {usedKeys.setBit(usedKeys.new Pos(Key), new Bool(false));}                                      // Free a reference to one of the keys in the slots
+
   //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
 
 //  Slots duplicateSlots()                                                                                                // Copy the source slots
@@ -934,6 +949,45 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
     test_locateNearestFreeSlot(false);
    }
 
+  static void test_alloc(boolean Ex)
+   {final Slots s = new Slots(4)
+     {void slotsCode()
+       {immediate(Ex);
+        putKey(new Int(2),  new Int(1));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   .   .
+usedKeys :    .   .   X   .
+keys     :    0   0   1   0
+""");
+
+        final Int k0 = allocKey(); putKey(k0,  new Int(2));
+        final Int k1 = allocKey(); putKey(k1,  new Int(3));
+        final Int k4 = allocKey(); putKey(k4,  new Int(4));
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   .   .
+usedKeys :    X   X   X   X
+keys     :    2   3   1   4
+""");
+
+        execute();
+       }
+     };
+   }
+
+  static void test_alloc()
+   {//test_alloc(true);
+    test_alloc(false);
+   }
+
 /*
   static void test_locateNearestFreeSlot()
    {final Slots s = new Slots(8);
@@ -1264,6 +1318,7 @@ keys     :   14   0  13   0  12   0  10  11
    {//oldTests();
     //test_slots();
     test_locateNearestFreeSlot();
+    test_alloc();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
