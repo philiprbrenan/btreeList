@@ -532,7 +532,6 @@ public class Program extends Test                                               
     Int getInt(Int I)                                                                                                   // Get the int at the indicated position
      {final int N = Integer.BYTES;
       final Int r = new Int();
-      say("AAAA", r);
       new I()
        {void action()
          {final int p = I.i();
@@ -542,10 +541,8 @@ public class Program extends Test                                               
           final int d = bytes[p+3];
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
-      say("BBBB", R);
          }
        };
-      say("CCCC", r);
       return r;
      }
 
@@ -741,7 +738,13 @@ public class Program extends Test                                               
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
-  <A, B> void ok(Supplier<A> a, B b) {new I() {void action() {ok(a.get(), b);}};}                                       // Test a result of delayed execution against a known result while the program is still executing
+  <A, B> void ok(Supplier<A> a, B b)                                                                                    // Test a result of delayed execution against a known result while the program is still executing
+   {new I()
+     {void action()
+       {if (!ok(a.get(), b)) say("====\n", traceBack);
+       }
+     };
+   }
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
