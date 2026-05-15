@@ -87,7 +87,7 @@ public class BitSet extends Program                                             
    }
 
   class Pos extends Int                                                                                                 // A position of a bit in the bit set
-   {Int position() {return dup();}                                                                                      // Current position
+   {Int position()           {return dup();}                                                                            // Current position
     public Pos()             {super();}                                                                                 // Construct an invalid bit position
     public Pos(int Position) {super(Position);}                                                                         // Construct a valid bit position
     public Pos(Int Position) {super(Position);}                                                                         // Construct a bit position
