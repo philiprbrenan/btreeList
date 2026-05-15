@@ -1342,23 +1342,15 @@ keys     :   14   0  13   0  12   0  10  11
    }
 */
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {////test_locateNearestFreeSlot();
-    //test_redistribute();
-    //test_ifd();
-    //test_idn();
-    //test_tooManySearches();
-    //test_locateFirstGeKey();
-    //test_compactLeft();
-    //test_compactRight();
-    //test_memory();
-   }
-
-  static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    //test_slots();
+   {test_slots();
     test_locateNearestFreeSlot();
     test_alloc();
     test_set_del_slot_key();
+   }
+
+  static void newTests()                                                                                                // Tests being worked on
+   {oldTests();
+    //test_set_del_slot_key();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
