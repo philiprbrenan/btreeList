@@ -72,22 +72,6 @@ class Slots extends Program                                                     
   Bool empty() {return usedKeys.empty();}                                                                               // All bits in the corresponding bitset are unused so the Slots must be empty
   Bool full () {return usedKeys.full ();}                                                                               // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
 
-  //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
-
-//  Slots duplicateSlots()                                                                                                // Copy the source slots
-//   {final Slots t = new Slots(numberOfRefs, byteMemory);
-//    System.arraycopy(byteMemory.bytes, byteMemory.start, t.byteMemory.bytes, byteMemory.start, byteMemory.width);
-//    return t;                                                                                                           // The copied slots
-//   }
-//
-//  Slots copySlots(Slots Source)                                                                                         // Copy the source slots
-//   {final int n = numberOfRefs, N = Source.numberOfRefs, w = byteMemory.width, W = Source.byteMemory.width;
-//    if (n != N) stop("Different number of refs:", n, N);
-//    if (w != W) stop("Different widths:", w, W);
-//    System.arraycopy(Source.byteMemory.bytes, Source.byteMemory.start, byteMemory.bytes, byteMemory.start, w);
-//    return this;                                                                                                        // The copied slots
-//   }
-
   void invalidateMemory()   {byteMemoryRef.invalidate(size);}                                                           // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   int numberOfRefs ()       {return numberOfRefs;}                                                                      // The number of references in the slots definition
   int numberOfSlots()       {return numberOfRefs()<<1;}                                                                 // Number of slots from number of refs
@@ -111,6 +95,64 @@ class Slots extends Program                                                     
     return usedSlots.nextOne(q).position();
    }
 
+  Int locateNearestFreeSlot(Int Position, Bool Prev)                                                                    // Relative position of the nearest free slot to the indicated position if there is one. Prev will be true if the previos free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
+   {final Int r = new Int(0);
+    Prev.invalidate();                                                                                                  // Assume no free slot will be found
+    new If (getSlotInUse(Position))                                                                                     // The slot is in use
+     {void Then()
+       {final BitSet.Pos p = usedSlots.prevZero(usedSlots.new Pos(Position));                                           // Prev free slot
+        final BitSet.Pos n = usedSlots.nextZero(usedSlots.new Pos(Position));                                           // Next free slot
+        final Bool       d = new Bool(false);                                                                           // Done when set
+
+        new If (p.valid())                                                                                              // Previous is valid
+         {void Then()
+           {new If (n.valid())                                                                                          // Next is valid
+             {void Then()
+               {new If (Position.Sub(p).lt(n.Sub(Position)))                                                            // Favor next over previous if they are bith the same distance appart
+                 {void Then()
+                   {r.set(p); Prev.set(true);                                                                           // Previous is closest
+                   }
+                  void Else()
+                   {r.set(n); Prev.set(false);                                                                          // Next is closest
+                   }
+                 };
+               }
+              void Else()
+               {r.set(p); Prev.set(true);                                                                               // Previous is closest
+                new I() {void action() {say("CCCC");}};
+               }
+             };
+           }
+          void Else()                                                                                                   // Pevious is invalid
+           {new If (n.valid())                                                                                          // Next is valid
+             {void Then()
+               {r.set(n); Prev.set(false);                                                                              // Next is closest
+                new I() {void action() {say("DDDDD");}};
+               }
+             };
+           }
+         };
+       }
+     };
+    return r;
+   }
+
+  //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
+
+//  Slots duplicateSlots()                                                                                                // Copy the source slots
+//   {final Slots t = new Slots(numberOfRefs, byteMemory);
+//    System.arraycopy(byteMemory.bytes, byteMemory.start, t.byteMemory.bytes, byteMemory.start, byteMemory.width);
+//    return t;                                                                                                           // The copied slots
+//   }
+//
+//  Slots copySlots(Slots Source)                                                                                         // Copy the source slots
+//   {final int n = numberOfRefs, N = Source.numberOfRefs, w = byteMemory.width, W = Source.byteMemory.width;
+//    if (n != N) stop("Different number of refs:", n, N);
+//    if (w != W) stop("Different widths:", w, W);
+//    System.arraycopy(Source.byteMemory.bytes, Source.byteMemory.start, byteMemory.bytes, byteMemory.start, w);
+//    return this;                                                                                                        // The copied slots
+//   }
+
 /*
 
   class Slot extends Int                                                                                                // A reference to a slot
@@ -132,7 +174,7 @@ class Slots extends Program                                                     
      {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
       final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
       return valid_Slot(p.valid(), ()->p.position());
-     }
+     }                                                                          Int Start
 
     Slot locatePrevUsedSlot()                                                                                           // Absolute position of this slot if it is in use or else the next lower used slot
      {return choose_Slot(usedSlots(this), ()->this, ()->stepLeft());
@@ -844,6 +886,54 @@ keys     :    0  11   0   0   0   0   0   0
     test_slots(false);
    }
 
+  static void test_locateNearestFreeSlot(boolean Ex)
+   {final Slots s = new Slots(16)
+     {void slotsCode()
+       {immediate(Ex);
+        putSlot(new Int(2),  new Int(1));
+        putSlot(new Int(4),  new Int(2));
+        putSlot(new Int(5),  new Int(3));
+        putSlot(new Int(6),  new Int(4));
+        putSlot(new Int(9),  new Int(5));
+        putSlot(new Int(10), new Int(6));
+        putSlot(new Int(12), new Int(7));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs: 16
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
+slots    :    0   0   1   0   2   3   4   0   0   5   6   0   7   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   X   X   X   .   .   X   X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+""");
+
+        final Bool P = new Bool();
+        final Int  q0 = locateNearestFreeSlot(new Int( 0), P); ok(()-> q0,  0); final Bool  p0 = P.valid(); ok(()-> p0, false);
+        final Int  q1 = locateNearestFreeSlot(new Int( 1), P); ok(()-> q1,  0); final Bool  p1 = P.valid(); ok(()-> p1, false);
+        final Int  q2 = locateNearestFreeSlot(new Int( 2), P); ok(()-> q2,  3);                             ok(()-> P,  false);
+        final Int  q3 = locateNearestFreeSlot(new Int( 3), P); ok(()-> q3,  0); final Bool  p3 = P.valid(); ok(()-> p3, false);
+        final Int  q4 = locateNearestFreeSlot(new Int( 4), P); ok(()-> q4,  3);                             ok(()-> P,  true);
+        final Int  q5 = locateNearestFreeSlot(new Int( 5), P); ok(()-> q5,  7);                             ok(()-> P,  false);
+        final Int  q6 = locateNearestFreeSlot(new Int( 6), P); ok(()-> q6,  7);                             ok(()-> P,  false);
+        final Int  q7 = locateNearestFreeSlot(new Int( 7), P); ok(()-> q7,  0); final Bool  p7 = P.valid(); ok(()-> p7, false);
+        final Int  q8 = locateNearestFreeSlot(new Int( 8), P); ok(()-> q8,  0); final Bool  p8 = P.valid(); ok(()-> p8, false);
+        final Int  q9 = locateNearestFreeSlot(new Int( 9), P); ok(()-> q9,  8);                             ok(()-> P,  true);
+        final Int q10 = locateNearestFreeSlot(new Int(10), P); ok(()->q10, 11);                             ok(()-> P,  false);
+        final Int q11 = locateNearestFreeSlot(new Int(11), P); ok(()->q11,  0); final Bool p11 = P.valid(); ok(()->p11, false);
+        final Int q12 = locateNearestFreeSlot(new Int(12), P); ok(()->q12, 13);                             ok(()-> P,  false);
+        final Int q13 = locateNearestFreeSlot(new Int(13), P); ok(()->q13,  0); final Bool p13 = P.valid(); ok(()->p13, false);
+
+        execute();
+       }
+     };
+   }
+
+  static void test_locateNearestFreeSlot()
+   {test_locateNearestFreeSlot(true);
+    test_locateNearestFreeSlot(false);
+   }
+
 /*
   static void test_locateNearestFreeSlot()
    {final Slots s = new Slots(8);
@@ -1172,7 +1262,8 @@ keys     :   14   0  13   0  12   0  10  11
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots();
+    //test_slots();
+    test_locateNearestFreeSlot();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
