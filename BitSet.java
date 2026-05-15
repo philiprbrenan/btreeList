@@ -159,8 +159,6 @@ public class BitSet extends Program                                             
         final Int  q = p.Add(w).add(B);
         final Int  Q = p.Add2(B);
         c.set();                                                                                                        // Complete early if we found a bit that does not need setting
-        assert !executing();
-                // b ?
         new If (B.Up().inc().lt(w).and(getBitNC(new Pos(Q)).Flip(), getBitNC(new Pos(Q.Inc())).Flip()))                 // Check both bits in the previous row are off
          {void Then()
            {final Pos r = new Pos(q);
@@ -268,12 +266,10 @@ public class BitSet extends Program                                             
     final Pos p = new Pos(0);
     final Pos r = new Pos();
 
-    new I() {void action() {say("BBBB start", r); }};
     new If (getBit(p))
-     {void Then() {r.set(p);           new I() {void action() {say("BBBB bitset then"); }};  }
-      void Else() {r.copy(nextOne(p)); new I() {void action() {say("BBBB bitset else"); }};  }
+     {void Then() {r.set(p);          }
+      void Else() {r.copy(nextOne(p));}
      };
-    new I() {void action() {say("BBBB end", r); }};
     return r;                                                                                                           // Result is valid if found
    }
 
