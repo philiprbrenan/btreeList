@@ -93,42 +93,28 @@ class Slots extends Program                                                     
   int numberOfSlots()       {return numberOfRefs()<<1;}                                                                 // Number of slots from number of refs
   int redistributionWidth() {return (int)java.lang.Math.sqrt(numberOfRefs());}                                          // Redistribute if the next slot is further than this
 
-  Int locateFirstUsedSlot()                                                                                             // First available slot
-   {final BitSet.Pos p = usedSlots.firstOne();
-    final Int f = new Int();
-    new If (p.valid()) {void Then() {f.set(p);}};
-    return f;
-   }
+  Int locateFirstUsedSlot() {return usedSlots.firstOne().position();}                                                   // First available slot
+  Int locateLastUsedSlot()  {return usedSlots.lastOne().position();}                                                    // Absolute position of the last slot in use
 
-  Int locateLastUsedSlot()                                                                                              // Absolute position of the last slot in use
-   {final BitSet.Pos p = usedSlots.lastOne();
-    final Int        f = new Int();
-    new If (p.valid()) {void Then() {f.set(p);}};
-    return f;
-   }
 
   Int locateFirstUnusedKey()                                                                                            // Absolute position of the first unused key
    {final BitSet.Pos p = usedKeys.firstZero();
-    final Int        f = new Int();
-    new If (p.valid()) {void Then() {f.set(p);}};
-    return f;
+    final Int        f = new Int(); new If (p.valid()) {void Then() {f.set(p);}}; return f;
    }
+
+//  Slot stepLeft()                                                                                                     // Step left to prior occupied slot assuming that such a step is possible
+//   {final BitSet.Pos q = usedSlots.new Pos(value());
+//    final BitSet.Pos p = usedSlots.prevOne(q);
+//    return valid_Slot(p.valid(), ()->p.position());
+//   }
+//
+//  Slot stepRight()                                                                                                    // Step right to the next occupied slot assuming that such a step is possible
+//   {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
+//    final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
+//    return valid_Slot(p.valid(), ()->p.position());
+//   }
 
 /*
-  void initialize()                                                                                                     // Clear all the slots
-   {memory.usedSlotsBits.initialize();
-    memory.usedKeysBits .initialize();
-   }
-
-  class slot extends Int                                                                                                // A dereferenced slot
-   {slot()           {super();}                                                                                         // A not valid dereferenced slot
-    slot(int Value)  {super(Value);}                                                                                    // A valid dereferenced slot
-    slot(Int Value)  {super(Value);}                                                                                    // A dereferenced slot
-    Int      value() {return this;}
-    public String toString()
-     {return "slot: "+i();
-     }
-   }
 
   class Slot extends Int                                                                                                // A reference to a slot
    {Slot()            {super();}                                                                                        // An invalid slot
@@ -149,7 +135,7 @@ class Slots extends Program                                                     
      {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
       final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
       return valid_Slot(p.valid(), ()->p.position());
-     }                                            setSlots
+     }
 
     Slot locatePrevUsedSlot()                                                                                           // Absolute position of this slot if it is in use or else the next lower used slot
      {return choose_Slot(usedSlots(this), ()->this, ()->stepLeft());
