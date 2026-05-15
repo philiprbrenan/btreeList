@@ -162,6 +162,15 @@ class Slots extends Program                                                     
    {for (int i : range(Slots.length)) putSlot(new Int(Slots[i]), new Int(i+1));
    }
 
+  void setSlotAndKey(Int P, Int Q, Int K) {putSlot(P, Q); putKey (Q, K);}                                               // Set a key and a slot to point to the key
+  void delSlotAndKey(Int P)
+   {new If (getSlotInUse(P))
+     {void Then()
+       {delKey(getSlotValue(P)); delSlot(P);
+       }
+      void Else() {new I() {void action() {stop("Slot not in use:", P);}};}                                                                                 //
+     };
+   }
 
 //  Slots duplicateSlots()                                                                                                // Copy the source slots
 //   {final Slots t = new Slots(numberOfRefs, byteMemory);
@@ -976,8 +985,46 @@ keys     :    2   3   1   4
    }
 
   static void test_alloc()
-   {//test_alloc(true);
+   {test_alloc(true);
     test_alloc(false);
+   }
+
+  static void test_set_del_slot_key(boolean Ex)
+   {final Slots s = new Slots(4)
+     {void slotsCode()
+       {immediate(Ex);
+        setSlotAndKey(new Int(3),  new Int(2),  new Int(1));
+        setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   0   2   3   0   0   0
+usedSlots:    .   .   .   X   X   .   .   .
+usedKeys :    .   .   X   X
+keys     :    0   0   1   2
+""");
+
+        delSlotAndKey(new Int(3));
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slots    :    0   0   0   0   3   0   0   0
+usedSlots:    .   .   .   .   X   .   .   .
+usedKeys :    .   .   .   X
+keys     :    0   0   0   2
+""");
+
+        execute();
+       }
+     };
+   }
+
+  static void test_set_del_slot_key()
+   {test_set_del_slot_key(true);
+    test_set_del_slot_key(false);
    }
 
 /*
@@ -1311,6 +1358,7 @@ keys     :   14   0  13   0  12   0  10  11
     //test_slots();
     test_locateNearestFreeSlot();
     test_alloc();
+    test_set_del_slot_key();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
