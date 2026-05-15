@@ -152,7 +152,16 @@ class Slots extends Program                                                     
 
   void freeRef(Int Key) {usedKeys.setBit(usedKeys.new Pos(Key), new Bool(false));}                                      // Free a reference to one of the keys in the slots
 
-  //void setMemory(ByteBuffer Bytes) {memory = new Memory(Bytes);}                                                      // Set memory to be used
+  Bool eq(Int Index, Int Key) {return Key.eq(getKeyValue(Index));}                                                      // Check that the specified key is equal to the indexed key
+  Bool le(Int Index, Int Key) {return Key.le(getKeyValue(Index));}                                                      // Check that the specified key is less than or equal to the indexed key
+  Bool lt(Int Index, Int Key) {return Key.lt(getKeyValue(Index));}                                                      // Check that the specified key is less than to the indexed key
+  Bool ge(Int Index, Int Key) {return Key.ge(getKeyValue(Index));}                                                      // Check that the specified key is greater than or equal to the indexed key
+  Bool gt(Int Index, Int Key) {return Key.gt(getKeyValue(Index));}                                                      // Check that the specified key is greater than the the indexed key
+
+  void setSlots(int...Slots)                                                                                            // Set slots for testing
+   {for (int i : range(Slots.length)) putSlot(new Int(Slots[i]), new Int(i+1));
+   }
+
 
 //  Slots duplicateSlots()                                                                                                // Copy the source slots
 //   {final Slots t = new Slots(numberOfRefs, byteMemory);
@@ -179,17 +188,6 @@ class Slots extends Program                                                     
     Slot      right() {return new Slot(Inc());}                                                                         // Step right
     Slot       left() {return new Slot(Dec());}                                                                         // Step left
 
-    Slot stepLeft()                                                                                                     // Step left to prior occupied slot assuming that such a step is possible
-     {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
-      final BitSet.Pos p = memory.usedSlotsBits.prevOne(q);
-      return valid_Slot(p.valid(), ()->p.position());
-     }
-
-    Slot stepRight()                                                                                                    // Step right to the next occupied slot assuming that such a step is possible
-     {final BitSet.Pos q = memory.usedSlotsBits.new Pos(value());
-      final BitSet.Pos p = memory.usedSlotsBits.nextOne(q);
-      return valid_Slot(p.valid(), ()->p.position());
-     }                                                                          Int Start
 
     Slot locatePrevUsedSlot()                                                                                           // Absolute position of this slot if it is in use or else the next lower used slot
      {return choose_Slot(usedSlots(this), ()->this, ()->stepLeft());
@@ -905,13 +903,7 @@ keys     :    0  11   0   0   0   0   0   0
    {final Slots s = new Slots(16)
      {void slotsCode()
        {immediate(Ex);
-        putSlot(new Int(2),  new Int(1));
-        putSlot(new Int(4),  new Int(2));
-        putSlot(new Int(5),  new Int(3));
-        putSlot(new Int(6),  new Int(4));
-        putSlot(new Int(9),  new Int(5));
-        putSlot(new Int(10), new Int(6));
-        putSlot(new Int(12), new Int(7));
+        setSlots(2, 4, 5, 6, 9, 10, 12);
         final Slots s = this;
         //new I() {void action() {stop(s);}};
         ok(()->this, """
