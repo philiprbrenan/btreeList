@@ -61,10 +61,10 @@ keys     :   14  13  16  15  18  17  12  11
   void slotsCode() {}                                                                                                   // Override this method to provide code for testing the slots
 
   Slots(int NumberOfRefs) {this(new Build().numberOfRefs(NumberOfRefs));}                                               // Create the slots in local memory for testing
-  void putSlot(Int Index, Int Value) {refSlots.putInt(Index, Value);      usedSlots.setBit(usedSlots.new Pos(Index), new Bool(true));}     // Set a slot
-  void delSlot(Int Index)            {refSlots.putInt(Index, new Int(0)); usedSlots.setBit(usedSlots.new Pos(Index), new Bool(false));}    // Clear a slot
-  void putKey (Int Index, Int Key)   {refKeys .putInt(Index, Key);        usedKeys .setBit(usedKeys .new Pos(Index), new Bool(true));}     // Set a key
-  void delKey (Int Index)            {refKeys .putInt(Index, new Int(0)); usedKeys .setBit(usedKeys .new Pos(Index), new Bool(false));}    // Clear a key
+  void putSlot(Int Index, Int Value) {refSlots.putInt(Index, Value);      usedSlots.set(usedSlots.new Pos(Index), new Bool(true));}     // Set a slot
+  void delSlot(Int Index)            {refSlots.putInt(Index, new Int(0)); usedSlots.set(usedSlots.new Pos(Index), new Bool(false));}    // Clear a slot
+  void putKey (Int Index, Int Key)   {refKeys .putInt(Index, Key);        usedKeys .set(usedKeys .new Pos(Index), new Bool(true));}     // Set a key
+  void delKey (Int Index)            {refKeys .putInt(Index, new Int(0)); usedKeys .set(usedKeys .new Pos(Index), new Bool(false));}    // Clear a key
 
   Bool getSlotInUse(Int Index)       {return usedSlots.getBit(usedSlots   .new Pos(Index));}                            // Check whether a slot is in use
   Int  getSlotValue(Int Index)       {return refSlots .getInt(                     Index );}                            // Index to keys from slot
@@ -797,15 +797,11 @@ keys     :   14  13  16  15  18  17  12  11
    {final Slots s = new Slots(8)
      {void slotsCode()
        {immediate(Ex);
-        new I() {void action() {say("AAAA");}};
-        final Bool e = usedKeys.empty();
-        new I() {void action() {say("BBBB");}};
-        new I() {void action() {say("EEEE", e); }};
-        say("CCCC", code.size());
-        if (true) {execute(); return;}
-        ok(()->e, true);
+        final Bool e = usedSlots.empty(); ok(()->e, true);
+        final Bool f = usedSlots.full (); ok(()->f, false);
         putSlot(new Int(2), new Int(3));
-        ok(empty(), false);
+        final Bool E = usedSlots.empty(); ok(()->E, false);
+        final Bool F = usedSlots.full (); ok(()->F, false);
         putSlot(new Int(0), new Int(1));
         putKey (new Int(1), new Int(11));
         putKey (new Int(3), new Int(22));
@@ -827,20 +823,19 @@ usedSlots:    X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   .   .   .   .   .
 keys     :    0  11   0   0   0   0   0   0
 """);
+        for (int i = 0, N = numberOfRefs(); i < N; i++) putKey (new Int(i), new Int(i+1));
+        final Bool re = usedKeys.empty(); ok(()->re, false);
+        final Bool rf = usedKeys.full (); ok(()->rf, true);
         execute();
        }
      };
    }
 
   static void test_slots()
-   {//test_slots(true);
+   {test_slots(true);
     test_slots(false);
    }
 
-  static void test_slots2()
-   {final Slots s = new Slots(8);
-    //s.setSlots(2, 3, 5, 6, 7, 9, 11, 13);
-   }
 /*
   static void test_locateNearestFreeSlot()
    {final Slots s = new Slots(8);
