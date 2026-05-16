@@ -195,22 +195,22 @@ class Slots extends Program                                                     
      };
    }
 
-  private void moveSlot(BitSet.Pos s, BitSet.Pos S, Bool Continue)                                                      // Move a slot
+  private void moveSlot(BitSet.Pos T, BitSet.Pos S, Bool Continue)                                                      // Move a slot from source to target
    {new If (S.valid())
      {void Then()
        {final Int q = getSlotToKeyValue(S);
         delSlotToKeys(S);
-        putSlotToKeys(s, q);
+        putSlotToKeys(T, q);
         Continue.set(true);                                                                                             // Continue moving slots
        }
      };
    }
 
-  private void moveKey(BitSet.Pos k, BitSet.Pos K, Bool Continue)                                                       // Move a key
-   {final Int s = refKeysToSlots.getInt(K);                                                                             // The slot referencing the key
-    final Int q = getKeyValue(K);                                                                                       // The value of the key
+  private void moveKey(BitSet.Pos T, BitSet.Pos S, Bool Continue)                                                       // Move a key from the source poisitin to the target position
+   {final Int s = refKeysToSlots.getInt(S);                                                                             // The slot referencing the key
+    final Int q = getKeyValue(S);                                                                                       // The value of the key
     delSlotAndKey(s);                                                                                                   // Delete the slot and its associated key
-    setSlotAndKey(s, k, q);                                                                                             // Reinsert the key
+    setSlotAndKey(s, T, q);                                                                                             // Reinsert the key
     Continue.set(true);                                                                                                 // Continue moving keys
    }
 
@@ -317,15 +317,19 @@ class Slots extends Program                                                     
      };
    }
 
+  private void moveSlot(Int T, Int S)                                                                                   // Move a slot from the specified source position to the specified target position
+   {final Int k = getSlotToKeyValue(S);                                                                                 // Index of key being moved
+    final Int K = getKeyValue(k);                                                                                       // Value of key being moved
+    delSlotAndKey(S);                                                                                                   // Remove source
+    setSlotAndKey(T, k, K);                                                                                             // Reinsert source at target
+   }
+
   void shiftUpOne(Int Position, Int Width)                                                                              // Shift up the specified slots by one position to create a free space at the specified position
    {new ForCount(Width)                                                                                                 // Move the indicated slots up one position
      {void body(Int Index)
        {final Int t = Position.Add(Width).sub(Index);                                                                   // Index of source element to be moved
         final Int s = t.Dec();                                                                                          // Index in slots of target element to be set
-        final Int k = getSlotToKeyValue(s);                                                                             // Index of key being moved
-        final Int K = getKeyValue(k);                                                                                   // Value of key being moved
-        delSlotAndKey(s);
-        setSlotAndKey(t, k, K);
+        moveSlot(t, s);
        }
      };
    }
@@ -334,12 +338,9 @@ class Slots extends Program                                                     
    {final Slots slots = this;
     new ForCount(Width)                                                                                                 // Move the indicated slots up one position
      {void body(Int Index)
-       {final Int t = Position.Sub(Width).add(Index);                                                                              // Index of source element to be moved
+       {final Int t = Position.Sub(Width).add(Index);                                                                   // Index of source element to be moved
         final Int s = t.Inc();                                                                                          // Index in slots of target element to be set
-        final Int k = getSlotToKeyValue(s);                                                                             // Index of key being moved
-        final Int K = getKeyValue(k);                                                                                   // Value of key being moved
-        delSlotAndKey(s);
-        setSlotAndKey(t, k, K);
+        moveSlot(t, s);
        }
      };
    }
@@ -485,57 +486,6 @@ class Slots extends Program                                                     
   void freeRef(slot Ref) {usedKeys(Ref, new Bool(false));}                                                              // Free a reference to one of the keys in the slots
 
 //D2 Low level operations                                                                                               // Low level operations on slots
-
-  Int locateNearestFreeSlotToKey(Slot Position)                                                                              // Relative position of the nearest free slot to the indicated position if there is one.
-   {final Int r = new Int(0);
-    if (usedSlotsToKeys(Position).b())                                                                                        // The slot is not free already. If it is not free we do at least get an error if the specified position is invalid
-     {final Int        Q = Position.value();                                                                            // The current position
-      final BitSet     s = memory.usedSlotsBits;                                                                        // The bitset to query
-      final BitSet.Pos p = s.prevZero(s.new Pos(Q));                                                                    // Prev free slot
-      final BitSet.Pos n = s.nextZero(s.new Pos(Q));                                                                    // Next free slot
-      final Bool       d = new Bool().clear();                                                                          // Done when set
-
-      if (p.notValid().b() && n.notValid().b()) stop("No more free slots");                                             // The caller should check that the slots are not full before calling us
-
-      new If (p.notValid().and(()->{return n.valid();}))                                                                // Next free slot because no prev free slot
-       {void Then()
-         {r.set(n.position().Sub(Q)); d.set();
-         }
-       };
-      new If (d.Flip().and                                                                                              // Prev free slot because no next free slot
-       (()->{return p.valid();},
-        ()->{return n.notValid();}))
-       {void Then()
-         {r.set(p.position().Sub(Q)); d.set();
-         }
-       };
-      new If (d.Flip())                                                                                                 // Choose nearest slot favoring lower slot if they are both the same distance away
-       {void Then()
-         {final Int P = p.position().Sub(Q), N = n.position().Sub(Q);                                                   // Relative positions
-          r.set(If (P.Neg().le(N), new Int(), ()->P, ()->N));
-         }
-       };
-     }
-    return r;
-   }
-
-  void shift(Int Position, Int Width)                                                                                   // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
-   {new If (Width.ne(0))                                                                                                // Non zero shift
-     {void Then()
-       {final Bool p = Width.gt(0);                                                                                     // Whether we are shifting up or down
-        new For (If (p, new Int(), ()->Width, ()->Width.Neg()))                                                                    // Move each slot
-         {void body(Int i, Bool C)
-           {final Int  d = If (p, new Int(), ()->i.Neg(), ()->i);
-            final Slot P = new Slot(Position.Add(Width).add(d));
-            slots(P, slots(If (p, new Slot(), ()->P.left(), ()->P.right())));                                           // Move slot
-            C.set();
-           }
-         };
-        usedSlotsToKeys(new Slot(Position.Add(Width)), new Bool(true));                                                       // We only move occupied slots
-       }
-     };
-   }
-
 
   Bool mergeSlot(Slots S, Slot I, slot J)                                                                               // Merge a slot
    {final Bool m = new Bool().clear();                                                                                  // Whether a successful merge occurred
