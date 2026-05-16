@@ -161,7 +161,7 @@ public class Program extends Test                                               
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
-    Bool           ()          {ai(); }                                                                                 // Constructors
+    Bool           ()          {ai(); invalidate();}                                                                    // Constructors
     Bool           (boolean I) {ai(); ie(Ops.set, I);}
     Bool           (Bool    I) {ai(); ie(Ops.set, I);}
     boolean       b()          {x(); return i;}
@@ -318,7 +318,7 @@ public class Program extends Test                                               
     boolean     v()  {     return v;}                                                                                   // Value has been set
     void        x()  {if (!v) variableNotSet("Int");}                                                                   // Check a value has been set for the integer
 
-    Int      ()      {ai(); }                                                                                           // Constructors
+    Int      ()      {ai(); invalidate();}                                                                              // Constructors
     Int (int I)      {ai(); ie(Ops.set, I);}
     Int (Int I)      {ai(); ie(Ops.set, I);}
 
