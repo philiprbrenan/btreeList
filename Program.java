@@ -104,6 +104,44 @@ public class Program extends Test                                               
     abstract void body(Int Index, Bool Continue);                                                                       // Body of the for loop - execute while in range and continuation requested
    }
 
+  abstract class ForCount                                                                                               // For loop for a precomputed number of times
+   {ForCount(Int Start, Int End)                                                                                        // Execute the loop the specified number of times
+     {final Int index = new Int();
+
+      if (immediate())                                                                                                  // Immediate execution
+       {for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
+         {if (trace) trace("ForCount "+i);
+          index.set(i);                                                                                                 // Set the index to each element of the specified range
+          body(index);                                                                                                  // Execute the loop
+         }
+       }
+      else                                                                                                              // Machine code
+       {index.set(Start);                                                                                               // Start index
+        final Label start = new Label();                                                                                // Start of for loop code
+        final Label   end = new Label();                                                                                // End of for loop code
+        if (trace) trace("ForCount "+index.i);
+        new I(true)                                                                                                     // The for loop will not be executed if the execution count is less than 1
+         {void action()
+           {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
+           }
+         };
+        body(index);                                                                                                    // Execute the loop
+        index.inc();                                                                                                    // Increment lop counter
+        new I(true)
+         {void action()
+           {program().pc = start.offset;                                                                                // Restart loop
+           }
+         };
+        end.set();                                                                                                      // End of the loop
+       }
+     }
+
+    ForCount(int End) {this(new Int(0), new Int(End));}                                                                 // Execute the loop the specified number of times as long as it returns true
+    ForCount(Int End) {this(new Int(0),         End);}                                                                  // Execute the loop the specified number of times as long as it returns true
+
+    abstract void body(Int Index);                                                                                      // Body of the for loop - execute while in range and continuation requested
+   }
+
   abstract class If                                                                                                     // If statement
    {If (boolean Condition)                                                                                              // A constant that selects code at compile time
      {if (Condition) Then(); else Else();
