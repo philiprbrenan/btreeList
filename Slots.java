@@ -290,6 +290,42 @@ class Slots extends Program                                                     
      };
    }
 
+  void redistribute()                                                                                                   // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order.
+   {final Slots slots = this;
+    new If (usedKeys.empty())                                                                                           // Something to redistribute
+     {void Then() {}
+      void Else()
+       {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
+        final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
+        compactLeft();                                                                                                  // Compact everything to the left
+        final BitSet.Pos  c = usedKeys.firstZero();                                                                     // Number of slots in use
+        final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
+        final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
+        final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
+        final Int         p = remainder.Down();                                                                         // Start position for first used slot
+say("NNNN",  N);
+say("RRRR",  R);
+say("cccc",  c);
+say("space", space);
+say("cover", cover);
+say("remainder", remainder);
+say("p",     p);
+        new For(c)                                                                                                      // Redistribute slots
+         {void body(Int Index, Bool Continue)                                                                           // Initialize background of slots
+           {final Int s = c.Dec().sub(Index);                                                                           // Index of source element to be moved
+            final Int t = p.Add(s.Mul(space)).add(s);                                                                   // Index in slots of target element to be set
+            final Int k = getKeyValue(s);
+say("BBBB source", s, "target", t, "key:", k, slots);
+            delSlotAndKey(s);
+say("CCCC source", s, "target", t, "key:", k, slots);
+            setSlotAndKey(t, s, k);
+            //Continue.set();
+           }
+         };
+       }
+     };
+   }
+
 //  Slots duplicateSlots()                                                                                                // Copy the source slots
 //   {final Slots t = new Slots(numberOfKeys, byteMemory);
 //    System.arraycopy(byteMemory.bytes, byteMemory.start, t.byteMemory.bytes, byteMemory.start, byteMemory.width);
@@ -1240,6 +1276,48 @@ keys     :    0   0   1   2
     test_compactRight(false);
    }
 
+
+  static void test_redistribute(boolean Ex)
+   {final Slots s = new Slots(4)
+     {void slotsCode()
+       {immediate(Ex);
+        setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
+        setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    0   0   1   0   3   0   0   0
+keysSlots:    0   2   0   4   0   0   0   0
+usedSlots:    .   .   X   .   X   .   .   .
+usedKeys :    .   X   .   X
+keys     :    0   1   0   2
+""");
+
+
+        redistribute();
+        new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    0   0   0   0   0   0   2   3
+keysSlots:    0   0   6   7   0   0   0   0
+usedSlots:    .   .   .   .   .   .   X   X
+usedKeys :    .   .   X   X
+keys     :    0   0   1   2
+""");
+
+        execute();
+       }
+     };
+   }
+
+  static void test_redistribute()
+   {test_redistribute(true);
+    test_redistribute(false);
+   }
+
 /*
   static void test_locateNearestFreeSlotToKey()
    {final Slots s = new Slots(8);
@@ -1560,11 +1638,12 @@ keys     :   14   0  13   0  12   0  10  11
     test_alloc();
     test_set_del_slot_key();
     test_compactLeft();
+    test_compactRight();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    test_compactRight();
+   {//oldTests();
+    test_redistribute();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
