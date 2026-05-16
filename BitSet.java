@@ -239,20 +239,18 @@ public class BitSet extends Program                                             
    }
 
   public void initialize()                                                                                              // Clear all bits.
-   {new For(bitSize)                                                                                                    // Step from root to leaf
-     {void body(Int I, Bool C)
+   {new ForCount(bitSize)                                                                                               // Step from root to leaf
+     {void body(Int I)
        {setBitNC(new Pos(I), new Bool(false));
-        C.set();
        }
      };
 
     new If (zero)                                                                                                       // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
      {void Then()
        {final Int p = addressZeroTree();                                                                                // Position in level, level, width
-        new For(bitSize)                                                                                                // For loop to set bits along path in One tree to actual bit
-         {void body(Int I, Bool C)
+        new ForCount(bitSize)                                                                                           // For loop to set bits along path in One tree to actual bit
+         {void body(Int I)
            {setBitNC(new Pos(p.Add(I)), new Bool(true));
-            C.set();
            }
          };
        }
@@ -300,16 +298,12 @@ public class BitSet extends Program                                             
 
         new If (c.lt(w).and(getBitNC(new Pos(p.Add(c)))))                                                               // Found next up bit
          {void Then()
-           {new For(i)                                                                                                  // Step down to the leaves
-             {void body(Int j, Bool K)                                                                                  // Step down to the leaves
-               {
-
-                 moveUpOneLayer(c, p, w);                                                                                // Move up to next layer
+           {new ForCount(i)                                                                                             // Step down to the leaves
+             {void body(Int j)                                                                                          // Step down to the leaves
+               {moveUpOneLayer(c, p, w);                                                                                // Move up to next layer
                 new If (getBitNC(new Pos(p.Add(c))).flip())                                                             // Follow path as low as possible
                  {void Then() {c.inc();}
                  };
-//              c.add(getBitNC(new Pos(p.Add(c))).b() ? 0 : 1);                                                         // Follow path as low as possible
-                K.set();                                                                                                // Continue the loop
                }
              };
             Next.set(c); C.clear();                                                                                     // Found the next element
@@ -419,14 +413,12 @@ public class BitSet extends Program                                             
                   void Else()
                    {new If (getBitNC(new Pos(p.Add(B))))                                                                // Found next up bit
                      {void Then()
-                       {new For(i)                                                                                      // Step down to the leaves
-                         {void body(Int j, Bool K)                                                                      // Step down to the leaves
+                       {new ForCount(i)                                                                                 // Step down to the leaves
+                         {void body(Int J)                                                                              // Step down to the leaves
                            {moveUpOneLayer(B, p, w);                                                                    // Move up one layer
                             new If (getBitNC(new Pos(p.Add(B))).flip())                                                 // Follow path as low as possible
                              {void Then() {B.inc();}
                              };
-                            //B.add(getBitNC(new Pos(p.Add(B))).b() ? 0 : 1);                                           // Follow path as low as possible
-                            K.set();
                            }
                          };
                         final Pos P = new Pos(new Int(B.Add(B)));                                                       // Address next level of bits in tree
@@ -434,7 +426,6 @@ public class BitSet extends Program                                             
                          {void Then() {Next.set(P).inc();}
                           void Else() {Next.set(P);}
                          };
-                        //R.set(P.Add(getBit(new Pos(P)).b() ? 1 : 0));                                                 // Next zero bit from actual bits
                         C.clear();
                        }
                       void Else()
