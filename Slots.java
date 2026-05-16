@@ -16,8 +16,9 @@ class Slots extends Program                                                     
   ByteMemory.Ref byteMemoryRef = null;                                                                                  // Byte memory reference containing the slots
   final SlotsMemoryPositions slotsMemoryPositions;                                                                      // Memory layout
   final ByteMemory.Ref refSlotsToKeys;                                                                                  // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-  final ByteMemory.Ref refUsedSlotsToKeys;                                                                              // Slots in use
-  final ByteMemory.Ref refUsedKeys;                                                                                     // References in use.  There are fewer references than slots to make insertions faster
+  final ByteMemory.Ref refKeysToSlots;                                                                                  // The slot associated with each in use key
+  final ByteMemory.Ref refUsedSlotsToKeys;                                                                              // Bitset showing which slots are being used to map to keys
+  final ByteMemory.Ref refUsedKeys;                                                                                     // Bitset showing which keys are in use
   final ByteMemory.Ref refKeys;                                                                                         // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
   final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
@@ -41,7 +42,8 @@ class Slots extends Program                                                     
       byteMemoryRef      = byteMemory.new Ref(0);                                                                       // Reference to local memory
      }
     refSlotsToKeys       = byteMemoryRef;                                                                               // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-    refUsedSlotsToKeys   = byteMemoryRef.step(slotsMemoryPositions.posUsedSlots);                                       // Slots in use
+    refKeysToSlots       = byteMemoryRef.step(slotsMemoryPositions.posKeysToSlots);                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refUsedSlotsToKeys   = byteMemoryRef.step(slotsMemoryPositions.posUsedSlotsToKeys);                                // Slots in use
     refUsedKeys          = byteMemoryRef.step(slotsMemoryPositions.posusedKeys);                                        // References in use.  There are fewer references than slots to make insertions faster
     refKeys              = byteMemoryRef.step(slotsMemoryPositions.posKeys);                                            // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
     usedSlotsToKeys      = new BitSet(slotsMemoryPositions.us.memory(refUsedSlotsToKeys));                              // Create bitsets to reference the program and memory used by this program
@@ -830,19 +832,21 @@ class Slots extends Program                                                     
     final BitSet.Build us = new BitSet.Build().bitSize(N).one(true).zero(true);                                         // Specification of bit set for used slots
     final BitSet.Build ur = new BitSet.Build().bitSize(R).one(true).zero(true);                                         // Specification of bit set for references
 
-    final int posSlots     = 0;                                                                                         // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-    final int posUsedSlots = posSlots     + ib(N);                                                                      // Slots in use
-    final int posusedKeys  = posUsedSlots + us.byteSize();                                                              // References in use.  There are fewer references than slots to make insertions faster
-    final int posKeys      = posusedKeys  + ur.byteSize();                                                              // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
-    final int size         = posKeys      + ib(N);                                                                      // Size of slots
+    final int posSlotsToKeys     = 0;                                                                                   // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    final int posKeysToSlots     = posSlotsToKeys     + ib(N);                                                          // USed keys to slot referencing the key
+    final int posUsedSlotsToKeys = posKeysToSlots     + ib(N);                                                          // Slots in use
+    final int posUsedKeysToSlots = posUsedSlotsToKeys + ib(N);                                                          // Slots in use
+    final int posusedKeys        = posUsedKeysToSlots + us.byteSize();                                                  // References in use.  There are fewer references than slots to make insertions faster
+    final int posKeys            = posusedKeys        + ur.byteSize();                                                  // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
+    final int size               = posKeys            + ib(N);                                                          // Size of slots
   }
 /*
   class Memory extends SlotsMemoryPositions                                                                             // Memory required to hold bytes
   {final ByteBuffer bytes;                                                                                              // Bytes used by this set of slots
 
     final BitSet usedSlotsBits = new BitSet(us)                                                                         // Bit storage for used slots
-    {void setByte(int I, int V) {bytes.put(new Int(posUsedSlots).Add(I).i(), (byte)V);}                                 // Save used slot bit
-      int  getByte(int I) {return bytes.get(new Int(posUsedSlots).Add(I).i());}                                         // Get used slot bit
+    {void setByte(int I, int V) {bytes.put(new Int(posUsedSlotsToKeys).Add(I).i(), (byte)V);}                                 // Save used slot bit
+      int  getByte(int I) {return bytes.get(new Int(posUsedSlotsToKeys).Add(I).i());}                                         // Get used slot bit
     };
 
     final BitSet usedKeysBits  = new BitSet(ur)                                                                         // Bit storage for used refs
@@ -885,13 +889,13 @@ class Slots extends Program                                                     
 
     Bool  usedSlotsToKeys(Int I) {return usedSlotsBits.getBit(us(I));}                                                        // Value of indexed used slot
     Bool   usedKeys(Int I) {return usedKeysBits .getBit(ur(I));}                                                        // Value of indexed used reference
-    Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlots).add(ib(I)).i()));}                            // Value of indexed slot
+    Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlotsToKeys).add(ib(I)).i()));}                            // Value of indexed slot
     Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}                            // Value of key via indexed reference
     Int        name(     ) {return new Int(bytes.getInt(posName));}
 
     void usedSlotsToKeys(Int I, Bool V) {usedSlotsBits.set(                 us(I),      V);}                                  // Set value of indexed used slot
     void  usedKeys(Int I, Bool V) {usedKeysBits .set(                 ur(I),      V);}                                  // Set value of indexed used reference
-    void     slots(Int I, Int  V) {bytes.putInt(new Int(posSlots).Add(ib(I)).i(), V.i());}                              // Set value of indexed slot
+    void     slots(Int I, Int  V) {bytes.putInt(new Int(posSlotsToKeys).Add(ib(I)).i(), V.i());}                              // Set value of indexed slot
     void      keys(Int I, Int  V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());}                              // Set value of key via indexed reference
     void      name(       Int  V) {bytes.putInt(posName,                          V.i());}                              // Save the name of the node in memory to assist debugging
 
