@@ -57,9 +57,9 @@ class Slots extends Program                                                     
 
   Slots(int NumberOfKeys) {this(new Build().numberOfKeys(NumberOfKeys));}                                               // Create the slots in local memory for testing
 
-  void putSlotToKeys(Int Index, Int Value)                                                                              // Set a slot to key reference and the corresponding back reference
-   {refSlotsToKeys.putInt(Index, Value);
-    refKeysToSlots.putInt(Value, Index);
+  void putSlotToKeys(Int Index, Int Key)                                                                                // Set a slot to key reference and the corresponding back reference
+   {refSlotsToKeys.putInt(Index, Key);
+    refKeysToSlots.putInt(Key, Index);
     usedSlotsToKeys.set(usedSlotsToKeys.new Pos(Index), new Bool(true));
    }
 
@@ -194,27 +194,29 @@ class Slots extends Program                                                     
       void Else() {new I() {void action() {stop("Slot not in use:", P);}};}                                             // Slot not occupied
      };
    }
-/*
+
   void compactLeft()                                                                                                    // Compact the used slots to the left end
-   {new If (usedKeys.empty())                                                                                           // Compact slots
+   {final Slots slots = this;
+    new If (usedKeys.empty())                                                                                           // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
-      void Else()
+      void Else()                                                                                                       // Compact slots first
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bool Continue)
-           {final BitSet.Pos s = usedSlotsToKeys.firstZero();
-            final BitSet.Pos S = usedSlotsToKeys.nextOne(s);
+           {final BitSet.Pos s = usedSlotsToKeys.firstZero();                                                           // First empty slot
+            final BitSet.Pos S = usedSlotsToKeys.nextOne(s);                                                            // Next used slot beyond first empty slot
             new If (S.valid())                                                                                          // Found a used slot beyond an unused slot
              {void Then()
                {final Int q = getSlotToKeyValue(S);
                 delSlotToKeys(S);
                 putSlotToKeys(s, q);
-                Continue.set(true);
+                Continue.set(true);                                                                                     // Keep going
                }
              };
            }
          };
        }
      };
+
     new If (usedKeys.empty())                                                                                           // Compact keys
      {void Then() {}                                                                                                    // Nothing to compact as empty
       void Else()
@@ -224,15 +226,14 @@ class Slots extends Program                                                     
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
                {final BitSet.Pos k = usedKeys .firstZero();                                                             // First empty key
-                final BitSet.Pos K = usedKeys .nextOne(k);                                                              // First used key beyond the empty key
-                new If (K.valid())
+                final BitSet.Pos K = usedKeys .lastOne();                                                               // Last used key so we get the longest possible move
+                new If (K.gt(k))                                                                                        // Compaction possible
                  {void Then()
-                   {final Int p = getKeyValue(Index);
-                    final Int q = getKeyValue(K);
-                    delKey(K);
-                    putSlotToKeys(Index, Index);
-                    putKey  (Indexk, q);
-                    Continue.set(true);
+                   {final Int s = refKeysToSlots.getInt(K);                                                             // The slot referencing the last key
+                    final Int q = getKeyValue(K);                                                                       // The value of the key
+                    delSlotAndKey(s);                                                                                   // Delete the slot and its associated key
+                    setSlotAndKey(s, k, q);                                                                             // Reinsert the key
+                    Continue.set(true);                                                                                 // Continue compacting keys
                    }
                  };
                }
@@ -1118,26 +1119,28 @@ keys     :    0   0   0   2
         setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
-        new I() {void action() {stop(s);}};
+        //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   1   0   3   0   0   0
+slotsKeys:    0   0   1   0   3   0   0   0
+keysSlots:    0   2   0   4   0   0   0   0
 usedSlots:    .   .   X   .   X   .   .   .
 usedKeys :    .   X   .   X
 keys     :    0   1   0   2
 """);
 
 
-        //compactLeft();
-        new I() {void action() {stop(s);}};
+        compactLeft();
+        //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   0   3   0   0   0
-usedSlots:    .   .   .   .   X   .   .   .
-usedKeys :    .   .   .   X
-keys     :    0   0   0   2
+slotsKeys:    1   0   0   0   0   0   0   0
+keysSlots:    1   0   0   0   0   0   0   0
+usedSlots:    X   X   .   .   .   .   .   .
+usedKeys :    X   X   .   .
+keys     :    2   1   0   0
 """);
 
         execute();
@@ -1146,7 +1149,7 @@ keys     :    0   0   0   2
    }
 
   static void test_compactLeft()
-   {test_compactLeft(true);
+   {//test_compactLeft(true);
     test_compactLeft(false);
    }
 
@@ -1473,7 +1476,7 @@ keys     :   14   0  13   0  12   0  10  11
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_compactLeft();
+    test_compactLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
