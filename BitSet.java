@@ -512,6 +512,30 @@ public class BitSet extends Program                                             
   public Bool  full() {return firstZero().notValid();}                                                                  // If there are no zero bits then the bit set must be full
   public Bool empty() {return firstOne ().notValid();}                                                                  // If there are no one bits then the bit set must be empty
 
+//D1 Statistics                                                                                                         // Count the number of ones or zero bits in a bit set
+
+  public Int countOnes()                                                                                                // Count ones in bitset
+   {final Int c = new Int(0);                                                                                           // Count
+    final Pos p = firstOne();
+    new For(new Int(bitSize))
+     {void body(Int Index, Bool Continue)
+       {new If (p.valid())
+         {void Then()
+           {c.inc();                                                                                                      // Count ones
+            final Int q = nextOne(p);                                                                                     // Next one
+            new If (q.valid())
+             {void Then()
+               {p.set(q);                                                                                            // Next one
+                Continue.set(true);
+               }
+             };
+           }
+         };
+       }
+     };
+    return c;
+   };
+
 //D1 Integrity                                                                                                          // Check that the bit trees match the actual bits
 
   public boolean integrity() {return integrity(true);}                                                                  // Do an integrity check on the bitset to detect corruption
@@ -637,6 +661,8 @@ Zero:
    4   91    2 |  1  1
    5   93    1 |  1
 """);
+
+    final Int c = b.countOnes(); b.ok(()->c, 9);
 
     if (true)
      {final Pos q;
@@ -1050,7 +1076,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();                                                                                                       // Run baseline tests.
+    test_prevNext();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
