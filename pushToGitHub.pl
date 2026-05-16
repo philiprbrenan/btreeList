@@ -1,8 +1,8 @@
 #!/usr/bin/perl -I/home/phil/perl/cpan/DataTableText/lib/ -I/home/phil/perl/cpan/GitHubCrud/lib/
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 # Push block memory code to GitHub.
 # Philip R Brenan at gmail dot com, Appa Apps Ltd Inc., 2025
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 use v5.38;
 use warnings FATAL => qw(all);
 use strict;
@@ -11,53 +11,53 @@ use Data::Dump qw(dump);
 use Data::Table::Text qw(:all);
 use GitHub::Crud qw(:all);
 
-my $repo    = q(btreeList);                                                     # Repo
-my $user    = q(philiprbrenan);                                                 # User
-my $home    = fpd q(/home/phil), $repo;                                         # Home folder
-my $shaFile = fpe $home, q(sha);                                                # Sh256 file sums for each known file to detect changes
-my $wf      = q(.github/workflows/main.yml);                                    # Work flow on Ubuntu
-my @ext     = qw(.java .pl);                                                    # Extensions of files to upload to github
+my $repo    = q(btreeList);                                                                                             # Repo
+my $user    = q(philiprbrenan);                                                                                         # User
+my $home    = fpd q(/home/phil), $repo;                                                                                 # Home folder
+my $shaFile = fpe $home, q(sha);                                                                                        # Sh256 file sums for each known file to detect changes
+my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu
+my @ext     = qw(.java .pl);                                                                                            # Extensions of files to upload to github
 
 say STDERR timeStamp,  " push to github $repo";
 
-my @files = searchDirectoryTreesForMatchingFiles($home, @ext);                  # Files to upload
-my @java  = grep {fe($_) =~ m(java)is} @files;                                  # Java files
-   @files = changedFiles $shaFile, @files;                                      # Filter out files that have not changed
+my @files = searchDirectoryTreesForMatchingFiles($home, @ext);                                                          # Files to upload
+my @java  = grep {!m(Tree)} grep {fe($_) =~ m(java)is} @files;                                                                          # Java files
+   @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
 
-if (!@files)                                                                    # No new files
+if (!@files)                                                                                                            # No new files
  {say "Everything up to date";
   exit;
  }
 
 
-if  (1)                                                                         # Upload via github crud
- {for my $s(@files)                                                             # Upload each selected file
-   {my $c = $s =~ m(\.(java|perl)\Z) ? readFile($s) : readBinaryFile $s;        # Source files might have unicode utf8, other files are binary
+if  (1)                                                                                                                 # Upload via github crud
+ {for my $s(@files)                                                                                                     # Upload each selected file
+   {my $c = $s =~ m(\.(java|perl)\Z) ? readFile($s) : readBinaryFile $s;                                                # Source files might have unicode utf8, other files are binary
 
-    if ($s =~ m(README))                                                        # Expand README
+    if ($s =~ m(README))                                                                                                # Expand README
      {$c = expandWellKnownWordsAsUrlsInMdFormat $c if $s =~ m(README);
      }
 
-    my $t = swapFilePrefix $s, $home;                                           # File on github
-    my $w = writeFileUsingSavedToken($user, $repo, $t, $c);                     # Write file into github
+    my $t = swapFilePrefix $s, $home;                                                                                   # File on github
+    my $w = writeFileUsingSavedToken($user, $repo, $t, $c);                                                             # Write file into github
     lll "$w  $t";
    }
  }
 
 
-writeFileUsingSavedToken($user, $repo, q(.config/geany/snippets.conf),          # Save the snippets file as this was the thing I missed most after a rebuild
+writeFileUsingSavedToken($user, $repo, q(.config/geany/snippets.conf),                                                  # Save the snippets file as this was the thing I missed most after a rebuild
                    readFile(q(/home/phil/.config/geany/snippets.conf)));
-writeFileUsingSavedToken($user, $repo, q(.config/geany/keybindings.conf),       # Save the keybindings file for the same reason
+writeFileUsingSavedToken($user, $repo, q(.config/geany/keybindings.conf),                                               # Save the keybindings file for the same reason
                   readFile(q(/home/phil/.config/geany/keybindings.conf)));
-#writeFileUsingSavedToken($user, $repo, q(.config/MakeWithPerl.pm),              # Save make with perl for the same reason
+#writeFileUsingSavedToken($user, $repo, q(.config/MakeWithPerl.pm),                                                     # Save make with perl for the same reason
 #                  readFile(q(/home/phil/perl/cpan/MakeWithPerl/lib/MakeWithPerl.pm)));
 
-if (@java)                                                                      # Write workflow to test java files
- {my @j = map {fn $_} @java;                                                    # Java files
+if (@java)                                                                                                              # Write workflow to test java files
+ {my @j = map {fn $_} @java;                                                                                            # Java files
   my $d = dateTimeStamp;
-  my $c = q(com/AppaApps/Silicon);                                              # Package to classes folder
-  my $j = join ', ', @j;                                                        # Java files without extension with separating commas
-  my $J = join ' ', map {"$_.java"} @j;                                         # Java files with extension without separating commas
+  my $c = q(com/AppaApps/Silicon);                                                                                      # Package to classes folder
+  my $j = join ', ', @j;                                                                                                # Java files without extension with separating commas
+  my $J = join ' ', map {"$_.java"} @j;                                                                                 # Java files with extension without separating commas
   my $y = <<"END";
 # Test $d
 
