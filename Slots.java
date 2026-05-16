@@ -303,17 +303,43 @@ class Slots extends Program                                                     
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
         final Int         p = remainder.Down();                                                                         // Start position for first used slot giving any over to end to bias slighlty in favor of preseorted data
-        new For(c)                                                                                                      // Redistribute used slots
-         {void body(Int Index, Bool Continue)                                                                           // Initialize background of slots
+        new ForCount(c)                                                                                                 // Redistribute used slots
+         {void body(Int Index)                                                                                          // Initialize background of slots
            {final Int s = c.Dec().sub(Index);                                                                           // Index of source element to be moved
             final Int t = p.Add(s.Mul(space)).add(s);                                                                   // Index in slots of target element to be set
             final Int k = getSlotToKeyValue(s);                                                                         // Index of key being moved
             final Int K = getKeyValue(k);                                                                               // Value of key being moved
             delSlotAndKey(s);
             setSlotAndKey(t, k, K);
-            Continue.set();
            }
          };
+       }
+     };
+   }
+
+  void shiftUpOne(Int Position, Int Width)                                                                              // Shift up the specified slots by one position to create a free space at the specified position
+   {new ForCount(Width)                                                                                                 // Move the indicated slots up one position
+     {void body(Int Index)
+       {final Int t = Position.Add(Width).sub(Index);                                                                   // Index of source element to be moved
+        final Int s = t.Dec();                                                                                          // Index in slots of target element to be set
+        final Int k = getSlotToKeyValue(s);                                                                             // Index of key being moved
+        final Int K = getKeyValue(k);                                                                                   // Value of key being moved
+        delSlotAndKey(s);
+        setSlotAndKey(t, k, K);
+       }
+     };
+   }
+
+  void shiftDownOne(Int Position, Int Width)                                                                            // Shift down the specified slots by one position to create a free space at the specified position
+   {final Slots slots = this;
+    new ForCount(Width)                                                                                                 // Move the indicated slots up one position
+     {void body(Int Index)
+       {final Int t = Position.Sub(Width).add(Index);                                                                              // Index of source element to be moved
+        final Int s = t.Inc();                                                                                          // Index in slots of target element to be set
+        final Int k = getSlotToKeyValue(s);                                                                             // Index of key being moved
+        final Int K = getKeyValue(k);                                                                                   // Value of key being moved
+        delSlotAndKey(s);
+        setSlotAndKey(t, k, K);
        }
      };
    }
@@ -457,19 +483,6 @@ class Slots extends Program                                                     
    }
 
   void freeRef(slot Ref) {usedKeys(Ref, new Bool(false));}                                                              // Free a reference to one of the keys in the slots
-
-//D2 Statistics                                                                                                         // Query the state of the slots
-
-  Int countUsed()                                                                                                       // Number of slots in use. How can we do this quickly in parallel?
-   {final Int n = new Int(0);
-    new For(numberOfSlotsToKeys())
-     {void body(Int i, Bool C)
-       {new If (usedSlotsToKeys(new Slot(new Int(i)))) {void Then(){n.inc();}};
-        C.set();
-       }
-     };
-    return n;
-   }
 
 //D2 Low level operations                                                                                               // Low level operations on slots
 
@@ -818,69 +831,6 @@ class Slots extends Program                                                     
     final int posKeys            = posusedKeys        + ur.byteSize();                                                  // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
     final int size               = posKeys            + ib(N);                                                          // Size of slots
   }
-/*
-  class Memory extends SlotsMemoryPositions                                                                             // Memory required to hold bytes
-  {final ByteBuffer bytes;                                                                                              // Bytes used by this set of slots
-
-    final BitSet usedSlotsBits = new BitSet(us)                                                                         // Bit storage for used slots
-    {void setByte(int I, int V) {bytes.put(new Int(posUsedSlotsToKeys).Add(I).i(), (byte)V);}                                 // Save used slot bit
-      int  getByte(int I) {return bytes.get(new Int(posUsedSlotsToKeys).Add(I).i());}                                         // Get used slot bit
-    };
-
-    final BitSet usedKeysBits  = new BitSet(ur)                                                                         // Bit storage for used refs
-    {void setByte(int I, int V) {bytes.put(new Int(posusedKeys).Add(I).i(), (byte)V);}                                  // Save used ref bit
-      int  getByte(int I) {return bytes.get(new Int(posusedKeys).Add(I).i());}                                          // Get used ref bit
-    };
-
-    void copySlots(Memory Memory)                                                                                       // Copy a set of slots from the specified memory into this memory
-    {new For(size)
-      {void body(Int i, Bool C)
-        {bytes.put(i.i(), Memory.bytes.get(i.i()));
-          C.set();
-        }
-      };
-    }
-
-    void invalidate()                                                                                                   // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-    {new For(size)
-      {void body(Int i, Bool C)
-        {bytes.put(i.i(), (byte)-1);
-          C.set();
-        }
-      };
-    }
-
-    void clear()                                                                                                        // Clear all bytes in memory to zero which has the beneficial effect of setting all slots to unused
-    {new For(size)
-      {void body(Int i, Bool C)
-        {bytes.put(i.i(), (byte)0);
-          C.set();
-        }
-      };
-    }
-
-    Memory()                 {bytes = ByteBuffer.allocate(size);}                                                       // Create memory
-    Memory(ByteBuffer Bytes) {bytes = Bytes;}                                                                           // Use a specified memory
-
-    BitSet.Pos   us(Int I) {return usedSlotsBits.new Pos(I);}                                                           // A slot position in the used slots
-    BitSet.Pos   ur(Int I) {return usedKeysBits .new Pos(I);}                                                           // A slot position in the references
-
-    Bool  usedSlotsToKeys(Int I) {return usedSlotsBits.getBit(us(I));}                                                        // Value of indexed used slot
-    Bool   usedKeys(Int I) {return usedKeysBits .getBit(ur(I));}                                                        // Value of indexed used reference
-    Int       slots(Int I) {return new Int(bytes.getInt(new Int(posSlotsToKeys).add(ib(I)).i()));}                            // Value of indexed slot
-    Int        keys(Int I) {return new Int(bytes.getInt(new Int(posKeys) .add(ib(I)).i()));}                            // Value of key via indexed reference
-    Int        name(     ) {return new Int(bytes.getInt(posName));}
-
-    void usedSlotsToKeys(Int I, Bool V) {usedSlotsBits.set(                 us(I),      V);}                                  // Set value of indexed used slot
-    void  usedKeys(Int I, Bool V) {usedKeysBits .set(                 ur(I),      V);}                                  // Set value of indexed used reference
-    void     slots(Int I, Int  V) {bytes.putInt(new Int(posSlotsToKeys).Add(ib(I)).i(), V.i());}                              // Set value of indexed slot
-    void      keys(Int I, Int  V) {bytes.putInt(new Int(posKeys ).Add(ib(I)).i(), V.i());}                              // Set value of key via indexed reference
-    void      name(       Int  V) {bytes.putInt(posName,                          V.i());}                              // Save the name of the node in memory to assist debugging
-
-    void      type(Int Type) {       bytes.putInt(posType, Type.i());}                                                  // Type of object in which the slots are embedded
-    Int       type() {return new Int(bytes.getInt(posType));}
-   }
-*/
 
 //D1 Tests                                                                                                              // Tests
 
@@ -1150,7 +1100,6 @@ keys     :    0   0   1   2
     test_compactRight(false);
    }
 
-
   static void test_redistribute(boolean Ex)
    {final Slots s = new Slots(8)
      {void slotsCode()
@@ -1196,6 +1145,80 @@ keys     :    7   1   3   2   4   5   6   0
   static void test_redistribute()
    {test_redistribute(true);
     test_redistribute(false);
+   }
+
+  static void test_shift(boolean Ex)
+   {final Slots s = new Slots(8)
+     {void slotsCode()
+       {immediate(Ex);
+        maxSteps = 99999;
+        setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
+        setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
+        setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
+        setSlotAndKey(new Int(8),   new Int(4),  new Int(4));
+        setSlotAndKey(new Int(12),  new Int(5),  new Int(5));
+        setSlotAndKey(new Int(13),  new Int(6),  new Int(6));
+        setSlotAndKey(new Int(14),  new Int(0),  new Int(7));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   1   0   3   0   0   2   4   0   0   0   5   6   0   0
+keysSlots:   14   2   7   4   8  12  13   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   X   .   .   X   X   .   .   .   X   X   X   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
+""");
+
+
+        shiftUpOne(new Int(2), new Int(1));
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   1   3   0   0   2   4   0   0   0   5   6   0   0
+keysSlots:   14   3   7   4   8  12  13   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   X   X   .   .   X   X   .   .   .   X   X   X   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
+""");
+
+        shiftUpOne(new Int(3), new Int(2));
+        shiftUpOne(new Int(4), new Int(2));
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   0   1   3   2   4   0   0   0   5   6   0   0
+keysSlots:   14   5   7   6   8  12  13   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   .   .   .   X   X   X   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
+""");
+
+        shiftDownOne(new Int(14), new Int(3));
+        shiftDownOne(new Int(13), new Int(3));
+        shiftDownOne(new Int(12), new Int(3));
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   0   1   3   2   4   5   6   0   0   0   0   0
+keysSlots:   11   5   7   6   8   9  10   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   .   .   .   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
+""");
+
+        execute();
+       }
+     };
+   }
+
+  static void test_shift()
+   {test_shift(true);
+    test_shift(false);
    }
 
 /*
@@ -1523,8 +1546,8 @@ keys     :   14   0  13   0  12   0  10  11
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_redistribute();
+   {//oldTests();
+    test_shift();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
