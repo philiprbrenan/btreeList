@@ -57,18 +57,38 @@ class Slots extends Program                                                     
 
   Slots(int NumberOfKeys) {this(new Build().numberOfKeys(NumberOfKeys));}                                               // Create the slots in local memory for testing
 
-  void putSlotToKeys(Int Index, Int Value) {refSlotsToKeys.putInt(Index, Value);      usedSlotsToKeys.set(usedSlotsToKeys.new Pos(Index), new Bool(true));}     // Set a slot
-  void delSlotToKeys(Int Index)            {refSlotsToKeys.putInt(Index, new Int(0)); usedSlotsToKeys.set(usedSlotsToKeys.new Pos(Index), new Bool(false));}    // Clear a slot
-  void putKey       (Int Index, Int Key)   {refKeys .putInt(Index, Key);              usedKeys       .set(usedKeys       .new Pos(Index), new Bool(true));}     // Set a key
-  void delKey       (Int Index)            {refKeys .putInt(Index, new Int(0));       usedKeys       .set(usedKeys       .new Pos(Index), new Bool(false));}    // Clear a key
+  void putSlotToKeys(Int Index, Int Value)                                                                              // Set a slot to key reference and the corresponding back reference
+   {refSlotsToKeys.putInt(Index, Value);
+    refKeysToSlots.putInt(Value, Index);
+    usedSlotsToKeys.set(usedSlotsToKeys.new Pos(Index), new Bool(true));
+   }
+
+  void delSlotToKeys(Int Index)                                                                                         // Delete a slot
+   {final Int K = refSlotsToKeys.getInt(Index);
+                  refSlotsToKeys.putInt(Index, new Int(0));
+    refKeysToSlots.putInt(K,                   new Int(0));
+    usedSlotsToKeys.set(usedSlotsToKeys.new Pos(Index), new Bool(false));                                               // Remove slot from bitset shoing which slots are in use
+   }
+
+  void putKey(Int Index, Int Key)                                                                                       // Set a key
+   {refKeys .putInt(Index, Key);
+    usedKeys.set(usedKeys.new Pos(Index), new Bool(true));
+   }
+
+  void delKey(Int Index)                                                                                                // Clear a key
+   {refKeys .putInt(Index, new Int(0));
+    usedKeys.set(usedKeys.new Pos(Index), new Bool(false));
+   }
 
   Bool getSlotToKeysInUse(Int Index)       {return usedSlotsToKeys.getBit(usedSlotsToKeys   .new Pos(Index));}          // Check whether a slot is in use
-  Int  getSlotToKeyValue(Int Index)        {return refSlotsToKeys .getInt(                     Index );}                // Index to keys from slot
+  Int  getSlotToKeyValue(Int Index)        {return refSlotsToKeys .getInt(                     Index );}                // Index to keys from slots
+  Int  getKeyToSlotValue(Int Index)        {return refKeysToSlots .getInt(                     Index );}                // Index to slots from keys
   Bool getKeyInUse (Int Index)             {return usedKeys .getBit(usedKeys    .new Pos(Index));}                      // Check whether a key is in use
   Int  getKeyValue (Int Index)             {return refKeys  .getInt(                     Index );}                      // Value of referenced key
 
   boolean getSlotToKeysInUse(int Index)    {return usedSlotsToKeys.getBitNC(Index);}                                    // Check whether a slot is in use
   int     getSlotToKeyValue (int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slot
+  int     getKeyToSlotValue (int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index from slots to keys
   boolean getKeyInUse       (int Index)    {return usedKeys .getBitNC(Index);}                                          // Check whether a key is in use
   int     getKeyValue       (int Index)    {return refKeys  .getInt(Index);}                                            // Value of referenced key
 
@@ -808,7 +828,8 @@ class Slots extends Program                                                     
     final int[]R = range(numberOfKeys());
     s.append(f("Slots    : refs: %2d\n", numberOfKeys));                                                                // Title
     s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
-    s.append("\nslots    : "); for (int i : N) s.append(f(" "+formatKey, getSlotToKeyValue(i)));
+    s.append("\nslotsKeys: "); for (int i : N) s.append(f(" "+formatKey, getSlotToKeyValue(i)));
+    s.append("\nkeysSlots: "); for (int i : N) s.append(f(" "+formatKey, getKeyToSlotValue(i)));
     s.append("\nusedSlots: "); for (int i : N) s.append(                 usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
     s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys .getBitNC(i) ? "   X" : "   .");
     s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey, getKeyValue(i)));
@@ -925,20 +946,25 @@ class Slots extends Program                                                     
         putKey (new Int(1), new Int(11));
         putKey (new Int(3), new Int(22));
 
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
+slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   2   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
         delSlotToKeys(new Int(2));
         delKey (new Int(3));
+        //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+slotsKeys:    1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   .   .   .   .   .
 keys     :    0  11   0   0   0   0   0   0
@@ -971,7 +997,8 @@ keys     :    0  11   0   0   0   0   0   0
         ok(()->this, """
 Slots    : refs: 16
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
-slots    :    0   0   1   0   2   3   4   0   0   5   6   0   7   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+slotsKeys:    0   0   1   0   2   3   4   0   0   5   6   0   7   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   2   4   5   6   9  10  12   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 usedSlots:    .   .   X   .   X   X   X   .   .   X   X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1013,7 +1040,8 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   0   0   0   0   0
+slotsKeys:    0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   .   .
 usedKeys :    .   .   X   .
 keys     :    0   0   1   0
@@ -1022,7 +1050,7 @@ keys     :    0   0   1   0
         final Int k0 = allocKey(); putKey(k0,  new Int(2));
         final Int k1 = allocKey(); putKey(k1,  new Int(3));
         final Int k4 = allocKey(); putKey(k4,  new Int(4));
-        //new I() {void action() {stop(s);}};
+        new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
