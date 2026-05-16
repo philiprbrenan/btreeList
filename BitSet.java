@@ -516,17 +516,39 @@ public class BitSet extends Program                                             
 
   public Int countOnes()                                                                                                // Count ones in bitset
    {final Int c = new Int(0);                                                                                           // Count
-    final Pos p = firstOne();
+    final Pos p = firstOne();                                                                                           // First one
+    new For(new Int(bitSize))                                                                                           // Step from one to one
+     {void body(Int Index, Bool Continue)
+       {new If (p.valid())                                                                                              // Latest step is valid
+         {void Then()
+           {c.inc();
+            final Int q = nextOne(p);
+            new If (q.valid())                                                                                          // Step to next one
+             {void Then()
+               {p.set(q);
+                Continue.set(true);                                                                                     // Continue stepping
+               }
+             };
+           }
+         };
+       }
+     };
+    return c;
+   };
+
+  public Int countZeros()                                                                                               // Count zeros in bitset
+   {final Int c = new Int(0);                                                                                           // Count
+    final Pos p = firstZero();
     new For(new Int(bitSize))
      {void body(Int Index, Bool Continue)
        {new If (p.valid())
          {void Then()
-           {c.inc();                                                                                                      // Count ones
-            final Int q = nextOne(p);                                                                                     // Next one
+           {c.inc();                                                                                                    // Count zeros
+            final Int q = nextZero(p);                                                                                  // Next zero
             new If (q.valid())
              {void Then()
-               {p.set(q);                                                                                            // Next one
-                Continue.set(true);
+               {p.set(q);
+                Continue.set(true);                                                                                     // Continue stepping
                }
              };
            }
@@ -662,7 +684,8 @@ Zero:
    5   93    1 |  1
 """);
 
-    final Int c = b.countOnes(); b.ok(()->c, 9);
+    final Int o = b.countOnes (); b.ok(()->o, 9);
+    final Int z = b.countZeros(); b.ok(()->z, 23);
 
     if (true)
      {final Pos q;
