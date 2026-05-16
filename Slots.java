@@ -1050,11 +1050,12 @@ keys     :    0   0   1   0
         final Int k0 = allocKey(); putKey(k0,  new Int(2));
         final Int k1 = allocKey(); putKey(k1,  new Int(3));
         final Int k4 = allocKey(); putKey(k4,  new Int(4));
-        new I() {void action() {stop(s);}};
+        //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   0   0   0   0   0
+slotsKeys:    0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   0   0   0   0   0
 usedSlots:    .   .   .   .   .   .   .   .
 usedKeys :    X   X   X   X
 keys     :    2   3   1   4
@@ -1081,7 +1082,8 @@ keys     :    2   3   1   4
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   2   3   0   0   0
+slotsKeys:    0   0   0   2   3   0   0   0
+keysSlots:    0   0   3   4   0   0   0   0
 usedSlots:    .   .   .   X   X   .   .   .
 usedKeys :    .   .   X   X
 keys     :    0   0   1   2
@@ -1092,7 +1094,8 @@ keys     :    0   0   1   2
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   0   0   3   0   0   0
+slotsKeys:    0   0   0   0   3   0   0   0
+keysSlots:    0   0   0   4   0   0   0   0
 usedSlots:    .   .   .   .   X   .   .   .
 usedKeys :    .   .   .   X
 keys     :    0   0   0   2
@@ -1115,7 +1118,7 @@ keys     :    0   0   0   2
         setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
-        //new I() {void action() {stop(s);}};
+        new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
