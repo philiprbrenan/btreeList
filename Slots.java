@@ -293,33 +293,25 @@ class Slots extends Program                                                     
   void redistribute()                                                                                                   // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order.
    {final Slots slots = this;
     new If (usedKeys.empty())                                                                                           // Something to redistribute
-     {void Then() {}
-      void Else()
+     {void Then() {}                                                                                                    // Nothing to redistrinute as the slots are empty
+      void Else()                                                                                                       // Redistribute
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
-        compactLeft();                                                                                                  // Compact everything to the left
+        compactLeft();                                                                                                  // Compact everything to the left so it is in a known position
         final BitSet.Pos  c = usedKeys.firstZero();                                                                     // Number of slots in use
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
-        final Int         p = remainder.Down();                                                                         // Start position for first used slot
-say("NNNN",  N);
-say("RRRR",  R);
-say("cccc",  c);
-say("space", space);
-say("cover", cover);
-say("remainder", remainder);
-say("p",     p);
-        new For(c)                                                                                                      // Redistribute slots
+        final Int         p = remainder.Down();                                                                         // Start position for first used slot giving any over to end to bias slighlty in favor of preseorted data
+        new For(c)                                                                                                      // Redistribute used slots
          {void body(Int Index, Bool Continue)                                                                           // Initialize background of slots
            {final Int s = c.Dec().sub(Index);                                                                           // Index of source element to be moved
             final Int t = p.Add(s.Mul(space)).add(s);                                                                   // Index in slots of target element to be set
-            final Int k = getKeyValue(s);
-say("BBBB source", s, "target", t, "key:", k, slots);
+            final Int k = getSlotToKeyValue(s);                                                                         // Index of key being moved
+            final Int K = getKeyValue(k);                                                                               // Value of key being moved
             delSlotAndKey(s);
-say("CCCC source", s, "target", t, "key:", k, slots);
-            setSlotAndKey(t, s, k);
-            //Continue.set();
+            setSlotAndKey(t, k, K);
+            Continue.set();
            }
          };
        }
@@ -514,21 +506,6 @@ say("CCCC source", s, "target", t, "key:", k, slots);
     return r;
    }
 
-  Slot locateFirstUsedSlot()                                                                                            // Absolute position of this slot if it is in use or else the next lower used slot
-   {final BitSet.Pos p = memory.usedSlotsBits.firstOne();
-    return valid_Slot(p.valid(), ()->p.position());
-   }
-
-  Slot locateLastUsedSlot()                                                                                             // Absolute position of the last slot in use
-   {final BitSet.Pos p = memory.usedSlotsBits.lastOne();
-    return valid_Slot(p.valid(), ()->p.position());
-   }
-
-  slot locateFirstEmptyRef()                                                                                            // Absolute position of the first empty reference
-   {final BitSet.Pos p = memory.usedKeysBits.firstZero();
-    return If (p.valid(), new slot(), ()->new slot(p.position()), ()->new slot());
-   }
-
   void shift(Int Position, Int Width)                                                                                   // Shift the specified number of slots around the specified position one bit left or right depending on the sign of the width.  The liberated slot is not initialized.
    {new If (Width.ne(0))                                                                                                // Non zero shift
      {void Then()
@@ -546,109 +523,6 @@ say("CCCC source", s, "target", t, "key:", k, slots);
      };
    }
 
-  void redistribute()                                                                                                   // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order.
-   {new If (empty().Flip())                                                                                             // Something to redistribute
-     {void Then()
-       {final Int         N = new Int(numberOfSlotsToKeys());                                                                 // Maximum number of slots
-        final Int         c = new Int(countUsed());                                                                     // Number of slots in use
-        final Int     space = new Int(N.Sub(c).div(c));                                                                 // Space between used slots
-        final Int     cover = new Int(space.Inc().mul(c.Dec()).inc());                                                  // Covered space from first used slot to last used slot,
-        final Int remainder = new Int(Test.max(0, N.Sub(cover).i()));                                                   // Uncovered remainder
-        final Int       []s = new Int [N.i()];                                                                          // New slots distribution
-        final Bool      []u = new Bool[N.i()];                                                                          // New used slots distribution
-        final Int         p = new Int(remainder.Down());                                                                // Start position for first used slot
-        new For(N)                                                                                                      // Redistribute slots
-         {void body(Int i, Bool C)                                                                                      // Initialize background of slots
-           {s[i.i()] = new Int (0);
-            u[i.i()] = new Bool().clear();
-            C.set();
-           };
-         };
-        new For(N)                                                                                                      // Redistribute slots
-         {void body(Int i, Bool C)
-           {final Slot I = new Slot(i);
-            new If (usedSlotsToKeys(I))                                                                                       // Redistribute active slots
-             {void Then()
-               {s[p.i()] = new Int(slots(I).value());
-                u[p.i()].set();
-                p.add(space).inc();                                                                                     // Spread the used slots out
-               }
-             };
-            C.set();
-           }
-         };
-
-        memory.usedSlotsBits.initialize();                                                                              // Clear the existing tree bits - faster than deleting each path in turn
-
-        new For(N)                                                                                                      // Copy redistribution back into original avoiding use of java array methods to make everything explicit for hardware conversion
-         {void body(Int i, Bool C)
-           {final Slot I = new Slot(i);
-            slots(I, new slot(s[i.i()].i()));
-            usedSlotsToKeys(I,      u[i.i()]);
-            C.set();
-           }
-         };
-       }
-     };
-   }
-
-  void reset()                                                                                                          // Reset the slots
-   {new For(numberOfSlotsToKeys()) {void body(Int i, Bool C) {slots(new Slot(i), new slot(0)); C.set();}};
-    new For(numberOfKeys() ) {void body(Int i, Bool C) {  key(new slot(i), new Key(0));  C.set();}};
-
-    initialize();                                                                                                       // Clear the existing tree bits - faster than deleting each path in turn
-   }
-
-  void compactSlot(Slot P, slot Q, Key K)                                                                               // Compact a slot
-   {usedSlotsToKeys(P, new Bool(true));
-     usedKeys(Q, new Bool(true));
-        slots(P, Q);
-         keys(P, K);
-   }
-
-  void compactLeft()                                                                                                    // Compact the used slots to the left end
-   {new If (empty().Flip())                                                                                             // Something to compact
-     {void Then()
-       {final Slots d = duplicateSlots();
-        reset();
-        final Int p = new Int(0);
-        new For(numberOfSlotsToKeys())                                                                                        // Each slot
-         {void body(Int i, Bool C)
-           {final Slot I = new Slot(i);
-            new If (d.usedSlotsToKeys(I))                                                                                     // Each used slot
-             {void Then()
-               {compactSlot(new Slot(p.i()), new slot(p.i()), d.keys(I));
-                p.inc();
-               }
-             };
-            C.set();
-           }
-         };
-       }
-     };
-   }
-
-  void compactRight()                                                                                                   // Compact the used slots to the left end
-   {new If (empty().Flip())                                                                                             // Something to compact
-     {void Then()
-       {final Slots d = duplicateSlots(); reset();
-        final Int p = new Int(numberOfKeys()-1);
-        final Int N = new Int(numberOfSlotsToKeys());
-        new For(N)
-         {void body(Int i, Bool C)
-           {final Slot I = new Slot(N.Sub(i).dec());
-            new If (d.usedSlotsToKeys(I))                                                                                     // Each used slot
-             {void Then()
-               {compactSlot(new Slot(p.i()), new slot(p.i()), d.keys(I));
-                p.dec();
-               }
-             };
-            C.set();
-           }
-         };
-       }
-     };
-   }
 
   Bool mergeSlot(Slots S, Slot I, slot J)                                                                               // Merge a slot
    {final Bool m = new Bool().clear();                                                                                  // Whether a successful merge occurred
@@ -1278,34 +1152,40 @@ keys     :    0   0   1   2
 
 
   static void test_redistribute(boolean Ex)
-   {final Slots s = new Slots(4)
+   {final Slots s = new Slots(8)
      {void slotsCode()
        {immediate(Ex);
-        setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
-        setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
+        maxSteps = 99999;
+        setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
+        setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
+        setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
+        setSlotAndKey(new Int(8),   new Int(4),  new Int(4));
+        setSlotAndKey(new Int(12),  new Int(5),  new Int(5));
+        setSlotAndKey(new Int(13),  new Int(6),  new Int(6));
+        setSlotAndKey(new Int(14),  new Int(0),  new Int(7));
         final Slots s = this;
         //new I() {void action() {stop(s);}};
         ok(()->this, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    0   0   1   0   3   0   0   0
-keysSlots:    0   2   0   4   0   0   0   0
-usedSlots:    .   .   X   .   X   .   .   .
-usedKeys :    .   X   .   X
-keys     :    0   1   0   2
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   1   0   3   0   0   2   4   0   0   0   5   6   0   0
+keysSlots:   14   2   7   4   8  12  13   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   X   .   .   X   X   .   .   .   X   X   X   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
 """);
 
 
         redistribute();
-        new I() {void action() {stop(s);}};
+        //new I() {void action() {stop(s);}};
         ok(()->this, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    0   0   0   0   0   0   2   3
-keysSlots:    0   0   6   7   0   0   0   0
-usedSlots:    .   .   .   .   .   .   X   X
-usedKeys :    .   .   X   X
-keys     :    0   0   1   2
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   1   0   3   0   2   0   4   0   5   0   6   0   0   0   0
+keysSlots:   13   1   5   3   7   9  11   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   .   X   .   X   .   X   .   X   .   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
 """);
 
         execute();
@@ -1639,11 +1519,12 @@ keys     :   14   0  13   0  12   0  10  11
     test_set_del_slot_key();
     test_compactLeft();
     test_compactRight();
+    test_redistribute();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_redistribute();
+   {oldTests();
+    //test_redistribute();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
