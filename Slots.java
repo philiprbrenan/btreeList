@@ -1218,7 +1218,7 @@ keys     :    7   1   3   2   4   5   6   0
         final Slots l = this;
         final Slots r = new Slots(4)
          {void slotsCode()
-           {//l.program(this);
+           {l.program(this);
             setSlotAndKey(new Int(2), new Int(1), new Int(3));
             setSlotAndKey(new Int(4), new Int(3), new Int(4));
            }
