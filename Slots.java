@@ -345,6 +345,33 @@ class Slots extends Program                                                     
      };
    }
 
+  Bool mergeFromRight(Slots Right)                                                                                      // Merge the specified slots from the right
+   {final Int lc =       usedKeys.countOnes();
+    final Int rc = Right.usedKeys.countOnes();
+    final Bool r = new Bool(false);
+    final Slots left = this;
+    new I() {void action() {say("AAAA", Right);}};
+    new If (lc.Add(rc).le(new Int(numberOfKeys())))
+     {void Then()
+       {//      compactLeft ();
+        Right.compactRight();
+        new I() {void action() {say("BBBB", Right);}};
+              compactLeft ();
+        new I() {void action() {say("CCCC", left);}};
+        new I() {void action() {stop(Right);}};
+        r.set(true);
+        new For (rc, new Int(numberOfKeys()))
+         {void body(Int Index, Bool Continue)
+           {final Int k = Right.getSlotToKeyValue(Index);                                                                                 // Index of key being moved
+            final Int K = Right.getKeyValue(k);                                                                                       // Value of key being moved
+            setSlotAndKey(Index, k, K);                                                                                             // Reinsert source at target
+           }
+         };
+       }
+     };
+    return r;
+   }
+
 //  Slots duplicateSlots()                                                                                                // Copy the source slots
 //   {final Slots t = new Slots(numberOfKeys, byteMemory);
 //    System.arraycopy(byteMemory.bytes, byteMemory.start, t.byteMemory.bytes, byteMemory.start, byteMemory.width);
@@ -986,7 +1013,6 @@ usedKeys :    .   X   .   X
 keys     :    0   1   0   2
 """);
 
-
         compactLeft();
         //new I() {void action() {stop(s);}};
         ok(()->this, """
@@ -1027,7 +1053,6 @@ usedKeys :    .   X   .   X
 keys     :    0   1   0   2
 """);
 
-
         compactRight();
         //new I() {void action() {stop(s);}};
         ok(()->this, """
@@ -1038,6 +1063,18 @@ keysSlots:    0   0   6   7   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X
 usedKeys :    .   .   X   X
 keys     :    0   0   1   2
+""");
+
+        compactLeft();
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    1   0   0   0   0   0   0   0
+keysSlots:    1   0   0   0   0   0   0   0
+usedSlots:    X   X   .   .   .   .   .   .
+usedKeys :    X   X   .   .
+keys     :    2   1   0   0
 """);
 
         execute();
@@ -1169,6 +1206,52 @@ keys     :    7   1   3   2   4   5   6   0
   static void test_shift()
    {test_shift(true);
     test_shift(false);
+   }
+
+  static void test_mergeFromRight(boolean Ex)
+   {final Slots s = new Slots(4)
+     {void slotsCode()
+       {immediate(Ex);
+        maxSteps = 99999;
+        setSlotAndKey(new Int(2), new Int(1), new Int(1));
+        setSlotAndKey(new Int(4), new Int(3), new Int(2));
+        final Slots l = this;
+        final Slots r = new Slots(4)
+         {void slotsCode()
+           {//program(s);
+            setSlotAndKey(new Int(2), new Int(1), new Int(3));
+            setSlotAndKey(new Int(4), new Int(3), new Int(4));
+           }
+         };
+        //mergeFromRight(r);
+        new I() {void action() {stop(l);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   0   1   3   2   4   5   6   0   0   0   0   0
+keysSlots:   11   5   7   6   8   9  10   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   .   .   .   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
+""");
+        new I() {void action() {stop(r);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   0   1   3   2   4   5   6   0   0   0   0   0
+keysSlots:   11   5   7   6   8   9  10   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   .   .   .   .
+usedKeys :    X   X   X   X   X   X   X   .
+keys     :    7   1   3   2   4   5   6   0
+""");
+        execute();
+       }
+     };
+   }
+
+  static void test_mergeFromRight()
+   {test_mergeFromRight(true);
+    test_mergeFromRight(false);
    }
 
 /*
@@ -1493,11 +1576,13 @@ keys     :   14   0  13   0  12   0  10  11
     test_compactLeft();
     test_compactRight();
     test_redistribute();
+    test_shift();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_shift();
+    test_compactRight();
+    //test_mergeFromRight();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
