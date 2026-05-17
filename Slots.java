@@ -1220,7 +1220,6 @@ keys     :    7   1   3   2   4   5   6   0
             setSlotAndKey(new Int(4), new Int(3), new Int(4));
            }
          };
-        //r.compactRight();
         mergeFromRight(r);
         ok(()->r, """
 Slots    : refs:  4
@@ -1231,7 +1230,6 @@ usedSlots:    .   .   .   .   .   .   X   X
 usedKeys :    .   .   X   X
 keys     :    0   0   3   4
 """);
-        //l.compactLeft();
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
@@ -1248,7 +1246,7 @@ keys     :    2   1   3   4
 
   static void test_mergeFromRight()
    {test_mergeFromRight(true);
-    //test_mergeFromRight(false);
+    test_mergeFromRight(false);
    }
 
 /*
@@ -1577,8 +1575,8 @@ keys     :   14   0  13   0  12   0  10  11
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_mergeFromRight();
+   {oldTests();
+    //test_mergeFromRight();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
