@@ -13,6 +13,8 @@ public class BitSet extends Program                                             
   final boolean zero, one;                                                                                              // Able to locate zeros and ones via a tree of bits if set
   final ByteMemory.Ref memoryRef;                                                                                       // Memory to use
   static boolean debug;                                                                                                 // Debug if true
+  static int bitsetNumbers = 0;                                                                                         // Bitsets created
+  final  int bitsetNumber  = ++bitsetNumbers;                                                                           // Number of this bitset
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
