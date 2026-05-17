@@ -346,22 +346,18 @@ class Slots extends Program                                                     
    }
 
   Bool mergeFromRight(Slots Right)                                                                                      // Merge the specified slots from the right
-   {final Int lc =       usedKeys.countOnes();
+   {final Int N  = new Int(numberOfSlotsToKeys());
+    final Int lc =       usedKeys.countOnes();
     final Int rc = Right.usedKeys.countOnes();
     final Bool r = new Bool(false);
     final Slots left = this;
-    new I() {void action() {say("AAAA", Right);}};
-    new If (lc.Add(rc).le(new Int(numberOfKeys())))
+    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the rsult can fit in one set of slots
      {void Then()
-       {//      compactLeft ();
+       {      compactLeft ();
         Right.compactRight();
-        new I() {void action() {say("BBBB", Right);}};
-              compactLeft ();
-        new I() {void action() {say("CCCC", left);}};
-        new I() {void action() {stop(Right);}};
         r.set(true);
-        new For (rc, new Int(numberOfKeys()))
-         {void body(Int Index, Bool Continue)
+        new ForCount (N.Sub(rc), N)
+         {void body(Int Index)
            {final Int k = Right.getSlotToKeyValue(Index);                                                                                 // Index of key being moved
             final Int K = Right.getKeyValue(k);                                                                                       // Value of key being moved
             setSlotAndKey(Index, k, K);                                                                                             // Reinsert source at target
@@ -778,7 +774,7 @@ class Slots extends Program                                                     
     s.append("\nslotsKeys: "); for (int i : N) s.append(f(" "+formatKey, getSlotToKeyValue(i)));
     s.append("\nkeysSlots: "); for (int i : N) s.append(f(" "+formatKey, getKeyToSlotValue(i)));
     s.append("\nusedSlots: "); for (int i : N) s.append(                 usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
-    s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys .getBitNC(i) ? "   X" : "   .");
+    s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys       .getBitNC(i) ? "   X" : "   .");
     s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey, getKeyValue(i)));
     return ""+s+"\n";
    }
@@ -1212,6 +1208,7 @@ keys     :    7   1   3   2   4   5   6   0
    {final Slots s = new Slots(4)
      {void slotsCode()
        {immediate(Ex);
+        //trace(true);
         maxSteps = 99999;
         setSlotAndKey(new Int(2), new Int(1), new Int(1));
         setSlotAndKey(new Int(4), new Int(3), new Int(2));
@@ -1223,9 +1220,8 @@ keys     :    7   1   3   2   4   5   6   0
             setSlotAndKey(new Int(4), new Int(3), new Int(4));
            }
          };
-        r.compactRight();
-        //r.execute();
-        //mergeFromRight(r);
+        //r.compactRight();
+        mergeFromRight(r);
         ok(()->r, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
@@ -1235,18 +1231,16 @@ usedSlots:    .   .   .   .   .   .   X   X
 usedKeys :    .   .   X   X
 keys     :    0   0   3   4
 """);
-        l.compactLeft();
+        //l.compactLeft();
         ok(()->this, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   0   0
-keysSlots:    1   0   0   0   0   0   0   0
-usedSlots:    X   X   .   .   .   .   .   .
-usedKeys :    X   X   .   .
-keys     :    2   1   0   0
+slotsKeys:    1   0   0   0   0   0   2   3
+keysSlots:    1   0   6   7   0   0   0   0
+usedSlots:    X   X   .   .   .   .   X   X
+usedKeys :    X   X   X   X
+keys     :    2   1   3   4
 """);
-        new I() {void action() {say("AAAA", r);}};
-        new I() {void action() {stop("BBBB", l);}};
         execute();
        }
      };
@@ -1584,7 +1578,6 @@ keys     :   14   0  13   0  12   0  10  11
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_compactRight();
     test_mergeFromRight();
    }
 
