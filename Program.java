@@ -602,7 +602,7 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool    getBool(Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                        // Get the bit at the bit indexed location
+    Bool    getBool(Int I) {return getBool (I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                       // Get the bit at the bit indexed location
     boolean getBool(int I) {return getBit(bytes[I / Byte.SIZE], I % Byte.SIZE);}                                        // Get the bit at the bit indexed location - debugging
 
     ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
@@ -660,7 +660,8 @@ public class Program extends Test                                               
       Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
       int      getInt(int I)                {return m.getInt (I*N+offset.i());}                                         // Get the int at the indicated position
-      boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
+      //boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
+      boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
 
       Ref step(int Width)                                                                                               // Step up from an existing ref to make a new one - only while not executing
        {final int s = offset.Add(Width).i();
