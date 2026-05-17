@@ -531,6 +531,16 @@ public class Program extends Test                                               
   class ByteMemory                                                                                                      // Bytes being used as the main memory program
    {byte[]bytes;                                                                                                        // Bytes of main memory
 
+    private byte getByte(int I)                                                                                         // Get the value of a byte
+     {if (trace) trace("memory get byte: "+I+" value:"+bytes[I]);                                                       // Trace
+      return bytes[I];                                                                                                  // Get the value of a byte
+     }
+
+    private void putByte(int I, byte J)                                                                                 // Get the value of a byte
+     {if (trace) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                               // Trace
+      bytes[I] = J;                                                                                                     // Set the value of a byte
+     }
+
     ByteMemory(int Length) {bytes = new byte[Length];  clear(0, Length);}                                               // Create the memory
 
     ByteMemory copy(Int Source, Int Target, Int Width)                                                                  // Copy the specified memory
@@ -563,7 +573,7 @@ public class Program extends Test                                               
 
     Int getByte(Int I)                                                                                                  // Get the byte at the indicated position
      {final Int r = new Int();
-      new I() {void action() {r.set(bytes[I.i()]);}};
+      new I() {void action() {r.set(getByte(I.i()));}};
       return r;
      }
 
@@ -573,10 +583,10 @@ public class Program extends Test                                               
       new I()
        {void action()
          {final int p = I.i();
-          final int a = bytes[p+0];
-          final int b = bytes[p+1];
-          final int c = bytes[p+2];
-          final int d = bytes[p+3];
+          final int a = getByte(p+0);
+          final int b = getByte(p+1);
+          final int c = getByte(p+2);
+          final int d = getByte(p+3);
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
          }
@@ -585,10 +595,10 @@ public class Program extends Test                                               
      }
 
     int getInt(int I)                                                                                                   // Get the int at the indicated position
-     {final int a = bytes[I+0];
-      final int b = bytes[I+1];
-      final int c = bytes[I+2];
-      final int d = bytes[I+3];
+     {final int a = getByte(I+0);
+      final int b = getByte(I+1);
+      final int c = getByte(I+2);
+      final int d = getByte(I+3);
       return d | c | b | a;
      }
 
@@ -596,17 +606,17 @@ public class Program extends Test                                               
      {Bool r = new Bool();
       new I()
        {void action()
-         {r.ex(Bool.Ops.set, getBit(bytes[I.i()], J.i()));
+         {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));
          }
        };
       return r;
      }
 
     Bool    getBool(Int I) {return getBool (I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                       // Get the bit at the bit indexed location
-    boolean getBool(int I) {return getBit(bytes[I / Byte.SIZE], I % Byte.SIZE);}                                        // Get the bit at the bit indexed location - debugging
+    boolean getBool(int I) {return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                      // Get the bit at the bit indexed location - debugging
 
     ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
-     {new I() {void action() {bytes[I.i()] = (byte)J.i();}};
+     {new I() {void action() {putByte(I.i(), (byte)J.i());}};
       return this;
      }
 
@@ -614,10 +624,10 @@ public class Program extends Test                                               
      {new I()
        {void action()
          {final int p = I.i(), v = J.i();
-          bytes[p+0] = (byte)((v >>>  0) & 0xFF);
-          bytes[p+1] = (byte)((v >>>  8) & 0xFF);
-          bytes[p+2] = (byte)((v >>> 16) & 0xFF);
-          bytes[p+3] = (byte)((v >>> 24) & 0xFF);
+          putByte(p+0, (byte)((v >>>  0) & 0xFF));
+          putByte(p+1, (byte)((v >>>  8) & 0xFF));
+          putByte(p+2, (byte)((v >>> 16) & 0xFF));
+          putByte(p+3, (byte)((v >>> 24) & 0xFF));
          }
        };
       return this;
@@ -627,9 +637,9 @@ public class Program extends Test                                               
      {new I()
        {void action()
          {final int p = I.i();
-          final int b = bytes[p];
+          final int b = getByte(p);
           final int B = setBit(b, J.i(), K.b());
-          bytes[p] = (byte)B;
+          putByte(p, (byte)B);
          }
        };
       return this;
