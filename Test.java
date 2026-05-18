@@ -350,7 +350,7 @@ public class Test                                                               
           f.equals("Method.java") ||
           f.equals("DirectMethodHandleAccessor.java")) {}
       else if (skipped < Skip) ++skipped;
-      else if (m.equals("<init>")) {}
+//    else if (m.equals("<init>")) {}
       else b.append("  "+f+":"+l+":"+m+'\n');
      }
     return b.toString();
