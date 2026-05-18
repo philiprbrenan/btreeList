@@ -12,33 +12,44 @@ public class BitSet extends Program                                             
   final boolean oneTreeBit;                                                                                             // At most only one tree bit present
   final boolean zero, one;                                                                                              // Able to locate zeros and ones via a tree of bits if set
   final ByteMemory.Ref memoryRef;                                                                                       // Memory to use
-  static boolean debug;                                                                                                 // Debug if true
   static int bitsetNumbers = 0;                                                                                         // Bitsets created
   final  int bitsetNumber  = ++bitsetNumbers;                                                                           // Number of this bitset
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
   static class Build                                                                                                    // Specification of a bitset
-   {int  bitSize = 1;                                                                                                   // Number of bits in the bit set.
-    boolean zero = false;                                                                                               // Able to locate zeros via a tree of bits if set
-    boolean  one = false;                                                                                               // Able to locate ones via a tree of bits if set
-    Program program                  = null;                                                                            // Program whose code is to be written into.
-    Program.ByteMemory.Ref memoryRef = null;                                                                            // Program memory to be used
+   {int              bitSize = 1;                                                                                       // Number of bits in the bit set.
+    boolean             zero = false;                                                                                   // Able to locate zeros via a tree of bits if set
+    boolean              one = false;                                                                                   // Able to locate ones via a tree of bits if set
+    boolean        immediate = true;                                                                                    // Immediate mode execution by default
+    Program           parent = null;                                                                                    // Parent program whose code is to be written into.
+    ByteMemory.Ref memoryRef = null;                                                                                    // Program memory to be used
 
-    Build bitSize (int     BitSize ) {bitSize  = BitSize; return this;}
-    Build zero    (boolean Zero    ) {zero     = Zero   ; return this;}
-    Build one     (boolean One     ) {one      = One    ; return this;}
-    Build memory  (Program.ByteMemory.Ref Ref) {memoryRef = Ref; return this;}
+    Build bitSize  (int     BitSize  ) {bitSize   = BitSize  ;    return this;}
+    Build zero     (boolean Zero     ) {zero      = Zero     ;    return this;}
+    Build one      (boolean One      ) {one       = One      ;    return this;}
+    Build immediate(boolean Immediate) {immediate = Immediate;    return this;}
+    Build memory   (Program.ByteMemory.Ref Ref) {memoryRef = Ref; return this;}
+    Build parent   (Program Parent)    {parent    = Parent   ;    return this;}
 
     int byteSize()                                                                                                      // Bytes needed for the bitset and its bit trees
      {final int s = zero && one ? 3 : zero || one ? 2 : 1;                                                              // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
       return (Byte.SIZE - 1 + s * nextPowerOfTwo(bitSize)) / Byte.SIZE;
      }
+
+    Program.Build programBuild()                                                                                        // Description of containing program
+     {final Program.Build p = new Program.Build();
+      if (memoryRef == null) p.memory(byteSize());
+      p.immediate(immediate);
+      if (parent != null) p.parent(parent);                                                                             // Place code from this program into this parent program
+      return p;
+     }
    }
 
   @SuppressWarnings("this-escape")
   public BitSet(Build Build)                                                                                            // Constructor
-   {bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
+   {super(Build.programBuild());
+    bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
     bitSize1   = bitSize - 1;
     bitSize2   = bitSize >>> 1;
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
@@ -46,9 +57,25 @@ public class BitSet extends Program                                             
     one        = Build.one;                                                                                             // Locate ones efficiently
     byteSize   = Build.byteSize();                                                                                      // Bytes needed for the bitset and its bit trees
     oneTreeBit = bitSize <= 2;                                                                                          // At most only one tree bit present
-    if (Build.memoryRef != null) {program(Build.memoryRef.program()); memoryRef = Build.memoryRef;}                     // Use memory supplied by caller and program owning memory
-    else {byteMemory = new ByteMemory(byteSize); memoryRef = byteMemory.new Ref(0);}                                    // Allocate default backing memory and write code into this program - useful during testing
-    initialize();
+    if (Build.memoryRef != null) memoryRef = Build.memoryRef;                                                           // Use memory supplied by caller and program owning memory
+    else memoryRef = byteMemory.new Ref(0);                                                                             // Create a reference to the default memory
+
+    new ForCount(bitSize)                                                                                               // Clear bitset at start
+     {void body(Int I)
+       {setBitNC(new Pos(I), new Bool(false));
+       }
+     };
+
+    new If (zero)                                                                                                       // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
+     {void Then()
+       {final Int p = addressZeroTree();                                                                                // Position in level, level, width
+        new ForCount(bitSize)                                                                                           // For loop to set bits along path in One tree to actual bit
+         {void body(Int I)
+           {setBitNC(new Pos(p.Add(I)), new Bool(true));
+           }
+         };
+       }
+     };
    }
 
   public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
@@ -234,25 +261,6 @@ public class BitSet extends Program                                             
                 c.and(w.gt(0));                                                                                         // As long as we are in a valid level
                }
              };
-           }
-         };
-       }
-     };
-   }
-
-  public void initialize()                                                                                              // Clear all bits.
-   {new ForCount(bitSize)                                                                                               // Step from root to leaf
-     {void body(Int I)
-       {setBitNC(new Pos(I), new Bool(false));
-       }
-     };
-
-    new If (zero)                                                                                                       // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
-     {void Then()
-       {final Int p = addressZeroTree();                                                                                // Position in level, level, width
-        new ForCount(bitSize)                                                                                           // For loop to set bits along path in One tree to actual bit
-         {void body(Int I)
-           {setBitNC(new Pos(p.Add(I)), new Bool(true));
            }
          };
        }
@@ -560,32 +568,6 @@ public class BitSet extends Program                                             
     return c;
    };
 
-//D1 Integrity                                                                                                          // Check that the bit trees match the actual bits
-
-  public boolean integrity() {return integrity(true);}                                                                  // Do an integrity check on the bitset to detect corruption
-
-  public boolean integrity(boolean Stop)                                                                                // Do an integrity check on the bitset to detect corruption and stop on failures unless specified otherwise
-   {final Build  build = new Build().bitSize(bitSize).one(one).zero(zero);                                              // Specify bit set
-    final byte[] bytes = new byte[build.byteSize()];                                                                    // Allocate backing storage.
-
-    final BitSet b = new BitSet(build);                                                                                  // Create an identical bitset
-
-    b.initialize();
-    for (int i : range(bitSize)) b.set(new Pos(i), getBit(new Pos(i)));                                                 // Load bit set
-
-    final String g = toString(), e = ""+b;
-    if (!g.equals(e))                                                                                                   // Check that the current bit tree matches the expected bit tree
-     {if (Stop)                                                                                                         // Normally we woudl stop and complain
-       {ok(g, e);
-        stop("Integrity failed in bit set:\n",
-      "Got\n"     +  toString(),
-      "Expected\n"+b.toString());
-       }
-      return false;
-     }
-    return true;
-   }
-
 //D1 Print                                                                                                              // Print the bit set
 
   public String toString()                                                                                              // Print bit set so we can visualize it. This will not be available on the chip so we use normal Java
@@ -632,17 +614,16 @@ public class BitSet extends Program                                             
 
 //D1 Tests                                                                                                              // Tests
 
-  static BitSet test_bits(int N, boolean One, boolean Zero)                                                             // Create test bitset.
-   {final Build build = new Build().bitSize(N).one(One).zero(Zero);                                                     // Allocate backing storage.
+  static BitSet test_bits(boolean Ex, int N, boolean One, boolean Zero)                                                 // Create test bitset.
+   {final Build build = new Build().bitSize(N).one(One).zero(Zero).immediate(Ex);                                       // Allocate backing storage.
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
     final BitSet    b = new BitSet(build);                                                                              // Create a bit set
     return b;                                                                                                           // Return test bitset.
    }
 
   static void test_bitSet(boolean Ex)                                                                                   // Test bit manipulation.
-   {final BitSet b = test_bits(23, true, false);                                                                        // Get test bitset.
+   {final BitSet b = test_bits(Ex, 23, true, false);                                                                    // Get test bitset.
     final int N = b.size();                                                                                             // Get logical size.
-    b.immediate(Ex);
     for (int i = 0; i < N; i++) b.setBit(b.new Pos(i), b.new Bool(i % 2 == 0));                                         // Set alternating bits.
     final Bool b4 = b.getBit(b.new Pos(b.new Int(4)));                                                                  // Get bit 4.
     final Bool b5 = b.getBit(b.new Pos(b.new Int(5)));                                                                  // Get bit 5.
@@ -663,8 +644,7 @@ false
    }
 
   static void test_prevNext(boolean Ex)                                                                                 // Test tree of searchable one bits
-   {final BitSet b = test_bits(32, true, true);
-    b.immediate(Ex);
+   {final BitSet b = test_bits(Ex, 32, true, true);
     b.maxSteps = 99999;
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
@@ -746,8 +726,7 @@ Zero:
 
   static void test_prevNext01(boolean Ex)                                                                               // Test tree of searchable one bits
    {final int N = 16;
-    final BitSet b = test_bits(N, true, true);
-    b.immediate(Ex);
+    final BitSet b = test_bits(Ex, N, true, true);
 
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
@@ -814,8 +793,7 @@ Zero:
 
   static void test_prevNext10(boolean Ex)                                                                               // Test tree of searchable one bits
    {final int N = 16;
-    final BitSet b = test_bits(N, true, true);
-    b.immediate(Ex);
+    final BitSet b = test_bits(Ex, N, true, true);
     for (int i : range(N)) b.set(b.new Pos(i), b.new Bool((i / 4) % 2 == 1));
 
    //stop(b);
@@ -867,8 +845,7 @@ Zero:
 
   static void test_oneZero(boolean Ex)
    {final int N = 8;
-    final BitSet b = test_bits(N, true, true);
-    b.immediate(Ex);
+    final BitSet b = test_bits(Ex, N, true, true);
     final StringBuilder s = new StringBuilder();
     b.new I() {void action() {s.append("Start:\n"+b);}};
 
@@ -1078,16 +1055,25 @@ Zero:
     test_oneZero(false);
    }
 
-  static void test_fullEmpty()
-   {final int N = 16;
-    final BitSet b = test_bits(N, true, true);
-    ok(b.empty());
-    for (int i : range(N))
-     {ok(b.full().Flip());
-      b.set(b.new Pos(i), b.new Bool(true));
-      ok(b.empty().Flip());
-     }
-    ok(b.full());
+  static void test_fullEmpty(boolean Ex)
+   {final int    N = 16;
+    final BitSet b = test_bits(Ex, N, true, true);
+    final Bool  e1 = b.empty(); b.ok(()->e1,  true);
+
+    b.new ForCount(b.new Int(N))
+     {void body(Int Index)
+       {final Bool f2 = b.full (); b.ok(()->f2, false);
+        b.set(b.new Pos(Index), b.new Bool(true));
+        final Bool e2 = b.empty(); b.ok(()->e2, false);
+       }
+     };
+    final Bool f1 = b.full(); b.ok(()->f1, true);
+    b.execute();
+   }
+
+  static void test_fullEmpty()                                                                                            // Test tree of searchable one bits
+   {test_fullEmpty(true);
+    test_fullEmpty(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
