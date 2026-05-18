@@ -14,50 +14,59 @@ public class Program extends Test                                               
   final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
   final Stack<StringBuilder> put = new Stack<>();                                                                       // Output from execution
 
-  Program           program = this;                                                                                     // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
-  ByteMemory     byteMemory;                                                                                            // Optional memory associated with the program
-  public  boolean immediate = true;                                                                                     // Exeute immediately if true else generate machine code and execute later
-  public  I       executing = null;                                                                                     // Instruction being currently executed
-  public  int      maxSteps = 9999;                                                                                     // Number of steps permitted in code execution
-  private int     nextIntId = 0;                                                                                        // Unique id for each Int
-  private int    nextBoolId = 0;                                                                                        // Unique id for each Bool
-  private int            pc;                                                                                            // Program counter - set to something less than zero to stop with a return code
+  final Program parentProgram;                                                                                          // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
+  final ByteMemory byteMemory;                                                                                          // Optional memory associated with the program
+  final String        tracing;                                                                                          // Trace to this file
+  final boolean     immediate;                                                                                          // Execute immediately if true else generate machine code and execute later
+  public  I         executing = null;                                                                                   // Instruction being currently executed
+  public  int        maxSteps = 9999;                                                                                   // Number of steps permitted in code execution
+  private int       nextIntId = 0;                                                                                      // Unique id for each Int
+  private int      nextBoolId = 0;                                                                                      // Unique id for each Bool
+  private static int programs = 0;                                                                                      // Unique id for each Bool
+  final   int       programId = ++programs;                                                                             // Unique id for each Bool
+  private int              pc;                                                                                          // Number the programs
 
-  Program() {code();}                                                                                                   // Create a program which executes as it is written
-  Program(boolean Immediate) {immediate = Immediate; code();}                                                           // Create a local program that executes immediately or later as machine code - the immediate mode only affects the local program
-  Program(Program Program)   {program   = Program;   code();}                                                           // Access the specified remote program through this program
+  static class Build                                                                                                    // Builder for this program
+   {boolean immediate;                                                                                                  // Immediate mode
+    boolean trace;                                                                                                      // Trace execution
+    Program parent;                                                                                                     // Parent program
+    Integer size;                                                                                                       // Memory allocated by this program
+    Build immediate(boolean Immediate) {immediate = Immediate; return this;}
+    Build parent   (Program Parent)    {parent    = Parent;    return this;}
+    Build memory   (int     Size)      {size      = Size;      return this;}
+    Build trace    (boolean Trace)     {trace     = Trace;     return this;}
+   }
+
+  Program(Build Build)                                                                                                  // Construct
+   {immediate     = Build.immediate;                                                                                    // Immediate or delayed execution
+    parentProgram = Build.parent == null ? this : Build.parent;                                                         // Parent program that will contain the code
+    byteMemory    = Build.size   != null ? new ByteMemory(Build.size) : null;                                           // Memory associated with program if any
+    tracing       = Build.trace  ? ("trace/"+(immediate ? "A" : "B")+".txt") : null;                                    // Tracing if any
+    if (tracing()) deleteFile(tracing);                                                                                 // Delete any existing trace file so we can start a new
+    code();                                                                                                             // Load or execute the code associated with this program
+   }
 
   void code() {}                                                                                                        // Override to provide some code for this program
-  boolean immediate() {return program.immediate;}                                                                       // Executing immediately via interpretation
-  boolean executing() {return program.executing != null;}                                                               // Executing machine code
-  Program   program() {return program;}                                                                                 // Address this program
-  Program immediate(boolean Immediate) {program.immediate = Immediate; return this;}                                    // Request immediate execution via interpretation
-  final void program(Program Program)  {program = Program;}                                                             // Set remote program to accept subsequent code. Set final to prevent this-escape error in derived classes
-  void executingOrInterpreting() {if (!immediate() && !executing()) stop("Not executing or interpreting");}             // Use standard Java operators rather than this class to execute code that is not executed as machine conde
+  boolean immediate() {return program().immediate;}                                                                     // Executing immediately via interpretation
+  boolean executing() {return program().executing != null;}                                                             // Executing machine code
+  boolean   tracing() {return tracing != null;}                                                                         // Trace execution
+  Program   program() {return parentProgram;}                                                                           // Address this program
+
+  void executingCheck() {if (!executing()) stop("Not executing or interpreting");}                                      // Use standard Java operators rather than this class to execute code that is not executed as machine conde
+
   void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructionse
-   {final I      i = program.executing;
+   {final I      i = parentProgram.executing;
     final String m = immediate() ? "immediate" : "delayed";
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
 
-  boolean trace = false;                                                                                                // Trace if true
-  final Stack<String> traceLog = new Stack<>();                                                                         // Trace of execution if requested
-  Program trace(boolean Trace) {trace = Trace; return this;}                                                            // Trace an operation
+  void trace(String Message)  {if (tracing()) {appendFile(tracing, Message+"\n");}}                                          // Write a trace message with location infdormatrion
 
-  void trace(String Message, String Location)                                                                           // Write a trace message
-   {if (trace)
-     {if (Location == null) traceLog.push(Message);
-      else                  traceLog.push(f("%-32s  %s", Message, Location));
+  void trace(String Message, String Location)                                                                           // Write a trace message with location infdormatrion
+   {if (tracing())
+     {final String m = Location == null ? Message+"\n" : f("%-32s  %s\n", Message, Location);
+      appendFile(tracing, m);
      }
-   }
-
-  void trace(String Message) {trace(Message, null);}                                                                    // Trace an operation
-
-  String trace()
-   {final StringBuilder s = new StringBuilder();
-    final int N = traceLog.size(); if (N == 0) return "";
-    for(int i = 0; i < N; ++i) s.append(f("%4d  %s\n", i, traceLog.elementAt(i)));
-    return ""+s;
    }
 
 //D1 Program                                                                                                            // Program structures
@@ -68,24 +77,25 @@ public class Program extends Test                                               
       final Bool cont = new Bool();
 
       if (immediate())                                                                                                  // Immediate execution
-       {for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
-         {if (trace) trace("For "+i);
+       {index.set(Start);                                                                                               // Start index
+        for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
+         {if (tracing()) trace("For "+i);
           cont.clear();                                                                                                 // Terminate unless told otherwise
-          index.set(i);                                                                                                 // Set the index to each element of the specified range
           body(index, cont);                                                                                            // Execute the loop
-          if (cont.Flip().b()) break;                                                                                   // Terminate the loop unless continuation requested
+          index.inc();                                                                                                  // Set the index to each element of the specified range
+          if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation requested
          }
        }
       else                                                                                                              // Machine code
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        if (trace) trace("For "+index.i);
         new I(true)
          {void action()
            {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
            }
          };
+        if (tracing()) new I() {void action() {trace("For "+index.i); }};                                                   // Trace at run time
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment lop counter
@@ -109,22 +119,23 @@ public class Program extends Test                                               
      {final Int index = new Int();
 
       if (immediate())                                                                                                  // Immediate execution
-       {for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
-         {if (trace) trace("ForCount "+i);
-          index.set(i);                                                                                                 // Set the index to each element of the specified range
+       {index.set(Start);                                                                                               // Start index
+        for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
+         {if (tracing()) trace("ForCount "+i);
           body(index);                                                                                                  // Execute the loop
+          index.inc();                                                                                                    // Increment lop counter
          }
        }
       else                                                                                                              // Machine code
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        if (trace) trace("ForCount "+index.i);
         new I(true)                                                                                                     // The for loop will not be executed if the execution count is less than 1
          {void action()
            {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
            }
          };
+        if (tracing()) new I() {void action() {trace("ForCount "+index.i);}};                                               // Trace at run time
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment lop counter
         new I(true)
@@ -149,11 +160,11 @@ public class Program extends Test                                               
     If (Bool    Condition)
      {if (immediate())                                                                                                  // Immediate execution
        {if (Condition.b())
-         {if (trace) trace("Then");
+         {if (tracing()) trace("Then");
           Then();
          }
         else
-         {if (trace) trace("Else");
+         {if (tracing()) trace("Else");
           Else();
          }
        }
@@ -165,7 +176,7 @@ public class Program extends Test                                               
            {if (!Condition.b()) program().pc = lse.offset;
            }
          };
-        if (trace) trace("Then2");
+        if (tracing()) new I() {void action() {trace("Then");}};                                                        // Trace at run time
         Then();                                                                                                         // Then body
         new I(true)                                                                                                     // Jump over else to end
          {void action()
@@ -173,7 +184,7 @@ public class Program extends Test                                               
            }
          };
         lse.set();                                                                                                      // Start of else
-        if (trace) trace("Else2");
+        if (tracing()) new I() {void action() {trace("Else");}};                                                            // Trace at run time
         Else();                                                                                                         // Else body
         end.set();                                                                                                      // End of the loop
        }
@@ -194,8 +205,8 @@ public class Program extends Test                                               
   class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
-    final int id = program.nextBoolId++;                                                                                // Unique id for Bool
-    private final String traceComment = trace ? traceComment() : null;                                                  // Location
+    final int id = parentProgram.nextBoolId++;                                                                          // Unique id for Bool
+    private final String traceComment = tracing() ? traceComment() : null;                                              // Location
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
@@ -232,17 +243,17 @@ public class Program extends Test                                               
     Bool ie(Ops Op, Int     I) {new I() {void action() {ex(Op, I);}}; return this;}
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
-     {executingOrInterpreting();
+     {executingCheck();
       switch(Op)
        {case flip -> {x(); i = !i;                }
         default   -> stop("Op not implemented:", Op);
        }
-      if (trace) trace("Bool1 "+Op+" "+this, traceComment);
+      if (tracing()) trace("Bool1 "+Op+" "+this, traceComment);
       return this;
      }
 
     Bool ex(Ops Op, boolean I)                                                                                          // Execute a monadic boolean operation on a constant
-     {executingOrInterpreting();
+     {executingCheck();
       switch (Op)
        {case set -> {i  = I;          }
         case eq  -> {x(); i = i == I; }
@@ -250,22 +261,22 @@ public class Program extends Test                                               
         default  -> stop("Op not implemented:", Op);
        }
       v = true;
-      if (trace) trace("Bool2 "+Op+" "+this+" "+I, traceComment);
+      if (tracing()) trace("Bool2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
     Bool ex(Ops Op, Bool I)                                                                                             // Execute a monadic boolean operation on a variable
-     {executingOrInterpreting();
+     {executingCheck();
       I.x(); return ex(Op, I.i);
      }
 
-    Bool ex(Ops Op, Int I)                                                                                               // Execute a monadic boolean operation on an integer variable
-     {executingOrInterpreting();
+    Bool ex(Ops Op, Int I)                                                                                              // Execute a monadic boolean operation on an integer variable
+     {executingCheck();
       switch(Op)
        {case set -> {I.x(); i = I.i > 0; v = true;}
         default  -> stop("Op not implemented:", Op);
        }
-      if (trace) trace("Bool4 "+Op+" "+this+" "+I, traceComment);
+      if (tracing()) trace("Bool4 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
@@ -349,8 +360,8 @@ public class Program extends Test                                               
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
-    private final int id = program.nextIntId++;                                                                         // Unique id for Int
-    private final String traceComment = trace ? traceComment() : null;                                                  // Location
+    private final int id = parentProgram.nextIntId++;                                                                   // Unique id for Int
+    private final String traceComment = tracing() ? traceComment() : null;                                              // Location
 
     int         i()  {x(); return i;}                                                                                   // Current value
     boolean     v()  {     return v;}                                                                                   // Value has been set
@@ -393,7 +404,7 @@ public class Program extends Test                                               
     Int ie(Ops Op, Int I) {new I() {void action() {ex(Op, I);}}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
-     {executingOrInterpreting();
+     {executingCheck();
       x();
       switch(Op)
        {case inc  -> {i++;                   }
@@ -405,12 +416,13 @@ public class Program extends Test                                               
         case abs  -> {i = i < 0 ? -i : i;    }
         default   -> stop("Op not implemented:", Op);
        }
-      if (trace) trace("Int1 "+Op, traceComment);
+
+      if (tracing()) trace("Int1 "+Op, traceComment);
       return this;
      }
 
     Int ex(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
-     {executingOrInterpreting();
+     {executingCheck();
       switch (Op)
        {case set  -> {      i  = I;}
         case add  -> { x(); i += I;}
@@ -422,12 +434,12 @@ public class Program extends Test                                               
         default   -> stop("Op not implemented:", Op);
        }
       v = true;
-      if (trace) trace("Int2 "+Op+" "+this+" "+I, traceComment);
+      if (tracing()) trace("Int2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
-     {executingOrInterpreting();
+     {executingCheck();
       I.x(); return ex(Op, I.i());
      }
 
@@ -478,7 +490,7 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, int I)
      {x();
-      if (trace) trace("Int3 "+Op+" "+this+" "+B+" "+I, traceComment);
+      if (tracing()) trace("Int3 "+Op+" "+this+" "+B+" "+I, traceComment);
       switch(Op)
        {case eq -> B.ex(Bool.Ops.set, i == I);
         case ne -> B.ex(Bool.Ops.set, i != I);
@@ -532,12 +544,12 @@ public class Program extends Test                                               
    {byte[]bytes;                                                                                                        // Bytes of main memory
 
     private byte getByte(int I)                                                                                         // Get the value of a byte
-     {if (trace) trace("memory get byte: "+I+" value:"+bytes[I]);                                                       // Trace
+     {if (tracing()) trace("memory get byte: "+I+" value:"+bytes[I]);                                                       // Trace
       return bytes[I];                                                                                                  // Get the value of a byte
      }
 
     private void putByte(int I, byte J)                                                                                 // Get the value of a byte
-     {if (trace) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                               // Trace
+     {if (tracing()) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                               // Trace
       bytes[I] = J;                                                                                                     // Set the value of a byte
      }
 
@@ -612,7 +624,7 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool    getBool(Int I) {return getBool (I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                       // Get the bit at the bit indexed location
+    Bool    getBool(Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                        // Get the bit at the bit indexed location
     boolean getBool(int I) {return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                      // Get the bit at the bit indexed location - debugging
 
     ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
@@ -648,10 +660,11 @@ public class Program extends Test                                               
     ByteMemory putBool(Int I, Bool K) {putBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE), K); return this;}                    // Set the bit at the bit indexed position
 
     class Ref                                                                                                           // Reference into memory
-     {final Int offset;                                                                                                 // Offset of this reference in memory
+     {final Int offset = new Int();                                                                                     // Offset of this reference in memory
       final int N = Integer.BYTES;
       final ByteMemory m = ByteMemory.this;
-      Ref(int Offset) {offset = new Int(Offset);}                                                                       // Offset this ref
+      Ref(int Offset) {offset.set(Offset);}                                                                             // Offset this ref
+      Ref(Int Offset) {offset.set(Offset);}                                                                             // Offset this ref
 
       ByteMemory byteMemory() {return ByteMemory.this;}
       Program    program()    {return Program.this;}
@@ -670,16 +683,13 @@ public class Program extends Test                                               
       Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
       int      getInt(int I)                {return m.getInt (I*N+offset.i());}                                         // Get the int at the indicated position
-      //boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
-      boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}   // Get the bit at the bit indexed location - debugging
+      //boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);} // Get the bit at the bit indexed location - debugging
+      boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}           // Get the bit at the bit indexed location - debugging
 
-      Ref step(int Width)                                                                                               // Step up from an existing ref to make a new one - only while not executing
-       {final int s = offset.Add(Width).i();
-        if (s > size()) stop("Stepping beyond end of memory, start:", offset, "width:", Width, "length:", size());
-        return new Ref(s);
-       }
+      Ref step(int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
+      Ref step(Int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
 
-      public String toString()                                                                                            // Print memory
+      public String toString()                                                                                          // Print memory
        {final StringBuilder s = saySb("Ref: " , offset.i());
         return ""+s;
        }
@@ -710,7 +720,7 @@ public class Program extends Test                                               
    }
 
   void push(StringBuilder Value)                                                                                        // Say on the same line
-   {final Stack<StringBuilder> p = program.put;
+   {final Stack<StringBuilder> p = parentProgram.put;
     if (p.size() == 0) {p.push(Value); return;}
     final StringBuilder q = p.lastElement();
 
@@ -721,7 +731,7 @@ public class Program extends Test                                               
    }
 
   String output()                                                                                                       // Output from execution
-   {final String r = program.put.size() > 0 ? joinStringBuilders(program.put, "") : "";
+   {final String r = parentProgram.put.size() > 0 ? joinStringBuilders(parentProgram.put, "") : "";
     return r.replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");
    }
 
@@ -733,14 +743,13 @@ public class Program extends Test                                               
    {final int instructionNumber;                                                                                        // The number of this instruction
     final boolean   mightJump;                                                                                          // The instruction might cause a jump
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
-    final String traceComment = traceComment();                                                                         // Line at which this instruction was created as a comment
+    final String traceComment = tracing() ? traceComment() : null;                                                      // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
      {ai(); //if  (executing()) stop("Cannot add instructions during progam execution");
-      instructionNumber = program.code.size();                                                                          // Number each instruction - hwever this only mke sens in delayed execution mode
+      instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - hwever this only mke sens in delayed execution mode
       mightJump = MightJump;
-
-      if (immediate()) {executing = this; action(); executing = null;}                                                  // Execute instruction immediately via interpretation if in immediate execution mode
+      if (immediate()) {parentProgram.executing = this; action(); parentProgram.executing = null;}                      // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save intruction in program for later execution if in delayed == non immediate execution mode
      }
 
@@ -756,7 +765,8 @@ public class Program extends Test                                               
    }
 
   void execute()                                                                                                        // Execute the current code
-   {if (immediate) return;                                                                                              // The code has already been executed interpretively
+   {if (immediate()) return;                                                                                            // The code has already been executed interpretively
+    if (tracing()) deleteFile(tracing);
     if (code.size() == 0) stop("No code to execute");
     pc = 0;
     int c, N;
@@ -776,12 +786,12 @@ public class Program extends Test                                               
     if (c >= maxSteps) stop("Out of steps after step:", c);
    }
 
-  void Goto(Label Target) {program.pc = Target.offset;}                                                                 // Goto a label unconditionally
-  void Goto(Label Target, Bool If) {if ( If.b()) program.pc = Target.offset;}                                           // Goto a label conditionally
-  void Noto(Label Target, Bool If) {if (!If.b()) program.pc = Target.offset;}                                           // Goto a label not unconditionally
+  void Goto(Label Target) {parentProgram.pc = Target.offset;}                                                           // Goto a label unconditionally
+  void Goto(Label Target, Bool If) {if ( If.b()) parentProgram.pc = Target.offset;}                                     // Goto a label conditionally
+  void Noto(Label Target, Bool If) {if (!If.b()) parentProgram.pc = Target.offset;}                                     // Goto a label not unconditionally
 
   void variableNotSet(String Type)                                                                                      // Variable not yet set message
-   {final I i = program.executing;
+   {final I i = parentProgram.executing;
     final String m = "has not been set yet";
     if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With trace back on failing instruction if possibep
     else           stop(Type, m);                                                                                       // No traceback available
@@ -800,7 +810,7 @@ public class Program extends Test                                               
   static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   static void test_programming(boolean Ex)
-   {final Program P = new Program()
+   {final Program P = new Program(new Build().immediate(Ex).trace(true))
      {void code()
        {final Int i = new Int(0);
         final Int N = new Int(11);
@@ -825,12 +835,11 @@ public class Program extends Test                                               
    }
 
   static void test_programming()
-   {test_programming(true);
-    test_programming(false);
+   {test_programming(true); test_programming(false);
    }
 
   static void test_bool(boolean Ex)
-   {final Program  P = new Program(Ex)
+   {final Program  P = new Program(new Build().immediate(Ex))
      {void code()
        {final Bool z = new Bool().clear();
         final Bool o = new Bool().set();
@@ -852,7 +861,7 @@ public class Program extends Test                                               
    }
 
   static void test_add(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(1);
         final Int b = new Int(0);
@@ -889,7 +898,7 @@ public class Program extends Test                                               
    }
 
   static void test_fibonnacci(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(0);
         final Int b = new Int(1);
@@ -929,7 +938,7 @@ public class Program extends Test                                               
    }
 
   static void test_mod(Boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int  a = new Int ();
         final Bool b = new Bool();
@@ -964,10 +973,9 @@ public class Program extends Test                                               
    }
 
   static Program test_incremental(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex).trace(true))
      {void code()
-       {trace = true;
-        final Int a = new Int(0);
+       {final Int a = new Int(0);
                  put(a);
         a.inc(); put(a);
         a.inc(); put(a);
@@ -985,11 +993,11 @@ public class Program extends Test                                               
 
   static void test_incremental()
    {final Program p = test_incremental(true), q = test_incremental(false);
-    ok(p.trace(), q.trace());
+    ok(readFile(p.tracing), readFile(q.tracing));
    }
 
   static void test_bits(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {new For(new Int(2))
          {void body(Int Index, Bool Continue)
@@ -1018,14 +1026,14 @@ public class Program extends Test                                               
    }
 
   static void test_remote(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(1);
         a.add(2);
         ok(()->a, 3);
        }
      };
-    final Program Q = new Program(P)
+    final Program Q = new Program(new Build().immediate(Ex).parent(P))
      {void code()
        {final Int a = new Int(1);
         a.add(3);
@@ -1041,7 +1049,7 @@ public class Program extends Test                                               
    }
 
   static void test_copy(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int  a = new Int();
         final Int  A = new Int();
@@ -1070,9 +1078,9 @@ public class Program extends Test                                               
    }
 
   static void test_byteMemory(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
-       {final ByteMemory m = byteMemory = new ByteMemory(16);
+       {final ByteMemory m = byteMemory;
         new For(2)
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
@@ -1105,9 +1113,9 @@ public class Program extends Test                                               
    }
 
   static void test_byteMemoryRef(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
-       {final ByteMemory     M = byteMemory = new ByteMemory(16);
+       {final ByteMemory     M = byteMemory;
         final ByteMemory.Ref m = M.new Ref(8);
         new For(2)
          {void body(Int Index, Bool Continue)
@@ -1141,9 +1149,9 @@ public class Program extends Test                                               
    }
 
   static void test_invalidate(boolean Ex)
-   {final Program P = new Program(Ex)
+   {final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
-       {final ByteMemory     M = byteMemory = new ByteMemory(16);
+       {final ByteMemory     M = byteMemory;
         final ByteMemory.Ref m = M.new Ref(8);
         m.invalidate(new Int(8));
         m.clear     (new Int(4));
@@ -1191,7 +1199,8 @@ public class Program extends Test                                               
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_programming();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
