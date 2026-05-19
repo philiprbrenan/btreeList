@@ -125,29 +125,63 @@ public class BitSet extends Program                                             
 
 //D2 Powers and Positions                                                                                               // Operations in numbers related to powers of two
 
+
 /*
-  0   1   2   3   4   5   6   7
-  8       9      10      11
-  12             13
-  14
+  0    1    2    3    4    5    6    7   8   9  10  11  12  13  14  15
+ 16        17        18        19       20      21      22      23
+ 24                  25                 26              27
+ 28                                     29
+ 30
 */
 
-  static int top(int Power) {return powerTwo(Power+1)-2;}                                                                // Top of the hill - zero based
+  int top() {return 2*bitSize-2;}                                                                                       // Top of the ones tree - zero based
 
-  static int nextDownLow(int Power, int Pos)                                                                            // Given a  bit value at an index after checking that the index is valid
-   {final int p = powerTwo(Power+1);                                                                                    // Number of elements in the tree
-    if (Pos <   0) stop("Position is below tree:", Pos);
-    if (Pos > p-2) stop("Position is above tree:", Pos, p);
-    return 2 * Pos - p;
+  int nextDownLow(int Pos)                                                                                              // Given a  bit value at an index after checking that the index is valid
+   {if (!one) stop("Ones tree requires");
+    final int p = top();                                                                                                // Number of elements in the tree
+    if (Pos < bitSize) stop("Position is below tree:", Pos);
+    if (Pos > p      ) stop("Position is above tree:", Pos, p);
+    return 2 * (Pos-1) - p;
    }
 
-  static int nextDownHigh(int Power, int Pos) {return nextDownLow(Power, Pos) + 1;}                                     // Given a  bit value at an index after checking that the index is valid
+  int nextDownHigh(int Pos) {return nextDownLow(Pos) + 1;}                                                              // Given a  bit value at an index after checking that the index is valid
 
-  static int nextUp(int Power, int Pos)                                                                                 // Given a  bit value at an index after checking that the index is valid
-   {final int p = powerTwo(Power+1);                                                                                    // Number of elements in the tree
-    if (Pos < 0)   stop("Position is below tree:", Pos);
-    if (Pos > p-2) stop("Position is above tree:", Pos, p);
-    return (Pos+p)/2 ;
+  int nextUp(int Pos)                                                                                                   // Given a  bit value at an index after checking that the index is valid
+   {if (!one) stop("Ones tree requires");
+    final int p = top();                                                                                                // Number of elements in the tree
+    if (Pos < 0) stop("Position is below tree:", Pos);
+    if (Pos > p) stop("Position is above tree:", Pos, p);
+    return (Pos+p+2)/2 ;
+   }
+
+  int low(int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated sub tree in the ones tree
+   {if (!one) stop("Ones tree required");
+    if (Pos < bitSize)     stop("Position is below tree:", Pos);
+    if (Pos > 2*bitSize-2) stop("Position is above tree:", Pos, bitSize);
+    if (!getBitNC(Pos)) stop("Cannot go low from Pos:",    Pos, this);
+    int p = Pos;
+    for (int i = 0; i < bitSize; i++)
+     {final int a = nextDownLow(p), b = nextDownHigh(p);
+      p = getBitNC(a) ? a : b;
+      if (p < bitSize) return p;
+     }
+    stop("No low from position:", Pos, this);
+    return -1;
+   }
+
+  int high(int Pos)                                                                                                     // Find the highestbit position with a one in it below the indicated sub tree in the ones tree
+   {if (!one) stop("Ones tree required");
+    if (Pos < bitSize)     stop("Position is below tree:", Pos);
+    if (Pos > 2*bitSize-2) stop("Position is above tree:", Pos, bitSize);
+    if (!getBitNC(Pos)) stop("Cannot go high from Pos:",   Pos, this);
+    int p = Pos;
+    for (int i = 0; i < bitSize; i++)
+     {final int a = nextDownLow(p), b = nextDownHigh(p);
+      p = getBitNC(b) ? b : a;
+      if (p < bitSize) return p;
+     }
+    stop("No high from position:", Pos, this);
+    return -1;
    }
 
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
@@ -1113,50 +1147,114 @@ Zero:
     b.execute();
    }
 
-  static void test_fullEmpty()                                                                                            // Test tree of searchable one bits
+  static void test_fullEmpty()                                                                                          // Test tree of searchable one bits
    {test_fullEmpty(true);
     test_fullEmpty(false);
    }
 
 /*
-  0   1   2   3   4   5   6   7
-  8       9      10      11
-  12             13
-  14
+  0    1    2    3    4    5    6    7   8   9  10  11  12  13  14  15
+ 16        17        18        19       20      21      22      23
+ 24                  25                 26              27
+ 28                                     29
+ 30
 */
 
-  static void test_powerPos()                                                                                            // Test tree of searchable one bits
-   {ok(nextDownHigh(3, 14), 13);
-    ok(nextDownLow (3, 14), 12);
-    ok(nextDownHigh(3, 13), 11);
-    ok(nextDownLow (3, 13), 10);
-    ok(nextDownHigh(3, 12),  9);
-    ok(nextDownLow (3, 12),  8);
-    ok(nextDownHigh(3, 11),  7);
-    ok(nextDownLow (3, 11),  6);
-    ok(nextDownHigh(3, 10),  5);
-    ok(nextDownLow (3, 10),  4);
-    ok(nextDownHigh(3,  9),  3);
-    ok(nextDownLow (3,  9),  2);
-    ok(nextDownHigh(3,  8),  1);
-    ok(nextDownLow (3,  8),  0);
+  static void test_powerPos()                                                                                           // Test tree of searchable one bits
+   {final int N = 16;
+    final BitSet b = test_bits(false, N, true, true);
 
-    ok(nextUp(3, 13),  14);
-    ok(nextUp(3, 12),  14);
-    ok(nextUp(3, 11),  13);
-    ok(nextUp(3, 10),  13);
-    ok(nextUp(3,  9),  12);
-    ok(nextUp(3,  8),  12);
-    ok(nextUp(3,  7),  11);
-    ok(nextUp(3,  6),  11);
-    ok(nextUp(3,  5),  10);
-    ok(nextUp(3,  4),  10);
-    ok(nextUp(3,  3),  9);
-    ok(nextUp(3,  2),  9);
-    ok(nextUp(3,  1),  8);
-    ok(nextUp(3,  0),  8);
+    for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Pos(i), b.new Bool(true));
+    b.execute();
 
-    ok(top(3), 14);
+    ok(b.top(), 30);
+
+    ok(b.nextDownHigh(30), 29);
+    ok(b.nextDownLow (30), 28);
+    ok(b.nextDownHigh(29), 27);
+    ok(b.nextDownLow (29), 26);
+    ok(b.nextDownHigh(28), 25);
+    ok(b.nextDownLow (28), 24);
+    ok(b.nextDownHigh(27), 23);
+    ok(b.nextDownLow (27), 22);
+    ok(b.nextDownHigh(26), 21);
+    ok(b.nextDownLow (26), 20);
+    ok(b.nextDownHigh(25), 19);
+    ok(b.nextDownLow (25), 18);
+    ok(b.nextDownHigh(24), 17);
+    ok(b.nextDownLow (24), 16);
+    ok(b.nextDownHigh(23), 15);
+    ok(b.nextDownLow (23), 14);
+    ok(b.nextDownHigh(22), 13);
+    ok(b.nextDownLow (22), 12);
+    ok(b.nextDownHigh(21), 11);
+    ok(b.nextDownLow (21), 10);
+    ok(b.nextDownHigh(20),  9);
+    ok(b.nextDownLow (20),  8);
+    ok(b.nextDownHigh(19),  7);
+    ok(b.nextDownLow (19),  6);
+    ok(b.nextDownHigh(18),  5);
+    ok(b.nextDownLow (18),  4);
+    ok(b.nextDownHigh(17),  3);
+    ok(b.nextDownLow (17),  2);
+    ok(b.nextDownHigh(16),  1);
+    ok(b.nextDownLow (16),  0);
+
+    ok(b.nextUp(29), 30);
+    ok(b.nextUp(28), 30);
+    ok(b.nextUp(27), 29);
+    ok(b.nextUp(26), 29);
+    ok(b.nextUp(25), 28);
+    ok(b.nextUp(24), 28);
+    ok(b.nextUp(23), 27);
+    ok(b.nextUp(22), 27);
+    ok(b.nextUp(21), 26);
+    ok(b.nextUp(20), 26);
+    ok(b.nextUp(19), 25);
+    ok(b.nextUp(18), 25);
+    ok(b.nextUp(17), 24);
+    ok(b.nextUp(16), 24);
+    ok(b.nextUp(15), 23);
+    ok(b.nextUp(14), 23);
+    ok(b.nextUp(13), 22);
+    ok(b.nextUp(12), 22);
+    ok(b.nextUp(11), 21);
+    ok(b.nextUp(10), 21);
+    ok(b.nextUp( 9), 20);
+    ok(b.nextUp( 8), 20);
+    ok(b.nextUp( 7), 19);
+    ok(b.nextUp( 6), 19);
+    ok(b.nextUp( 5), 18);
+    ok(b.nextUp( 4), 18);
+    ok(b.nextUp( 3), 17);
+    ok(b.nextUp( 2), 17);
+    ok(b.nextUp( 1), 16);
+    ok(b.nextUp( 0), 16);
+
+    //stop("AAAA", b);
+    ok(b, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  0  0  0  0  0  1  1  1  0  0  0  1  0  0  0  0
+One:
+   2   16    8 |  0  0  1  1  0  1  0  0
+   3   24    4 |  0  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  1  1  1  0  1  1  1  1
+   2   39    4 |  1  1  1  1
+   3   43    2 |  1  1
+   4   45    1 |  1
+""");
+
+    ok(b.low(30),   5); ok(b.high(30), 11);
+    ok(b.low(29),  11); ok(b.high(29), 11);
+    ok(b.low(28),   5); ok(b.high(28),  7);
+    ok(b.low(26),  11); ok(b.high(26), 11);
+    ok(b.low(25),   5); ok(b.high(25),  7);
+    ok(b.low(21),  11); ok(b.high(21), 11);
+    ok(b.low(19),   6); ok(b.high(19),  7);
+    ok(b.low(18),   5); ok(b.high(18),  5);
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
@@ -1171,8 +1269,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                       // Run baseline tests.
-    //test_powerPos();
+   {//oldTests();                                                                                                       // Run baseline tests.
+    test_powerPos();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
