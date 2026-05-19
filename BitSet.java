@@ -153,10 +153,9 @@ public class BitSet extends Program                                             
     int p = Pos;                                                                                                        // Position in ones tree
     for (int i = 0; i < logBitSize; i++)                                                                                // Step down
      {final int a = nextDownLow(p), b = nextDownHigh(p);                                                                // Lower level bits
-      p = getBitNC(a) ? a : b;                                                                                          // Step through lowest one if present, otherwise the upper one. One of them  must be present
-      if (p < bitSize) break;                                                                                        // Stepped out of ones tree into target bits
+      if ((p = getBitNC(a) ? a : b) < bitSize) break;                                                                   // Step through lowest one if present, otherwise the upper one. One of them  must be present
      }
-    return p;                                                                                                          // Never used
+    return p;
    }
 
   int high(int Pos)                                                                                                     // Find the highestbit position with a one in it below the indicated sub tree in the ones tree
@@ -164,10 +163,9 @@ public class BitSet extends Program                                             
     int p = Pos;                                                                                                        // Position in ones tree
     for (int i = 0; i < logBitSize; i++)                                                                                // Step down
      {final int a = nextDownLow(p), b = nextDownHigh(p);                                                                // Lower level bits
-      p = getBitNC(b) ? b : a;                                                                                          // Step through highest one if present, otherwise the lower one. One of them  must be present
-      if (p < bitSize) break;                                                                                        // Stepped out of ones tree into target bits
+      if ((p = getBitNC(b) ? b : a) < bitSize) break;                                                                   // Step through highest one if present, otherwise the lower one. One of them  must be present
      }
-    return p;                                                                                                          // Never used
+    return p;
    }
 
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
