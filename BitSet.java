@@ -150,6 +150,26 @@ public class BitSet extends Program                                             
     return (Pos+p)/2 ;
    }
 
+//D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
+
+  public Bool full()                                                                                                    // Whether the bitset is full
+   {final Bool r = new Bool();
+    if (zero)
+     {new I() {void action() {r.ex(Bool.Ops.set, !getBitNC((one ? bitSize1 : 0) + 2*bitSize-2));}};                     // There is a zeroes tree, so a zero at the apex of the zeroes tree indicates that the bit set is full
+     }
+    else r.set(firstZero().notValid());                                                                                 // There is no zeros tree - look for the first zero to check whether the bitset is full
+    return r;
+   }
+
+  public Bool empty()                                                                                                   // Whether the bit set is empty
+   {final Bool r = new Bool();
+    if (one)
+     {new I() {void action() {r.ex(Bool.Ops.set, !getBitNC(2*bitSize-2));}};                                            // There is a ones tree, so a zero at the apex of the ones tree indicates that the bit set is empty
+     }
+    else r.set(firstOne().notValid());                                                                                  // There is no ones tree - look for the first one to check whether the bitset is empty
+    return r;
+   }
+
 //D2 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
   public Bool getBit(Pos Index)                                                                                         // Get bit value at an index after checking that the index is valid
@@ -543,12 +563,6 @@ public class BitSet extends Program                                             
      };
     return Prev;                                                                                                        // Result if found
    }
-
-//D1 Full or empty                                                                                                      // Check whether a bit set is full or empty
-
-  public Bool  full() {return firstZero().notValid();}                                                                  // If there are no zero bits then the bit set must be full
-  //public Bool empty() {return firstOne ().notValid();}                                                                  // If there are no one bits then the bit set must be empty
-  public Bool empty() {return new Bool(!getBitNC(bitSize2));}                                                           // A zero at the apex of the ones tree means that there are no ones so the bit set must be empty
 
 //D1 Statistics                                                                                                         // Count the number of ones or zero bits in a bit set
 
@@ -1157,8 +1171,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                       // Run baseline tests.
-    test_powerPos();
+   {oldTests();                                                                                                       // Run baseline tests.
+    //test_powerPos();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
