@@ -155,7 +155,7 @@ public class BitSet extends Program                                             
   public Bool full()                                                                                                    // Whether the bitset is full
    {final Bool r = new Bool();
     if (zero)
-     {new I() {void action() {r.ex(Bool.Ops.set, !getBitNC((one ? bitSize1 : 0) + 2*bitSize-2));}};                     // There is a zeroes tree, so a zero at the apex of the zeroes tree indicates that the bit set is full
+     {new I() {void action() {r.ex(Bool.Ops.set, !getBitNC(2*bitSize-2+ (one ? bitSize1 : 0)));}};                      // There is a zeroes tree, so a zero at the apex of the zeroes tree indicates that the bit set is full
      }
     else r.set(firstZero().notValid());                                                                                 // There is no zeros tree - look for the first zero to check whether the bitset is full
     return r;
