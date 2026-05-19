@@ -1196,11 +1196,12 @@ public class Program extends Test                                               
     test_byteMemory();
     test_byteMemoryRef();
     test_invalidate();
+    test_programming();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_programming();
+   {oldTests();
+    //test_programming();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
