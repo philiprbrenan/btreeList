@@ -7,7 +7,7 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;                                                                                                     // Standard utility library.
 
 public class BitSet extends Program                                                                                     // Abstract fixed-size bit set using byte-level storage.
- {final int bitSize, bitSize1, bitSize2;                                                                                // Number of bits in the bit set.
+ {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
   final int byteSize;                                                                                                   // Number of bytes in the bit set.
   final boolean oneTreeBit;                                                                                             // At most only one tree bit present
   final boolean zero, one;                                                                                              // Able to locate zeros and ones via a tree of bits if set
@@ -46,12 +46,12 @@ public class BitSet extends Program                                             
      }
    }
 
-  @SuppressWarnings("this-escape")
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.programBuild());
     bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
     bitSize1   = bitSize - 1;
     bitSize2   = bitSize >>> 1;
+    logBitSize = logTwo(bitSize);
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
     zero       = Build.zero;                                                                                            // Locate zeroes efficiently
     one        = Build.one;                                                                                             // Locate ones efficiently
@@ -136,52 +136,40 @@ public class BitSet extends Program                                             
 
   int top() {return 2*bitSize-2;}                                                                                       // Top of the ones tree - zero based
 
-  int nextDownLow(int Pos)                                                                                              // Given a  bit value at an index after checking that the index is valid
+  void checkLow(int Pos, int Low)                                                                                       // Check that we can step down
    {if (!one) stop("Ones tree requires");
     final int p = top();                                                                                                // Number of elements in the tree
-    if (Pos < bitSize) stop("Position is below tree:", Pos);
-    if (Pos > p      ) stop("Position is above tree:", Pos, p);
-    return 2 * (Pos-1) - p;
+    if (Pos < Low) stop("Position is below tree:", Pos);
+    if (Pos > p  ) stop("Position is above tree:", Pos, p);
    }
 
+  int nextDownLow (int Pos) {checkLow(Pos, bitSize); return 2 * (Pos-1) - top();}                                       // Given a  bit value at an index after checking that the index is valid
   int nextDownHigh(int Pos) {return nextDownLow(Pos) + 1;}                                                              // Given a  bit value at an index after checking that the index is valid
+  int nextUp      (int Pos) {checkLow(Pos, 0); return (Pos + top() + 2) / 2;}                                           // Given a  bit value at an index after checking that the index is valid
 
-  int nextUp(int Pos)                                                                                                   // Given a  bit value at an index after checking that the index is valid
-   {if (!one) stop("Ones tree requires");
-    final int p = top();                                                                                                // Number of elements in the tree
-    if (Pos < 0) stop("Position is below tree:", Pos);
-    if (Pos > p) stop("Position is above tree:", Pos, p);
-    return (Pos+p+2)/2 ;
-   }
 
   int low(int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated sub tree in the ones tree
-   {if (!one) stop("Ones tree required");
-    if (Pos < bitSize)     stop("Position is below tree:", Pos);
-    if (Pos > 2*bitSize-2) stop("Position is above tree:", Pos, bitSize);
-    if (!getBitNC(Pos)) stop("Cannot go low from Pos:",    Pos, this);
-    int p = Pos;
-    for (int i = 0; i < bitSize; i++)
-     {final int a = nextDownLow(p), b = nextDownHigh(p);
-      p = getBitNC(a) ? a : b;
-      if (p < bitSize) return p;
+   {checkLow(Pos, bitSize); if (!getBitNC(Pos)) stop("Cannot go low from Pos:",    Pos, this);                          // We can only step down from a one in the ones tree
+    int p = Pos;                                                                                                        // Position in ones tree
+    for (int i = 0; i < logBitSize; i++)                                                                                // Step down
+     {final int a = nextDownLow(p), b = nextDownHigh(p);                                                                // Lower level bits
+      p = getBitNC(a) ? a : b;                                                                                          // Step through lowest one if present, otherwise the upper one. One of them  must be present
+      if (p < bitSize) return p;                                                                                        // Stepped out of ones tree into target bits
      }
-    stop("No low from position:", Pos, this);
-    return -1;
+    stop("No low from position:", Pos, this);                                                                           // Should not happen
+    return -1;                                                                                                          // Never used
    }
 
   int high(int Pos)                                                                                                     // Find the highestbit position with a one in it below the indicated sub tree in the ones tree
-   {if (!one) stop("Ones tree required");
-    if (Pos < bitSize)     stop("Position is below tree:", Pos);
-    if (Pos > 2*bitSize-2) stop("Position is above tree:", Pos, bitSize);
-    if (!getBitNC(Pos)) stop("Cannot go high from Pos:",   Pos, this);
-    int p = Pos;
-    for (int i = 0; i < bitSize; i++)
-     {final int a = nextDownLow(p), b = nextDownHigh(p);
-      p = getBitNC(b) ? b : a;
-      if (p < bitSize) return p;
+   {checkLow(Pos, bitSize); if (!getBitNC(Pos)) stop("Cannot go high from Pos:",   Pos, this);                          // We can only step down from a one in the ones tree
+    int p = Pos;                                                                                                        // Position in ones tree
+    for (int i = 0; i < logBitSize; i++)                                                                                // Step down
+     {final int a = nextDownLow(p), b = nextDownHigh(p);                                                                // Lower level bits
+      p = getBitNC(b) ? b : a;                                                                                          // Step through highest one if present, otherwise the lower one. One of them  must be present
+      if (p < bitSize) return p;                                                                                        // Stepped out of ones tree into target bits
      }
-    stop("No high from position:", Pos, this);
-    return -1;
+    stop("No high from position:", Pos, this);                                                                          // Should not happen
+    return -1;                                                                                                          // Never used
    }
 
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
