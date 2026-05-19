@@ -123,6 +123,31 @@ public class BitSet extends Program                                             
     public String toString() {return "Pos: "+super.toString();}                                                         // Print a bit position
    }
 
+//D2 Powers and Positions                                                                                               // Operations in numbers related to powers of two
+
+/*
+  0   1   2   3   4   5   6   7
+  8       9      10      11
+  12             13
+  14
+*/
+
+  static int nextDownLow(int Power, int Pos)                                                                            // Given a  bit value at an index after checking that the index is valid
+   {final int p = powerTwo(Power+1);                                                                                  // Number of elements in the hill
+    if (Pos <   0) stop("Position is below hill:", Pos);
+    if (Pos > p-2) stop("Position is above hill:", Pos, p);
+    return 2 * Pos - p;
+   }
+
+  static int nextDownHigh(int Power, int Pos) {return nextDownLow(Power, Pos) + 1;}                                     // Given a  bit value at an index after checking that the index is valid
+
+  static int nextUp(int Power, int Pos)                                                                                 // Given a  bit value at an index after checking that the index is valid
+   {final int p = powerTwo(Power+1);                                                                                  // Number of elements in the hill
+    if (Pos < 0)   stop("Position is below hill:", Pos);
+    if (Pos > p-2) stop("Position is above hill:", Pos, p);
+    return (Pos+p)/2 ;
+   }
+
 //D2 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
   public Bool getBit(Pos Index)                                                                                         // Get bit value at an index after checking that the index is valid
@@ -1076,6 +1101,45 @@ Zero:
     test_fullEmpty(false);
    }
 
+/*
+  0   1   2   3   4   5   6   7
+  8       9      10      11
+  12             13
+  14
+*/
+
+  static void test_powerPos()                                                                                            // Test tree of searchable one bits
+   {ok(nextDownHigh(3, 14), 13);
+    ok(nextDownLow (3, 14), 12);
+    ok(nextDownHigh(3, 13), 11);
+    ok(nextDownLow (3, 13), 10);
+    ok(nextDownHigh(3, 12),  9);
+    ok(nextDownLow (3, 12),  8);
+    ok(nextDownHigh(3, 11),  7);
+    ok(nextDownLow (3, 11),  6);
+    ok(nextDownHigh(3, 10),  5);
+    ok(nextDownLow (3, 10),  4);
+    ok(nextDownHigh(3,  9),  3);
+    ok(nextDownLow (3,  9),  2);
+    ok(nextDownHigh(3,  8),  1);
+    ok(nextDownLow (3,  8),  0);
+
+    ok(nextUp(3, 13),  14);
+    ok(nextUp(3, 12),  14);
+    ok(nextUp(3, 11),  13);
+    ok(nextUp(3, 10),  13);
+    ok(nextUp(3,  9),  12);
+    ok(nextUp(3,  8),  12);
+    ok(nextUp(3,  7),  11);
+    ok(nextUp(3,  6),  11);
+    ok(nextUp(3,  5),  10);
+    ok(nextUp(3,  4),  10);
+    ok(nextUp(3,  3),  9);
+    ok(nextUp(3,  2),  9);
+    ok(nextUp(3,  1),  8);
+    ok(nextUp(3,  0),  8);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be stable.
    {test_bitSet();
     test_prevNext01();
@@ -1084,11 +1148,12 @@ Zero:
     test_prevNext10();
     test_oneZero();
     test_fullEmpty();
+    test_powerPos();
    }
 
   static void newTests()                                                                                                // Tests under development.
    {//oldTests();                                                                                                       // Run baseline tests.
-    test_prevNext();
+    test_powerPos();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
