@@ -132,19 +132,21 @@ public class BitSet extends Program                                             
   14
 */
 
+  static int top(int Power) {return powerTwo(Power+1)-2;}                                                                // Top of the hill - zero based
+
   static int nextDownLow(int Power, int Pos)                                                                            // Given a  bit value at an index after checking that the index is valid
-   {final int p = powerTwo(Power+1);                                                                                  // Number of elements in the hill
-    if (Pos <   0) stop("Position is below hill:", Pos);
-    if (Pos > p-2) stop("Position is above hill:", Pos, p);
+   {final int p = powerTwo(Power+1);                                                                                    // Number of elements in the tree
+    if (Pos <   0) stop("Position is below tree:", Pos);
+    if (Pos > p-2) stop("Position is above tree:", Pos, p);
     return 2 * Pos - p;
    }
 
   static int nextDownHigh(int Power, int Pos) {return nextDownLow(Power, Pos) + 1;}                                     // Given a  bit value at an index after checking that the index is valid
 
   static int nextUp(int Power, int Pos)                                                                                 // Given a  bit value at an index after checking that the index is valid
-   {final int p = powerTwo(Power+1);                                                                                  // Number of elements in the hill
-    if (Pos < 0)   stop("Position is below hill:", Pos);
-    if (Pos > p-2) stop("Position is above hill:", Pos, p);
+   {final int p = powerTwo(Power+1);                                                                                    // Number of elements in the tree
+    if (Pos < 0)   stop("Position is below tree:", Pos);
+    if (Pos > p-2) stop("Position is above tree:", Pos, p);
     return (Pos+p)/2 ;
    }
 
@@ -545,7 +547,8 @@ public class BitSet extends Program                                             
 //D1 Full or empty                                                                                                      // Check whether a bit set is full or empty
 
   public Bool  full() {return firstZero().notValid();}                                                                  // If there are no zero bits then the bit set must be full
-  public Bool empty() {return firstOne ().notValid();}                                                                  // If there are no one bits then the bit set must be empty
+  //public Bool empty() {return firstOne ().notValid();}                                                                  // If there are no one bits then the bit set must be empty
+  public Bool empty() {return new Bool(!getBitNC(bitSize2));}                                                           // A zero at the apex of the ones tree means that there are no ones so the bit set must be empty
 
 //D1 Statistics                                                                                                         // Count the number of ones or zero bits in a bit set
 
@@ -1138,6 +1141,8 @@ Zero:
     ok(nextUp(3,  2),  9);
     ok(nextUp(3,  1),  8);
     ok(nextUp(3,  0),  8);
+
+    ok(top(3), 14);
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
