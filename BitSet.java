@@ -128,7 +128,7 @@ public class BitSet extends Program                                             
   Int nextDownLow (Int Pos) {checkLow(Pos, bitSize); return Pos.Dec().mul(2).sub(top());}                               // Given a bit value at an index after checking that the index is valid
   Int nextUp      (Int Pos) {checkLow(Pos, 0);       return Pos.Add(top()).add(2).div(2);}                              // Given a bit value at an index after checking that the index is valid
 
-  Int low(Int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated sub tree in the ones tree
+  Int low(Int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
    {checkLow(Pos, bitSize);                                                                                             // Check we are in the ones tree proper
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
 
@@ -141,7 +141,7 @@ public class BitSet extends Program                                             
            {p.set(a);
            }
           void Else()
-           {p.set(nextDownHigh(p));                                                                                     // Must be a one becuase w started from a one and the left hand size was zero
+           {p.set(nextDownHigh(p));                                                                                     // Must be a one because w started from a one and the left hand size was zero
            }
          };
         new If (p.ge(bitSize)) {void Then() {Continue.set();}};                                                         // Continue while we are in the ones tree
@@ -150,7 +150,7 @@ public class BitSet extends Program                                             
     return p;
    }
 
-  Int high(Int Pos)                                                                                                     // Find the highestbit position with a one in it below the indicated sub tree in the ones tree
+  Int high(Int Pos)                                                                                                     // Find the highest bit position with a one in it below the indicated subtree in the ones tree
    {checkLow(Pos, bitSize);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
     Int p = new Int(Pos);                                                                                               // Position in ones tree
@@ -162,7 +162,7 @@ public class BitSet extends Program                                             
            {p.set(b);
            }
           void Else()
-           {p.set(nextDownLow(p));                                                                                      // Must be a one becuase w started from a one and the left hand size was zero
+           {p.set(nextDownLow(p));                                                                                      // Must be a one because w started from a one and the left hand size was zero
            }
          };
         new If (p.ge(bitSize)) {void Then() {Continue.set();}};                                                         // Continue while we are in the ones tree
@@ -171,13 +171,13 @@ public class BitSet extends Program                                             
     return p;
    }
 
-  Bool canGoLeft(Int Pos)                                                                                               // Whether we can go left from the current postion
+  Bool canGoLeft(Int Pos)                                                                                               // Whether we can go left from the current position
    {checkLow(Pos, bitSize);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     return new Bool(getBitNC(nextDownLow(Pos)));
    }
 
-  Bool canGoRight(Int Pos)                                                                                              // Whether we can go right from the current postion
+  Bool canGoRight(Int Pos)                                                                                              // Whether we can go right from the current position
    {checkLow(Pos, bitSize);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:",  Pos, this);                           // We can only step down from a one in the ones tree
     return new Bool(getBitNC(nextDownHigh(Pos)));
@@ -327,7 +327,7 @@ public class BitSet extends Program                                             
      };
    }
 
-  private void setZeroPath(Int Index)                                                                                   // Set bits along the path from the indexed bit to the root of the bit tree unlkess thre is another path running through each bit
+  private void setZeroPath(Int Index)                                                                                   // Set bits along the path from the indexed bit to the root of the bit tree unless there is another path running through each bit
    {final Int w = new Int(bitSize2);                                                                                    // Width of child layer
     final Int p = new Int(addressZeroTree());                                                                           // First child layer is the first layer of the zero bit tree
     final Int b = new Int(Index.Down());                                                                                // Index of bit in child layer
@@ -436,7 +436,7 @@ public class BitSet extends Program                                             
 
     new If (b.ne(0))                                                                                                    // At the start so no previous bit
      {void Then()
-       {new For(bitSize)                                                                                                // Step up throgh One bits
+       {new For(bitSize)                                                                                                // Step up through One bits
          {void body(Int i, Bool C)
            {final Int  B = new Int(b.Dec());                                                                            // Is there a path down from the next bit?
             C.set();                                                                                                    // Whether we have arrived at a bit that is already correctly set
@@ -675,7 +675,7 @@ public class BitSet extends Program                                             
         if (!one && !zero) break;                                                                                       // Only print the first line if there are no tree bits
        }
       s.append("\n");
-      if (i == 1)                                                                                                       // The first line is the actual bitsw
+      if (i == 1)                                                                                                       // The first line is the actual bits
        {if      (one)  s.append("One:\n");                                                                              // One tree present so it comes next
         else if (zero) s.append("Zero:\n");                                                                             // Zero tree present and no One tree present so the zero tree comes next
        }
