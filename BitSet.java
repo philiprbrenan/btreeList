@@ -99,7 +99,7 @@ public class BitSet extends Program                                             
      };
    }
 
-  private void checkOne () {if (!one)stop("This bitset does have the ability to search for ones");}                      // Check that we can search for ones in this bit set
+  private void checkOne () {if (!one)stop("This bitset does have the ability to search for ones");}                     // Check that we can search for ones in this bit set
   private void checkZero() {if (!one)stop("This bitset does have the ability to search for zeroes");}                   // Check that we can search for zeroes in this bit set
 
 //D2 Powers and Positions                                                                                               // Operations in numbers related to powers of two
@@ -124,12 +124,12 @@ public class BitSet extends Program                                             
      }
    }
 
-  Int nextDownHigh(Int Pos) {return nextDownLow(Pos).Inc();}                                                            // Given a  bit value at an index after checking that the index is valid
-  Int nextDownLow (Int Pos) {checkLow(Pos, bitSize); return Pos.Dec().mul(2).sub(top());}                               // Given a  bit value at an index after checking that the index is valid
-  Int nextUp      (Int Pos) {checkLow(Pos, 0);       return Pos.Add(top()).add(2).div(2);}                              // Given a  bit value at an index after checking that the index is valid
+  Int nextDownHigh(Int Pos) {return nextDownLow(Pos).Inc();}                                                            // Given a bit value at an index after checking that the index is valid
+  Int nextDownLow (Int Pos) {checkLow(Pos, bitSize); return Pos.Dec().mul(2).sub(top());}                               // Given a bit value at an index after checking that the index is valid
+  Int nextUp      (Int Pos) {checkLow(Pos, 0);       return Pos.Add(top()).add(2).div(2);}                              // Given a bit value at an index after checking that the index is valid
 
   Int low(Int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated sub tree in the ones tree
-   {checkLow(Pos, bitSize);                                                                                             // Chek we are in the ones tree proper
+   {checkLow(Pos, bitSize);                                                                                             // Check we are in the ones tree proper
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
 
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
@@ -252,7 +252,7 @@ public class BitSet extends Program                                             
 
   void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the bit tree
    {checkOne();
-    final Int b = new Int(Index);                                                                                     // Position in level
+    final Int b = new Int(Index);                                                                                       // Position in level
     final Int p = new Int(0);                                                                                           // Position in bits, width
     final Int w = new Int(bitSize);                                                                                     // Width
 
@@ -448,11 +448,10 @@ public class BitSet extends Program                                             
                     new If (getBitNC(new Int(p.Add(B).inc())))                                                          // Follow path as low as possible
                      {void Then() {B.inc();}
                      };
-                    //B.add(getBitNC(new Int(p.Add(B).inc())).b() ? 1 : 0);                                               // Follow path to actual bits
                     K.set();
                    }
                  };
-                Prev.set(B);                                                                                               // Save the result
+                Prev.set(B);                                                                                            // Save the result
                 C.clear();                                                                                              // Finish the loop
                }
               void Else()
@@ -496,7 +495,7 @@ public class BitSet extends Program                                             
     if (immediate()) checkIndex(Start);
     final Int Next = new Int();                                                                                         // Invalid indicates not found
 
-    final Int b = new Int(Start);                                                                            // Offset in bits in the current layer
+    final Int b = new Int(Start);                                                                                       // Offset in bits in the current layer
     new If (b.ne(bitSize1))                                                                                             // Not last bit so there might be a next bit
      {void Then()
        {final Int w = new Int(bitSize2);                                                                                // Current width
@@ -588,17 +587,15 @@ public class BitSet extends Program                                             
                             new If (getBitNC(new Int(p.Add(b))).flip())                                                 // Follow path as high as possible
                              {void Then() {B.inc();}
                              };
-                            //B.add(getBitNC(new Int(p.Add(b))).b() ? 0 : 1);                                           // Follow path as high as possible
                             K.set();
                            }
                          };
                         final Int P = new Int(B.Add(B));                                                                // Parent row bits - low position
                         final Int Q = new Int(P.dup().inc());                                                           // Parent row bits - high position
-                        new If (getBit(new Int(Q)).flip())                                                                     // Prev zero bit from actual bits
+                        new If (getBit(new Int(Q)).flip())                                                              // Prev zero bit from actual bits
                          {void Then() {Prev.set(P.inc());}
                           void Else() {Prev.set(P);}
                          };
-                        //R.set(P.add(!getBit(new Int(Q)).b() ? 1 : 0));                                                // Prev zero bit from actual bits
                         C.clear();
                        }
                      };
