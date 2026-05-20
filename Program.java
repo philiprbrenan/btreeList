@@ -304,6 +304,12 @@ public class Program extends Test                                               
       return this;
      }
 
+    Bool Or(Bool...b)                                                                                                   // "Or" without short circuit. Does not modify the target
+     {final Bool r = new Bool(this);
+      r.set(this).or(b);
+      return r;
+     }
+
     @SafeVarargs
     final Bool And(Supplier<Bool>...b)                                                                                  // "And" with short circuit
      {final Bool r = new Bool();
@@ -346,6 +352,12 @@ public class Program extends Test                                               
          }
        };
       return this;
+     }
+
+    Bool And(Bool...b)                                                                                                   // "And" without short circuit. Does not modify the target
+     {final Bool r = new Bool(this);
+      r.and(b);
+      return r;
      }
 
     Bool dup   ()       {                                             return new Bool(this);}                           // Duplicate a boolean so that the duplicated version can be modified without modifying the original
@@ -860,6 +872,41 @@ public class Program extends Test                                               
     test_bool(false);
    }
 
+
+  static void test_andOr(boolean Ex)
+   {final Program  P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Bool z = new Bool().clear();
+        final Bool o = new Bool().set();
+        final Bool O1 = z.Or (z, z);
+        final Bool O2 = z.Or (z, o);
+        final Bool O3 = z.Or (o, z);
+        final Bool O4 = z.Or (o, o);
+        final Bool A1 = o.And(z, z);
+        final Bool A2 = o.And(z, o);
+        final Bool A3 = o.And(o, z);
+        final Bool A4 = o.And(o, o);
+        execute();
+        ok(()->z,  false);
+        ok(()->o,  true);
+        ok(()->O1, false);
+        ok(()->O2, true);
+        ok(()->O3, true);
+        ok(()->O4, true);
+        ok(()->A1, false);
+        ok(()->A2, false);
+        ok(()->A3, false);
+        ok(()->A4, true);
+       }
+     };
+   }
+
+  static void test_andOr()
+   {test_andOr(true);
+    test_andOr(false);
+   }
+
+
   static void test_add(boolean Ex)
    {final Program P = new Program(new Build().immediate(Ex))
      {void code()
@@ -1186,6 +1233,7 @@ public class Program extends Test                                               
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
+    test_andOr();
     test_add();
     test_fibonnacci();
     test_mod();
@@ -1201,7 +1249,6 @@ public class Program extends Test                                               
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_programming();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
