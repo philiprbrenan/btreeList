@@ -113,16 +113,19 @@ class Slots extends Program                                                     
    }
 
   Bool getSlotToKeysInUse(Int Index)       {return usedSlotsToKeys.getBit(usedSlotsToKeys   .new Pos(Index));}          // Check whether a slot is in use
-  Int  getSlotToKeyValue(Int Index)        {return refSlotsToKeys .getInt(                     Index );}                // Index to keys from slots
-  Int  getKeyToSlotValue(Int Index)        {return refKeysToSlots .getInt(                     Index );}                // Index to slots from keys
-  Bool getKeyInUse (Int Index)             {return usedKeys .getBit(usedKeys    .new Pos(Index));}                      // Check whether a key is in use
-  Int  getKeyValue (Int Index)             {return refKeys  .getInt(                     Index );}                      // Value of referenced key
+  Int  getSlotToKeyIndex (Int Index)       {return refSlotsToKeys .getInt(                           Index );}          // Index to keys from slots
+  Int  getKeyToSlotIndex (Int Index)       {return refKeysToSlots .getInt(                           Index );}          // Index to slots from keys
+  Bool getKeyInUse       (Int Index)       {return usedKeys .getBit(usedKeys                .new Pos(Index));}          // Check whether a key is in use
+  Int  getKeyValue       (Int Index)       {return refKeys  .getInt(                                 Index );}          // Value of referenced key
 
   boolean getSlotToKeysInUse(int Index)    {return usedSlotsToKeys.getBitNC(Index);}                                    // Check whether a slot is in use
-  int     getSlotToKeyValue (int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slot
-  int     getKeyToSlotValue (int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index from slots to keys
+  int     getSlotToKeyIndex (int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slot
+  int     getKeyToSlotIndex (int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index from slots to keys
   boolean getKeyInUse       (int Index)    {return usedKeys .getBitNC(Index);}                                          // Check whether a key is in use
   int     getKeyValue       (int Index)    {return refKeys  .getInt(Index);}                                            // Value of referenced key
+
+  Int  getSlotToKeyValue (Int Index)       {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
+  int  getSlotToKeyValue (int Index)       {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
   Bool empty() {return usedKeys.empty();}                                                                               // All bits in the corresponding bitset are unused so the Slots must be empty
   Bool full () {return usedKeys.full ();}                                                                               // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
@@ -221,7 +224,7 @@ class Slots extends Program                                                     
   void delSlotAndKey(Int P)                                                                                             // Delete an occupied slot and its corresponding key
    {new If (getSlotToKeysInUse(P))
      {void Then()
-       {delKey(getSlotToKeyValue(P)); delSlotToKeys(P);
+       {delKey(getSlotToKeyIndex(P)); delSlotToKeys(P);
        }
       void Else() {new I() {void action() {stop("Slot not in use:", P);}};}                                             // Slot not occupied
      };
@@ -230,7 +233,7 @@ class Slots extends Program                                                     
   private void moveSlot(BitSet.Pos T, BitSet.Pos S, Bool Continue)                                                      // Move a slot from source to target
    {new If (S.valid())
      {void Then()
-       {final Int q = getSlotToKeyValue(S);
+       {final Int q = getSlotToKeyIndex(S);
         delSlotToKeys(S);
         putSlotToKeys(T, q);
         Continue.set(true);                                                                                             // Continue moving slots
@@ -339,7 +342,7 @@ class Slots extends Program                                                     
          {void body(Int Index)                                                                                          // Initialize background of slots
            {final Int s = c.Dec().sub(Index);                                                                           // Index of source element to be moved
             final Int t = p.Add(s.Mul(space)).add(s);                                                                   // Index in slots of target element to be set
-            final Int k = getSlotToKeyValue(s);                                                                         // Index of key being moved
+            final Int k = getSlotToKeyIndex(s);                                                                         // Index of key being moved
             final Int K = getKeyValue(k);                                                                               // Value of key being moved
             delSlotAndKey(s);
             setSlotAndKey(t, k, K);
@@ -350,7 +353,7 @@ class Slots extends Program                                                     
    }
 
   private void moveSlot(Int T, Int S)                                                                                   // Move a slot from the specified source position to the specified target position
-   {final Int k = getSlotToKeyValue(S);                                                                                 // Index of key being moved
+   {final Int k = getSlotToKeyIndex(S);                                                                                 // Index of key being moved
     final Int K = getKeyValue(k);                                                                                       // Value of key being moved
     delSlotAndKey(S);                                                                                                   // Remove source
     setSlotAndKey(T, k, K);                                                                                             // Reinsert source at target
@@ -390,7 +393,7 @@ class Slots extends Program                                                     
         r.set(true);
         new ForCount (N.Sub(rc), N)
          {void body(Int Index)
-           {final Int k = Right.getSlotToKeyValue(Index);                                                               // Index of key being moved
+           {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key being moved
             final Int K = Right.getKeyValue(k);                                                                         // Value of key being moved
             setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
            }
@@ -413,7 +416,7 @@ class Slots extends Program                                                     
         r.set(true);
         new ForCount (lc)
          {void body(Int Index)
-           {final Int k = Left.getSlotToKeyValue(Index);                                                                // Index of key being moved
+           {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key being moved
             final Int K = Left.getKeyValue(k);                                                                          // Value of key being moved
             setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
            }
@@ -423,9 +426,62 @@ class Slots extends Program                                                     
     return r;
    }
 
-//  Int find(Int Key)                                                                                                     // Find a key in the slots
-//   {if                                                                                 //
-//   }
+  class Find                                                                                                            // Find result
+   {final int slot ;                                                                                                    // Slot found
+    final boolean lower, higher, equal, empty;                                                                          // Position of search item relative to the slot found
+
+    Find(int Slot, boolean Lower, boolean Higher)
+     {slot = Slot; lower = Lower; higher = Higher; equal = Lower && Higher; empty = !Lower && !Higher;
+     }
+
+    public String toString()
+     {return "Find(" + "slot=" + slot + ", lower=" + lower + ", higher=" + higher +
+             ", equal=" + equal + ", empty=" + empty + ')';
+     }
+   }
+
+  Find find(int Key)                                                                                                    // Find a key in the slots
+   {final BitSet u = usedSlotsToKeys;
+    if (empty().b())
+     {return new Find(0, false, false);                                                                                                            //
+     }
+    else
+     {int p = u.top();
+      int l = u.low (p);
+      int r = u.high(p);
+      int L = getSlotToKeyValue(l);
+      int R = getSlotToKeyValue(r);
+      if (Key == L) return new Find(l, true, true);
+      if (Key == R) return new Find(r, true, true);
+      for (int i = 0; i < u.logBitSize-1; i++)
+       {if (Key <  L) return new Find(l, true, false);                                                                  // Lower than the left hand side
+        if (Key >  R) return new Find(r, false, true);                                                                  // Higher than the right hand side
+        if (u.canGoLeft(p))                                                                                             // Go left
+         {final int lp = u.nextDownLow     (p);                                                                         // Upper end of left range
+          final int lr = u.high            (lp);
+          final int lR = getSlotToKeyValue(lr);
+          if (Key == lR)                                                                                                // Found
+           {return new Find(lr, true, true);
+           }
+          else if (Key <  lR)                                                                                           // Lower than left hand end so not found
+           {p = lp; r = lr; R = lR;
+           }
+          else if (u.canGoRight(p))                                                                                     // Greater than so perhaps part of right hand range
+           {final int rp = u.nextDownHigh   (p);                                                                        // Low end of right range
+            final int rl = u.low            (rp);
+            final int rL = getSlotToKeyValue(rl);
+            if (Key == rL) return new Find(rl, true, true);                                                             // Found
+            if (Key  < rL) return new Find(rl, true, false);                                                            // Not found and less than low end of right
+            p = rp; l = rl; L = rL;                                                                                     // Some where in the right hand range of which we already know the upper limits
+           }
+         }
+        else if (u.canGoRight(p))                                                                                       // Could not go left so must have gone right
+         {p = u.nextDownHigh(p);
+         }
+       }
+      return new Find(l, false, true);                                                                                    // Must be somewhere in the last range
+     }
+   }
 /*
 
 
@@ -637,8 +693,8 @@ class Slots extends Program                                                     
     final int[]R = range(numberOfKeys());
     s.append(f("Slots    : refs: %2d\n", numberOfKeys));                                                                // Title
     s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
-    s.append("\nslotsKeys: "); for (int i : N) s.append(f(" "+formatKey, getSlotToKeyValue(i)));
-    s.append("\nkeysSlots: "); for (int i : N) s.append(f(" "+formatKey, getKeyToSlotValue(i)));
+    s.append("\nslotsKeys: "); for (int i : N) s.append(f(" "+formatKey, getSlotToKeyIndex(i)));
+    s.append("\nkeysSlots: "); for (int i : N) s.append(f(" "+formatKey, getKeyToSlotIndex(i)));
     s.append("\nusedSlots: "); for (int i : N) s.append(                 usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
     s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys       .getBitNC(i) ? "   X" : "   .");
     s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey, getKeyValue(i)));
@@ -1446,6 +1502,123 @@ keys     :   14   0  13   0  12   0  10  11
     ok(B.type(), 11);
    }
 */
+  static void test_find()
+   {final Slots s = new Slots(new Build().numberOfKeys(8))
+     {void slotsCode()
+       {putSlotToKeys(new Int( 0), new Int(1));
+        putSlotToKeys(new Int( 2), new Int(3));
+        putSlotToKeys(new Int( 4), new Int(5));
+        putSlotToKeys(new Int(15), new Int(0));
+        putKey       (new Int( 1), new Int(11));
+        putKey       (new Int( 3), new Int(22));
+        putKey       (new Int( 5), new Int(33));
+        putKey       (new Int( 0), new Int(44));
+
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    1   0   3   0   5   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:   15   0   0   2   0   4   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   X   .   .   .   .   .   .   .   .   .   .   X
+usedKeys :    X   X   .   X   .   X   .   .
+keys     :   44  11   0  22   0  33   0   0
+""");
+
+       ok(getSlotToKeyValue(0), 11);
+       ok(getSlotToKeyValue(2), 22);
+       ok(getSlotToKeyValue(4), 33);
+       ok(getSlotToKeyValue(8), 44);
+
+       //new I() {void action() {stop(s.usedSlotsToKeys);}};
+       ok(s.usedSlotsToKeys, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  1  0  1  0  1  0  0  0  0  0  0  0  0  0  0  1
+One:
+   2   16    8 |  1  1  1  0  0  0  0  1
+   3   24    4 |  1  1  0  1
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  1  1  1  1  1  1  1  1
+   2   39    4 |  1  1  1  1
+   3   43    2 |  1  1
+   4   45    1 |  1
+""");
+        Find f = find(45);
+        //stop(f);
+        ok(find( 5), "Find(slot=0, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(11), "Find(slot=0, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(15), "Find(slot=2, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(22), "Find(slot=2, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(25), "Find(slot=4, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(33), "Find(slot=4, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(35), "Find(slot=15, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(44), "Find(slot=15, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(45), "Find(slot=15, lower=false, higher=true, equal=false, empty=false)");
+       }
+     };
+   }
+  static void test_findRight()
+   {final Slots s = new Slots(new Build().numberOfKeys(8))
+     {void slotsCode()
+       {putSlotToKeys(new Int( 9), new Int(1));
+        putSlotToKeys(new Int(11), new Int(3));
+        putSlotToKeys(new Int(13), new Int(5));
+        putSlotToKeys(new Int(15), new Int(0));
+        putKey       (new Int( 1), new Int(11));
+        putKey       (new Int( 3), new Int(22));
+        putKey       (new Int( 5), new Int(33));
+        putKey       (new Int( 0), new Int(44));
+
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   0   0   0   0   0   1   0   3   0   5   0   0
+keysSlots:   15   9   0  11   0  13   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   .   .   .   X   .   X   .   X   .   X
+usedKeys :    X   X   .   X   .   X   .   .
+keys     :   44  11   0  22   0  33   0   0
+""");
+
+       ok(getSlotToKeyValue( 9), 11);
+       ok(getSlotToKeyValue(11), 22);
+       ok(getSlotToKeyValue(13), 33);
+       ok(getSlotToKeyValue(15), 44);
+
+       //new I() {void action() {stop(s.usedSlotsToKeys);}};
+       ok(s.usedSlotsToKeys, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  0  0  0  0  0  0  0  0  0  1  0  1  0  1  0  1
+One:
+   2   16    8 |  0  0  0  0  1  1  1  1
+   3   24    4 |  0  0  1  1
+   4   28    2 |  0  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  1  1  1  1  1  1  1  1
+   2   39    4 |  1  1  1  1
+   3   43    2 |  1  1
+   4   45    1 |  1
+""");
+        Find f = find(45);
+        //stop(f);
+        ok(find( 5), "Find(slot=9, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(11), "Find(slot=9, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(15), "Find(slot=11, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(22), "Find(slot=11, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(25), "Find(slot=13, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(33), "Find(slot=13, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(35), "Find(slot=15, lower=true, higher=false, equal=false, empty=false)");
+        ok(find(44), "Find(slot=15, lower=true, higher=true, equal=true, empty=false)");
+        ok(find(45), "Find(slot=15, lower=false, higher=true, equal=false, empty=false)");
+       }
+     };
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
     test_locateNearestFreeSlotToKey();
@@ -1458,6 +1631,8 @@ keys     :   14   0  13   0  12   0  10  11
     test_slots();
     test_mergeFromRight();
     test_mergeFromLeft();
+    test_find();
+    test_findRight();
    }
 
   static void newTests()                                                                                                // Tests being worked on
