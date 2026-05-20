@@ -26,6 +26,7 @@ public class Test                                                               
   final static TreeSet<String>   testsExecuted = new TreeSet<>();                                                       // Tests executed
   final static boolean theShorterIsTheDaughter = true;                                                                  // True for a shorter traceback during tests to get more counts on the page at a time in Geany
   final static boolean        coverageAnalysis = false;                                                                 // Enables coverage checks
+  static       boolean                   debug = false;                                                                 // Global debug flag
 
   Test Test() {return this;}                                                                                            // Instance
 
