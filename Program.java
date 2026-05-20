@@ -60,7 +60,7 @@ public class Program extends Test                                               
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
 
-  void trace(String Message)  {if (tracing()) {appendFile(tracing, Message+"\n");}}                                          // Write a trace message with location infdormatrion
+  void trace(String Message)  {if (tracing()) {appendFile(tracing, Message+"\n");}}                                     // Write a trace message with location infdormatrion
 
   void trace(String Message, String Location)                                                                           // Write a trace message with location infdormatrion
    {if (tracing())
@@ -135,7 +135,7 @@ public class Program extends Test                                               
            {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
            }
          };
-        if (tracing()) new I() {void action() {trace("ForCount "+index.i);}};                                               // Trace at run time
+        if (tracing()) new I() {void action() {trace("ForCount "+index.i);}};                                           // Trace at run time
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment lop counter
         new I(true)
@@ -184,7 +184,7 @@ public class Program extends Test                                               
            }
          };
         lse.set();                                                                                                      // Start of else
-        if (tracing()) new I() {void action() {trace("Else");}};                                                            // Trace at run time
+        if (tracing()) new I() {void action() {trace("Else");}};                                                        // Trace at run time
         Else();                                                                                                         // Else body
         end.set();                                                                                                      // End of the loop
        }
@@ -354,7 +354,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool And(Bool...b)                                                                                                   // "And" without short circuit. Does not modify the target
+    Bool And(Bool...b)                                                                                                  // "And" without short circuit. Does not modify the target
      {final Bool r = new Bool(this);
       r.and(b);
       return r;
@@ -556,12 +556,12 @@ public class Program extends Test                                               
    {byte[]bytes;                                                                                                        // Bytes of main memory
 
     private byte getByte(int I)                                                                                         // Get the value of a byte
-     {if (tracing()) trace("memory get byte: "+I+" value:"+bytes[I]);                                                       // Trace
+     {if (tracing()) trace("memory get byte: "+I+" value:"+bytes[I]);                                                   // Trace
       return bytes[I];                                                                                                  // Get the value of a byte
      }
 
     private void putByte(int I, byte J)                                                                                 // Get the value of a byte
-     {if (tracing()) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                               // Trace
+     {if (tracing()) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                           // Trace
       bytes[I] = J;                                                                                                     // Set the value of a byte
      }
 
