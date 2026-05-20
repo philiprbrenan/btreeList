@@ -452,19 +452,19 @@ class Slots extends Program                                                     
      {void Then()
        {f.set(new Int(0), false, false);                                                                                // Empty
        }
-      void Else()
-       {Int p = u.top();
-        Int l = u.low (p);
-        Int r = u.high(p);
-        Int L = getSlotToKeyValue(l);
-        Int R = getSlotToKeyValue(r);
+      void Else()                                                                                                       // Not empty
+       {Int p = u.top();                                                                                                // Position in ones tree
+        Int l = u.low (p);                                                                                              // Index of lower bound in slots
+        Int r = u.high(p);                                                                                              // Index of upper bound in slots
+        Int L = getSlotToKeyValue(l);                                                                                   // Value of Key at lower bound of search
+        Int R = getSlotToKeyValue(r);                                                                                   // Value of key at upper bound of search
 
         new If (Key.eq(L))
-         {void Then()                                                                                                   // Equal to low bound
+         {void Then()                                                                                                   // Equal to low bound of search
            {f.set(l, true, true);
            }
           void Else()
-           {new If (Key.eq(R))                                                                                          // Equal to high bound
+           {new If (Key.eq(R))                                                                                          // Equal to high bound of search
              {void Then()
                {f.set(r, true, true);
                }
@@ -473,58 +473,58 @@ class Slots extends Program                                                     
                  {void body(Int Index, Bool Continue)
                    {new If (Key.lt(L))
                      {void Then()
-                       {f.set(l, true, false);                                                                          // Lower than the left hand side
+                       {f.set(l, true, false);                                                                          // Lower than the lower bound
                        }
                       void Else()
                        {new If (Key.gt(R))
                          {void Then()
-                           {f.set(r, false, true);                                                                      // Higher than the right hand side
+                           {f.set(r, false, true);                                                                      // Higher than the upper bound
                            }
-                          void Else()
-                           {new If (u.canGoLeft(p))                                                                     // Go left
+                          void Else()                                                                                   // Search range
+                           {new If (u.canGoLeft(p))                                                                     // Go left if possible  to search first part of range if it exists
                              {void Then()
                                {final Int lp = u.nextDownLow     (p);                                                   // Upper end of left range
-                                final Int lr = u.high            (lp);
-                                final Int lR = getSlotToKeyValue(lr);
+                                final Int lr = u.high            (lp);                                                  // Index of upper end of range
+                                final Int lR = getSlotToKeyValue(lr);                                                   // Value of key at upper end of range
                                 new If (Key.eq(lR))                                                                     // Found at upper end of range
                                  {void Then()
-                                   {f.set(lr, true, true);
+                                   {f.set(lr, true, true);                                                              // Equals currnt upper end of range
                                    }
-                                  void Else()
+                                  void Else()                                                                           // Search new sub range
                                    {new If (Key.lt(lR))                                                                 // Lower than upper bound
                                      {void Then()
                                        {new If(r.ne(lr))                                                                // New upper bound
                                          {void Then()
-                                          {p.set(lp); r.set(lr); R.set(lR);
-                                           Continue.set();                                                              // Continue the search
+                                          {p.set(lp); r.set(lr); R.set(lR);                                             // Set new upper bound of search range
+                                           Continue.set();                                                              // Continue the search  with new bounds
                                           }
                                          void Else()                                                                    // Same upper bound so search has finished
-                                          {f.set(lr, true, false);
+                                          {f.set(lr, true, false);                                                      // Result must be less than current upper bound of search
                                           }
                                         };
                                        }
                                       void Else()
-                                       {new If (u.canGoRight(p))                                                        // Greater than so perhaps part of right hand range
+                                       {new If (u.canGoRight(p))                                                        // Greater than anything in the left subrange so perhaps part of right hand subrange
                                          {void Then()
                                            {final Int rp = u.nextDownHigh   (p);                                        // Low end of right range
-                                            final Int rl = u.low            (rp);
-                                            final Int rL = getSlotToKeyValue(rl);
+                                            final Int rl = u.low            (rp);                                       // Index of lower end of search range
+                                            final Int rL = getSlotToKeyValue(rl);                                       // Key at lower end of search range
                                             new If (Key.eq(rL))                                                         // Equal to lower bound on right
                                              {void Then()
-                                               {f.set(rl, true, true);                                                  // Found
+                                               {f.set(rl, true, true);                                                  // Found equal to lower end of right sub range
                                                }
-                                              void Else()
-                                               {new If (Key.lt(rL))
+                                              void Else()                                                               // Continue search
+                                               {new If (Key.lt(rL))                                                     // Less than the lower bound of right sub range
                                                  {void Then()
                                                    {f.set(rl, true, false);                                             // Not found and less than low end of right
                                                    }
-                                                  void Else()
+                                                  void Else()                                                           // Search new range
                                                    {new If (l.ne(rl))                                                   // New lower bound
                                                      {void Then()
                                                        {p.set(rp); l.set(rl); L.set(rL);                                // Some where in the right hand range of which we already know the upper limits
                                                         Continue.set();                                                 // Continue the search
                                                        }
-                                                      void Else()                                                       // Same lower bound so search has finished
+                                                      void Else()                                                       // Same lower bound is being set so search has finished
                                                        {f.set(rl, false, true);
                                                        }
                                                      };
@@ -542,7 +542,7 @@ class Slots extends Program                                                     
                               void Else()
                                {new If (u.canGoRight(p))                                                                // Could not go left so must have gone right
                                  {void Then()
-                                   {p.set(u.nextDownHigh(p));
+                                   {p.set(u.nextDownHigh(p));                                                           // MOoe to right sub range which has the same bounds as the parent range
                                     Continue.set();                                                                     // Continue the search
                                    }
                                  };
