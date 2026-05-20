@@ -101,7 +101,7 @@ class Slots extends Program                                                     
    {final Int K = refSlotsToKeys.getInt(Index);
                   refSlotsToKeys.putInt(Index, new Int(0));
     refKeysToSlots.putInt(K,                   new Int(0));
-    usedSlotsToKeys.set(Index, new Bool(false));                                               // Remove slot from bitset shoing which slots are in use
+    usedSlotsToKeys.set(Index, new Bool(false));                                                                        // Remove slot from bitset
    }
 
   void putKey(Int Index, Int Key)                                                                                       // Set a key
@@ -254,8 +254,8 @@ class Slots extends Program                                                     
       void Else()                                                                                                       // Compact slots first
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bool Continue)
-           {final Int s = usedSlotsToKeys.firstZero();                                                           // First empty slot
-            final Int S = usedSlotsToKeys.nextOne(s);                                                            // Next used slot beyond first empty slot
+           {final Int s = usedSlotsToKeys.firstZero();                                                                  // First empty slot
+            final Int S = usedSlotsToKeys.nextOne(s);                                                                   // Next used slot beyond first empty slot
             moveSlot(s, S, Continue);
            }
          };
@@ -270,8 +270,8 @@ class Slots extends Program                                                     
           void Else()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
-               {final Int k = usedKeys .firstZero();                                                             // First empty key
-                final Int K = usedKeys .lastOne();                                                               // Last used key so we get the longest possible move
+               {final Int k = usedKeys .firstZero();                                                                    // First empty key
+                final Int K = usedKeys .lastOne();                                                                      // Last used key so we get the longest possible move
                 new If (K.gt(k))                                                                                        // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
@@ -292,8 +292,8 @@ class Slots extends Program                                                     
       void Else()                                                                                                       // Compact slots first
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bool Continue)
-           {final Int s = usedSlotsToKeys.lastZero();                                                            // Last empty slot
-            final Int S = usedSlotsToKeys.prevOne(s);                                                            // Previously used slot beyond last empty one
+           {final Int s = usedSlotsToKeys.lastZero();                                                                   // Last empty slot
+            final Int S = usedSlotsToKeys.prevOne(s);                                                                   // Previously used slot beyond last empty one
             moveSlot(s, S, Continue);
            }
          };
@@ -308,8 +308,8 @@ class Slots extends Program                                                     
           void Else()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
-               {final Int k = usedKeys .lastZero();                                                              // Last empty key
-                final Int K = usedKeys .firstOne();                                                              // First used key so we get the longest possible move
+               {final Int k = usedKeys .lastZero();                                                                     // Last empty key
+                final Int K = usedKeys .firstOne();                                                                     // First used key so we get the longest possible move
                 new If (K.lt(k))                                                                                        // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
@@ -331,7 +331,7 @@ class Slots extends Program                                                     
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
         compactLeft();                                                                                                  // Compact everything to the left so it is in a known position
-        final Int  c = usedKeys.firstZero();                                                                     // Number of slots in use
+        final Int  c = usedKeys.firstZero();                                                                            // Number of slots in use
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
@@ -429,8 +429,8 @@ class Slots extends Program                                                     
 //D2 High level operations                                                                                              // Find, insert, delete values in the slots
 
   class Find                                                                                                            // Find result
-   {final Int slot = new Int() ;                                                                                                    // Slot found
-    final Bool lower = new Bool(), higher = new Bool(), equal = new Bool(), empty = new Bool();                                                                          // Position of search item relative to the slot found
+   {final Int slot = new Int() ;                                                                                        // Slot found
+    final Bool lower = new Bool(), higher = new Bool(), equal = new Bool(), empty = new Bool();                         // Position of search item relative to the slot found
 
     void set(Int Slot, boolean Lower, boolean Higher)
      {slot.set(Slot); lower.set(Lower); higher.set(Higher);
