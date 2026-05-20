@@ -1,9 +1,7 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Distributed slots used to hold the key of the Btree
+// Distributed sparse slots used to hold the key of the Btree
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// locateNearestFreeSlotToKey - add prefernce option for low or high slot so that descending order does fewer moves
-
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -13,14 +11,14 @@ import java.util.function.Supplier;
 class Slots extends Program                                                                                             // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int                 numberOfKeys;                                                                               // The maximum number of references maintained by these slots
   final int                         size;                                                                               // Number of bytes needed to hold slots
-  final BitSet            usedSlotsToKeys;                                                                              // The slots in use.  Thre are more slotsthan refernces os that they can be distributed with intervening empty slots to make insertions faster
+  final BitSet            usedSlotsToKeys;                                                                              // The slots in use.  There are more slots than references so that they can be distributed with intervening empty slots to make insertions faster
   final BitSet                   usedKeys;                                                                              // The references in use.
   ByteMemory.Ref            byteMemoryRef = null;                                                                       // Byte memory reference containing the slots
   final ByteMemory.Ref     refSlotsToKeys;                                                                              // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
   final ByteMemory.Ref     refKeysToSlots;                                                                              // The slot associated with each in use key
   final ByteMemory.Ref refUsedSlotsToKeys;                                                                              // Bitset showing which slots are being used to map to keys
   final ByteMemory.Ref        refUsedKeys;                                                                              // Bitset showing which keys are in use
-  final ByteMemory.Ref            refKeys;                                                                              // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
+  final ByteMemory.Ref            refKeys;                                                                              // Keys used in btree held unordered in this array but ordered by the slot references to them
   final static String           formatKey = "%3d";                                                                      // Format a key for dumping during testing
   final Build.SlotsMemoryPositions slotsMemoryPositions;                                                                // Memory layout
 
@@ -29,7 +27,7 @@ class Slots extends Program                                                     
   static class Build                                                                                                    // Specification of slots
    {boolean            immediate = true;                                                                                // Immediate mode
     boolean                trace = true;                                                                                // Trace execution
-    int             numberOfKeys = 2;                                                                                   // Number of refernces in the slots
+    int             numberOfKeys = 2;                                                                                   // Number of references in the slots
     ByteMemory.Ref byteMemoryRef;                                                                                       // Program memory to be used
     Program               parent;                                                                                       // Parent program if any
     SlotsMemoryPositions slotsMemoryPositions;                                                                          // Layout of memory
@@ -61,11 +59,11 @@ class Slots extends Program                                                     
       final BitSet.Build ur = new BitSet.Build().bitSize(R).one(true).zero(true);                                       // Specification of bit set for references
 
       final int posSlotsToKeys     = 0;                                                                                 // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-      final int posKeysToSlots     = posSlotsToKeys     + ib(N);                                                        // USed keys to slot referencing the key
+      final int posKeysToSlots     = posSlotsToKeys     + ib(N);                                                        // Used keys to slot referencing the key
       final int posUsedSlotsToKeys = posKeysToSlots     + ib(N);                                                        // Slots in use
       final int posUsedKeysToSlots = posUsedSlotsToKeys + ib(N);                                                        // Slots in use
       final int posusedKeys        = posUsedKeysToSlots + us.byteSize();                                                // References in use.  There are fewer references than slots to make insertions faster
-      final int posKeys            = posusedKeys        + ur.byteSize();                                                // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
+      final int posKeys            = posusedKeys        + ur.byteSize();                                                // Keys used in btree held unordered in this array but ordered by the slot references to them
       final int size               = posKeys            + ib(N);                                                        // Size of slots
      }
    }
@@ -80,7 +78,7 @@ class Slots extends Program                                                     
     refKeysToSlots       = byteMemoryRef.step(slotsMemoryPositions.posKeysToSlots);                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refUsedSlotsToKeys   = byteMemoryRef.step(slotsMemoryPositions.posUsedSlotsToKeys);                                 // Slots in use
     refUsedKeys          = byteMemoryRef.step(slotsMemoryPositions.posusedKeys);                                        // References in use.  There are fewer references than slots to make insertions faster
-    refKeys              = byteMemoryRef.step(slotsMemoryPositions.posKeys);                                            // Keys used in btree held unordered in this array but ordered by the slot refernces rto them
+    refKeys              = byteMemoryRef.step(slotsMemoryPositions.posKeys);                                            // Keys used in btree held unordered in this array but ordered by the slot references to them
     usedSlotsToKeys      = new BitSet        (slotsMemoryPositions.us.memory(refUsedSlotsToKeys).parent(parentProgram));// Create bitsets to reference the program and memory used by this program
     usedKeys             = new BitSet        (slotsMemoryPositions.ur.memory(refUsedKeys).parent(parentProgram));
     new I() {void action() {deleteFile(tracing);}};                                                                     // Delete the trace file here to avoid including the memory reference calculations above
@@ -162,7 +160,7 @@ class Slots extends Program                                                     
          {void Then()
            {new If (n.valid())                                                                                          // Next is valid
              {void Then()
-               {new If (Position.Sub(p).lt(n.Sub(Position)))                                                            // Favor next over previous if they are bith the same distance appart
+               {new If (Position.Sub(p).lt(n.Sub(Position)))                                                            // Favor next over previous if they are both the same distance apart
                  {void Then()
                    {r.set(p); Prev.set(true);                                                                           // Previous is closest
                    }
@@ -176,7 +174,7 @@ class Slots extends Program                                                     
                }
              };
            }
-          void Else()                                                                                                   // Pevious is invalid
+          void Else()                                                                                                   // Previous is invalid
            {new If (n.valid())                                                                                          // Next is valid
              {void Then()
                {r.set(n); Prev.set(false);                                                                              // Next is closest
@@ -235,7 +233,7 @@ class Slots extends Program                                                     
      };
    }
 
-  private void moveKey(Int T, Int S, Bool Continue)                                                                     // Move a key from the source poisitin to the target position
+  private void moveKey(Int T, Int S, Bool Continue)                                                                     // Move a key from the source position to the target position
    {final Int s = refKeysToSlots.getInt(S);                                                                             // The slot referencing the key
     final Int q = getKeyValue(S);                                                                                       // The value of the key
     delSlotAndKey(s);                                                                                                   // Delete the slot and its associated key
@@ -326,7 +324,7 @@ class Slots extends Program                                                     
   void redistribute()                                                                                                   // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order.
    {final Slots slots = this;
     new If (empty())                                                                                                    // Something to redistribute
-     {void Then() {}                                                                                                    // Nothing to redistrinute as the slots are empty
+     {void Then() {}                                                                                                    // Nothing to redistribute as the slots are empty
       void Else()                                                                                                       // Redistribute
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
@@ -335,7 +333,7 @@ class Slots extends Program                                                     
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
-        final Int         p = remainder.Down();                                                                         // Start position for first used slot giving any over to end to bias slighlty in favor of preseorted data
+        final Int         p = remainder.Down();                                                                         // Start position for first used slot giving any over to end to bias slightly in favor of presorted data
         new ForCount(c)                                                                                                 // Redistribute used slots
          {void body(Int Index)                                                                                          // Initialize background of slots
            {final Int s = c.Dec().sub(Index);                                                                           // Index of source element to be moved
@@ -448,7 +446,7 @@ class Slots extends Program                                                     
    {final BitSet u = usedSlotsToKeys;
     final Find   f = new Find();
 
-    new If (empty())                                                                                                    // Nothing to find if all the slots are eopty
+    new If (empty())                                                                                                    // Nothing to find if all the slots are empty
      {void Then()
        {f.set(new Int(0), false, false);                                                                                // Empty
        }
@@ -488,7 +486,7 @@ class Slots extends Program                                                     
                                 final Int lR = getSlotToKeyValue(lr);                                                   // Value of key at upper end of range
                                 new If (Key.eq(lR))                                                                     // Found at upper end of range
                                  {void Then()
-                                   {f.set(lr, true, true);                                                              // Equals currnt upper end of range
+                                   {f.set(lr, true, true);                                                              // Equals current upper end of range
                                    }
                                   void Else()                                                                           // Search new sub range
                                    {new If (Key.lt(lR))                                                                 // Lower than upper bound
@@ -521,7 +519,7 @@ class Slots extends Program                                                     
                                                   void Else()                                                           // Search new range
                                                    {new If (l.ne(rl))                                                   // New lower bound
                                                      {void Then()
-                                                       {p.set(rp); l.set(rl); L.set(rL);                                // Some where in the right hand range of which we already know the upper limits
+                                                       {p.set(rp); l.set(rl); L.set(rL);                                // Somewhere in the right hand range of which we already know the upper limits
                                                         Continue.set();                                                 // Continue the search
                                                        }
                                                       void Else()                                                       // Same lower bound is being set so search has finished
@@ -542,7 +540,7 @@ class Slots extends Program                                                     
                               void Else()
                                {new If (u.canGoRight(p))                                                                // Could not go left so must have gone right
                                  {void Then()
-                                   {p.set(u.nextDownHigh(p));                                                           // MOoe to right sub range which has the same bounds as the parent range
+                                   {p.set(u.nextDownHigh(p));                                                           // Move to right sub range which has the same bounds as the parent range
                                     Continue.set();                                                                     // Continue the search
                                    }
                                  };
@@ -601,7 +599,7 @@ class Slots extends Program                                                     
                  {void Then() {setSlotAndKey(p, K, Key);}                                                               // Insert key immediately above nearest found key slot in an already empty slot
                   void Else()                                                                                           // Next free slot has intervening occupied slots
                    {shiftUpOne   (s.Inc(), p.Sub(s).Dec());                                                             // Shift block above nearest found key slot
-                    setSlotAndKey(s.Inc(), K, Key);                                                                     // Insert key immediately above nearest found key slot in a slot freed by moving the block anove up one step
+                    setSlotAndKey(s.Inc(), K, Key);                                                                     // Insert key immediately above nearest found key slot in a slot freed by moving the block above up one step
                    }
                  };
                }
