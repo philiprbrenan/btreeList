@@ -248,7 +248,7 @@ class Slots extends Program                                                     
 
   void compactLeft()                                                                                                    // Compact the used slots to the left end
    {final Slots slots = this;
-    new If (usedKeys.empty())                                                                                           // Compact slots
+    new If (empty())                                                                                                    // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
       void Else()                                                                                                       // Compact slots first
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
@@ -264,7 +264,7 @@ class Slots extends Program                                                     
     new If (usedKeys.empty())                                                                                           // Compact keys
      {void Then() {}                                                                                                    // Nothing to compact as empty
       void Else()
-       {new If (usedKeys.full())                                                                                        // Keys cannot be compacted as they are full
+       {new If (full())                                                                                                 // Keys cannot be compacted as they are full
          {void Then() {}
           void Else()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
@@ -286,7 +286,7 @@ class Slots extends Program                                                     
 
   void compactRight()                                                                                                   // Compact the used slots to the right end
    {final Slots slots = this;
-    new If (usedKeys.empty())                                                                                           // Compact slots
+    new If (empty())                                                                                                    // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
       void Else()                                                                                                       // Compact slots first
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
@@ -302,7 +302,7 @@ class Slots extends Program                                                     
     new If (usedKeys.empty())                                                                                           // Compact keys
      {void Then() {}                                                                                                    // Nothing to compact as empty
       void Else()
-       {new If (usedKeys.full())                                                                                        // Keys cannot be compacted as they are full
+       {new If (full())                                                                                                 // Keys cannot be compacted as they are full
          {void Then() {}
           void Else()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
@@ -324,7 +324,7 @@ class Slots extends Program                                                     
 
   void redistribute()                                                                                                   // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order.
    {final Slots slots = this;
-    new If (usedKeys.empty())                                                                                           // Something to redistribute
+    new If (empty())                                                                                                    // Something to redistribute
      {void Then() {}                                                                                                    // Nothing to redistrinute as the slots are empty
       void Else()                                                                                                       // Redistribute
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
@@ -423,7 +423,9 @@ class Slots extends Program                                                     
     return r;
    }
 
-
+//  Int find(Int Key)                                                                                                     // Find a key in the slots
+//   {if                                                                                 //
+//   }
 /*
 
 
@@ -658,7 +660,7 @@ class Slots extends Program                                                     
   static void test_slots(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {final Bool e = usedSlotsToKeys.empty();
+       {final Bool e = empty();
          ok(()->e, true);
         final Bool f = usedSlotsToKeys.full ();
         ok(()->f, false);
