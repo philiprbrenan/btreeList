@@ -143,9 +143,9 @@ public class BitSet extends Program                                             
     if (Pos > p  ) stop("Position is above tree:", Pos, p);
    }
 
-  int nextDownLow (int Pos) {checkLow(Pos, bitSize); return 2 * (Pos-1) - top();}                                       // Given a  bit value at an index after checking that the index is valid
   int nextDownHigh(int Pos) {return nextDownLow(Pos) + 1;}                                                              // Given a  bit value at an index after checking that the index is valid
-  int nextUp      (int Pos) {checkLow(Pos, 0); return (Pos + top() + 2) / 2;}                                           // Given a  bit value at an index after checking that the index is valid
+  int nextDownLow (int Pos) {checkLow(Pos, bitSize); return 2 * (Pos-1) - top();}                                       // Given a  bit value at an index after checking that the index is valid
+  int nextUp      (int Pos) {checkLow(Pos, 0);       return     (Pos + top() + 2) / 2;}                                 // Given a  bit value at an index after checking that the index is valid
 
 
   int low(int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated sub tree in the ones tree
