@@ -52,17 +52,17 @@ public class Program extends Test                                               
   boolean   tracing() {return tracing != null;}                                                                         // Trace execution
   Program   program() {return parentProgram;}                                                                           // Address this program
 
-  void executingCheck() {if (!executing()) stop("Not executing or interpreting");}                                      // Use standard Java operators rather than this class to execute code that is not executed as machine conde
+  void executingCheck() {if (!executing()) stop("Not executing or interpreting");}                                      // Use standard Java operators rather than this class to execute code that is not executed as machine code
 
-  void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructionse
+  void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructions
    {final I      i = parentProgram.executing;
     final String m = immediate() ? "immediate" : "delayed";
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
 
-  void trace(String Message)  {if (tracing()) {appendFile(tracing, Message+"\n");}}                                     // Write a trace message with location infdormatrion
+  void trace(String Message)  {if (tracing()) {appendFile(tracing, Message+"\n");}}                                     // Write a trace message with location information
 
-  void trace(String Message, String Location)                                                                           // Write a trace message with location infdormatrion
+  void trace(String Message, String Location)                                                                           // Write a trace message with location information
    {if (tracing())
      {final String m = Location == null ? Message+"\n" : f("%-32s  %s\n", Message, Location);
       appendFile(tracing, m);
@@ -95,10 +95,10 @@ public class Program extends Test                                               
            {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
            }
          };
-        if (tracing()) new I() {void action() {trace("For "+index.i); }};                                                   // Trace at run time
+        if (tracing()) new I() {void action() {trace("For "+index.i); }};                                               // Trace at run time
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
-        index.inc();                                                                                                    // Increment lop counter
+        index.inc();                                                                                                    // Increment loop counter
         new I(true)
          {void action()
            {program().pc = cont.b() ? start.offset : end.offset;                                                        // Continue while requested
@@ -123,7 +123,7 @@ public class Program extends Test                                               
         for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
          {if (tracing()) trace("ForCount "+i);
           body(index);                                                                                                  // Execute the loop
-          index.inc();                                                                                                    // Increment lop counter
+          index.inc();                                                                                                  // Increment loop counter
          }
        }
       else                                                                                                              // Machine code
@@ -137,7 +137,7 @@ public class Program extends Test                                               
          };
         if (tracing()) new I() {void action() {trace("ForCount "+index.i);}};                                           // Trace at run time
         body(index);                                                                                                    // Execute the loop
-        index.inc();                                                                                                    // Increment lop counter
+        index.inc();                                                                                                    // Increment loop counter
         new I(true)
          {void action()
            {program().pc = start.offset;                                                                                // Restart loop
@@ -225,7 +225,7 @@ public class Program extends Test                                               
     Bool      clear()          {return ie(Ops.set,  false);}
     Bool       flip()          {return ie(Ops.flip);       }
 
-    Bool        Set()          {return dup().set();}                                                                    // Boolen operations that modify a copy of the target
+    Bool        Set()          {return dup().set();}                                                                    // Boolean operations that modify a copy of the target
     Bool        Set(boolean I) {return dup().set(I);}
     Bool        Set(Bool    I) {return dup().set(I);}
     Bool      Clear()          {return dup().clear();}
@@ -684,8 +684,8 @@ public class Program extends Test                                               
       Ref  copy(Ref Source, Int Width)      {m.copy(Source.offset, offset, Width);       return this;}                  // Copy the specified memory
       Ref  clear     (Int Width)            {m.clear(offset,     Width);                 return this;}                  // Clear memory by setting its bytes to zero
       Ref  clear     (int Width)            {m.clear(offset.i(), Width);                 return this;}                  // Clear memory by setting its bytes to zero
-      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);            return this;}                  // Invalidate memory by setting its bytes to s values unlikely to be valid
-      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);            return this;}                  // Invalidate memory by setting its bytes to s values unlikely to be valid
+      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);            return this;}                  // Invalidate memory by setting its bytes to values unlikely to be valid
+      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);            return this;}                  // Invalidate memory by setting its bytes to values unlikely to be valid
       Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
       Int      getInt(Int I)                {return m.getInt (I.Mul(N).add(offset));}                                   // Get the int at the indicated position
       Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
@@ -758,11 +758,11 @@ public class Program extends Test                                               
     final String traceComment = tracing() ? traceComment() : null;                                                      // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {ai(); //if  (executing()) stop("Cannot add instructions during progam execution");
-      instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - hwever this only mke sens in delayed execution mode
+     {ai(); //if  (executing()) stop("Cannot add instructions during program execution");
+      instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sens in delayed execution mode
       mightJump = MightJump;
       if (immediate()) {parentProgram.executing = this; action(); parentProgram.executing = null;}                      // Execute instruction immediately via interpretation if in immediate execution mode
-      else  {program().code.push(this);}                                                                                // Save intruction in program for later execution if in delayed == non immediate execution mode
+      else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
@@ -771,7 +771,7 @@ public class Program extends Test                                               
    }
 
   class Label                                                                                                           // Label jump targets in the program
-   {int offset;                                                                                                         // The instruction location to which this labels applies
+   {int offset;                                                                                                         // The instruction location to which this label applies
     Label()    {set(); program().labels.push(this);}                                                                    // A label assigned to an instruction location
     void set() {offset = program().code.size();}                                                                        // Reassign the label to an instruction
    }
@@ -805,7 +805,7 @@ public class Program extends Test                                               
   void variableNotSet(String Type)                                                                                      // Variable not yet set message
    {final I i = parentProgram.executing;
     final String m = "has not been set yet";
-    if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With trace back on failing instruction if possibep
+    if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
