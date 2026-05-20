@@ -147,7 +147,6 @@ public class BitSet extends Program                                             
   int nextDownLow (int Pos) {checkLow(Pos, bitSize); return 2 * (Pos-1) - top();}                                       // Given a  bit value at an index after checking that the index is valid
   int nextUp      (int Pos) {checkLow(Pos, 0);       return     (Pos + top() + 2) / 2;}                                 // Given a  bit value at an index after checking that the index is valid
 
-
   int low(int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated sub tree in the ones tree
    {checkLow(Pos, bitSize); if (!getBitNC(Pos)) stop("Cannot go low from Pos:",    Pos, this);                          // We can only step down from a one in the ones tree
     int p = Pos;                                                                                                        // Position in ones tree
@@ -166,6 +165,16 @@ public class BitSet extends Program                                             
       if ((p = getBitNC(b) ? b : a) < bitSize) break;                                                                   // Step through highest one if present, otherwise the lower one. One of them  must be present
      }
     return p;
+   }
+
+  boolean canGoLeft(int Pos)                                                                                            // Whether we can go left from the current postion
+   {checkLow(Pos, bitSize); if (!getBitNC(Pos)) stop("Cannot go low from Pos:",    Pos, this);                          // We can only step down from a one in the ones tree
+    return getBitNC(nextDownLow(Pos));
+   }
+
+  boolean canGoRight(int Pos)                                                                                           // Whether we can go right from the current postion
+   {checkLow(Pos, bitSize); if (!getBitNC(Pos)) stop("Cannot go low from Pos:",    Pos, this);                          // We can only step down from a one in the ones tree
+    return getBitNC(nextDownHigh(Pos));
    }
 
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
@@ -1239,6 +1248,10 @@ Zero:
     ok(b.low(21),  11); ok(b.high(21), 11);
     ok(b.low(19),   6); ok(b.high(19),  7);
     ok(b.low(18),   5); ok(b.high(18),  5);
+
+    ok(b.canGoLeft (30),  true); ok(b.canGoRight(30),  true);
+    ok(b.canGoLeft (26), false); ok(b.canGoRight(26),  true);
+    ok(b.canGoLeft (29),  true); ok(b.canGoRight(29), false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
