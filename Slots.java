@@ -693,12 +693,12 @@ class Slots extends Program                                                     
         final Bool f = usedSlotsToKeys.full ();
         ok(()->f, false);
         putSlotToKeys(new Int(2), new Int(3));
-        final Bool E = usedSlotsToKeys.empty(); ok(()->E, false);
-        final Bool F = usedSlotsToKeys.full (); ok(()->F, false);
+        usedSlotsToKeys.empty().ok(false);
+        usedSlotsToKeys.full ().ok(false);
         putSlotToKeys(new Int(0), new Int(1));
 
-        final Int fs = locateFirstUsedSlot(); ok(()->fs, 0);
-        final Int ls = locateLastUsedSlot (); ok(()->ls, 2);
+        locateFirstUsedSlot().ok(0);
+        locateLastUsedSlot ().ok(2);
 
         putKey (new Int(1), new Int(11));
         putKey (new Int(3), new Int(22));
@@ -727,12 +727,12 @@ usedKeys :    .   X   .   .   .   .   .   .
 keys     :    0  11   0   0   0   0   0   0
 """);
         for (int i = 0, N = numberOfKeys(); i < N; i++) putKey (new Int(i), new Int(i+1));
-        final Bool re = usedKeys.empty(); ok(()->re, false);
-        final Bool rf = usedKeys.full (); ok(()->rf, true);
+        usedKeys.empty().ok(false);
+        usedKeys.full ().ok(true);
 
-        delKey(new Int(3)); final Int k1 = locateFirstUnusedKey(); ok(()->k1, 3);
-        delKey(new Int(4)); final Int k2 = locateFirstUnusedKey(); ok(()->k2, 3);
-        delKey(new Int(2)); final Int k3 = locateFirstUnusedKey(); ok(()->k3, 2);
+        delKey(new Int(3)); locateFirstUnusedKey().ok(3);
+        delKey(new Int(4)); locateFirstUnusedKey().ok(3);
+        delKey(new Int(2)); locateFirstUnusedKey().ok(2);
 
         execute();
        }
@@ -761,20 +761,20 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 """);
 
         final Bool P = new Bool();
-        final Int  q0 = locateNearestFreeSlotToKey(new Int( 0), P); ok(()-> q0,  0); final Bool  p0 = P.valid(); ok(()-> p0, false);
-        final Int  q1 = locateNearestFreeSlotToKey(new Int( 1), P); ok(()-> q1,  0); final Bool  p1 = P.valid(); ok(()-> p1, false);
-        final Int  q2 = locateNearestFreeSlotToKey(new Int( 2), P); ok(()-> q2,  3);                             ok(()-> P,  false);
-        final Int  q3 = locateNearestFreeSlotToKey(new Int( 3), P); ok(()-> q3,  0); final Bool  p3 = P.valid(); ok(()-> p3, false);
-        final Int  q4 = locateNearestFreeSlotToKey(new Int( 4), P); ok(()-> q4,  3);                             ok(()-> P,  true);
-        final Int  q5 = locateNearestFreeSlotToKey(new Int( 5), P); ok(()-> q5,  7);                             ok(()-> P,  false);
-        final Int  q6 = locateNearestFreeSlotToKey(new Int( 6), P); ok(()-> q6,  7);                             ok(()-> P,  false);
-        final Int  q7 = locateNearestFreeSlotToKey(new Int( 7), P); ok(()-> q7,  0); final Bool  p7 = P.valid(); ok(()-> p7, false);
-        final Int  q8 = locateNearestFreeSlotToKey(new Int( 8), P); ok(()-> q8,  0); final Bool  p8 = P.valid(); ok(()-> p8, false);
-        final Int  q9 = locateNearestFreeSlotToKey(new Int( 9), P); ok(()-> q9,  8);                             ok(()-> P,  true);
-        final Int q10 = locateNearestFreeSlotToKey(new Int(10), P); ok(()->q10, 11);                             ok(()-> P,  false);
-        final Int q11 = locateNearestFreeSlotToKey(new Int(11), P); ok(()->q11,  0); final Bool p11 = P.valid(); ok(()->p11, false);
-        final Int q12 = locateNearestFreeSlotToKey(new Int(12), P); ok(()->q12, 13);                             ok(()-> P,  false);
-        final Int q13 = locateNearestFreeSlotToKey(new Int(13), P); ok(()->q13,  0); final Bool p13 = P.valid(); ok(()->p13, false);
+        locateNearestFreeSlotToKey(new Int( 0), P).ok( 0); final Bool  p0 = P.valid(); ok(()-> p0, false);
+        locateNearestFreeSlotToKey(new Int( 1), P).ok( 0); final Bool  p1 = P.valid(); ok(()-> p1, false);
+        locateNearestFreeSlotToKey(new Int( 2), P).ok( 3);                             ok(()-> P,  false);
+        locateNearestFreeSlotToKey(new Int( 3), P).ok( 0); final Bool  p3 = P.valid(); ok(()-> p3, false);
+        locateNearestFreeSlotToKey(new Int( 4), P).ok( 3);                             ok(()-> P,  true);
+        locateNearestFreeSlotToKey(new Int( 5), P).ok( 7);                             ok(()-> P,  false);
+        locateNearestFreeSlotToKey(new Int( 6), P).ok( 7);                             ok(()-> P,  false);
+        locateNearestFreeSlotToKey(new Int( 7), P).ok( 0); final Bool  p7 = P.valid(); ok(()-> p7, false);
+        locateNearestFreeSlotToKey(new Int( 8), P).ok( 0); final Bool  p8 = P.valid(); ok(()-> p8, false);
+        locateNearestFreeSlotToKey(new Int( 9), P).ok( 8);                             ok(()-> P,  true);
+        locateNearestFreeSlotToKey(new Int(10), P).ok(11);                             ok(()-> P,  false);
+        locateNearestFreeSlotToKey(new Int(11), P).ok( 0); final Bool p11 = P.valid(); ok(()->p11, false);
+        locateNearestFreeSlotToKey(new Int(12), P).ok(13);                             ok(()-> P,  false);
+        locateNearestFreeSlotToKey(new Int(13), P).ok( 0); final Bool p13 = P.valid(); ok(()->p13, false);
 
         execute();
        }
@@ -1280,14 +1280,14 @@ Zero:
   static void test_insert(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {final Int i14 = insert(new Int(14)); ok(()->i14,  8);
-        final Int i13 = insert(new Int(13)); ok(()->i13,  7);
-        final Int i16 = insert(new Int(16)); ok(()->i16,  9);
-        final Int i15 = insert(new Int(15)); ok(()->i15,  9);
-        final Int i18 = insert(new Int(18)); ok(()->i18, 11);
-        final Int i17 = insert(new Int(17)); ok(()->i17, 11);
-        final Int i12 = insert(new Int(12)); ok(()->i12,  6);
-        final Int i11 = insert(new Int(11)); ok(()->i11,  5);
+       {insert(new Int(14)).ok( 8);
+        insert(new Int(13)).ok( 7);
+        insert(new Int(16)).ok( 9);
+        insert(new Int(15)).ok( 9);
+        insert(new Int(18)).ok(11);
+        insert(new Int(17)).ok(11);
+        insert(new Int(12)).ok( 6);
+        insert(new Int(11)).ok( 5);
         final Slots s = this;
         //new I() {void action() {stop(s);}};
         ok(()->this, """
@@ -1313,15 +1313,14 @@ keys     :   14  13  16  15  18  17  12  11
   static void test_insert2(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {
-        insert(new Int(11));
-        insert(new Int(12));
-        insert(new Int(13));
-        insert(new Int(15));
-        insert(new Int(16));
-        insert(new Int(17));
-        insert(new Int(18));
-        insert(new Int(14));
+       {insert(new Int(11)).ok( 8);
+        insert(new Int(12)).ok( 9);
+        insert(new Int(13)).ok(10);
+        insert(new Int(15)).ok(11);
+        insert(new Int(16)).ok(12);
+        insert(new Int(17)).ok(13);
+        insert(new Int(18)).ok(14);
+        insert(new Int(14)).ok( 6);
         final Slots s = this;
         //new I() {void action() {stop(s);}};
         ok(()->this, """
@@ -1363,7 +1362,8 @@ keys     :   11  12  13  15  16  17  18  14
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_insert2();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
