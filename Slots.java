@@ -147,7 +147,7 @@ class Slots extends Program                                                     
   Int stepRight(Int Start) {return usedSlotsToKeys.nextOne(Start);}                                                     // Step right to the next occupied slot assuming that such a step is possible
 
 
-  Int locateNearestFreeSlotToKey(Int Position, Bool Prev)                                                               // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
+  Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow, Bool Prev)                                                // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
    {final Int r = new Int(0);
     Prev.invalidate();                                                                                                  // Assume no free slot will be found
     new If (getSlotToKeysInUse(Position))                                                                               // The slot is in use
@@ -160,12 +160,18 @@ class Slots extends Program                                                     
          {void Then()
            {new If (n.valid())                                                                                          // Next is valid
              {void Then()
-               {new If (Position.Sub(p).lt(n.Sub(Position)))                                                            // Favor next over previous if they are both the same distance apart
+               {new If (FavorLow)
                  {void Then()
-                   {r.set(p); Prev.set(true);                                                                           // Previous is closest
+                   {new If (Position.Sub(p).le(n.Sub(Position)))                                                        // Favor next over previous if they are both the same distance apart
+                     {void Then() {r.set(p); Prev.set(true) ;}                                                          // Previous is closest
+                      void Else() {r.set(n); Prev.set(false);}                                                          // Next is closest
+                     };
                    }
                   void Else()
-                   {r.set(n); Prev.set(false);                                                                          // Next is closest
+                   {new If (Position.Sub(p).lt(n.Sub(Position)))                                                        // Favor next over previous if they are both the same distance apart
+                     {void Then() {r.set(p); Prev.set(true) ;}                                                          // Previous is closest
+                      void Else() {r.set(n); Prev.set(false);}                                                          // Next is closest
+                     };
                    }
                  };
                }
@@ -185,6 +191,10 @@ class Slots extends Program                                                     
        }
      };
     return r;
+   }
+
+  Int locateNearestFreeSlotToKey(Int Position, Bool Prev)                                                               // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
+   {return locateNearestFreeSlotToKey(Position, new Bool(false), Prev);
    }
 
   Int allocKey()                                                                                                        // Allocate a key
@@ -572,7 +582,7 @@ class Slots extends Program                                                     
         final Find f = find(Key);                                                                                       // Find nearest existing key in slots
         final Int  s = new Int(f.slot);                                                                                 // Nearest existing key slot
         final Bool d = new Bool();                                                                                      // Nearest free slot is below - true or above - false relative to the nearest existing key
-        final Int  p = locateNearestFreeSlotToKey(s, d);                                                                // Absolute position of nearest free slot
+        final Int  p = locateNearestFreeSlotToKey(s, f.lower, d);                                                       // Absolute position of nearest free slot
 
         new If (d)                                                                                                      // Free slot is lower than nearest found key slot
          {void Then()
@@ -1259,12 +1269,13 @@ Zero:
         ok(()->this, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slotsKeys:    0   0   0   0   0   0   7   6   1   0   3   2   5   4   0   0
-keysSlots:    9   8  11  10  13  12   7   6   0   0   0   0   0   0   0   0
-usedSlots:    .   .   .   .   .   .   X   X   X   X   X   X   X   X   .   .
+slotsKeys:    0   0   0   0   0   7   6   1   0   3   2   5   4   0   0   0
+keysSlots:    8   7  10   9  12  11   6   5   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   X   X   X   X   X   X   .   .   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   14  13  16  15  18  17  12  11
 """);
+        maxSteps = 99999;
         execute();
        }
      };
@@ -1272,7 +1283,7 @@ keys     :   14  13  16  15  18  17  12  11
 
   static void test_insert()
    {test_insert(true);
-    //test_insert(false);
+    test_insert(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -1294,7 +1305,6 @@ keys     :   14  13  16  15  18  17  12  11
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
