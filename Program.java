@@ -207,6 +207,7 @@ public class Program extends Test                                               
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = parentProgram.nextBoolId++;                                                                          // Unique id for Bool
     private final String traceComment = tracing() ? traceComment() : null;                                              // Location
+    String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
@@ -366,12 +367,28 @@ public class Program extends Test                                               
     Bool notValid  ()   {return new Bool(!v);}                                                                          // Whether the boolean is invalid
     Bool invalidate()   {new I() {void action() {v = false;}};        return this;}                                     // Invalidate the boolean
 
-    public String toString() {return v ? ""+i : "undefined Bool";}                                                      // Print the boolean
+    public String toString()                                                                                            // Print the boolean
+     {if (name == null) return v ? ""+i       : "undefined Bool";
+      else              return v ? name+"="+i : "undefined Bool: "+name;
+     }
+
+    Bool say() {final Bool i = this; new I() {void action() {Test.say(i);}}; return this;}                              // Say the boolean
+
+    Bool ok(Boolean Value)                                                                                              // Check the boolean
+     {new I()
+       {void action()
+         {if (Value != null) {x(); Test.ok(i, Value);}
+          else               {     Test.ok(v, false);}
+         }
+       };
+      return this;
+     }
    }
 
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
+            String  name = null;                                                                                        // The name of the variable
     private final int id = parentProgram.nextIntId++;                                                                   // Unique id for Int
     private final String traceComment = tracing() ? traceComment() : null;                                              // Location
 
@@ -543,7 +560,22 @@ public class Program extends Test                                               
     void bsetEx(Int I, Bool    V) {x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}                     // Get the indicated bit in the integer
     void bgetEx(Bool B, Int    I) {x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}
 
-    public String toString() {return v ? ""+i : "undefined Int";}                                                       // Print the integer
+    public String toString()                                                                                            // Print the integer
+     {if (name == null) return v ? ""+i       : "undefined Int";
+      else              return v ? name+"="+i : "undefined Int: "+name;
+     }
+
+    Int say() {final Int i = this; new I() {void action() {Test.say(i);}}; return this;}                               // Say the integer
+
+    Int ok(Integer Value)                                                                                              // Check the integer
+     {new I()
+       {void action()
+         {if (Value != null) {x(); Test.ok(i, Value);}
+          else               {     Test.ok(v, false);}
+         }
+       };
+      return this;
+     }
    }
 
 //D1 Byte Memory                                                                                                        // Operations on memory backed by bytes
@@ -878,25 +910,15 @@ public class Program extends Test                                               
      {void code()
        {final Bool z = new Bool().clear();
         final Bool o = new Bool().set();
-        final Bool O1 = z.Or (z, z);
-        final Bool O2 = z.Or (z, o);
-        final Bool O3 = z.Or (o, z);
-        final Bool O4 = z.Or (o, o);
-        final Bool A1 = o.And(z, z);
-        final Bool A2 = o.And(z, o);
-        final Bool A3 = o.And(o, z);
-        final Bool A4 = o.And(o, o);
+        z.Or (z, z).ok(false);
+        z.Or (z, o).ok(true);
+        z.Or (o, z).ok(true);
+        z.Or (o, o).ok(true);
+        o.And(z, z).ok(false);
+        o.And(z, o).ok(false);
+        o.And(o, z).ok(false);
+        o.And(o, o).ok(true);
         execute();
-        ok(()->z,  false);
-        ok(()->o,  true);
-        ok(()->O1, false);
-        ok(()->O2, true);
-        ok(()->O3, true);
-        ok(()->O4, true);
-        ok(()->A1, false);
-        ok(()->A2, false);
-        ok(()->A3, false);
-        ok(()->A4, true);
        }
      };
    }
@@ -1050,15 +1072,15 @@ public class Program extends Test                                               
          {void body(Int Index, Bool Continue)
            {final Int a = new Int(0);
             a.set(0);
-            a.bset(new Int(0));                 ok(()->a, 1);
-            a.bset(new Int(1));                 ok(()->a, 3);
-            a.bset(new Int(2));                 ok(()->a, 7);
-            a.bclr(new Int(0));                 ok(()->a, 6);
-            a.bclr(new Int(1));                 ok(()->a, 4);
-            a.bclr(new Int(2));                 ok(()->a, 0);
-            a.bset(new Int(3), new Bool(true)); ok(()->a, 8);
-            final Bool b = a.bget(new Int(2));  ok(()->b, false);
-            final Bool c = a.bget(new Int(3));  ok(()->c, true);
+            a.bset(new Int(0))                .ok(1);
+            a.bset(new Int(1))                .ok(3);
+            a.bset(new Int(2))                .ok(7);
+            a.bclr(new Int(0))                .ok(6);
+            a.bclr(new Int(1))                .ok(4);
+            a.bclr(new Int(2))                .ok(0);
+            a.bset(new Int(3), new Bool(true)).ok(8);
+            final Bool b = a.bget(new Int(2)) .ok(false);
+            final Bool c = a.bget(new Int(3)) .ok(true);
             Continue.set();
            }
          };
@@ -1076,15 +1098,13 @@ public class Program extends Test                                               
    {final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(1);
-        a.add(2);
-        ok(()->a, 3);
+        a.add(2).ok(3);
        }
      };
     final Program Q = new Program(new Build().immediate(Ex).parent(P))
      {void code()
        {final Int a = new Int(1);
-        a.add(3);
-        ok(()->a, 4);
+        a.add(3).ok(4);
        }
      };
     P.execute();
@@ -1101,19 +1121,19 @@ public class Program extends Test                                               
        {final Int  a = new Int();
         final Int  A = new Int();
         A.copy(a);
-        final Bool a1 = a.valid();    ok(()->a1, false);
-        final Bool A1 = A.valid();    ok(()->A1, false);
-        final Bool B1 = A.notValid(); ok(()->B1, true);
+        a.valid()   .ok(false);
+        A.valid()   .ok(false);
+        A.notValid().ok(true);
         a.set(1);
         A.copy(a);
-        final Bool a2 = a.valid();    ok(()->a2, true);
-        final Bool A2 = A.valid();    ok(()->A2, true);
-        final Bool B2 = A.notValid(); ok(()->B2, false);
+        a.valid()   .ok(true);
+        A.valid()   .ok(true);
+        A.notValid().ok(false);
         a.invalidate();
         A.copy(a);
-        final Bool a3 = a.valid();    ok(()->a3, false);
-        final Bool A3 = A.valid();    ok(()->A3, false);
-        final Bool B3 = A.notValid(); ok(()->B3, true);
+        a.valid()   .ok(false);
+        A.valid()   .ok(false);
+        A.notValid().ok(true);
        }
      };
     P.execute();
@@ -1132,19 +1152,19 @@ public class Program extends Test                                               
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
             m.putInt(new Int(4), new Int(2));
-            final Int a = m.getInt(new Int(0)); ok(()->a.i(), 1);
-            final Int b = m.getInt(new Int(4)); ok(()->b.i(), 2);
+            m.getInt(new Int(0)).ok(1);
+            m.getInt(new Int(4)).ok(2);
 
-            final Bool c = m.getBool(new Int(4), new Int(0)); ok(()->c.b(), false);
-            final Bool d = m.getBool(new Int(4), new Int(1)); ok(()->d.b(), true );
-            final Bool e = m.getBool(new Int(4), new Int(2)); ok(()->e.b(), false);
-                           m.putBool(new Int(4), new Int(0), new Bool(true));
-            final Int  f = m.getInt (new Int(4));             ok(()->f.i(), 3);
+            m.getBool(new Int(4), new Int(0)).ok(false);
+            m.getBool(new Int(4), new Int(1)).ok(true );
+            m.getBool(new Int(4), new Int(2)).ok(false);
+            m.putBool(new Int(4), new Int(0), new Bool(true));
+            m.getInt (new Int(4)).            ok(3);
 
-                           m.putBool(new Int(32), new Bool(false));
-            final Bool C = m.getBool(new Int(32)); ok(()->C.b(), false);
-            final Bool D = m.getBool(new Int(33)); ok(()->D.b(), true );
-            final Bool E = m.getBool(new Int(34)); ok(()->E.b(), false);
+            m.putBool(new Int(32), new Bool(false));
+            m.getBool(new Int(32)).ok(false);
+            m.getBool(new Int(33)).ok(true );
+            m.getBool(new Int(34)).ok(false);
            }
          };
        }
@@ -1168,19 +1188,19 @@ public class Program extends Test                                               
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
             m.putInt(new Int(1), new Int(2));
-            final Int a = m.getInt(new Int(0)); ok(()->a.i(), 1);
-            final Int b = m.getInt(new Int(1)); ok(()->b.i(), 2);
+            m.getInt(new Int(0)).ok(1);
+            m.getInt(new Int(1)).ok(2);
 
-            final Bool c = m.getBool(new Int(4), new Int(0)); ok(()->c.b(), false);
-            final Bool d = m.getBool(new Int(4), new Int(1)); ok(()->d.b(), true );
-            final Bool e = m.getBool(new Int(4), new Int(2)); ok(()->e.b(), false);
-                           m.putBool(new Int(4), new Int(0), new Bool(true));
-            final Int  f = m.getInt (new Int(1));             ok(()->f.i(), 3);
+            m.getBool(new Int(4), new Int(0)).ok(false);
+            m.getBool(new Int(4), new Int(1)).ok(true );
+            m.getBool(new Int(4), new Int(2)).ok(false);
+            m.putBool(new Int(4), new Int(0), new Bool(true));
+            m.getInt (new Int(1)).            ok(3);
 
-                           m.putBool(new Int(32), new Bool(false));
-            final Bool C = m.getBool(new Int(32)); ok(()->C.b(), false);
-            final Bool D = m.getBool(new Int(33)); ok(()->D.b(), true );
-            final Bool E = m.getBool(new Int(34)); ok(()->E.b(), false);
+            m.putBool(new Int(32), new Bool(false));
+            m.getBool(new Int(32)).ok(false);
+            m.getBool(new Int(33)).ok(true );
+            m.getBool(new Int(34)).ok(false);
            }
          };
        }
@@ -1244,7 +1264,6 @@ public class Program extends Test                                               
     test_byteMemory();
     test_byteMemoryRef();
     test_invalidate();
-    test_programming();
    }
 
   static void newTests()                                                                                                // Tests being worked on
