@@ -1362,8 +1362,7 @@ keys     :   11  12  13  15  16  17  18  14
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_insert2();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
