@@ -756,14 +756,14 @@ Zero:
    5   93    1 |  1
 """);
 
-    final Int o = b.countOnes (); b.ok(()->o, 9);
-    final Int z = b.countZeros(); b.ok(()->z, 23);
+    final Int o = b.countOnes ().ok( 9);
+    final Int z = b.countZeros().ok(23);
 
-    final Bool a1 = b.adjacentOnes(b.new Int(13), b.new Int(19)); b.ok(()->a1, true);
-    final Bool a2 = b.adjacentOnes(b.new Int(13), b.new Int(24)); b.ok(()->a2, false);
-    final Bool a3 = b.adjacentOnes(b.new Int(24), b.new Int(19)); b.ok(()->a3, true);
-    final Bool a4 = b.adjacentOnes(b.new Int(25), b.new Int(19)); b.ok(()->a4, false);
-    final Bool a5 = b.adjacentOnes(b.new Int(25), b.new Int(25)); b.ok(()->a5, false);
+    b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
+    b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
+    b.adjacentOnes(b.new Int(24), b.new Int(19)).ok(true);
+    b.adjacentOnes(b.new Int(25), b.new Int(19)).ok(false);
+    b.adjacentOnes(b.new Int(25), b.new Int(25)).ok(false);
 
     if (true)
      {final Int q;
@@ -771,46 +771,45 @@ Zero:
       b.ok(()->q.i(), 12);
      }
 
-    for (int i : range(13))     {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(),  13);}
-    for (int i : range(13, 19)) {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(),  19);}
-    for (int i : range(19, 24)) {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(),  24);}
-    for (int i : range(23, 28)) {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(), i+1);}
-                                {final Int q = b.nextOne(b.new Int(28)); b.ok(()->q.i(),  30);}
-                                {final Int q = b.nextOne(b.new Int(29)); b.ok(()->q.i(),  30);}
-                                {final Int q = b.nextOne(b.new Int(30)); b.ok(()->q.i(),  31);}
-                                {final Int q = b.nextOne(b.new Int(31)); b.ok(()->q.v(), false);}
+    for (int i : range(13))     b.nextOne(b.new Int( i)).ok( 13);
+    for (int i : range(13, 19)) b.nextOne(b.new Int( i)).ok( 19);
+    for (int i : range(19, 24)) b.nextOne(b.new Int( i)).ok( 24);
+    for (int i : range(23, 28)) b.nextOne(b.new Int( i)).ok(i+1);
+                                b.nextOne(b.new Int(28)).ok( 30);
+                                b.nextOne(b.new Int(29)).ok( 30);
+                                b.nextOne(b.new Int(30)).ok( 31);
+                 {final Int q = b.nextOne(b.new Int(31)); b.ok(()->q.v(), false);}
 
     for (int i : range(14))     {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.v(), false);}
 
-    for (int i : range(14, 20)) {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.i(),  13);}
-    for (int i : range(20, 24)) {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.i(),  19);}
-    for (int i : range(25, 29)) {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.i(), i-1);}
-                                {final Int q = b.prevOne(b.new Int(30)); b.ok(()->q.i(),  28);}
-                                {final Int q = b.prevOne(b.new Int(31)); b.ok(()->q.i(),  30);}
+    for (int i : range(14, 20)) b.prevOne(b.new Int( i)).ok( 13);
+    for (int i : range(20, 24)) b.prevOne(b.new Int( i)).ok( 19);
+    for (int i : range(25, 29)) b.prevOne(b.new Int( i)).ok(i-1);
+                                b.prevOne(b.new Int(30)).ok( 28);
+                                b.prevOne(b.new Int(31)).ok( 30);
 
-                                {final Int q = b.firstOne(); b.ok(()->q.i(), 13);}
-                                {final Int q = b. lastOne(); b.ok(()->q.i(), 31);}
+                 {final Int q = b.firstOne().ok(13);}
+                 {final Int q = b. lastOne().ok(31);}
 
-    for (int i : range(12))     {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(), i+1);}
-                                {final Int q = b.nextZero(b.new Int(12)); b.ok(()->q.i(),  14);}
-    for (int i : range(13, 18)) {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(), i+1);}
-    for (int i : range(19, 23)) {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(), i+1);}
-    for (int i : range(23, 28)) {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(),  29);}
+    for (int i : range(12))     b.nextZero(b.new Int( i)).ok(i+1);
+                                b.nextZero(b.new Int(12)).ok( 14);
+    for (int i : range(13, 18)) b.nextZero(b.new Int( i)).ok(i+1);
+    for (int i : range(19, 23)) b.nextZero(b.new Int( i)).ok(i+1);
+    for (int i : range(23, 28)) b.nextZero(b.new Int( i)).ok( 29);
     for (int i : range(29, 32)) {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.v(), false);}
 
 
                                 {final Int q = b.prevZero(b.new Int( 0)); b.ok(()->q.v(), false);}
-    for (int i : range( 1, 14)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(), i-1);}
+    for (int i : range( 1, 14)) b.prevZero(b.new Int( i)).ok(i-1);
+                                b.prevZero(b.new Int(14)).ok( 12);
+    for (int i : range(15, 19)) b.prevZero(b.new Int( i)).ok(i-1);
+                                b.prevZero(b.new Int(20)).ok( 18);
+    for (int i : range(21, 24)) b.prevZero(b.new Int( i)).ok(i-1);
+    for (int i : range(24, 30)) b.prevZero(b.new Int( i)).ok( 23);
+    for (int i : range(30, 32)) b.prevZero(b.new Int( i)).ok( 29);
 
-                                {final Int q = b.prevZero(b.new Int(14)); b.ok(()->q.i(),  12);}
-    for (int i : range(15, 19)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(), i-1);}
-                                {final Int q = b.prevZero(b.new Int(20)); b.ok(()->q.i(),  18);}
-    for (int i : range(21, 24)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(), i-1);}
-    for (int i : range(24, 30)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(),  23);}
-    for (int i : range(30, 32)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(),  29);}
-
-                                {final Int q = b.firstZero(); b.ok(()->q.i(),  0);}
-                                {final Int q = b. lastZero(); b.ok(()->q.i(), 29);}
+                                b.firstZero().ok( 0);
+                                b. lastZero().ok(29);
 
     b.execute();
    }
@@ -855,31 +854,31 @@ Zero:
    4   45    1 |  1
 """);
 
-    for (int i : range( 3))     {final Int q = b.nextOne(b.new Int(i)); b.ok(()->q.i(),    i+1);}
-    for (int i : range( 4,  8)) {final Int q = b.nextOne(b.new Int(i)); b.ok(()->q.i(),      8);}
-    for (int i : range( 7, 11)) {final Int q = b.nextOne(b.new Int(i)); b.ok(()->q.i(),    i+1);}
-    for (int i : range(11, 16)) {final Int q = b.nextOne(b.new Int(i)); b.ok(()->q.v(),  false);}   // notValid  ???
+    for (int i : range( 3))     b.nextOne(b.new Int(i)).ok(i+1);
+    for (int i : range( 4,  8)) b.nextOne(b.new Int(i)).ok(  8);
+    for (int i : range( 7, 11)) b.nextOne(b.new Int(i)).ok(i+1);
+    for (int i : range(11, 16)) {final Int q = b.nextOne(b.new Int(i)); b.ok(()->q.v(),  false);}
 
                                 {final Int q = b.prevOne(b.new Int(0)); b.ok(()->q.v(),  false);}
-    for (int i : range( 1,  5)) {final Int q = b.prevOne(b.new Int(i)); b.ok(()->q.i(),    i-1);}
-    for (int i : range( 4,  9)) {final Int q = b.prevOne(b.new Int(i)); b.ok(()->q.i(),      3);}
-    for (int i : range( 9, 12)) {final Int q = b.prevOne(b.new Int(i)); b.ok(()->q.i(),    i-1);}
-    for (int i : range(12, 16)) {final Int q = b.prevOne(b.new Int(i)); b.ok(()->q.i(),     11);}
-                                {final Int q = b.firstOne();            b.ok(()->q.i(),      0);}
-                                {final Int q = b.lastOne ();            b.ok(()->q.i(),     11);}
+    for (int i : range( 1,  5)) b.prevOne(b.new Int(i)).ok(i-1);
+    for (int i : range( 4,  9)) b.prevOne(b.new Int(i)).ok(  3);
+    for (int i : range( 9, 12)) b.prevOne(b.new Int(i)).ok(i-1);
+    for (int i : range(12, 16)) b.prevOne(b.new Int(i)).ok( 11);
+                                b.firstOne()           .ok(  0);
+                                b.lastOne ()           .ok( 11);
 
-    for (int i : range( 3))     {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(),    4);}
-    for (int i : range( 3,  7)) {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(),  i+1);}
-    for (int i : range( 7, 11)) {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(),   12);}
-    for (int i : range(11, 15)) {final Int q = b.nextZero(b.new Int( i)); b.ok(()->q.i(),   i+1);}
+    for (int i : range( 3))     b.nextZero(b.new Int( i)).ok(  4);
+    for (int i : range( 3,  7)) b.nextZero(b.new Int( i)).ok(i+1);
+    for (int i : range( 7, 11)) b.nextZero(b.new Int( i)).ok( 12);
+    for (int i : range(11, 15)) b.nextZero(b.new Int( i)).ok( i+1);
                                 {final Int q = b.nextZero(b.new Int(15)); b.ok(()->q.v(), false);}
 
     for (int i : range( 5))     {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.v(), false);}
-    for (int i : range( 5,  9)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(),   i-1);}
-    for (int i : range( 8, 12)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(),     7);}
-    for (int i : range(13, 16)) {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.i(),   i-1);}
-                                {final Int q = b.firstZero();             b.ok(()->q.i(),      4);}
-                                {final Int q = b.lastZero ();             b.ok(()->q.i(),     15);}
+    for (int i : range( 5,  9)) b.prevZero(b.new Int( i)).ok(i-1);
+    for (int i : range( 8, 12)) b.prevZero(b.new Int( i)).ok(  7);
+    for (int i : range(13, 16)) b.prevZero(b.new Int( i)).ok(i-1);
+                                b.firstZero()            .ok(  4);
+                                b.lastZero ()            .ok( 15);
    }
 
   static void test_prevNext01()                                                                                         // Test tree of searchable one bits
@@ -909,29 +908,29 @@ Zero:
    4   45    1 |  1
 """);
 
-    for (int i : range( 3))     {final Int q = b.nextZero(b.new Int(i)); b.ok(()->q.i(), i+1);}
-    for (int i : range( 3, 8))  {final Int q = b.nextZero(b.new Int(i)); b.ok(()->q.i(),   8);}
-    for (int i : range( 7, 11)) {final Int q = b.nextZero(b.new Int(i)); b.ok(()->q.i(), i+1);}
+    for (int i : range( 3))     b.nextZero(b.new Int(i)).ok(i+1);
+    for (int i : range( 3, 8))  b.nextZero(b.new Int(i)).ok(  8);
+    for (int i : range( 7, 11)) b.nextZero(b.new Int(i)).ok(i+1);
     for (int i : range(11, 16)) {final Int q = b.nextZero(b.new Int(i)); b.ok(()->q.v(), false);}
 
                                 {final Int q = b.prevZero(b.new Int(0)); b.ok(()->q.v(), false);}
-    for (int i : range( 1,  5)) {final Int q = b.prevZero(b.new Int(i)); b.ok(()->q.i(),  i-1);}
-    for (int i : range( 4,  8)) {final Int q = b.prevZero(b.new Int(i)); b.ok(()->q.i(),   3);}
-    for (int i : range( 9, 13)) {final Int q = b.prevZero(b.new Int(i)); b.ok(()->q.i(), i-1);}
-    for (int i : range(12, 16)) {final Int q = b.prevZero(b.new Int(i)); b.ok(()->q.i(),  11);}
+    for (int i : range( 1,  5)) b.prevZero(b.new Int(i)).ok(i-1);
+    for (int i : range( 4,  8)) b.prevZero(b.new Int(i)).ok(  3);
+    for (int i : range( 9, 13)) b.prevZero(b.new Int(i)).ok(i-1);
+    for (int i : range(12, 16)) b.prevZero(b.new Int(i)).ok( 11);
 
-    for (int i : range( 4))     {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(),   4);}
-    for (int i : range( 3,  7)) {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(), i+1);}
-    for (int i : range( 7, 12)) {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(),  12);}
-    for (int i : range(11, 15)) {final Int q = b.nextOne(b.new Int( i)); b.ok(()->q.i(), i+1);}
+    for (int i : range( 4))     b.nextOne(b.new Int( i)).ok(  4);
+    for (int i : range( 3,  7)) b.nextOne(b.new Int( i)).ok(i+1);
+    for (int i : range( 7, 12)) b.nextOne(b.new Int( i)).ok( 12);
+    for (int i : range(11, 15)) b.nextOne(b.new Int( i)).ok(i+1);
                                 {final Int q = b.nextOne(b.new Int(15)); b.ok(()->q.v(), false);}
 
     for (int i : range( 5))     {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.v(), false);}
-    for (int i : range( 5,  8)) {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.i(), i-1);}
-    for (int i : range( 8, 13)) {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.i(),   7);}
-    for (int i : range(13, 16)) {final Int q = b.prevOne(b.new Int( i)); b.ok(()->q.i(), i-1);}
-                                {final Int q = b.firstOne();             b.ok(()->q.i(),   4);}
-                                {final Int q = b.lastOne();              b.ok(()->q.i(),  15);}
+    for (int i : range( 5,  8)) b.prevOne(b.new Int( i)).ok(i-1);
+    for (int i : range( 8, 13)) b.prevOne(b.new Int( i)).ok(  7);
+    for (int i : range(13, 16)) b.prevOne(b.new Int( i)).ok(i-1);
+                                b.firstOne()            .ok(  4);
+                                b.lastOne ()            .ok( 15);
    }
 
   static void test_prevNext10()                                                                                         // Test tree of searchable one bits
@@ -1158,9 +1157,9 @@ Zero:
 
     b.new ForCount(b.new Int(N))
      {void body(Int Index)
-       {final Bool f2 = b.full (); b.ok(()->f2, false);
+       {b.full ().ok(false);
         b.set(b.new Int(Index), b.new Bool(true));
-        final Bool e2 = b.empty(); b.ok(()->e2, false);
+        b.empty().ok(false);
        }
      };
     final Bool f1 = b.full(); b.ok(()->f1, true);
@@ -1188,67 +1187,67 @@ Zero:
 
     final Int t = b.top(); b.ok(()->t.i(), 30);
 
-    final Int d29 = b.nextDownHigh(b.new Int(30));   b.ok(()->d29, 29);
-    final Int d28 = b.nextDownLow (b.new Int(30));   b.ok(()->d28, 28);
-    final Int d27 = b.nextDownHigh(b.new Int(29));   b.ok(()->d27, 27);
-    final Int d26 = b.nextDownLow (b.new Int(29));   b.ok(()->d26, 26);
-    final Int d25 = b.nextDownHigh(b.new Int(28));   b.ok(()->d25, 25);
-    final Int d24 = b.nextDownLow (b.new Int(28));   b.ok(()->d24, 24);
-    final Int d23 = b.nextDownHigh(b.new Int(27));   b.ok(()->d23, 23);
-    final Int d22 = b.nextDownLow (b.new Int(27));   b.ok(()->d22, 22);
-    final Int d21 = b.nextDownHigh(b.new Int(26));   b.ok(()->d21, 21);
-    final Int d20 = b.nextDownLow (b.new Int(26));   b.ok(()->d20, 20);
-    final Int d19 = b.nextDownHigh(b.new Int(25));   b.ok(()->d19, 19);
-    final Int d18 = b.nextDownLow (b.new Int(25));   b.ok(()->d18, 18);
-    final Int d17 = b.nextDownHigh(b.new Int(24));   b.ok(()->d17, 17);
-    final Int d16 = b.nextDownLow (b.new Int(24));   b.ok(()->d16, 16);
-    final Int d15 = b.nextDownHigh(b.new Int(23));   b.ok(()->d15, 15);
-    final Int d14 = b.nextDownLow (b.new Int(23));   b.ok(()->d14, 14);
-    final Int d13 = b.nextDownHigh(b.new Int(22));   b.ok(()->d13, 13);
-    final Int d12 = b.nextDownLow (b.new Int(22));   b.ok(()->d12, 12);
-    final Int d11 = b.nextDownHigh(b.new Int(21));   b.ok(()->d11, 11);
-    final Int d10 = b.nextDownLow (b.new Int(21));   b.ok(()->d10, 10);
-    final Int d09 = b.nextDownHigh(b.new Int(20));   b.ok(()->d09,  9);
-    final Int d08 = b.nextDownLow (b.new Int(20));   b.ok(()->d08,  8);
-    final Int d07 = b.nextDownHigh(b.new Int(19));   b.ok(()->d07,  7);
-    final Int d06 = b.nextDownLow (b.new Int(19));   b.ok(()->d06,  6);
-    final Int d05 = b.nextDownHigh(b.new Int(18));   b.ok(()->d05,  5);
-    final Int d04 = b.nextDownLow (b.new Int(18));   b.ok(()->d04,  4);
-    final Int d03 = b.nextDownHigh(b.new Int(17));   b.ok(()->d03,  3);
-    final Int d02 = b.nextDownLow (b.new Int(17));   b.ok(()->d02,  2);
-    final Int d01 = b.nextDownHigh(b.new Int(16));   b.ok(()->d01,  1);
-    final Int d00 = b.nextDownLow (b.new Int(16));   b.ok(()->d00,  0);
+    b.nextDownHigh(b.new Int(30)).ok(29);
+    b.nextDownLow (b.new Int(30)).ok(28);
+    b.nextDownHigh(b.new Int(29)).ok(27);
+    b.nextDownLow (b.new Int(29)).ok(26);
+    b.nextDownHigh(b.new Int(28)).ok(25);
+    b.nextDownLow (b.new Int(28)).ok(24);
+    b.nextDownHigh(b.new Int(27)).ok(23);
+    b.nextDownLow (b.new Int(27)).ok(22);
+    b.nextDownHigh(b.new Int(26)).ok(21);
+    b.nextDownLow (b.new Int(26)).ok(20);
+    b.nextDownHigh(b.new Int(25)).ok(19);
+    b.nextDownLow (b.new Int(25)).ok(18);
+    b.nextDownHigh(b.new Int(24)).ok(17);
+    b.nextDownLow (b.new Int(24)).ok(16);
+    b.nextDownHigh(b.new Int(23)).ok(15);
+    b.nextDownLow (b.new Int(23)).ok(14);
+    b.nextDownHigh(b.new Int(22)).ok(13);
+    b.nextDownLow (b.new Int(22)).ok(12);
+    b.nextDownHigh(b.new Int(21)).ok(11);
+    b.nextDownLow (b.new Int(21)).ok(10);
+    b.nextDownHigh(b.new Int(20)).ok( 9);
+    b.nextDownLow (b.new Int(20)).ok( 8);
+    b.nextDownHigh(b.new Int(19)).ok( 7);
+    b.nextDownLow (b.new Int(19)).ok( 6);
+    b.nextDownHigh(b.new Int(18)).ok( 5);
+    b.nextDownLow (b.new Int(18)).ok( 4);
+    b.nextDownHigh(b.new Int(17)).ok( 3);
+    b.nextDownLow (b.new Int(17)).ok( 2);
+    b.nextDownHigh(b.new Int(16)).ok( 1);
+    b.nextDownLow (b.new Int(16)).ok( 0);
 
-    final Int u29 = b.nextUp(b.new Int(29));         b.ok(()->u29, 30);
-    final Int u28 = b.nextUp(b.new Int(28));         b.ok(()->u28, 30);
-    final Int u27 = b.nextUp(b.new Int(27));         b.ok(()->u27, 29);
-    final Int u26 = b.nextUp(b.new Int(26));         b.ok(()->u26, 29);
-    final Int u25 = b.nextUp(b.new Int(25));         b.ok(()->u25, 28);
-    final Int u24 = b.nextUp(b.new Int(24));         b.ok(()->u24, 28);
-    final Int u23 = b.nextUp(b.new Int(23));         b.ok(()->u23, 27);
-    final Int u22 = b.nextUp(b.new Int(22));         b.ok(()->u22, 27);
-    final Int u21 = b.nextUp(b.new Int(21));         b.ok(()->u21, 26);
-    final Int u20 = b.nextUp(b.new Int(20));         b.ok(()->u20, 26);
-    final Int u19 = b.nextUp(b.new Int(19));         b.ok(()->u19, 25);
-    final Int u18 = b.nextUp(b.new Int(18));         b.ok(()->u18, 25);
-    final Int u17 = b.nextUp(b.new Int(17));         b.ok(()->u17, 24);
-    final Int u16 = b.nextUp(b.new Int(16));         b.ok(()->u16, 24);
-    final Int u15 = b.nextUp(b.new Int(15));         b.ok(()->u15, 23);
-    final Int u14 = b.nextUp(b.new Int(14));         b.ok(()->u14, 23);
-    final Int u13 = b.nextUp(b.new Int(13));         b.ok(()->u13, 22);
-    final Int u12 = b.nextUp(b.new Int(12));         b.ok(()->u12, 22);
-    final Int u11 = b.nextUp(b.new Int(11));         b.ok(()->u11, 21);
-    final Int u10 = b.nextUp(b.new Int(10));         b.ok(()->u10, 21);
-    final Int u09 = b.nextUp(b.new Int( 9));         b.ok(()->u09, 20);
-    final Int u08 = b.nextUp(b.new Int( 8));         b.ok(()->u08, 20);
-    final Int u07 = b.nextUp(b.new Int( 7));         b.ok(()->u07, 19);
-    final Int u06 = b.nextUp(b.new Int( 6));         b.ok(()->u06, 19);
-    final Int u05 = b.nextUp(b.new Int( 5));         b.ok(()->u05, 18);
-    final Int u04 = b.nextUp(b.new Int( 4));         b.ok(()->u04, 18);
-    final Int u03 = b.nextUp(b.new Int( 3));         b.ok(()->u03, 17);
-    final Int u02 = b.nextUp(b.new Int( 2));         b.ok(()->u02, 17);
-    final Int u01 = b.nextUp(b.new Int( 1));         b.ok(()->u01, 16);
-    final Int u00 = b.nextUp(b.new Int( 0));         b.ok(()->u00, 16);
+    b.nextUp(b.new Int(29)).ok(30);
+    b.nextUp(b.new Int(28)).ok(30);
+    b.nextUp(b.new Int(27)).ok(29);
+    b.nextUp(b.new Int(26)).ok(29);
+    b.nextUp(b.new Int(25)).ok(28);
+    b.nextUp(b.new Int(24)).ok(28);
+    b.nextUp(b.new Int(23)).ok(27);
+    b.nextUp(b.new Int(22)).ok(27);
+    b.nextUp(b.new Int(21)).ok(26);
+    b.nextUp(b.new Int(20)).ok(26);
+    b.nextUp(b.new Int(19)).ok(25);
+    b.nextUp(b.new Int(18)).ok(25);
+    b.nextUp(b.new Int(17)).ok(24);
+    b.nextUp(b.new Int(16)).ok(24);
+    b.nextUp(b.new Int(15)).ok(23);
+    b.nextUp(b.new Int(14)).ok(23);
+    b.nextUp(b.new Int(13)).ok(22);
+    b.nextUp(b.new Int(12)).ok(22);
+    b.nextUp(b.new Int(11)).ok(21);
+    b.nextUp(b.new Int(10)).ok(21);
+    b.nextUp(b.new Int( 9)).ok(20);
+    b.nextUp(b.new Int( 8)).ok(20);
+    b.nextUp(b.new Int( 7)).ok(19);
+    b.nextUp(b.new Int( 6)).ok(19);
+    b.nextUp(b.new Int( 5)).ok(18);
+    b.nextUp(b.new Int( 4)).ok(18);
+    b.nextUp(b.new Int( 3)).ok(17);
+    b.nextUp(b.new Int( 2)).ok(17);
+    b.nextUp(b.new Int( 1)).ok(16);
+    b.nextUp(b.new Int( 0)).ok(16);
 
     //stop("AAAA", b);
     b.ok(()->b, """
@@ -1266,18 +1265,18 @@ Zero:
    4   45    1 |  1
 """);
 
-    final Int l30 = b.low(b.new Int(30)); b.ok(()->l30,  5);   final Int h30 = b.high(b.new Int(30));  b.ok(()->h30, 11);
-    final Int l29 = b.low(b.new Int(29)); b.ok(()->l29, 11);   final Int h29 = b.high(b.new Int(29));  b.ok(()->h29, 11);
-    final Int l28 = b.low(b.new Int(28)); b.ok(()->l28,  5);   final Int h28 = b.high(b.new Int(28));  b.ok(()->h28,  7);
-    final Int l26 = b.low(b.new Int(26)); b.ok(()->l26, 11);   final Int h26 = b.high(b.new Int(26));  b.ok(()->h26, 11);
-    final Int l25 = b.low(b.new Int(25)); b.ok(()->l25,  5);   final Int h25 = b.high(b.new Int(25));  b.ok(()->h25,  7);
-    final Int l21 = b.low(b.new Int(21)); b.ok(()->l21, 11);   final Int h21 = b.high(b.new Int(21));  b.ok(()->h21, 11);
-    final Int l19 = b.low(b.new Int(19)); b.ok(()->l19,  6);   final Int h19 = b.high(b.new Int(19));  b.ok(()->h19,  7);
-    final Int l18 = b.low(b.new Int(18)); b.ok(()->l18,  5);   final Int h18 = b.high(b.new Int(18));  b.ok(()->h18,  5);
+    b.low(b.new Int(30)).ok( 5);   b.high(b.new Int(30)).ok(11);
+    b.low(b.new Int(29)).ok(11);   b.high(b.new Int(29)).ok(11);
+    b.low(b.new Int(28)).ok( 5);   b.high(b.new Int(28)).ok( 7);
+    b.low(b.new Int(26)).ok(11);   b.high(b.new Int(26)).ok(11);
+    b.low(b.new Int(25)).ok( 5);   b.high(b.new Int(25)).ok( 7);
+    b.low(b.new Int(21)).ok(11);   b.high(b.new Int(21)).ok(11);
+    b.low(b.new Int(19)).ok( 6);   b.high(b.new Int(19)).ok( 7);
+    b.low(b.new Int(18)).ok( 5);   b.high(b.new Int(18)).ok( 5);
 
-    final Bool L30 = b.canGoLeft(b.new Int(30)); b.ok(()->L30,  true);   final Bool R30 = b.canGoRight(b.new Int(30)); b.ok(()->R30,  true);
-    final Bool L26 = b.canGoLeft(b.new Int(26)); b.ok(()->L26, false);   final Bool R26 = b.canGoRight(b.new Int(26)); b.ok(()->R26,  true);
-    final Bool L29 = b.canGoLeft(b.new Int(29)); b.ok(()->L29,  true);   final Bool R29 = b.canGoRight(b.new Int(29)); b.ok(()->R29, false);
+    b.canGoLeft(b.new Int(30)).ok( true);   b.canGoRight(b.new Int(30)).ok( true);
+    b.canGoLeft(b.new Int(26)).ok(false);   b.canGoRight(b.new Int(26)).ok( true);
+    b.canGoLeft(b.new Int(29)).ok( true);   b.canGoRight(b.new Int(29)).ok(false);
     b.execute();
    }
 
