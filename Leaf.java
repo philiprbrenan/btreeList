@@ -72,18 +72,21 @@ class Leaf extends Program                                                      
 
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
-  Int getDataFromKey(Int Key)                                                                                           // Get the data associated with a key
-   {final Slots.Find f = slots.find(Key);                                                                                           // Find the key
-    final Int        r = new Int();
-    new If (f.equal)
+  Int find          (Int Key) {return getDataFromKey(Key, false);}                                                      // Get the data associated with a key
+  Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key
+  Int getDataFromKey(Int Key, boolean Delete)                                                                           // Get the data associated with a key with the option of deleting the key if found
+   {final Slots.Find f = slots.find(Key);                                                                               // Find the key
+    final Int        r = new Int();                                                                                     // Result
+    new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot)));
+       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot)));                                                         // Get data associated with key
+        if (Delete) slots.delSlotAndKey(f.slot);                                                                        // Delete the key if requested
        }
-      void Else()
-       {r.invalidate();
+      void Else()                                                                                                       // Key not found
+       {r.invalidate();                                                                                                 // Data is invalid showing that the key was not found
        }
      };
-    return r;
+    return r;                                                                                                           // Return data associated with key
    }
 
   Int insert(Int Key, Int Data)                                                                                         // Insert a key data pair into a leaf returning the index of the containing slot
@@ -92,9 +95,6 @@ class Leaf extends Program                                                      
     refData.putInt(k, Data);
     return i;
    }
-
-  Slots.Find find(Int Key) {return slots.find(Key);}                                                                    // Find a key
-
 
 /*
   Data data(Slot I) {return new Data(memory.data(slots(I).value()));}                                                 // Get value of data field at index
@@ -399,10 +399,13 @@ Leaf: size:   8
   3   3  33
   4   4  44
 """);
-    l.getDataFromKey(l.new Int(1)).ok(11);
-    l.getDataFromKey(l.new Int(2)).ok(22);
-    l.getDataFromKey(l.new Int(3)).ok(33);
-    l.getDataFromKey(l.new Int(4)).ok(44);
+    l.find  (l.new Int(1)).ok(11);
+    l.find  (l.new Int(2)).ok(22);
+    l.find  (l.new Int(3)).ok(33);
+    l.find  (l.new Int(4)).ok(44);
+
+    l.delete(l.new Int(3)).ok(33);
+
     l.execute();
    }
 
