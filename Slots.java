@@ -241,6 +241,13 @@ class Slots extends Program                                                     
      };
    }
 
+  private void moveSlot(Int T, Int S)                                                                                   // Move a slot from the specified source position to the specified target position
+   {final Int k = getSlotToKeyIndex(S);                                                                                 // Index of key being moved
+    final Int K = getKeyValue(k);                                                                                       // Value of key being moved
+    delSlotAndKey(S);                                                                                                   // Remove source
+    setSlotAndKey(T, k, K);                                                                                             // Reinsert source at target
+   }
+
   private void moveKey(Int T, Int S, Bool Continue)                                                                     // Move a key from the source position to the target position
    {final Int s = refKeysToSlots.getInt(S);                                                                             // The slot referencing the key
     final Int q = getKeyValue(S);                                                                                       // The value of the key
@@ -249,7 +256,7 @@ class Slots extends Program                                                     
     Continue.set(true);                                                                                                 // Continue moving keys
    }
 
-//D3 Compact and Merge                                                                                                  // Compact and merge slots
+//D3 Compact, Split and Merge                                                                                           // Compact, split and merge slots
 
 //D4 Compact                                                                                                            // Compact slots to the left or right
 
@@ -356,14 +363,49 @@ class Slots extends Program                                                     
      };
    }
 
-//D4 Merge                                                                                                              // Merge slots
+//D4 Split                                                                                                              // Split full slots into left and right hand pieces
 
-  private void moveSlot(Int T, Int S)                                                                                   // Move a slot from the specified source position to the specified target position
-   {final Int k = getSlotToKeyIndex(S);                                                                                 // Index of key being moved
-    final Int K = getKeyValue(k);                                                                                       // Value of key being moved
-    delSlotAndKey(S);                                                                                                   // Remove source
-    setSlotAndKey(T, k, K);                                                                                             // Reinsert source at target
+  void splitRightEven(Slots Target) {splitRightEven(Target, true);}                                                     // Split a full set of slots that contains an even number of entries redistributing the results - this is the normall expected outcome
+
+  void splitRightEven(Slots Target, boolean Redistribute)                                                               // Split a full set of slots that contains an even number of entries optionally redistributing the slots in the source and target slots
+   {final int N = numberOfKeys();
+    if (N % 2 == 1) stop("Slot set must have an even number of entries");
+    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+    compactLeft();                                                                                                      // The  slots are full so there is no opportunity to insert anything else and we are going to distribute after the split so the slots distribution is going to be changed regardless
+    Target.compactLeft();                                                                                               // Move slots to left so we now where they and so do not have to probe for them
+    new ForCount(Target.count().min(new Int(N/2))) {void body(Int Index) {Target.delSlotAndKey(Index);}};               // Clear the target areas that should not be occupied after the split
+
+    new ForCount(new Int(N/2), new Int(N))                                                                              // Move upper half of source to upper half of target
+     {void body(Int Index)
+       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
+        delSlotAndKey(Index);                                                                                           // Delete key
+        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       }
+     };
+    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
    }
+
+  void splitLeftEven(Slots Target) {splitLeftEven(Target, true);}                                                       // Split a full set of slots that contains an even number of entries redistributing the results - this is the normall expected outcome
+
+  void splitLeftEven(Slots Target, boolean Redistribute)                                                                // Split a full set of slots that contains an even number of entries optionally redistributing the slots in the source and target slots
+   {final int N = numberOfKeys();
+    if (N % 2 == 1) stop("Slot set must have an even number of entries");
+    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+    compactLeft();                                                                                                      // The  slots are full so there is no opportunity to insert anything else and we are going to distribute after the split so the slots distribution is going to be changed regardless
+    Target.compactLeft();                                                                                               // Move slots to left so we now where they and so do not have to probe for them
+    new ForCount(Target.count().min(new Int(N/2))) {void body(Int Index) {Target.delSlotAndKey(Index);}};               // Clear the target areas that should not be occupied after the split
+
+    new ForCount(new Int(N/2))                                                                                          // Move lower half of source to lower half of target
+     {void body(Int Index)
+       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
+        delSlotAndKey(Index);                                                                                           // Delete key
+        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       }
+     };
+    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+   }
+
+//D4 Merge                                                                                                              // Merge slots
 
   void shiftUpOne(Int Position, Int Width)                                                                              // Shift up the specified slots by one position to create a free space at the specified position
    {new ForCount(Width)                                                                                                 // Move the indicated slots up one position
@@ -962,7 +1004,6 @@ usedKeys :    X   X   X   X   X   X   X   .
 keys     :    7   1   3   2   4   5   6   0
 """);
 
-
         redistribute();
         //new I() {void action() {stop(s);}};
         ok(()->this, """
@@ -974,7 +1015,6 @@ usedSlots:    .   X   .   X   .   X   .   X   .   X   .   X   .   X   .   .
 usedKeys :    X   X   X   X   X   X   X   .
 keys     :    7   1   3   2   4   5   6   0
 """);
-
         execute();
        }
      };
@@ -1328,6 +1368,118 @@ keys     :   11  12  13  15  16  17  18  14
     test_insert2(false);
    }
 
+  static void test_splitRightEven(boolean Ex)
+   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+     {void slotsCode()
+       {insert(new Int(11)).ok( 8);
+        insert(new Int(12)).ok( 9);
+        insert(new Int(13)).ok(10);
+        insert(new Int(15)).ok(11);
+        insert(new Int(16)).ok(12);
+        insert(new Int(17)).ok(13);
+        insert(new Int(18)).ok(14);
+        insert(new Int(14)).ok( 6);
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   1   0   2   7   3   0   4   0   5   0   6   0   0
+keysSlots:    1   3   5   7   9  11  13   6   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   X   .   .
+usedKeys :    X   X   X   X   X   X   X   X
+keys     :   11  12  13  15  16  17  18  14
+""");
+        final Slots t = new Slots(new Build().numberOfKeys(8).immediate(Ex).parent(this));
+        t.insert(new Int(11));
+        s.splitRightEven(t, false);
+        //new I() {void action() {stop(s);}};
+        ok(()->s, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   1   2   7   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   1   2   0   0   0   0   3   0   0   0   0   0   0   0   0
+usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    X   X   X   .   .   .   .   X
+keys     :   11  12  13   0   0   0   0  14
+""");
+        //new I() {void action() {stop(t);}};
+        ok(()->t, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
+usedKeys :    .   .   .   .   X   X   X   X
+keys     :    0   0   0   0  15  16  17  18
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_splitRightEven()
+   {test_splitRightEven(true);
+    test_splitRightEven(false);
+   }
+
+  static void test_splitLeftEven(boolean Ex)
+   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+     {void slotsCode()
+       {insert(new Int(11)).ok( 8);
+        insert(new Int(12)).ok( 9);
+        insert(new Int(13)).ok(10);
+        insert(new Int(15)).ok(11);
+        insert(new Int(16)).ok(12);
+        insert(new Int(17)).ok(13);
+        insert(new Int(18)).ok(14);
+        insert(new Int(14)).ok( 6);
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   1   0   2   7   3   0   4   0   5   0   6   0   0
+keysSlots:    1   3   5   7   9  11  13   6   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   X   .   .
+usedKeys :    X   X   X   X   X   X   X   X
+keys     :   11  12  13  15  16  17  18  14
+""");
+        final Slots t = new Slots(new Build().numberOfKeys(8).immediate(Ex).parent(this));
+        t.insert(new Int(11)); t.compactRight();
+        s.splitLeftEven(t, false);
+        //new I() {void action() {stop(t);}};
+        //new I() {void action() {stop(s);}};
+        ok(()->t, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    X   X   X   X   .   .   .   .
+keys     :   11  12  13  14   0   0   0   0
+""");
+        ok(()->s, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   3   4   5   6   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   4   5   6   7   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
+usedKeys :    .   .   .   X   X   X   X   .
+keys     :    0   0   0  15  16  17  18   0
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_splitLeftEven()
+   {test_splitLeftEven(true);
+    test_splitLeftEven(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
     test_locateNearestFreeSlotToKey();
@@ -1344,10 +1496,14 @@ keys     :   11  12  13  15  16  17  18  14
     test_findRight();
     test_insert();
     test_insert2();
+    test_splitRightEven();
+    test_splitLeftEven();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_splitRightEven();
+    test_splitLeftEven();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
