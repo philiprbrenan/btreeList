@@ -126,14 +126,15 @@ class Slots extends Program                                                     
   boolean getSlotToKeysInUse(int Index)    {return usedSlotsToKeys.getBitNC(Index);}                                    // Check whether a slot is in use
   int     getSlotToKeyIndex (int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slot
   int     getKeyToSlotIndex (int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index from slots to keys
-  boolean getKeyInUse       (int Index)    {return usedKeys .getBitNC(Index);}                                          // Check whether a key is in use
-  int     getKeyValue       (int Index)    {return refKeys  .getInt(Index);}                                            // Value of referenced key
+  boolean getKeyInUse       (int Index)    {return usedKeys       .getBitNC(Index);}                                    // Check whether a key is in use
+  int     getKeyValue       (int Index)    {return refKeys        .getInt(Index);}                                      // Value of referenced key
 
   Int  getSlotToKeyValue (Int Index)       {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
   int  getSlotToKeyValue (int Index)       {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
   Bool empty() {return usedKeys.empty();}                                                                               // All bits in the corresponding bitset are unused so the Slots must be empty
   Bool full () {return usedKeys.full ();}                                                                               // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+  Int  count() {return usedKeys.countOnes();}                                                                           // Count the nunber of keys in use
 
   void invalidateMemory   () {byteMemoryRef.invalidate(size);}                                                          // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   int  numberOfKeys       () {return numberOfKeys;}                                                                     // The number of references in the slots definition
@@ -150,7 +151,6 @@ class Slots extends Program                                                     
 
   Int stepLeft (Int Start) {return usedSlotsToKeys.prevOne(Start);}                                                     // Step left to prior occupied slot assuming that such a step is possible
   Int stepRight(Int Start) {return usedSlotsToKeys.nextOne(Start);}                                                     // Step right to the next occupied slot assuming that such a step is possible
-
 
   Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow, Bool Prev)                                                // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
    {final Int r = new Int(0);
@@ -1151,10 +1151,11 @@ keys     :    1   2   3   4
         putSlotToKeys(new Int( 2), new Int(3));
         putSlotToKeys(new Int( 4), new Int(5));
         putSlotToKeys(new Int(15), new Int(0));
-        putKey       (new Int( 1), new Int(11));
-        putKey       (new Int( 3), new Int(22));
-        putKey       (new Int( 5), new Int(33));
-        putKey       (new Int( 0), new Int(44));
+                                                 count().ok(0);
+        putKey       (new Int( 1), new Int(11)); count().ok(1);
+        putKey       (new Int( 3), new Int(22)); count().ok(2);
+        putKey       (new Int( 5), new Int(33)); count().ok(3);
+        putKey       (new Int( 0), new Int(44)); count().ok(4);
 
         final Slots s = this;
         //new I() {void action() {stop(s);}};
@@ -1168,10 +1169,10 @@ usedKeys :    X   X   .   X   .   X   .   .
 keys     :   44  11   0  22   0  33   0   0
 """);
 
-       ok(getSlotToKeyValue(0), 11);
-       ok(getSlotToKeyValue(2), 22);
-       ok(getSlotToKeyValue(4), 33);
-       ok(getSlotToKeyValue(8), 44);
+       getSlotToKeyValue(new Int(0)).ok(11);
+       getSlotToKeyValue(new Int(2)).ok(22);
+       getSlotToKeyValue(new Int(4)).ok(33);
+       getSlotToKeyValue(new Int(8)).ok(44);
 
        //new I() {void action() {stop(s.usedSlotsToKeys);}};
        ok(s.usedSlotsToKeys, """
