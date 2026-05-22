@@ -256,6 +256,8 @@ class Slots extends Program                                                     
     Continue.set(true);                                                                                                 // Continue moving keys
    }
 
+  void copy(Slots Source)  {byteMemoryRef.copy(Source.byteMemoryRef, new Int(build.size()));}                           // Copy source into this
+
 //D3 Compact, Split and Merge                                                                                           // Compact, split and merge slots
 
 //D4 Compact                                                                                                            // Compact slots to the left or right
@@ -782,8 +784,9 @@ class Slots extends Program                                                     
         putKey (new Int(3), new Int(22));
 
         final Slots s = this;
+        final Slots t = new Slots(s.build.parent(s).memory(null)); t.copy(s);                                                     // Create some more memory and copy the slots into it
         //new I() {void action() {stop(s);}};
-        ok(()->this, """
+        ok(()->s, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -795,7 +798,7 @@ keys     :    0  11   0  22   0   0   0   0
         delSlotToKeys(new Int(2));
         delKey (new Int(3));
         //new I() {void action() {stop(s);}};
-        ok(()->this, """
+        ok(()->s, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -811,6 +814,16 @@ keys     :    0  11   0   0   0   0   0   0
         delKey(new Int(3)); locateFirstUnusedKey().ok(3);
         delKey(new Int(4)); locateFirstUnusedKey().ok(3);
         delKey(new Int(2)); locateFirstUnusedKey().ok(2);
+
+        ok(()->t, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   2   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   X   .   X   .   .   .   .
+keys     :    0  11   0  22   0   0   0   0
+""");
 
         execute();
        }
@@ -1236,6 +1249,92 @@ keys     :    1   2   3   4
    {test_mergeFromLeftEven(true); test_mergeFromLeftEven(false);
    }
 
+  static void test_mergeFromRightOdd(boolean Ex)
+   {final int N = 4;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
+     {void slotsCode()
+       {final Slots l = this;
+        setSlotAndKey(new Int(2), new Int(1), new Int(2));
+        setSlotAndKey(new Int(4), new Int(3), new Int(1));
+        final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
+         {void slotsCode()
+           {setSlotAndKey(new Int(2), new Int(1), new Int(3));
+            setSlotAndKey(new Int(4), new Int(3), new Int(4));
+           }
+         };
+        mergeFromRightEven(r);
+        ok(()->l, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    1   0   0   0   0   0   2   3
+keysSlots:    1   0   6   7   0   0   0   0
+usedSlots:    X   X   .   .   .   .   X   X
+usedKeys :    X   X   X   X
+keys     :    1   2   3   4
+""");
+        ok(()->r, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    0   0   0   0   0   0   2   3
+keysSlots:    0   0   6   7   0   0   0   0
+usedSlots:    .   .   .   .   .   .   X   X
+usedKeys :    .   .   X   X
+keys     :    0   0   3   4
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_mergeFromRightOdd()
+   {test_mergeFromRightOdd(true); test_mergeFromRightOdd(false);
+   }
+
+  static void test_mergeFromLeftOdd(boolean Ex)
+   {final int N = 4;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
+     {void slotsCode()
+       {final Slots r = this;
+        setSlotAndKey(new Int(2), new Int(1), new Int(3));
+        setSlotAndKey(new Int(4), new Int(3), new Int(4));
+        final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r))
+         {void slotsCode()
+           {setSlotAndKey(new Int(2), new Int(1), new Int(2));
+            setSlotAndKey(new Int(4), new Int(3), new Int(1));
+           }
+         };
+        mergeFromLeftEven(l);
+        //new I() {void action() {stop(l);}};
+        ok(()->l, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    1   0   0   0   0   0   0   0
+keysSlots:    1   0   0   0   0   0   0   0
+usedSlots:    X   X   .   .   .   .   .   .
+usedKeys :    X   X   .   .
+keys     :    1   2   0   0
+""");
+        //new I() {void action() {stop(r);}};
+        ok(()->r, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    1   0   0   0   0   0   2   3
+keysSlots:    1   0   6   7   0   0   0   0
+usedSlots:    X   X   .   .   .   .   X   X
+usedKeys :    X   X   X   X
+keys     :    1   2   3   4
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_mergeFromLeftOdd()
+   {test_mergeFromLeftOdd(true); test_mergeFromLeftOdd(false);
+   }
+
   static void test_find()
    {final Slots s = new Slots(new Build().numberOfKeys(8))
      {void slotsCode()
@@ -1658,6 +1757,8 @@ keys     :    0   0   0  15  16  17   0
     test_slots();
     test_mergeFromRightEven();
     test_mergeFromLeftEven();
+    test_mergeFromRightOdd();
+    test_mergeFromLeftOdd();
     test_find();
     test_findRight();
     test_insert();
@@ -1670,6 +1771,7 @@ keys     :    0   0   0  15  16  17   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
+    test_slots();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
