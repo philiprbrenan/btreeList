@@ -11,7 +11,9 @@ public class BitSet extends Program                                             
   final int byteSize;                                                                                                   // Number of bytes in the bit set.
   final boolean oneTreeBit;                                                                                             // At most only one tree bit present
   final boolean zero, one;                                                                                              // Able to locate zeros and ones via a tree of bits if set
-  final ByteMemory.Ref memoryRef;                                                                                       // Memory to use
+  final boolean powerOfTwo;                                                                                             // Able to optimize some operations because the requested bitset has a number of elemets that is a power of two
+  final Build              build;                                                                                       // Memory to use
+  final ByteMemory.Ref memoryRef;                                                                                       // Build used to create biotset
   static int bitsetNumbers = 0;                                                                                         // Bitsets created
   final  int bitsetNumber  = ++bitsetNumbers;                                                                           // Number of this bitset
 
@@ -48,9 +50,11 @@ public class BitSet extends Program                                             
 
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.build());
+    build      = Build;
     bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
     bitSize1   = bitSize - 1;
     bitSize2   = bitSize >>> 1;
+    powerOfTwo = bitSize == Build.bitSize;
     logBitSize = logTwo(bitSize);
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
     zero       = Build.zero;                                                                                            // Locate zeroes efficiently
@@ -84,7 +88,7 @@ public class BitSet extends Program                                             
   public static int bytesNeeded(int Size)              {return new Build().bitSize(Size)         .byteSize();}          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
   public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
 
-  public  int size() {return bitSize;}                                                                                  // Bit set size
+  public  int size() {return build.bitSize;}                                                                            // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
 
   private void checkIndex(Int Index)                                                                                    // Check that a bit index is valid
    {new If (Index.lt(0))
@@ -205,10 +209,16 @@ public class BitSet extends Program                                             
 
   public Bool full()                                                                                                    // Whether the bitset is full
    {final Bool r = new Bool();
-    if (zero)
-     {new I() {void action() {r.ex(Bool.Ops.set, !getBitNC(2*bitSize-2+ (one ? bitSize1 : 0)));}};                      // There is a zeroes tree, so a zero at the apex of the zeroes tree indicates that the bit set is full
+    if (powerOfTwo)                                                                                                     // If the bitset size is a power of two we can optimize
+     {if (zero)
+       {new I() {void action() {r.ex(Bool.Ops.set, !getBitNC(2*bitSize-2+ (one ? bitSize1 : 0)));}};                    // There is a zeroes tree, so a zero at the apex of the zeroes tree indicates that the bit set is full
+       }
+      else r.set(firstZero().notValid());                                                                               // There is no zeros tree - look for the first zero to check whether the bitset is full
      }
-    else r.set(firstZero().notValid());                                                                                 // There is no zeros tree - look for the first zero to check whether the bitset is full
+    else
+     {final Int c = countOnes();
+      r.set(countOnes().eq(size()));
+     }
     return r;
    }
 
@@ -1150,9 +1160,8 @@ Zero:
     test_oneZero(false);
    }
 
-  static void test_fullEmpty(boolean Ex)
-   {final int    N = 16;
-    final BitSet b = test_bits(Ex, N, true, true);
+  static void test_fullEmpty(int N, boolean Ex)
+   {final BitSet b = test_bits(Ex, N, true, true);
     final Bool  e1 = b.empty(); b.ok(()->e1,  true);
 
     b.new ForCount(b.new Int(N))
@@ -1162,13 +1171,16 @@ Zero:
         b.empty().ok(false);
        }
      };
-    final Bool f1 = b.full(); b.ok(()->f1, true);
+    b.full().ok(true);
+    b.maxSteps = 99999;
     b.execute();
    }
 
   static void test_fullEmpty()                                                                                          // Test tree of searchable one bits
-   {test_fullEmpty(true);
-    test_fullEmpty(false);
+   {test_fullEmpty( 9, true);
+    test_fullEmpty( 9, false);
+    test_fullEmpty(16, true);
+    test_fullEmpty(16, false);
    }
 
 /*
@@ -1297,8 +1309,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                       // Run baseline tests.
-    //test_powerPos();
+   {//oldTests();                                                                                                       // Run baseline tests.
+    test_fullEmpty();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
