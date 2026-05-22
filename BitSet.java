@@ -37,7 +37,7 @@ public class BitSet extends Program                                             
       return (Byte.SIZE - 1 + s * nextPowerOfTwo(bitSize)) / Byte.SIZE;
      }
 
-    Program.Build programBuild()                                                                                        // Description of containing program
+    Program.Build build()                                                                                               // Description of containing program
      {final Program.Build p = new Program.Build();
       if (memoryRef == null) p.memory(byteSize());
       p.immediate(immediate);
@@ -47,7 +47,7 @@ public class BitSet extends Program                                             
    }
 
   public BitSet(Build Build)                                                                                            // Constructor
-   {super(Build.programBuild());
+   {super(Build.build());
     bitSize    = nextPowerOfTwo(Build.bitSize);                                                                         // Record size.
     bitSize1   = bitSize - 1;
     bitSize2   = bitSize >>> 1;
