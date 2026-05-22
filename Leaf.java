@@ -96,6 +96,41 @@ class Leaf extends Program                                                      
     return i;
    }
 
+  Bool empty() {return slots.empty();}                                                                                  // Is the leaf empty
+  Bool full () {return slots.full();}                                                                                   // Is the leaf full
+
+  void compactLeft()                                                                                                    // Compact a leaf to the left
+   {final Int t = new Int(0);
+    new ForCount (new Int(maxLeafSize))                                                                                 // Each key
+     {void body(Int s)
+       {new If (slots.getKeyInUse(s).And(s.gt(t)))
+         {void Then()
+           {refData.putInt(t, refData.getInt(s));                                                                       // Move down if not already compacted
+            t.inc();
+           }
+         };
+       }
+     };
+    slots.compactLeft();                                                                                                // Compact the slots to match
+   }
+
+  void compactRight()                                                                                                   // Compact a leaf to the right
+   {final Int t = new Int(maxLeafSize-1);
+    final Int s = new Int(maxLeafSize);
+    new ForCount (new Int(maxLeafSize))                                                                                 // Each key
+     {void body(Int S)
+       {s.dec();
+        new If (slots.getKeyInUse(s).And(s.lt(t)))
+         {void Then()
+           {refData.putInt(t, refData.getInt(s));                                                                       // Move up if not already compacted
+            t.dec();
+           }
+         };
+       }
+     };
+    slots.compactRight();                                                                                                // Compact the slots to match
+   }
+
 /*
   Data data(Slot I) {return new Data(memory.data(slots(I).value()));}                                                 // Get value of data field at index
   void data(Slot I, Data Value)                                                                                       // Set value of data field at index
@@ -372,11 +407,24 @@ class Leaf extends Program                                                      
 
   public String toString()                                                                                              // Print a leaf
    {final StringBuilder s = new StringBuilder(f("Leaf: size: "+formatKey+"\n", maxLeafSize));
-    int j = 0;
+    s.append(" Ref   Key  Data\n");
     for (int i : range(slots.numberOfSlotsToKeys()))
      {if (slots.getSlotToKeysInUse(i))
-       {final String f = formatKey+" "+formatKey+" "+formatKey +"\n";
-        final String t = f(f, ++j, slots.getSlotToKeyValue(i), refData.getInt(slots.getSlotToKeyIndex(i)));
+       {final String f = "%4d  %4d  %4d\n";
+        final String t = f(f,  slots.getSlotToKeyIndex(i), slots.getSlotToKeyValue(i), refData.getInt(slots.getSlotToKeyIndex(i)));
+        s.append(t);
+       }
+     }
+    return ""+s;
+   }
+
+  String dumpData()                                                                                                     // Dump the data
+   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxLeafSize));
+    s.append(" Ref  Data\n");
+    for (int i : range(slots.numberOfKeys()))
+     {if (slots.getKeyInUse(i))
+       {final String f = "%4d  %4d\n";
+        final String t = f(f,  i, refData.getInt(i));
         s.append(t);
        }
      }
@@ -394,10 +442,11 @@ class Leaf extends Program                                                      
     //new I() {void action() {stop("AAAA", l);}};
     l.ok(()->l, """
 Leaf: size:   8
-  1   1  11
-  2   2  22
-  3   3  33
-  4   4  44
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
 """);
     l.find  (l.new Int(1)).ok(11);
     l.find  (l.new Int(2)).ok(22);
@@ -416,8 +465,75 @@ Leaf: size:   8
    }
 
   static void test_leaf()
-   {//test_leaf(true);
+   {test_leaf(true);
     test_leaf(false);
+   }
+
+  static void test_compactLeft(boolean  Ex)
+   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+    l.insert(l.new Int(2), l.new Int(22));
+    l.insert(l.new Int(4), l.new Int(44));
+    l.insert(l.new Int(3), l.new Int(33));
+    l.insert(l.new Int(1), l.new Int(11));
+    l.delete(l.new Int(2));
+    //l.new I() {void action() {stop("AAAA", l.dumpData(), l.slots);}};
+    l.ok(()->l.dumpData(), """
+Leaf data: size:   8
+ Ref  Data
+   1    44
+   2    33
+   3    11
+""");
+    l.compactLeft();
+    //l.new I() {void action() {stop("AAAA", l.dumpData());}};
+    l.ok(()->l.dumpData(), """
+Leaf data: size:   8
+ Ref  Data
+   0    44
+   1    33
+   2    11
+""");
+    l.maxSteps = 99999;
+    l.execute();
+   }
+
+  static void test_compactLeft()
+   {test_compactLeft(true);
+    test_compactLeft(false);
+   }
+
+  static void test_compactRight(boolean  Ex)
+   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+    l.insert(l.new Int(2), l.new Int(22));
+    l.insert(l.new Int(4), l.new Int(44));
+    l.insert(l.new Int(3), l.new Int(33));
+    l.insert(l.new Int(1), l.new Int(11));
+    //l.new I() {void action() {stop("AAAA", l.dumpData(), l.slots);}};
+    l.ok(()->l.dumpData(), """
+Leaf data: size:   8
+ Ref  Data
+   0    22
+   1    44
+   2    33
+   3    11
+""");
+    l.compactRight();
+    //l.new I() {void action() {stop("AAAA", l.dumpData());}};
+    l.ok(()->l.dumpData(), """
+Leaf data: size:   8
+ Ref  Data
+   4    22
+   5    44
+   6    33
+   7    11
+""");
+    l.maxSteps = 99999;
+    l.execute();
+   }
+
+  static void test_compactRight()
+   {test_compactRight(true);
+    test_compactRight(false);
    }
 
 /*
@@ -893,6 +1009,8 @@ data     :   11  12  13  14  15  16  17  18
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_leaf();
+    test_compactLeft();
+    test_compactRight();
     //test_emptyTree();
     //test_compactLeafLeft();
     //test_compactLeafRight();
@@ -923,8 +1041,7 @@ data     :   11  12  13  14  15  16  17  18
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_leaf();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
