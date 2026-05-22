@@ -1664,12 +1664,12 @@ keys     :    0   0   0  15  16  17   0
     test_insert2();
     test_splitRightEven();
     test_splitLeftEven();
+    test_splitRightOdd();
+    test_splitLeftOdd();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitRightOdd();
-    test_splitLeftOdd();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
