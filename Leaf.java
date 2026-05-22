@@ -59,7 +59,7 @@ class Leaf extends Program                                                      
    {super(Build.build());                                                                                               // Program for leaf
     build         = Build;
     maxLeafSize   = Build.maxLeafSize;
-    slots         = new Slots(new Slots.Build().numberOfKeys(maxLeafSize));                                             // Slots for leaf
+    slots         = new Slots(new Slots.Build().numberOfKeys(maxLeafSize).parent(this));                                // Slots for leaf
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refType       = byteMemoryRef;                                                                                      // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
@@ -385,14 +385,14 @@ class Leaf extends Program                                                      
 
 //D1 Tests                                                                                                              // Tests
 
-  static void test_leaf()
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8));
+  static void test_leaf(boolean Ex)
+   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
     //new I() {void action() {stop("AAAA", l);}};
-    ok(l, """
+    l.ok(()->l, """
 Leaf: size:   8
   1   1  11
   2   2  22
@@ -404,9 +404,20 @@ Leaf: size:   8
     l.find  (l.new Int(3)).ok(33);
     l.find  (l.new Int(4)).ok(44);
 
+    l.delete(l.new Int(1)).ok(11);
+    l.delete(l.new Int(2)).ok(22);
     l.delete(l.new Int(3)).ok(33);
+    l.delete(l.new Int(4)).ok(44);
 
+    l.delete(l.new Int(1)).valid().ok(false);
+
+    l.maxSteps = 99999;
     l.execute();
+   }
+
+  static void test_leaf()
+   {//test_leaf(true);
+    test_leaf(false);
    }
 
 /*
