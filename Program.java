@@ -216,7 +216,7 @@ public class Program extends Test                                               
     Bool           (Bool    I) {ai(); ie(Ops.set, I);}
     boolean       b()          {x(); return i;}
     boolean       v()          {     return v;}
-    void          x()          {if (!v) variableNotSet("Bool");}                                                        // Check a value has been set for the boolean
+    void          x()          {if (!v) variableNotSet("Bool", name);}                                                  // Check a value has been set for the boolean
     Bool          X()          {v = true; return this;}
 
     Bool        set()          {return ie(Ops.set,  true); }                                                            // Boolean operations which modify the target
@@ -394,7 +394,7 @@ public class Program extends Test                                               
 
     int         i()  {x(); return i;}                                                                                   // Current value
     boolean     v()  {     return v;}                                                                                   // Value has been set
-    void        x()  {if (!v) variableNotSet("Int");}                                                                   // Check a value has been set for the integer
+    void        x()  {if (!v) variableNotSet("Int", name);}                                                             // Check a value has been set for the integer
 
     Int      ()      {ai(); invalidate();}                                                                              // Constructors
     Int (int I)      {ai(); ie(Ops.set, I);}
@@ -402,6 +402,8 @@ public class Program extends Test                                               
 
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}
+    Int  max (Int I) {final Int r = this; new If (lt(I)) {void Then() {r.set(I);}}; return r;}
+    Int  min (Int I) {final Int r = this; new If (gt(I)) {void Then() {r.set(I);}}; return r;}
                                                                                                                         // Possible integer operations
     enum Ops {X, abs, add, add2, bclr, bget, bset, dec, div, down, eq, ge, gt, inc, le, lt,
        max, min, mod, mul, neg, ne, set, sqrt, sub, up};
@@ -834,9 +836,9 @@ public class Program extends Test                                               
   void Goto(Label Target, Bool If) {if ( If.b()) parentProgram.pc = Target.offset;}                                     // Goto a label conditionally
   void Noto(Label Target, Bool If) {if (!If.b()) parentProgram.pc = Target.offset;}                                     // Goto a label not unconditionally
 
-  void variableNotSet(String Type)                                                                                      // Variable not yet set message
+  void variableNotSet(String Type, String Name)                                                                         // Variable not yet set message
    {final I i = parentProgram.executing;
-    final String m = "has not been set yet";
+    final String m = (Name != null ? Name+" " : "") + "has not been set yet";
     if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
     else           stop(Type, m);                                                                                       // No traceback available
    }
