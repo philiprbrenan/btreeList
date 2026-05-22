@@ -2,7 +2,6 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// redistribute(): block out a range like a perl array to allow rapid unshift and push operations while limiting the size of the gap between adjacent elements to make binary search faster.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
