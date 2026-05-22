@@ -365,14 +365,15 @@ class Slots extends Program                                                     
 
 //D4 Split                                                                                                              // Split full slots into left and right hand pieces
 
+//D5 Even                                                                                                               // Splitting an even number of slots
+
   void splitRightEven(Slots Target) {splitRightEven(Target, true);}                                                     // Split a full set of slots that contains an even number of entries redistributing the results - this is the normall expected outcome
 
   void splitRightEven(Slots Target, boolean Redistribute)                                                               // Split a full set of slots that contains an even number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
-    compactLeft();                                                                                                      // The  slots are full so there is no opportunity to insert anything else and we are going to distribute after the split so the slots distribution is going to be changed regardless
-    Target.compactLeft();                                                                                               // Move slots to left so we now where they and so do not have to probe for them
+    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
     new ForCount(Target.count().min(new Int(N/2))) {void body(Int Index) {Target.delSlotAndKey(Index);}};               // Clear the target areas that should not be occupied after the split
 
     new ForCount(new Int(N/2), new Int(N))                                                                              // Move upper half of source to upper half of target
@@ -391,8 +392,8 @@ class Slots extends Program                                                     
    {final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
-    compactLeft();                                                                                                      // The  slots are full so there is no opportunity to insert anything else and we are going to distribute after the split so the slots distribution is going to be changed regardless
-    Target.compactLeft();                                                                                               // Move slots to left so we now where they and so do not have to probe for them
+
+    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
     new ForCount(Target.count().min(new Int(N/2))) {void body(Int Index) {Target.delSlotAndKey(Index);}};               // Clear the target areas that should not be occupied after the split
 
     new ForCount(new Int(N/2))                                                                                          // Move lower half of source to lower half of target
@@ -403,6 +404,57 @@ class Slots extends Program                                                     
        }
      };
     if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+   }
+
+//D5 Odd                                                                                                                // Splitting an odd number of slots
+
+  Int splitRightOdd(Slots Target) {return splitRightOdd(Target, true);}                                                 // Split a full set of slots that contains an odd number of entries redistributing the results - this is the normall expected outcome
+
+  Int splitRightOdd(Slots Target, boolean Redistribute)                                                                 // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
+   {final int N = numberOfKeys();
+    final Int M = new Int(N/2);                                                                                         // Mid point
+    final Int R = new Int(N/2+1);                                                                                       // Start of right range
+    if (N % 2 == 0) stop("Slot set must have an odd number of entries");
+    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+
+    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
+    final Int r = new Int(getSlotToKeyValue(M)); delSlotAndKey(M);                                                      // Remove middle key
+
+    new ForCount(Target.count().min(R)) {void body(Int Index) {Target.delSlotAndKey(Index);}};                          // Clear the target areas that should not be occupied after the split
+
+    new ForCount(R, new Int(N))                                                                                         // Move upper half of source to upper half of target
+     {void body(Int Index)
+       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
+        delSlotAndKey(Index);                                                                                           // Delete key
+        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       }
+     };
+    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+    return r;
+   }
+
+  Int splitLeftOdd(Slots Target) {return splitLeftOdd(Target, true);}                                                   // Split a full set of slots that contains an odd number of entries redistributing the results - this is the normall expected outcome
+
+  Int splitLeftOdd(Slots Target, boolean Redistribute)                                                                  // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
+   {final int N = numberOfKeys();
+    final Int M = new Int(N/2);                                                                                         // Mid point
+    final Int R = new Int(N/2+1);                                                                                       // Start of right range
+    if (N % 2 == 0) stop("Slot set must have an odd number of entries");
+    if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
+
+    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
+    final Int r = new Int(getSlotToKeyValue(M)); delSlotAndKey(M);                                                      // Remove middle value
+    new ForCount(Target.count().min(R)) {void body(Int Index) {Target.delSlotAndKey(Index);}};                          // Clear the target areas that should not be occupied after the split
+
+    new ForCount(M)                                                                                                     // Move lower half of source to lower half of target
+     {void body(Int Index)
+       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
+        delSlotAndKey(Index);                                                                                           // Delete key
+        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       }
+     };
+    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+    return r;
    }
 
 //D4 Merge                                                                                                              // Merge slots
@@ -428,7 +480,7 @@ class Slots extends Program                                                     
      };
    }
 
-  Bool mergeFromRight(Slots Right)                                                                                      // Merge the specified slots from the right
+  Bool mergeFromRightEven(Slots Right)                                                                                  // Merge the specified slots from the right
    {final Int N  = new Int(numberOfSlotsToKeys());
     final Int lc =       usedKeys.countOnes();
     final Int rc = Right.usedKeys.countOnes();
@@ -451,7 +503,7 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Bool mergeFromLeft(Slots Left)                                                                                        // Merge the specified slots from the right
+  Bool mergeFromLeftEven(Slots Left)                                                                                        // Merge the specified slots from the right
    {final Int N  = new Int(numberOfSlotsToKeys());
     final Int rc =      usedKeys.countOnes();
     final Int lc = Left.usedKeys.countOnes();
@@ -1098,7 +1150,7 @@ keys     :    7   1   3   2   4   5   6   0
     test_shift(false);
    }
 
-  static void test_mergeFromRight(boolean Ex)
+  static void test_mergeFromRightEven(boolean Ex)
    {final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
@@ -1111,7 +1163,7 @@ keys     :    7   1   3   2   4   5   6   0
             setSlotAndKey(new Int(4), new Int(3), new Int(4));
            }
          };
-        mergeFromRight(r);
+        mergeFromRightEven(r);
         ok(()->l, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
@@ -1136,11 +1188,11 @@ keys     :    0   0   3   4
      };
    }
 
-  static void test_mergeFromRight()
-   {test_mergeFromRight(true); test_mergeFromRight(false);
+  static void test_mergeFromRightEven()
+   {test_mergeFromRightEven(true); test_mergeFromRightEven(false);
    }
 
-  static void test_mergeFromLeft(boolean Ex)
+  static void test_mergeFromLeftEven(boolean Ex)
    {final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
@@ -1153,7 +1205,7 @@ keys     :    0   0   3   4
             setSlotAndKey(new Int(4), new Int(3), new Int(1));
            }
          };
-        mergeFromLeft(l);
+        mergeFromLeftEven(l);
         //new I() {void action() {stop(l);}};
         ok(()->l, """
 Slots    : refs:  4
@@ -1180,8 +1232,8 @@ keys     :    1   2   3   4
      };
    }
 
-  static void test_mergeFromLeft()
-   {test_mergeFromLeft(true); test_mergeFromLeft(false);
+  static void test_mergeFromLeftEven()
+   {test_mergeFromLeftEven(true); test_mergeFromLeftEven(false);
    }
 
   static void test_find()
@@ -1369,7 +1421,8 @@ keys     :   11  12  13  15  16  17  18  14
    }
 
   static void test_splitRightEven(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {final int N = 8;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {insert(new Int(11)).ok( 8);
         insert(new Int(12)).ok( 9);
@@ -1390,7 +1443,7 @@ usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   X   .   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  18  14
 """);
-        final Slots t = new Slots(new Build().numberOfKeys(8).immediate(Ex).parent(this));
+        final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11));
         s.splitRightEven(t, false);
         //new I() {void action() {stop(s);}};
@@ -1425,7 +1478,8 @@ keys     :    0   0   0   0  15  16  17  18
    }
 
   static void test_splitLeftEven(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {final int N = 8;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {insert(new Int(11)).ok( 8);
         insert(new Int(12)).ok( 9);
@@ -1446,7 +1500,7 @@ usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   X   .   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  18  14
 """);
-        final Slots t = new Slots(new Build().numberOfKeys(8).immediate(Ex).parent(this));
+        final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11)); t.compactRight();
         s.splitLeftEven(t, false);
         //new I() {void action() {stop(t);}};
@@ -1480,6 +1534,118 @@ keys     :    0   0   0  15  16  17  18   0
     test_splitLeftEven(false);
    }
 
+  static void test_splitRightOdd(boolean Ex)
+   {final int N = 7;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
+     {void slotsCode()
+       {insert(new Int(11));
+        insert(new Int(12));
+        insert(new Int(13));
+        insert(new Int(15));
+        insert(new Int(16));
+        insert(new Int(17));
+        insert(new Int(14));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   1   0   2   6   3   0   4   0   5   0   0
+keysSlots:    1   3   5   7   9  11   6   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   .
+usedKeys :    X   X   X   X   X   X   X
+keys     :   11  12  13  15  16  17  14
+""");
+        final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
+        t.insert(new Int(11));
+        s.splitRightOdd(t, false).ok(14);
+        //new I() {void action() {stop(s);}};
+        ok(()->s, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    X   X   X   .   .   .   .
+keys     :   11  12  13   0   0   0   0
+""");
+        //new I() {void action() {stop(t);}};
+        ok(()->t, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   0   4   5   6   0   0   0   0   0   0   0
+keysSlots:    0   0   0   0   4   5   6   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   X   X   X   .   .   .   .   .   .   .
+usedKeys :    .   .   .   .   X   X   X
+keys     :    0   0   0   0  15  16  17
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_splitRightOdd()
+   {test_splitRightOdd(true);
+    test_splitRightOdd(false);
+   }
+
+  static void test_splitLeftOdd(boolean Ex)
+   {final int N = 7;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
+     {void slotsCode()
+       {insert(new Int(11));
+        insert(new Int(12));
+        insert(new Int(13));
+        insert(new Int(15));
+        insert(new Int(16));
+        insert(new Int(17));
+        insert(new Int(14));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   1   0   2   6   3   0   4   0   5   0   0
+keysSlots:    1   3   5   7   9  11   6   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   .
+usedKeys :    X   X   X   X   X   X   X
+keys     :   11  12  13  15  16  17  14
+""");
+        final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
+        t.insert(new Int(11)); t.compactRight();
+        s.splitLeftOdd(t, false).ok(14);
+        //new I() {void action() {stop(t);}};
+        //new I() {void action() {stop(s);}};
+        ok(()->t, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    X   X   X   .   .   .   .
+keys     :   11  12  13   0   0   0   0
+""");
+        ok(()->s, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   0   3   4   5   0   0   0   0   0   0   0
+keysSlots:    0   0   0   4   5   6   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   X   X   X   .   .   .   .   .   .   .
+usedKeys :    .   .   .   X   X   X   .
+keys     :    0   0   0  15  16  17   0
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_splitLeftOdd()
+   {test_splitLeftOdd(true);
+    test_splitLeftOdd(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
     test_locateNearestFreeSlotToKey();
@@ -1490,8 +1656,8 @@ keys     :    0   0   0  15  16  17  18   0
     test_redistribute();
     test_shift();
     test_slots();
-    test_mergeFromRight();
-    test_mergeFromLeft();
+    test_mergeFromRightEven();
+    test_mergeFromLeftEven();
     test_find();
     test_findRight();
     test_insert();
@@ -1502,8 +1668,8 @@ keys     :    0   0   0  15  16  17  18   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitRightEven();
-    test_splitLeftEven();
+    test_splitRightOdd();
+    test_splitLeftOdd();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
