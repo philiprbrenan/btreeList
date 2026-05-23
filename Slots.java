@@ -1,7 +1,9 @@
 //----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Distributed sparse slots used to hold the key of the Btree
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// redistribute slots after split/merge
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -482,6 +484,8 @@ class Slots extends Program                                                     
      };
    }
 
+//D5 Even                                                                                                               // Merge slots with an even maximum number of keys
+
   Bool mergeFromRightEven(Slots Right)                                                                                  // Merge the specified slots from the right
    {final Int N  = new Int(numberOfSlotsToKeys());
     final Int lc =       usedKeys.countOnes();
@@ -525,6 +529,57 @@ class Slots extends Program                                                     
          };
        }
      };
+    return r;
+   }
+
+//D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys
+
+  Bool mergeFromRightOdd(Int Key, Slots Right)                                                                          // Merge the specified slots from the right
+   {final Int N  = new Int(numberOfSlotsToKeys());
+    final Int lc =       usedKeys.countOnes();
+    final Int rc = Right.usedKeys.countOnes();
+    final Bool r = new Bool(false);
+    final Slots left = this;
+
+    new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+     {void Then()
+       {left .compactLeft ();
+        Right.compactRight();
+        r.set(true);
+        new ForCount (N.Sub(rc), N)
+         {void body(Int Index)
+           {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key being moved
+            final Int K = Right.getKeyValue(k);                                                                         // Value of key being moved
+            setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
+           }
+         };
+        setSlotAndKey(lc, lc, Key);                                                                                     // Insert separating key
+       }
+     };
+    return r;
+   }
+
+  Bool mergeFromLeftOdd(Int Key, Slots Left)                                                                            // Merge the specified slots from the right
+   {final Int N  = new Int(numberOfSlotsToKeys());
+    final Int rc =      usedKeys.countOnes();
+    final Int lc = Left.usedKeys.countOnes();
+    final Bool r = new Bool(false);
+    final Slots right = this;
+    new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+     {void Then()
+       {Left.compactLeft  ();
+             compactRight();
+        r.set(true);
+        new ForCount (lc)
+         {void body(Int Index)
+           {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key being moved
+            final Int K = Left.getKeyValue(k);                                                                          // Value of key being moved
+            setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
+           }
+         };
+       }
+     };
+    setSlotAndKey(lc, lc, Key);                                                                                         // Insert separating key
     return r;
    }
 
@@ -1168,32 +1223,32 @@ keys     :    7   1   3   2   4   5   6   0
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots l = this;
-        setSlotAndKey(new Int(2), new Int(1), new Int(2));
-        setSlotAndKey(new Int(4), new Int(3), new Int(1));
+        insert(new Int(2));
+        insert(new Int(1));
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
          {void slotsCode()
-           {setSlotAndKey(new Int(2), new Int(1), new Int(3));
-            setSlotAndKey(new Int(4), new Int(3), new Int(4));
+           {insert(new Int(3));
+            insert(new Int(4));
            }
          };
-        mergeFromRightEven(r);
+        mergeFromRightEven(r).ok(true);
         ok(()->l, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   2   3
-keysSlots:    1   0   6   7   0   0   0   0
+slotsKeys:    1   0   0   0   0   0   3   2
+keysSlots:    1   0   7   6   0   0   0   0
 usedSlots:    X   X   .   .   .   .   X   X
 usedKeys :    X   X   X   X
-keys     :    1   2   3   4
+keys     :    2   1   4   3
 """);
         ok(()->r, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    0   0   0   0   0   0   2   3
-keysSlots:    0   0   6   7   0   0   0   0
+slotsKeys:    0   0   0   0   0   0   3   2
+keysSlots:    0   0   7   6   0   0   0   0
 usedSlots:    .   .   .   .   .   .   X   X
 usedKeys :    .   .   X   X
-keys     :    0   0   3   4
+keys     :    0   0   4   3
 """);
         maxSteps = 99999;
         execute();
@@ -1202,7 +1257,8 @@ keys     :    0   0   3   4
    }
 
   static void test_mergeFromRightEven()
-   {test_mergeFromRightEven(true); test_mergeFromRightEven(false);
+   {test_mergeFromRightEven(true);
+    test_mergeFromRightEven(false);
    }
 
   static void test_mergeFromLeftEven(boolean Ex)
@@ -1210,15 +1266,15 @@ keys     :    0   0   3   4
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots r = this;
-        setSlotAndKey(new Int(2), new Int(1), new Int(3));
-        setSlotAndKey(new Int(4), new Int(3), new Int(4));
+        r.insert(new Int(3));
+        r.insert(new Int(4));
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r))
          {void slotsCode()
-           {setSlotAndKey(new Int(2), new Int(1), new Int(2));
-            setSlotAndKey(new Int(4), new Int(3), new Int(1));
+           {insert(new Int(2));
+            insert(new Int(1));
            }
          };
-        mergeFromLeftEven(l);
+        mergeFromLeftEven(l).ok(true);
         //new I() {void action() {stop(l);}};
         ok(()->l, """
 Slots    : refs:  4
@@ -1227,17 +1283,17 @@ slotsKeys:    1   0   0   0   0   0   0   0
 keysSlots:    1   0   0   0   0   0   0   0
 usedSlots:    X   X   .   .   .   .   .   .
 usedKeys :    X   X   .   .
-keys     :    1   2   0   0
+keys     :    2   1   0   0
 """);
         //new I() {void action() {stop(r);}};
         ok(()->r, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   2   3
-keysSlots:    1   0   6   7   0   0   0   0
+slotsKeys:    1   0   0   0   0   0   3   2
+keysSlots:    1   0   7   6   0   0   0   0
 usedSlots:    X   X   .   .   .   .   X   X
 usedKeys :    X   X   X   X
-keys     :    1   2   3   4
+keys     :    2   1   4   3
 """);
         maxSteps = 99999;
         execute();
@@ -1246,41 +1302,67 @@ keys     :    1   2   3   4
    }
 
   static void test_mergeFromLeftEven()
-   {test_mergeFromLeftEven(true); test_mergeFromLeftEven(false);
+   {test_mergeFromLeftEven(true);
+    test_mergeFromLeftEven(false);
    }
 
   static void test_mergeFromRightOdd(boolean Ex)
-   {final int N = 4;
+   {final int N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots l = this;
-        setSlotAndKey(new Int(2), new Int(1), new Int(2));
-        setSlotAndKey(new Int(4), new Int(3), new Int(1));
+        l.insert(new Int(2));
+        l.insert(new Int(1));
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
          {void slotsCode()
-           {setSlotAndKey(new Int(2), new Int(1), new Int(3));
-            setSlotAndKey(new Int(4), new Int(3), new Int(4));
+           {insert(new Int(4));
+            insert(new Int(5));
            }
          };
-        mergeFromRightEven(r);
+        //new I() {void action() {stop(l); }};
         ok(()->l, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   2   3
-keysSlots:    1   0   6   7   0   0   0   0
-usedSlots:    X   X   .   .   .   .   X   X
-usedKeys :    X   X   X   X
-keys     :    1   2   3   4
+Slots    : refs:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   0   0   0   1   0   0   0   0   0
+keysSlots:    5   4   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   X   X   .   .   .   .
+usedKeys :    X   X   .   .   .
+keys     :    2   1   0   0   0
+""");
+        //new I() {void action() {stop(r); }};
+        ok(()->r, """
+Slots    : refs:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   0   0   0   0   0   1   0   0   0
+keysSlots:    5   6   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   .   .   .
+usedKeys :    X   X   .   .   .
+keys     :    4   5   0   0   0
+""");
+
+        l.mergeFromRightOdd(new Int(3), r).ok(true);
+
+        //new I() {void action() {stop(l); }};
+        //new I() {void action() {stop(r); }};
+        ok(()->l, """
+Slots    : refs:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    1   0   2   0   0   0   0   0   4   3
+keysSlots:    1   0   2   9   8   0   0   0   0   0
+usedSlots:    X   X   X   .   .   .   .   .   X   X
+usedKeys :    X   X   X   X   X
+keys     :    2   1   3   5   4
 """);
         ok(()->r, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    0   0   0   0   0   0   2   3
-keysSlots:    0   0   6   7   0   0   0   0
-usedSlots:    .   .   .   .   .   .   X   X
-usedKeys :    .   .   X   X
-keys     :    0   0   3   4
+Slots    : refs:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   0   0   0   0   0   0   0   4   3
+keysSlots:    0   0   0   9   8   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   .   .   X   X
+usedKeys :    .   .   .   X   X
+keys     :    0   0   0   5   4
 """);
+        mergeFromRightOdd(new Int(3), l).ok(false);
         maxSteps = 99999;
         execute();
        }
@@ -1288,42 +1370,55 @@ keys     :    0   0   3   4
    }
 
   static void test_mergeFromRightOdd()
-   {test_mergeFromRightOdd(true); test_mergeFromRightOdd(false);
+   {test_mergeFromRightOdd(true);
+    test_mergeFromRightOdd(false);
    }
 
   static void test_mergeFromLeftOdd(boolean Ex)
-   {final int N = 4;
+   {final int N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots r = this;
-        setSlotAndKey(new Int(2), new Int(1), new Int(3));
-        setSlotAndKey(new Int(4), new Int(3), new Int(4));
+        r.insert(new Int(4));
+        r.insert(new Int(5));
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r))
          {void slotsCode()
-           {setSlotAndKey(new Int(2), new Int(1), new Int(2));
-            setSlotAndKey(new Int(4), new Int(3), new Int(1));
+           {insert(new Int(1));
+            insert(new Int(2));
            }
          };
-        mergeFromLeftEven(l);
-        //new I() {void action() {stop(l);}};
-        ok(()->l, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   0   0
-keysSlots:    1   0   0   0   0   0   0   0
-usedSlots:    X   X   .   .   .   .   .   .
-usedKeys :    X   X   .   .
-keys     :    1   2   0   0
-""");
         //new I() {void action() {stop(r);}};
         ok(()->r, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   2   3
-keysSlots:    1   0   6   7   0   0   0   0
-usedSlots:    X   X   .   .   .   .   X   X
-usedKeys :    X   X   X   X
-keys     :    1   2   3   4
+Slots    : refs:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   0   0   0   0   0   1   0   0   0
+keysSlots:    5   6   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   .   .   .
+usedKeys :    X   X   .   .   .
+keys     :    4   5   0   0   0
+""");
+        //new I() {void action() {stop(l);}};
+        ok(()->l, """
+Slots    : refs:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   0   0   0   0   0   1   0   0   0
+keysSlots:    5   6   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   X   X   .   .   .
+usedKeys :    X   X   .   .   .
+keys     :    1   2   0   0   0
+""");
+
+        r.mergeFromLeftOdd(new Int(3), l).ok(true);
+
+        //new I() {void action() {stop(r);}};
+        ok(()->r, """
+Slots    : refs:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   1   2   0   0   0   0   0   4   3
+keysSlots:    0   1   2   9   8   0   0   0   0   0
+usedSlots:    X   X   X   .   .   .   .   .   X   X
+usedKeys :    X   X   X   X   X
+keys     :    1   2   3   5   4
 """);
         maxSteps = 99999;
         execute();
@@ -1332,7 +1427,8 @@ keys     :    1   2   3   4
    }
 
   static void test_mergeFromLeftOdd()
-   {test_mergeFromLeftOdd(true); test_mergeFromLeftOdd(false);
+   {test_mergeFromLeftOdd(true);
+    test_mergeFromLeftOdd(false);
    }
 
   static void test_find()
@@ -1771,7 +1867,10 @@ keys     :    0   0   0  15  16  17   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots();
+    test_mergeFromRightEven();
+    test_mergeFromLeftEven();
+    test_mergeFromRightOdd();
+    test_mergeFromLeftOdd();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
