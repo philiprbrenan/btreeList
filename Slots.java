@@ -486,7 +486,8 @@ class Slots extends Program                                                     
 
 //D5 Even                                                                                                               // Merge slots with an even maximum number of keys
 
-  Bool mergeFromRightEven(Slots Right)                                                                                  // Merge the specified slots from the right
+  Bool mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, true);}                                        // Merge the specified slots from the right
+  Bool mergeFromRightEven(Slots Right, boolean Redistribute)                                                            // Merge the specified slots from the right
    {final Int N  = new Int(numberOfSlotsToKeys());
     final Int lc =       usedKeys.countOnes();
     final Int rc = Right.usedKeys.countOnes();
@@ -504,12 +505,14 @@ class Slots extends Program                                                     
             setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
            }
          };
+        if (Redistribute) {redistribute(); Right.redistribute();}                                                       // Redistribute source and target slots if requested
        }
      };
     return r;
    }
 
-  Bool mergeFromLeftEven(Slots Left)                                                                                        // Merge the specified slots from the right
+  Bool mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, true);}                                            // Merge the specified slots from the right
+  Bool mergeFromLeftEven(Slots Left, boolean Redistribute)                                                              // Merge the specified slots from the right
    {final Int N  = new Int(numberOfSlotsToKeys());
     final Int rc =      usedKeys.countOnes();
     final Int lc = Left.usedKeys.countOnes();
@@ -527,6 +530,7 @@ class Slots extends Program                                                     
             setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
            }
          };
+        if (Redistribute) {redistribute(); Left.redistribute();}                                                        // Redistribute source and target slots if requested
        }
      };
     return r;
@@ -534,7 +538,8 @@ class Slots extends Program                                                     
 
 //D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys
 
-  Bool mergeFromRightOdd(Int Key, Slots Right)                                                                          // Merge the specified slots from the right
+  Bool mergeFromRightOdd(Int Key, Slots Right) {return mergeFromRightOdd(Key, Right, true);}                            // Merge the specified slots from the right
+  Bool mergeFromRightOdd(Int Key, Slots Right, boolean Redistribute)                                                    // Merge the specified slots from the right
    {final Int N  = new Int(numberOfSlotsToKeys());
     final Int lc =       usedKeys.countOnes();
     final Int rc = Right.usedKeys.countOnes();
@@ -554,12 +559,14 @@ class Slots extends Program                                                     
            }
          };
         setSlotAndKey(lc, lc, Key);                                                                                     // Insert separating key
+        if (Redistribute) {redistribute(); Right.redistribute();}                                                       // Redistribute source and target slots if requested
        }
      };
     return r;
    }
 
-  Bool mergeFromLeftOdd(Int Key, Slots Left)                                                                            // Merge the specified slots from the right
+  Bool mergeFromLeftOdd(Int Key, Slots Left) {return mergeFromLeftOdd(Key, Left, true);}                                // Merge the specified slots from the left
+  Bool mergeFromLeftOdd(Int Key, Slots Left, boolean Redistribute)                                                      // Merge the specified slots from the left
    {final Int N  = new Int(numberOfSlotsToKeys());
     final Int rc =      usedKeys.countOnes();
     final Int lc = Left.usedKeys.countOnes();
@@ -580,6 +587,7 @@ class Slots extends Program                                                     
        }
      };
     setSlotAndKey(lc, lc, Key);                                                                                         // Insert separating key
+    if (Redistribute) {redistribute(); Left.redistribute();}                                                            // Redistribute source and target slots if requested
     return r;
    }
 
@@ -1231,7 +1239,7 @@ keys     :    7   1   3   2   4   5   6   0
             insert(new Int(4));
            }
          };
-        mergeFromRightEven(r).ok(true);
+        mergeFromRightEven(r, false).ok(true);
         ok(()->l, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
@@ -1274,7 +1282,7 @@ keys     :    0   0   4   3
             insert(new Int(1));
            }
          };
-        mergeFromLeftEven(l).ok(true);
+        mergeFromLeftEven(l, false).ok(true);
         //new I() {void action() {stop(l);}};
         ok(()->l, """
 Slots    : refs:  4
@@ -1340,7 +1348,7 @@ usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
 
-        l.mergeFromRightOdd(new Int(3), r).ok(true);
+        l.mergeFromRightOdd(new Int(3), r, false).ok(true);
 
         //new I() {void action() {stop(l); }};
         //new I() {void action() {stop(r); }};
@@ -1362,7 +1370,7 @@ usedSlots:    .   .   .   .   .   .   .   .   X   X
 usedKeys :    .   .   .   X   X
 keys     :    0   0   0   5   4
 """);
-        mergeFromRightOdd(new Int(3), l).ok(false);
+        mergeFromRightOdd(new Int(3), l, false).ok(false);
         maxSteps = 99999;
         execute();
        }
@@ -1408,7 +1416,7 @@ usedKeys :    X   X   .   .   .
 keys     :    1   2   0   0   0
 """);
 
-        r.mergeFromLeftOdd(new Int(3), l).ok(true);
+        r.mergeFromLeftOdd(new Int(3), l, false).ok(true);
 
         //new I() {void action() {stop(r);}};
         ok(()->r, """
