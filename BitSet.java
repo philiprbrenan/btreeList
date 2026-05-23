@@ -391,7 +391,7 @@ public class BitSet extends Program                                             
 
   public Int lastOne()                                                                                                  // Find the index of the last set bit
    {checkOne();
-    final Int p = new Int(bitSize1);
+    final Int p = new Int(build.bitSize-1);
     final Int r = new Int();
     new If (getBit(p))
      {void Then() {r.set(p);}
@@ -491,7 +491,7 @@ public class BitSet extends Program                                             
 
   public Int lastZero()                                                                                                 // Find the index of the last set bit
    {checkZero();
-    final Int p = new Int(bitSize1);
+    final Int p = new Int(build.bitSize-1);
     final Int r = new Int();
     new If (getBit(p))
      {void Then() {r.copy(prevZero(p));}
