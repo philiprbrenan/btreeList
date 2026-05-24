@@ -61,8 +61,7 @@ public class BitSet extends Program                                             
     one         = Build.one;                                                                                            // Locate ones efficiently
     byteSize    = Build.byteSize();                                                                                     // Bytes needed for the bitset and its bit trees
     oneTreeBit  = bitSize <= 2;                                                                                         // At most only one tree bit present
-    if (Build.memoryRef != null) memoryRef = Build.memoryRef;                                                           // Use memory supplied by caller and program owning memory
-    else memoryRef = byteMemory.new Ref(0);                                                                             // Create a reference to the default memory
+    if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
 
     new ForCount(bitSize)                                                                                               // Clear bitset at start
      {void body(Int I)
