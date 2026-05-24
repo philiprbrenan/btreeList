@@ -1883,7 +1883,7 @@ usedKeys :    X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  14
 """);
         clear();
-        new I() {void action() {stop(s);}};
+        //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -1929,8 +1929,7 @@ keys     :    0   0   0   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_clear();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
