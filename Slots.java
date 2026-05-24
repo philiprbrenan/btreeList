@@ -117,11 +117,11 @@ class Slots extends Program                                                     
     usedKeys.set   (Index, new Bool(false));
    }
 
-  Bool getSlotToKeysInUse(Int Index)       {return usedSlotsToKeys.getBit(Index);}                                      // Check whether a slot is in use
-  Int  getSlotToKeyIndex (Int Index)       {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slots
-  Int  getKeyToSlotIndex (Int Index)       {return refKeysToSlots .getInt(Index);}                                      // Index to slots from keys
-  Bool getKeyInUse       (Int Index)       {return usedKeys       .getBit(Index);}                                      // Check whether a key is in use
-  Int  getKeyValue       (Int Index)       {return refKeys        .getInt(Index);}                                      // Value of referenced key
+  Bool    getSlotToKeysInUse(Int Index)    {return usedSlotsToKeys.getBit(Index);}                                      // Check whether a slot is in use
+  Int     getSlotToKeyIndex (Int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slots
+  Int     getKeyToSlotIndex (Int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index to slots from keys
+  Bool    getKeyInUse       (Int Index)    {return usedKeys       .getBit(Index);}                                      // Check whether a key is in use
+  Int     getKeyValue       (Int Index)    {return refKeys        .getInt(Index);}                                      // Value of referenced key
 
   boolean getSlotToKeysInUse(int Index)    {return usedSlotsToKeys.getBitNC(Index);}                                    // Check whether a slot is in use
   int     getSlotToKeyIndex (int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slot
@@ -129,37 +129,37 @@ class Slots extends Program                                                     
   boolean getKeyInUse       (int Index)    {return usedKeys       .getBitNC(Index);}                                    // Check whether a key is in use
   int     getKeyValue       (int Index)    {return refKeys        .getInt(Index);}                                      // Value of referenced key
 
-  Int  getSlotToKeyValue (Int Index)       {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
-  int  getSlotToKeyValue (int Index)       {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
+  Int     getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
+  int     getSlotToKeyValue (int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
-  Bool empty() {return usedKeys.empty();}                                                                               // All bits in the corresponding bitset are unused so the Slots must be empty
-  Bool full () {return usedKeys.full ();}                                                                               // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Int  count() {return usedKeys.countOnes();}                                                                           // Count the nunber of keys in use
+  Bool    empty             ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
+  Bool    full              ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+  Int     count             ()             {return usedKeys.countOnes();}                                               // Count the nunber of keys in use
 
-  void invalidateMemory   () {byteMemoryRef.invalidate(size);}                                                          // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-  int  numberOfKeys       () {return numberOfKeys;}                                                                     // The number of references in the slots definition
-  int  numberOfSlotsToKeys() {return numberOfKeys()<<1;}                                                                // Number of slots from number of refs
-  int  redistributionWidth() {return (int)java.lang.Math.sqrt(numberOfKeys());}                                         // Redistribute if the next slot is further than this
+  void invalidateMemory     ()             {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
+  int  numberOfKeys         ()             {return numberOfKeys;}                                                       // The number of references in the slots definition
+  int  numberOfSlotsToKeys  ()             {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
+  int  redistributionWidth  ()             {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
 
-  Int  locateFirstUsedSlot() {return usedSlotsToKeys.firstOne();}                                                       // First available slot
-  Int  locateLastUsedSlot () {return usedSlotsToKeys.lastOne();}                                                        // Absolute position of the last slot in use
+  Int  locateFirstUsedSlot  ()             {return usedSlotsToKeys.firstOne();}                                         // First available slot
+  Int  locateLastUsedSlot   ()             {return usedSlotsToKeys.lastOne();}                                          // Absolute position of the last slot in use
 
-  Int locateFirstUnusedKey()                                                                                            // Absolute position of the first unused key
+  Int locateFirstUnusedKey  ()                                                                                          // Absolute position of the first unused key
    {final Int p = usedKeys.firstZero();
-    final Int        f = new Int(); new If (p.valid()) {void Then() {f.set(p);}}; return f;
+    final Int f = new Int(); new If (p.valid()) {void Then() {f.set(p);}}; return f;
    }
 
-  Int stepLeft (Int Start) {return usedSlotsToKeys.prevOne(Start);}                                                     // Step left to prior occupied slot assuming that such a step is possible
-  Int stepRight(Int Start) {return usedSlotsToKeys.nextOne(Start);}                                                     // Step right to the next occupied slot assuming that such a step is possible
+  Int stepLeft             (Int Start)     {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
+  Int stepRight            (Int Start)     {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
 
   Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow, Bool Prev)                                                // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
    {final Int r = new Int(0);
     Prev.invalidate();                                                                                                  // Assume no free slot will be found
     new If (getSlotToKeysInUse(Position))                                                                               // The slot is in use
      {void Then()
-       {final Int p = usedSlotsToKeys.prevZero(Position);                                                               // Prev free slot
-        final Int n = usedSlotsToKeys.nextZero(Position);                                                               // Next free slot
-        final Bool       d = new Bool(false);                                                                           // Done when set
+       {final Int  p = usedSlotsToKeys.prevZero(Position);                                                              // Prev free slot
+        final Int  n = usedSlotsToKeys.nextZero(Position);                                                              // Next free slot
+        final Bool d = new Bool(false);                                                                                 // Done when set
 
         new If (p.valid())                                                                                              // Previous is valid
          {void Then()
@@ -370,7 +370,6 @@ class Slots extends Program                                                     
 //D5 Even                                                                                                               // Splitting an even number of slots
 
   void splitRightEven(Slots Target) {splitRightEven(Target, true);}                                                     // Split a full set of slots that contains an even number of entries redistributing the results - this is the normall expected outcome
-
   void splitRightEven(Slots Target, boolean Redistribute)                                                               // Split a full set of slots that contains an even number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
@@ -389,7 +388,6 @@ class Slots extends Program                                                     
    }
 
   void splitLeftEven(Slots Target) {splitLeftEven(Target, true);}                                                       // Split a full set of slots that contains an even number of entries redistributing the results - this is the normall expected outcome
-
   void splitLeftEven(Slots Target, boolean Redistribute)                                                                // Split a full set of slots that contains an even number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
@@ -411,7 +409,6 @@ class Slots extends Program                                                     
 //D5 Odd                                                                                                                // Splitting an odd number of slots
 
   Int splitRightOdd(Slots Target) {return splitRightOdd(Target, true);}                                                 // Split a full set of slots that contains an odd number of entries redistributing the results - this is the normall expected outcome
-
   Int splitRightOdd(Slots Target, boolean Redistribute)                                                                 // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
@@ -436,7 +433,6 @@ class Slots extends Program                                                     
    }
 
   Int splitLeftOdd(Slots Target) {return splitLeftOdd(Target, true);}                                                   // Split a full set of slots that contains an odd number of entries redistributing the results - this is the normall expected outcome
-
   Int splitLeftOdd(Slots Target, boolean Redistribute)                                                                  // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
@@ -592,7 +588,7 @@ class Slots extends Program                                                     
 //D2 High level operations                                                                                              // Find, insert, delete values in the slots
 
   class Find                                                                                                            // Find result
-   {final Int slot = new Int() ;                                                                                        // Slot found
+   {final Int   slot = new Int() ;                                                                                      // Slot found
     final Bool lower = new Bool(), higher = new Bool(), equal = new Bool(), empty = new Bool();                         // Position of search item relative to the slot found
 
     void set(Int Slot, Bool Lower, Bool Higher)
@@ -647,9 +643,10 @@ class Slots extends Program                                                     
                           void Else()                                                                                   // Search range
                            {new If (u.canGoLeft(p))                                                                     // Go left if possible  to search first part of range if it exists
                              {void Then()
-                               {final Int lp = u.nextDownLow    (p);                                                    // Upper end of left range
+                               {final Int lp = u.childLow       (p);                                                       // Upper end of left range
                                 final Int lr = u.high           (lp);                                                   // Index of upper end of range
                                 final Int lR = getSlotToKeyValue(lr);                                                   // Value of key at upper end of range
+
                                 new If (Key.eq(lR))                                                                     // Found at upper end of range
                                  {void Then()
                                    {f.set(lr, new Bool(true), new Bool(true));                                          // Equals current upper end of range
@@ -657,13 +654,13 @@ class Slots extends Program                                                     
                                   void Else()                                                                           // Search new sub range
                                    {new If (Key.lt(lR))                                                                 // Lower than upper bound
                                      {void Then()
-                                       {p.set(lp); r.set(lr); R.set(lR);                                            // Set new upper bound of search range
-                                        Continue.set();                                                             // Continue the search  with new bounds
+                                       {p.set(lp); r.set(lr); R.set(lR);                                                // Set new upper bound of search range
+                                        Continue.set();                                                                 // Continue the search  with new bounds
                                        }
                                       void Else()
                                        {new If (u.canGoRight(p))                                                        // Greater than anything in the left subrange so perhaps part of right hand subrange
                                          {void Then()
-                                           {final Int rp = u.nextDownHigh   (p);                                        // Low end of right range
+                                           {final Int rp = u.childHigh      (p);                                        // Low end of right range
                                             final Int rl = u.low            (rp);                                       // Index of lower end of search range
                                             final Int rL = getSlotToKeyValue(rl);                                       // Key at lower end of search range
                                             new If (Key.eq(rL))                                                         // Equal to lower bound on right
@@ -676,8 +673,8 @@ class Slots extends Program                                                     
                                                    {f.set(rl, new Bool(true), new Bool(false));                         // Not found and less than low end of right
                                                    }
                                                   void Else()                                                           // Search new range
-                                                   {p.set(rp); l.set(rl); L.set(rL);                                // Somewhere in the right hand range of which we already know the upper limits
-                                                    Continue.set();                                                 // Continue the search
+                                                   {p.set(rp); l.set(rl); L.set(rL);                                    // Somewhere in the right hand range of which we already know the upper limits
+                                                    Continue.set();                                                     // Continue the search
                                                    }
                                                  };
                                                }
@@ -692,7 +689,7 @@ class Slots extends Program                                                     
                               void Else()
                                {new If (u.canGoRight(p))                                                                // Could not go left so must have gone right
                                  {void Then()
-                                   {p.set(u.nextDownHigh(p));                                                           // Move to right sub range which has the same bounds as the parent range
+                                   {p.set(u.childHigh(p));                                                              // Move to right sub range which has the same bounds as the parent range
                                     Continue.set();                                                                     // Continue the search
                                    }
                                  };
@@ -845,7 +842,7 @@ class Slots extends Program                                                     
         putKey (new Int(3), new Int(22));
 
         final Slots s = this;
-        final Slots t = new Slots(s.build.parent(s).memory(null)); t.copy(s);                                                     // Create some more memory and copy the slots into it
+        final Slots t = new Slots(s.build.parent(s).memory(null)); t.copy(s);                                           // Create some more memory and copy the slots into it
         //new I() {void action() {stop(s);}};
         ok(()->s, """
 Slots    : refs:  8
@@ -1856,7 +1853,6 @@ keys     :    0   0   0  15  16  17   0
     test_compactRight();
     test_redistribute();
     test_shift();
-    test_slots();
     test_mergeFromRightEven();
     test_mergeFromLeftEven();
     test_mergeFromRightOdd();
@@ -1872,11 +1868,7 @@ keys     :    0   0   0  15  16  17   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_mergeFromRightEven();
-    test_mergeFromLeftEven();
-    test_mergeFromRightOdd();
-    test_mergeFromLeftOdd();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
