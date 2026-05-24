@@ -83,7 +83,7 @@ class Slots extends Program                                                     
     refUsedKeys          = byteMemoryRef.step(m.posusedKeys);                                                           // References in use.  There are fewer references than slots to make insertions faster
     refKeys              = byteMemoryRef.step(m.posKeys);                                                               // Keys used in btree held unordered in this array but ordered by the slot references to them
     usedSlotsToKeys      = new BitSet        (m.us.memory(refUsedSlotsToKeys).parent(parentProgram));                   // Create bitsets to reference the program and memory used by this program
-    usedKeys             = new BitSet        (m.ur.memory(refUsedKeys).parent(parentProgram));
+    usedKeys             = new BitSet        (m.ur.memory(refUsedKeys)       .parent(parentProgram));
     new I() {void action() {deleteFile(tracing);}};                                                                     // Delete the trace file here to avoid including the memory reference calculations above
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
    }
@@ -258,6 +258,16 @@ class Slots extends Program                                                     
 
   void copy(Slots Source)  {byteMemoryRef.copy(Source.byteMemoryRef, new Int(build.size()));}                           // Copy source into this
 
+  void clear()                                                                                                          // Clear the slots
+   {final Slots slots = this;
+    compactLeft();                                                                                                      // Place slots in a knoewn position
+    new ForCount(count())                                                                                               // Clear compacted slots
+     {void body(Int Index)
+       {delSlotAndKey(Index);
+       }
+     };
+   }
+
 //D3 Compact, Split and Merge                                                                                           // Compact, split and merge slots
 
 //D4 Compact                                                                                                            // Compact slots to the left or right
@@ -374,8 +384,14 @@ class Slots extends Program                                                     
    {final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
-    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
-    new ForCount(Target.count().min(new Int(N/2))) {void body(Int Index) {Target.delSlotAndKey(Index);}};               // Clear the target areas that should not be occupied after the split
+
+// Make a clear target
+    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we know where they and so do not have to probe for them.
+    new ForCount(Target.count().min(new Int(N/2)))                                                                      // Clear the target areas that should not be occupied after the split
+     {void body(Int Index)
+       {Target.delSlotAndKey(Index);
+       }
+     };
 
     new ForCount(new Int(N/2), new Int(N))                                                                              // Move upper half of source to upper half of target
      {void body(Int Index)
@@ -1844,6 +1860,50 @@ keys     :    0   0   0  15  16  17   0
     test_splitLeftOdd(false);
    }
 
+  static void test_clear(boolean Ex)
+   {final int N = 7;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
+     {void slotsCode()
+       {insert(new Int(11));
+        insert(new Int(12));
+        insert(new Int(13));
+        insert(new Int(15));
+        insert(new Int(16));
+        insert(new Int(17));
+        insert(new Int(14));
+        final Slots s = this;
+        //new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   1   0   2   6   3   0   4   0   5   0   0
+keysSlots:    1   3   5   7   9  11   6   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   .
+usedKeys :    X   X   X   X   X   X   X
+keys     :   11  12  13  15  16  17  14
+""");
+        clear();
+        new I() {void action() {stop(s);}};
+        ok(()->this, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   .   .   .   .   .   .
+keys     :    0   0   0   0   0   0   0
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_clear()
+   {test_clear(true);
+    test_clear(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
     test_locateNearestFreeSlotToKey();
@@ -1865,10 +1925,12 @@ keys     :    0   0   0  15  16  17   0
     test_splitLeftEven();
     test_splitRightOdd();
     test_splitLeftOdd();
+    test_clear();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_clear();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
