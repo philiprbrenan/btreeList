@@ -374,11 +374,24 @@ public class Program extends Test                                               
 
     Bool say() {final Bool i = this; new I() {void action() {Test.say(i);}}; return this;}                              // Say the boolean
 
-    Bool ok(Boolean Value)                                                                                              // Check the boolean
+    Bool ok(Boolean Value)
      {new I()
        {void action()
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
+         }
+       };
+      return this;
+     }
+
+    Bool ok(Bool Value)
+     {final Bool got = this;
+       new If (Value.valid())
+       {void Then()
+         {new I() {void action()  {Test.ok(got.b(), Value.b()); }};
+         }
+        void Else()
+         {new I() {void action() {Test.ok(got.notValid(), true);}};
          }
        };
       return this;
@@ -567,9 +580,9 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : "undefined Int: "+name;
      }
 
-    Int say() {final Int i = this; new I() {void action() {Test.say(i);}}; return this;}                               // Say the integer
+    Int say() {final Int i = this; new I() {void action() {Test.say(i);}}; return this;}                                // Say the integer
 
-    Int ok(Integer Value)                                                                                              // Check the integer
+    Int ok(Integer Value)                                                                                               // Check the integer
      {new I()
        {void action()
          {if (Value != null) {x(); Test.ok(i, Value);}
@@ -578,6 +591,20 @@ public class Program extends Test                                               
        };
       return this;
      }
+
+    Int ok(Int Value)
+     {final Int got = this;
+       new If (Value.valid())
+       {void Then()
+         {new I() {void action() {Test.ok(got.i(), Value.i());}};
+         }
+        void Else()
+         {new I() {void action() {Test.ok(got.notValid(), true);}};
+         }
+       };
+      return this;
+     }
+
    }
 
 //D1 Byte Memory                                                                                                        // Operations on memory backed by bytes
@@ -795,7 +822,7 @@ public class Program extends Test                                               
     final String traceComment = tracing() ? traceComment() : null;                                                      // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
-     {ai(); //if  (executing()) stop("Cannot add instructions during program execution");
+     {ai();
       instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sens in delayed execution mode
       mightJump = MightJump;
       if (immediate()) {parentProgram.executing = this; action(); parentProgram.executing = null;}                      // Execute instruction immediately via interpretation if in immediate execution mode
