@@ -52,7 +52,8 @@ public class Program extends Test                                               
   boolean   tracing() {return tracing != null;}                                                                         // Trace execution
   Program   program() {return parentProgram;}                                                                           // Address this program
 
-  void executingCheck() {if (!executing()) stop("Not executing or interpreting");}                                      // Use standard Java operators rather than this class to execute code that is not executed as machine code
+  void executingCheck()     {if (!executing()) stop("Not executing or interpreting");}                                  // Use standard Java operators rather than this class to execute code that is not executed as machine code
+  void parentProgramCheck() {if (program() != program().program()) stop("Parent program not set to parent program");}   // Use standard Java operators rather than this class to execute code that is not executed as machine code
 
   void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructions
    {final I      i = parentProgram.executing;
