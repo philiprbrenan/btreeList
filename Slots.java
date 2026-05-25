@@ -260,7 +260,7 @@ class Slots extends Program                                                     
 
   void clear()                                                                                                          // Clear the slots
    {final Slots slots = this;
-    compactLeft();                                                                                                      // Place slots in a knoewn position
+    compactSlotsLeft();                                                                                                 // Place slots in a known position
     new ForCount(count())                                                                                               // Clear compacted slots
      {void body(Int Index)
        {delSlotAndKey(Index);
@@ -268,15 +268,13 @@ class Slots extends Program                                                     
      };
    }
 
-//D3 Compact, Split and Merge                                                                                           // Compact, split and merge slots
+//D3 Compact, Split and Merge                                                                                           // Compact to the left or right, redistribute and merge slots
 
 //D4 Compact                                                                                                            // Compact slots to the left or right
 
-  void compactLeft()                                                                                                    // Compact the used slots to the left end
-   {final Slots slots = this;
-    new If (empty())                                                                                                    // Compact slots
+  void compactSlotsLeft()                                                                                               // Compact the slots to the left hand end
+   {new If (empty().Flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
-      void Else()                                                                                                       // Compact slots first
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bool Continue)
            {final Int s = usedSlotsToKeys.firstZero();                                                                  // First empty slot
@@ -286,35 +284,11 @@ class Slots extends Program                                                     
          };
        }
      };
-
-    new If (usedKeys.empty())                                                                                           // Compact keys
-     {void Then() {}                                                                                                    // Nothing to compact as empty
-      void Else()
-       {new If (full())                                                                                                 // Keys cannot be compacted as they are full
-         {void Then() {}
-          void Else()
-           {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
-             {void body(Int Index, Bool Continue)
-               {final Int k = usedKeys .firstZero();                                                                    // First empty key
-                final Int K = usedKeys .lastOne();                                                                      // Last used key so we get the longest possible move
-                new If (K.gt(k))                                                                                        // Compaction possible
-                 {void Then()
-                   {moveKey(k, K, Continue);
-                   }
-                 };
-               }
-             };
-           }
-         };
-       }
-     };
    }
 
-  void compactRight()                                                                                                   // Compact the used slots to the right end
-   {final Slots slots = this;
-    new If (empty())                                                                                                    // Compact slots
+  void compactSlotsRight()                                                                                              // Compact the slots to the right hand end
+   {new If (empty().Flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
-      void Else()                                                                                                       // Compact slots first
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bool Continue)
            {final Int s = usedSlotsToKeys.lastZero();                                                                   // Last empty slot
@@ -324,20 +298,25 @@ class Slots extends Program                                                     
          };
        }
      };
+   }
 
-    new If (usedKeys.empty())                                                                                           // Compact keys
-     {void Then() {}                                                                                                    // Nothing to compact as empty
-      void Else()
-       {new If (full())                                                                                                 // Keys cannot be compacted as they are full
+  interface CompactKey {void update(Slots Slots, Int target, Int Source);}                                              // Observe the compaction of a key so that external data can be compacted in the same way
+
+  void compactKeysLeft() {compactKeysLeft((S, t, s)->{});}                                                              // Compact the keys to the left using as few moves as possible
+  void compactKeysLeft(CompactKey CompactKey)                                                                           // Compact the keys to the left using as few moves as possible while allowing the caller to observe the moves made
+   {final Slots slots = this;
+    new If (empty().Flip())                                                                                             // Keys cannot be compacted if the slots are full or empty
+     {void Then()
+       {new If (full().Flip())                                                                                          // Keys cannot be compacted if the slots are full or empty
          {void Then() {}
-          void Else()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
-               {final Int k = usedKeys .lastZero();                                                                     // Last empty key
-                final Int K = usedKeys .firstOne();                                                                     // First used key so we get the longest possible move
-                new If (K.lt(k))                                                                                        // Compaction possible
+               {final Int k = usedKeys .firstZero();                                                                    // First empty key
+                final Int K = usedKeys .lastOne();                                                                      // Last used key so we get the longest possible move
+                new If (K.gt(k))                                                                                        // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
+                    if (CompactKey != null) CompactKey.update(slots, k, K);                                             // Expose the compaction move
                    }
                  };
                }
@@ -348,15 +327,39 @@ class Slots extends Program                                                     
      };
    }
 
-  void redistribute()                                                                                                   // Redistribute the unused slots evenly with a slight bias to having a free slot at the end to assist with data previously sorted into ascending order.
+  void compactKeysRight() {compactKeysRight((S, t, s)->{});}                                                            // Compact the keys to the right using as few moves as possible
+  void compactKeysRight(CompactKey CompactKey)                                                                          // Compact the keys to the right using as few moves as possible while allowing the caller to observe the moves made
+    {final Slots slots = this;
+     new If (empty().Flip())                                                                                            // Keys cannot be compacted if the slots are full or empty
+      {void Then()
+        {new If (full().Flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
+         {void Then() {}
+           {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
+             {void body(Int Index, Bool Continue)
+               {final Int k = usedKeys .lastZero();                                                                     // Last empty key
+                final Int K = usedKeys .firstOne();                                                                     // First used key so we get the longest possible move
+                new If (K.lt(k))                                                                                        // Compaction possible
+                 {void Then()
+                   {moveKey(k, K, Continue);
+                    if (CompactKey != null) CompactKey.update(slots, k, K);                                                    // Expose the compaction move
+                   }
+                 };
+               }
+             };
+           }
+         };
+       }
+     };
+   }
+
+  void redistribute()                                                                                                   // Improve insert performance by making the slots sparse while leaving the keys in their current positions
    {final Slots slots = this;
-    new If (empty())                                                                                                    // Something to redistribute
-     {void Then() {}                                                                                                    // Nothing to redistribute as the slots are empty
-      void Else()                                                                                                       // Redistribute
+    new If (empty().Flip())                                                                                             // Something to redistribute
+     {void Then()                                                                                                       // Redistribute
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
-        compactLeft();                                                                                                  // Compact everything to the left so it is in a known position
-        final Int  c = usedKeys.firstZero();                                                                            // Number of slots in use
+        compactSlotsLeft();                                                                                             // Compact slots to the left so it is in a known position
+        final Int         c = usedKeys.firstZero();                                                                     // Number of slots in use
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
@@ -366,9 +369,8 @@ class Slots extends Program                                                     
            {final Int s = c.Dec().sub(Index);                                                                           // Index of source element to be moved
             final Int t = p.Add(s.Mul(space)).add(s);                                                                   // Index in slots of target element to be set
             final Int k = getSlotToKeyIndex(s);                                                                         // Index of key being moved
-            final Int K = getKeyValue(k);                                                                               // Value of key being moved
-            delSlotAndKey(s);
-            setSlotAndKey(t, k, K);
+             delSlotToKeys(s);                                                                                          // Delete the slot to key refence while retaining the key
+             putSlotToKeys(t, k);                                                                                       // New position for slot to key
            }
          };
        }
@@ -379,99 +381,242 @@ class Slots extends Program                                                     
 
 //D5 Even                                                                                                               // Splitting an even number of slots
 
-  void splitRightEven(Slots Target) {splitRightEven(Target, true);}                                                     // Split a full set of slots that contains an even number of entries redistributing the results - this is the normall expected outcome
-  void splitRightEven(Slots Target, boolean Redistribute)                                                               // Split a full set of slots that contains an even number of entries optionally redistributing the slots in the source and target slots
+  void splitRightEven(Slots Right)                                                                                      // Split a full set of slots that contains an even number of entries optionally redistributing the slots
    {final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
-// Make a clear target
-    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we know where they and so do not have to probe for them.
-    new ForCount(Target.count().min(new Int(N/2)))                                                                      // Clear the target areas that should not be occupied after the split
+    final Slots left = this;
+    left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
+    Right.copy(left);                                                                                                   // Duplicate left into right
+
+    new ForCount(new Int(N/2))                                                                                          // Clear lower half of target right slots
      {void body(Int Index)
-       {Target.delSlotAndKey(Index);
+       {Right.delSlotToKeys(Index);
        }
      };
 
-    new ForCount(new Int(N/2), new Int(N))                                                                              // Move upper half of source to upper half of target
+    new ForCount(new Int(N/2), new Int(N))                                                                              // Clear upper half of left slots
      {void body(Int Index)
-       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
-        delSlotAndKey(Index);                                                                                           // Delete key
-        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       {left.delSlotToKeys(Index);
        }
      };
-    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+
+    left .redistribute();                                                                                               // Redistribute source and target slots if requested
+    Right.redistribute();
    }
 
-  void splitLeftEven(Slots Target) {splitLeftEven(Target, true);}                                                       // Split a full set of slots that contains an even number of entries redistributing the results - this is the normall expected outcome
-  void splitLeftEven(Slots Target, boolean Redistribute)                                                                // Split a full set of slots that contains an even number of entries optionally redistributing the slots in the source and target slots
+  void splitLeftEven(Slots Left)                                                                                        // Split a full set of slots that contains an even number of entries optionally redistributing the slots
    {final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
-    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
-    new ForCount(Target.count().min(new Int(N/2))) {void body(Int Index) {Target.delSlotAndKey(Index);}};               // Clear the target areas that should not be occupied after the split
+    final Slots right = this;
+    right.compactSlotsRight();                                                                                          // Compacting the source on the right will not affect the order of the keys
+    Left.copy(right);                                                                                                   // Duplicate right into left
 
-    new ForCount(new Int(N/2))                                                                                          // Move lower half of source to lower half of target
+    new ForCount(new Int(N/2))                                                                                          // Clear lower half of target left slots
      {void body(Int Index)
-       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
-        delSlotAndKey(Index);                                                                                           // Delete key
-        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       {right.delSlotToKeys(Index);
        }
      };
-    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+
+    new ForCount(new Int(N/2), new Int(N))                                                                              // Clear upper half of left slots
+     {void body(Int Index)
+       {Left.delSlotToKeys(Index);                                                                                      // Delete key
+       }
+     };
+    Left .redistribute();                                                                                               // Redistribute source and target slots if requested
+    right.redistribute();
    }
 
 //D5 Odd                                                                                                                // Splitting an odd number of slots
 
-  Int splitRightOdd(Slots Target) {return splitRightOdd(Target, true);}                                                 // Split a full set of slots that contains an odd number of entries redistributing the results - this is the normall expected outcome
-  Int splitRightOdd(Slots Target, boolean Redistribute)                                                                 // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
+  Int splitRightOdd(Slots Right)                                                                                        // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
     if (N % 2 == 0) stop("Slot set must have an odd number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
-    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
-    final Int r = new Int(getSlotToKeyValue(M)); delSlotAndKey(M);                                                      // Remove middle key
+    final Slots left = this;
+    left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
+    Right.copy(left);                                                                                                   // Duplicate left into right
 
-    new ForCount(Target.count().min(R)) {void body(Int Index) {Target.delSlotAndKey(Index);}};                          // Clear the target areas that should not be occupied after the split
+    final Int r = new Int(left.getSlotToKeyValue(M)); delSlotAndKey(M);                                                 // Remove middle value
 
-    new ForCount(R, new Int(N))                                                                                         // Move upper half of source to upper half of target
+    new ForCount(R)                                                                                                     // Clear lower half of target right slots
      {void body(Int Index)
-       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
-        delSlotAndKey(Index);                                                                                           // Delete key
-        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       {Right.delSlotToKeys(Index);
        }
      };
-    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+
+    new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
+     {void body(Int Index)
+       {left.delSlotToKeys(Index);
+       }
+     };
+
+    left .redistribute();                                                                                               // Redistribute source and target slots if requested
+    Right.redistribute();
     return r;
    }
 
-  Int splitLeftOdd(Slots Target) {return splitLeftOdd(Target, true);}                                                   // Split a full set of slots that contains an odd number of entries redistributing the results - this is the normall expected outcome
-  Int splitLeftOdd(Slots Target, boolean Redistribute)                                                                  // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
+  Int splitLeftOdd(Slots Left)                                                                                          // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
     if (N % 2 == 0) stop("Slot set must have an odd number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
-    compactLeft(); Target.compactLeft();                                                                                // Move slots to left so we now where they and so do not have to probe for them
-    final Int r = new Int(getSlotToKeyValue(M)); delSlotAndKey(M);                                                      // Remove middle value
-    new ForCount(Target.count().min(R)) {void body(Int Index) {Target.delSlotAndKey(Index);}};                          // Clear the target areas that should not be occupied after the split
+    final Slots right = this;
+    right.compactSlotsLeft();                                                                                           // Compacting the source on the left will not affect the order of the keys
+    Left.copy(right);                                                                                                   // Duplicate left into right
 
-    new ForCount(M)                                                                                                     // Move lower half of source to lower half of target
+    final Int r = new Int(Left.getSlotToKeyValue(M)); delSlotAndKey(M);                                                 // Remove middle value
+
+    new ForCount(R)                                                                                                     // Clear lower half of target right slots
      {void body(Int Index)
-       {final Int K = getSlotToKeyValue(Index);                                                                         // Current key
-        delSlotAndKey(Index);                                                                                           // Delete key
-        Target.setSlotAndKey(Index, Index, K);                                                                          // Add key to matching position in top half of target
+       {right.delSlotToKeys(Index);
        }
      };
-    if (Redistribute) {redistribute(); Target.redistribute();}                                                          // Redistribute source and target slots if requested
+
+    new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
+     {void body(Int Index)
+       {Left.delSlotToKeys(Index);
+       }
+     };
+
+    Left .redistribute();                                                                                               // Redistribute source and target slots if requested
+    right.redistribute();
     return r;
    }
 
 //D4 Merge                                                                                                              // Merge slots
+
+//D5 Even                                                                                                               // Merge slots with an even maximum number of keys
+
+  Bool mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                      // Merge the specified slots from the right without observing the results
+  Bool mergeFromRightEven(Slots Right, CompactKey CompactKey)                                                           // Merge the specified slots from the right
+   {final Slots left = this;
+    final Int      N = new Int(numberOfSlotsToKeys());
+    final Int     lc = left .usedKeys.countOnes();                                                                      // Count on left
+    final Int     rc = Right.usedKeys.countOnes();                                                                      // Count on right
+    final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
+
+    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+     {void Then()
+       {r.set(true);                                                                                                    // Able to merge
+        left .compactSlotsLeft ();
+        Right.compactSlotsRight();
+        left .compactKeysLeft  (CompactKey);
+        Right.compactKeysRight (CompactKey);
+        new ForCount (N.Sub(rc), N)                                                                                     // Merge right into left
+         {void body(Int Index)
+           {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key from right
+            final Int K = Right.getKeyValue(k);                                                                         // Value of key from right
+            left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
+           }
+         };
+        left .redistribute();                                                                                           // Redistribute left
+        Right.redistribute();                                                                                           // Redistribute right
+       }
+     };
+    return r;
+   }
+
+  Bool mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                          // Merge the specified slots from the right
+  Bool mergeFromLeftEven(Slots Left, CompactKey CompactKey)                                                             // Merge the specified slots from the right
+   {final Slots right = this;
+    final Int       N = new Int(numberOfSlotsToKeys());
+    final Int      rc = right.usedKeys.countOnes();
+    final Int      lc = Left .usedKeys.countOnes();
+    final Bool      r = new Bool(false);
+
+    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+     {void Then()
+       {r.set(true);
+        Left .compactSlotsLeft ();
+        right.compactSlotsRight();
+        Left .compactKeysLeft  (CompactKey);
+        right.compactKeysRight (CompactKey);
+        new ForCount (lc)
+         {void body(Int Index)
+           {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key from left
+            final Int K = Left.getKeyValue(k);                                                                          // Value of key from left
+            right.setSlotAndKey(Index, k, K);                                                                           // Reinsert left key in right target
+           }
+         };
+        Left .redistribute();                                                                                           // Redistribute left
+        right.redistribute();                                                                                           // Redistribute right
+       }
+     };
+    return r;
+   }
+
+//D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys
+
+  Bool mergeFromRightOdd(Int Key, Slots Right) {return mergeFromRightOdd(Key, Right, (S, t, s)->{});}          // Merge the specified slots from the right without observing the results
+  Bool mergeFromRightOdd(Int Key, Slots Right, CompactKey CompactKey)                                                   // Merge the specified slots from the right
+   {final Slots left = this;
+    final Int      N = new Int(numberOfSlotsToKeys());
+    final Int     lc = left .usedKeys.countOnes();                                                                      // Count on left
+    final Int     rc = Right.usedKeys.countOnes();                                                                      // Count on right
+    final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
+
+    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+     {void Then()
+       {r.set(true);                                                                                                    // Able to merge
+        left .compactSlotsLeft ();
+        Right.compactSlotsRight();
+        left .compactKeysLeft  (CompactKey);
+        Right.compactKeysRight (CompactKey);
+        new ForCount (N.Sub(rc), N)                                                                                     // Merge right into left
+         {void body(Int Index)
+           {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key from right
+            final Int K = Right.getKeyValue(k);                                                                         // Value of key from right
+            left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
+           }
+         };
+        setSlotAndKey(lc, lc, Key);                                                                                     // Insert separating key
+        left .redistribute();                                                                                           // Redistribute left
+        Right.redistribute();                                                                                           // Redistribute right
+       }
+     };
+    return r;
+   }
+
+  Bool mergeFromLeftOdd(Int Key, Slots Left) {return mergeFromLeftOdd(Key, Left, (S, t, s)->{});}                       // Merge the specified slots from the right
+  Bool mergeFromLeftOdd(Int Key, Slots Left, CompactKey CompactKey)                                                     // Merge the specified slots from the right
+   {final Slots right = this;
+    final Int       N = new Int(numberOfSlotsToKeys());
+    final Int      rc = right.usedKeys.countOnes();
+    final Int      lc = Left .usedKeys.countOnes();
+    final Bool      r = new Bool(false);
+
+    new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots with space for the additional key
+     {void Then()
+       {r.set(true);
+        Left .compactSlotsLeft ();
+        right.compactSlotsRight();
+        Left .compactKeysLeft  (CompactKey);
+        right.compactKeysRight (CompactKey);
+        new ForCount (lc)
+         {void body(Int Index)
+           {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key from left
+            final Int K = Left.getKeyValue(k);                                                                          // Value of key from left
+            right.setSlotAndKey(Index, k, K);                                                                           // Reinsert left key in right target
+           }
+         };
+        setSlotAndKey(lc, lc, Key);                                                                                     // Insert separating key
+        Left .redistribute();                                                                                           // Redistribute left
+        right.redistribute();                                                                                           // Redistribute right
+       }
+     };
+    return r;
+   }
+
+//D4 Shift                                                                                                              // Shift the slots to the left/down one position or up/right one position
 
   void shiftUpOne(Int Position, Int Width)                                                                              // Shift up the specified slots by one position to create a free space at the specified position
    {new ForCount(Width)                                                                                                 // Move the indicated slots up one position
@@ -492,113 +637,6 @@ class Slots extends Program                                                     
         moveSlot(t, s);
        }
      };
-   }
-
-//D5 Even                                                                                                               // Merge slots with an even maximum number of keys
-
-  Bool mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, true);}                                        // Merge the specified slots from the right
-  Bool mergeFromRightEven(Slots Right, boolean Redistribute)                                                            // Merge the specified slots from the right
-   {final Int N  = new Int(numberOfSlotsToKeys());
-    final Int lc =       usedKeys.countOnes();
-    final Int rc = Right.usedKeys.countOnes();
-    final Bool r = new Bool(false);
-    final Slots left = this;
-    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
-     {void Then()
-       {      compactLeft ();
-        Right.compactRight();
-        r.set(true);
-        new ForCount (N.Sub(rc), N)
-         {void body(Int Index)
-           {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key being moved
-            final Int K = Right.getKeyValue(k);                                                                         // Value of key being moved
-            setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
-           }
-         };
-        if (Redistribute) {redistribute(); Right.redistribute();}                                                       // Redistribute source and target slots if requested
-       }
-     };
-    return r;
-   }
-
-  Bool mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, true);}                                            // Merge the specified slots from the right
-  Bool mergeFromLeftEven(Slots Left, boolean Redistribute)                                                              // Merge the specified slots from the right
-   {final Int N  = new Int(numberOfSlotsToKeys());
-    final Int rc =      usedKeys.countOnes();
-    final Int lc = Left.usedKeys.countOnes();
-    final Bool r = new Bool(false);
-    final Slots right = this;
-    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
-     {void Then()
-       {Left.compactLeft  ();
-             compactRight();
-        r.set(true);
-        new ForCount (lc)
-         {void body(Int Index)
-           {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key being moved
-            final Int K = Left.getKeyValue(k);                                                                          // Value of key being moved
-            setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
-           }
-         };
-        if (Redistribute) {redistribute(); Left.redistribute();}                                                        // Redistribute source and target slots if requested
-       }
-     };
-    return r;
-   }
-
-//D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys
-
-  Bool mergeFromRightOdd(Int Key, Slots Right) {return mergeFromRightOdd(Key, Right, true);}                            // Merge the specified slots from the right
-  Bool mergeFromRightOdd(Int Key, Slots Right, boolean Redistribute)                                                    // Merge the specified slots from the right
-   {final Int N  = new Int(numberOfSlotsToKeys());
-    final Int lc =       usedKeys.countOnes();
-    final Int rc = Right.usedKeys.countOnes();
-    final Bool r = new Bool(false);
-    final Slots left = this;
-
-    new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
-     {void Then()
-       {left .compactLeft ();
-        Right.compactRight();
-        r.set(true);
-        new ForCount (N.Sub(rc), N)
-         {void body(Int Index)
-           {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key being moved
-            final Int K = Right.getKeyValue(k);                                                                         // Value of key being moved
-            setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
-           }
-         };
-        setSlotAndKey(lc, lc, Key);                                                                                     // Insert separating key
-        if (Redistribute) {redistribute(); Right.redistribute();}                                                       // Redistribute source and target slots if requested
-       }
-     };
-    return r;
-   }
-
-  Bool mergeFromLeftOdd(Int Key, Slots Left) {return mergeFromLeftOdd(Key, Left, true);}                                // Merge the specified slots from the left
-  Bool mergeFromLeftOdd(Int Key, Slots Left, boolean Redistribute)                                                      // Merge the specified slots from the left
-   {final Int N  = new Int(numberOfSlotsToKeys());
-    final Int rc =      usedKeys.countOnes();
-    final Int lc = Left.usedKeys.countOnes();
-    final Bool r = new Bool(false);
-    final Slots right = this;
-    new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
-     {void Then()
-       {Left.compactLeft  ();
-             compactRight();
-        r.set(true);
-        new ForCount (lc)
-         {void body(Int Index)
-           {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key being moved
-            final Int K = Left.getKeyValue(k);                                                                          // Value of key being moved
-            setSlotAndKey(Index, k, K);                                                                                 // Reinsert source at target
-           }
-         };
-       }
-     };
-    setSlotAndKey(lc, lc, Key);                                                                                         // Insert separating key
-    if (Redistribute) {redistribute(); Left.redistribute();}                                                            // Redistribute source and target slots if requested
-    return r;
    }
 
 //D2 High level operations                                                                                              // Find, insert, delete values in the slots
@@ -1047,9 +1085,64 @@ usedKeys :    .   X   .   X
 keys     :    0   1   0   2
 """);
 
-        compactLeft();
+        compactSlotsLeft();
         //new I() {void action() {stop(s);}};
-        ok(()->this, """
+        ok(()->s, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    1   3   0   0   0   0   0   0
+keysSlots:    0   0   0   1   0   0   0   0
+usedSlots:    X   X   .   .   .   .   .   .
+usedKeys :    .   X   .   X
+keys     :    0   1   0   2
+""");
+
+        compactSlotsRight();
+        //new I() {void action() {stop(s);}};
+        ok(()->s, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    0   0   0   0   0   0   1   3
+keysSlots:    0   6   0   7   0   0   0   0
+usedSlots:    .   .   .   .   .   .   X   X
+usedKeys :    .   X   .   X
+keys     :    0   1   0   2
+""");
+
+        final StringBuilder T = new StringBuilder();
+        compactKeysLeft((S, b, a)->{T.append(a.i()+"->"+b.i()+";");});
+        //new I() {void action() {stop(T, s);}};
+        ok(()->T, "3->0;");
+        ok(()->s, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    0   0   0   0   0   0   1   0
+keysSlots:    7   6   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   X   X
+usedKeys :    X   X   .   .
+keys     :    2   1   0   0
+""");
+
+        final StringBuilder U = new StringBuilder();
+        compactKeysRight((S, b, a)->{U.append(a.i()+"->"+b.i()+";");});
+        //new I() {void action() {stop(U, s);}};
+        ok(()->U, "0->3;1->2;");
+        ok(()->s, """
+Slots    : refs:  4
+positions:    0   1   2   3   4   5   6   7
+slotsKeys:    0   0   0   0   0   0   2   3
+keysSlots:    0   0   6   7   0   0   0   0
+usedSlots:    .   .   .   .   .   .   X   X
+usedKeys :    .   .   X   X
+keys     :    0   0   1   2
+""");
+
+        final StringBuilder W = new StringBuilder();
+        compactKeysLeft ((S, b, a)->{W.append(a.i()+"->"+b.i()+";");});
+        compactSlotsLeft();
+        //new I() {void action() {stop(W, s);}};
+        ok(()->W, "3->0;2->1;");
+        ok(()->s, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    1   0   0   0   0   0   0   0
@@ -1086,7 +1179,7 @@ usedKeys :    .   X   .   X
 keys     :    0   1   0   2
 """);
 
-        compactRight();
+        compactSlotsRight();
         //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  4
@@ -1098,7 +1191,7 @@ usedKeys :    .   .   X   X
 keys     :    0   0   1   2
 """);
 
-        compactLeft();
+        compactSlotsLeft();
         //new I() {void action() {stop(s);}};
         ok(()->this, """
 Slots    : refs:  4
@@ -1250,7 +1343,7 @@ keys     :    7   1   3   2   4   5   6   0
             insert(new Int(4));
            }
          };
-        mergeFromRightEven(r, false).ok(true);
+        mergeFromRightEven(r).ok(true);
         ok(()->l, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
@@ -1293,7 +1386,7 @@ keys     :    0   0   4   3
             insert(new Int(1));
            }
          };
-        mergeFromLeftEven(l, false).ok(true);
+        mergeFromLeftEven(l).ok(true);
         //new I() {void action() {stop(l);}};
         ok(()->l, """
 Slots    : refs:  4
@@ -1359,7 +1452,7 @@ usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
 
-        l.mergeFromRightOdd(new Int(3), r, false).ok(true);
+        l.mergeFromRightOdd(new Int(3), r).ok(true);
 
         //new I() {void action() {stop(l); }};
         //new I() {void action() {stop(r); }};
@@ -1381,7 +1474,7 @@ usedSlots:    .   .   .   .   .   .   .   .   X   X
 usedKeys :    .   .   .   X   X
 keys     :    0   0   0   5   4
 """);
-        mergeFromRightOdd(new Int(3), l, false).ok(false);
+        mergeFromRightOdd(new Int(3), l).ok(false);
         maxSteps = 99999;
         execute();
        }
@@ -1427,7 +1520,7 @@ usedKeys :    X   X   .   .   .
 keys     :    1   2   0   0   0
 """);
 
-        r.mergeFromLeftOdd(new Int(3), l, false).ok(true);
+        r.mergeFromLeftOdd(new Int(3), l).ok(true);
 
         //new I() {void action() {stop(r);}};
         ok(()->r, """
@@ -1659,7 +1752,7 @@ keys     :   11  12  13  15  16  17  18  14
 """);
         final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11));
-        s.splitRightEven(t, false);
+        s.splitRightEven(t);
         //new I() {void action() {stop(s);}};
         ok(()->s, """
 Slots    : refs:  8
@@ -1693,7 +1786,7 @@ keys     :    0   0   0   0  15  16  17  18
 
   static void test_splitLeftEven(boolean Ex)
    {final int N = 8;
-    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
+    final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {insert(new Int(11)).ok( 8);
         insert(new Int(12)).ok( 9);
@@ -1703,9 +1796,9 @@ keys     :    0   0   0   0  15  16  17  18
         insert(new Int(17)).ok(13);
         insert(new Int(18)).ok(14);
         insert(new Int(14)).ok( 6);
-        final Slots s = this;
-        //new I() {void action() {stop(s);}};
-        ok(()->this, """
+        final Slots r = this;
+        //new I() {void action() {stop(r);}};
+        ok(()->r, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   1   0   2   7   3   0   4   0   5   0   6   0   0
@@ -1714,12 +1807,12 @@ usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   X   .   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  18  14
 """);
-        final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
-        t.insert(new Int(11)); t.compactRight();
-        s.splitLeftEven(t, false);
+        final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r));
+        l.insert(new Int(11)); l.compactSlotsRight();
+        r.splitLeftEven(l);
         //new I() {void action() {stop(t);}};
         //new I() {void action() {stop(s);}};
-        ok(()->t, """
+        ok(()->l, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1728,7 +1821,7 @@ usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    X   X   X   X   .   .   .   .
 keys     :   11  12  13  14   0   0   0   0
 """);
-        ok(()->s, """
+        ok(()->r, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   3   4   5   6   0   0   0   0   0   0   0   0
@@ -1772,7 +1865,7 @@ keys     :   11  12  13  15  16  17  14
 """);
         final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11));
-        s.splitRightOdd(t, false).ok(14);
+        s.splitRightOdd(t).ok(14);
         //new I() {void action() {stop(s);}};
         ok(()->s, """
 Slots    : refs:  7
@@ -1827,8 +1920,8 @@ usedKeys :    X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  14
 """);
         final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
-        t.insert(new Int(11)); t.compactRight();
-        s.splitLeftOdd(t, false).ok(14);
+        t.insert(new Int(11)); t.compactSlotsRight();
+        s.splitLeftOdd(t).ok(14);
         //new I() {void action() {stop(t);}};
         //new I() {void action() {stop(s);}};
         ok(()->t, """
@@ -1930,6 +2023,7 @@ keys     :    0   0   0   0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    test_compactLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
