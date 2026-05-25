@@ -139,11 +139,35 @@ class Leaf extends Program                                                      
     new ForCount (new Int(maxLeafSize/2), new Int(maxLeafSize))                                                         // Upper key/data pairs
      {void body(Int Index)
        {final Int k = slots.getSlotToKeyIndex(Index);                                                                   // Current key
-        Right.refData.putInt(Index, refData.getInt(k));
+        Right.refData.putInt(new Int(maxLeafSize).sub(Index).dec(), refData.getInt(k));                                 // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
        }
      };
-    slots.splitRightEven(Right.slots, false);                                                                           // Split the slots to match
-//  redistribute slots and corresponding data
+    slots.splitRightEven(Right.slots, false);                                                                           // Split the slots to match but do not redistribute the results
+    slots.new Redistribute()                                                                                            // Redistribute slots and corresponding data
+     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
+     };
+    Right.slots.new Redistribute()                                                                                      // Redistribute slots and corresponding data
+     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
+     };
+   }
+
+  void splitLeft(Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf
+   {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
+    slots.compactLeft();                                                                                                // Compact source slots so we know where they are
+    Left.slots.clear();                                                                                                 // Clear the target
+    new ForCount (new Int(maxLeafSize/2))                                                                               // Lower key/data pairs
+     {void body(Int Index)
+       {final Int k = slots.getSlotToKeyIndex(Index);                                                                   // Current key
+        Left.refData.putInt(Index, refData.getInt(k));                                                                  // Move data values  in order to the lower positions
+       }
+     };
+    slots.splitLeftEven(Left.slots, !false);                                                                            // Split the slots to match
+    slots.new Redistribute()                                                                                            // Redistribute slots and corresponding data
+     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
+     };
+    Left.slots.new Redistribute()                                                                                       // Redistribute slots and corresponding data
+     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
+     };
    }
 
 /*
@@ -446,6 +470,13 @@ class Leaf extends Program                                                      
     return ""+s;
    }
 
+  String dumpDataArray()                                                                                                // Dump the data array
+   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxLeafSize));
+    s.append(" Ref  Data\n");
+    for (int i : range(slots.numberOfKeys())) s.append(f("%4d  %4d\n",  i, refData.getInt(i)));
+    return ""+s;
+   }
+
 //D1 Tests                                                                                                              // Tests
 
   static void test_leaf(boolean Ex)
@@ -551,7 +582,7 @@ Leaf data: size:   8
     test_compactRight(false);
    }
 
-  static void test_splitLeft(boolean  Ex)
+  static void test_splitRight(boolean Ex)
    {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
@@ -577,7 +608,7 @@ Leaf: size:   8
     final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(l));
     l.splitRight(r);
     //l.new I() {void action() {stop(l);}};
-    if (false) l.ok(()->l, """
+    l.ok(()->l, """
 Leaf: size:   8
  Ref   Key  Data
    3     1    11
@@ -589,13 +620,65 @@ Leaf: size:   8
     l.ok(()->r, """
 Leaf: size:   8
  Ref   Key  Data
-   4     5    55
-   5     6    66
-   6     7    77
-   7     8    88
+   3     5    55
+   2     6    66
+   1     7    77
+   0     8    88
 """);
     l.maxSteps = 99999;
     l.execute();
+   }
+
+  static void test_splitRight()
+   {test_splitRight(true);
+    test_splitRight(false);
+   }
+
+  static void test_splitLeft(boolean  Ex)
+   {final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+    r.insert(r.new Int(2), r.new Int(22));
+    r.insert(r.new Int(4), r.new Int(44));
+    r.insert(r.new Int(3), r.new Int(33));
+    r.insert(r.new Int(1), r.new Int(11));
+    r.insert(r.new Int(6), r.new Int(66));
+    r.insert(r.new Int(7), r.new Int(77));
+    r.insert(r.new Int(5), r.new Int(55));
+    r.insert(r.new Int(8), r.new Int(88));
+    //r.new I() {void action() {stop(r);}};
+    r.ok(()->r, """
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(r));
+    r.splitLeft(l);
+    //r.new I() {void action() {stop(l);}};
+    l.ok(()->l, """
+Leaf: size:   8
+ Ref   Key  Data
+   0     1    11
+   1     2    22
+   2     3    33
+   3     4    44
+""");
+    //r.new I() {void action() {stop(r);}};
+    r.ok(()->r, """
+Leaf: size:   8
+ Ref   Key  Data
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    r.maxSteps = 99999;
+    r.execute();
    }
 
   static void test_splitLeft()
@@ -1078,6 +1161,8 @@ data     :   11  12  13  14  15  16  17  18
    {test_leaf();
     test_compactLeft();
     test_compactRight();
+    test_splitRight();
+    test_splitLeft();
     //test_emptyTree();
     //test_compactLeafLeft();
     //test_compactLeafRight();
@@ -1109,7 +1194,7 @@ data     :   11  12  13  14  15  16  17  18
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitLeft();
+    test_splitLeft(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
