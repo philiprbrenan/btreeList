@@ -382,6 +382,21 @@ public class Test                                                               
     return null;                                                                                                        // Not called in a test
    }
 
+  static String positionInTest()                                                                                        // Position in a test in geany clickable format
+   {final StackTraceElement[]t = new Exception().getStackTrace();
+    for(int i = 0; i < t.length; ++i)
+     {final String m = t[i].getMethodName();
+      if (m.matches("\\Atest_.*\\Z"))
+       {final StackTraceElement s = t[i-1];
+        final String f = s.getFileName();
+        final String l = String.format("%04d", s.getLineNumber());
+        return f+":"+l+":";
+       }
+     }
+    stop("Not called in a test");
+    return null;
+   }
+
   static int  currentTestNumber = 0;
   static long currentTestTime = System.nanoTime();
 
@@ -1013,43 +1028,50 @@ public class Test                                                               
     for (Object o : O) sayThisOrStop.push(o.toString());
    }
 
-  private static void ii(Object s, Object[] a)
-   {final Object[] b = new Object[a.length + 1];
-    b[0] = s;
-    System.arraycopy(a, 0, b, 1, a.length);
-    say(b);
+//  private static void ii(Object s, Object[] a)
+//   {final Object[] b = new Object[a.length + 1];
+//    b[0] = s;
+//    System.arraycopy(a, 0, b, 1, a.length);
+//    say(b);
+//   }
+
+//  static void squeezeVerticalSpaces(Stack<StringBuilder>S)                                                              // Squeeze common vertical spaces out of a stack of string builders
+//   {final int collapse = 3;
+//    int m = 0; for(StringBuilder s: S) if (s.length() > m) m = s.length();                                              // Maximum length
+//
+//    for(int j = 0; j < S.size(); j++)                                                                                   // Pad each row to the maximum length
+//     {S.elementAt(j).append(" ".repeat(m - S.elementAt(j).length()));
+//     }
+//
+//    columns: for(int i = m; i >= collapse; i--)                                                                         // Each column working backwards through each string
+//     {for(StringBuilder s: S)                                                                                           // Check there are two spaces that can be squeezed to one in all rows in this column
+//       {if (!s.substring(i-collapse, i).equals(" ".repeat(collapse)))
+//         {continue columns;
+//         }
+//       }
+//
+//      for(int j = 0; j < S.size(); j++)                                                                                 // Squeeze common spaces in column
+//       {final String s = S.elementAt(j).toString();
+//        S.setElementAt
+//         (new StringBuilder
+//           (s.substring(0, i-collapse)+s.substring(i-collapse+1)), j);
+//       }
+//     }
+//
+//    for(int j = 0; j < S.size(); j++)                                                                                   // Remove trailing padding
+//     {final StringBuilder s = S.elementAt(j);
+//      for(;s.length() > 0 && s.charAt(s.length()-1) == ' ';)
+//       {s.setLength(s.length()-1);
+//       }
+//     }
+//   }
+
+  static void testStop(Object...O)                                                                                      // Say something during a test, show the location in the test and stop
+   {say(O);
+    System.err.println(positionInTest());
+    System.exit(1);
    }
 
-  static void squeezeVerticalSpaces(Stack<StringBuilder>S)                                                              // Squeeze common vertical spaces out of a stack of strong builders
-   {final int collapse = 3;
-    int m = 0; for(StringBuilder s: S) if (s.length() > m) m = s.length();                                              // Maximum length
-
-    for(int j = 0; j < S.size(); j++)                                                                                   // Pad each row to the maximum length
-     {S.elementAt(j).append(" ".repeat(m - S.elementAt(j).length()));
-     }
-
-    columns: for(int i = m; i >= collapse; i--)                                                                         // Each column working backwards through each string
-     {for(StringBuilder s: S)                                                                                           // Check there are two spaces that can be squeezed to one in all rows in this column
-       {if (!s.substring(i-collapse, i).equals(" ".repeat(collapse)))
-         {continue columns;
-         }
-       }
-
-      for(int j = 0; j < S.size(); j++)                                                                                 // Squeeze common spaces in column
-       {final String s = S.elementAt(j).toString();
-        S.setElementAt
-         (new StringBuilder
-           (s.substring(0, i-collapse)+s.substring(i-collapse+1)), j);
-       }
-     }
-
-    for(int j = 0; j < S.size(); j++)                                                                                   // Remove trailing padding
-     {final StringBuilder s = S.elementAt(j);
-      for(;s.length() > 0 && s.charAt(s.length()-1) == ' ';)
-       {s.setLength(s.length()-1);
-       }
-     }
-   }
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
@@ -1442,20 +1464,20 @@ BBBB
     ok(testsExecuted, "[executed]");
    }
 
-  static void test_squeezeVerticalSpaces()
-   {final Stack<StringBuilder>S = new Stack<>();
-    S.push(new StringBuilder("a   aa           aaa"));
-    S.push(new StringBuilder("bb  bbb          bbbb"));
-    S.push(new StringBuilder("ccc cccc         ccccc"));
-    squeezeVerticalSpaces(S);
-    final String s = joinStringBuilders(S, "\n")+"\n";
-                                            //stop(s);
-    ok(s, """
-a   aa    aaa
-bb  bbb   bbbb
-ccc cccc  ccccc
-""");
-   }
+//  static void test_squeezeVerticalSpaces()
+//   {final Stack<StringBuilder>S = new Stack<>();
+//    S.push(new StringBuilder("a   aa           aaa"));
+//    S.push(new StringBuilder("bb  bbb          bbbb"));
+//    S.push(new StringBuilder("ccc cccc         ccccc"));
+//    squeezeVerticalSpaces(S);
+//    final String s = joinStringBuilders(S, "\n")+"\n";
+//                                            //stop(s);
+//    ok(s, """
+//a   aa    aaa
+//bb  bbb   bbbb
+//ccc cccc  ccccc
+//""");
+//   }
 
   static void test_replaceAll()
    {final StringBuilder s = new StringBuilder();
@@ -1502,7 +1524,7 @@ a   aa    AAA
     test_md5();
     test_fileNames();
     test_executed();
-    test_squeezeVerticalSpaces();
+ // test_squeezeVerticalSpaces();
     test_modZero();
     test_hextoInt();
    }
