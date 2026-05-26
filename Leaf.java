@@ -520,22 +520,22 @@ Leaf: size:   8
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf data: size:   8
- Ref  Data
-   0    22
-   1    44
-   2    33
-   3    11
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
 """);
     l.compactRight();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf data: size:   8
- Ref  Data
-   4    22
-   5    44
-   6    33
-   7    11
+Leaf: size:   8
+ Ref   Key  Data
+   4     1    11
+   7     2    22
+   5     3    33
+   6     4    44
 """);
     l.maxSteps = 99999;
     l.execute();
@@ -1157,7 +1157,8 @@ data     :   11  12  13  14  15  16  17  18
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_splitLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
