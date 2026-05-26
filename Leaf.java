@@ -811,6 +811,48 @@ Leaf: size:   8
     test_mergeLeft(false);
    }
 
+  static void test_find(boolean  Ex)
+   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+    l.insert(l.new Int(2), l.new Int(22));
+    l.insert(l.new Int(4), l.new Int(44));
+    l.insert(l.new Int(3), l.new Int(33));
+    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.new Int(6), l.new Int(66));
+    l.insert(l.new Int(7), l.new Int(77));
+    l.insert(l.new Int(5), l.new Int(55));
+    l.insert(l.new Int(8), l.new Int(88));
+   // l.new I() {void action() {testStop(l);}};
+    l.ok(()->l, """
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    l.find(l.new Int(0)).notValid().ok(true);
+    l.find(l.new Int(1)).ok(11);
+    l.find(l.new Int(2)).ok(22);
+    l.find(l.new Int(3)).ok(33);
+    l.find(l.new Int(4)).ok(44);
+    l.find(l.new Int(5)).ok(55);
+    l.find(l.new Int(6)).ok(66);
+    l.find(l.new Int(7)).ok(77);
+    l.find(l.new Int(8)).ok(88);
+    l.find(l.new Int(9)).notValid().ok(true);
+    l.maxSteps = 99999;
+    l.execute();
+   }
+
+  static void test_find()
+   {test_find(true);
+    test_find(false);
+   }
+
 /*
   static void test_ifd()
    {final Tree  t =   new
@@ -1290,6 +1332,7 @@ data     :   11  12  13  14  15  16  17  18
     test_splitLeft();
     test_mergeRight();
     test_mergeLeft();
+    test_find();
     //test_emptyTree();
     //test_compactLeafLeft();
     //test_compactLeafRight();
