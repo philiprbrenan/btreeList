@@ -112,7 +112,7 @@ class Leaf extends Program                                                      
          };
        }
      };
-    slots.compactLeft();                                                                                                // Compact the slots to match
+    slots.compactSlotsLeft();                                                                                           // Compact the slots to match
    }
 
   void compactRight()                                                                                                   // Compact a leaf to the right
@@ -129,12 +129,12 @@ class Leaf extends Program                                                      
          };
        }
      };
-    slots.compactRight();                                                                                               // Compact the slots to match
+    slots.compactSlotsRight();                                                                                          // Compact the slots to match
    }
 
   void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
    {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
-    slots.compactLeft();                                                                                                // Compact source slots so we know where they are
+    slots.compactSlotsLeft();                                                                                           // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
     new ForCount (new Int(maxLeafSize/2), new Int(maxLeafSize))                                                         // Upper key/data pairs
      {void body(Int Index)
