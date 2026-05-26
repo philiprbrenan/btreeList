@@ -55,8 +55,8 @@ class Slots extends Program                                                     
      {final int N = numberOfSlotsToKeys();
       final int R = numberOfKeys();
 
-      final BitSet.Build us = new BitSet.Build().bitSize(N).one(true).zero(true);                                       // Specification of bit set for used slots
-      final BitSet.Build ur = new BitSet.Build().bitSize(R).one(true).zero(true);                                       // Specification of bit set for references
+      final BitSet.Build us = new BitSet.Build().bitSize(N);                                                            // Specification of bit set for used slots
+      final BitSet.Build ur = new BitSet.Build().bitSize(R);                                                            // Specification of bit set for references
 
       final int posSlotsToKeys     = 0;                                                                                 // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
       final int posKeysToSlots     = posSlotsToKeys     + ib(N);                                                        // Used keys to slot referencing the key
@@ -287,8 +287,10 @@ class Slots extends Program                                                     
    }
 
   void compactSlotsRight()                                                                                              // Compact the slots to the right hand end
-   {new If (empty().Flip())                                                                                             // Compact slots
+   {final Slots slots = this;
+    new If (empty())                                                                                                    // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
+      void Else()
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bool Continue)
            {final Int s = usedSlotsToKeys.lastZero();                                                                   // Last empty slot
@@ -359,7 +361,7 @@ class Slots extends Program                                                     
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
         compactSlotsLeft();                                                                                             // Compact slots to the left so it is in a known position
-        final Int         c = usedKeys.firstZero();                                                                     // Number of slots in use
+        final Int         c = usedSlotsToKeys.firstZero();                                                              // Number of slots in use
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
@@ -392,13 +394,13 @@ class Slots extends Program                                                     
 
     new ForCount(new Int(N/2))                                                                                          // Clear lower half of target right slots
      {void body(Int Index)
-       {Right.delSlotToKeys(Index);
+       {Right.delSlotAndKey(Index);
        }
      };
 
     new ForCount(new Int(N/2), new Int(N))                                                                              // Clear upper half of left slots
      {void body(Int Index)
-       {left.delSlotToKeys(Index);
+       {left.delSlotAndKey(Index);
        }
      };
 
@@ -412,18 +414,18 @@ class Slots extends Program                                                     
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
     final Slots right = this;
-    right.compactSlotsRight();                                                                                          // Compacting the source on the right will not affect the order of the keys
+    right.compactSlotsLeft();                                                                                          // Compacting the source on the right will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate right into left
 
     new ForCount(new Int(N/2))                                                                                          // Clear lower half of target left slots
      {void body(Int Index)
-       {right.delSlotToKeys(Index);
+       {right.delSlotAndKey(Index);
        }
      };
 
     new ForCount(new Int(N/2), new Int(N))                                                                              // Clear upper half of left slots
      {void body(Int Index)
-       {Left.delSlotToKeys(Index);                                                                                      // Delete key
+       {Left.delSlotAndKey(Index);                                                                                      // Delete key
        }
      };
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
@@ -443,17 +445,17 @@ class Slots extends Program                                                     
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
     Right.copy(left);                                                                                                   // Duplicate left into right
 
-    final Int r = new Int(left.getSlotToKeyValue(M)); delSlotAndKey(M);                                                 // Remove middle value
+    final Int r = new Int(left.getSlotToKeyValue(M));                                                                   // Remove middle value
 
     new ForCount(R)                                                                                                     // Clear lower half of target right slots
      {void body(Int Index)
-       {Right.delSlotToKeys(Index);
+       {Right.delSlotAndKey(Index);
        }
      };
 
     new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
      {void body(Int Index)
-       {left.delSlotToKeys(Index);
+       {left.delSlotAndKey(Index);
        }
      };
 
@@ -473,17 +475,17 @@ class Slots extends Program                                                     
     right.compactSlotsLeft();                                                                                           // Compacting the source on the left will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate left into right
 
-    final Int r = new Int(Left.getSlotToKeyValue(M)); delSlotAndKey(M);                                                 // Remove middle value
+    final Int r = new Int(Left.getSlotToKeyValue(M)); //delSlotAndKey(M);                                                 // Remove middle value
 
     new ForCount(R)                                                                                                     // Clear lower half of target right slots
      {void body(Int Index)
-       {right.delSlotToKeys(Index);
+       {right.delSlotAndKey(Index);
        }
      };
 
     new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
      {void body(Int Index)
-       {Left.delSlotToKeys(Index);
+       {Left.delSlotAndKey(Index);
        }
      };
 
@@ -667,9 +669,9 @@ class Slots extends Program                                                     
        {f.set(new Int(0), new Bool(false), new Bool(false));                                                            // Empty
        }
       void Else()                                                                                                       // Not empty
-       {Int p = u.top();                                                                                                // Position in ones tree
-        Int l = u.low (p);                                                                                              // Index of lower bound in slots
-        Int r = u.high(p);                                                                                              // Index of upper bound in slots
+       {Int p = u.topOne();                                                                                             // Position in ones tree
+        Int l = u.lowOne (p);                                                                                           // Index of lower bound in slots
+        Int r = u.highOne(p);                                                                                           // Index of upper bound in slots
         Int L = getSlotToKeyValue(l);                                                                                   // Value of Key at lower bound of search
         Int R = getSlotToKeyValue(r);                                                                                   // Value of key at upper bound of search
 
@@ -697,8 +699,8 @@ class Slots extends Program                                                     
                           void Else()                                                                                   // Search range
                            {new If (u.canGoLeft(p))                                                                     // Go left if possible  to search first part of range if it exists
                              {void Then()
-                               {final Int lp = u.childLow       (p);                                                       // Upper end of left range
-                                final Int lr = u.high           (lp);                                                   // Index of upper end of range
+                               {final Int lp = u.childLowOne    (p);                                                       // Upper end of left range
+                                final Int lr = u.highOne        (lp);                                                   // Index of upper end of range
                                 final Int lR = getSlotToKeyValue(lr);                                                   // Value of key at upper end of range
 
                                 new If (Key.eq(lR))                                                                     // Found at upper end of range
@@ -714,8 +716,8 @@ class Slots extends Program                                                     
                                       void Else()
                                        {new If (u.canGoRight(p))                                                        // Greater than anything in the left subrange so perhaps part of right hand subrange
                                          {void Then()
-                                           {final Int rp = u.childHigh      (p);                                        // Low end of right range
-                                            final Int rl = u.low            (rp);                                       // Index of lower end of search range
+                                           {final Int rp = u.childHighOne   (p);                                        // Low end of right range
+                                            final Int rl = u.lowOne         (rp);                                       // Index of lower end of search range
                                             final Int rL = getSlotToKeyValue(rl);                                       // Key at lower end of search range
                                             new If (Key.eq(rL))                                                         // Equal to lower bound on right
                                              {void Then()
@@ -743,7 +745,7 @@ class Slots extends Program                                                     
                               void Else()
                                {new If (u.canGoRight(p))                                                                // Could not go left so must have gone right
                                  {void Then()
-                                   {p.set(u.childHigh(p));                                                              // Move to right sub range which has the same bounds as the parent range
+                                   {p.set(u.childHighOne(p));                                                           // Move to right sub range which has the same bounds as the parent range
                                     Continue.set();                                                                     // Continue the search
                                    }
                                  };
@@ -1068,7 +1070,7 @@ keys     :    0   0   0   2
     test_set_del_slot_key(false);
    }
 
-  static void test_compactLeft(boolean Ex)
+  static void test_compact(boolean Ex)
    {final Slots s = new Slots(4)
      {void slotsCode()
        {setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
@@ -1152,36 +1154,12 @@ usedKeys :    X   X   .   .
 keys     :    2   1   0   0
 """);
 
-        execute();
-       }
-     };
-   }
-
-  static void test_compactLeft()
-   {test_compactLeft(true);
-    test_compactLeft(false);
-   }
-
-  static void test_compactRight(boolean Ex)
-   {final Slots s = new Slots(4)
-     {void slotsCode()
-       {setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
-        setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
-        final Slots s = this;
-        //new I() {void action() {stop(s);}};
-        ok(()->this, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    0   0   1   0   3   0   0   0
-keysSlots:    0   2   0   4   0   0   0   0
-usedSlots:    .   .   X   .   X   .   .   .
-usedKeys :    .   X   .   X
-keys     :    0   1   0   2
-""");
-
+        final StringBuilder X = new StringBuilder();
+        compactKeysRight ((S, b, a)->{X.append(a.i()+"->"+b.i()+";");});
         compactSlotsRight();
-        //new I() {void action() {stop(s);}};
-        ok(()->this, """
+        //new I() {void action() {stop(X, s);}};
+        ok(()->X, "0->3;1->2;");
+        ok(()->s, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   2   3
@@ -1191,26 +1169,14 @@ usedKeys :    .   .   X   X
 keys     :    0   0   1   2
 """);
 
-        compactSlotsLeft();
-        //new I() {void action() {stop(s);}};
-        ok(()->this, """
-Slots    : refs:  4
-positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   0   0
-keysSlots:    1   0   0   0   0   0   0   0
-usedSlots:    X   X   .   .   .   .   .   .
-usedKeys :    X   X   .   .
-keys     :    2   1   0   0
-""");
-
         execute();
        }
      };
    }
 
-  static void test_compactRight()
-   {test_compactRight(true);
-    test_compactRight(false);
+  static void test_compact()
+   {test_compact(true);
+    test_compact(false);
    }
 
   static void test_redistribute(boolean Ex)
@@ -1347,18 +1313,18 @@ keys     :    7   1   3   2   4   5   6   0
         ok(()->l, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   3   2
-keysSlots:    1   0   7   6   0   0   0   0
-usedSlots:    X   X   .   .   .   .   X   X
+slotsKeys:    1   0   0   0   3   0   2   0
+keysSlots:    2   0   6   4   0   0   0   0
+usedSlots:    X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X
 keys     :    2   1   4   3
 """);
         ok(()->r, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    0   0   0   0   0   0   3   2
-keysSlots:    0   0   7   6   0   0   0   0
-usedSlots:    .   .   .   .   .   .   X   X
+slotsKeys:    0   3   0   0   0   2   0   0
+keysSlots:    0   0   5   1   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .
 usedKeys :    .   .   X   X
 keys     :    0   0   4   3
 """);
@@ -1391,9 +1357,9 @@ keys     :    0   0   4   3
         ok(()->l, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   0   0
-keysSlots:    1   0   0   0   0   0   0   0
-usedSlots:    X   X   .   .   .   .   .   .
+slotsKeys:    0   1   0   0   0   0   0   0
+keysSlots:    5   1   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .
 usedKeys :    X   X   .   .
 keys     :    2   1   0   0
 """);
@@ -1401,9 +1367,9 @@ keys     :    2   1   0   0
         ok(()->r, """
 Slots    : refs:  4
 positions:    0   1   2   3   4   5   6   7
-slotsKeys:    1   0   0   0   0   0   3   2
-keysSlots:    1   0   7   6   0   0   0   0
-usedSlots:    X   X   .   .   .   .   X   X
+slotsKeys:    1   0   0   0   3   0   2   0
+keysSlots:    2   0   6   4   0   0   0   0
+usedSlots:    X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X
 keys     :    2   1   4   3
 """);
@@ -1459,18 +1425,18 @@ keys     :    4   5   0   0   0
         ok(()->l, """
 Slots    : refs:  5
 positions:    0   1   2   3   4   5   6   7   8   9
-slotsKeys:    1   0   2   0   0   0   0   0   4   3
-keysSlots:    1   0   2   9   8   0   0   0   0   0
-usedSlots:    X   X   X   .   .   .   .   .   X   X
+slotsKeys:    1   0   0   0   2   0   4   0   3   0
+keysSlots:    2   0   4   8   6   0   0   0   0   0
+usedSlots:    X   .   X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X   X
 keys     :    2   1   3   5   4
 """);
         ok(()->r, """
 Slots    : refs:  5
 positions:    0   1   2   3   4   5   6   7   8   9
-slotsKeys:    0   0   0   0   0   0   0   0   4   3
-keysSlots:    0   0   0   9   8   0   0   0   0   0
-usedSlots:    .   .   .   .   .   .   .   .   X   X
+slotsKeys:    0   0   4   0   0   0   0   3   0   0
+keysSlots:    0   0   0   7   2   0   0   0   0   0
+usedSlots:    .   .   X   .   .   .   .   X   .   .
 usedKeys :    .   .   .   X   X
 keys     :    0   0   0   5   4
 """);
@@ -1526,9 +1492,9 @@ keys     :    1   2   0   0   0
         ok(()->r, """
 Slots    : refs:  5
 positions:    0   1   2   3   4   5   6   7   8   9
-slotsKeys:    0   1   2   0   0   0   0   0   4   3
-keysSlots:    0   1   2   9   8   0   0   0   0   0
-usedSlots:    X   X   X   .   .   .   .   .   X   X
+slotsKeys:    0   0   1   0   2   0   4   0   3   0
+keysSlots:    0   2   4   8   6   0   0   0   0   0
+usedSlots:    X   .   X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X   X
 keys     :    1   2   3   5   4
 """);
@@ -1757,9 +1723,9 @@ keys     :   11  12  13  15  16  17  18  14
         ok(()->s, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slotsKeys:    0   1   2   7   0   0   0   0   0   0   0   0   0   0   0   0
-keysSlots:    0   1   2   0   0   0   0   3   0   0   0   0   0   0   0   0
-usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
+slotsKeys:    0   0   0   0   0   1   0   0   0   2   0   0   0   7   0   0
+keysSlots:    1   5   9   0   0   0   0  13   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    X   X   X   .   .   .   .   X
 keys     :   11  12  13   0   0   0   0  14
 """);
@@ -1767,11 +1733,11 @@ keys     :   11  12  13   0   0   0   0  14
         ok(()->t, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slotsKeys:    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
-keysSlots:    0   0   0   0   4   5   6   7   0   0   0   0   0   0   0   0
-usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
-usedKeys :    .   .   .   .   X   X   X   X
-keys     :    0   0   0   0  15  16  17  18
+slotsKeys:    0   3   0   0   0   4   0   0   0   5   0   0   0   6   0   0
+keysSlots:    0   0   0   1   5   9  13   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
+usedKeys :    .   .   .   X   X   X   X   .
+keys     :    0   0   0  15  16  17  18   0
 """);
         maxSteps = 99999;
         execute();
@@ -1810,23 +1776,23 @@ keys     :   11  12  13  15  16  17  18  14
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r));
         l.insert(new Int(11)); l.compactSlotsRight();
         r.splitLeftEven(l);
-        //new I() {void action() {stop(t);}};
-        //new I() {void action() {stop(s);}};
+        //new I() {void action() {stop(l);}};
+        //new I() {void action() {stop(r);}};
         ok(()->l, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slotsKeys:    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
-keysSlots:    0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0
-usedSlots:    X   X   X   X   .   .   .   .   .   .   .   .   .   .   .   .
-usedKeys :    X   X   X   X   .   .   .   .
-keys     :   11  12  13  14   0   0   0   0
+slotsKeys:    0   0   0   0   0   1   0   0   0   2   0   0   0   7   0   0
+keysSlots:    1   5   9   0   0   0   0  13   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
+usedKeys :    X   X   X   .   .   .   .   X
+keys     :   11  12  13   0   0   0   0  14
 """);
         ok(()->r, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slotsKeys:    0   0   0   0   3   4   5   6   0   0   0   0   0   0   0   0
-keysSlots:    0   0   0   4   5   6   7   0   0   0   0   0   0   0   0   0
-usedSlots:    .   .   .   .   X   X   X   X   .   .   .   .   .   .   .   .
+slotsKeys:    0   3   0   0   0   4   0   0   0   5   0   0   0   6   0   0
+keysSlots:    0   0   0   1   5   9  13   0   0   0   0   0   0   0   0   0
+usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    .   .   .   X   X   X   X   .
 keys     :    0   0   0  15  16  17  18   0
 """);
@@ -1870,9 +1836,9 @@ keys     :   11  12  13  15  16  17  14
         ok(()->s, """
 Slots    : refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
-slotsKeys:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
-keysSlots:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
-usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .
+slotsKeys:    0   0   0   0   0   0   1   0   0   0   2   0   0   0
+keysSlots:    2   6  10   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
 usedKeys :    X   X   X   .   .   .   .
 keys     :   11  12  13   0   0   0   0
 """);
@@ -1880,11 +1846,11 @@ keys     :   11  12  13   0   0   0   0
         ok(()->t, """
 Slots    : refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
-slotsKeys:    0   0   0   0   4   5   6   0   0   0   0   0   0   0
-keysSlots:    0   0   0   0   4   5   6   0   0   0   0   0   0   0
-usedSlots:    .   .   .   .   X   X   X   .   .   .   .   .   .   .
-usedKeys :    .   .   .   .   X   X   X
-keys     :    0   0   0   0  15  16  17
+slotsKeys:    0   0   3   0   0   0   4   0   0   0   5   0   0   0
+keysSlots:    0   0   0   2   6  10   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
+usedKeys :    .   .   .   X   X   X   .
+keys     :    0   0   0  15  16  17   0
 """);
         maxSteps = 99999;
         execute();
@@ -1927,18 +1893,18 @@ keys     :   11  12  13  15  16  17  14
         ok(()->t, """
 Slots    : refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
-slotsKeys:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
-keysSlots:    0   1   2   0   0   0   0   0   0   0   0   0   0   0
-usedSlots:    X   X   X   .   .   .   .   .   .   .   .   .   .   .
+slotsKeys:    0   0   0   0   0   0   1   0   0   0   2   0   0   0
+keysSlots:    2   6  10   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
 usedKeys :    X   X   X   .   .   .   .
 keys     :   11  12  13   0   0   0   0
 """);
         ok(()->s, """
 Slots    : refs:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
-slotsKeys:    0   0   0   0   3   4   5   0   0   0   0   0   0   0
-keysSlots:    0   0   0   4   5   6   0   0   0   0   0   0   0   0
-usedSlots:    .   .   .   .   X   X   X   .   .   .   .   .   .   .
+slotsKeys:    0   0   3   0   0   0   4   0   0   0   5   0   0   0
+keysSlots:    0   0   0   2   6  10   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
 usedKeys :    .   .   .   X   X   X   .
 keys     :    0   0   0  15  16  17   0
 """);
@@ -2002,8 +1968,7 @@ keys     :    0   0   0   0   0   0   0
     test_locateNearestFreeSlotToKey();
     test_alloc();
     test_set_del_slot_key();
-    test_compactLeft();
-    test_compactRight();
+    test_compact();
     test_redistribute();
     test_shift();
     test_mergeFromRightEven();
@@ -2023,7 +1988,6 @@ keys     :    0   0   0   0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    test_compactLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
