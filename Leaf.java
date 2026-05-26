@@ -117,26 +117,17 @@ class Leaf extends Program                                                      
   void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
    {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
     final Leaf left = this;
-    left.compactLeft();                                                                                                      // Compact source slots so we know where they are
+    left.compactLeft();                                                                                                 // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
-    new ForCount (new Int(maxLeafSize))                                                                                 // Copy data
-     {void body(Int Index)
-       {Right.refData.putInt(Index, left.refData.getInt(Index));                                                             // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
-       }
-     };
+    new ForCount (new Int(maxLeafSize))        {void body(Int Index) {Right.data(Index, left.data(Index));}};           // Copy the data values associated with the slots
     slots.splitRightEven(Right.slots);                                                                                  // Split the slots
    }
 
   void splitLeft(Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf
    {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
     final Leaf right = this;
-    right.compactLeft();                                                                                                      // Compact source slots so we know where they are
-    Left.slots.clear();                                                                                                 // Clear the target
-    new ForCount (new Int(maxLeafSize/2))                                                                               // Lower key/data pairs
-     {void body(Int Index)
-       {Left.refData.putInt(Index, right.refData.getInt(Index));                                                              // Move data values  in order to the lower positions
-       }
-     };
+    right.compactLeft(); Left.slots.clear();                                                                            // Compact source slots so we know where they are and clear target
+    new ForCount (new Int(maxLeafSize / 2))    {void body(Int Index) {Left.data(Index, right.data(Index));}};           // Copy the data values associated with the slots
     slots.splitLeftEven(Left.slots);                                                                                    // Split the slots
    }
 
@@ -150,11 +141,7 @@ class Leaf extends Program                                                      
     new If(lc.Add(rc).le(maxLeafSize))
      {void Then()
        {r.set();
-        new ForCount(rc, new Int(maxLeafSize))                                                                          // Copy data
-         {void body(Int Index)
-           {left.refData.putInt(Index, Right.refData.getInt(Index));                                                    // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
-           }
-         };
+        new ForCount(rc, new Int(maxLeafSize)) {void body(Int Index) {left.data(Index, Right.data(Index));}};           // Copy the data values associated with the slots
         left.slots.mergeFromRightEven(Right.slots);                                                                     // Split the slots
        }
      };
@@ -170,11 +157,7 @@ class Leaf extends Program                                                      
     new If(lc.Add(rc).le(maxLeafSize))
      {void Then()
        {r.set();
-        new ForCount(lc)                                                                                                // Copy data
-         {void body(Int Index)
-           {right.refData.putInt(Index, Left.refData.getInt(Index));                                                    // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
-           }
-         };
+        new ForCount(lc)                       {void body(Int Index) {right.data(Index, Left.data(Index));}};           // Copy the data values associated with the slots
         right.slots.mergeFromLeftEven(Left.slots);                                                                      // Split the slots
        }
      };
