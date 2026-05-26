@@ -766,7 +766,7 @@ Leaf: size:   8
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
     r.insert(r.new Int(8), r.new Int(88));
-    r.new I() {void action() {testStop(r);}};
+   // r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
 Leaf: size:   8
  Ref   Key  Data
@@ -799,11 +799,15 @@ Leaf: size:   8
    5     7    77
    7     8    88
 """);
-    r.mergeLeft(r);
-    r.new I() {void action() {testStop(r);}};
+    r.mergeLeft(l);
+    //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
 Leaf: size:   8
  Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
    6     5    55
    4     6    66
    5     7    77
@@ -1326,8 +1330,8 @@ data     :   11  12  13  14  15  16  17  18
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_mergeRight();
-    //test_mergeLeft();
+    //test_mergeRight();
+    test_mergeLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
