@@ -518,7 +518,7 @@ Leaf: size:   8
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
-    l.new I() {void action() {testStop(l);}};
+    //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Leaf data: size:   8
  Ref  Data
@@ -528,7 +528,7 @@ Leaf data: size:   8
    3    11
 """);
     l.compactRight();
-    l.new I() {void action() {testStop(l);}};
+    //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Leaf data: size:   8
  Ref  Data
