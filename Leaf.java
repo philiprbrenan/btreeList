@@ -112,11 +112,12 @@ class Leaf extends Program                                                      
 
   void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
    {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
-    compactLeft();                                                                                                      // Compact source slots so we know where they are
+    final Leaf left = this;
+    left.compactLeft();                                                                                                      // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
     new ForCount (new Int(maxLeafSize))                                                                                 // Copy data
      {void body(Int Index)
-       {Right.refData.putInt(Index, refData.getInt(Index));                                                             // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+       {Right.refData.putInt(Index, left.refData.getInt(Index));                                                             // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
        }
      };
     slots.splitRightEven(Right.slots);                                                                                  // Split the slots
@@ -124,11 +125,12 @@ class Leaf extends Program                                                      
 
   void splitLeft(Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf
    {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
-    compactLeft();                                                                                                      // Compact source slots so we know where they are
+    final Leaf right = this;
+    right.compactLeft();                                                                                                      // Compact source slots so we know where they are
     Left.slots.clear();                                                                                                 // Clear the target
     new ForCount (new Int(maxLeafSize/2))                                                                               // Lower key/data pairs
      {void body(Int Index)
-       {Left.refData.putInt(Index, refData.getInt(Index));                                                              // Move data values  in order to the lower positions
+       {Left.refData.putInt(Index, right.refData.getInt(Index));                                                              // Move data values  in order to the lower positions
        }
      };
     slots.splitLeftEven(Left.slots);                                                                                    // Split the slots
