@@ -845,8 +845,19 @@ Leaf: size:   8
     l.find(l.new Int(8)).ok(88);
     l.find(l.new Int(9)).notValid().ok(true);
 
-    l.delete(l.new Int(2)).ok(22);
-    l.find  (l.new Int(2)).notValid().ok(true);
+    l.delete(l.new Int(2)).ok(22); l.find(l.new Int(2)).notValid().ok(true); l.count().ok(7);
+    l.delete(l.new Int(1)).ok(11); l.find(l.new Int(1)).notValid().ok(true); l.count().ok(6);
+    l.delete(l.new Int(4)).ok(44); l.find(l.new Int(4)).notValid().ok(true); l.count().ok(5);
+    l.delete(l.new Int(3)).ok(33); l.find(l.new Int(3)).notValid().ok(true); l.count().ok(4);
+    l.delete(l.new Int(8)).ok(88); l.find(l.new Int(8)).notValid().ok(true); l.count().ok(3);
+    l.delete(l.new Int(6)).ok(66); l.find(l.new Int(6)).notValid().ok(true); l.count().ok(2);
+    l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
+    l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
+   // l.new I() {void action() {testStop(l);}};
+    l.ok(()->l, """
+Leaf: size:   8
+ Ref   Key  Data
+""");
 
     l.maxSteps = 99999;
     l.execute();
