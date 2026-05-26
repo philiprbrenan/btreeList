@@ -1011,7 +1011,7 @@ public class Test                                                               
     if (t != null) System.err.println(t);
    }
 
-  static void stop(Object...O)                                                                                          // Say something, provide an error trace and stop
+  static void testStop(Object...O)                                                                                          // Say something, provide an error trace and stop
    {final boolean sos = sayThisOrStop.size() > 0;                                                                       // Say or stop checking in effect
     say(O);
     if (sos)
@@ -1471,7 +1471,7 @@ BBBB
 //    S.push(new StringBuilder("ccc cccc         ccccc"));
 //    squeezeVerticalSpaces(S);
 //    final String s = joinStringBuilders(S, "\n")+"\n";
-//                                            //stop(s);
+//                                            //testStop(s);
 //    ok(s, """
 //a   aa    aaa
 //bb  bbb   bbbb
