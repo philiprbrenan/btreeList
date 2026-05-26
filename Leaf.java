@@ -100,6 +100,10 @@ class Leaf extends Program                                                      
   Bool full () {return slots.full ();}                                                                                  // Is the leaf full
   Int  count() {return slots.count();}                                                                                  // Number of key/data pairs in the leaf
 
+  Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
+  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+
+
   void compactLeft()                                                                                                    // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                          // Compact the slots to match
@@ -749,8 +753,8 @@ Leaf: size:   8
    5     7    77
    7     8    88
 """);
-    r.maxSteps = 99999;
-    r.execute();
+    l.maxSteps = 99999;
+    l.execute();
    }
 
   static void test_mergeRight()
