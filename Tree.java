@@ -2611,7 +2611,7 @@ class Tree extends Program                                                      
     s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
     s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
     s.clearFirstSlot(); s.redistribute(); t.put(()->s.printSlots());
-    //stop(t.output());
+    //testStop(t.output());
     //0123456789012345
     ok(t.output(), """
 XXXXXXXXXXXXXXXX
@@ -2935,7 +2935,7 @@ data     :   21  22  23  24   0   0   0   0
     l.insert(t.new Key(14), t.new Data(24));
     l.insert(t.new Key(11), t.new Data(21));
 
-                                          //stop(l);
+                                          //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -2947,7 +2947,7 @@ keys     :   13  12  14  11   0   0   0   0
 data     :   23  22  24  21   0   0   0   0
 """);
     l.compactRight();
-                                          //stop(l);
+                                          //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -2967,7 +2967,7 @@ data     :    0   0   0   0  21  22  23  24
     b.insert(t.new Key(11), t.fake(t.new Allocation(21)));
     b.insert(t.new Key(13), t.fake(t.new Allocation(23)));
     b.top(t.fake(t.new Allocation(4)));
-  //stop(b);
+  //testStop(b);
     ok(b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -2981,7 +2981,7 @@ top      :   -4
 """);
 
     b.compactLeft();
-  //stop(b);
+  //testStop(b);
     ok(b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -3002,7 +3002,7 @@ top      :   -4
     b.insert(t.new Key(11), t.fake(t.new Allocation(11)));
     b.insert(t.new Key(13), t.fake(t.new Allocation(13)));
     b.top(t.fake(t.new Allocation(4)));
-  //stop(b);
+  //testStop(b);
     ok(b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -3016,7 +3016,7 @@ top      :   -4
 """);
 
     b.compactRight();
-  //stop(b);
+  //testStop(b);
     ok(b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -3047,7 +3047,7 @@ top      :   -4
   static void test_duplicate_leaf()
    {final Leaf l = test_leaf();
     final Leaf L = l.duplicate();
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -3058,7 +3058,7 @@ usedRefs :    X   X   X   X   X   X   X   X
 keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
-  //stop(L);
+  //testStop(L);
     ok(L, """
 Leaf     : 2 up: null index: null
 Slots    : name:  2, type:  0, refs:  8
@@ -3073,7 +3073,7 @@ data     :   13  16  15  18  17  14  12  11
 
   static void test_splitLeftLeafIntoRight()
    {final Leaf l = test_leaf();
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -3085,7 +3085,7 @@ keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
     final Leaf r = l.splitRight();
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -3096,7 +3096,7 @@ usedRefs :    X   .   .   .   .   X   X   X
 keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
-  //stop(r);
+  //testStop(r);
     ok(r, """
 Leaf     : 2 up: null index: null
 Slots    : name:  2, type:  0, refs:  8
@@ -3145,7 +3145,7 @@ data: 15, 16, 17, 18
   static void test_duplicate_branch()
    {final Branch b = test_branch();
     final Branch B = b.duplicate();
-  //stop(b);
+  //testStop(b);
     ok(b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -3157,7 +3157,7 @@ keys     :   13  16  15  17  14  12  11
 data     :   -3  -6  -5  -7  -4  -2  -1
 top      :   -8
 """);
-  //stop(b);
+  //testStop(b);
     ok(B, """
 Branch   :    2   up:    0  index:    0
 Slots    : name:  2, type:  1, refs:  7
@@ -3179,7 +3179,7 @@ keys: 11, 12, 13
 data: -1, -2, -3
 top : 4
 """);
-  //stop(s.right);
+  //testStop(s.right);
     ok(s.right.printInOrder(), """
 keys: 15, 16, 17
 data: -5, -6, -7
@@ -3191,13 +3191,13 @@ top : 8
   static void test_splitRightBranchIntoLeft()
    {final Branch       r = test_branch();
     final Branch.Split s = r.splitLeft();
-  //stop(s.left);
+  //testStop(s.left);
     ok(s.left.printInOrder(), """
 keys: 11, 12, 13
 data: -1, -2, -3
 top : 4
 """);
-  //stop(s.right);
+  //testStop(s.right);
     ok(s.right.printInOrder(), """
 keys: 15, 16, 17
 data: -5, -6, -7
@@ -3226,7 +3226,7 @@ top : 8
    {final Leaf l = test_leaf1();
     final Leaf r = test_leaf2();
     l.mergeFromRight(r);
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -3243,7 +3243,7 @@ data     :   11  12  13  14  15  16  17  18
    {final Leaf l = test_leaf1();
     final Leaf r = test_leaf2();
     r.mergeFromLeft(l);
-  //stop(r));
+  //testStop(r));
     ok(r, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -3288,7 +3288,7 @@ data     :   11  12  13  14  15  16  17  18
    {final TreeBranch l = test_branch1();
     final TreeBranch r = test_branch2();
     l.b.mergeFromRight(l.t.new Key(14), r.b);
-  //stop(l);
+  //testStop(l);
     ok(l.b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -3306,7 +3306,7 @@ top      :   -8
    {final TreeBranch l = test_branch1();
     final TreeBranch r = test_branch2();
     r.b.mergeFromLeft(r.t.new Key(14), l.b);
-  //stop(r);
+  //testStop(r);
     ok(r.b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -3327,7 +3327,7 @@ top      :   -8
     b.insert(t.new Key(5));
     b.insert(t.new Key(3));
     b.redistribute();
-  //stop(b);
+  //testStop(b);
     ok(b, """
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slots    :    0   0   0   0   0   0   0   2   0   0   0   0   1   0   0   0
@@ -3387,7 +3387,7 @@ top : 8
       t.freeCheck();
       s.append("Insert: "+i+"\n"+t);
      }
-  //stop(s);
+  //testStop(s);
     ok(""+s, """
 Insert: 1
 1|
@@ -3854,7 +3854,7 @@ Path        : 2, 9
       t.freeCheck();
       ok(t.count(), i+1);
      }
-  //stop(t);
+  //testStop(t);
     ok(""+t, """
                                                                                             2152                                                                                                                              4957                                                                                      6829                                                                                                                                                           |
                         706                                                                                                                             3441                                    4249                                                        5518                                                                                                               7866                                                             9250                                   |
@@ -4268,7 +4268,7 @@ Delete 22
     for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
     for (int i = 1; i <= N; ++i) {t.delete(t.new Key(i));                t.freeCheck();}
     for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
-  //stop(t.dump());
+  //testStop(t.dump());
     ok(t.dump(), """
                                                                                8                                                                                          16                                                                                     24                                                                            |
                                                                               [5.0]                                                                                      [5.2]                                                                                  [5.4]                                                                          |
