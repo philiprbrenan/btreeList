@@ -134,6 +134,46 @@ class Leaf extends Program                                                      
     slots.splitLeftEven(Left.slots);                                                                                    // Split the slots
    }
 
+  void mergeRight(Leaf Right)                                                                                           // Merge the leaf into the right of this leaf
+   {final Leaf left = this;
+    final Int  lc   = left .count();
+    final Int  rc   = Right.count();
+    left.compactLeft(); Right.compactRight();                                                                           // Compact source slots so we know where they are
+    final Bool r = new Bool().clear();
+
+    new If(lc.Add(rc).le(maxLeafSize))
+     {void Then()
+       {r.set();
+        new ForCount(rc, new Int(maxLeafSize))                                                                          // Copy data
+         {void body(Int Index)
+           {left.refData.putInt(Index, Right.refData.getInt(Index));                                                    // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+           }
+         };
+        left.slots.mergeFromRightEven(Right.slots);                                                                     // Split the slots
+       }
+     };
+   }
+
+  void mergeLeft(Leaf Left)                                                                                             // Merge the leaf into the right of this leaf
+   {final Leaf right = this;
+    final Int  lc   = Left .count();
+    final Int  rc   = right.count();
+    Left.compactLeft(); right.compactRight();                                                                           // Compact source slots so we know where they are
+    final Bool r = new Bool().clear();
+
+    new If(lc.Add(rc).le(maxLeafSize))
+     {void Then()
+       {r.set();
+        new ForCount(lc)                                                                                                // Copy data
+         {void body(Int Index)
+           {right.refData.putInt(Index, Left.refData.getInt(Index));                                                    // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+           }
+         };
+        right.slots.mergeFromLeftEven(Left.slots);                                                                      // Split the slots
+       }
+     };
+   }
+
 /*
   Data data(Slot I) {return new Data(memory.data(slots(I).value()));}                                                 // Get value of data field at index
   void data(Slot I, Data Value)                                                                                       // Set value of data field at index
@@ -204,7 +244,7 @@ class Leaf extends Program                                                      
    }
 
   Int splittingKey()                                                                                                  // Splitting key from a leaf
-   {if (full().Flip().b()) stop("Leaf not full");                                                                     // The leaf must be full if we are going to split it
+   {if (full().Flip().b()) testStop("Leaf not full");                                                                     // The leaf must be full if we are going to split it
     final Int k = new Int(0);                                                                                         // Splitting key
     final Int p = new Int(0);                                                                                         // Position in leaf
     new For(numberOfSlots())                                                                                          // Scan for splitting keys
@@ -449,7 +489,7 @@ class Leaf extends Program                                                      
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
-    //new I() {void action() {stop("AAAA", l);}};
+    //new I() {void action() {testStop("AAAA", l);}};
     l.ok(()->l, """
 Leaf: size:   8
  Ref   Key  Data
@@ -556,7 +596,7 @@ Leaf: size:   8
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
-    //l.new I() {void action() {stop(l);}};
+    //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Leaf: size:   8
  Ref   Key  Data
@@ -571,7 +611,7 @@ Leaf: size:   8
 """);
     final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(l));
     l.splitRight(r);
-    //l.new I() {void action() {stop(l);}};
+    //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Leaf: size:   8
  Ref   Key  Data
@@ -580,7 +620,7 @@ Leaf: size:   8
    2     3    33
    1     4    44
 """);
-    //l.new I() {void action() {stop(r);}};
+    //l.new I() {void action() {testStop(r);}};
     l.ok(()->r, """
 Leaf: size:   8
  Ref   Key  Data
@@ -608,7 +648,7 @@ Leaf: size:   8
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
     r.insert(r.new Int(8), r.new Int(88));
-    //r.new I() {void action() {stop(r);}};
+    //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
 Leaf: size:   8
  Ref   Key  Data
@@ -623,7 +663,7 @@ Leaf: size:   8
 """);
     final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(r));
     r.splitLeft(l);
-    //r.new I() {void action() {stop(l);}};
+    //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Leaf: size:   8
  Ref   Key  Data
@@ -632,7 +672,7 @@ Leaf: size:   8
    2     3    33
    1     4    44
 """);
-    //r.new I() {void action() {stop(r);}};
+    //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
 Leaf: size:   8
  Ref   Key  Data
@@ -648,6 +688,134 @@ Leaf: size:   8
   static void test_splitLeft()
    {test_splitLeft(true);
     test_splitLeft(false);
+   }
+
+  static void test_mergeRight(boolean Ex)
+   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+    l.insert(l.new Int(2), l.new Int(22));
+    l.insert(l.new Int(4), l.new Int(44));
+    l.insert(l.new Int(3), l.new Int(33));
+    l.insert(l.new Int(1), l.new Int(11));
+    l.insert(l.new Int(6), l.new Int(66));
+    l.insert(l.new Int(7), l.new Int(77));
+    l.insert(l.new Int(5), l.new Int(55));
+    l.insert(l.new Int(8), l.new Int(88));
+    //l.new I() {void action() {testStop(l);}};
+    l.ok(()->l, """
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(l));
+    l.splitRight(r);
+    //l.new I() {void action() {testStop(l);}};
+    l.ok(()->l, """
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+""");
+    //r.new I() {void action() {testStop(r);}};
+    r.ok(()->r, """
+Leaf: size:   8
+ Ref   Key  Data
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    l.mergeRight(r);
+    //l.new I() {void action() {testStop(l);}};
+    l.ok(()->l, """
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    r.maxSteps = 99999;
+    r.execute();
+   }
+
+  static void test_mergeRight()
+   {test_mergeRight(true);
+    test_mergeRight(false);
+   }
+
+  static void test_mergeLeft(boolean  Ex)
+   {final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+    r.insert(r.new Int(2), r.new Int(22));
+    r.insert(r.new Int(4), r.new Int(44));
+    r.insert(r.new Int(3), r.new Int(33));
+    r.insert(r.new Int(1), r.new Int(11));
+    r.insert(r.new Int(6), r.new Int(66));
+    r.insert(r.new Int(7), r.new Int(77));
+    r.insert(r.new Int(5), r.new Int(55));
+    r.insert(r.new Int(8), r.new Int(88));
+    r.new I() {void action() {testStop(r);}};
+    r.ok(()->r, """
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(r));
+    r.splitLeft(l);
+    //r.new I() {void action() {testStop(l);}};
+    l.ok(()->l, """
+Leaf: size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+""");
+    //r.new I() {void action() {testStop(r);}};
+    r.ok(()->r, """
+Leaf: size:   8
+ Ref   Key  Data
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    r.mergeLeft(r);
+    r.new I() {void action() {testStop(r);}};
+    r.ok(()->r, """
+Leaf: size:   8
+ Ref   Key  Data
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+    r.maxSteps = 99999;
+    r.execute();
+   }
+
+  static void test_mergeLeft()
+   {test_mergeLeft(true);
+    test_mergeLeft(false);
    }
 
 /*
@@ -909,7 +1077,7 @@ data     :   21  22  23  24   0   0   0   0
     l.insert(t.new Key(14), t.new Data(24));
     l.insert(t.new Key(11), t.new Data(21));
 
-                                          //stop(l);
+                                          //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -921,7 +1089,7 @@ keys     :   13  12  14  11   0   0   0   0
 data     :   23  22  24  21   0   0   0   0
 """);
     l.compactRight();
-                                          //stop(l);
+                                          //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -941,7 +1109,7 @@ data     :    0   0   0   0  21  22  23  24
     b.insert(t.new Key(11), t.fake(t.new Allocation(21)));
     b.insert(t.new Key(13), t.fake(t.new Allocation(23)));
     b.top(t.fake(t.new Allocation(4)));
-  //stop(b);
+  //testStop(b);
     ok(b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -955,7 +1123,7 @@ top      :   -4
 """);
 
     b.compactLeft();
-  //stop(b);
+  //testStop(b);
     ok(b, """
 Branch   :    1   up:    0  index:    0
 Slots    : name:  1, type:  1, refs:  7
@@ -986,7 +1154,7 @@ top      :   -4
   static void test_duplicate_leaf()
    {final Leaf l = test_leaf();
     final Leaf L = l.duplicate();
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -997,7 +1165,7 @@ usedRefs :    X   X   X   X   X   X   X   X
 keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
-  //stop(L);
+  //testStop(L);
     ok(L, """
 Leaf     : 2 up: null index: null
 Slots    : name:  2, type:  0, refs:  8
@@ -1012,7 +1180,7 @@ data     :   13  16  15  18  17  14  12  11
 
   static void test_splitLeftLeafIntoRight()
    {final Leaf l = test_leaf();
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -1024,7 +1192,7 @@ keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
     final Leaf r = l.splitRight();
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -1035,7 +1203,7 @@ usedRefs :    X   .   .   .   .   X   X   X
 keys     :   13  16  15  18  17  14  12  11
 data     :   13  16  15  18  17  14  12  11
 """);
-  //stop(r);
+  //testStop(r);
     ok(r, """
 Leaf     : 2 up: null index: null
 Slots    : name:  2, type:  0, refs:  8
@@ -1090,7 +1258,7 @@ data: 15, 16, 17, 18
    {final Leaf l = test_leaf1();
     final Leaf r = test_leaf2();
     l.mergeFromRight(r);
-  //stop(l);
+  //testStop(l);
     ok(l, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -1107,7 +1275,7 @@ data     :   11  12  13  14  15  16  17  18
    {final Leaf l = test_leaf1();
     final Leaf r = test_leaf2();
     r.mergeFromLeft(l);
-  //stop(r));
+  //testStop(r));
     ok(r, """
 Leaf     : 1 up: null index: null
 Slots    : name:  1, type:  0, refs:  8
@@ -1158,7 +1326,8 @@ data     :   11  12  13  14  15  16  17  18
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitRight();
+    test_mergeRight();
+    //test_mergeLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
