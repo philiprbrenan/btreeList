@@ -860,7 +860,7 @@ Zero:
    4   45    1 |  1
 """);
     for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 0));
-    //stop(b);
+    //testStop(b);
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  1  1  1  1  0  0  0  0  1  1  1  1  0  0  0  0
@@ -913,7 +913,7 @@ Zero:
     final BitSet b = test_bits(Ex, N);
     for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 1));
 
-   //stop(b);
+   //testStop(b);
 
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
@@ -975,7 +975,7 @@ Zero:
       b.new I() {void action() {s.append("Clear: "+i+"\n"+b);}};
      }
     b.execute();
-    //stop(s);
+    //testStop(s);
     ok(""+s, """
 Start:
 BitSet            0  1  2  3  4  5  6  7
@@ -1381,7 +1381,7 @@ Zero:
     b.parentOne(b.new Int( 1)).ok(16);
     b.parentOne(b.new Int( 0)).ok(16);
 
-    //stop("AAAA", b);
+    //testStop("AAAA", b);
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  0  0  0  0  0  1  1  1  0  0  0  1  0  0  0  0
