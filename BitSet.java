@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Fixed size bit set which can locate set or cleared bits in log N time.
+// Locate set or cleared bits in a  fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -10,7 +10,6 @@ public class BitSet extends Program                                             
  {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
   final int byteSize;                                                                                                   // Number of bytes in the bit set.
   final boolean oneTreeBit;                                                                                             // At most only one tree bit present
-  final boolean zero, one;                                                                                              // Able to locate zeros and ones via a tree of bits if set
   final boolean powerOfTwo;                                                                                             // Able to optimize some operations because the requested bitset has a number of elements that is a power of two
   final Build              build;                                                                                       // Memory to use
   final ByteMemory.Ref memoryRef;                                                                                       // Build used to create biotset
@@ -21,23 +20,16 @@ public class BitSet extends Program                                             
 
   static class Build                                                                                                    // Specification of a bitset
    {int              bitSize = 1;                                                                                       // Number of bits in the bit set.
-    boolean             zero = false;                                                                                   // Able to locate zeros via a tree of bits if set
-    boolean              one = false;                                                                                   // Able to locate ones via a tree of bits if set
     boolean        immediate = true;                                                                                    // Immediate mode execution by default
     Program           parent = null;                                                                                    // Parent program whose code is to be written into.
     ByteMemory.Ref memoryRef = null;                                                                                    // Program memory to be used
 
     Build bitSize  (int     BitSize  ) {bitSize   = BitSize  ;    return this;}
-    Build zero     (boolean Zero     ) {zero      = Zero     ;    return this;}
-    Build one      (boolean One      ) {one       = One      ;    return this;}
     Build immediate(boolean Immediate) {immediate = Immediate;    return this;}
     Build memory   (Program.ByteMemory.Ref Ref) {memoryRef = Ref; return this;}
     Build parent   (Program Parent)    {parent    = Parent   ;    return this;}
 
-    int byteSize()                                                                                                      // Bytes needed for the bitset and its bit trees
-     {final int s = zero && one ? 3 : zero || one ? 2 : 1;                                                              // The number of blocks of bits required.  Need the base layer plus blocks for trees of bits to locate ones and/or zeroes
-      return (Byte.SIZE - 1 + s * nextPowerOfTwo(bitSize)) / Byte.SIZE;
-     }
+    int byteSize() {return (Byte.SIZE - 1 + 3 * nextPowerOfTwo(bitSize)) / Byte.SIZE;}                                  // Bytes needed for the bitset and its bit trees
 
     Program.Build build()                                                                                               // Description of containing program
      {final Program.Build p = new Program.Build();
@@ -48,6 +40,7 @@ public class BitSet extends Program                                             
      }
    }
 
+  @SuppressWarnings("this-escape")
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.build());
     build       = Build;
@@ -57,8 +50,6 @@ public class BitSet extends Program                                             
     powerOfTwo  = bitSize == Build.bitSize;
     logBitSize  = logTwo(bitSize);
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
-    zero        = Build.zero;                                                                                           // Locate zeroes efficiently
-    one         = Build.one;                                                                                            // Locate ones efficiently
     byteSize    = Build.byteSize();                                                                                     // Bytes needed for the bitset and its bit trees
     oneTreeBit  = bitSize <= 2;                                                                                         // At most only one tree bit present
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
@@ -69,23 +60,16 @@ public class BitSet extends Program                                             
        }
      };
 
-    new If (zero)                                                                                                       // Set all the bits to one in the paths in the zero tree if present to show that all the actual bits are zero
-     {void Then()
-       {final Int p = addressZeroTree();                                                                                // Position in level, level, width
-        new ForCount(bitSize)                                                                                           // For loop to set bits along path in One tree to actual bit
-         {void body(Int I)
-           {setBitNC(p.Add(I), new Bool(true));
-           }
-         };
+    final Int p = addressZeroTree();                                                                                    // Position in level, level, width
+    new ForCount(bitSize)                                                                                               // For loop to set bits along path in One tree to actual bit
+     {void body(Int I)
+       {setBitNC(p.Add(I), new Bool(true));
        }
      };
    }
 
-  public BitSet(int BitSize)              {this(new Build().bitSize(BitSize));}                                         // Constructor to create a bitset without the ability locate zeroes or ones
-  public BitSet(int BitSize, boolean One) {this(new Build().bitSize(BitSize).one(One));}                                // Constructor to create a bit set with optionally the ability to locate ones
-
-  public static int bytesNeeded(int Size)              {return new Build().bitSize(Size)         .byteSize();}          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
-  public static int bytesNeeded(int Size, boolean One) {return new Build().bitSize(Size).one(One).byteSize();}          // Number of bytes needed for a bit set of specified size with the ability to locate ones if specified.
+  BitSet(int BitSize)              {this(  new Build().bitSize(BitSize));}                                              // Constructor to create a bitset without the ability locate zeroes or ones
+  static int bytesNeeded(int Size) {return new Build().bitSize(Size).byteSize();}                                       // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
 
   public  int size() {return build.bitSize;}                                                                            // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
 
@@ -102,55 +86,81 @@ public class BitSet extends Program                                             
      };
    }
 
-  private void checkOne () {if (!one)stop("This bitset does have the ability to search for ones");}                     // Check that we can search for ones in this bit set
-  private void checkZero() {if (!one)stop("This bitset does have the ability to search for zeroes");}                   // Check that we can search for zeroes in this bit set
+//D1 Powers and Positions                                                                                               // Operations in numbers related to powers of two
 
-//D2 Powers and Positions                                                                                               // Operations in numbers related to powers of two
+  Int topZero()      {return new Int(2 * bitSize - 2 + bitSize1);}                                                      // Top of the zeros tree if it exists - zero based
+  Int topOne ()      {return new Int(2 * bitSize - 2);}                                                                 // Top of the ones  tree if it exists - zero based
 
+  int posOne (int P) {return 1 * bitSize + P;}                                                                          // Position in the ones  tree if it exists, argument is zero based as is the result
+  int posZero(int P) {return 2 * bitSize + P - 1;}                                                                      // Position in the zeros tree if it exists, argument is zero based as is the result
 
-/*
-  0    1    2    3    4    5    6    7   8   9  10  11  12  13  14  15
- 16        17        18        19       20      21      22      23
- 24                  25                 26              27
- 28                                     29
- 30
-*/
-
-  Int top    ()      {if (!one ) stop("No ones tree");   return new Int(2 * bitSize - 2);}                              // Top of the ones  tree if it exists - zero based
-  Int topZero()      {if (!zero) stop("No zeroes tree"); return new Int(2 * bitSize - 2 + (one ? bitSize : 0));}        // Top of the zeros tree if it exists - zero based
-  Int topOne ()      {return top();}                                                                                    // Top of the ones  tree if it exists - zero based
-
-  Int posOne (int P) {if (!one ) stop("No ones tree");   return new Int(1 * bitSize + P);}                              // Position in the ones  tree if it exists, argument is zero based as is the result
-  Int posZero(int P) {if (!zero) stop("No zeroes tree"); return new Int(1 * bitSize + P + (one ? bitSize : 0));}        // Position in the zeros tree if it exists, argument is zero based as is the result
+  Int posOne (Int P) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posOne (P.i()));}}; return r;} // Position in the ones  tree if it exists, argument is zero based as is the result
+  Int posZero(Int P) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posZero(P.i()));}}; return r;} // Position in the zeros tree if it exists, argument is zero based as is the result
 
   void checkLow(Int Pos, int Low)                                                                                       // Check that we can step down
    {if (immediate())
-     {checkOne();
-      final int p = top().i(), P = Pos.i();                                                                             // Number of elements in the tree
+     {final int p = topOne().i(), P = Pos.i();                                                                          // Number of elements in the tree
       if (P < Low) stop("Position is below tree:", P);
       if (P > p  ) stop("Position is above tree:", P, p);
      }
    }
 
-  Int childHigh(Int Pos) {return childLow(Pos).Inc();}                                                                  // Step to the corresponding child high bit index from this parent bit index
-  Int childLow (Int Pos) {checkLow(Pos, bitSize); return Pos.Dec().mul(2).sub(top());}                                  // Step to the corresponding child low  bit index from this parent bit index
-  Int parent      (Int Pos) {checkLow(Pos, 0);       return Pos.Add(top()).add(2).div(2);}                              // Step to the corresponding parent bit index for this child bit index
+  Int zeroToOne(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
+  Int oneToZero(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
 
-  Int low(Int Pos)                                                                                                      // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
-   {checkLow(Pos, bitSize);                                                                                             // Check we are in the ones tree proper
-    if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
+  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}
+  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}
+  Int parentZero   (Int Pos) {return oneToZero(parentOne   (zeroToOne(Pos)));}                                          // Step to the corresponding parent bit index for this child bit index
 
+  Int childHighOne (Int Pos) {return childLowOne(Pos).Inc();}                                                           // Step to the corresponding child high bit index from this parent bit index
+  Int childLowOne  (Int Pos) {return Pos.Dec().mul(2).sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
+  Int parentOne    (Int Pos) {return Pos.Add(topOne()).add(2).div(2);}                                                  // Step to the corresponding parent bit index for this child bit index
+
+  int zeroPos  (int Pos)                                                                                                // Position in the indicated row of the zero tree
+   {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
+    return onePos(Pos - zeroBase(true) + bitSize);
+   }
+
+  int zeroWidth(int Pos)                                                                                                // Width of the specified position in the indicated row of the zero tree
+   {if (Pos < bitSize) return bitSize;
+    return oneWidth(Pos - zeroBase(true) + bitSize);
+   }
+
+  int onePos  (int Pos)                                                                                                 // Position in the indicated row of the one tree
+   {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
+    int p = Pos - oneBase(true);
+    int b = bitSize2;
+    for (int i = 0; i < bitSize; i++) if (p >= b) {p -= b; b >>>= 1;} else break;
+    return p;
+   }
+
+  int oneWidth(int Pos)                                                                                                 // Width of the specified position in the indicated row of the one tree
+   {if (Pos < bitSize) return bitSize;
+    int p = Pos - oneBase(true);
+    int b = bitSize2;
+    for (int i = 0; i < bitSize; i++) if (p >= b) {p -= b; b >>>= 1;} else break;
+    return b;
+   }
+
+  int zeroBase (boolean X)  {return posZero(0);}                                                                        // Position in the current row
+  int oneBase  (boolean X)  {return posOne (0);}                                                                        // Position in the current row
+
+  Int zeroBase ()        {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posZero  (0)      );}}; return r;} // Position in the current row
+  Int oneBase  ()        {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posOne   (0)      );}}; return r;} // Position in the current row
+  Int zeroPos  (Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, zeroPos  (Pos.i()));}}; return r;} // Position in the current row
+  Int zeroWidth(Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, zeroWidth(Pos.i()));}}; return r;} // Width of the current row
+  Int onePos   (Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, onePos   (Pos.i()));}}; return r;} // Position in the current row
+  Int oneWidth (Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, oneWidth (Pos.i()));}}; return r;} // Width of the current row
+
+  Int lowOne(Int Pos)                                                                                                   // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
+   {if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
-    new For(new Int(logBitSize))                                                                                        // Step down
+    new For (new Int(logBitSize))                                                                                       // Step down
      {void body(Int Index, Bool Continue)
-       {final Int a = childLow(p);                                                                                      // Lower level bit
-        new If (getBitNC(a))
-         {void Then()
-           {p.set(a);
-           }
-          void Else()
-           {p.set(childHigh(p));                                                                                        // Must be a one because we started from a one and the left hand size was zero
-           }
+       {final Int a = childLowOne(p);                                                                                   // Lower level bit
+        new If (getBitNC(a))                                                                                            // Take lower bit if possible else upper one
+         {void Then() {p.set(a);}
+          void Else() {p.set(a.inc());}
          };
         new If (p.ge(bitSize)) {void Then() {Continue.set();}};                                                         // Continue while we are in the ones tree
        }
@@ -158,37 +168,76 @@ public class BitSet extends Program                                             
     return p;
    }
 
-  Int high(Int Pos)                                                                                                     // Find the highest bit position with a one in it below the indicated subtree in the ones tree
-   {checkLow(Pos, bitSize);
-    if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
+  Int highOne(Int Pos)                                                                                                  // Find the highest bit position with a one in it below the indicated subtree in the ones tree
+   {if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
     Int p = new Int(Pos);                                                                                               // Position in ones tree
     new For(new Int(logBitSize))                                                                                        // Step down
      {void body(Int Index, Bool Continue)
-       {final Int b = childHigh(p);                                                                                     // Lower level bit
-        new If (getBitNC(b))
-         {void Then()
-           {p.set(b);
-           }
-          void Else()
-           {p.set(childLow(p));                                                                                         // Must be a one because w started from a one and the left hand size was zero
-           }
+       {final Int b = childHighOne(p);                                                                                  // Lower level bit
+        new If (getBitNC(b))                                                                                            // Choose upper bit over lower bit if possible
+         {void Then() {p.set(b);}
+          void Else() {p.set(b.dec());}
          };
         new If (p.ge(bitSize)) {void Then() {Continue.set();}};                                                         // Continue while we are in the ones tree
        }
      };
+    return p;
+   }
+
+  Int lowZero(Int Pos)                                                                                                  // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
+   {if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
+    final Int p = new Int(Pos);
+    new For(new Int(logBitSize))                                                                                        // Step down
+     {void body(Int Index, Bool Continue)
+       {new If (p.ge(zeroBase().Add(bitSize2)))
+         {void Then()
+           {Continue.set();
+            final Int a = childLowZero(p);
+            new If (getBitNC(a))                                                                                        // Choose lower bit if possible
+             {void Then() {p.set(a);}
+              void Else() {p.set(a.inc());}
+             };
+           }
+         };
+       }
+     };
+    p.set(childLowZero(p));
+    new If (getBitNC(p)) {void Then() {p.inc();}};                                                                      // Choose upper bit if lower bit has a one in it
+    return p;
+   }
+
+  Int highZero(Int Pos)                                                                                                 // Find the highest bit position with a one in it below the indicated subtree in the ones tree
+   {if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
+    final Int p = new Int(Pos);
+    new For(new Int(logBitSize))                                                                                        // Step down
+     {void body(Int Index, Bool Continue)
+       {new If (p.ge(zeroBase().Add(bitSize2)))
+         {void Then()
+           {Continue.set();
+            final Int b = childHighZero(p);
+            new If (getBitNC(b))                                                                                        // Choose upper biot over lower bit if possible
+             {void Then() {p.set(b); }
+              void Else() {p.set(b.dec());}
+             };
+           }
+         };
+       }
+     };
+    p.set( childHighZero(p));
+    new If (getBitNC(p)) {void Then(){p.dec();}};                                                                       // Low bit has a one so it must be the next bit up
     return p;
    }
 
   Bool canGoLeft(Int Pos)                                                                                               // Whether we can go left from the current position
    {checkLow(Pos, bitSize);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
-    return new Bool(getBitNC(childLow(Pos)));
+    return new Bool(getBitNC(childLowOne(Pos)));
    }
 
   Bool canGoRight(Int Pos)                                                                                              // Whether we can go right from the current position
    {checkLow(Pos, bitSize);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:",  Pos, this);                           // We can only step down from a one in the ones tree
-    return new Bool(getBitNC(childHigh(Pos)));
+    return new Bool(getBitNC(childHighOne(Pos)));
    }
 
   Bool adjacentOnes(Int A, Int B)                                                                                       // Whether two ones in the ones tree are adjacent
@@ -209,7 +258,7 @@ public class BitSet extends Program                                             
     return r;
    }
 
-//D2 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
+//D1 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
   public Bool getBit(Int Index)                                                                                         // Get bit value at an index after checking that the index is valid
    {if (immediate()) checkIndex(Index);
@@ -229,8 +278,8 @@ public class BitSet extends Program                                             
    {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value
      {void Then()
        {setBitNC(Index, Value);                                                                                         // Set the bit
-        new If (one)  {void Then() {new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};}};
-        new If (zero) {void Then() {new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};}};
+        new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};
+        new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};
        }
      };
    }
@@ -239,78 +288,74 @@ public class BitSet extends Program                                             
   void moveUpOneLayer  (Int B, Int p, Int w) {w.up();   p.sub(w); B.up()  ;}                                            // Move up one layer in the bit tree
 
   void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the bit tree
-   {checkOne();
-    final Int b = new Int(Index);                                                                                       // Position in level
+   {final Int b = new Int(Index);                                                                                       // Position in level
     final Int p = new Int(0);                                                                                           // Position in bits, width
     final Int w = new Int(bitSize);                                                                                     // Width
 
     new For(bitSize)                                                                                                    // Set bits along the path to the actual bit in the One tree
-     {void body(Int Index, Bool c)
-       {c.set();                                                                                                        // Complete early if we found a bit that does not need setting
+     {void body(Int Index, Bool Continue)
+       {Continue.set();                                                                                                 // Complete early if we found a bit that does not need setting
         new If (p.ne(0))                                                                                                // Not on the actual bits
          {void Then()                                                                                                   // Not on the actual bits
            {final Int q = new Int(p.Add(b));                                                                            // Position in One tree
             new If (getBitNC(q))                                                                                        // Is the bit already set
-             {void Then() {c.clear();}                                                                                  // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+             {void Then() {Continue.clear();}                                                                           // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
               void Else() {setBitNC(q, new Bool(true));}                                                                // Flip the bit and continue
              };
            }
          };
         moveDownOneLayer(b, p, w);                                                                                      // Next level up
-        c.and(w.gt(0));                                                                                                 // As long as we are in a valid level
+        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
        }
      };
    }
 
-  private void clearOnePath(Int Index)                                                                                  // Clear bits along the path from the indexed bit to the root of the bit tree
-   {checkOne();
-    final Int b = new Int(Index);                                                                                       // Position in level
+  void clearOnePath(Int Index)                                                                                          // Clear bits along the path from the indexed bit to the root of the bit tree
+   {final Int b = new Int(Index);                                                                                       // Position in level
     final Int p = new Int(0);                                                                                           // Position in bits, width
     final Int w = new Int(bitSize);                                                                                     // Width
 
     new For(bitSize)                                                                                                    // Step from root to leaf
-     {void body(Int Index, Bool c)
+     {void body(Int Index, Bool Continue)
        {final Int  B = b.Down();
         final Int  q = p.Add(w).add(B);
         final Int  Q = p.Add2(B);
-        c.set();                                                                                                        // Complete early if we found a bit that does not need setting
+        Continue.set();                                                                                                 // Complete early if we found a bit that does not need setting
         new If (B.Up().inc().lt(w).and(getBitNC(Q).Flip(), getBitNC(Q.Inc()).Flip()))                                   // Check both bits in the previous row are off
          {void Then()
            {final Int r = new Int(q);
             new If (getBitNC(r).Flip())
-             {void Then() {c.clear();}                                                                                  // Bit is already correctly set so there is nothing more to do
+             {void Then() {Continue.clear();}                                                                           // Bit is already correctly set so there is nothing more to do
               void Else() {setBitNC(r, new Bool(false));}                                                               // Clear set bit along path to root
              };
            }
          };
         moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        c.and(w.gt(0));                                                                                                 // As long as we are in a valid level
+        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
        }
      };
    }
 
-  private Int addressZeroTree()                                                                                         // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {final Int p = new Int(bitSize);
-    new If (one) {void Then() {p.add(bitSize1);}};                                                                      // Address first bit of zero bit tree
+  Int addressZeroTree()                                                                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
+   {final Int p = new Int(bitSize+bitSize1);
     return p;
    }
 
   private void clearZeroPath(Int Index)                                                                                 // Clear the target bit and set bits along the path from the indexed bit to the root of the bit tree
-   {checkZero();
-    final Int p = new Int(addressZeroTree());                                                                           // Address zero bit tree
+   {final Int p = new Int(addressZeroTree());                                                                           // Address zero bit tree
     final Int b = new Int(Index.Down());                                                                                // Position in layer
     final Int w = new Int(bitSize2);                                                                                    // Width of this layer
 
     new For(bitSize)                                                                                                    // Step from root to leaf
-     {void body(Int Index, Bool c)
+     {void body(Int Index, Bool Continue)
        {final Int  q = new Int(p.Add(b));
-        c.set();
+        Continue.set();
         new If (getBitNC(q))                                                                                            // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-         {void Then() {c.clear();}
+         {void Then() {Continue.clear();}
           void Else() {setBitNC(q, new Bool(true));}
          };
         moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        c.and(w.gt(0));                                                                                                 // As long as we are in a valid level
+        Continue.and(w.gt(0));                                                                                                 // As long as we are in a valid level
        }
      };
    }
@@ -329,22 +374,22 @@ public class BitSet extends Program                                             
            {setBitNC(r, new Bool(false));                                                                               // Clear set bit along path to root to show no path
 
             new For(bitSize)                                                                                            // Step from root to leaf
-             {void body(Int Index, Bool c)
+             {void body(Int Index, Bool Continue)
                {final Int  P = p.dup();                                                                                 // Child layer becomes parent layer
                 moveDownOneLayer(b, p, w);                                                                              // Index of bit in child layer, position in child layer, width of child layer
                 final Int  Q = P.Add(b).add(b);
-                c.set();                                                                                                // Complete early if we found a bit that does not need setting
+                Continue.set();                                                                                         // Complete early if we found a bit that does not need setting
                 new If (getBitNC(new Int(Q)).or(getBitNC(new Int(Q.Inc()))))
-                 {void Then() {c.clear();}                                                                              // There is a one in the upper row so we do not need to clear further down
+                 {void Then() {Continue.clear();}                                                                       // There is a one in the upper row so we do not need to clear further down
                   void Else()                                                                                           // Need to show that there are no ones in the upper row
                    {final Int r = new Int(p.Add(b));                                                                    // Bit to set
                     new If (getBitNC(r).Flip())
-                     {void Then() {c.clear();}                                                                          // Bit is already correctly set so there is nothing more to do
+                     {void Then() {Continue.clear();}                                                                   // Bit is already correctly set so there is nothing more to do
                       void Else() {setBitNC(r, new Bool(false));}                                                       // Clear set bit along path to root
                      };
                    }
                  };
-                c.and(w.gt(0));                                                                                         // As long as we are in a valid level
+                Continue.and(w.gt(0));                                                                                  // As long as we are in a valid level
                }
              };
            }
@@ -356,8 +401,7 @@ public class BitSet extends Program                                             
 //D1 Locate Ones                                                                                                        // Find the first, last, next, previous bit set to one
 
   public Int firstOne()                                                                                                 // Find the index of the first set bit
-   {checkOne();
-    final Int p = new Int(0);                                                                                           // Offset of first bit
+   {final Int p = new Int(0);                                                                                           // Offset of first bit
     final Int r = new Int();
 
     new If (getBit(p))
@@ -368,8 +412,7 @@ public class BitSet extends Program                                             
    }
 
   public Int lastOne()                                                                                                  // Find the index of the last set bit
-   {checkOne();
-    final Int p = new Int(size()-1);                                                                                    // Offset of last bit
+   {final Int p = new Int(size()-1);                                                                                    // Offset of last bit
     final Int r = new Int();
     new If (getBit(p))
      {void Then() {r.set(p);}
@@ -379,8 +422,7 @@ public class BitSet extends Program                                             
    }
 
   public Int nextOne(Int Start)                                                                                         // Find the index of the next set bit above the specified start bit
-   {checkOne();
-    if (immediate()) checkIndex(Start);
+   {if (immediate()) checkIndex(Start);
     final Int Next = new Int();                                                                                         // Invalid indicates not found
 
     final Int b = new Int(Start);                                                                                       // Position in layer
@@ -427,8 +469,7 @@ public class BitSet extends Program                                             
    }
 
   public Int prevOne(Int Start)                                                                                         // Find the index of the previous set bit below the specified bit
-   {checkOne();
-    if (immediate()) checkIndex(Start);
+   {if (immediate()) checkIndex(Start);
     final Int Prev = new Int();                                                                                         // Invalid indicates not found
     final Int b = new Int(Start);                                                                                       // Position in layer
     final Int w = new Int(bitSize);                                                                                     // Width of layer
@@ -442,13 +483,12 @@ public class BitSet extends Program                                             
             C.set();                                                                                                    // Whether we have arrived at a bit that is already correctly set
             new If (b.gt(0).and(getBitNC(new Int(p.Add(B)))))                                                           // Found next down bit
              {void Then()
-               {new For(i)                                                                                              // Step down to the leaves
-                 {void body(Int j, Bool K)
+               {new ForCount(i)                                                                                         // Step down to the leaves
+                 {void body(Int j)
                    {moveUpOneLayer(B, p, w);
                     new If (getBitNC(new Int(p.Add(B).inc())))                                                          // Follow path as low as possible
                      {void Then() {B.inc();}
                      };
-                    K.set();
                    }
                  };
                 Prev.set(B);                                                                                            // Save the result
@@ -469,8 +509,7 @@ public class BitSet extends Program                                             
 //D1 Locate Zeros                                                                                                       // Find the first, last, next, previous bit set to zero
 
   public Int firstZero()                                                                                                // Find the index of the first set bit
-   {checkZero();
-    final Int p = new Int(0);
+   {final Int p = new Int(0);
     final Int r = new Int();
     new If (getBit(p))
      {void Then() {r.copy(nextZero(p));}                                                                                // Use copy because the result might be invalid showing that there is no first zero
@@ -480,19 +519,17 @@ public class BitSet extends Program                                             
    }
 
   public Int lastZero()                                                                                                 // Find the index of the last set bit
-   {checkZero();
-    final Int p = new Int(size()-1);
+   {final Int p = new Int(size()-1);
     final Int r = new Int();
     new If (getBit(p))
      {void Then() {r.copy(prevZero(p));}                                                                                // Use copy because the result might be invalid showing that there is no last zero
-      void Else() {r.set(p);          }
+      void Else() {r.set(p);           }
      };
     return r;                                                                                                           // Result is valid if found
    }
 
   public Int nextZero(Int Start)                                                                                        // Find the index of the next set bit above the specified bit
-   {checkZero();
-    if (immediate()) checkIndex(Start);
+   {if (immediate()) checkIndex(Start);
     final Int Next = new Int();                                                                                         // Invalid indicates not found
 
     final Int b = new Int(Start);                                                                                       // Offset in bits in the current layer
@@ -531,7 +568,7 @@ public class BitSet extends Program                                             
                         final Int P = new Int(new Int(B.Add(B)));                                                       // Address next level of bits in tree
                         new If (getBit(P))                                                                              // Next zero bit from actual bits
                          {void Then() {Next.set(P).inc();}
-                          void Else() {Next.set(P);}
+                          void Else() {Next.set(P);      }
                          };
                         C.clear();
                        }
@@ -562,66 +599,58 @@ public class BitSet extends Program                                             
      }
     return Next;                                                                                                        // Result is valid if found
    }
+/*
 
-  public Int prevZero(Int Start)                                                                                        // Find the index of the previous set bit below the specified bit
-   {checkZero();
-    if (immediate()) checkIndex(Start);
-    final Int Prev = new Int();                                                                                         // Invalid indicates not found
+  1    1    1    0    1    1    1    1    1    1    1    1    1    0    1    1
+  0         1         0         0         0         0         1         0
+  1                   0                   0                   1
+  1                                       1
+  1
 
-    final Int b = new Int(Start);
-    new If (b.ne(0))                                                                                                    // Not the first bit so there might be a previous bit
-     {void Then()
-       {new If (new Bool(getBit(new Int(b.Dec()))).flip())                                                              // Prev bit is zero
+  0    1    2    3    4    5    6    7    8    9   10   11   12    13   14   15
+ 16        17        18        19        20        21        22         23
+ 24                  25                  26                  27
+ 28                                      29
+ 30
+*/
+
+  Int prevZero(Int Start)                                                                                               // Find the index of the previous set bit below the specified bit
+   {if (immediate()) checkIndex(Start);
+    final Int Prev = new Int();                                                                                         // Location of previous zero ro ivalid of thre is not one
+    final Int p = new Int(Start);                                                                                       // Start position in body of bitset
+    new If (p.eq(0))                                                                                                    // At start of bitset
+     {void Then() {}                                                                                                    // At start of bitset - not found
+      void Else()
+       {final Int q = p.Dec();                                                                                          // Position to left
+        new If (getBitNC(q).Flip())                                                                                     // Adjacent zero
          {void Then()
-           {Prev.set(b.Dec());
+           {Prev.set(q);
            }
-          void Else()
-           {if (oneTreeBit) return;                                                                                     // No more bits to check
-
-            final Int w = new Int(bitSize2);                                                                            // Current width
-            final Int p = addressZeroTree();                                                                            // Position in bits
-            b.down();                                                                                                   // First layer of zero tree bits
-
-            new For(bitSize)                                                                                            // Search down through the zero bit tree
-             {void body(Int i, Bool C)                                                                                  // Search down through the zero bit tree
-               {final Int  B = b.Dec();                                                                                 // Is there a path down from the next bit?
-                C.set();                                                                                                // Whether we have arrived at a bit that is already correctly set
-                new If (B.lt(0))                                                                                        // Nothing prior to search so no prev zero
-                 {void Then()
-                   {C.clear();
-                   }
-                  void Else()                                                                                           // More prior bits to search
-                   {new If (getBitNC(new Int(p.Add(B))))                                                                // Found next up bit
-                     {void Then()
-                       {new For(i)                                                                                      // Step down to the leaves
-                         {void body(Int j, Bool K)                                                                      // Step down to the leaves
-                           {b.up(); moveUpOneLayer(B, p, w);                                                            // Move up one layer
-                            new If (getBitNC(new Int(p.Add(b))).flip())                                                 // Follow path as high as possible
-                             {void Then() {B.inc();}
-                             };
-                            K.set();
-                           }
-                         };
-                        final Int P = new Int(B.Add(B));                                                                // Parent row bits - low position
-                        final Int Q = new Int(P.dup().inc());                                                           // Parent row bits - high position
-                        new If (getBit(new Int(Q)).flip())                                                              // Prev zero bit from actual bits
-                         {void Then() {Prev.set(P.inc());}
-                          void Else() {Prev.set(P);}
-                         };
-                        C.clear();
-                       }
+          void Else()                                                                                                   // Go down through zeros tree looking for a one
+           {new For(logBitSize)
+             {void body(Int Up, Bool ContinueUp)
+               {p.set(parentZero(p));                                                                                   // Every bit has a parent exceptteh topmost bit ion the tree but the loop will terminated on count before then
+                new If (zeroPos(p).eq(0))                                                                               // At start of row
+                 {void Then() {}                                                                                        // At start of row - not found
+                  void Else()
+                   {p.dec();                                                                                            // Position to left
+                    new If (getBitNC(p))                                                                                // Found a one
+                    {void Then()                                                                                        // Reached a one so we turn over and head back up the tree goinfg as high as possible
+                      {Prev.set(highZero(p));                                                                           // Highest zero from this point
+                      }
+                     void Else()                                                                                        // Continue the search for a one
+                      {ContinueUp.set();
+                      }
                      };
                    }
                  };
-                moveDownOneLayer(b, p, w);                                                                              // Address next level of bits in tree
-                new If (w.eq(0)) {void Then() {C.clear();}};                                                            // Next layer exists
                }
              };
            }
          };
        }
      };
-    return Prev;                                                                                                        // Result if found
+    return Prev;
    }
 
 //D1 Statistics                                                                                                         // Count the number of ones or zero bits in a bit set
@@ -691,69 +720,43 @@ public class BitSet extends Program                                             
      {s.append(f("%4d %4d %4d |", i, p, r));
       for (int j : range(r))                                                                                            // Bits in level
        {if (i > 1 || j < size()) s.append(f("  %1d", memoryRef.getBool(p + j) ? 1 : 0));
-        if (!one && !zero) break;                                                                                       // Only print the first line if there are no tree bits
        }
       s.append("\n");
       if (i == 1)                                                                                                       // The first line is the actual bits
-       {if      (one)  s.append("One:\n");                                                                              // One tree present so it comes next
-        else if (zero) s.append("Zero:\n");                                                                             // Zero tree present and no One tree present so the zero tree comes next
+       {s.append("One:\n");                                                                                             // One tree present so it comes next
        }
       p += r;
       r >>>= 1;
-      if (r == 0) break;                                                                                               // Reached the leaves
+      if (r == 0) break;                                                                                                // Reached the leaves
      }
 
-    if (one && zero)                                                                                                    // Print zero search tree block if both one and zero bit trees are present
-     {r = bitSize2;
-      s.append("Zero:\n");
-      for   (int i : range(1, size()))                                                                                  // Each level
-       {s.append(f("%4d %4d %4d |", i, p, r));
-        for (int j : range(r))                                                                                          // Bits in level
-         {s.append(f("  %1d", memoryRef.getBool(p + j) ? 1 : 0));
-          if (!one && !zero) break;                                                                                     // Only print the first line if there are no tree bits
-         }
-        s.append("\n");
-        p += r;
-        r >>>= 1;
-        if (r == 0) break;                                                                                              // Reached the leaves
+    r = bitSize2;
+    s.append("Zero:\n");
+    for   (int i : range(1, size()))                                                                                    // Each level
+     {s.append(f("%4d %4d %4d |", i, p, r));
+      for (int j : range(r))                                                                                            // Bits in level
+       {s.append(f("  %1d", memoryRef.getBool(p + j) ? 1 : 0));
        }
+      s.append("\n");
+      p += r;
+      r >>>= 1;
+      if (r == 0) break;                                                                                                // Reached the leaves
      }
+
     return ""+s;
    }
 
 //D1 Tests                                                                                                              // Tests
 
-  static BitSet test_bits(boolean Ex, int N, boolean One, boolean Zero)                                                 // Create test bitset.
-   {final Build build = new Build().bitSize(N).one(One).zero(Zero).immediate(Ex);                                       // Allocate backing storage.
+  static BitSet test_bits(boolean Ex, int N)                                                                            // Create test bitset.
+   {final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Allocate backing storage.
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
     final BitSet    b = new BitSet(build);                                                                              // Create a bit set
     return b;                                                                                                           // Return test bitset.
    }
 
-  static void test_bitSet(boolean Ex)                                                                                   // Test bit manipulation.
-   {final BitSet b = test_bits(Ex, 23, true, false);                                                                    // Get test bitset.
-    final int N = b.size();                                                                                             // Get logical size.
-    for (int i = 0; i < N; i++) b.setBit(b.new Int(i), b.new Bool(i % 2 == 0));                                         // Set alternating bits.
-    final Bool b4 = b.getBit(b.new Int(b.new Int(4)));                                                                  // Get bit 4.
-    final Bool b5 = b.getBit(b.new Int(b.new Int(5)));                                                                  // Get bit 5.
-    b.put(b4);                                                                                                          // Verify bit 4.
-    b.put(b5);                                                                                                          // Verify bit 5.
-    b.execute();
-
-    //stop(b.output());
-    ok(b.output(), """
-true
-false
-""");
-   }
-
-  static void test_bitSet()                                                                                             // Test bit manipulation.
-   {test_bitSet(true);
-    test_bitSet(false);
-   }
-
   static void test_prevNext(boolean Ex)                                                                                 // Test tree of searchable one bits
-   {final BitSet b = test_bits(Ex, 32, true, true);
+   {final BitSet b = test_bits(Ex, 32);
     b.maxSteps = 99999;
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
@@ -840,7 +843,7 @@ Zero:
 
   static void test_prevNext01(boolean Ex)                                                                               // Test tree of searchable one bits
    {final int N = 16;
-    final BitSet b = test_bits(Ex, N, true, true);
+    final BitSet b = test_bits(Ex, N);
 
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
@@ -876,9 +879,9 @@ Zero:
     for (int i : range( 3))     b.nextOne(b.new Int(i)).ok(i+1);
     for (int i : range( 4,  8)) b.nextOne(b.new Int(i)).ok(  8);
     for (int i : range( 7, 11)) b.nextOne(b.new Int(i)).ok(i+1);
-    for (int i : range(11, 16)) {final Int q = b.nextOne(b.new Int(i)); b.ok(()->q.v(),  false);}
+    for (int i : range(11, 16)) b.nextOne(b.new Int(i)).notValid().ok(true);
 
-                                {final Int q = b.prevOne(b.new Int(0)); b.ok(()->q.v(),  false);}
+                                b.prevOne(b.new Int(0)).notValid().ok(true);
     for (int i : range( 1,  5)) b.prevOne(b.new Int(i)).ok(i-1);
     for (int i : range( 4,  9)) b.prevOne(b.new Int(i)).ok(  3);
     for (int i : range( 9, 12)) b.prevOne(b.new Int(i)).ok(i-1);
@@ -890,9 +893,9 @@ Zero:
     for (int i : range( 3,  7)) b.nextZero(b.new Int( i)).ok(i+1);
     for (int i : range( 7, 11)) b.nextZero(b.new Int( i)).ok( 12);
     for (int i : range(11, 15)) b.nextZero(b.new Int( i)).ok( i+1);
-                                {final Int q = b.nextZero(b.new Int(15)); b.ok(()->q.v(), false);}
+                                b.nextZero(b.new Int(15)).notValid().ok(true);
 
-    for (int i : range( 5))     {final Int q = b.prevZero(b.new Int( i)); b.ok(()->q.v(), false);}
+    for (int i : range( 5))     b.prevZero(b.new Int( i)).notValid().ok(true);
     for (int i : range( 5,  9)) b.prevZero(b.new Int( i)).ok(i-1);
     for (int i : range( 8, 12)) b.prevZero(b.new Int( i)).ok(  7);
     for (int i : range(13, 16)) b.prevZero(b.new Int( i)).ok(i-1);
@@ -907,7 +910,7 @@ Zero:
 
   static void test_prevNext10(boolean Ex)                                                                               // Test tree of searchable one bits
    {final int N = 16;
-    final BitSet b = test_bits(Ex, N, true, true);
+    final BitSet b = test_bits(Ex, N);
     for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 1));
 
    //stop(b);
@@ -959,7 +962,7 @@ Zero:
 
   static void test_oneZero(boolean Ex)
    {final int N = 8;
-    final BitSet b = test_bits(Ex, N, true, true);
+    final BitSet b = test_bits(Ex, N);
     final StringBuilder s = new StringBuilder();
     b.new I() {void action() {s.append("Start:\n"+b);}};
 
@@ -1170,7 +1173,7 @@ Zero:
    }
 
   static void test_fullEmpty(int N, boolean Ex)
-   {final BitSet b = test_bits(Ex, N, true, true);
+   {final BitSet b = test_bits(Ex, N);
 
     b.empty().ok(true);
     b.new ForCount(b.new Int(N))
@@ -1196,7 +1199,7 @@ Zero:
    }
 
   static void test_count(int N, boolean Ex)
-   {final BitSet b = test_bits(Ex, N, true, true);
+   {final BitSet b = test_bits(Ex, N);
 
     b.set(b.new Int(  1),   b.new Bool(true));
     b.set(b.new Int(N-1),   b.new Bool(true));
@@ -1230,77 +1233,153 @@ Zero:
  24                  25                 26              27
  28                                     29
  30
+
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  0  0  0  0  0  1  1  1  0  0  0  1  0  0  0  0
+One:
+   2   16    8 |  0  0  1  1  0  1  0  0
+   3   24    4 |  0  1  1  0
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  1  1  1  0  1  1  1  1
+   2   39    4 |  1  1  1  1
+   3   43    2 |  1  1
+   4   45    1 |  1
+
 */
 
-  static void test_powerPos(boolean Ex)
+  static void test_powerPosOneZero(boolean Ex)
    {final int N = 16;
-    final BitSet b = test_bits(Ex, N, true, true);
+    final BitSet b = test_bits(Ex, N);
 
     for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), b.new Bool(true));
 
-    final Int t = b.top(); b.ok(()->t.i(), 30);
+    b.topOne().ok(30); b.topZero().ok(45); b.oneBase() .ok(16); b.zeroBase().ok(31);
 
-    b.childHigh(b.new Int(30)).ok(29);
-    b.childLow (b.new Int(30)).ok(28);
-    b.childHigh(b.new Int(29)).ok(27);
-    b.childLow (b.new Int(29)).ok(26);
-    b.childHigh(b.new Int(28)).ok(25);
-    b.childLow (b.new Int(28)).ok(24);
-    b.childHigh(b.new Int(27)).ok(23);
-    b.childLow (b.new Int(27)).ok(22);
-    b.childHigh(b.new Int(26)).ok(21);
-    b.childLow (b.new Int(26)).ok(20);
-    b.childHigh(b.new Int(25)).ok(19);
-    b.childLow (b.new Int(25)).ok(18);
-    b.childHigh(b.new Int(24)).ok(17);
-    b.childLow (b.new Int(24)).ok(16);
-    b.childHigh(b.new Int(23)).ok(15);
-    b.childLow (b.new Int(23)).ok(14);
-    b.childHigh(b.new Int(22)).ok(13);
-    b.childLow (b.new Int(22)).ok(12);
-    b.childHigh(b.new Int(21)).ok(11);
-    b.childLow (b.new Int(21)).ok(10);
-    b.childHigh(b.new Int(20)).ok( 9);
-    b.childLow (b.new Int(20)).ok( 8);
-    b.childHigh(b.new Int(19)).ok( 7);
-    b.childLow (b.new Int(19)).ok( 6);
-    b.childHigh(b.new Int(18)).ok( 5);
-    b.childLow (b.new Int(18)).ok( 4);
-    b.childHigh(b.new Int(17)).ok( 3);
-    b.childLow (b.new Int(17)).ok( 2);
-    b.childHigh(b.new Int(16)).ok( 1);
-    b.childLow (b.new Int(16)).ok( 0);
+    b.childHighZero(b.new Int(45)).ok(44);
+    b.childLowZero (b.new Int(45)).ok(43);
+    b.childHighZero(b.new Int(44)).ok(42);
+    b.childLowZero (b.new Int(44)).ok(41);
+    b.childHighZero(b.new Int(43)).ok(40);
+    b.childLowZero (b.new Int(43)).ok(39);
+    b.childHighZero(b.new Int(42)).ok(38);
+    b.childLowZero (b.new Int(42)).ok(37);
+    b.childHighZero(b.new Int(41)).ok(36);
+    b.childLowZero (b.new Int(41)).ok(35);
+    b.childHighZero(b.new Int(40)).ok(34);
+    b.childLowZero (b.new Int(40)).ok(33);
+    b.childHighZero(b.new Int(39)).ok(32);
+    b.childLowZero (b.new Int(39)).ok(31);
+    b.childHighZero(b.new Int(38)).ok(15);
+    b.childLowZero (b.new Int(38)).ok(14);
+    b.childHighZero(b.new Int(37)).ok(13);
+    b.childLowZero (b.new Int(37)).ok(12);
+    b.childHighZero(b.new Int(36)).ok(11);
+    b.childLowZero (b.new Int(36)).ok(10);
+    b.childHighZero(b.new Int(35)).ok( 9);
+    b.childLowZero (b.new Int(35)).ok( 8);
+    b.childHighZero(b.new Int(34)).ok( 7);
+    b.childLowZero (b.new Int(34)).ok( 6);
+    b.childHighZero(b.new Int(33)).ok( 5);
+    b.childLowZero (b.new Int(33)).ok( 4);
+    b.childHighZero(b.new Int(32)).ok( 3);
+    b.childLowZero (b.new Int(32)).ok( 2);
+    b.childHighZero(b.new Int(31)).ok( 1);
+    b.childLowZero (b.new Int(31)).ok( 0);
 
-    b.parent(b.new Int(29)).ok(30);
-    b.parent(b.new Int(28)).ok(30);
-    b.parent(b.new Int(27)).ok(29);
-    b.parent(b.new Int(26)).ok(29);
-    b.parent(b.new Int(25)).ok(28);
-    b.parent(b.new Int(24)).ok(28);
-    b.parent(b.new Int(23)).ok(27);
-    b.parent(b.new Int(22)).ok(27);
-    b.parent(b.new Int(21)).ok(26);
-    b.parent(b.new Int(20)).ok(26);
-    b.parent(b.new Int(19)).ok(25);
-    b.parent(b.new Int(18)).ok(25);
-    b.parent(b.new Int(17)).ok(24);
-    b.parent(b.new Int(16)).ok(24);
-    b.parent(b.new Int(15)).ok(23);
-    b.parent(b.new Int(14)).ok(23);
-    b.parent(b.new Int(13)).ok(22);
-    b.parent(b.new Int(12)).ok(22);
-    b.parent(b.new Int(11)).ok(21);
-    b.parent(b.new Int(10)).ok(21);
-    b.parent(b.new Int( 9)).ok(20);
-    b.parent(b.new Int( 8)).ok(20);
-    b.parent(b.new Int( 7)).ok(19);
-    b.parent(b.new Int( 6)).ok(19);
-    b.parent(b.new Int( 5)).ok(18);
-    b.parent(b.new Int( 4)).ok(18);
-    b.parent(b.new Int( 3)).ok(17);
-    b.parent(b.new Int( 2)).ok(17);
-    b.parent(b.new Int( 1)).ok(16);
-    b.parent(b.new Int( 0)).ok(16);
+    b.parentZero(b.new Int(44)).ok(45);
+    b.parentZero(b.new Int(43)).ok(45);
+    b.parentZero(b.new Int(42)).ok(44);
+    b.parentZero(b.new Int(41)).ok(44);
+    b.parentZero(b.new Int(40)).ok(43);
+    b.parentZero(b.new Int(39)).ok(43);
+    b.parentZero(b.new Int(38)).ok(42);
+    b.parentZero(b.new Int(37)).ok(42);
+    b.parentZero(b.new Int(36)).ok(41);
+    b.parentZero(b.new Int(35)).ok(41);
+    b.parentZero(b.new Int(34)).ok(40);
+    b.parentZero(b.new Int(33)).ok(40);
+    b.parentZero(b.new Int(32)).ok(39);
+    b.parentZero(b.new Int(31)).ok(39);
+    b.parentZero(b.new Int(15)).ok(38);
+    b.parentZero(b.new Int(14)).ok(38);
+    b.parentZero(b.new Int(13)).ok(37);
+    b.parentZero(b.new Int(12)).ok(37);
+    b.parentZero(b.new Int(11)).ok(36);
+    b.parentZero(b.new Int(10)).ok(36);
+    b.parentZero(b.new Int( 9)).ok(35);
+    b.parentZero(b.new Int( 8)).ok(35);
+    b.parentZero(b.new Int( 7)).ok(34);
+    b.parentZero(b.new Int( 6)).ok(34);
+    b.parentZero(b.new Int( 5)).ok(33);
+    b.parentZero(b.new Int( 4)).ok(33);
+    b.parentZero(b.new Int( 3)).ok(32);
+    b.parentZero(b.new Int( 2)).ok(32);
+    b.parentZero(b.new Int( 1)).ok(31);
+    b.parentZero(b.new Int( 0)).ok(31);
+
+    b.childHighOne(b.new Int(30)).ok(29);
+    b.childLowOne (b.new Int(30)).ok(28);
+    b.childHighOne(b.new Int(29)).ok(27);
+    b.childLowOne (b.new Int(29)).ok(26);
+    b.childHighOne(b.new Int(28)).ok(25);
+    b.childLowOne (b.new Int(28)).ok(24);
+    b.childHighOne(b.new Int(27)).ok(23);
+    b.childLowOne (b.new Int(27)).ok(22);
+    b.childHighOne(b.new Int(26)).ok(21);
+    b.childLowOne (b.new Int(26)).ok(20);
+    b.childHighOne(b.new Int(25)).ok(19);
+    b.childLowOne (b.new Int(25)).ok(18);
+    b.childHighOne(b.new Int(24)).ok(17);
+    b.childLowOne (b.new Int(24)).ok(16);
+    b.childHighOne(b.new Int(23)).ok(15);
+    b.childLowOne (b.new Int(23)).ok(14);
+    b.childHighOne(b.new Int(22)).ok(13);
+    b.childLowOne (b.new Int(22)).ok(12);
+    b.childHighOne(b.new Int(21)).ok(11);
+    b.childLowOne (b.new Int(21)).ok(10);
+    b.childHighOne(b.new Int(20)).ok( 9);
+    b.childLowOne (b.new Int(20)).ok( 8);
+    b.childHighOne(b.new Int(19)).ok( 7);
+    b.childLowOne (b.new Int(19)).ok( 6);
+    b.childHighOne(b.new Int(18)).ok( 5);
+    b.childLowOne (b.new Int(18)).ok( 4);
+    b.childHighOne(b.new Int(17)).ok( 3);
+    b.childLowOne (b.new Int(17)).ok( 2);
+    b.childHighOne(b.new Int(16)).ok( 1);
+    b.childLowOne (b.new Int(16)).ok( 0);
+
+    b.parentOne(b.new Int(29)).ok(30);
+    b.parentOne(b.new Int(28)).ok(30);
+    b.parentOne(b.new Int(27)).ok(29);
+    b.parentOne(b.new Int(26)).ok(29);
+    b.parentOne(b.new Int(25)).ok(28);
+    b.parentOne(b.new Int(24)).ok(28);
+    b.parentOne(b.new Int(23)).ok(27);
+    b.parentOne(b.new Int(22)).ok(27);
+    b.parentOne(b.new Int(21)).ok(26);
+    b.parentOne(b.new Int(20)).ok(26);
+    b.parentOne(b.new Int(19)).ok(25);
+    b.parentOne(b.new Int(18)).ok(25);
+    b.parentOne(b.new Int(17)).ok(24);
+    b.parentOne(b.new Int(16)).ok(24);
+    b.parentOne(b.new Int(15)).ok(23);
+    b.parentOne(b.new Int(14)).ok(23);
+    b.parentOne(b.new Int(13)).ok(22);
+    b.parentOne(b.new Int(12)).ok(22);
+    b.parentOne(b.new Int(11)).ok(21);
+    b.parentOne(b.new Int(10)).ok(21);
+    b.parentOne(b.new Int( 9)).ok(20);
+    b.parentOne(b.new Int( 8)).ok(20);
+    b.parentOne(b.new Int( 7)).ok(19);
+    b.parentOne(b.new Int( 6)).ok(19);
+    b.parentOne(b.new Int( 5)).ok(18);
+    b.parentOne(b.new Int( 4)).ok(18);
+    b.parentOne(b.new Int( 3)).ok(17);
+    b.parentOne(b.new Int( 2)).ok(17);
+    b.parentOne(b.new Int( 1)).ok(16);
+    b.parentOne(b.new Int( 0)).ok(16);
 
     //stop("AAAA", b);
     b.ok(()->b, """
@@ -1318,35 +1397,83 @@ Zero:
    4   45    1 |  1
 """);
 
-    b.low(b.new Int(30)).ok( 5);   b.high(b.new Int(30)).ok(11);
-    b.low(b.new Int(29)).ok(11);   b.high(b.new Int(29)).ok(11);
-    b.low(b.new Int(28)).ok( 5);   b.high(b.new Int(28)).ok( 7);
-    b.low(b.new Int(26)).ok(11);   b.high(b.new Int(26)).ok(11);
-    b.low(b.new Int(25)).ok( 5);   b.high(b.new Int(25)).ok( 7);
-    b.low(b.new Int(21)).ok(11);   b.high(b.new Int(21)).ok(11);
-    b.low(b.new Int(19)).ok( 6);   b.high(b.new Int(19)).ok( 7);
-    b.low(b.new Int(18)).ok( 5);   b.high(b.new Int(18)).ok( 5);
+    b.lowOne(b.new Int(30)).ok( 5);   b.highOne(b.new Int(30)).ok(11);
+    b.lowOne(b.new Int(29)).ok(11);   b.highOne(b.new Int(29)).ok(11);
+    b.lowOne(b.new Int(28)).ok( 5);   b.highOne(b.new Int(28)).ok( 7);
+    b.lowOne(b.new Int(26)).ok(11);   b.highOne(b.new Int(26)).ok(11);
+    b.lowOne(b.new Int(25)).ok( 5);   b.highOne(b.new Int(25)).ok( 7);
+    b.lowOne(b.new Int(21)).ok(11);   b.highOne(b.new Int(21)).ok(11);
+    b.lowOne(b.new Int(19)).ok( 6);   b.highOne(b.new Int(19)).ok( 7);
+    b.lowOne(b.new Int(18)).ok( 5);   b.highOne(b.new Int(18)).ok( 5);
+
+    b.lowZero(b.new Int(15+30)).ok( 0);   b.highZero(b.new Int(15+30)).ok(15);
+    b.lowZero(b.new Int(15+29)).ok( 8);   b.highZero(b.new Int(15+29)).ok(15);
+    b.lowZero(b.new Int(15+28)).ok( 0);   b.highZero(b.new Int(15+28)).ok( 4);
+    b.lowZero(b.new Int(15+27)).ok(12);   b.highZero(b.new Int(15+27)).ok(15);
+    b.lowZero(b.new Int(15+26)).ok( 8);   b.highZero(b.new Int(15+26)).ok(10);
+    b.lowZero(b.new Int(15+25)).ok( 4);   b.highZero(b.new Int(15+25)).ok( 4);
+    b.lowZero(b.new Int(15+24)).ok( 0);   b.highZero(b.new Int(15+24)).ok( 3);
+    b.lowZero(b.new Int(15+23)).ok(14);   b.highZero(b.new Int(15+23)).ok(15);
+    b.lowZero(b.new Int(15+22)).ok(12);   b.highZero(b.new Int(15+22)).ok(13);
+    b.lowZero(b.new Int(15+21)).ok(10);   b.highZero(b.new Int(15+21)).ok(10);
+    b.lowZero(b.new Int(15+20)).ok( 8);   b.highZero(b.new Int(15+20)).ok( 9);
+    b.lowZero(b.new Int(15+18)).ok( 4);   b.highZero(b.new Int(15+18)).ok( 4);
+    b.lowZero(b.new Int(15+17)).ok( 2);   b.highZero(b.new Int(15+17)).ok( 3);
+    b.lowZero(b.new Int(15+16)).ok( 0);   b.highZero(b.new Int(15+16)).ok( 1);
 
     b.canGoLeft(b.new Int(30)).ok( true); b.canGoRight(b.new Int(30)).ok( true);
     b.canGoLeft(b.new Int(26)).ok(false); b.canGoRight(b.new Int(26)).ok( true);
     b.canGoLeft(b.new Int(29)).ok( true); b.canGoRight(b.new Int(29)).ok(false);
+
+    b.oneBase() .ok(16);                                                    b.zeroBase().ok(31);
+    b.onePos(b.new Int( 0)).ok( 0); b.oneWidth(b.new Int( 0)).ok(16);       b.zeroPos(b.new Int(    0)).ok( 0); b.zeroWidth(b.new Int(    0)).ok(16);
+    b.onePos(b.new Int( 1)).ok( 1); b.oneWidth(b.new Int( 1)).ok(16);       b.zeroPos(b.new Int(    1)).ok( 1); b.zeroWidth(b.new Int(    1)).ok(16);
+    b.onePos(b.new Int( 2)).ok( 2); b.oneWidth(b.new Int( 2)).ok(16);       b.zeroPos(b.new Int(    2)).ok( 2); b.zeroWidth(b.new Int(    2)).ok(16);
+    b.onePos(b.new Int( 3)).ok( 3); b.oneWidth(b.new Int( 3)).ok(16);       b.zeroPos(b.new Int(    3)).ok( 3); b.zeroWidth(b.new Int(    3)).ok(16);
+    b.onePos(b.new Int( 4)).ok( 4); b.oneWidth(b.new Int( 4)).ok(16);       b.zeroPos(b.new Int(    4)).ok( 4); b.zeroWidth(b.new Int(    4)).ok(16);
+    b.onePos(b.new Int( 5)).ok( 5); b.oneWidth(b.new Int( 5)).ok(16);       b.zeroPos(b.new Int(    5)).ok( 5); b.zeroWidth(b.new Int(    5)).ok(16);
+    b.onePos(b.new Int( 6)).ok( 6); b.oneWidth(b.new Int( 6)).ok(16);       b.zeroPos(b.new Int(    6)).ok( 6); b.zeroWidth(b.new Int(    6)).ok(16);
+    b.onePos(b.new Int( 7)).ok( 7); b.oneWidth(b.new Int( 7)).ok(16);       b.zeroPos(b.new Int(    7)).ok( 7); b.zeroWidth(b.new Int(    7)).ok(16);
+    b.onePos(b.new Int( 8)).ok( 8); b.oneWidth(b.new Int( 8)).ok(16);       b.zeroPos(b.new Int(    8)).ok( 8); b.zeroWidth(b.new Int(    8)).ok(16);
+    b.onePos(b.new Int( 9)).ok( 9); b.oneWidth(b.new Int( 9)).ok(16);       b.zeroPos(b.new Int(    9)).ok( 9); b.zeroWidth(b.new Int(    9)).ok(16);
+    b.onePos(b.new Int(10)).ok(10); b.oneWidth(b.new Int(10)).ok(16);       b.zeroPos(b.new Int(   10)).ok(10); b.zeroWidth(b.new Int(   10)).ok(16);
+    b.onePos(b.new Int(11)).ok(11); b.oneWidth(b.new Int(11)).ok(16);       b.zeroPos(b.new Int(   11)).ok(11); b.zeroWidth(b.new Int(   11)).ok(16);
+    b.onePos(b.new Int(12)).ok(12); b.oneWidth(b.new Int(12)).ok(16);       b.zeroPos(b.new Int(   12)).ok(12); b.zeroWidth(b.new Int(   12)).ok(16);
+    b.onePos(b.new Int(13)).ok(13); b.oneWidth(b.new Int(13)).ok(16);       b.zeroPos(b.new Int(   13)).ok(13); b.zeroWidth(b.new Int(   13)).ok(16);
+    b.onePos(b.new Int(14)).ok(14); b.oneWidth(b.new Int(14)).ok(16);       b.zeroPos(b.new Int(   14)).ok(14); b.zeroWidth(b.new Int(   14)).ok(16);
+    b.onePos(b.new Int(15)).ok(15); b.oneWidth(b.new Int(15)).ok(16);       b.zeroPos(b.new Int(   15)).ok(15); b.zeroWidth(b.new Int(   15)).ok(16);
+    b.onePos(b.new Int(16)).ok( 0); b.oneWidth(b.new Int(16)).ok(8);        b.zeroPos(b.new Int(15+16)).ok( 0); b.zeroWidth(b.new Int(15+16)).ok(8);
+    b.onePos(b.new Int(17)).ok( 1); b.oneWidth(b.new Int(17)).ok(8);        b.zeroPos(b.new Int(15+17)).ok( 1); b.zeroWidth(b.new Int(15+17)).ok(8);
+    b.onePos(b.new Int(18)).ok( 2); b.oneWidth(b.new Int(18)).ok(8);        b.zeroPos(b.new Int(15+18)).ok( 2); b.zeroWidth(b.new Int(15+18)).ok(8);
+    b.onePos(b.new Int(19)).ok( 3); b.oneWidth(b.new Int(19)).ok(8);        b.zeroPos(b.new Int(15+19)).ok( 3); b.zeroWidth(b.new Int(15+19)).ok(8);
+    b.onePos(b.new Int(20)).ok( 4); b.oneWidth(b.new Int(20)).ok(8);        b.zeroPos(b.new Int(15+20)).ok( 4); b.zeroWidth(b.new Int(15+20)).ok(8);
+    b.onePos(b.new Int(21)).ok( 5); b.oneWidth(b.new Int(21)).ok(8);        b.zeroPos(b.new Int(15+21)).ok( 5); b.zeroWidth(b.new Int(15+21)).ok(8);
+    b.onePos(b.new Int(22)).ok( 6); b.oneWidth(b.new Int(22)).ok(8);        b.zeroPos(b.new Int(15+22)).ok( 6); b.zeroWidth(b.new Int(15+22)).ok(8);
+    b.onePos(b.new Int(23)).ok( 7); b.oneWidth(b.new Int(23)).ok(8);        b.zeroPos(b.new Int(15+23)).ok( 7); b.zeroWidth(b.new Int(15+23)).ok(8);
+    b.onePos(b.new Int(24)).ok( 0); b.oneWidth(b.new Int(24)).ok(4);        b.zeroPos(b.new Int(15+24)).ok( 0); b.zeroWidth(b.new Int(15+24)).ok(4);
+    b.onePos(b.new Int(25)).ok( 1); b.oneWidth(b.new Int(25)).ok(4);        b.zeroPos(b.new Int(15+25)).ok( 1); b.zeroWidth(b.new Int(15+25)).ok(4);
+    b.onePos(b.new Int(26)).ok( 2); b.oneWidth(b.new Int(26)).ok(4);        b.zeroPos(b.new Int(15+26)).ok( 2); b.zeroWidth(b.new Int(15+26)).ok(4);
+    b.onePos(b.new Int(27)).ok( 3); b.oneWidth(b.new Int(27)).ok(4);        b.zeroPos(b.new Int(15+27)).ok( 3); b.zeroWidth(b.new Int(15+27)).ok(4);
+    b.onePos(b.new Int(28)).ok( 0); b.oneWidth(b.new Int(28)).ok(2);        b.zeroPos(b.new Int(15+28)).ok( 0); b.zeroWidth(b.new Int(15+28)).ok(2);
+    b.onePos(b.new Int(29)).ok( 1); b.oneWidth(b.new Int(29)).ok(2);        b.zeroPos(b.new Int(15+29)).ok( 1); b.zeroWidth(b.new Int(15+29)).ok(2);
+    b.onePos(b.new Int(30)).ok( 0); b.oneWidth(b.new Int(30)).ok(1);        b.zeroPos(b.new Int(15+30)).ok( 0); b.zeroWidth(b.new Int(15+30)).ok(1);
+
     b.execute();
    }
 
-  static void test_powerPos()
-   {test_powerPos(true);
-    test_powerPos(false);
+  static void test_powerPosOneZero()
+   {test_powerPosOneZero(true);
+    test_powerPosOneZero(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
-   {test_bitSet();
-    test_prevNext01();
+   {test_prevNext01();
     test_prevNext();
     test_prevNext01();
     test_prevNext10();
     test_oneZero();
     test_fullEmpty();
-    test_powerPos();
+    test_powerPosOneZero();
     test_count();
    }
 
