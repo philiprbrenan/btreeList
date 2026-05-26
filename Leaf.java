@@ -101,73 +101,37 @@ class Leaf extends Program                                                      
   Int  count() {return slots.count();}                                                                                  // Number of key/data pairs in the leaf
 
   void compactLeft()                                                                                                    // Compact a leaf to the left
-   {final Int t = new Int(0);
-    new ForCount (new Int(maxLeafSize))                                                                                 // Each key
-     {void body(Int s)
-       {new If (slots.getKeyInUse(s).And(s.gt(t)))
-         {void Then()
-           {refData.putInt(t, refData.getInt(s));                                                                       // Move down if not already compacted
-            t.inc();
-           }
-         };
-       }
-     };
-    slots.compactSlotsLeft();                                                                                           // Compact the slots to match
+   {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
+    slots.compactKeysLeft((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                          // Compact the slots to match
    }
 
   void compactRight()                                                                                                   // Compact a leaf to the right
-   {final Int t = new Int(maxLeafSize-1);
-    final Int s = new Int(maxLeafSize);
-    new ForCount (new Int(maxLeafSize))                                                                                 // Each key
-     {void body(Int S)
-       {s.dec();
-        new If (slots.getKeyInUse(s).And(s.lt(t)))
-         {void Then()
-           {refData.putInt(t, refData.getInt(s));                                                                       // Move up if not already compacted
-            t.dec();
-           }
-         };
-       }
-     };
-    slots.compactSlotsRight();                                                                                          // Compact the slots to match
+   {slots.compactSlotsRight();                                                                                          // Compact the slots to match
+    slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
    }
 
   void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
    {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
-    slots.compactSlotsLeft();                                                                                           // Compact source slots so we know where they are
+    compactLeft();                                                                                                      // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
-    new ForCount (new Int(maxLeafSize/2), new Int(maxLeafSize))                                                         // Upper key/data pairs
+    new ForCount (new Int(maxLeafSize))                                                                                 // Copy data
      {void body(Int Index)
-       {final Int k = slots.getSlotToKeyIndex(Index);                                                                   // Current key
-        Right.refData.putInt(new Int(maxLeafSize).sub(Index).dec(), refData.getInt(k));                                 // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+       {Right.refData.putInt(Index, refData.getInt(Index));                                                             // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
        }
      };
-    slots.splitRightEven(Right.slots, false);                                                                           // Split the slots to match but do not redistribute the results
-    slots.new Redistribute()                                                                                            // Redistribute slots and corresponding data
-     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
-     };
-    Right.slots.new Redistribute()                                                                                      // Redistribute slots and corresponding data
-     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
-     };
+    slots.splitRightEven(Right.slots);                                                                                  // Split the slots
    }
 
   void splitLeft(Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf
    {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
-    slots.compactLeft();                                                                                                // Compact source slots so we know where they are
+    compactLeft();                                                                                                      // Compact source slots so we know where they are
     Left.slots.clear();                                                                                                 // Clear the target
     new ForCount (new Int(maxLeafSize/2))                                                                               // Lower key/data pairs
      {void body(Int Index)
-       {final Int k = slots.getSlotToKeyIndex(Index);                                                                   // Current key
-        Left.refData.putInt(Index, refData.getInt(k));                                                                  // Move data values  in order to the lower positions
+       {Left.refData.putInt(Index, refData.getInt(Index));                                                              // Move data values  in order to the lower positions
        }
      };
-    slots.splitLeftEven(Left.slots, !false);                                                                            // Split the slots to match
-    slots.new Redistribute()                                                                                            // Redistribute slots and corresponding data
-     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
-     };
-    Left.slots.new Redistribute()                                                                                       // Redistribute slots and corresponding data
-     {void update(Int Source, Int Target) {refData.putInt(Target, refData.getInt(Source));}
-     };
+    slots.splitLeftEven(Left.slots);                                                                                    // Split the slots
    }
 
 /*
@@ -663,10 +627,10 @@ Leaf: size:   8
     l.ok(()->l, """
 Leaf: size:   8
  Ref   Key  Data
-   0     1    11
-   1     2    22
+   3     1    11
+   0     2    22
    2     3    33
-   3     4    44
+   1     4    44
 """);
     //r.new I() {void action() {stop(r);}};
     r.ok(()->r, """
@@ -1193,8 +1157,8 @@ data     :   11  12  13  14  15  16  17  18
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_splitLeft(true);
+   {oldTests();
+    //test_splitLeft(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
