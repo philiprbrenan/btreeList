@@ -70,12 +70,14 @@ public class Program extends Test                                               
      }
    }
 
-//D1 Program                                                                                                            // Program structures
+//D1 Program                                                                                                            // Program ececution structures
+
+//D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
   abstract class For                                                                                                    // For loop
    {For(Int Start, Int End)                                                                                             // Execute the loop the specified number of times
-     {final Int index = new Int();
-      final Bool cont = new Bool();
+     {final Int index = new Int();  index.name = "Index";
+      final Bool cont = new Bool(); cont.name  = "Continue";
 
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
@@ -117,7 +119,7 @@ public class Program extends Test                                               
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount(Int Start, Int End)                                                                                        // Execute the loop the specified number of times
-     {final Int index = new Int();
+     {final Int index = new Int(); index.name = "Index";
 
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
@@ -153,6 +155,8 @@ public class Program extends Test                                               
 
     abstract void body(Int Index);                                                                                      // Body of the for loop - execute while in range and continuation requested
    }
+
+//D2 If                                                                                                                 // If then else
 
   abstract class If                                                                                                     // If statement
    {If (boolean Condition)                                                                                              // A constant that selects code at compile time
@@ -202,6 +206,10 @@ public class Program extends Test                                               
      };
     return Set;
    }
+
+//D1 Data                                                                                                               // Operations on boolean and integer data
+
+//D2 Boolean values                                                                                                     // Operations on boolean values
 
   class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
@@ -398,6 +406,8 @@ public class Program extends Test                                               
       return this;
      }
    }
+
+//D2 Integer values                                                                                                     // Operations on integer values
 
   class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
@@ -735,6 +745,8 @@ public class Program extends Test                                               
 
     ByteMemory putBool(Int I, Bool K) {putBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE), K); return this;}                    // Set the bit at the bit indexed position
 
+//D2 Memory references                                                                                                  // References to byte memory
+
     class Ref                                                                                                           // Reference into memory
      {final Int offset = new Int();                                                                                     // Offset of this reference in memory
       final int N = Integer.BYTES;
@@ -760,7 +772,6 @@ public class Program extends Test                                               
       Ref    putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                   // Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref    putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                   // Set the bit at the bit indexed position
       int     getInt(int I)                {return m.getInt (I*N+offset.i());}                                          // Get the int at the indicated position
-      //boolean getBool(int I) {return getBit((int)program.byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);} // Get the bit at the bit indexed location - debugging
       boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}           // Get the bit at the bit indexed location - debugging
 
       Ref step(int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
