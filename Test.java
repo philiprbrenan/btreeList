@@ -1011,7 +1011,7 @@ public class Test                                                               
     if (t != null) System.err.println(t);
    }
 
-  static void testStop(Object...O)                                                                                          // Say something, provide an error trace and stop
+  static void stop(Object...O)                                                                                          // Say something, provide an error trace and stop
    {final boolean sos = sayThisOrStop.size() > 0;                                                                       // Say or stop checking in effect
     say(O);
     if (sos)
