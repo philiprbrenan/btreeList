@@ -584,10 +584,10 @@ Leaf: size:   8
     l.ok(()->r, """
 Leaf: size:   8
  Ref   Key  Data
-   3     5    55
-   2     6    66
-   1     7    77
-   0     8    88
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
 """);
     l.maxSteps = 99999;
     l.execute();
@@ -1158,7 +1158,7 @@ data     :   11  12  13  14  15  16  17  18
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitLeft();
+    test_splitRight();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
