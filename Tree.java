@@ -122,7 +122,7 @@ class Tree extends Program                                                      
   class Allocation extends Int                                                                                          // An allocated node that could become a leaf or a branch or a tree base
    {Memory  memory;                                                                                                     // Memory used by allocation
 
-    Allocation(int At) {set(At); memory = }
+    Allocation(int At) {set(At);}
     Allocation(Int At) {this(At.i());}
     Int at()           {return this;}
 
