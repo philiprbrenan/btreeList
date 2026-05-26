@@ -844,6 +844,10 @@ Leaf: size:   8
     l.find(l.new Int(7)).ok(77);
     l.find(l.new Int(8)).ok(88);
     l.find(l.new Int(9)).notValid().ok(true);
+
+    l.delete(l.new Int(2)).ok(22);
+    l.find  (l.new Int(2)).notValid().ok(true);
+
     l.maxSteps = 99999;
     l.execute();
    }
