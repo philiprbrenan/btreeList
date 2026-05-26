@@ -1299,6 +1299,8 @@ data     :   11  12  13  14  15  16  17  18
     test_compactRight();
     test_splitRight();
     test_splitLeft();
+    test_mergeRight();
+    test_mergeLeft();
     //test_emptyTree();
     //test_compactLeafLeft();
     //test_compactLeafRight();
@@ -1330,7 +1332,7 @@ data     :   11  12  13  14  15  16  17  18
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_mergeRight();
+    test_mergeRight();
     test_mergeLeft();
    }
 
