@@ -310,7 +310,7 @@ class Slots extends Program                                                     
     new If (empty().Flip())                                                                                             // Keys cannot be compacted if the slots are full or empty
      {void Then()
        {new If (full().Flip())                                                                                          // Keys cannot be compacted if the slots are full or empty
-         {void Then() {}
+         {void Then()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
                {final Int k = usedKeys .firstZero();                                                                    // First empty key
@@ -335,7 +335,7 @@ class Slots extends Program                                                     
      new If (empty().Flip())                                                                                            // Keys cannot be compacted if the slots are full or empty
       {void Then()
         {new If (full().Flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
-         {void Then() {}
+         {void Then()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
                {final Int k = usedKeys .lastZero();                                                                     // Last empty key
