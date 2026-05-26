@@ -990,7 +990,7 @@ public class Program extends Test                                               
        }
      };
     P.execute();
-    //stop(P.output());
+    //testStop(P.output());
     ok(P.output(), """
 1 2
 1 4
@@ -1030,7 +1030,7 @@ public class Program extends Test                                               
        }
      };
     P.execute();
-    //stop(P.output());
+    //testStop(P.output());
     ok(P.output(), """
 1
 2
@@ -1071,7 +1071,7 @@ public class Program extends Test                                               
        }
      };
     P.execute();
-    //stop(P.output());
+    //testStop(P.output());
     ok(P.output(), """
 2
 1
@@ -1095,7 +1095,7 @@ public class Program extends Test                                               
        }
      };
     P.execute();
-    //stop(P.output());
+    //testStop(P.output());
     ok(P.output(), """
 0
 1
