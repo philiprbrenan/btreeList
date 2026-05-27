@@ -648,10 +648,12 @@ public class Program extends Test                                               
 
     ByteMemory(int Length) {bytes = new byte[Length];  clear(new Int(0), Length);}                                      // Create the memory
 
-    ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, Int Width)                             // Copy the specified memory
+    ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
      {new I()
        {void action()
-         {System.arraycopy(SourceMemory.bytes, SourceOffset.i(), bytes, TargetOffset.i(), Width.i());}};
+         {System.arraycopy(SourceMemory.bytes, SourceOffset.i(), bytes, TargetOffset.i(), Width);
+         }
+       };
       return this;
      }
 
@@ -761,7 +763,7 @@ public class Program extends Test                                               
       ByteMemory byteMemory() {return ByteMemory.this;}
       Program    program()    {return Program.this;}
 
-      Ref        copy(Ref Source, Int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
+      Ref        copy(Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
       Ref       clear(int Width)            {m.clear     (offset, Width);                    return this;}              // Clear memory by setting its bytes to zero
       Ref  invalidate(int Width)            {m.invalidate(offset, Width);                    return this;}              // Invalidate memory by setting its bytes to values unlikely to be valid
       Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
