@@ -881,7 +881,6 @@ Leaf: size:   8
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_findGe();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
