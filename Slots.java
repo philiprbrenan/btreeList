@@ -771,9 +771,9 @@ class Slots extends Program                                                     
     return f;
    }
 
-  Int findGe(Int Key)                                                                                                   // Find the index of the first key in the slots that is either equal to or greater than the specified key
-   {final Find f = find(Key);                                                                                           // Find result
-    final Int  r = new Int();                                                                                           // Find result
+  Int findGe(Int Key)                                                                                                   // Find the index of the first key in the slots that is either equal to or greater than the specified key else return invalid if there is no such key
+   {final Find f = find(Key);                                                                                           // Find the key result
+    final Int  r = new Int();                                                                                           // If the slots contains keys and one of them is greater than or equal to the search key, then return the index of that key, else return invalid
     new If (f.equal.or(f.lower))                                                                                        // Found the index of a key that is greater than or equal to the search key
      {void Then()
        {r.set(f.slot);                                                                                                  // Slot index of found key
