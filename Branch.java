@@ -606,10 +606,9 @@ Branch: size:   8
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
-    l.insert(l.new Int(8), l.new Int(88));
-   // l.new I() {void action() {testStop(l);}};
+    l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -618,7 +617,7 @@ Branch: size:   8
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
+Branch.java:0609:
 """);
     l.find(l.new Int(0)).notValid().ok(true);
     l.find(l.new Int(1)).ok(11);
@@ -660,7 +659,7 @@ Branch: size:   8
      {void branchCode()
        {final Branch l = this;
         l.setAsBranch();
-        l.isBranch()          .ok(true);
+        l.isBranch()        .ok(true);
         l.data(new Int(1), new Int(A));
         l.data(new Int(1))  .ok(A);
         l.up  (new Int(21));
@@ -699,7 +698,8 @@ Branch: size:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_find();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
