@@ -145,12 +145,12 @@ public class BitSet extends Program                                             
   int zeroBase (boolean X)  {return posZero(0);}                                                                        // Position in the current row
   int oneBase  (boolean X)  {return posOne (0);}                                                                        // Position in the current row
 
-  Int zeroBase ()        {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posZero  (0)      );}}; return r;} // Position in the current row
-  Int oneBase  ()        {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posOne   (0)      );}}; return r;} // Position in the current row
-  Int zeroPos  (Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, zeroPos  (Pos.i()));}}; return r;} // Position in the current row
-  Int zeroWidth(Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, zeroWidth(Pos.i()));}}; return r;} // Width of the current row
-  Int onePos   (Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, onePos   (Pos.i()));}}; return r;} // Position in the current row
-  Int oneWidth (Int Pos) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, oneWidth (Pos.i()));}}; return r;} // Width of the current row
+  Int zeroBase ()        {final Int r = new Int("zeroBase" ); new I() {void action() {r.ex(Int.Ops.set, posZero  (0)      );}}; return r;} // Position in the current row
+  Int oneBase  ()        {final Int r = new Int("oneBase"  ); new I() {void action() {r.ex(Int.Ops.set, posOne   (0)      );}}; return r;} // Position in the current row
+  Int zeroPos  (Int Pos) {final Int r = new Int("zeroPos"  ); new I() {void action() {r.ex(Int.Ops.set, zeroPos  (Pos.i()));}}; return r;} // Position in the current row
+  Int zeroWidth(Int Pos) {final Int r = new Int("zeroWidth"); new I() {void action() {r.ex(Int.Ops.set, zeroWidth(Pos.i()));}}; return r;} // Width of the current row
+  Int onePos   (Int Pos) {final Int r = new Int("onePos"   ); new I() {void action() {r.ex(Int.Ops.set, onePos   (Pos.i()));}}; return r;} // Position in the current row
+  Int oneWidth (Int Pos) {final Int r = new Int("oneWidth" ); new I() {void action() {r.ex(Int.Ops.set, oneWidth (Pos.i()));}}; return r;} // Width of the current row
 
   Int lowOne(Int Pos)                                                                                                   // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
    {if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
