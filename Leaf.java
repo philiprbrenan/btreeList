@@ -868,31 +868,6 @@ Leaf: size:   8
     test_find(false);
    }
 
-/*
-
-  static void test_locateFirstGeKey()
-   {final Tree  t =   new Tree (8);
-    final Slots s = t.new Slots(8);
-
-    s.usedSlots(s.new Slot( 1), t.new Bool(true)); s.slots(s.new Slot( 1), s.new slot(7)); s.usedRefs(s.new slot(7), t.new Bool(true)); s.key(s.new slot(7), t.new Key(22));
-    s.usedSlots(s.new Slot( 5), t.new Bool(true)); s.slots(s.new Slot( 5), s.new slot(4)); s.usedRefs(s.new slot(4), t.new Bool(true)); s.key(s.new slot(4), t.new Key(24));
-    s.usedSlots(s.new Slot( 9), t.new Bool(true)); s.slots(s.new Slot( 9), s.new slot(2)); s.usedRefs(s.new slot(2), t.new Bool(true)); s.key(s.new slot(2), t.new Key(26));
-    s.usedSlots(s.new Slot(14), t.new Bool(true)); s.slots(s.new Slot(14), s.new slot(0)); s.usedRefs(s.new slot(0), t.new Bool(true)); s.key(s.new slot(0), t.new Key(28));
-    ok(s, """
-Slots    : name:  0, type:  0, refs:  8
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slots    :    0   7   0   0   0   4   0   0   0   2   0   0   0   0   0   0
-usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   .   X   .
-usedRefs :    X   .   X   .   X   .   .   X
-keys     :   28   0  26   0  24   0   0  22
-""");
-    ok(s.locateFirstGe(t.new Key(23)).i(),    5);
-    ok(s.locateFirstGe(t.new Key(24)).i(),    5);
-    ok(s.locateFirstGe(t.new Key(25)).i(),    9);
-    ok(s.locateFirstGe(t.new Key(30)).notValid());
-   }
-*/
-
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_leaf();
     test_compactLeft();
@@ -902,39 +877,11 @@ keys     :   28   0  26   0  24   0   0  22
     test_mergeRight();
     test_mergeLeft();
     test_find();
-    //test_emptyTree();
-    //test_compactLeafLeft();
-    //test_compactLeafRight();
-    //test_compactBranchLeft();
-    //test_compactBranchRight();
-    //test_duplicate_leaf();
-    //test_splitLeftLeafIntoRight();
-    //test_splitRightLeafIntoLeft();
-    //test_duplicate_branch();
-    //test_splitLeftBranchIntoRight();
-    //test_splitRightBranchIntoLeft();
-    //test_mergeLeafLeft();
-    //test_mergeLeafRight();
-    //test_mergeBranchLeft();
-    //test_mergeBranchRight();
-    //test_splitLeaf();
-    //test_splitBranch();
-    //test_insert2();
-    //test_insert();
-    //test_insert_reverse();
-    //test_insert_random();
-    //test_insert_random_32();
-    //test_delete();
-    //test_delete_descending();
-    //test_delete_random_32();
-    //test_deep();
-    //test_idi();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_mergeRight();
-    test_mergeLeft();
+    test_findGe();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
