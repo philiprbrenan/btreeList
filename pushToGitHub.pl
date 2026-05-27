@@ -18,7 +18,7 @@ my $folder  = fpd $home, $repo;                                                 
 my $shaFile = fpe $folder, q(sha);                                                                                      # Sh256 file sums for each known file to detect changes
 my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
-my @exclude = qw(Branch Tree);                                                                                          # Java files to exclude from testing as they are not yet ready
+my @exclude = qw(Branch.java Tree.java);                                                                                # Java files to exclude from testing as they are not yet ready
 my %exclude = map {$_=>1} @exclude;
 
 say STDERR timeStamp,  " push to github $repo";
