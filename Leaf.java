@@ -10,7 +10,8 @@ class Leaf extends Program                                                      
  {final int        maxLeafSize;                                                                                         // The maximum number of entries in a leaf of the tree
   final Slots            slots;                                                                                         // Slots used to order keys in leaf
   ByteMemory.Ref  byteMemoryRef = null;                                                                                 // Byte memory reference containing the slots
-  final ByteMemory.Ref refType;                                                                                         // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+  final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
+  final ByteMemory.Ref refUp;                                                                                           // Parent node
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each in use key
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being used to map to keys
   final Build            build;                                                                                         // Build used to construct this leaf
@@ -46,8 +47,9 @@ class Leaf extends Program                                                      
      }
 
     class MemoryPositions                                                                                               // Layout of memory
-     {final int posType  = 0;                                                                                           // A tree consists of leaves and branches, this field tells us which one we have
-      final int posSlots = posType + ib();
+     {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
+      final int posUp    = posMark + ib();
+      final int posSlots = posUp   + ib();
       final int posData  = posSlots+slots.size();
       final int size     = posData+ib(maxLeafSize);
      }
@@ -62,7 +64,8 @@ class Leaf extends Program                                                      
     slots         = new Slots(new Slots.Build().numberOfKeys(maxLeafSize).parent(parentProgram));                       // Slots for leaf
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refType       = byteMemoryRef;                                                                                      // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refMark       = byteMemoryRef;                                                                                      // Marks thos node as a leaf or a branch
+    refUp         = byteMemoryRef.step(m.posUp);                                                                        // Reference oft parent node
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
 
@@ -103,6 +106,11 @@ class Leaf extends Program                                                      
   Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
+  Bool isLeaf()   {return refMark.getInt().eq(   1) ;}                                                                  // Whether we are on a leaf or not
+  void makeLeaf() {       refMark.putInt(new Int(1));}                                                                  // Mark this as a leaf
+
+  Int  up()       {return refUp.getInt();}                                                                              // Whether we are on a leaf or not
+  void up(Int I)  {       refUp.putInt(I);}                                                                             // Mark this as a leaf
 
   void compactLeft()                                                                                                    // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
@@ -868,6 +876,24 @@ Leaf: size:   8
     test_find(false);
    }
 
+  static void test_fixedFields(boolean  Ex)
+   {final int  u = 21;
+    final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex))
+     {void leafCode()
+       {makeLeaf();
+        isLeaf().ok(true);
+        up(new Int(u));
+        up().ok(u);
+        execute();
+       }
+     };
+   }
+
+  static void test_fixedFields()
+   {test_fixedFields(true);
+    test_fixedFields(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_leaf();
     test_compactLeft();
@@ -877,10 +903,12 @@ Leaf: size:   8
     test_mergeRight();
     test_mergeLeft();
     test_find();
+    test_fixedFields();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
+    test_fixedFields();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
