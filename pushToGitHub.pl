@@ -18,13 +18,12 @@ my $folder  = fpd $home, $repo;                                                 
 my $shaFile = fpe $folder, q(sha);                                                                                      # Sh256 file sums for each known file to detect changes
 my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
-my @exclude = qw(Branch.java Tree.java);                                                                                # Java files to exclude from testing as they are not yet ready
-my %exclude = map {$_=>1} @exclude;
+my $exclude = q(Branch|Tree);                                                                                           # Java files to exclude from testing as they are not yet ready
 
 say STDERR timeStamp,  " push to github $repo";
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
-my @java  = grep {!defined $exclude{$_}} grep {fe($_) =~ m(java)is} @files;                                             # Java files
+my @java  = grep {!m($exclude)} grep {fe($_) =~ m(java)is} @files;                                                      # Java files
    @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
 if (!@files)                                                                                                            # No new files
  {say "Everything up to date";
