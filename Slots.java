@@ -699,7 +699,7 @@ class Slots extends Program                                                     
                           void Else()                                                                                   // Search range
                            {new If (u.canGoLeft(p))                                                                     // Go left if possible  to search first part of range if it exists
                              {void Then()
-                               {final Int lp = u.childLowOne    (p);                                                       // Upper end of left range
+                               {final Int lp = u.childLowOne    (p);                                                    // Upper end of left range
                                 final Int lr = u.highOne        (lp);                                                   // Index of upper end of range
                                 final Int lR = getSlotToKeyValue(lr);                                                   // Value of key at upper end of range
 
@@ -770,6 +770,21 @@ class Slots extends Program                                                     
      };
     return f;
    }
+
+  Int findGe(Int Key)                                                                                                   // Find the index of the first key in the slots that is either equal to or greater than the specified key
+   {final Find f = find(Key);                                                                                           // Find result
+    final Int  r = new Int();                                                                                           // Find result
+    new If (f.equal.or(f.lower))                                                                                        // Found the index of a key that is greater than or equal to the search key
+     {void Then()
+       {r.set(f.slot);                                                                                                  // Slot index of found key
+       }
+      void Else()
+       {r.copy(usedSlotsToKeys.nextOne(f.slot));                                                                         // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want. Have to use copy because the value might be invalid.
+       }
+     };
+    return r;                                                                                                           // Result found if valid, if invalid greater than any key in the slots
+   }
+
 
   Int insert(Int Key)                                                                                                   // Insert a key into the slots and return the slot choosen
    {if (immediate() && usedKeys.full().b()) stop("No more space to insert key:", Key);                                  // No space left
@@ -1554,8 +1569,8 @@ Zero:
    3   43    2 |  1  1
    4   45    1 |  1
 """);
-        Find f = find(new Int(45));
-        //testStop(f);
+        maxSteps = 99999;
+        execute();
         ok(find(new Int( 5)), "Find(slot=0, lower=true, higher=false, equal=false, empty=false)");
         ok(find(new Int(11)), "Find(slot=0, lower=true, higher=true, equal=true, empty=false)");
         ok(find(new Int(15)), "Find(slot=2, lower=true, higher=false, equal=false, empty=false)");
@@ -1568,7 +1583,8 @@ Zero:
        }
      };
    }
-  static void test_findRight()
+
+  static void test_findRight()                                                                                          // Same as find but with the slots on the right
    {final Slots s = new Slots(new Build().numberOfKeys(8))
      {void slotsCode()
        {putSlotToKeys(new Int( 9), new Int(1));
@@ -1612,8 +1628,8 @@ Zero:
    3   43    2 |  1  1
    4   45    1 |  1
 """);
-        Find f = find(new Int(45));
-        //testStop(f);
+        maxSteps = 99999;
+        execute();
         ok(find(new Int( 5)), "Find(slot=9, lower=true, higher=false, equal=false, empty=false)");
         ok(find(new Int(11)), "Find(slot=9, lower=true, higher=true, equal=true, empty=false)");
         ok(find(new Int(15)), "Find(slot=11, lower=true, higher=false, equal=false, empty=false)");
@@ -1691,6 +1707,75 @@ keys     :   11  12  13  15  16  17  18  14
   static void test_insert2()
    {test_insert2(true);
     test_insert2(false);
+   }
+
+  static void test_findGe(boolean Ex)
+   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+     {void slotsCode()
+       {insert(new Int(11)).ok( 8);
+        insert(new Int(22)).ok( 9);
+        insert(new Int(33)).ok(10);
+        insert(new Int(44)).ok(11);
+        insert(new Int(55)).ok(12);
+        insert(new Int(66)).ok(13);
+        insert(new Int(77)).ok(14);
+        insert(new Int(88)).ok(15);
+
+        redistribute();
+        //testStop(this, usedSlotsToKeys);
+        ok(()->this, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
+keysSlots:    0   2   4   6   8  10  12  14   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .   X   .
+usedKeys :    X   X   X   X   X   X   X   X
+keys     :   11  22  33  44  55  66  77  88
+""");
+        //testStop(usedSlotsToKeys);
+        ok(()->usedSlotsToKeys, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0
+One:
+   2   16    8 |  1  1  1  1  1  1  1  1
+   3   24    4 |  1  1  1  1
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  1  1  1  1  1  1  1  1
+   2   39    4 |  1  1  1  1
+   3   43    2 |  1  1
+   4   45    1 |  1
+""");
+
+        findGe(new Int(11)).ok( 0);
+        findGe(new Int(22)).ok( 2);
+        findGe(new Int(33)).ok( 4);
+        findGe(new Int(44)).ok( 6);
+        findGe(new Int(55)).ok( 8);
+        findGe(new Int(66)).ok(10);
+        findGe(new Int(77)).ok(12);
+        findGe(new Int(88)).ok(14);
+
+        findGe(new Int(10)).ok(( 0));
+        findGe(new Int(20)).ok(( 2));
+        findGe(new Int(30)).ok(( 4));
+        findGe(new Int(40)).ok(( 6));
+        findGe(new Int(50)).ok(( 8));
+        findGe(new Int(60)).ok((10));
+        findGe(new Int(70)).ok((12));
+        findGe(new Int(80)).ok((14));
+        findGe(new Int(90)).notValid().ok(true);
+
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_findGe()
+   {test_findGe(true);
+    test_findGe(false);
    }
 
   static void test_splitRightEven(boolean Ex)
@@ -1979,6 +2064,7 @@ keys     :    0   0   0   0   0   0   0
     test_findRight();
     test_insert();
     test_insert2();
+    test_findGe();
     test_splitRightEven();
     test_splitLeftEven();
     test_splitRightOdd();
