@@ -64,7 +64,7 @@ class Leaf extends Program                                                      
     slots         = new Slots(new Slots.Build().numberOfKeys(maxLeafSize).parent(parentProgram));                       // Slots for leaf
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = byteMemoryRef;                                                                                      // Marks thos node as a leaf or a branch
+    refMark       = byteMemoryRef.step(m.posMark);                                                                                      // Marks thos node as a leaf or a branch
     refUp         = byteMemoryRef.step(m.posUp);                                                                        // Reference oft parent node
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
@@ -108,13 +108,16 @@ class Leaf extends Program                                                      
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
-  void      clear() {byteMemoryRef.clear(bytesNeeded()); makeLeaf();}                                                   // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
+  void      clear() {byteMemoryRef.clear(bytesNeeded()); setAsLeaf();}                                                   // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   Bool     isLeaf() {return refMark.getInt().eq(   1) ;}                                                                // Whether we are on a leaf or not
-  void   makeLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a leaf
+  void  setAsLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a leaf
 
   Int  up()         {return refUp.getInt();}                                                                            // Get reference to a parent node
   void up(Int I)    {       refUp.putInt(I);}                                                                           // Set reference to parent node
+
+  void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
+  void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
 
   void compactLeft()                                                                                                    // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
@@ -611,17 +614,26 @@ Leaf: size:   8
    }
 
   static void test_fixedFields(boolean  Ex)
-   {final int  u = 21;
-    final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex))
+   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex))
      {void leafCode()
-       {data(new Int(1), new Int(22));
-        data(new Int(1))     .ok(22);
-        up(new Int(u));
-        up()   .ok(u);
-        clear();
-        data(new Int(1))     .ok( 0);
-        isLeaf()             .ok(true);
-        up()                 .ok(0);
+       {final Leaf l = this;
+        l.setAsLeaf();
+        l.isLeaf()          .ok(true);
+        l.data(new Int(1), new Int(22));
+        l.data(new Int(1))  .ok(22);
+        l.up  (new Int(21));
+        l.up  ()            .ok(21);
+        final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(l));
+        r.copy(l);
+        r.isLeaf()          .ok(true);
+
+        l.clear();
+        l.data(new Int(1))  .ok(0);
+        l.isLeaf()          .ok(true);
+        l.up()              .ok(0);
+        r.data(new Int(1))  .ok(22);
+        r.isLeaf()          .ok(true);
+        r.up()              .ok(21);
         execute();
        }
      };
