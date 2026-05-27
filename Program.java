@@ -220,6 +220,10 @@ public class Program extends Test                                               
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
+    Bool (String Name)             {this();  name = Name;}                                                              // Constructors with name supplied
+    Bool (String Name, boolean  I) {this(I); name = Name;}
+    Bool (String Name, Bool     I) {this(I); name = Name;}
+
     Bool           ()          {ai(); invalidate();}                                                                    // Constructors
     Bool           (boolean I) {ai(); ie(Ops.set, I);}
     Bool           (Bool    I) {ai(); ie(Ops.set, I);}
@@ -419,6 +423,10 @@ public class Program extends Test                                               
     int         i()  {x(); return i;}                                                                                   // Current value
     boolean     v()  {     return v;}                                                                                   // Value has been set
     void        x()  {if (!v) variableNotSet("Int", name);}                                                             // Check a value has been set for the integer
+
+    Int (String Name)        {this();  name = Name;}                                                                    // Constructors with name supplied
+    Int (String Name, int I) {this(I); name = Name;}
+    Int (String Name, Int I) {this(I); name = Name;}
 
     Int      ()      {ai(); invalidate();}                                                                              // Constructors
     Int (int I)      {ai(); ie(Ops.set, I);}
@@ -748,7 +756,7 @@ public class Program extends Test                                               
 //D2 Memory references                                                                                                  // References to byte memory
 
     class Ref                                                                                                           // Reference into memory
-     {final Int offset = new Int();                                                                                     // Offset of this reference in memory
+     {final Int offset = new Int("memoryReferenceOffset");                                                              // Offset of this reference in memory
       final int N = Integer.BYTES;
       final ByteMemory m = ByteMemory.this;
       Ref(int Offset) {offset.set(Offset);}                                                                             // Offset this ref
@@ -758,23 +766,20 @@ public class Program extends Test                                               
       Program    program()    {return Program.this;}
 
       Ref        copy(Ref Source, Int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
-
-      Ref       clear(Int Width)            {m.clear(offset,     Width);                 return this;}                  // Clear memory by setting its bytes to zero
-      Ref       clear(int Width)            {m.clear(offset.i(), Width);                 return this;}                  // Clear memory by setting its bytes to zero
-      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);            return this;}                  // Invalidate memory by setting its bytes to values unlikely to be valid
-      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);            return this;}                  // Invalidate memory by setting its bytes to values unlikely to be valid
+      Ref       clear(Int Width)            {m.clear(offset, Width);                         return this;}              // Clear memory by setting its bytes to zero
+      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);                return this;}              // Invalidate memory by setting its bytes to values unlikely to be valid
+      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);                return this;}              // Invalidate memory by setting its bytes to values unlikely to be valid
       Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
       Int     getInt (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                   // Get the int at the indicated position
       Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
       Bool    getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                           // Get the bit at the bit indexed location
-      Ref     putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                return this;}                  // Set the byte at the indicated position relative to the start to the specified value
-      Ref     putInt (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);         return this;}                  // Set the int at the indicated position relative to the start to the specified value
-      Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);             return this;}                  // Set the bit at the indicated position in the byte at the specified position to the specified value
-      Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K); return this;}                  // Set the bit at the bit indexed position
-      int      getInt(int I)                {return m.getInt (I*N+offset.i());}
-
-      Int      getInt()                     {                      return m.getInt (offset);}                           // Get the referenced int
-      Ref      putInt(Int J)                {m.putInt (offset, J); return this;}                                        // Put the referenced int
+      Ref     putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                    return this;}              // Set the byte at the indicated position relative to the start to the specified value
+      Ref     putInt (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);             return this;}              // Set the int at the indicated position relative to the start to the specified value
+      Ref     putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}              // Set the bit at the indicated position in the byte at the specified position to the specified value
+      Ref     putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}              // Set the bit at the bit indexed position
+      int      getInt(int I)                {return m.getInt (I*N+offset.i());}                                         // Get an int immediately when debugging
+      Int      getInt()                     {                                                return m.getInt (offset);} // Get the referenced int
+      Ref      putInt(Int J)                {m.putInt (offset, J);                           return this;}              // Put the referenced int
 
       boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}           // Get the bit at the bit indexed location - debugging
 
