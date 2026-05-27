@@ -7,8 +7,8 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Leaf extends Program                                                                                              // A leaf in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
- {final int        maxLeafSize;                                                                                         // The maximum number of entries in a leaf of the tree
-  final Slots            slots;                                                                                         // Slots used to order keys in leaf
+ {final int   maxSize;                                                                                                  // The maximum number of entries in a leaf of the tree
+  final Slots slots;                                                                                                    // Slots used to order keys in leaf
   ByteMemory.Ref  byteMemoryRef = null;                                                                                 // Byte memory reference containing the slots
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
   final ByteMemory.Ref refUp;                                                                                           // Parent node
@@ -20,7 +20,7 @@ class Leaf extends Program                                                      
 //D1 Construction                                                                                                       // Construct and layout a leaf
 
   static class Build                                                                                                    // Parameters describing a leaf
-   {Integer         maxLeafSize;                                                                                        // Maximum number of keys in leaf
+   {Integer         maxSize;                                                                                            // Maximum number of keys in leaf
     boolean         immediate = true;                                                                                   // Immediate mode
     boolean         trace = true;                                                                                       // Trace execution
     Program         parent;                                                                                             // Parent program if any
@@ -28,15 +28,15 @@ class Leaf extends Program                                                      
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build     slots;                                                                                              // Bytes needed for slots
 
-    Build immediate    (boolean  Immediate) {immediate     = Immediate;   return this;}
-    Build maxLeafSize  (int MaxLeafSize)    {maxLeafSize   = MaxLeafSize; return this;}
-    Build memory       (ByteMemory.Ref Ref) {byteMemoryRef = Ref;         return this;}
-    Build parent       (Program    Parent)  {parent        = Parent;      return this;}
-    Build trace        (boolean     Trace)  {trace         = Trace;       return this;}
+    Build immediate    (boolean Immediate ) {immediate     = Immediate; return this;}
+    Build maxSize      (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
+    Build memory       (ByteMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
+    Build parent       (Program Parent    ) {parent        = Parent;    return this;}
+    Build trace        (boolean Trace     ) {trace         = Trace;     return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
-      final Slots.Build   s = slots = new Slots.Build().numberOfKeys(maxLeafSize);
+      final Slots.Build   s = slots = new Slots.Build().numberOfKeys(maxSize);
       final Program.Build S = s.build();                                                                                // Has the side effect of computing the size of the slots
       memoryPositions = new MemoryPositions();
       if (byteMemoryRef == null) p.memory(size());
@@ -51,7 +51,7 @@ class Leaf extends Program                                                      
       final int posUp    = posMark + ib();
       final int posSlots = posUp   + ib();
       final int posData  = posSlots+slots.size();
-      final int size     = posData+ib(maxLeafSize);
+      final int size     = posData+ib(maxSize);
      }
 
     int size() {return memoryPositions.size;}                                                                           // Bytes needed for the slots
@@ -60,11 +60,11 @@ class Leaf extends Program                                                      
   Leaf(Build Build)                                                                                                     // Create a description of a leaf
    {super(Build.build());                                                                                               // Program for leaf
     build         = Build;
-    maxLeafSize   = Build.maxLeafSize;
-    slots         = new Slots(new Slots.Build().numberOfKeys(maxLeafSize).parent(parentProgram));                       // Slots for leaf
+    maxSize       = Build.maxSize;
+    slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).parent(parentProgram));                           // Slots for leaf
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = byteMemoryRef.step(m.posMark);                                                                                      // Marks thos node as a leaf or a branch
+    refMark       = byteMemoryRef.step(m.posMark);                                                                      // Marks thos node as a leaf or a branch
     refUp         = byteMemoryRef.step(m.posUp);                                                                        // Reference oft parent node
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
@@ -100,15 +100,16 @@ class Leaf extends Program                                                      
     return i;
    }
 
-  Bool empty() {return slots.empty();}                                                                                  // Is the leaf empty
-  Bool full () {return slots.full ();}                                                                                  // Is the leaf full
-  Int  count() {return slots.count();}                                                                                  // Number of key/data pairs in the leaf
+  Bool empty()   {return slots.empty();}                                                                                // Is the leaf empty
+  Bool full ()   {return slots.full ();}                                                                                // Is the leaf full
+  Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the leaf
+  int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the leaf
 
   Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
-  void      clear() {byteMemoryRef.clear(bytesNeeded()); setAsLeaf();}                                                   // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
+  void      clear() {byteMemoryRef.clear(bytesNeeded()); setAsLeaf();}                                                  // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   Bool     isLeaf() {return refMark.getInt().eq(   1) ;}                                                                // Whether we are on a leaf or not
   void  setAsLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a leaf
@@ -130,19 +131,19 @@ class Leaf extends Program                                                      
    }
 
   void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
-   {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
+   {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf left = this;
     left.compactLeft();                                                                                                 // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
-    new ForCount (new Int(maxLeafSize))        {void body(Int Index) {Right.data(Index, left.data(Index));}};           // Copy the data values associated with the slots
+    new ForCount (new Int(maxSize()))        {void body(Int Index) {Right.data(Index, left.data(Index));}};             // Copy the data values associated with the slots
     slots.splitRightEven(Right.slots);                                                                                  // Split the slots
    }
 
   void splitLeft(Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf
-   {if (immediate() && count().i() != maxLeafSize) stop("Leaf not full");                                               // The leaf must be full
+   {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf right = this;
     right.compactLeft(); Left.slots.clear();                                                                            // Compact source slots so we know where they are and clear target
-    new ForCount (new Int(maxLeafSize / 2))    {void body(Int Index) {Left.data(Index, right.data(Index));}};           // Copy the data values associated with the slots
+    new ForCount (new Int(maxSize() / 2))    {void body(Int Index) {Left.data(Index, right.data(Index));}};             // Copy the data values associated with the slots
     slots.splitLeftEven(Left.slots);                                                                                    // Split the slots
    }
 
@@ -153,10 +154,10 @@ class Leaf extends Program                                                      
     left.compactLeft(); Right.compactRight();                                                                           // Compact source slots so we know where they are
     final Bool r = new Bool().clear();
 
-    new If(lc.Add(rc).le(maxLeafSize))
+    new If(lc.Add(rc).le(maxSize()))
      {void Then()
        {r.set();
-        new ForCount(rc, new Int(maxLeafSize)) {void body(Int Index) {left.data(Index, Right.data(Index));}};           // Copy the data values associated with the slots
+        new ForCount(rc, new Int(maxSize())) {void body(Int Index) {left.data(Index, Right.data(Index));}};             // Copy the data values associated with the slots
         left.slots.mergeFromRightEven(Right.slots);                                                                     // Split the slots
        }
      };
@@ -169,7 +170,7 @@ class Leaf extends Program                                                      
     Left.compactLeft(); right.compactRight();                                                                           // Compact source slots so we know where they are
     final Bool r = new Bool().clear();
 
-    new If(lc.Add(rc).le(maxLeafSize))
+    new If(lc.Add(rc).le(maxSize()))
      {void Then()
        {r.set();
         new ForCount(lc)                       {void body(Int Index) {right.data(Index, Left.data(Index));}};           // Copy the data values associated with the slots
@@ -178,17 +179,18 @@ class Leaf extends Program                                                      
      };
    }
 
-  int splitSize() {return maxLeafSize>>>1;}                                                                           // Size of a split leaf
+  int splitSize() {return maxSize()>>>1;}                                                                               // Size of a split leaf
 
 //D2 Print                                                                                                              // Print the leaf
 
   public String toString()                                                                                              // Print a leaf
-   {final StringBuilder s = new StringBuilder(f("Leaf: size: "+formatKey+"\n", maxLeafSize));
+   {final StringBuilder s = new StringBuilder(f("Leaf: size: "+formatKey+"\n", maxSize()));
     s.append(" Ref   Key  Data\n");
     for (int i : range(slots.numberOfSlotsToKeys()))
      {if (slots.getSlotToKeysInUse(i))
        {final String f = "%4d  %4d  %4d\n";
-        final String t = f(f,  slots.getSlotToKeyIndex(i), slots.getSlotToKeyValue(i), refData.getInt(slots.getSlotToKeyIndex(i)));
+        final int    k = slots.getSlotToKeyIndex(i);
+        final String t = f(f, k, slots.getSlotToKeyValue(i), refData.getInt(k));
         s.append(t);
        }
      }
@@ -196,7 +198,7 @@ class Leaf extends Program                                                      
    }
 
   String dumpData()                                                                                                     // Dump the data
-   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxLeafSize));
+   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxSize()));
     s.append(" Ref  Data\n");
     for (int i : range(slots.numberOfKeys()))
      {if (slots.getKeyInUse(i))
@@ -209,7 +211,7 @@ class Leaf extends Program                                                      
    }
 
   String dumpDataArray()                                                                                                // Dump the data array
-   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxLeafSize));
+   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxSize()));
     s.append(" Ref  Data\n");
     for (int i : range(slots.numberOfKeys())) s.append(f("%4d  %4d\n",  i, refData.getInt(i)));
     return ""+s;
@@ -218,7 +220,7 @@ class Leaf extends Program                                                      
 //D1 Tests                                                                                                              // Tests
 
   static void test_leaf(boolean Ex)
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -254,7 +256,7 @@ Leaf: size:   8
    }
 
   static void test_compactLeft(boolean  Ex)
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -287,7 +289,7 @@ Leaf: size:   8
    }
 
   static void test_compactRight(boolean  Ex)
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -321,7 +323,7 @@ Leaf: size:   8
    }
 
   static void test_splitRight(boolean Ex)
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -343,7 +345,7 @@ Leaf: size:   8
    5     7    77
    7     8    88
 """);
-    final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(l));
+    final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -373,7 +375,7 @@ Leaf: size:   8
    }
 
   static void test_splitLeft(boolean  Ex)
-   {final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -395,7 +397,7 @@ Leaf: size:   8
    5     7    77
    7     8    88
 """);
-    final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(r));
+    final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -425,7 +427,7 @@ Leaf: size:   8
    }
 
   static void test_mergeRight(boolean Ex)
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -447,7 +449,7 @@ Leaf: size:   8
    5     7    77
    7     8    88
 """);
-    final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(l));
+    final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -491,7 +493,7 @@ Leaf: size:   8
    }
 
   static void test_mergeLeft(boolean  Ex)
-   {final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -513,7 +515,7 @@ Leaf: size:   8
    5     7    77
    7     8    88
 """);
-    final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(r));
+    final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -557,7 +559,7 @@ Leaf: size:   8
    }
 
   static void test_find(boolean  Ex)
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex));
+   {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -614,16 +616,17 @@ Leaf: size:   8
    }
 
   static void test_fixedFields(boolean  Ex)
-   {final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex))
+   {final int A = 22, B = 21;
+     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex))
      {void leafCode()
        {final Leaf l = this;
         l.setAsLeaf();
         l.isLeaf()          .ok(true);
-        l.data(new Int(1), new Int(22));
-        l.data(new Int(1))  .ok(22);
+        l.data(new Int(1), new Int(A));
+        l.data(new Int(1))  .ok(A);
         l.up  (new Int(21));
-        l.up  ()            .ok(21);
-        final Leaf r = new Leaf(new Build().maxLeafSize(8).immediate(Ex).parent(l));
+        l.up  ()            .ok(B);
+        final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
         r.copy(l);
         r.isLeaf()          .ok(true);
 
@@ -631,9 +634,9 @@ Leaf: size:   8
         l.data(new Int(1))  .ok(0);
         l.isLeaf()          .ok(true);
         l.up()              .ok(0);
-        r.data(new Int(1))  .ok(22);
+        r.data(new Int(1))  .ok(A);
         r.isLeaf()          .ok(true);
-        r.up()              .ok(21);
+        r.up()              .ok(B);
         execute();
        }
      };
