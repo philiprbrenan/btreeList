@@ -133,11 +133,12 @@ class Leaf extends Program                                                      
     slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
    }
 
-  private void copyData(Leaf Source, Int Start, Int End)                                                                // Copy the data values in the specified key range from the specified source                                                                                        // Split a full leaf rightwards into a supplied leaf
-   {new ForCount (Start, End)
+  private void copySplitData(Leaf Target, Int Start, Int End)                                                           // Copy out the indexed data values in the specified key range from the specified source and place them in the exact same position in the target
+   {final Leaf source = this;
+    new ForCount (Start, End)
      {void body(Int Index)
-       {final Int k = Source.slots.getSlotToKeyIndex(Index);
-        data(k,  Source.data(k));
+       {final Int s =  source.slots.getSlotToKeyIndex(Index);                                                            // Index the key to be copied out
+        Target.data(s, source.data(s));                                                                                 // Copy the data value from the source leaf into the exact same position in the left leaf
        }
      };
    }
@@ -145,51 +146,67 @@ class Leaf extends Program                                                      
   void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf left = this;
-    left.compactLeft();                                                                                                 // Compact source slots so we know where they are
+    left .compactLeft();                                                                                                // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
-    copyData(Right, new Int(0), new Int(maxSize()));                                                                     // Copy the data values associated with the slots
-    slots.splitRightEven(Right.slots);                                                                                  // Split the slots
+    left.copySplitData(Right, new Int(maxSize/2), new Int(maxSize()));                                                  // Copy the data values associated with the slots
+    left.slots.splitRightEven(Right.slots);                                                                             // Split the slots
    }
 
   void splitLeft(Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf right = this;
     right.compactLeft();                                                                                                // Compact source slots so we know where they are
-    Left.slots.clear();                                                                                                 // Clear target
-    copyData(right, new Int(0), new Int(maxSize() / 2));                                                                // Copy the data values associated with the slots
-    slots.splitLeftEven(Left.slots);                                                                                    // Split the slots
+    Left .slots.clear();                                                                                                // Clear target
+    right.copySplitData(Left, new Int(0), new Int(maxSize() / 2));                                                      // Copy the data values associated with the slots
+    right.slots.splitLeftEven(Left.slots);                                                                              // Split the slots
    }
 
-  void mergeRight(Leaf Right)                                                                                           // Merge the leaf into the right of this leaf
+  private void copyMergeData(Leaf Source, Int Start, Int End)                                                           // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
+   {new ForCount (Start, End)
+     {void body(Int Index)
+       {data(Index, Source.data(Index));                                                                                // The keys have been compacted left and right so we can copy them from the source position into the same position in the target without collisions
+       }
+     };
+   }
+
+  Bool mergeRight(Leaf Right)                                                                                           // Merge the leaf into the right of this leaf
    {final Leaf left = this;
     final Int  lc   = left .count();
     final Int  rc   = Right.count();
-    left.compactLeft(); Right.compactRight();                                                                           // Compact source slots so we know where they are
-    final Bool r = new Bool().clear();
+    final Bool r    = new Bool().clear();
 
-    new If(lc.Add(rc).le(maxSize()))
+    new If (lc.Add(rc).le(maxSize()))
      {void Then()
        {r.set();
-        copyData(Right, rc, new Int(maxSize()));                                                                        // Copy the data values associated with the slots
-        left.slots.mergeFromRightEven(Right.slots);                                                                     // Split the slots
+        left .compactLeft();    Right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
+        left .slots.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
+        Right.slots.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
+
+        left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
+        left.slots.mergeFromRightEven(Right.slots);                                                                     // Merge the slots
        }
      };
+    return r;
    }
 
-  void mergeLeft(Leaf Left)                                                                                             // Merge the leaf into the right of this leaf
+  Bool mergeLeft(Leaf Left)                                                                                             // Merge the leaf into the right of this leaf
    {final Leaf right = this;
-    final Int  lc   = Left .count();
-    final Int  rc   = right.count();
-    Left.compactLeft(); right.compactRight();                                                                           // Compact source slots so we know where they are
-    final Bool r = new Bool().clear();
+    final Int  lc    = Left .count();
+    final Int  rc    = right.count();
+    final Bool r     = new Bool().clear();
 
-    new If(lc.Add(rc).le(maxSize()))
+    new If (lc.Add(rc).le(maxSize()))
      {void Then()
        {r.set();
-        copyData(right, new Int(0), lc);                                                                                // Copy the data values associated with the slots
-        right.slots.mergeFromLeftEven(Left.slots);                                                                      // Split the slots
+        Left .compactLeft();    right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
+        Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
+        right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
+
+        right.copyMergeData(Left, new Int(0), lc);                                                                            // Copy the data values associated with the slots
+        right.slots.mergeFromLeftEven(Left.slots);                                                                      // Merge the slots
        }
      };
+    return r;
    }
 
   int splitSize() {return maxSize()>>>1;}                                                                               // Size of a split leaf
@@ -674,7 +691,9 @@ Leaf: size:   8
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_fixedFields();
+    //test_splitRight(true);
+    test_mergeRight();
+    test_mergeLeft();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
