@@ -645,7 +645,7 @@ public class Program extends Test                                               
       bytes[I] = J;                                                                                                     // Set the value of a byte
      }
 
-    ByteMemory(int Length) {bytes = new byte[Length];  clear(0, Length);}                                               // Create the memory
+    ByteMemory(int Length) {bytes = new byte[Length];  clear(new Int(0), Length);}                                      // Create the memory
 
     ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, Int Width)                             // Copy the specified memory
      {new I()
@@ -654,14 +654,9 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory clear(int Start, int Width)                                                                              // Clear memory by setting its bytes to zero
-     {Arrays.fill(bytes, Start,  Start+Width, (byte)0);
-      return this;
-     }
-
-    ByteMemory clear(Int Start, Int Width)
+    ByteMemory clear(Int Start, int Width)
      {final Int w = Start.Add(Width);
-      new I() {void action() {Arrays.fill(bytes, Start.i(),  w.i(), (byte)0);}};
+      new I() {void action() {Arrays.fill(bytes, Start.i(),  Start.i()+Width, (byte)0);}};
       return this;
      }
 
@@ -670,8 +665,8 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory invalidate(Int Start, Int Width)
-     {new I() {void action() {invalidate(Start.i(),  Width.i());}};
+    ByteMemory invalidate(Int Start, int Width)
+     {new I() {void action() {invalidate(Start.i(),  Width);}};
       return this;
      }
 
@@ -766,9 +761,8 @@ public class Program extends Test                                               
       Program    program()    {return Program.this;}
 
       Ref        copy(Ref Source, Int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
-      Ref       clear(Int Width)            {m.clear(offset, Width);                         return this;}              // Clear memory by setting its bytes to zero
-      Ref  invalidate(Int Width)            {m.invalidate(offset,     Width);                return this;}              // Invalidate memory by setting its bytes to values unlikely to be valid
-      Ref  invalidate(int Width)            {m.invalidate(offset.i(), Width);                return this;}              // Invalidate memory by setting its bytes to values unlikely to be valid
+      Ref       clear(int Width)            {m.clear     (offset, Width);                    return this;}              // Clear memory by setting its bytes to zero
+      Ref  invalidate(int Width)            {m.invalidate(offset, Width);                    return this;}              // Invalidate memory by setting its bytes to values unlikely to be valid
       Int     getByte(Int I)                {return m.getByte(I.Add(offset));}                                          // Get the byte at the indicated position
       Int     getInt (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                   // Get the int at the indicated position
       Bool    getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       // Get the bit in the specified byte at the specified position within the byte
@@ -1273,8 +1267,8 @@ public class Program extends Test                                               
      {void code()
        {final ByteMemory     M = byteMemory;
         final ByteMemory.Ref m = M.new Ref(8);
-        m.invalidate(new Int(8));
-        m.clear     (new Int(4));
+        m.invalidate(8);
+        m.clear     (4);
        }
      };
     P.execute();
