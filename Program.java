@@ -1,4 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -76,8 +77,8 @@ public class Program extends Test                                               
 
   abstract class For                                                                                                    // For loop
    {For(Int Start, Int End)                                                                                             // Execute the loop the specified number of times
-     {final Int index = new Int();  index.name = "Index";
-      final Bool cont = new Bool(); cont.name  = "Continue";
+     {final Int index = new Int ("Index");
+      final Bool cont = new Bool("Continue");
 
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
@@ -119,7 +120,7 @@ public class Program extends Test                                               
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount(Int Start, Int End)                                                                                        // Execute the loop the specified number of times
-     {final Int index = new Int(); index.name = "Index";
+     {final Int index = new Int("Index");
 
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
@@ -883,7 +884,7 @@ public class Program extends Test                                               
 
   void variableNotSet(String Type, String Name)                                                                         // Variable not yet set message
    {final I i = parentProgram.executing;
-    final String m = (Name != null ? Name+" " : "") + "has not been set yet";
+    final String m = (Name != null ? '"'+Name+'"'+" " : "") + "has not been set yet";
     if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
     else           stop(Type, m);                                                                                       // No traceback available
    }
