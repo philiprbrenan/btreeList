@@ -7,15 +7,15 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Leaf extends Program                                                                                              // A leaf in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
- {final int   maxSize;                                                                                                  // The maximum number of entries in a leaf of the tree
-  final Slots slots;                                                                                                    // Slots used to order keys in leaf
-  ByteMemory.Ref  byteMemoryRef = null;                                                                                 // Byte memory reference containing the slots
+ {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
+  final Slots          slots;                                                                                           // Slots used to order keys in leaf
+  ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the slots
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
   final ByteMemory.Ref refUp;                                                                                           // Parent node
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each in use key
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being used to map to keys
-  final Build            build;                                                                                         // Build used to construct this leaf
-  final static String formatKey = "%3d";                                                                                // Format a key for dumping during testing
+  final Build          build;                                                                                           // Build used to construct this leaf
+  final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout a leaf
 
@@ -28,11 +28,11 @@ class Leaf extends Program                                                      
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build     slots;                                                                                              // Bytes needed for slots
 
-    Build immediate    (boolean Immediate ) {immediate     = Immediate; return this;}
-    Build maxSize      (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory       (ByteMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
-    Build parent       (Program Parent    ) {parent        = Parent;    return this;}
-    Build trace        (boolean Trace     ) {trace         = Trace;     return this;}
+    Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
+    Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
+    Build memory   (ByteMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
+    Build parent   (Program Parent    ) {parent        = Parent;    return this;}
+    Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -48,10 +48,10 @@ class Leaf extends Program                                                      
 
     class MemoryPositions                                                                                               // Layout of memory
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posUp    = posMark + ib();
-      final int posSlots = posUp   + ib();
-      final int posData  = posSlots+slots.size();
-      final int size     = posData+ib(maxSize);
+      final int posUp    = posMark  + ib();
+      final int posSlots = posUp    + ib();
+      final int posData  = posSlots + slots.size();
+      final int size     = posData  + ib(maxSize);
      }
 
     int size() {return memoryPositions.size;}                                                                           // Bytes needed for the slots
@@ -61,6 +61,8 @@ class Leaf extends Program                                                      
    {super(Build.build());                                                                                               // Program for leaf
     build         = Build;
     maxSize       = Build.maxSize;
+    if (maxSize % 2 == 1) stop("MaxSize should be even not odd:", maxSize);                                             // Not strictly true but slightly easier to cope with
+    if (maxSize < 2)      stop("MaxSize must be at least 2:",     maxSize);
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).parent(parentProgram));                           // Slots for leaf
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
@@ -78,6 +80,7 @@ class Leaf extends Program                                                      
 
   Int find          (Int Key) {return getDataFromKey(Key, false);}                                                      // Get the data associated with a key
   Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+
   Int getDataFromKey(Int Key, boolean Delete)                                                                           // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
     final Int        r = new Int();                                                                                     // Result
