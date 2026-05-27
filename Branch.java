@@ -1,6 +1,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Branch of a btree implemented using distributed sparse slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
+// “8GB DDR4 2666 laptop SODIMM”
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -181,8 +182,18 @@ class Branch extends Program                                                    
   Int splitLeft(Branch Left)                                                                                            // Split a full branch leftwards into a supplied branch
    {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
-    right.compactLeft(); Left.slots.clear();                                                                            // Compact source slots so we know where they are and clear target
-    new ForCount (new Int(maxSize() / 2))    {void body(Int Index) {Left.data(Index, right.data(Index));}};             // Copy the data values associated with the slots
+say("DDDD11", right);
+    right.compactLeft();
+say("DDDD22", right);
+    Left.slots.clear();                                                                            // Compact source slots so we know where they are and clear target
+say("DDDD33", right);
+    new ForCount (new Int(maxSize() / 2))
+    {void body(Int Index)
+      { say("DDDD44", Index, right.data(Index), right);
+
+        Left.data(Index, right.data(Index));
+
+        }};             // Copy the data values associated with the slots
     return slots.splitLeftOdd(Left.slots);                                                                              // Split the slots
    }
 
@@ -266,7 +277,7 @@ class Branch extends Program                                                    
     l.insert(l.new Int(1), l.new Int(11));
     //new I() {void action() {testStop("AAAA", l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -303,7 +314,7 @@ Branch: size:   8
     l.delete(l.new Int(2));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    2     3    33
@@ -312,7 +323,7 @@ Branch: size:   8
     l.compactLeft();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    0     1    11
    2     3    33
@@ -335,7 +346,7 @@ Branch: size:   8
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -345,12 +356,12 @@ Branch: size:   8
     l.compactRight();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
-   4     1    11
-   7     2    22
-   5     3    33
-   6     4    44
+   3     1    11
+   6     2    22
+   4     3    33
+   5     4    44
 """);
     l.maxSteps = 99999;
     l.execute();
@@ -370,10 +381,9 @@ Branch: size:   8
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
-    l.insert(l.new Int(8), l.new Int(88));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -382,27 +392,24 @@ Branch: size:   8
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
-    l.splitRight(r);
+    l.splitRight(r).ok(4);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
    2     3    33
-   1     4    44
 """);
     //l.new I() {void action() {testStop(r);}};
     l.ok(()->r, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     l.maxSteps = 99999;
     l.execute();
@@ -422,10 +429,9 @@ Branch: size:   8
     r.insert(r.new Int(6), r.new Int(66));
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
-    r.insert(r.new Int(8), r.new Int(88));
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -434,27 +440,24 @@ Branch: size:   8
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
    2     3    33
-   1     4    44
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     r.maxSteps = 99999;
     r.execute();
@@ -477,7 +480,7 @@ Branch: size:   8
     l.insert(l.new Int(8), l.new Int(88));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -492,7 +495,7 @@ Branch: size:   8
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -501,7 +504,7 @@ Branch: size:   8
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -511,7 +514,7 @@ Branch: size:   8
     l.mergeRight(l.new Int(4), r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -543,7 +546,7 @@ Branch: size:   8
     r.insert(r.new Int(8), r.new Int(88));
    // r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -558,7 +561,7 @@ Branch: size:   8
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -567,7 +570,7 @@ Branch: size:   8
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -577,7 +580,7 @@ Branch: size:   8
     r.mergeLeft(l.new Int(4), l);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -606,7 +609,7 @@ Branch: size:   8
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
-    l.new I() {void action() {testStop(l);}};
+    //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Branch: size:   7
  Ref   Key  Data
@@ -617,7 +620,6 @@ Branch: size:   7
    6     5    55
    4     6    66
    5     7    77
-Branch.java:0609:
 """);
     l.find(l.new Int(0)).notValid().ok(true);
     l.find(l.new Int(1)).ok(11);
@@ -627,20 +629,17 @@ Branch.java:0609:
     l.find(l.new Int(5)).ok(55);
     l.find(l.new Int(6)).ok(66);
     l.find(l.new Int(7)).ok(77);
-    l.find(l.new Int(8)).ok(88);
-    l.find(l.new Int(9)).notValid().ok(true);
+    l.find(l.new Int(8)).notValid().ok(true);
 
-    l.delete(l.new Int(2)).ok(22); l.find(l.new Int(2)).notValid().ok(true); l.count().ok(7);
-    l.delete(l.new Int(1)).ok(11); l.find(l.new Int(1)).notValid().ok(true); l.count().ok(6);
-    l.delete(l.new Int(4)).ok(44); l.find(l.new Int(4)).notValid().ok(true); l.count().ok(5);
-    l.delete(l.new Int(3)).ok(33); l.find(l.new Int(3)).notValid().ok(true); l.count().ok(4);
-    l.delete(l.new Int(8)).ok(88); l.find(l.new Int(8)).notValid().ok(true); l.count().ok(3);
+    l.delete(l.new Int(2)).ok(22); l.find(l.new Int(2)).notValid().ok(true); l.count().ok(6);
+    l.delete(l.new Int(1)).ok(11); l.find(l.new Int(1)).notValid().ok(true); l.count().ok(5);
+    l.delete(l.new Int(4)).ok(44); l.find(l.new Int(4)).notValid().ok(true); l.count().ok(4);
+    l.delete(l.new Int(3)).ok(33); l.find(l.new Int(3)).notValid().ok(true); l.count().ok(3);
     l.delete(l.new Int(6)).ok(66); l.find(l.new Int(6)).notValid().ok(true); l.count().ok(2);
     l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
-   // l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   8
+Branch: size:   7
  Ref   Key  Data
 """);
 
@@ -699,7 +698,7 @@ Branch: size:   8
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_find();
+    test_splitLeft(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
