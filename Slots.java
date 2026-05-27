@@ -485,9 +485,11 @@ class Slots extends Program                                                     
 
     new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
      {void body(Int Index)
-       {Left.delSlotAndKey(Index);
+       {say("AAAA", Index, Left);
+        Left.delSlotAndKey(Index);
        }
      };
+    say("BBBB", Left);
 
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
