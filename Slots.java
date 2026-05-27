@@ -256,7 +256,7 @@ class Slots extends Program                                                     
     Continue.set(true);                                                                                                 // Continue moving keys
    }
 
-  void copy(Slots Source)  {byteMemoryRef.copy(Source.byteMemoryRef, new Int(build.size()));}                           // Copy source into this
+  void copy(Slots Source)  {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                    // Copy source into this
 
   void clear()                                                                                                          // Clear the slots
    {final Slots slots = this;
