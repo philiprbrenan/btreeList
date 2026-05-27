@@ -667,7 +667,7 @@ Branch: size:   8
         l.up  ()            .ok(B);
         final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
         r.copy(l);
-        r.isBranch()          .ok(true);
+        r.isBranch()        .ok(true);
 
         l.clear();
         l.data(new Int(1))  .ok(0);
