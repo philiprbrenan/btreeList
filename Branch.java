@@ -170,63 +170,98 @@ class Branch extends Program                                                    
     slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
    }
 
-  Int splitRight(Branch Right)                                                                                          // Split a full branch rightwards into a supplied branch
+  private void copySplitData(Branch Target, Int Start, Int End)                                                         // Copy out the indexed data values in the specified key range from the specified source and place them in the exact same position in the target
+   {final Branch source = this;
+    new ForCount (Start, End)
+     {void body(Int Index)
+       {final Int s =  source.slots.getSlotToKeyIndex(Index);                                                           // Index the key to be copied out
+        Target.data(s, source.data(s));                                                                                 // Copy the data value from the source leaf into the exact same position in the left leaf
+       }
+     };
+   }
+
+  void splitRight(Branch Right)                                                                                         // Split a full branch rightwards into a supplied branch
    {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch left = this;
-    left.compactLeft();                                                                                                 // Compact source slots so we know where they are
+    left .compactLeft();                                                                                                // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
-    new ForCount (new Int(maxSize()))        {void body(Int Index) {Right.data(Index, left.data(Index));}};             // Copy the data values associated with the slots
-    return slots.splitRightOdd(Right.slots);                                                                            // Split the slots
+    left .copySplitData(Right, new Int(maxSize / 2 + 1), new Int(maxSize()));                                           // Copy the data values associated with the slots
+    Right.top(left.top());                                                                                              // Left top is now right top
+    left .top(left.data(left.slots.getSlotToKeyIndex(new Int(maxSize / 2))));                                           // Left top is data from splitting key
+    left .slots.splitRightOdd(Right.slots);                                                                             // Split the slots
    }
 
-  Int splitLeft(Branch Left)                                                                                            // Split a full branch leftwards into a supplied branch
+  void splitLeft(Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch
    {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
-say("DDDD11", right);
-    right.compactLeft();
-say("DDDD22", right);
-    Left.slots.clear();                                                                            // Compact source slots so we know where they are and clear target
-say("DDDD33", right);
-    new ForCount (new Int(maxSize() / 2))
-    {void body(Int Index)
-      { say("DDDD44", Index, right.data(Index), right);
-
-        Left.data(Index, right.data(Index));
-
-        }};             // Copy the data values associated with the slots
-    return slots.splitLeftOdd(Left.slots);                                                                              // Split the slots
+    right.compactLeft();                                                                                               // Compact source slots so we know where they are
+    Left .slots.clear();                                                                                                // Clear target
+    right.copySplitData(Left, new Int(0), new Int(maxSize() / 2));                                                      // Copy the data values associated with the slots
+    Left .top(right.data(Left.slots.getSlotToKeyIndex(new Int(maxSize / 2))));                                          // Left top is data from splitting key
+    slots.splitLeftOdd(Left.slots);                                                                                     // Split the slots
    }
 
-  void mergeRight(Int Key, Branch Right)                                                                                // Merge the branch into the right of this branch
+  private void copyMergeData(Branch Source, Int Start, Int End)                                                           // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
+   {new ForCount (Start, End)
+     {void body(Int Index)
+       {data(Index, Source.data(Index));                                                                                // The keys have been compacted left and right so we can copy them from the source position into the same position in the target without collisions
+       }
+     };
+   }
+
+  Bool mergeRight(Branch Right)                                                                                         // Merge the leaf into the right of this leaf
    {final Branch left = this;
-    final Int  lc   = left .count();
-    final Int  rc   = Right.count();
-    left.compactLeft(); Right.compactRight();                                                                           // Compact source slots so we know where they are
-    final Bool r = new Bool().clear();
+    final Int  lc     = left .count();
+    final Int  rc     = Right.count();
+    final Bool r      = new Bool().clear();
 
-    new If(lc.Add(rc).lt(maxSize()))
+    new If (lc.Add(rc).lt(maxSize()))
      {void Then()
        {r.set();
-        new ForCount(rc, new Int(maxSize())) {void body(Int Index) {left.data(Index, Right.data(Index));}};             // Copy the data values associated with the slots
-        left.slots.mergeFromRightOdd(Key, Right.slots);                                                                 // Split the slots
+        left .compactLeft();    Right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
+        left .slots.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
+        Right.slots.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
+
+        final Int lh = left .slots.getSlotToKeyValue(lc.Dec());                                                         // Highest key in left
+        final Int rl = Right.slots.getSlotToKeyValue(rc.Inc());                                                         // Lowest key on right
+        final Int sk = lh.Add(rl).div(2);                                                                               // Splitting key
+        final Int lt = left .top();                                                                                     // Left top
+        final Int rt = Right.top();                                                                                     // Right top
+        left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
+        left.top(rt);                                                                                                   // Set right top
+        left.slots.setSlotAndKey(lc, lc, sk);                                                                           // Insert splittingh key Safe because the keys have been compacted
+        left.data(lc, lt);                                                                                              // Place left top in left data values
+        left.slots.mergeFromRightOdd(sk, Right.slots);                                                                     // Split the slots
        }
      };
+    return r;
    }
 
-  void mergeLeft(Int Key, Branch Left)                                                                                  // Merge the branch into the right of this branch
+  Bool mergeLeft(Branch Left)                                                                                           // Merge the leaf into the right of this leaf
    {final Branch right = this;
-    final Int  lc   = Left .count();
-    final Int  rc   = right.count();
-    Left.compactLeft(); right.compactRight();                                                                           // Compact source slots so we know where they are
-    final Bool r = new Bool().clear();
+    final Int    lc    = Left .count();
+    final Int    rc    = right.count();
+    final Bool   r     = new Bool().clear();
 
-    new If(lc.Add(rc).lt(maxSize()))
+    new If (lc.Add(rc).lt(maxSize()))
      {void Then()
        {r.set();
-        new ForCount(lc)                     {void body(Int Index) {right.data(Index, Left.data(Index));}};             // Copy the data values associated with the slots
-        right.slots.mergeFromLeftOdd(Key, Left.slots);                                                                  // Split the slots
+        Left .compactLeft();    right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
+        Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
+        right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
+
+        final Int lh = Left .slots.getSlotToKeyValue(lc.Dec());                                                         // Highest key in left
+        final Int rl = right.slots.getSlotToKeyValue(rc.Inc());                                                         // Lowest key on right
+        final Int sk = lh.Add(rl).div(2);                                                                               // Splitting key
+        final Int lt = Left .top();                                                                                     // Left top
+        final Int rt = right.top();                                                                                     // Right top
+        right.copyMergeData(Left, new Int(0), new Int(lc));                                                             // Copy the left data values into the right data values
+        right.slots.setSlotAndKey(lc, lc, sk);                                                                           // Insert splittingh key Safe because the keys have been compacted
+        right.data(lc, lt);                                                                                              // Place left top in left data values
+        right.slots.mergeFromRightOdd(sk, Left.slots);                                                                     // Split the slots
        }
      };
+    return r;
    }
 
   int splitSize() {return maxSize()>>>1;}                                                                               // Size of a split branch
@@ -394,7 +429,7 @@ Branch: size:   7
    5     7    77
 """);
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
-    l.splitRight(r).ok(4);
+    l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Branch: size:   7
@@ -511,7 +546,7 @@ Branch: size:   7
    5     7    77
    7     8    88
 """);
-    l.mergeRight(l.new Int(4), r);
+    l.mergeRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Branch: size:   7
@@ -577,7 +612,7 @@ Branch: size:   7
    5     7    77
    7     8    88
 """);
-    r.mergeLeft(l.new Int(4), l);
+    r.mergeLeft(l);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
 Branch: size:   7
@@ -698,7 +733,8 @@ Branch: size:   7
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitLeft(true);
+    test_splitLeft();
+    test_splitRight();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
