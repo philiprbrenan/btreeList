@@ -148,16 +148,16 @@ class Branch extends Program                                                    
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a branch
-  void      clear() {byteMemoryRef.clear(bytesNeeded()); setAsLeaf();}                                                  // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
+  void      clear() {byteMemoryRef.clear(bytesNeeded()); setAsBranch();}                                                // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
 
-  Bool     isLeaf() {return refMark.getInt().eq(   1) ;}                                                                // Whether we are on a branch or not
-  void  setAsLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a branch
+  Bool     isBranch() {return refMark.getInt().eq(   2) ;}                                                              // Whether we are on a branch or not
+  void  setAsBranch() {       refMark.putInt(new Int(2));}                                                              // Mark this as a branch
 
   Int  up()         {return refUp.getInt();}                                                                            // Get reference to a parent node
   void up(Int I)    {       refUp.putInt(I);}                                                                           // Set reference to parent node
 
-  void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one branch into another branch
-  void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a branch so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
+  void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
+  void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
 
   void compactLeft()                                                                                                    // Compact a branch to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
@@ -169,51 +169,51 @@ class Branch extends Program                                                    
     slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
    }
 
-  void splitRight(Branch Right)                                                                                           // Split a full branch rightwards into a supplied branch
-   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                                 // The branch must be full
+  Int splitRight(Branch Right)                                                                                          // Split a full branch rightwards into a supplied branch
+   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch left = this;
     left.compactLeft();                                                                                                 // Compact source slots so we know where they are
     Right.slots.clear();                                                                                                // Clear the target
     new ForCount (new Int(maxSize()))        {void body(Int Index) {Right.data(Index, left.data(Index));}};             // Copy the data values associated with the slots
-    slots.splitRightEven(Right.slots);                                                                                  // Split the slots
+    return slots.splitRightOdd(Right.slots);                                                                            // Split the slots
    }
 
-  void splitLeft(Branch Left)                                                                                             // Split a full branch leftwards into a supplied branch
-   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                                 // The branch must be full
+  Int splitLeft(Branch Left)                                                                                            // Split a full branch leftwards into a supplied branch
+   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
     right.compactLeft(); Left.slots.clear();                                                                            // Compact source slots so we know where they are and clear target
     new ForCount (new Int(maxSize() / 2))    {void body(Int Index) {Left.data(Index, right.data(Index));}};             // Copy the data values associated with the slots
-    slots.splitLeftEven(Left.slots);                                                                                    // Split the slots
+    return slots.splitLeftOdd(Left.slots);                                                                              // Split the slots
    }
 
-  void mergeRight(Branch Right)                                                                                           // Merge the branch into the right of this branch
+  void mergeRight(Int Key, Branch Right)                                                                                // Merge the branch into the right of this branch
    {final Branch left = this;
     final Int  lc   = left .count();
     final Int  rc   = Right.count();
     left.compactLeft(); Right.compactRight();                                                                           // Compact source slots so we know where they are
     final Bool r = new Bool().clear();
 
-    new If(lc.Add(rc).le(maxSize()))
+    new If(lc.Add(rc).lt(maxSize()))
      {void Then()
        {r.set();
         new ForCount(rc, new Int(maxSize())) {void body(Int Index) {left.data(Index, Right.data(Index));}};             // Copy the data values associated with the slots
-        left.slots.mergeFromRightEven(Right.slots);                                                                     // Split the slots
+        left.slots.mergeFromRightOdd(Key, Right.slots);                                                                 // Split the slots
        }
      };
    }
 
-  void mergeLeft(Branch Left)                                                                                             // Merge the branch into the right of this branch
+  void mergeLeft(Int Key, Branch Left)                                                                                  // Merge the branch into the right of this branch
    {final Branch right = this;
     final Int  lc   = Left .count();
     final Int  rc   = right.count();
     Left.compactLeft(); right.compactRight();                                                                           // Compact source slots so we know where they are
     final Bool r = new Bool().clear();
 
-    new If(lc.Add(rc).le(maxSize()))
+    new If(lc.Add(rc).lt(maxSize()))
      {void Then()
        {r.set();
-        new ForCount(lc)                       {void body(Int Index) {right.data(Index, Left.data(Index));}};           // Copy the data values associated with the slots
-        right.slots.mergeFromLeftEven(Left.slots);                                                                      // Split the slots
+        new ForCount(lc)                     {void body(Int Index) {right.data(Index, Left.data(Index));}};             // Copy the data values associated with the slots
+        right.slots.mergeFromLeftOdd(Key, Left.slots);                                                                  // Split the slots
        }
      };
    }
@@ -258,8 +258,8 @@ class Branch extends Program                                                    
 
 //D1 Tests                                                                                                              // Tests
 
-  static void test_leaf(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(8).immediate(Ex));
+  static void test_branch(boolean Ex)
+   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -289,13 +289,13 @@ Branch: size:   8
     l.execute();
    }
 
-  static void test_leaf()
-   {test_leaf(true);
-    test_leaf(false);
+  static void test_branch()
+   {test_branch(true);
+    test_branch(false);
    }
 
   static void test_compactLeft(boolean  Ex)
-   {final Branch l = new Branch(new Build().maxSize(8).immediate(Ex));
+   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -328,7 +328,7 @@ Branch: size:   8
    }
 
   static void test_compactRight(boolean  Ex)
-   {final Branch l = new Branch(new Build().maxSize(8).immediate(Ex));
+   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -362,7 +362,7 @@ Branch: size:   8
    }
 
   static void test_splitRight(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(8).immediate(Ex));
+   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -384,7 +384,7 @@ Branch: size:   8
    5     7    77
    7     8    88
 """);
-    final Branch r = new Branch(new Build().maxSize(8).immediate(Ex).parent(l));
+    final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -414,7 +414,7 @@ Branch: size:   8
    }
 
   static void test_splitLeft(boolean  Ex)
-   {final Branch r = new Branch(new Build().maxSize(8).immediate(Ex));
+   {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -436,7 +436,7 @@ Branch: size:   8
    5     7    77
    7     8    88
 """);
-    final Branch l = new Branch(new Build().maxSize(8).immediate(Ex).parent(r));
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -466,7 +466,7 @@ Branch: size:   8
    }
 
   static void test_mergeRight(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(8).immediate(Ex));
+   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -488,7 +488,7 @@ Branch: size:   8
    5     7    77
    7     8    88
 """);
-    final Branch r = new Branch(new Build().maxSize(8).immediate(Ex).parent(l));
+    final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -508,7 +508,7 @@ Branch: size:   8
    5     7    77
    7     8    88
 """);
-    l.mergeRight(r);
+    l.mergeRight(l.new Int(4), r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
 Branch: size:   8
@@ -532,7 +532,7 @@ Branch: size:   8
    }
 
   static void test_mergeLeft(boolean  Ex)
-   {final Branch r = new Branch(new Build().maxSize(8).immediate(Ex));
+   {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -554,7 +554,7 @@ Branch: size:   8
    5     7    77
    7     8    88
 """);
-    final Branch l = new Branch(new Build().maxSize(8).immediate(Ex).parent(r));
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -574,7 +574,7 @@ Branch: size:   8
    5     7    77
    7     8    88
 """);
-    r.mergeLeft(l);
+    r.mergeLeft(l.new Int(4), l);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
 Branch: size:   8
@@ -598,7 +598,7 @@ Branch: size:   8
    }
 
   static void test_find(boolean  Ex)
-   {final Branch l = new Branch(new Build().maxSize(8).immediate(Ex));
+   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -656,25 +656,25 @@ Branch: size:   8
 
   static void test_fixedFields(boolean  Ex)
    {final int A = 22, B = 21;
-     final Branch l = new Branch(new Build().maxSize(8).immediate(Ex))
-     {void leafCode()
+     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
+     {void branchCode()
        {final Branch l = this;
-        l.setAsLeaf();
-        l.isLeaf()          .ok(true);
+        l.setAsBranch();
+        l.isBranch()          .ok(true);
         l.data(new Int(1), new Int(A));
         l.data(new Int(1))  .ok(A);
         l.up  (new Int(21));
         l.up  ()            .ok(B);
-        final Branch r = new Branch(new Build().maxSize(8).immediate(Ex).parent(l));
+        final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
         r.copy(l);
-        r.isLeaf()          .ok(true);
+        r.isBranch()          .ok(true);
 
         l.clear();
         l.data(new Int(1))  .ok(0);
-        l.isLeaf()          .ok(true);
+        l.isBranch()          .ok(true);
         l.up()              .ok(0);
         r.data(new Int(1))  .ok(A);
-        r.isLeaf()          .ok(true);
+        r.isBranch()          .ok(true);
         r.up()              .ok(B);
         execute();
        }
@@ -687,7 +687,7 @@ Branch: size:   8
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_leaf();
+   {test_branch();
     test_compactLeft();
     test_compactRight();
     test_splitRight();
@@ -699,8 +699,7 @@ Branch: size:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_fixedFields();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
