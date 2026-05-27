@@ -11,19 +11,21 @@ use Data::Dump qw(dump);
 use Data::Table::Text qw(:all);
 use GitHub::Crud qw(:all);
 
+my $home    = q(/home/phil/);                                                                                           # Home
 my $repo    = q(btreeList);                                                                                             # Repo
 my $user    = q(philiprbrenan);                                                                                         # User
-my $home    = fpd q(/home/phil), $repo;                                                                                 # Home folder
-my $shaFile = fpe $home, q(sha);                                                                                        # Sh256 file sums for each known file to detect changes
+my $folder  = fpd $home, $repo;                                                                                         # Home folder
+my $shaFile = fpe $folder, q(sha);                                                                                      # Sh256 file sums for each known file to detect changes
 my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu
 my @ext     = qw(.java .pl);                                                                                            # Extensions of files to upload to github
+my @exclude = qw(Branch Tree);                                                                                          # Java files to exclude from testing as they are not yet ready
+my %exclude = map {$_=>1} @exclude;
 
 say STDERR timeStamp,  " push to github $repo";
 
-my @files = searchDirectoryTreesForMatchingFiles($home, @ext);                                                          # Files to upload
-my @java  = grep {!m(Tree)} grep {fe($_) =~ m(java)is} @files;                                                                          # Java files
+my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
+my @java  = grep {!defined $exclude{$_}} grep {fe($_) =~ m(java)is} @files;                                             # Java files
    @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
-
 if (!@files)                                                                                                            # No new files
  {say "Everything up to date";
   exit;
@@ -38,19 +40,19 @@ if  (1)                                                                         
      {$c = expandWellKnownWordsAsUrlsInMdFormat $c if $s =~ m(README);
      }
 
-    my $t = swapFilePrefix $s, $home;                                                                                   # File on github
+    my $t = swapFilePrefix $s, $folder;                                                                                 # File on github
     my $w = writeFileUsingSavedToken($user, $repo, $t, $c);                                                             # Write file into github
     lll "$w  $t";
    }
  }
 
 
-writeFileUsingSavedToken($user, $repo, q(.config/geany/snippets.conf),                                                  # Save the snippets file as this was the thing I missed most after a rebuild
-                   readFile(q(/home/phil/.config/geany/snippets.conf)));
-writeFileUsingSavedToken($user, $repo, q(.config/geany/keybindings.conf),                                               # Save the keybindings file for the same reason
-                  readFile(q(/home/phil/.config/geany/keybindings.conf)));
-#writeFileUsingSavedToken($user, $repo, q(.config/MakeWithPerl.pm),                                                     # Save make with perl for the same reason
-#                  readFile(q(/home/phil/perl/cpan/MakeWithPerl/lib/MakeWithPerl.pm)));
+writeFileUsingSavedToken($user, $repo,  q(.config/geany/snippets.conf),                                                 # Save the snippets file as this was the thing I missed most after a rebuild
+                        readFile(qq($home/.config/geany/snippets.conf)));
+writeFileUsingSavedToken($user, $repo,  q(.config/geany/keybindings.conf),                                              # Save the keybindings file for the same reason
+                        readFile(qq($home/.config/geany/keybindings.conf)));
+writeFileUsingSavedToken($user, $repo,  q(.xprofile),                                                                   # Save key bindings
+                        readFile(qq($home/.xprofile)));
 
 if (@java)                                                                                                              # Write workflow to test java files
  {my @j = map {fn $_} @java;                                                                                            # Java files
@@ -106,7 +108,7 @@ jobs:
         javac -g -d Classes -cp Classes $c/*.java
 END
 
-  for my $j(@j)                                                                 # Java files
+  for my $j(@j)                                                                                                         # Java files
    {$y .= <<END;
 
     - name: Test $j
@@ -117,7 +119,7 @@ END
 END
    }
 
-  my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                       # Upload workflow
+  my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
   lll "$f  Ubuntu work flow for $repo";
  }
 else
