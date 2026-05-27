@@ -73,10 +73,11 @@ class Leaf extends Program                                                      
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
 
+
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
   Int find          (Int Key) {return getDataFromKey(Key, false);}                                                      // Get the data associated with a key
-  Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key
+  Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
   Int getDataFromKey(Int Key, boolean Delete)                                                                           // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
     final Int        r = new Int();                                                                                     // Result
@@ -106,11 +107,14 @@ class Leaf extends Program                                                      
   Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
-  Bool isLeaf()   {return refMark.getInt().eq(   1) ;}                                                                  // Whether we are on a leaf or not
-  void makeLeaf() {       refMark.putInt(new Int(1));}                                                                  // Mark this as a leaf
+  int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
+  void      clear() {byteMemoryRef.clear(new Int(bytesNeeded())); makeLeaf();}                                          // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
-  Int  up()       {return refUp.getInt();}                                                                              // Whether we are on a leaf or not
-  void up(Int I)  {       refUp.putInt(I);}                                                                             // Mark this as a leaf
+  Bool     isLeaf() {return refMark.getInt().eq(   1) ;}                                                                // Whether we are on a leaf or not
+  void   makeLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a leaf
+
+  Int  up()         {return refUp.getInt();}                                                                            // Get reference to a parent node
+  void up(Int I)    {       refUp.putInt(I);}                                                                           // Set reference to parent node
 
   void compactLeft()                                                                                                    // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
@@ -171,279 +175,9 @@ class Leaf extends Program                                                      
      };
    }
 
-/*
-  Data data(Slot I) {return new Data(memory.data(slots(I).value()));}                                                 // Get value of data field at index
-  void data(Slot I, Data Value)                                                                                       // Set value of data field at index
-   {memory.data(slots(I).value(), If (Value.valid(), new Int(), ()->Value.value(), ()->new Int(0)));
-   }
-
-  Data data(slot I) {return new Data(memory.data(I.value()));}                                                        // Get value of data field at the slot
-  void data(slot I, Data Value)                                                                                       // Set value of data field at the slot
-   {memory.data(I.value(),
-      If (Value.valid(), new Int(), ()->Value.value(), ()->new Int(0)));
-   }
-
   int splitSize() {return maxLeafSize>>>1;}                                                                           // Size of a split leaf
 
-  Leaf duplicate()                                                                                                    // Duplicate a leaf
-   {final Leaf d = new Leaf();
-    d.copySlots(this);                                                                                                // Copy slots
-    new For(numberOfRefs())                                                                                           // Each reference
-     {void body(Int i, Bool C)                                                                                        // Each reference
-       {final slot I = new slot(i);                                                                                   // Copy data associated with leaf keys
-        d.data(I, data(I));                                                                                           // Copy data associated with leaf keys
-        C.set();
-       }
-     };
-    return d;
-   }
-
-  void free()                                                                                                         // Free the leaf
-   {Tree.this.free(name());                                                                                           // Add to free chain
-    invalidate();                                                                                                     // Invalidate slots
-    memory.invalidate();                                                                                              // Invalidate leaf data
-   }
-
-  Leaf splitRight()                                                                                                   // Split this leaf into a new right leaf and return the new right leaf
-   {final Leaf r = duplicate();                                                                                       // Copy the  leaf on the left to create the basis for the new right leaf
-    splitLeftFullIntoRight(r);                                                                                        // Remove unwanted elements from leaf and right to effect the split
-    return r;
-   }
-
-  Leaf splitLeft()                                                                                                    // Split a right leaf into a new left leaf
-   {final Leaf l = duplicate();                                                                                       // Make a copy of the existing right leaf to form the basis for the new left leaf
-    l.splitLeftFullIntoRight(this);                                                                                   // Remove unwanted elements from leaf and right to effect the split
-    return l;
-   }
-
-  Leaf splitLeftFullIntoRight(Leaf Right)                                                                             // Split a full left leaf into an existing right leaf
-   {final Int s = new Int(0);                                                                                         // Count slots used
-    new For(numberOfSlots())                                                                                          // Each slot
-     {void body(Int i, Bool C)
-       {final Slot S = new Slot(i);
-        new If (usedSlots(S))                                                                                         // Slot is in use
-         {void Then()                                                                                                 // Slot is in use
-           {new If (s.lt(splitSize()))                                                                                // Still in left leaf
-             {void Then()
-               {Right.clearSlotAndRef(S); s.inc();
-               }
-              void Else()                                                                                             // Clear slot being used in right leaf
-               {clearSlotAndRef(S);
-               }
-             };
-           }
-         };
-        C.set();
-       }
-     };                                                                                                               // The new right leaf
-    redistribute(); Right.redistribute();
-    return Right;
-   }
-
-  Int splittingKey()                                                                                                  // Splitting key from a leaf
-   {if (full().Flip().b()) testStop("Leaf not full");                                                                     // The leaf must be full if we are going to split it
-    final Int k = new Int(0);                                                                                         // Splitting key
-    final Int p = new Int(0);                                                                                         // Position in leaf
-    new For(numberOfSlots())                                                                                          // Scan for splitting keys
-     {void body(Int i, Bool C)
-       {new If (usedSlots(new Slot(i)))                                                                               // Used slot
-         {void Then()
-           {new If (p.eq(splitSize()-1).or(()->{return p.eq(splitSize());}))                                          // Accumulate splitting key as last on left and first on right of split
-             {void Then()
-               {k.add(keys(new Slot(i)).value());
-               }
-             };
-            p.inc();                                                                                                  // Next position
-           }
-         };
-        C.set();
-       }
-     };
-    return k.Down();                                                                                                  // Average splitting key
-   }
-
-  Branch split()                                                                                                      // Split a leaf into two leaves and a branch
-   {final Leaf   l = duplicate();
-    final Leaf   r = l.splitRight();
-    final Branch b = new Branch();                                                                                    // Branch into which the leaves will be inserted
-    b.insert(new Key(splittingKey()), l);                                                                             // Insert left
-    b.top(r);                                                                                                         // Right goes to to
-    free();
-    return b;
-   }
-
-  slot insert(Key Key, Data Data)                                                                                     // Insert a key data pair into a leaf
-   {final slot i = insert(Key);
-    new If (i.valid()) {void Then() {data(i, Data);}};                                                                // Save data in allocated reference
-    return i;
-   }
-
-  void compactLeft()                                                                                                  // Compact the leaf to the left
-   {final Data[]d = new Data[numberOfRefs()];
-    final Int p = new Int(0);
-    new For(numberOfSlots())                                                                                          // Copy leaf data
-     {void body(Int i, Bool C)
-       {final Slot I = new Slot(i);
-        new If (usedSlots(I))
-         {void Then()
-           {d[p.i()] = data(slots(I)); p.inc();
-           }
-         };
-        C.set();
-       }
-     };
-    super.compactLeft();                                                                                              // Compact slots
-
-    new For(p)                                                                                                        // Copy compacted leaf data
-     {void body(Int i, Bool C)
-       {data(new slot(i), d[i.i()]);
-        C.set();
-       }
-     };
-   }
-
-  void compactRight()                                                                                                 // Compact the leaf to the right
-   {final int   N = numberOfSlots(), R = numberOfRefs();
-    final Data[]d = new Data[R];
-    final Int   p = new Int(R-1);                                                                                     // Start at the last slot
-    new For(N)                                                                                                        // Compact each slot to the right
-     {void body(Int i, Bool C)
-       {final Slot I = new Slot(N-i.i()-1);
-        new If (usedSlots(I))
-         {void Then()
-           {d[p.i()] = data(slots(I)); p.dec();
-           }
-         };
-        C.set();
-       }
-     };
-    super.compactRight();                                                                                             // Compact slots
-    new For(p, new Int(R-1))                                                                                          // Copy compacted leaf data
-     {void body(Int i, Bool C)
-       {data(new slot(i), d[i.i()]);
-        C.set();
-       }
-     };
-   }
-
-  void mergeData(Leaf Left, Leaf Right)                                                                               // Merge the data from the compacted left and right slots
-   {final Leaf l = Left, r = Right;
-    new For(maxLeafSize)
-     {void body(Int i, Bool C)
-       {final slot J = new slot(i);
-        new If     (l.usedRefs(J))
-         {void Then()
-           {data(J, l.data(J));
-           }
-          void Else()
-           {new If (r.usedRefs(J)) {void Then() {data(J, r.data(J));}};
-           }
-         };
-        C.set();
-       }
-     };
-   }
-
-  void mergeLeaves(Leaf Left, Leaf Right)                                                                             // Merge the specified leaves into the current leaf
-   {Left .compactLeft ();
-    Right.compactRight();
-    mergeCompacted(Left, Right);
-    mergeData     (Left, Right);
-    redistribute();
-   }
-
-  Bool mergeFromRight(Leaf Right)                                                                                     // Merge the specified slots from the right
-   {final Bool r = new Bool();
-    new If (countUsed().Add(Right.countUsed()).gt(maxLeafSize))
-     {void Then()
-       {r.clear();
-       }
-      void Else()
-       {mergeLeaves(duplicate(), Right.duplicate());
-        r.set();
-       }
-     };
-    return r;
-   }
-
-  Bool mergeFromLeft(Leaf Left)                                                                                       // Merge the specified slots from the left
-   {final Bool R = new Bool();
-    new If (Left.countUsed().Add(countUsed()).gt(maxLeafSize))
-     {void Then()
-       {R.clear();
-       }
-      void Else()
-       {final Leaf l = Left.duplicate();
-        final Leaf r =      duplicate();
-        mergeLeaves(l, r);
-        Left.free();
-        l.free();
-        r.free();
-        R.set();
-       }
-     };
-    return R;
-   }
-
-//D2 Memory                                                                                                             // Memory for leaf
-
-  class Memory extends LeafMemoryPositions                                                                            // Memory required to hold bytes
-   {final ByteBuffer bytes;                                                                                           // Byte buffer holding memory of this leaf
-
-    void copy(Memory Memory)                                                                                          // Copy a set of slots from the specified memory into this memory
-     {new For(size)
-       {void body(Int i, Bool C)
-         {bytes.put(i.i(), Memory.bytes.get(i.i()));
-          C.set();
-         }
-       };
-     }
-
-    void invalidate()                                                                                                 // Invalidate the leaf in such a way that it is unlikely to work well if subsequently used
-     {new For(size)
-       {void body(Int i, Bool C)
-         {bytes.put(i.i(), (byte)-1);
-          C.set();
-         }
-       };
-     }
-
-    Memory(Allocation Name) {bytes = node(Name);}                                                                     // Position in tree memory
-
-    Int  up()     {return new Int(bytes.getInt(posUp));}                                                              // Reference to parent branch. The zero node contains the tree base so zero can be used as a representation of null for references to branches and leaves
-    void up(Int Index)   {bytes.putInt(posUp, Index.i());}                                                            // Save address of parent branch into memory
-
-    Int  upIndex(){return new Int(bytes.getInt(posUpIndex));}                                                         // Get index of leaf in its parent from memory
-    void upIndex(Int Value)                                                                                           // Save index of this leaf in its parent branch
-     {new If(Value.valid())                                                                                           // Save value
-       {void Then() {new I() {void action() {bytes.putInt(posUpIndex, Value.i());}};}                                 // Save none null value
-        void Else() {new I() {void action() {bytes.putInt(posUpIndex, -1)       ;}};}                                 // -1 used to indicate null which means top
-       };
-     }
-
-    Int  data(Int Index)                                                                                              // Get the index of the leaf in its parent branch from memory
-     {return new Int(bytes.getInt(posData + ib(Index).i()));
-     }
-    void data(Int Index, Int  Value)                                                                                  // Put the index of the leaf in its parent branch into memory
-     {bytes.putInt(posData + ib(Index).i(), Value.i());
-     }
-   }
-
 //D2 Print                                                                                                              // Print the leaf
-
-  String printInOrder()                                                                                                 // Print the values in the used slots in order
-   {final StringJoiner k = new StringJoiner(", ");
-    final StringJoiner d = new StringJoiner(", ");
-    for (int i : range(numberOfSlots()))
-     {final Slot I = new Slot(i);
-      if (usedSlots(I).b())
-       {k.add(""+keys(I).i());
-        d.add(""+memory.data(slots(I)).i());
-       }
-     }
-    return "keys: "+k+"\n"+"data: "+d+"\n";
-   }
-*/
 
   public String toString()                                                                                              // Print a leaf
    {final StringBuilder s = new StringBuilder(f("Leaf: size: "+formatKey+"\n", maxLeafSize));
@@ -880,10 +614,14 @@ Leaf: size:   8
    {final int  u = 21;
     final Leaf l = new Leaf(new Build().maxLeafSize(8).immediate(Ex))
      {void leafCode()
-       {makeLeaf();
-        isLeaf().ok(true);
+       {data(new Int(1), new Int(22));
+        data(new Int(1))     .ok(22);
         up(new Int(u));
-        up().ok(u);
+        up()   .ok(u);
+        clear();
+        data(new Int(1))     .ok( 0);
+        isLeaf()             .ok(true);
+        up()                 .ok(0);
         execute();
        }
      };
