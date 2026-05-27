@@ -108,7 +108,7 @@ class Leaf extends Program                                                      
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
-  void      clear() {byteMemoryRef.clear(new Int(bytesNeeded())); makeLeaf();}                                          // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
+  void      clear() {byteMemoryRef.clear(bytesNeeded()); makeLeaf();}                                                   // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   Bool     isLeaf() {return refMark.getInt().eq(   1) ;}                                                                // Whether we are on a leaf or not
   void   makeLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a leaf
