@@ -434,7 +434,7 @@ class Slots extends Program                                                     
 
 //D5 Odd                                                                                                                // Splitting an odd number of slots
 
-  Int splitRightOdd(Slots Right)                                                                                        // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
+  void splitRightOdd(Slots Right)                                                                                       // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
@@ -444,8 +444,6 @@ class Slots extends Program                                                     
     final Slots left = this;
     left.compactSlotsLeft();                                                                                            // Compacting the source on the left will not affect the order of the keys
     Right.copy(left);                                                                                                   // Duplicate left into right
-
-    final Int r = new Int(left.getSlotToKeyValue(M));                                                                   // Remove middle value
 
     new ForCount(R)                                                                                                     // Clear lower half of target right slots
      {void body(Int Index)
@@ -461,10 +459,9 @@ class Slots extends Program                                                     
 
     left .redistribute();                                                                                               // Redistribute source and target slots if requested
     Right.redistribute();
-    return r;
    }
 
-  Int splitLeftOdd(Slots Left)                                                                                          // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
+  void splitLeftOdd(Slots Left)                                                                                         // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots
    {final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
@@ -475,8 +472,6 @@ class Slots extends Program                                                     
     right.compactSlotsLeft();                                                                                           // Compacting the source on the left will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate left into right
 
-    final Int r = new Int(Left.getSlotToKeyValue(M)); //delSlotAndKey(M);                                                 // Remove middle value
-
     new ForCount(R)                                                                                                     // Clear lower half of target right slots
      {void body(Int Index)
        {right.delSlotAndKey(Index);
@@ -485,15 +480,12 @@ class Slots extends Program                                                     
 
     new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
      {void body(Int Index)
-       {say("AAAA", Index, Left);
-        Left.delSlotAndKey(Index);
+       {Left.delSlotAndKey(Index);
        }
      };
-    say("BBBB", Left);
 
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
-    return r;
    }
 
 //D4 Merge                                                                                                              // Merge slots
@@ -560,7 +552,7 @@ class Slots extends Program                                                     
 
 //D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys
 
-  Bool mergeFromRightOdd(Int Key, Slots Right) {return mergeFromRightOdd(Key, Right, (S, t, s)->{});}          // Merge the specified slots from the right without observing the results
+  Bool mergeFromRightOdd(Int Key, Slots Right) {return mergeFromRightOdd(Key, Right, (S, t, s)->{});}                   // Merge the specified slots from the right without observing the results
   Bool mergeFromRightOdd(Int Key, Slots Right, CompactKey CompactKey)                                                   // Merge the specified slots from the right
    {final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
@@ -1918,7 +1910,7 @@ keys     :   11  12  13  15  16  17  14
 """);
         final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11));
-        s.splitRightOdd(t).ok(14);
+        s.splitRightOdd(t);
         //new I() {void action() {testStop(s);}};
         ok(()->s, """
 Slots    : refs:  7
@@ -1974,7 +1966,7 @@ keys     :   11  12  13  15  16  17  14
 """);
         final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11)); t.compactSlotsRight();
-        s.splitLeftOdd(t).ok(14);
+        s.splitLeftOdd(t);
         //new I() {void action() {testStop(t);}};
         //new I() {void action() {testStop(s);}};
         ok(()->t, """
