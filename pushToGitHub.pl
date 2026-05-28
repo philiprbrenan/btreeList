@@ -155,6 +155,7 @@ jobs:
           PMD_VERSION=7.3.0
           wget -q https://github.com/pmd/pmd/releases/download/pmd_releases%2F\${PMD_VERSION}/pmd-dist-\${PMD_VERSION}-bin.zip
           unzip pmd-dist-\${PMD_VERSION}-bin.zip
+          mv pmd-bin-\$PMD_VERSION pmd
           echo "\$PWD/pmd-bin-\${PMD_VERSION}/bin" >> \$GITHUB_PATH
 
       - name: Run CPD (Copy/Paste Detector)
@@ -163,7 +164,7 @@ jobs:
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
-          ./pmd-bin-7.3.0/bin/pmd cpd
+          ./pmd/bin/pmd cpd
             --minimum-tokens 50 \
             --language java \
             --dir . \
