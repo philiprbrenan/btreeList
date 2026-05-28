@@ -16,9 +16,10 @@ my $repo    = q(btreeList);                                                     
 my $user    = q(philiprbrenan);                                                                                         # User
 my $folder  = fpd $home, $repo;                                                                                         # Home folder
 my $shaFile = fpe $folder, q(sha);                                                                                      # Sh256 file sums for each known file to detect changes
-my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu
+my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu - compile and test
+my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
-my $exclude = q(Tree);                                                                                           # Java files to exclude from testing as they are not yet ready
+my $exclude = q(Tree);                                                                                                  # Java files to exclude from testing as they are not yet ready
 
 say STDERR timeStamp,  " push to github $repo";
 
@@ -123,4 +124,58 @@ END
  }
 else
  {say STDERR "No Java files changed";
+ }
+
+if (1)                                                                                                                  # Write workflow to check copy and pastes in java code
+ {my $d = dateTimeStamp;
+  my $y = <<"END";
+# Test $d
+
+name: Copy Paste Detection
+
+on:
+  push:
+    paths:
+      - '**/cpd.yml'
+
+jobs:
+  cpd:
+    name: Run Copy/Paste Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout\@v4
+
+      - name: 'JDK'
+        uses: oracle-actions/setup-java\@v1
+
+      - name: Install PMD
+        run: |
+          PMD_VERSION=7.3.0
+          wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F\${PMD_VERSION}/pmd-dist-\${PMD_VERSION}-bin.zip
+          unzip pmd-dist-\${PMD_VERSION}-bin.zip
+          echo "\$PWD/pmd-bin-\${PMD_VERSION}/bin" >> \$GITHUB_PATH
+
+      - name: Run CPD (Copy/Paste Detector)
+        run: |
+          cpd \
+            --minimum-tokens 50 \
+            --language java \
+            --dir . \
+            --format text \
+            > cpd-report.txt
+
+      - name: Show CPD Report
+        run: cat cpd-report.txt
+
+      - name: Upload CPD Report
+        uses: actions/upload-artifact\@v4
+        with:
+          name: cpd-report
+          path: cpd-report.txt
+END
+
+  my $f = writeFileUsingSavedToken $user, $repo, $wfcpd, $y;                                                            # Upload workflow
+  lll "$f  Ubuntu copy paste detection work flow for $repo";
  }
