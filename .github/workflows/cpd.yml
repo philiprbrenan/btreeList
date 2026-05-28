@@ -1,0 +1,45 @@
+# Test 2026-05-28 at 12:19:33
+
+name: Copy Paste Detection
+
+on:
+  push:
+    paths:
+      - '**/cpd.yml'
+
+jobs:
+  cpd:
+    name: Run Copy/Paste Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 'JDK'
+        uses: oracle-actions/setup-java@v1
+
+      - name: Install PMD
+        run: |
+          PMD_VERSION=7.3.0
+          wget https://github.com/pmd/pmd/releases/download/pmd_releases%2F${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip
+          unzip pmd-dist-${PMD_VERSION}-bin.zip
+          echo "$PWD/pmd-bin-${PMD_VERSION}/bin" >> $GITHUB_PATH
+
+      - name: Run CPD (Copy/Paste Detector)
+        run: |
+          cpd 
+            --minimum-tokens 50 
+            --language java 
+            --dir . 
+            --format text 
+            > cpd-report.txt
+
+      - name: Show CPD Report
+        run: cat cpd-report.txt
+
+      - name: Upload CPD Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpd-report
+          path: cpd-report.txt
