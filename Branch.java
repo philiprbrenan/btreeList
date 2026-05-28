@@ -222,15 +222,12 @@ class Branch extends Program                                                    
         ls.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
         Rs.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
 
-        final Int lh = ls.getSlotToKeyValue(lc.Dec());                                                                  // Highest key in left
-        final Int rl = Rs.getSlotToKeyValue(new Int(Rs.numberOfSlotsToKeys()).sub(rc));                                 // Lowest key on right
-        final Int sk = lh.Add(rl).div(2);                                                                               // Splitting key
         final Int lt = left .top();                                                                                     // Left top
         final Int rt = Right.top();                                                                                     // Right top
         left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
         left.top(rt);                                                                                                   // Set right top
         left.data(lc, lt);                                                                                              // Place left top in left data values
-        ls.mergeFromRightOdd(sk, Rs);                                                                                   // Split the slots
+        ls.mergeFromRightOdd(Rs, null);                                                                                 // Split the slots
        }
      };
     return r;
@@ -251,14 +248,11 @@ class Branch extends Program                                                    
         Ls.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
         rs.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
 
-        final Int lh = Ls.getSlotToKeyValue(lc.Dec());                                                                  // Highest key in left
-        final Int rl = rs.getSlotToKeyValue(new Int(rs.numberOfSlotsToKeys()).sub(rc));                                 // Lowest key on right
-        final Int sk = lh.Add(rl).div(2);                                                                               // Splitting key
         final Int lt = Left .top();                                                                                     // Left top
         final Int rt = right.top();                                                                                     // Right top
         right.copyMergeData(Left, new Int(0), new Int(lc));                                                             // Copy the left data values into the right data values
         right.data(lc, lt);                                                                                             // Place left top in left data values
-        rs.mergeFromLeftOdd(sk, Ls);                                                                                    // Split the slots
+        rs.mergeFromLeftOdd(Ls, null);                                                                                    // Split the slots
        }
      };
     return r;
