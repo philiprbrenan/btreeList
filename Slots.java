@@ -141,8 +141,8 @@ class Slots extends Program                                                     
   int  numberOfSlotsToKeys  ()             {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
   int  redistributionWidth  ()             {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
 
-  Int  locateFirstUsedSlot  ()             {return usedSlotsToKeys.firstOne();}                                         // First available slot
-  Int  locateLastUsedSlot   ()             {return usedSlotsToKeys.lastOne();}                                          // Absolute position of the last slot in use
+  Int  locateFirstUsedSlot  ()             {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
+  Int  locateLastUsedSlot   ()             {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
 
   Int locateFirstUnusedKey  ()                                                                                          // Absolute position of the first unused key
    {final Int p = usedKeys.firstZero();
