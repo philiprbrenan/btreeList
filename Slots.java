@@ -492,7 +492,7 @@ class Slots extends Program                                                     
 
 //D5 Even                                                                                                               // Merge slots with an even maximum number of keys
 
-  Bool mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                      // Merge the specified slots from the right without observing the results
+  Bool mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                               // Merge the specified slots from the right without observing the results
   Bool mergeFromRightEven(Slots Right, CompactKey CompactKey)                                                           // Merge the specified slots from the right
    {final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
