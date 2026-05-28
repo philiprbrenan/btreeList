@@ -152,7 +152,7 @@ jobs:
 
       - name: Install PMD
         run: |
-          PMD_VERSION=7.3.0
+          PMD_VERSION=7.24.0
           wget -q https://github.com/pmd/pmd/releases/download/pmd_releases%2F\${PMD_VERSION}/pmd-dist-\${PMD_VERSION}-bin.zip
           unzip pmd-dist-\${PMD_VERSION}-bin.zip
           mv pmd-bin-\$PMD_VERSION pmd
