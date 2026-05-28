@@ -22,8 +22,8 @@ class Branch extends Program                                                    
 
   static class Build                                                                                                    // Parameters describing a branch
    {Integer         maxSize;                                                                                            // Maximum number of keys in branch
-    boolean         immediate = true;                                                                                   // Immediate mode
-    boolean         trace = true;                                                                                       // Trace execution
+    boolean         immediate = true;                                                                                   // Immediate execution mode
+    boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
     ByteMemory.Ref  byteMemoryRef;                                                                                      // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
@@ -39,11 +39,11 @@ class Branch extends Program                                                    
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
       final Slots.Build   s = slots = new Slots.Build().numberOfKeys(maxSize);
       final Program.Build S = s.build();                                                                                // Has the side effect of computing the size of the slots
-      memoryPositions = new MemoryPositions();
+      memoryPositions       = new MemoryPositions();
       if (byteMemoryRef == null) p.memory(size());
       if (parent        != null) p.parent(parent);
       p.immediate(immediate);
-      p.trace(trace);
+      p.trace    (trace);
       return p;
      }
 
