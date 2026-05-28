@@ -9,11 +9,11 @@ import java.util.*;
 class Leaf extends Program                                                                                              // A leaf in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in leaf
-  ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the slots
+  ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
-  final ByteMemory.Ref refUp;                                                                                           // Parent node
-  final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each in use key
-  final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being used to map to keys
+  final ByteMemory.Ref refUp;                                                                                           // Parent node - branch
+  final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
+  final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
   final Build          build;                                                                                           // Build used to construct this leaf
   final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
@@ -66,7 +66,7 @@ class Leaf extends Program                                                      
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).parent(parentProgram));                           // Slots for leaf
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = byteMemoryRef.step(m.posMark);                                                                      // Marks thos node as a leaf or a branch
+    refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
     refUp         = byteMemoryRef.step(m.posUp);                                                                        // Reference oft parent node
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
