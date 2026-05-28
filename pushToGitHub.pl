@@ -159,12 +159,11 @@ jobs:
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
-          sudo apt install tree
           tree
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
-          ./pmd-bin-7.13.0/bin/pmd cpd
+          ./pmd-bin-7.3.0/bin/pmd cpd
             --minimum-tokens 50 \
             --language java \
             --dir . \
