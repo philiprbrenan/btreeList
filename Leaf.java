@@ -11,7 +11,6 @@ class Leaf extends Program                                                      
   final Slots          slots;                                                                                           // Slots used to order keys in leaf
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
-  final ByteMemory.Ref refUp;                                                                                           // Parent node - branch
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
   final Build          build;                                                                                           // Build used to construct this leaf
@@ -48,8 +47,7 @@ class Leaf extends Program                                                      
 
     class MemoryPositions                                                                                               // Layout of memory
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posUp    = posMark  + ib();
-      final int posSlots = posUp    + ib();
+      final int posSlots = posMark  + ib();
       final int posData  = posSlots + slots.size();
       final int size     = posData  + ib(maxSize);
      }
@@ -67,7 +65,6 @@ class Leaf extends Program                                                      
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
-    refUp         = byteMemoryRef.step(m.posUp);                                                                        // Reference oft parent node
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
 
@@ -116,9 +113,6 @@ class Leaf extends Program                                                      
 
   Bool     isLeaf() {return refMark.getInt().eq(   1) ;}                                                                // Whether we are on a leaf or not
   void  setAsLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a leaf
-
-  Int  up()         {return refUp.getInt();}                                                                            // Get reference to a parent node
-  void up(Int I)    {       refUp.putInt(I);}                                                                           // Set reference to parent node
 
   void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
   void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
@@ -654,8 +648,6 @@ Leaf: size:   8
         l.isLeaf()          .ok(true);
         l.data(new Int(1), new Int(A));
         l.data(new Int(1))  .ok(A);
-        l.up  (new Int(21));
-        l.up  ()            .ok(B);
         final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
         r.copy(l);
         r.isLeaf()          .ok(true);
@@ -663,10 +655,8 @@ Leaf: size:   8
         l.clear();
         l.data(new Int(1))  .ok(0);
         l.isLeaf()          .ok(true);
-        l.up()              .ok(0);
         r.data(new Int(1))  .ok(A);
         r.isLeaf()          .ok(true);
-        r.up()              .ok(B);
         execute();
        }
      };
