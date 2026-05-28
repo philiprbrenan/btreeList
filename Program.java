@@ -386,6 +386,10 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : "undefined Bool: "+name;
      }
 
+    void stop(final Object...O)                                                                                         // Conditionally print a message and stop
+     {new If (this) {void Then() {new I() {void action() {Test.stop(O);}};}};
+     }
+
     Bool say() {final Bool i = this; new I() {void action() {Test.say(i);}}; return this;}                              // Say the boolean
 
     Bool ok(Boolean Value)
