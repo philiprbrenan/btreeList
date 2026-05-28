@@ -10,11 +10,11 @@ import java.util.*;
 class Branch extends Program                                                                                            // A branch in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
-  ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the slots
+  ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a branch
-  final ByteMemory.Ref refUp;                                                                                           // Parent node
-  final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each in use key
-  final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being used to map to keys
+  final ByteMemory.Ref refUp;                                                                                           // Parent node - branch
+  final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
+  final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
   final ByteMemory.Ref refTop;                                                                                          // Target for keys greater than all the keys in the branch bitset
   final Build          build;                                                                                           // Build used to construct this branch
   final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
@@ -69,7 +69,7 @@ class Branch extends Program                                                    
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).parent(parentProgram));                           // Slots for branch
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = byteMemoryRef.step(m.posMark);                                                                      // Marks thos node as a branch or a branch
+    refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
     refUp         = byteMemoryRef.step(m.posUp);                                                                        // Reference oft parent node
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refTop        = byteMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
@@ -79,11 +79,10 @@ class Branch extends Program                                                    
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
 
-
   void branchCode() {}                                                                                                  // Override this method to provide code for testing the branch
 
-  Int find          (Int Key) {return getDataFromKey(Key, false);}                                                      // Get the data associated with a key
-  Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Int find  (Int Key) {return getDataFromKey(Key, false);}                                                              // Get the data associated with a key
+  Int delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
   Int getDataFromKey(Int Key, boolean Delete)                                                                           // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
@@ -100,7 +99,7 @@ class Branch extends Program                                                    
     return r;                                                                                                           // Return data associated with key
    }
 
-  Int top() {return refTop.getInt();}                                                                                   // Get value of top
+  Int top()  {return refTop.getInt();}                                                                                  // Get value of top
   void top(Int Top) {refTop.putInt(Top);}                                                                               // Set value of top
 
   Int stepDown(Int Key)                                                                                                 // Reference of the next branch down that might contain the specified key
@@ -113,16 +112,16 @@ class Branch extends Program                                                    
       void Else()
        {new If (f.equal.or(f.lower))                                                                                    // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
          {void Then()
-           {r.set(data(f.slot));                                                                                        // Data associated with found key
+           {r.set(data(slots.getSlotToKeyIndex(f.slot)));                                                               // Data associated with found key
            }
           void Else()
            {final Int n = slots.usedSlotsToKeys.nextOne(f.slot);                                                        // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
             new If (n.valid())                                                                                          // Found the index of a key that is greater than or equal to the search key
              {void Then()
-               {r.set(data(n));                                                                                         // Data associated with next key
+               {r.set(data(slots.getSlotToKeyIndex(n)));                                                                // Data associated with next key
                }
               void Else()
-               {r.set(top());                                                                                           // No  next key so use default
+               {r.set(top());                                                                                           // No next key so use default
                }
              };
            }
@@ -131,7 +130,6 @@ class Branch extends Program                                                    
      };
     return r;                                                                                                           // Result
    }
-
 
   Int insert(Int Key, Int Data)                                                                                         // Insert a key data pair into a branch returning the index of the containing slot
    {final Int i = slots.insert(Key);
@@ -194,14 +192,14 @@ class Branch extends Program                                                    
   void splitLeft(Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch
    {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
-    right.compactLeft();                                                                                               // Compact source slots so we know where they are
+    right.compactLeft();                                                                                                // Compact source slots so we know where they are
     Left .slots.clear();                                                                                                // Clear target
     right.copySplitData(Left, new Int(0), new Int(maxSize() / 2));                                                      // Copy the data values associated with the slots
     Left .top(right.data(Left.slots.getSlotToKeyIndex(new Int(maxSize / 2))));                                          // Left top is data from splitting key
     slots.splitLeftOdd(Left.slots);                                                                                     // Split the slots
    }
 
-  private void copyMergeData(Branch Source, Int Start, Int End)                                                           // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
+  private void copyMergeData(Branch Source, Int Start, Int End)                                                         // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
      {void body(Int Index)
        {data(Index, Source.data(Index));                                                                                // The keys have been compacted left and right so we can copy them from the source position into the same position in the target without collisions
@@ -231,7 +229,7 @@ class Branch extends Program                                                    
         left.top(rt);                                                                                                   // Set right top
         left.slots.setSlotAndKey(lc, lc, sk);                                                                           // Insert splittingh key Safe because the keys have been compacted
         left.data(lc, lt);                                                                                              // Place left top in left data values
-        left.slots.mergeFromRightOdd(sk, Right.slots);                                                                     // Split the slots
+        left.slots.mergeFromRightOdd(sk, Right.slots);                                                                  // Split the slots
        }
      };
     return r;
@@ -256,9 +254,9 @@ class Branch extends Program                                                    
         final Int lt = Left .top();                                                                                     // Left top
         final Int rt = right.top();                                                                                     // Right top
         right.copyMergeData(Left, new Int(0), new Int(lc));                                                             // Copy the left data values into the right data values
-        right.slots.setSlotAndKey(lc, lc, sk);                                                                           // Insert splittingh key Safe because the keys have been compacted
-        right.data(lc, lt);                                                                                              // Place left top in left data values
-        right.slots.mergeFromRightOdd(sk, Left.slots);                                                                     // Split the slots
+        right.slots.setSlotAndKey(lc, lc, sk);                                                                          // Insert splittingh key Safe because the keys have been compacted
+        right.data(lc, lt);                                                                                             // Place left top in left data values
+        right.slots.mergeFromRightOdd(sk, Left.slots);                                                                  // Split the slots
        }
      };
     return r;
@@ -689,7 +687,7 @@ Branch: size:   7
 
   static void test_fixedFields(boolean  Ex)
    {final int A = 22, B = 21;
-     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
      {void branchCode()
        {final Branch l = this;
         l.setAsBranch();
@@ -704,10 +702,10 @@ Branch: size:   7
 
         l.clear();
         l.data(new Int(1))  .ok(0);
-        l.isBranch()          .ok(true);
+        l.isBranch()        .ok(true);
         l.up()              .ok(0);
         r.data(new Int(1))  .ok(A);
-        r.isBranch()          .ok(true);
+        r.isBranch()        .ok(true);
         r.up()              .ok(B);
         execute();
        }
@@ -717,6 +715,31 @@ Branch: size:   7
   static void test_fixedFields()
    {test_fixedFields(true);
     test_fixedFields(false);
+   }
+
+  static void test_stepDown(boolean  Ex)
+   {final int    N = 4;
+    final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
+     {void branchCode()
+       {setAsBranch();
+
+        insert(new Int(10), new Int(1));
+        insert(new Int(20), new Int(2));
+        insert(new Int(30), new Int(3));
+        top   (             new Int(4));
+
+        stepDown(new Int(02)).ok(1);
+        stepDown(new Int(12)).ok(2);
+        stepDown(new Int(22)).ok(3);
+        stepDown(new Int(32)).ok(4);
+        execute();
+       }
+     };
+   }
+
+  static void test_stepDown()
+   {test_stepDown(true);
+    test_stepDown(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -729,12 +752,12 @@ Branch: size:   7
     test_mergeLeft();
     test_find();
     test_fixedFields();
+    test_stepDown();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitLeft();
-    test_splitRight();
+    test_stepDown();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
