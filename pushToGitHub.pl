@@ -164,12 +164,7 @@ jobs:
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
-          ./pmd/bin/pmd cpd \
-            --minimum-tokens 50 \
-            --language java \
-            --dir . \
-            --format text \
-            > cpd-report.txt
+          ./pmd/bin/pmd cpd --minimum-tokens 50  --language java --dir . --format text cpd-report.txt
 
       - name: Show CPD Report
         run: cat cpd-report.txt
