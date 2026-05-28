@@ -12,7 +12,6 @@ class Branch extends Program                                                    
   final Slots          slots;                                                                                           // Slots used to order keys in branch
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a branch
-  final ByteMemory.Ref refUp;                                                                                           // Parent node - branch
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
   final ByteMemory.Ref refTop;                                                                                          // Target for keys greater than all the keys in the branch bitset
@@ -50,8 +49,7 @@ class Branch extends Program                                                    
 
     class MemoryPositions                                                                                               // Layout of memory
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posUp    = posMark  + ib();
-      final int posSlots = posUp    + ib();
+      final int posSlots = posMark  + ib();
       final int posData  = posSlots + slots.size();
       final int posTop   = posData  + ib(maxSize);
       final int size     = posTop   + ib();
@@ -70,7 +68,6 @@ class Branch extends Program                                                    
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
-    refUp         = byteMemoryRef.step(m.posUp);                                                                        // Reference oft parent node
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refTop        = byteMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
@@ -151,9 +148,6 @@ class Branch extends Program                                                    
 
   Bool     isBranch() {return refMark.getInt().eq(   2) ;}                                                              // Whether we are on a branch or not
   void  setAsBranch() {       refMark.putInt(new Int(2));}                                                              // Mark this as a branch
-
-  Int  up()         {return refUp.getInt();}                                                                            // Get reference to a parent node
-  void up(Int I)    {       refUp.putInt(I);}                                                                           // Set reference to parent node
 
   void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
   void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
@@ -690,8 +684,6 @@ Branch: size:   7 top:   0
         l.isBranch()        .ok(true);
         l.data(new Int(1), new Int(A));
         l.data(new Int(1))  .ok(A);
-        l.up  (new Int(21));
-        l.up  ()            .ok(B);
         final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
         r.copy(l);
         r.isBranch()        .ok(true);
@@ -699,10 +691,8 @@ Branch: size:   7 top:   0
         l.clear();
         l.data(new Int(1))  .ok(0);
         l.isBranch()        .ok(true);
-        l.up()              .ok(0);
         r.data(new Int(1))  .ok(A);
         r.isBranch()        .ok(true);
-        r.up()              .ok(B);
         execute();
        }
      };
