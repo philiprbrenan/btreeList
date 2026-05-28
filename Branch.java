@@ -223,17 +223,14 @@ class Branch extends Program                                                    
         Rs.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
 
         final Int lh = ls.getSlotToKeyValue(lc.Dec());                                                                  // Highest key in left
-say("BBBB", new Int(maxSize).sub(rc), Rs, Right.dumpDataArray());                                                       // Lowest key on right
         final Int rl = Rs.getSlotToKeyValue(new Int(Rs.numberOfSlotsToKeys()).sub(rc));                                 // Lowest key on right
         final Int sk = lh.Add(rl).div(2);                                                                               // Splitting key
         final Int lt = left .top();                                                                                     // Left top
         final Int rt = Right.top();                                                                                     // Right top
-say("AAAA", lh, rl, sk);
         left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
         left.top(rt);                                                                                                   // Set right top
-        ls.setSlotAndKey(lc, lc, sk);                                                                                   // Insert splittingh key Safe because the keys have been compacted
         left.data(lc, lt);                                                                                              // Place left top in left data values
-        ls.mergeFromRightOdd(sk, Right.slots);                                                                          // Split the slots
+        ls.mergeFromRightOdd(sk, Rs);                                                                                   // Split the slots
        }
      };
     return r;
@@ -248,19 +245,20 @@ say("AAAA", lh, rl, sk);
     new If (lc.Add(rc).lt(maxSize()))
      {void Then()
        {r.set();
+        final Slots Ls = Left .slots;
+        final Slots rs = right.slots;
         Left .compactLeft();    right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
-        Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
-        right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
+        Ls.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
+        rs.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
 
-        final Int lh = Left .slots.getSlotToKeyValue(lc.Dec());                                                         // Highest key in left
-        final Int rl = right.slots.getSlotToKeyValue(rc.Inc());                                                         // Lowest key on right
+        final Int lh = Ls.getSlotToKeyValue(lc.Dec());                                                                  // Highest key in left
+        final Int rl = rs.getSlotToKeyValue(new Int(rs.numberOfSlotsToKeys()).sub(rc));                                 // Lowest key on right
         final Int sk = lh.Add(rl).div(2);                                                                               // Splitting key
         final Int lt = Left .top();                                                                                     // Left top
         final Int rt = right.top();                                                                                     // Right top
         right.copyMergeData(Left, new Int(0), new Int(lc));                                                             // Copy the left data values into the right data values
-        right.slots.setSlotAndKey(lc, lc, sk);                                                                          // Insert splittingh key Safe because the keys have been compacted
         right.data(lc, lt);                                                                                             // Place left top in left data values
-        right.slots.mergeFromRightOdd(sk, Left.slots);                                                                  // Split the slots
+        rs.mergeFromLeftOdd(sk, Ls);                                                                                    // Split the slots
        }
      };
     return r;
@@ -558,14 +556,13 @@ Branch: size:   7 top:  99
     l.ok(()->l, """
 Branch: size:   7 top:  99
  Ref   Key  Data
-   3     1    11
+   1     1    11
    0     2    22
    2     3    33
-   1     4    44
+   3     4    44
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     l.maxSteps = 99999;
     l.execute();
@@ -585,11 +582,10 @@ Branch: size:   7 top:  99
     r.insert(r.new Int(6), r.new Int(66));
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
-    r.insert(r.new Int(8), r.new Int(88));
     r.top(r.new Int(99));
     // r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:   0
+Branch: size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -598,41 +594,37 @@ Branch: size:   7 top:   0
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch: size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
    2     3    33
-   1     4    44
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:   0
+Branch: size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     r.mergeLeft(l);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:   0
+Branch: size:   7 top:  99
  Ref   Key  Data
-   3     1    11
+   1     1    11
    0     2    22
    2     3    33
-   1     4    44
+   3     4    44
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     r.maxSteps = 99999;
     r.execute();
@@ -767,7 +759,7 @@ Branch: size:   7 top:   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_mergeRight(true);
+    test_mergeLeft(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
