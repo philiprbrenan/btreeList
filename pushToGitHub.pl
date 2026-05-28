@@ -24,7 +24,7 @@ my $exclude = q();                                                              
 say STDERR timeStamp,  " push to github $repo";
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
-my @java  = grep {!m($exclude)} grep {fe($_) =~ m(java)is} @files;                                                      # Java files
+my @java  = grep {fe($_) =~ m(java)is} @files;                                                                          # Java files
    @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
 if (!@files)                                                                                                            # No new files
  {say "Everything up to date";
