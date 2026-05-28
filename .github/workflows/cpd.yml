@@ -1,4 +1,4 @@
-# Test 2026-05-28 at 18:38:40
+# Test 2026-05-28 at 18:41:45
 
 name: Copy Paste Detection
 
@@ -28,7 +28,7 @@ jobs:
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
-          cpd 
+          ./pmd-bin-7.13.0/bin/cpd
             --minimum-tokens 50 
             --language java 
             --dir . 
