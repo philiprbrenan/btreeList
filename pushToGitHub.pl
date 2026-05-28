@@ -159,7 +159,7 @@ jobs:
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
-          cpd \
+          ./pmd-bin-7.13.0/bin/cpd
             --minimum-tokens 50 \
             --language java \
             --dir . \
