@@ -195,7 +195,7 @@ class Branch extends Program                                                    
     right.compactLeft();                                                                                                // Compact source slots so we know where they are
     Left .slots.clear();                                                                                                // Clear target
     right.copySplitData(Left, new Int(0), new Int(maxSize() / 2));                                                      // Copy the data values associated with the slots
-    Left .top(right.data(Left.slots.getSlotToKeyIndex(new Int(maxSize / 2))));                                          // Left top is data from splitting key
+    Left .top(right.data(right.slots.getSlotToKeyIndex(new Int(maxSize / 2))));                                         // Left top is data from splitting key
     slots.splitLeftOdd(Left.slots);                                                                                     // Split the slots
    }
 
@@ -216,20 +216,24 @@ class Branch extends Program                                                    
     new If (lc.Add(rc).lt(maxSize()))
      {void Then()
        {r.set();
+        final Slots ls = left .slots;
+        final Slots Rs = Right.slots;
         left .compactLeft();    Right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
-        left .slots.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
-        Right.slots.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
+        ls.compactKeysLeft ((S, t, s)->{left .data(t, left .data(s));});
+        Rs.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
 
-        final Int lh = left .slots.getSlotToKeyValue(lc.Dec());                                                         // Highest key in left
-        final Int rl = Right.slots.getSlotToKeyValue(rc.Inc());                                                         // Lowest key on right
+        final Int lh = ls.getSlotToKeyValue(lc.Dec());                                                                  // Highest key in left
+say("BBBB", new Int(maxSize).sub(rc), Rs, Right.dumpDataArray());                                                       // Lowest key on right
+        final Int rl = Rs.getSlotToKeyValue(new Int(Rs.numberOfSlotsToKeys()).sub(rc));                                 // Lowest key on right
         final Int sk = lh.Add(rl).div(2);                                                                               // Splitting key
         final Int lt = left .top();                                                                                     // Left top
         final Int rt = Right.top();                                                                                     // Right top
+say("AAAA", lh, rl, sk);
         left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
         left.top(rt);                                                                                                   // Set right top
-        left.slots.setSlotAndKey(lc, lc, sk);                                                                           // Insert splittingh key Safe because the keys have been compacted
+        ls.setSlotAndKey(lc, lc, sk);                                                                                   // Insert splittingh key Safe because the keys have been compacted
         left.data(lc, lt);                                                                                              // Place left top in left data values
-        left.slots.mergeFromRightOdd(sk, Right.slots);                                                                  // Split the slots
+        ls.mergeFromRightOdd(sk, Right.slots);                                                                          // Split the slots
        }
      };
     return r;
@@ -266,8 +270,14 @@ class Branch extends Program                                                    
 
 //D2 Print                                                                                                              // Print the branch
 
+  StringBuilder printTitle()                                                                                            // Print the title line
+   {final StringBuilder s = new StringBuilder();
+    s.append(f("Branch: size: "+formatKey+" top: "+formatKey+"\n", maxSize(), refTop.getInt(0)));
+    return s;
+   }
+
   public String toString()                                                                                              // Print a branch
-   {final StringBuilder s = new StringBuilder(f("Branch: size: "+formatKey+"\n", maxSize()));
+   {final StringBuilder s = printTitle();
     s.append(" Ref   Key  Data\n");
     for (int i : range(slots.numberOfSlotsToKeys()))
      {if (slots.getSlotToKeysInUse(i))
@@ -281,7 +291,7 @@ class Branch extends Program                                                    
    }
 
   String dumpData()                                                                                                     // Dump the data
-   {final StringBuilder s = new StringBuilder(f("Branch data: size: "+formatKey+"\n", maxSize()));
+   {final StringBuilder s = printTitle();
     s.append(" Ref  Data\n");
     for (int i : range(slots.numberOfKeys()))
      {if (slots.getKeyInUse(i))
@@ -294,7 +304,7 @@ class Branch extends Program                                                    
    }
 
   String dumpDataArray()                                                                                                // Dump the data array
-   {final StringBuilder s = new StringBuilder(f("Branch data: size: "+formatKey+"\n", maxSize()));
+   {final StringBuilder s = printTitle();
     s.append(" Ref  Data\n");
     for (int i : range(slots.numberOfKeys())) s.append(f("%4d  %4d\n",  i, refData.getInt(i)));
     return ""+s;
@@ -310,7 +320,7 @@ class Branch extends Program                                                    
     l.insert(l.new Int(1), l.new Int(11));
     //new I() {void action() {testStop("AAAA", l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -347,7 +357,7 @@ Branch: size:   7
     l.delete(l.new Int(2));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    2     3    33
@@ -356,7 +366,7 @@ Branch: size:   7
     l.compactLeft();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    0     1    11
    2     3    33
@@ -379,7 +389,7 @@ Branch: size:   7
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -389,7 +399,7 @@ Branch: size:   7
     l.compactRight();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    6     2    22
@@ -414,9 +424,10 @@ Branch: size:   7
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
+    l.top(l.new Int(99));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -430,7 +441,7 @@ Branch: size:   7
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -438,7 +449,7 @@ Branch: size:   7
 """);
     //l.new I() {void action() {testStop(r);}};
     l.ok(()->r, """
-Branch: size:   7
+Branch: size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -462,9 +473,10 @@ Branch: size:   7
     r.insert(r.new Int(6), r.new Int(66));
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
+    r.top(r.new Int(99));
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7
+Branch: size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -478,7 +490,7 @@ Branch: size:   7
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -486,7 +498,7 @@ Branch: size:   7
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7
+Branch: size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -510,10 +522,10 @@ Branch: size:   7
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
-    l.insert(l.new Int(8), l.new Int(88));
+    l.top(l.new Int(99));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -522,32 +534,29 @@ Branch: size:   7
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
    2     3    33
-   1     4    44
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7
+Branch: size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
    5     7    77
-   7     8    88
 """);
     l.mergeRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -577,9 +586,10 @@ Branch: size:   7
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
     r.insert(r.new Int(8), r.new Int(88));
-   // r.new I() {void action() {testStop(r);}};
+    r.top(r.new Int(99));
+    // r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -594,7 +604,7 @@ Branch: size:   7
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -603,7 +613,7 @@ Branch: size:   7
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -613,7 +623,7 @@ Branch: size:   7
     r.mergeLeft(l);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -644,7 +654,7 @@ Branch: size:   7
     l.insert(l.new Int(5), l.new Int(55));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -672,7 +682,7 @@ Branch: size:   7
     l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
     l.ok(()->l, """
-Branch: size:   7
+Branch: size:   7 top:   0
  Ref   Key  Data
 """);
 
@@ -757,7 +767,7 @@ Branch: size:   7
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_stepDown();
+    test_mergeRight(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
