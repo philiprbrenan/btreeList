@@ -503,10 +503,12 @@ class Slots extends Program                                                     
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
      {void Then()
        {r.set(true);                                                                                                    // Able to merge
-        left .compactSlotsLeft ();
-        Right.compactSlotsRight();
-        left .compactKeysLeft  (CompactKey);
-        Right.compactKeysRight (CompactKey);
+        if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
+         {left .compactSlotsLeft ();
+          Right.compactSlotsRight();
+          left .compactKeysLeft  (CompactKey);
+          Right.compactKeysRight (CompactKey);
+         }
         new ForCount (N.Sub(rc), N)                                                                                     // Merge right into left
          {void body(Int Index)
            {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key from right
@@ -521,7 +523,7 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Bool mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                          // Merge the specified slots from the right
+  Bool mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                                   // Merge the specified slots from the right
   Bool mergeFromLeftEven(Slots Left, CompactKey CompactKey)                                                             // Merge the specified slots from the right
    {final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
@@ -532,10 +534,12 @@ class Slots extends Program                                                     
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
      {void Then()
        {r.set(true);
-        Left .compactSlotsLeft ();
-        right.compactSlotsRight();
-        Left .compactKeysLeft  (CompactKey);
-        right.compactKeysRight (CompactKey);
+        if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
+         {Left .compactSlotsLeft ();
+          right.compactSlotsRight();
+          Left .compactKeysLeft  (CompactKey);
+          right.compactKeysRight (CompactKey);
+         }
         new ForCount (lc)
          {void body(Int Index)
            {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key from left
@@ -552,8 +556,8 @@ class Slots extends Program                                                     
 
 //D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys
 
-  Bool mergeFromRightOdd(Int Key, Slots Right) {return mergeFromRightOdd(Key, Right, (S, t, s)->{});}                   // Merge the specified slots from the right without observing the results
-  Bool mergeFromRightOdd(Int Key, Slots Right, CompactKey CompactKey)                                                   // Merge the specified slots from the right
+  Bool mergeFromRightOdd(Slots Right) {return mergeFromRightOdd(Right, (S, t, s)->{});}                                 // Merge the specified slots from the right without observing the results
+  Bool mergeFromRightOdd(Slots Right, CompactKey CompactKey)                                                            // Merge the specified slots from the right
    {final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
     final Int     lc = left .usedKeys.countOnes();                                                                      // Count on left
@@ -563,10 +567,12 @@ class Slots extends Program                                                     
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
      {void Then()
        {r.set(true);                                                                                                    // Able to merge
-        left .compactSlotsLeft ();
-        Right.compactSlotsRight();
-        left .compactKeysLeft  (CompactKey);
-        Right.compactKeysRight (CompactKey);
+        if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
+         {left .compactSlotsLeft ();
+          Right.compactSlotsRight();
+          left .compactKeysLeft  (CompactKey);
+          Right.compactKeysRight (CompactKey);
+         }
         new ForCount (N.Sub(rc), N)                                                                                     // Merge right into left
          {void body(Int Index)
            {final Int k = Right.getSlotToKeyIndex(Index);                                                               // Index of key from right
@@ -574,7 +580,12 @@ class Slots extends Program                                                     
             left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
            }
          };
-        setSlotAndKey(lc, lc, Key);                                                                                     // Insert separating key
+
+        final Int lh = left .getSlotToKeyValue(lc.Dec());                                                               // Highest key in left
+        final Int Rl = Right.getSlotToKeyValue(new Int(Right.numberOfSlotsToKeys()).sub(rc));                           // Lowest key on right
+        final Int sk = lh.Add(Rl).div(2);                                                                               // Splitting key
+
+        setSlotAndKey(lc, lc, sk);                                                                                      // Insert separating key
         left .redistribute();                                                                                           // Redistribute left
         Right.redistribute();                                                                                           // Redistribute right
        }
@@ -582,8 +593,8 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Bool mergeFromLeftOdd(Int Key, Slots Left) {return mergeFromLeftOdd(Key, Left, (S, t, s)->{});}                       // Merge the specified slots from the right
-  Bool mergeFromLeftOdd(Int Key, Slots Left, CompactKey CompactKey)                                                     // Merge the specified slots from the right
+  Bool mergeFromLeftOdd(Slots Left) {return mergeFromLeftOdd(Left, (S, t, s)->{});}                                     // Merge the specified slots from the right
+  Bool mergeFromLeftOdd(Slots Left, CompactKey CompactKey)                                                              // Merge the specified slots from the right
    {final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
     final Int      rc = right.usedKeys.countOnes();
@@ -593,10 +604,12 @@ class Slots extends Program                                                     
     new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots with space for the additional key
      {void Then()
        {r.set(true);
-        Left .compactSlotsLeft ();
-        right.compactSlotsRight();
-        Left .compactKeysLeft  (CompactKey);
-        right.compactKeysRight (CompactKey);
+        if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
+         {Left .compactSlotsLeft ();
+          right.compactSlotsRight();
+          Left .compactKeysLeft  (CompactKey);
+          right.compactKeysRight (CompactKey);
+         }
         new ForCount (lc)
          {void body(Int Index)
            {final Int k = Left.getSlotToKeyIndex(Index);                                                                // Index of key from left
@@ -604,7 +617,10 @@ class Slots extends Program                                                     
             right.setSlotAndKey(Index, k, K);                                                                           // Reinsert left key in right target
            }
          };
-        setSlotAndKey(lc, lc, Key);                                                                                     // Insert separating key
+        final Int Lh = Left .getSlotToKeyValue(lc.Dec());                                                               // Highest key in left
+        final Int rl = right.getSlotToKeyValue(new Int(right.numberOfSlotsToKeys()).sub(rc));                           // Lowest key on right
+        final Int sk = Lh.Add(rl).div(2);                                                                               // Splitting key
+        setSlotAndKey(lc, lc, sk);                                                                                      // Insert separating key
         Left .redistribute();                                                                                           // Redistribute left
         right.redistribute();                                                                                           // Redistribute right
        }
@@ -1427,7 +1443,7 @@ usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
 
-        l.mergeFromRightOdd(new Int(3), r).ok(true);
+        l.mergeFromRightOdd(r).ok(true);
 
         //new I() {void action() {testStop(l); }};
         //new I() {void action() {testStop(r); }};
@@ -1449,7 +1465,7 @@ usedSlots:    .   .   X   .   .   .   .   X   .   .
 usedKeys :    .   .   .   X   X
 keys     :    0   0   0   5   4
 """);
-        mergeFromRightOdd(new Int(3), l).ok(false);
+        mergeFromRightOdd(l).ok(false);
         maxSteps = 99999;
         execute();
        }
@@ -1495,7 +1511,7 @@ usedKeys :    X   X   .   .   .
 keys     :    1   2   0   0   0
 """);
 
-        r.mergeFromLeftOdd(new Int(3), l).ok(true);
+        r.mergeFromLeftOdd(l).ok(true);
 
         //new I() {void action() {testStop(r);}};
         ok(()->r, """
