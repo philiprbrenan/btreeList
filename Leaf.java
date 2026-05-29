@@ -6,10 +6,11 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 
-class Leaf extends Program                                                                                              // A leaf in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
+class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in leaf
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
+  final Int            at            = new Int();                                                                       // A representation of the location of the leaf sufficient to be able to free it
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
@@ -20,6 +21,7 @@ class Leaf extends Program                                                      
 
   static class Build                                                                                                    // Parameters describing a leaf
    {Integer         maxSize;                                                                                            // Maximum number of keys in leaf
+    Int             at;                                                                                                 // The location of the leaf
     boolean         immediate = true;                                                                                   // Immediate execution mode
     boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
@@ -32,6 +34,7 @@ class Leaf extends Program                                                      
     Build memory   (ByteMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
+    Build at       (Int     At        ) {at            = At;        return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -67,11 +70,18 @@ class Leaf extends Program                                                      
     refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
-
-    new I() {void action() {deleteFile(tracing);}};                                                                     // Delete the trace file here to avoid including the memory reference calculations above
+    if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
 
+  Leaf initializeMemory()                                                                                               // Initialize slots and data associated with the leaf
+   {clear();                                                                                                            // Clear backing memory
+    slots.initializeMemory();                                                                                           // Initialize slots
+if (debug) stop("XXXX");
+    return this;
+   }
+
+  public Int getLocation() {return at;}                                                                                 // The location of this node in memory
 
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
@@ -109,10 +119,7 @@ class Leaf extends Program                                                      
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
-  void      clear() {byteMemoryRef.clear(bytesNeeded()); setAsLeaf();}                                                  // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
-
-  Bool     isLeaf() {return refMark.getInt().eq(   1) ;}                                                                // Whether we are on a leaf or not
-  void  setAsLeaf() {       refMark.putInt(new Int(1));}                                                                // Mark this as a leaf
+  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
   void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
@@ -208,7 +215,11 @@ class Leaf extends Program                                                      
 //D2 Print                                                                                                              // Print the leaf
 
   public String toString()                                                                                              // Print a leaf
-   {final StringBuilder s = new StringBuilder(f("Leaf: size: "+formatKey+"\n", maxSize()));
+   {final StringBuilder s = new StringBuilder();
+    s.append(f("Leaf: size: "+formatKey, maxSize()));
+    final int a = byteMemoryRef.offset.i();
+    if (a > 0) s.append(f(" at: "+formatKey, a));
+    s.append("\n");
     s.append(" Ref   Key  Data\n");
     for (int i : range(slots.numberOfSlotsToKeys()))
      {if (slots.getSlotToKeysInUse(i))
@@ -245,6 +256,7 @@ class Leaf extends Program                                                      
 
   static void test_leaf(boolean Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -281,6 +293,7 @@ Leaf: size:   8
 
   static void test_compactLeft(boolean  Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -314,6 +327,7 @@ Leaf: size:   8
 
   static void test_compactRight(boolean  Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -348,6 +362,7 @@ Leaf: size:   8
 
   static void test_splitRight(boolean Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -370,6 +385,7 @@ Leaf: size:   8
    7     8    88
 """);
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
+    r.initializeMemory();
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -400,6 +416,7 @@ Leaf: size:   8
 
   static void test_splitLeft(boolean  Ex)
    {final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
+    r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -452,6 +469,7 @@ Leaf: size:   8
 
   static void test_mergeRight(boolean Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -518,6 +536,7 @@ Leaf: size:   8
 
   static void test_mergeLeft(boolean  Ex)
    {final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
+    r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -584,6 +603,7 @@ Leaf: size:   8
 
   static void test_find(boolean  Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -641,22 +661,19 @@ Leaf: size:   8
 
   static void test_fixedFields(boolean  Ex)
    {final int A = 22, B = 21;
-     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex))
+    final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex))
      {void leafCode()
        {final Leaf l = this;
-        l.setAsLeaf();
-        l.isLeaf()          .ok(true);
+        l.initializeMemory();
         l.data(new Int(1), new Int(A));
         l.data(new Int(1))  .ok(A);
         final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
+        r.initializeMemory();
         r.copy(l);
-        r.isLeaf()          .ok(true);
 
         l.clear();
         l.data(new Int(1))  .ok(0);
-        l.isLeaf()          .ok(true);
         r.data(new Int(1))  .ok(A);
-        r.isLeaf()          .ok(true);
         execute();
        }
      };
