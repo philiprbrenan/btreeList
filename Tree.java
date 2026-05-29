@@ -136,17 +136,52 @@ class Tree extends Program                                                      
   Bool isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Is the indexed node a branch
   Bool isLeaf  (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                // Is the indexed node a leaf
 
-  Leaf leaf(Int Node)                                                                                                   // Address a leaf in memory
+  Leaf leaf(Int Node)                                                                                                   // Index a leaf in memory
    {isLeaf(Node).Flip().stop("Not a leaf:", Node);                                                                      // Check the location actually holds a leaf
     final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
-    return new Leaf(build.leaf.parent(this).memory(r));                                                                 // Base leaf at the address
+    return new Leaf(build.leaf.parent(this).memory(r));                                                                 // Base leaf at the indexed address
    }
 
-  Int leaf()                                                                                                            // Create a leaf in memory and return its address
-   {final Int  a = allocate();
-    setType(a, BranchOrLeaf.leaf);
-    final Leaf l = leaf(a); l.setAsLeaf();
-    return a;
+  Int leaf()                                                                                                            // Create i leaf in memory and return its index
+   {final Int  i = allocate();
+    setType(i, BranchOrLeaf.leaf);
+    final Leaf l = leaf(i);
+    return i;
+   }
+
+  Branch branch(Int Node)                                                                                                 // Index i branch in memory
+   {isBranch(Node).Flip().stop("Not i branch:", Node);                                                                  // Check the location actually holds i branch
+    final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address branch
+    return new Branch(build.branch.parent(this).memory(r));                                                             // Base branch at the indexed address
+   }
+
+  Int branch()                                                                                                          // Create i branch in memory and return its index
+   {final Int i = allocate();
+    setType(i, BranchOrLeaf.branch);
+    final Branch b = branch(i);
+    return i;
+   }
+
+  public String toString()                                                                                              // Dump the tree
+   {final StringBuilder s = new StringBuilder();
+    s.append(f("Tree memory:\n"));
+    s.append(f("Leaf   size: %4d\n", build.leafSize));
+    s.append(f("Branch size: %4d\n", build.branchSize));
+    s.append(f("Node   size: %4d\n", sizeOfNode));
+    s.append(f("MaxLeafSize: %4d\n", maxLeafSize));
+    s.append(f("MaxBranchSz: %4d\n", maxBranchSize));
+    s.append(f("NumberNodes: %4d\n", numberOfNodes));
+
+    for (int i : range(min(numberOfNodes, 20)))
+     {final Int  I = new Int(i);
+      final int  n = sizeOfNode * i;
+      final Bool l = isLeaf(I);
+      final Bool b = isBranch(I);
+      s.append(f("Node: %4d at %4d\n", i, n));
+      final String t = l.b() ? leaf(I).toString() : branch(I).toString();
+      s.append(t);
+     }
+    return ""+s;
    }
 
 /*
