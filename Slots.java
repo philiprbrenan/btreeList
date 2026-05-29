@@ -82,15 +82,22 @@ class Slots extends Program                                                     
     refUsedSlotsToKeys   = byteMemoryRef.step(m.posUsedSlotsToKeys);                                                    // Slots in use
     refUsedKeys          = byteMemoryRef.step(m.posusedKeys);                                                           // References in use.  There are fewer references than slots to make insertions faster
     refKeys              = byteMemoryRef.step(m.posKeys);                                                               // Keys used in btree held unordered in this array but ordered by the slot references to them
-    usedSlotsToKeys      = new BitSet        (m.us.memory(refUsedSlotsToKeys).parent(parentProgram));                   // Create bitsets to reference the program and memory used by this program
-    usedKeys             = new BitSet        (m.ur.memory(refUsedKeys)       .parent(parentProgram));
-    new I() {void action() {deleteFile(tracing);}};                                                                     // Delete the trace file here to avoid including the memory reference calculations above
+    usedSlotsToKeys      = new BitSet(m.us.memory(refUsedSlotsToKeys).parent(parentProgram));                           // Create bitsets to reference the program and memory used by this program
+    usedKeys             = new BitSet(m.ur.memory(refUsedKeys)       .parent(parentProgram));
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
+   }
+
+  Slots initializeMemory()                                                                                              // Initialize memory
+   {if (debug) say("BBBB11");
+    usedSlotsToKeys.initializeMemory();
+    if (debug) say("BBBB22");
+    usedKeys       .initializeMemory();
+    return this;
    }
 
   void slotsCode() {}                                                                                                   // Override this method to provide code for testing the slots
 
-  Slots(int NumberOfKeys) {this(new Build().numberOfKeys(NumberOfKeys));}                                               // Create the slots in local memory for testing
+  Slots(int NumberOfKeys) {this(new Build().numberOfKeys(NumberOfKeys)); initializeMemory();}                           // Create the slots in local memory for testing
 
 //D2 Internal                                                                                                           // Low level internal operations on slots
 
@@ -907,8 +914,9 @@ class Slots extends Program                                                     
   static void test_slots(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {final Bool e = empty();
-         ok(()->e, true);
+       {initializeMemory();
+        final Bool e = empty();
+        ok(()->e, true);
         final Bool f = usedSlotsToKeys.full ();
         ok(()->f, false);
         putSlotToKeys(new Int(2), new Int(3));
@@ -977,7 +985,8 @@ keys     :    0  11   0  22   0   0   0   0
   static void test_locateNearestFreeSlotToKey(boolean Ex)
    {final Slots s = new Slots(16)
      {void slotsCode()
-       {setSlots(2, 4, 5, 6, 9, 10, 12);
+       {initializeMemory();
+        setSlots(2, 4, 5, 6, 9, 10, 12);
         final Slots s = this;
         //new I() {void action() {testStop(s);}};
         ok(()->this, """
@@ -1019,7 +1028,8 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
   static void test_alloc(boolean Ex)
    {final Slots s = new Slots(4)
      {void slotsCode()
-       {putKey(new Int(2),  new Int(1));
+       {initializeMemory();
+        putKey(new Int(2),  new Int(1));
         final Slots s = this;
         //new I() {void action() {testStop(s);}};
         ok(()->this, """
@@ -1059,7 +1069,8 @@ keys     :    2   3   1   4
   static void test_set_del_slot_key(boolean Ex)
    {final Slots s = new Slots(4)
      {void slotsCode()
-       {setSlotAndKey(new Int(3),  new Int(2),  new Int(1));
+       {initializeMemory();
+        setSlotAndKey(new Int(3),  new Int(2),  new Int(1));
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
         //new I() {void action() {testStop(s);}};
@@ -1098,7 +1109,8 @@ keys     :    0   0   0   2
   static void test_compact(boolean Ex)
    {final Slots s = new Slots(4)
      {void slotsCode()
-       {setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
+       {initializeMemory();
+        setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
         //new I() {void action() {testStop(s);}};
@@ -1207,7 +1219,8 @@ keys     :    0   0   1   2
   static void test_redistribute(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {maxSteps = 99999;
+       {initializeMemory();
+        maxSteps = 99999;
         setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
         setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
@@ -1251,7 +1264,8 @@ keys     :    7   1   3   2   4   5   6   0
   static void test_shift(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {maxSteps = 99999;
+       {initializeMemory();
+        maxSteps = 99999;
         setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
         setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
@@ -1325,12 +1339,14 @@ keys     :    7   1   3   2   4   5   6   0
    {final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {final Slots l = this;
+       {initializeMemory();
+        final Slots l = this;
         insert(new Int(2));
         insert(new Int(1));
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
          {void slotsCode()
-           {insert(new Int(3));
+           {initializeMemory();
+            insert(new Int(3));
             insert(new Int(4));
            }
          };
@@ -1368,12 +1384,14 @@ keys     :    0   0   4   3
    {final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {final Slots r = this;
+       {initializeMemory();
+        final Slots r = this;
         r.insert(new Int(3));
         r.insert(new Int(4));
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r))
          {void slotsCode()
-           {insert(new Int(2));
+           {initializeMemory();
+            insert(new Int(2));
             insert(new Int(1));
            }
          };
@@ -1413,12 +1431,14 @@ keys     :    2   1   4   3
    {final int N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {final Slots l = this;
+       {initializeMemory();
+        final Slots l = this;
         l.insert(new Int(2));
         l.insert(new Int(1));
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
          {void slotsCode()
-           {insert(new Int(4));
+           {initializeMemory();
+            insert(new Int(4));
             insert(new Int(5));
            }
          };
@@ -1481,12 +1501,14 @@ keys     :    0   0   0   5   4
    {final int N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {final Slots r = this;
+       {initializeMemory();
+        final Slots r = this;
         r.insert(new Int(4));
         r.insert(new Int(5));
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r))
          {void slotsCode()
-           {insert(new Int(1));
+           {initializeMemory();
+            insert(new Int(1));
             insert(new Int(2));
            }
          };
@@ -1537,7 +1559,8 @@ keys     :    1   2   3   5   4
   static void test_find()
    {final Slots s = new Slots(new Build().numberOfKeys(8))
      {void slotsCode()
-       {putSlotToKeys(new Int( 0), new Int(1));
+       {initializeMemory();
+        putSlotToKeys(new Int( 0), new Int(1));
         putSlotToKeys(new Int( 2), new Int(3));
         putSlotToKeys(new Int( 4), new Int(5));
         putSlotToKeys(new Int(15), new Int(0));
@@ -1597,7 +1620,8 @@ Zero:
   static void test_findRight()                                                                                          // Same as find but with the slots on the right
    {final Slots s = new Slots(new Build().numberOfKeys(8))
      {void slotsCode()
-       {putSlotToKeys(new Int( 9), new Int(1));
+       {initializeMemory();
+        putSlotToKeys(new Int( 9), new Int(1));
         putSlotToKeys(new Int(11), new Int(3));
         putSlotToKeys(new Int(13), new Int(5));
         putSlotToKeys(new Int(15), new Int(0));
@@ -1656,7 +1680,8 @@ Zero:
   static void test_insert(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(14));
+       {initializeMemory();
+        insert(new Int(14));
         insert(new Int(13));
         insert(new Int(16));
         insert(new Int(15));
@@ -1689,7 +1714,8 @@ keys     :   14  13  16  15  18  17  12  11
   static void test_insert2(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11)).ok( 8);
+       {initializeMemory();
+        insert(new Int(11)).ok( 8);
         insert(new Int(12)).ok( 9);
         insert(new Int(13)).ok(10);
         insert(new Int(15)).ok(11);
@@ -1722,7 +1748,8 @@ keys     :   11  12  13  15  16  17  18  14
   static void test_findGe(boolean Ex)
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11)).ok( 8);
+       {initializeMemory();
+        insert(new Int(11)).ok( 8);
         insert(new Int(22)).ok( 9);
         insert(new Int(33)).ok(10);
         insert(new Int(44)).ok(11);
@@ -1792,7 +1819,8 @@ Zero:
    {final int N = 8;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11)).ok( 8);
+       {initializeMemory();
+        insert(new Int(11)).ok( 8);
         insert(new Int(12)).ok( 9);
         insert(new Int(13)).ok(10);
         insert(new Int(15)).ok(11);
@@ -1849,7 +1877,8 @@ keys     :    0   0   0  15  16  17  18   0
    {final int N = 8;
     final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11)).ok( 8);
+       {initializeMemory();
+        insert(new Int(11)).ok( 8);
         insert(new Int(12)).ok( 9);
         insert(new Int(13)).ok(10);
         insert(new Int(15)).ok(11);
@@ -1906,7 +1935,8 @@ keys     :    0   0   0  15  16  17  18   0
    {final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11));
+       {initializeMemory();
+        insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
         insert(new Int(15));
@@ -1962,7 +1992,8 @@ keys     :    0   0   0  15  16  17   0
    {final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11));
+       {initializeMemory();
+        insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
         insert(new Int(15));
@@ -2018,7 +2049,8 @@ keys     :    0   0   0  15  16  17   0
    {final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11));
+       {initializeMemory();
+        insert(new Int(11));
         insert(new Int(12));
         insert(new Int(13));
         insert(new Int(15));
