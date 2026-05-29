@@ -83,8 +83,7 @@ class Tree extends Program                                                      
     freeChain  = new Slots(build.freeChain.parent(this));                                                               // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i)                                                                      // Initial free chain. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
      {freeChain.setSlotAndKey(new Int(i), new Int(i), new Int(i));
-     }
-    freeChain.redistribute();
+     }                                                                                                                  // Do not redistribute as the keys are one to one with the slots and act as a perfect hash
    }
 
   int maxLeafSize  () {return maxLeafSize;}                                                                             // Maximum size of a leaf
@@ -92,21 +91,64 @@ class Tree extends Program                                                      
   int numberOfNodes() {return numberOfNodes;}                                                                           // Maximum number of nodes in tree
   int           mnl() {return maximumNumberOfLevels;}                                                                   // Maximum number of levels
 
-  Int allocate()                                                                                                        // Allocate a leaf or a branch
+  Int allocate()                                                                                                        // Allocate a leaf or a branch using the free chain slots as an array that can be searched for the first used slot in log time
    {freeChain.usedKeys.countOnes().eq(0).stop("No more leaves or branches");
-    final Int a = new Int("allocated").set(freeChain.locateFirstUsedSlot());
-    freeChain.delSlotAndKey(a);
+    final Int i = new Int("index")    .set(freeChain.getSlotToKeyIndex(freeChain.locateFirstUsedSlot()));               // Index of the key slot holding the index of the node to be allocated
+    final Int a = new Int("allocated").set(freeChain.getKeyValue(i));                                                   // Index of the node to be allocated
+    freeChain.delSlotAndKey(i);                                                                                         // Remove indexed node from free chain
     return a;
    }
 
   void free(Int Free)                                                                                                   // Free a leaf or a branch
-   {final Int f = Free;
-    f.lt(0)            .stop("Name of node to free must not be negative:", f);
-    f.gt(numberOfNodes).stop("Name of node to free too big:",  f);
-    final Slots.Find F = freeChain.find(f);
-    F.equal.stop("Attempting to free a branch or leaf that has already been freed:", f);
-    freeChain.insert(f);
+   {nodeAddress(Free);                                                                                                  // Check the viability of the node index
+    byteMemory.invalidate(nodeAddress(Free), sizeOfNode);                                                               // Invalidate the memory
+    freeChain.setSlotAndKey(Free, Free, Free);
    }
+
+  Int nodeAddress(Int Node)                                                                                             // Convert index to byte address of node in memory
+   {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
+    Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
+    final Slots.Find F = freeChain.find(Node);                                                                          // Check not freed
+    F.equal.stop("Attempting to access a branch or leaf that has been freed:", Node);                                   // Complain of the node has been freed and not reallocated
+    return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
+   }
+
+  enum BranchOrLeaf                                                                                                     // Branch or leaf
+   {leaf(1), branch(2);
+    private final int value;
+    BranchOrLeaf (int Value) {value = Value;}
+    int value()              {return value;}
+   }
+
+  Bool checkType(Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
+   {final Int  a = nodeAddress(Node);
+    final Int  t = byteMemory.getInt(a);
+    final Bool r = new Bool(false);
+    new If (t.eq(Type.value())) {void Then() {r.set(true);}};
+    return r;
+   }
+
+  void setType(Int Node, BranchOrLeaf Type)                                                                             // Check the type of a node
+   {final Int a = nodeAddress(Node);
+    byteMemory.putInt(a, new Int(Type.value()));
+   }
+
+  Bool isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Is the indexed node a branch
+  Bool isLeaf  (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                // Is the indexed node a leaf
+
+  Leaf leaf(Int Node)                                                                                                   // Address a leaf in memory
+   {isLeaf(Node).Flip().stop("Not a leaf:", Node);                                                                      // Check the location actually holds a leaf
+    final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
+    return new Leaf(build.leaf.parent(this).memory(r));                                                                 // Base leaf at the address
+   }
+
+  Int leaf()                                                                                                            // Create a leaf in memory and return its address
+   {final Int  a = allocate();
+    setType(a, BranchOrLeaf.leaf);
+    final Leaf l = leaf(a); l.setAsLeaf();
+    return a;
+   }
+
 /*
 //D1 Tree memory                                                                                                        // Memory used to hold the root of the tree, its leaves and branches
 
@@ -944,9 +986,14 @@ class Tree extends Program                                                      
   static void test_tree()
    {final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(4));
     t.freeChain.usedKeys.countZeros().ok(0);
-    final Int a = t.allocate().ok(0);
+    final Int a = t.leaf().ok(0);
     t.freeChain.usedKeys.countZeros().ok(1);
-    t.free(a);
+    final Int b = t.leaf().ok(1);
+    t.freeChain.usedKeys.countZeros().ok(2);
+    final Leaf A = t.leaf(a); A.isLeaf().ok(true);
+    final Leaf B = t.leaf(b); B.isLeaf().ok(true);
+    t.free(a); A.isLeaf().ok(false);
+    t.free(b); B.isLeaf().ok(false);
     t.freeChain.usedKeys.countZeros().ok(0);
    }
 /*
