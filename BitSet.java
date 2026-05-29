@@ -40,7 +40,6 @@ public class BitSet extends Program                                             
      }
    }
 
-  @SuppressWarnings("this-escape")
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.build());
     build       = Build;
@@ -53,19 +52,25 @@ public class BitSet extends Program                                             
     byteSize    = Build.byteSize();                                                                                     // Bytes needed for the bitset and its bit trees
     oneTreeBit  = bitSize <= 2;                                                                                         // At most only one tree bit present
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
+   }
 
-    new ForCount(bitSize)                                                                                               // Clear bitset at start
+  BitSet initializeMemory()                                                                                             // Initialize memory
+   {say("DDDD11", bitSize);
+    new ForCount(bitSize)                                                                                               // Clear one tree
      {void body(Int I)
        {setBitNC(I, new Bool(false));
        }
      };
+    say("DDDD22", bitSize);
 
-    final Int p = addressZeroTree();                                                                                    // Position in level, level, width
+    final Int p = addressZeroTree();                                                                                    // Set zero tree
     new ForCount(bitSize)                                                                                               // For loop to set bits along path in One tree to actual bit
      {void body(Int I)
        {setBitNC(p.Add(I), new Bool(true));
        }
      };
+    say("DDDD33", bitSize, dumpMemory());
+    return this;
    }
 
   BitSet(int BitSize)              {this(  new Build().bitSize(BitSize));}                                              // Constructor to create a bitset without the ability locate zeroes or ones
@@ -282,6 +287,8 @@ public class BitSet extends Program                                             
         new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};
        }
      };
+if (debug) say("BBBB", Index, Value, dumpMemory());
+
    }
 
   void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();}                                            // Next layer down in a bit tree
@@ -751,7 +758,7 @@ public class BitSet extends Program                                             
   static BitSet test_bits(boolean Ex, int N)                                                                            // Create test bitset.
    {final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Allocate backing storage.
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
-    final BitSet    b = new BitSet(build);                                                                              // Create a bit set
+    final BitSet    b = new BitSet(build).initializeMemory();                                                           // Create a bit set
     return b;                                                                                                           // Return test bitset.
    }
 
