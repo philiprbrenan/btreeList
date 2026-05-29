@@ -1,5 +1,4 @@
 //----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -787,7 +786,7 @@ public class Program extends Test                                               
       Ref step(int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
       Ref step(Int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
 
-      public String toString()                                                                                          // Print memory
+      public String toString()                                                                                          // Print memory reference
        {final StringBuilder s = saySb("Ref: " , offset.i());
         return ""+s;
        }
@@ -798,7 +797,31 @@ public class Program extends Test                                               
       for (int i = 0, N = size(); i < N; i++) s.append(f("%4d %3d\n", i, bytes[i]));
       return ""+s;
      }
+
+    String dumpHex()                                                                                                    // Dump memory in hexadecimal format
+     {final StringBuilder s = new StringBuilder();
+      s.append(f("Memory for program %4d\n", programId));
+      s.append("         ");
+      for (int i = 0; i < 16; i++) s.append(f("%02X ", i));
+      s.append("\n");
+
+      for (int i = 0; i < bytes.length; i++)
+       {if (i % 16 == 0) s.append(f("%08d ", i));
+
+        final byte b = bytes[i];
+        if (b != 0) s.append(f("%02X ", b)); else s.append("  ");
+        if ((i + 1) % 16 == 0) s.append("\n");
+       }
+      if (bytes.length % 16 != 0) s.append("\n");
+      return ""+s;
+     }
    }
+
+  interface Locatable                                                                                                   // The location of an object in memory
+   {Int getLocation();
+   }
+
+  String dumpMemory() {return program().byteMemory.dumpHex();}                                                          // Dump memory in hexadecimal format
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
