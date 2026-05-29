@@ -10,6 +10,7 @@ import java.util.*;
 class Branch extends Program                                                                                            // A branch in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
+  final Int            at            = new Int();                                                                       // A representation of the location of the branch sufficient to be able to free it
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a branch
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
@@ -22,6 +23,7 @@ class Branch extends Program                                                    
 
   static class Build                                                                                                    // Parameters describing a branch
    {Integer         maxSize;                                                                                            // Maximum number of keys in branch
+    Int             at;                                                                                                 // The location of the branch
     boolean         immediate = true;                                                                                   // Immediate execution mode
     boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
@@ -34,6 +36,7 @@ class Branch extends Program                                                    
     Build memory   (ByteMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
+    Build at       (Int     At        ) {at            = At;        return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -71,9 +74,14 @@ class Branch extends Program                                                    
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refTop        = byteMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
-
-    new I() {void action() {deleteFile(tracing);}};                                                                     // Delete the trace file here to avoid including the memory reference calculations above
+    if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
+   }
+
+  Branch initializeMemory()                                                                                               // Initialize slots and data associated with the branch
+   {clear();                                                                                                            // Clear backing memory
+    slots.initializeMemory();                                                                                           // Initialize slots
+    return this;
    }
 
   void branchCode() {}                                                                                                  // Override this method to provide code for testing the branch
@@ -96,7 +104,7 @@ class Branch extends Program                                                    
     return r;                                                                                                           // Return data associated with key
    }
 
-  Int top()  {return refTop.getInt();}                                                                                  // Get value of top
+  Int  top()  {return refTop.getInt();}                                                                                 // Get value of top
   void top(Int Top) {refTop.putInt(Top);}                                                                               // Set value of top
 
   Int stepDown(Int Key)                                                                                                 // Reference of the next branch down that might contain the specified key
@@ -144,10 +152,7 @@ class Branch extends Program                                                    
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a branch
-  void      clear() {byteMemoryRef.clear(bytesNeeded()); setAsBranch();}                                                // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
-
-  Bool     isBranch() {return refMark.getInt().eq(   2) ;}                                                              // Whether we are on a branch or not
-  void  setAsBranch() {       refMark.putInt(new Int(2));}                                                              // Mark this as a branch
+  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
 
   void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
   void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
@@ -300,6 +305,7 @@ class Branch extends Program                                                    
 
   static void test_branch(boolean Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -336,6 +342,7 @@ Branch: size:   7 top:   0
 
   static void test_compactLeft(boolean  Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -369,6 +376,7 @@ Branch: size:   7 top:   0
 
   static void test_compactRight(boolean  Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -403,6 +411,7 @@ Branch: size:   7 top:   0
 
   static void test_splitRight(boolean Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -424,6 +433,7 @@ Branch: size:   7 top:  99
    5     7    77
 """);
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
+    r.initializeMemory();
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
@@ -452,6 +462,7 @@ Branch: size:   7 top:  99
 
   static void test_splitLeft(boolean  Ex)
    {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
+    r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -501,6 +512,7 @@ Branch: size:   7 top:  99
 
   static void test_mergeRight(boolean Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -563,6 +575,7 @@ Branch: size:   7 top:  99
 
   static void test_mergeLeft(boolean  Ex)
    {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
+    r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -625,6 +638,7 @@ Branch: size:   7 top:  99
 
   static void test_find(boolean  Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+    l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -680,19 +694,16 @@ Branch: size:   7 top:   0
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
      {void branchCode()
        {final Branch l = this;
-        l.setAsBranch();
-        l.isBranch()        .ok(true);
+        l.initializeMemory();
         l.data(new Int(1), new Int(A));
         l.data(new Int(1))  .ok(A);
         final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
+        r.initializeMemory();
         r.copy(l);
-        r.isBranch()        .ok(true);
 
         l.clear();
         l.data(new Int(1))  .ok(0);
-        l.isBranch()        .ok(true);
         r.data(new Int(1))  .ok(A);
-        r.isBranch()        .ok(true);
         execute();
        }
      };
@@ -707,8 +718,7 @@ Branch: size:   7 top:   0
    {final int    N = 4;
     final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
      {void branchCode()
-       {setAsBranch();
-
+       {initializeMemory();
         insert(new Int(10), new Int(1));
         insert(new Int(20), new Int(2));
         insert(new Int(30), new Int(3));
