@@ -659,7 +659,7 @@ public class BitSet extends Program                                             
 
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
 
-  public Bool full () {if (debug) say("AAAA", new Bool(firstZero().notValid()), this);return new Bool(firstZero().notValid());}                                                        // Whether the bitset is full - in log BN time,  But it might be better to keep a separate count field if this method is heavily used.
+  public Bool full () {return new Bool(firstZero().notValid());}                                                        // Whether the bitset is full - in log BN time,  But it might be better to keep a separate count field if this method is heavily used.
   public Bool empty() {return new Bool(firstOne ().notValid());}                                                        // Whether the bitset is empty
 
 //D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset
@@ -1468,20 +1468,6 @@ Zero:
     test_powerPosOneZero(false);
    }
 
-  static void test_full4(boolean Ex)
-   {final BitSet b = new BitSet(new Build().bitSize(4).immediate(Ex)).initializeMemory();
-    b.set(b.new Int(0), b.new Bool(true)); say("AAAA11", b.full());
-    b.set(b.new Int(1), b.new Bool(true)); say("AAAA11", b.full());
-    b.set(b.new Int(2), b.new Bool(true)); say("AAAA11", b.full());
-    b.set(b.new Int(3), b.new Bool(true)); say("AAAA11", b.full());
-    say("AAAA", b);
-   }
-
-  static void test_full4()
-   {test_full4(true);
-    //test_full4(false);
-   }
-
   static void oldTests()                                                                                                // Tests thought to be stable.
    {test_prevNext01();
     test_prevNext();
@@ -1494,8 +1480,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                         // Run baseline tests.
-    test_full4();
+   {oldTests();                                                                                                         // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
