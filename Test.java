@@ -1101,8 +1101,7 @@ public class Test                                                               
     boolean matchesLen = true, matches = true;
     if (le != lg)                                                                                                       // Failed on length
      {matchesLen = false;
-      say(b, currentTestName(), "Failed: mismatched length, expected",
-        le, "got", lg);
+      say(b, currentTestName(), "Failed: mismatched length, got", lg, "expected", le);
 
 //    for (int i = 0; i < G.length(); i++)                                                                              // Check each character side by side
 //     {final int  g = G.charAt(i);
