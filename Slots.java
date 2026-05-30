@@ -88,9 +88,7 @@ class Slots extends Program                                                     
    }
 
   Slots initializeMemory()                                                                                              // Initialize memory
-   {if (debug) say("BBBB11");
-    usedSlotsToKeys.initializeMemory();
-    if (debug) say("BBBB22");
+   {usedSlotsToKeys.initializeMemory();
     usedKeys       .initializeMemory();
     return this;
    }
