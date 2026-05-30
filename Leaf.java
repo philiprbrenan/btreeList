@@ -215,10 +215,10 @@ class Leaf extends Program implements Program.Locatable                         
 
   public String toString()                                                                                              // Print a leaf
    {final StringBuilder s = new StringBuilder();
-    s.append(f("Leaf: size: "+formatKey+"\n", maxSize()));
-    //final int a = byteMemoryRef.offset.i();
-    //if (a > 0) s.append(f(" at: "+formatKey, a));
-    //s.append("\n");
+    s.append(f("Leaf  "));
+    final Int a = new Int(); new I() {void action() {a.set(getLocation()); }};
+    if (a.i() > 0) s.append(f(" at: "+formatKey, a.i())); else s.append(" ".repeat(8));
+    s.append(f(" size: "+formatKey+"\n", maxSize()));
     s.append(" Ref   Key  Data\n");
     for (int i : range(slots.numberOfSlotsToKeys()))
      {if (slots.getSlotToKeysInUse(i))
@@ -228,26 +228,6 @@ class Leaf extends Program implements Program.Locatable                         
         s.append(t);
        }
      }
-    return ""+s;
-   }
-
-  String dumpData()                                                                                                     // Dump the data
-   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxSize()));
-    s.append(" Ref  Data\n");
-    for (int i : range(slots.numberOfKeys()))
-     {if (slots.getKeyInUse(i))
-       {final String f = "%4d  %4d\n";
-        final String t = f(f,  i, refData.getInt(i));
-        s.append(t);
-       }
-     }
-    return ""+s;
-   }
-
-  String dumpDataArray()                                                                                                // Dump the data array
-   {final StringBuilder s = new StringBuilder(f("Leaf data: size: "+formatKey+"\n", maxSize()));
-    s.append(" Ref  Data\n");
-    for (int i : range(slots.numberOfKeys())) s.append(f("%4d  %4d\n",  i, refData.getInt(i)));
     return ""+s;
    }
 
@@ -262,7 +242,7 @@ class Leaf extends Program implements Program.Locatable                         
     l.insert(l.new Int(1), l.new Int(11));
     //new I() {void action() {testStop("AAAA", l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -300,7 +280,7 @@ Leaf: size:   8
     l.delete(l.new Int(2));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    2     3    33
@@ -309,7 +289,7 @@ Leaf: size:   8
     l.compactLeft();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    0     1    11
    2     3    33
@@ -333,7 +313,7 @@ Leaf: size:   8
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -343,7 +323,7 @@ Leaf: size:   8
     l.compactRight();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    4     1    11
    7     2    22
@@ -372,7 +352,7 @@ Leaf: size:   8
     l.insert(l.new Int(8), l.new Int(88));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -388,7 +368,7 @@ Leaf: size:   8
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -397,7 +377,7 @@ Leaf: size:   8
 """);
     //l.new I() {void action() {testStop(r);}};
     l.ok(()->r, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -426,7 +406,7 @@ Leaf: size:   8
     r.insert(r.new Int(8), r.new Int(88));
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -441,7 +421,7 @@ Leaf: size:   8
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -450,7 +430,7 @@ Leaf: size:   8
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -479,7 +459,7 @@ Leaf: size:   8
     l.insert(l.new Int(8), l.new Int(88));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -494,7 +474,7 @@ Leaf: size:   8
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -503,7 +483,7 @@ Leaf: size:   8
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -513,7 +493,7 @@ Leaf: size:   8
     l.mergeRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -546,7 +526,7 @@ Leaf: size:   8
     r.insert(r.new Int(8), r.new Int(88));
    // r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -561,7 +541,7 @@ Leaf: size:   8
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -570,7 +550,7 @@ Leaf: size:   8
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -580,7 +560,7 @@ Leaf: size:   8
     r.mergeLeft(l);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -613,7 +593,7 @@ Leaf: size:   8
     l.insert(l.new Int(8), l.new Int(88));
    // l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -645,7 +625,7 @@ Leaf: size:   8
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
    // l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Leaf: size:   8
+Leaf           size:   8
  Ref   Key  Data
 """);
 
