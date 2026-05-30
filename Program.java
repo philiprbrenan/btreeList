@@ -851,9 +851,12 @@ public class Program extends Test                                               
     return s;
    }
 
-  void out()                {new I() {void action() {                                  stop(output())  ;}};}            // Say the normalized content of the output area and stop
-  void out(String Expected) {new I() {void action() {     Test.ok(output(), Expected); out.setLength(0);}};}            // Test the normalized content of the output area, then clear the output area ready for the next report
-  void Out(String Expected) {new I() {void action() {if (!Test.ok(output(), Expected)) stop(output())  ;}};}            // Test the normalized content of the output area, print the actual output area contents and stop
+  void check()                {new I() {void action() {                                  stop(output())  ;}};}          // Say the normalized content of the output area and stop
+  void check(String Expected) {new I() {void action() {     Test.ok(output(), Expected); out.setLength(0);}};}          // Test the normalized content of the output area against the specified string, then clear the output area ready for the next report
+  void Check(String Expected) {new I() {void action() {if (!Test.ok(output(), Expected)) stop(output())  ;}};}          // Test the normalized content of the output area against the specified string, print the actual output area contents and stop
+
+  void check(StringBuilder Got, String Expected) {new I() {void action() {     Test.ok(""+Got, Expected); out.setLength(0);}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
+  void Check(StringBuilder Got, String Expected) {new I() {void action() {if (!Test.ok(""+Got, Expected)) stop(output())  ;}};} // Test the supplied content against the specified string, print the actual output area contents and stop
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1019,7 +1022,7 @@ public class Program extends Test                                               
             Continue.set();
            }
          };
-        out("""
+        check("""
 1 2
 1 4
 1 6
@@ -1058,8 +1061,8 @@ public class Program extends Test                                               
             Continue.set();
            }
          };
-        Out("""
-1 2 3 5 8 13 21 34 55 89a
+        Check("""
+1 2 3 5 8 13 21 34 55 89
 """);
         execute();
        }
@@ -1089,7 +1092,7 @@ public class Program extends Test                                               
             Continue.set();
            }
          };
-      out("""
+      check("""
 2 1 3 2
 """);
         execute();
@@ -1110,7 +1113,7 @@ public class Program extends Test                                               
                  a.out();
         a.inc(); a.out();
         a.inc(); a.out();
-        out("""
+        check("""
 0 1 2
 """);
         execute();
