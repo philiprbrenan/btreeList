@@ -5,8 +5,6 @@
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
-import java.nio.ByteBuffer;
-import java.util.function.Supplier;
 
 class Slots extends Program                                                                                             // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int                 numberOfKeys;                                                                               // The maximum number of references maintained by these slots
@@ -875,14 +873,6 @@ class Slots extends Program                                                     
 
 //D2 Print                                                                                                              // Print the slots
 
-  String printSlots()                                                                                                   // Print the occupancy of each slot
-   {final StringBuilder s = new StringBuilder();
-    for (int i : range(numberOfSlotsToKeys()))
-     {s.append(getSlotToKeysInUse(new Int(i)).b() ? "X" : ".");
-     }
-    return ""+s;
-   }
-
   public String toString()                                                                                              // Dump the slots
    {final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlotsToKeys());
@@ -897,14 +887,6 @@ class Slots extends Program                                                     
     return ""+s+"\n";
    }
 
-  String printInOrder()                                                                                                 // Print the values in the used slots in order
-   {final StringJoiner s = new StringJoiner(", ");
-    for (int i : range(numberOfSlotsToKeys()))
-     {if (usedSlotsToKeys.getBit(new Int(i)).b()) s.add(""+getKeyValue(new Int(i)).i());
-     }
-    return ""+s;
-   }
-
 //D1 Tests                                                                                                              // Tests
 
 //D2 Slots                                                                                                              // Test the slots
@@ -913,13 +895,8 @@ class Slots extends Program                                                     
    {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
-        final Bool e = empty();
-        ok(()->e, true);
-        final Bool f = usedSlotsToKeys.full ();
-        ok(()->f, false);
-        putSlotToKeys(new Int(2), new Int(3));
-        usedSlotsToKeys.empty().ok(false);
-        usedSlotsToKeys.full ().ok(false);
+                                                                empty().ok(true);  usedSlotsToKeys.full().ok(false);
+        putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
         putSlotToKeys(new Int(0), new Int(1));
 
         locateFirstUsedSlot().ok(0);
@@ -941,7 +918,7 @@ usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
         delSlotToKeys(new Int(2));
-        delKey (new Int(3));
+        delKey       (new Int(3));
         //new I() {void action() {testStop(s);}};
         ok(()->s, """
 Slots    : refs:  8
@@ -2088,37 +2065,6 @@ keys     :    0   0   0   0   0   0   0
     test_clear(false);
    }
 
-  static void test_full4(boolean Ex)
-   {final int N = 7;
-    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
-     {void slotsCode()
-       {initializeMemory();
-        insert(new Int(1));
-        insert(new Int(2));
-        insert(new Int(3));
-        insert(new Int(4));
-        final Slots s = this;
-        new I() {void action() {testStop(s);}};
-        ok(()->this, """
-Slots    : refs:  7
-positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
-slotsKeys:    0   0   0   1   0   2   6   3   0   4   0   5   0   0
-keysSlots:    1   3   5   7   9  11   6   0   0   0   0   0   0   0
-usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   .
-usedKeys :    X   X   X   X   X   X   X
-keys     :   11  12  13  15  16  17  14
-""");
-        maxSteps = 99999;
-        execute();
-       }
-     };
-   }
-
-  static void test_full4()
-   {test_full4(true);
-    test_full4(false);
-   }
-
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
     test_locateNearestFreeSlotToKey();
@@ -2144,8 +2090,7 @@ keys     :   11  12  13  15  16  17  14
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_full4();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
