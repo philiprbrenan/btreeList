@@ -212,22 +212,17 @@ class Tree extends Program                                                      
    }
 
   void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
-   {say("AAAA00", Key);
-    new If (isRootLeaf())
+   {new If (isRootLeaf())
      {void Then()                                                                                                       //
        {final Leaf R = leaf(new Int(0));
-say("AAAA11", R);
-debug = Key.i() >= 3;
         new If (R.full())
          {void Then()
-           {say("AAAA22");
+           {
            }
           void Else()                                                                                                   // Root is a non full leaf
-           {say("AAAA33", Key, Data);
-             R.insert(Key, Data);
+           {R.insert(Key, Data);
            }                                                                                                              //
          };
-if (debug) stop();
        }
      };
    }
@@ -1187,11 +1182,25 @@ Allocations   :    0
 
     t.insert(t.new Int(1), t.new Int(11));
     t.insert(t.new Int(2), t.new Int(22));
-    debug = true;
     t.insert(t.new Int(3), t.new Int(33));
-    //t.insert(t.new Int(4), t.new Int(44));
+    t.insert(t.new Int(4), t.new Int(44));
     t.dumpTree();
-    say("AAAA", t.out);
+    t.dumpTree("""
+Tree memory dump
+Leaf   size   :  153
+Branch size   :  121
+Node   size   :  153
+MaxLeafSize   :    4
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    1
+   0 Leaf: size:   4
+ Ref   Key  Data
+   0     1    11
+   1     2    22
+   2     3    33
+   3     4    44
+""");
     t.execute();
    }
 
