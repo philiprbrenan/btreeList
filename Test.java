@@ -1101,14 +1101,17 @@ public class Test                                                               
     boolean matchesLen = true, matches = true;
     if (le != lg)                                                                                                       // Failed on length
      {matchesLen = false;
-      say(b, currentTestName(), "Failed: mismatched length, got", lg, "expected", le);
 
-//    for (int i = 0; i < G.length(); i++)                                                                              // Check each character side by side
-//     {final int  g = G.charAt(i);
-//      final int  e = i < E.length() ? E.charAt(i) : ' ';
-//      final char c =                  G.charAt(i);
-//      say(i, g, e, c);
-//     }
+      int X = 0;
+      final int N = min(le, lg);
+      for (int i = 0; i < N; i++)                                                                                       // Check each character side by side
+       {final char g = G.charAt(i);
+        final char e = E.charAt(i);
+        if (e != g) ++X;
+       }
+      if (X == 0)
+       {say(b, currentTestName(), "Failed: mismatched length, got", lg, "expected", le, "but first", N, "characters do match");
+       }
      }
 
     int l = 1, c = 0;                                                                                                   // Line and character of first failure
@@ -1145,7 +1148,7 @@ public class Test                                                               
               say(b, sg[k]);                                                                                            // What we got
                                                       //say(b, dg);
               say(b, de); say(b, dm);                                                                                   // Difference markers
-                                                      //say(b, error); say(b, r);                                                                               // Error detail
+                                                      //say(b, error); say(b, r);                                       // Error detail
              }
            }
           else say(b, sg[k]);                                                                                           // Line that is not the first error line
