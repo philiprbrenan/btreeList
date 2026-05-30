@@ -25,6 +25,7 @@ public class Program extends Test                                               
   private static int programs = 0;                                                                                      // Unique id for each Bool
   final   int       programId = ++programs;                                                                             // Unique id for each Bool
   private int              pc;                                                                                          // Number the programs
+  final StringBuilder     out = new StringBuilder();                                                                    // Text output area
 
   static class Build                                                                                                    // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -637,7 +638,9 @@ public class Program extends Test                                               
   static Int ib(Int I) {return I.Mul(ib());}                                                                            // Number of bytes in a number of integers
 
   class ByteMemory                                                                                                      // Bytes being used as the main memory program
-   {byte[]bytes;                                                                                                        // Bytes of main memory
+   {static int byteMemoryIds = 0;
+    final  int byteMemoryId  = ++byteMemoryIds;
+    byte[]bytes;                                                                                                        // Bytes of main memory
 
     private byte getByte(int I)                                                                                         // Get the value of a byte
      {if (tracing()) trace("memory get byte: "+I+" value:"+bytes[I]);                                                   // Trace
