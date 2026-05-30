@@ -22,8 +22,8 @@ public class Program extends Test                                               
   public  int        maxSteps = 9999;                                                                                   // Number of steps permitted in code execution
   private int       nextIntId = 0;                                                                                      // Unique id for each Int
   private int      nextBoolId = 0;                                                                                      // Unique id for each Bool
-  private static int programs = 0;                                                                                      // Unique id for each Bool
-  final   int       programId = ++programs;                                                                             // Unique id for each Bool
+  private static int programs = 0;                                                                                      // Unique id for each program
+  final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Number the programs
   final StringBuilder     out = new StringBuilder();                                                                    // Text output area
 
