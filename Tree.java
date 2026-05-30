@@ -83,9 +83,8 @@ class Tree extends Program                                                      
     sizeOfNode = build.nodeSize;
 
     freeChain  = new Slots(build.freeChain.parent(this));                                                               // Memory for free chain
-    for (int i = 0, N = numberOfNodes; i < N; ++i)                                                                      // Initial free chain. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
-     {freeChain.setSlotAndKey(new Int(i), new Int(i), new Int(i));
-     }                                                                                                                  // Do not redistribute as the keys are one to one with the slots and act as a perfect hash
+    for (int i = 1, N = numberOfNodes; i < N; ++i) freeChain.setSlotAndKey(new Int(i), new Int(i), new Int(i));         // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+    setType(new Int(0), BranchOrLeaf.leaf);                                                                             // The root starts as an empty allocated leaf
    }
 
   int maxLeafSize  () {return maxLeafSize;}                                                                             // Maximum size of a leaf
@@ -124,6 +123,9 @@ class Tree extends Program                                                      
     BranchOrLeaf (int Value) {value = Value;}
     int value()              {return value;}
    }
+
+  Bool isRootLeaf  () {return checkType(new Int(0), BranchOrLeaf.leaf);}                                                         // Whether the root is a leaf
+  Bool isRootBranch() {return checkType(new Int(0), BranchOrLeaf.branch);}                                                       // Whether the root is a branch
 
   Bool checkType(Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
    {final Int  a = nodeAddress(Node);
@@ -174,7 +176,6 @@ class Tree extends Program                                                      
   void dumpTree()                                                                                                       // Dump the tree
    {final StringBuilder s = out;
     final Int           c = new Int(numberOfNodes).sub(freeChain.count());
-
     new I()
      {void action()
        {s.setLength(0);
@@ -210,75 +211,104 @@ class Tree extends Program                                                      
     new I() {void action() {ok(""+out,  Expected);}};
    }
 
-/*
-//D1 Tree memory                                                                                                        // Memory used to hold the root of the tree, its leaves and branches
-
-  class Memory extends TreeMemoryPositions                                                                              // Memory used to hold the bytes of the
-   {final int            l = new   LeafMemoryPositions().memorySize();                                                  // Memory positions for leaves
-    final int            b = new BranchMemoryPositions().memorySize();                                                  // Memory positions for branches
-    final int   sizeOfNode = max(l, b);                                                                                 // Size of memory for a branch or a leaf or the base description of the tree - which is held in node 0.
-    final int         size = sizeOfNode * (numberOfNodes+1);                                                            // Size of memory for tree assuming that each node can contain a branch or a leaf or the base description of the tree - which is held in node zero
-    final byte[]     bytes = new byte[size];                                                                            // Memory occupied by tree
-
-
-
-
-    Int  root()             {return new Int(bytes.getInt(posRoot));}                                                    // Get index of node containing root
-    void root(Int Value)                   {bytes.putInt(posRoot, Value.i());}                                          // Set index of node containing root
-
-    int  maxLeafSize()      {return bytes.getInt(posMaxLeafSize);}                                                      // Get maximum leaf size for the tree
-    void maxLeafSize(int Max)      {bytes.putInt(posMaxLeafSize, Max);}                                                 // Set max leaf size for the tree
-
-    int  maxBranchSize()    {return bytes.getInt(posMaxBranchSize);}                                                    // Get maximum branch size for the tree
-    void maxBranchSize(int Max)    {bytes.putInt(posMaxBranchSize, Max);}                                               // Set max branch size for the tree
-
-    int  numberOfNodes()    {return bytes.getInt(posNumberOfNodes);}                                                    // Get maximum number of nodes in the tree
-    void numberOfNodes(int Number) {bytes.putInt(posNumberOfNodes, Number);}                                            // Set maximum number of nodes in the tree
-
-    public String toString()                                                                                            // Print memory
-     {final StringBuilder s = new StringBuilder();
-      s.append(f("Tree memory:\n"));
-      s.append(f("Leaf   size: %4d\n", l));
-      s.append(f("Branch size: %4d\n", b));
-      s.append(f("Node   size: %4d\n", sizeOfNode));
-      s.append(f("Root       : %4d\n", root()));
-      s.append(f("MaxLeafSize: %4d\n", maxLeafSize()));
-      s.append(f("MaxBranchSz: %4d\n", maxBranchSize()));
-      s.append(f("NumberNodes: %4d\n", numberOfNodes()));
-
-      for (int i : range(min(numberOfNodes, 20)))
-       {final int n = sizeOfNode * i;
-        s.append(f("Node: %4d at %4d\n", i, n));
-        final Bool       l = new Int(bytes.getInt(n)).eq(new Int(AllocationType.Leaf.ordinal()));                             // The type of each allocated node is always the first element so it is easy to find and allows us to decode the rest of the memory
-        final Allocation a = new Allocation(new Int(i));
-        final Slots      S = new Slots(a);
-        final String t = l.b() ? new Leaf(S).toString() : new Branch(S).toString();
-        s.append(t);
+  void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
+   {say("AAAA00", Key);
+    new If (isRootLeaf())
+     {void Then()                                                                                                       //
+       {final Leaf R = leaf(new Int(0));
+say("AAAA11", R.slots);
+debug = Key.i() >= 3;
+        new If (R.full())
+         {void Then()
+           {say("AAAA22");
+           }
+          void Else()                                                                                                   // Root is a non full leaf
+           {say("AAAA33", Key, Data);
+             R.insert(Key, Data);
+           }                                                                                                              //
+         };
+if (debug) stop();
        }
-      return ""+s;
-     }
+     };
+   }
+/*
+     final Ref<Branch> p = new Ref<>((Branch)root());                                                                    // Start at root
+    new If (p.get().full())                                                                                             // Split full root branch
+     {void Then()
+       {final Branch P = p.get();
+        p.set(p.get().split());
+        root(p.get());
+        P.free();
+       }
+     };
 
-    ByteBuffer node(Allocation Name)                                                                                    // Address the specified node of the tree
-     {return memory.bytes.slice(Name.Mul(sizeOfNode).i(), sizeOfNode);
-     }
+    final Ref<Branch> q = new Ref<>(find(Key).leaf.up());                                                               // First branch above leaf
+    final Ref<Branch> b = new Ref<>(q.get().up());                                                                      // Parent of first branch above leaf
+    final Bool        D = new Bool().clear();                                                                           // First unfull branch above leaf has been located when set
+    new If (b.valid())
+     {void Then()
+       {new For(numberOfNodes)                                                                                          // Look for first unfull branch along path up from leaf
+         {void body(Int i, Bool C)                                                                                      // Found the first unfull branch
+           {new If (b.get().full().Flip())
+             {void Then()
+               {p.set(b.get()); D.set();
+               }
+              void Else()
+               {q.set(b.get());
+                b.set(q.get().up());
+               }
+             };
+            C.set(D).flip().and(()->{return b.valid();});
+           }
+         };
+       }
+     };
 
-    String getInt(Int Name, Int Field)                                                                                  // Print the specified node of the tree - useful for debugging
-     {return "Node: "+Name+" field: "+
-        Field+" = "+memory.bytes.getInt(Name.Mul(sizeOfNode).add(Field).i());
-     }
+    final Bool d = new Bool().clear();                                                                                  // Set when done
+    new For(MaximumNumberOfLevels)                                                                                      // Step down through the tree from branch to branch splitting as we go until we reach a leaf
+     {void body(Int i, Bool C)
+       {final Slots q = p.get().stepDown(Key);                                                                          // Step down
+        C.set();
+        new If (q.isLeaf())                                                                                             // Step down to a leaf
+         {void Then()
+           {final Leaf r = (Leaf)q;                                                                                     // We have reached a leaf
+            new If (r.full())                                                                                           // Split the leaf if it is full
+             {void Then()
+              {final Int  sk = r.splittingKey();                                                                        // Splitting key
+                final Leaf l = r.splitLeft();                                                                           // Right leaf split out of the leaf
+                p.get().insert(new Key(sk), l);                                                                         // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+                final Leaf L = If (Key.value().le(sk), ()->l, ()->r);                                                   // Choose left or right leaf depending on key
+                L.insert(Key, Data);                                                                                    // Insert into left or right leaf which will now have space
+               }
+              void Else() {r.insert(Key, Data);}                                                                        // Leaf has sufficient space
+             };
+            mergeAlongPath(Key);                                                                                        // Merge along the path taken by the key to compress the tree
+            C.clear(); d.set();
+           }
+          void Else()                                                                                                   // Step down to a branch
+           {final Branch r = (Branch)q;
+            new If (r.full())                                                                                           // Split the leaf if it is full
+             {void Then()
+               {final Int         sk = r.splittingKey();                                                                // Splitting key
+                final Branch.Split s = r.splitLeft();                                                                   // Branch split out on right from
+                p.get().insert(new Key(sk), s.left);                                                                    // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
+                p.set(If (Key.value().le(sk), ()->s.left, ()->s.right));                                                // Traverse left or right
+               }
+              void Else() {p.set(r);}                                                                                   // Step down into non full branch
+             };
+           }
+         };
+       }
+     };
+    new If (d.Flip())                                                                                                   // Unable to insert
+     {void Then()
+       {stop("Insert fell off the end of tree after this many searches:", mnl());
+       }
+     };
    }
 
-//D2 Root                                                                                                               // The root of the tree is referenced from a known location which allows any node to act as the root if needed - which simplifies the logic for merging and splitting the root.
-
-//  Slots root()                                                                                                          // Slots representing the root of the tree held in memory
-//   {final Int r = memory.root();                                                                                        // Current node containing root
-//    return If (r.eq(0), ()->null,                                                                                       // Node zero contains the tree base so we can conveniently use zero as a null pointer as no leaf or branch will occupy node zero.
-//           ()->If (r.lt(0), ()->new Leaf  (new Allocation(r.neg())),                                                    // Leaf as negative
-//                            ()->new Branch(new Allocation(r))));                                                        // Branch as positive
-//   }
 /*
-  void root(Leaf   Root) {memory.root(If (new Bool(Root != null), new Int(), ()->Root.name().neg(), ()->new Int(0)));}  // Set the root in memory with a negative address to show that it is a leaf
-  void root(Branch Root) {memory.root(If (new Bool(Root != null), new Int(), ()->Root.name()      , ()->new Int(0)));}  // Set the root in memory with a positive address to show that it is a branch
+
 
 
 //D2 Low Level                                                                                                          // Low level operations
@@ -1149,7 +1179,25 @@ Allocations   :    0
 
   static void test_tree()
    {test_tree(true);
-    //test_tree(false);
+    test_tree(false);
+   }
+
+  static void test_insert(boolean Ex)
+   {final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
+
+    t.insert(t.new Int(1), t.new Int(11));
+    t.insert(t.new Int(2), t.new Int(22));
+    debug = true;
+    t.insert(t.new Int(3), t.new Int(33));
+    //t.insert(t.new Int(4), t.new Int(44));
+    t.dumpTree();
+    say("AAAA", t.out);
+    t.execute();
+   }
+
+  static void test_insert()
+   {          test_insert(true);
+//            test_insert(false);
    }
 
 /*
@@ -2062,22 +2110,7 @@ Delete 22
 */
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_tree();
-    //test_compactLeafLeft();
-    //test_compactLeafRight();
-    //test_compactBranchLeft();
-    //test_compactBranchRight();
-    //test_duplicate_leaf();
-    //test_splitLeftLeafIntoRight();
-    //test_splitRightLeafIntoLeft();
-    //test_duplicate_branch();
-    //test_splitLeftBranchIntoRight();
-    //test_splitRightBranchIntoLeft();
-    //test_mergeLeafLeft();
-    //test_mergeLeafRight();
-    //test_mergeBranchLeft();
-    //test_mergeBranchRight();
-    //test_splitLeaf();
-    //test_splitBranch();
+    test_insert();
     //test_insert2();
     //test_insert();
     //test_insert_reverse();
@@ -2091,7 +2124,8 @@ Delete 22
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
