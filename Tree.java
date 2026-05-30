@@ -194,9 +194,7 @@ class Tree extends Program                                                      
      {void body(Int Index)
        {new If(isAllocated(Index))
          {void Then()
-           {new I() {void action() {s.append(f("%4d ", Index.i())); }};
-
-            new If (isLeaf(Index))
+           {new If (isLeaf(Index))
              {void Then() {s.append(leaf  (Index).toString());}
               void Else() {s.append(branch(Index).toString());}
              };
@@ -1071,10 +1069,10 @@ class Tree extends Program                                                      
 
   static void test_tree(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-                                 t.freeChain.usedKeys.countZeros().ok(0);
-    final Leaf   a = t.leaf();   t.freeChain.usedKeys.countZeros().ok(1);
-    final Leaf   b = t.leaf();   t.freeChain.usedKeys.countZeros().ok(2);
-    final Branch c = t.branch(); t.freeChain.usedKeys.countZeros().ok(3);
+                                            t.freeChain.usedKeys.countZeros().ok(1);
+    final Leaf   a = t.leaf(t.new Int(0));  t.freeChain.usedKeys.countZeros().ok(1);
+    final Leaf   b = t.leaf();              t.freeChain.usedKeys.countZeros().ok(2);
+    final Branch c = t.branch();            t.freeChain.usedKeys.countZeros().ok(3);
     a.insert(t.new Int(2), t.new Int(22));
     b.insert(t.new Int(4), t.new Int(44));
     c.insert(t.new Int(5), t.new Int(55));
@@ -1098,15 +1096,15 @@ MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
-   0 Leaf: size:   2
+Leaf           size:   2
  Ref   Key  Data
    1     1    11
    0     2    22
-   1 Leaf: size:   2
+Leaf   at: 121 size:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-   2 Branch: size:   3 top:   0
+Branch at: 242 size:   3 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1124,12 +1122,16 @@ Node   size   :  121
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
-Allocations   :    2
-   1 Leaf: size:   2
+Allocations   :    3
+Leaf           size:   2
+ Ref   Key  Data
+   1     1    11
+   0     2    22
+Leaf   at: 121 size:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-   2 Branch: size:   3 top:   0
+Branch at: 242 size:   3 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -2134,7 +2136,8 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
+    test_tree();
+    //test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
