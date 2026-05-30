@@ -202,7 +202,7 @@ class Leaf extends Program implements Program.Locatable                         
         Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
         right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
 
-        right.copyMergeData(Left, new Int(0), lc);                                                                            // Copy the data values associated with the slots
+        right.copyMergeData(Left, new Int(0), lc);                                                                      // Copy the data values associated with the slots
         right.slots.mergeFromLeftEven(Left.slots);                                                                      // Merge the slots
        }
      };
@@ -213,22 +213,41 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D2 Print                                                                                                              // Print the leaf
 
-  public String toString()                                                                                              // Print a leaf
+  StringBuilder print()                                                                                                 // Print a leaf
    {final StringBuilder s = new StringBuilder();
-    s.append(f("Leaf  "));
-    final Int a = new Int(); new I() {void action() {a.set(getLocation()); }};
-    if (a.i() > 0) s.append(f(" at: "+formatKey, a.i())); else s.append(" ".repeat(8));
-    s.append(f(" size: "+formatKey+"\n", maxSize()));
-    s.append(" Ref   Key  Data\n");
-    for (int i : range(slots.numberOfSlotsToKeys()))
-     {if (slots.getSlotToKeysInUse(i))
-       {final String f = "%4d  %4d  %4d\n";
-        final int    k = slots.getSlotToKeyIndex(i);
-        final String t = f(f, k, slots.getSlotToKeyValue(i), refData.getInt(k));
-        s.append(t);
+    new I() {void action() {s.setLength(0); s.append(f("Leaf  "));}};
+    final Int a = new Int().copy(getLocation());
+    new If (a.valid())                                                                                                  // Index in memory if present
+     {void Then()
+       {new If (a.gt(0))
+         {void Then()
+           {new I() {void action() {s.append(f(" at: "+formatKey, a.i())); }};
+           }
+          void Else()
+           {new I() {void action() {s.append(" ".repeat(8)); }};
+           }
+         };
        }
-     }
-    return ""+s;
+      void Else()
+       {new I() {void action() {s.append(" ".repeat(8)); }};
+       }
+     };
+    new I()                                                                                                             // Key/Data pairs in key order
+     {void action()
+       {s.append(f(" size: "+formatKey+"\n", maxSize()));
+        s.append(" Ref   Key  Data\n");
+
+        for (int i : range(slots.numberOfSlotsToKeys()))
+         {if (slots.getSlotToKeysInUse(i))
+           {final String f = "%4d  %4d  %4d\n";
+            final int    k = slots.getSlotToKeyIndex(i);
+            final String t = f(f, k, slots.getSlotToKeyValue(i), refData.getInt(k));
+            s.append(t);
+           }
+         };
+       }
+     };
+    return s;
    }
 
 //D1 Tests                                                                                                              // Tests
@@ -241,7 +260,7 @@ class Leaf extends Program implements Program.Locatable                         
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
     //new I() {void action() {testStop("AAAA", l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -279,7 +298,7 @@ Leaf           size:   8
     l.insert(l.new Int(1), l.new Int(11));
     l.delete(l.new Int(2));
     //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -288,7 +307,7 @@ Leaf           size:   8
 """);
     l.compactLeft();
     //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    0     1    11
@@ -312,7 +331,7 @@ Leaf           size:   8
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -322,7 +341,7 @@ Leaf           size:   8
 """);
     l.compactRight();
     //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    4     1    11
@@ -351,7 +370,7 @@ Leaf           size:   8
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
     //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -367,7 +386,7 @@ Leaf           size:   8
     r.initializeMemory();
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -376,7 +395,7 @@ Leaf           size:   8
    1     4    44
 """);
     //l.new I() {void action() {testStop(r);}};
-    l.ok(()->r, """
+    l.check(r.print(), """
 Leaf           size:   8
  Ref   Key  Data
    6     5    55
@@ -405,7 +424,7 @@ Leaf           size:   8
     r.insert(r.new Int(5), r.new Int(55));
     r.insert(r.new Int(8), r.new Int(88));
     //r.new I() {void action() {testStop(r);}};
-    r.ok(()->r, """
+    r.check(r.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -420,7 +439,7 @@ Leaf           size:   8
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -429,7 +448,7 @@ Leaf           size:   8
    1     4    44
 """);
     //r.new I() {void action() {testStop(r);}};
-    r.ok(()->r, """
+    r.check(r.print(), """
 Leaf           size:   8
  Ref   Key  Data
    6     5    55
@@ -457,8 +476,7 @@ Leaf           size:   8
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
-    //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -472,8 +490,7 @@ Leaf           size:   8
 """);
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
     l.splitRight(r);
-    //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -481,8 +498,8 @@ Leaf           size:   8
    2     3    33
    1     4    44
 """);
-    //r.new I() {void action() {testStop(r);}};
-    r.ok(()->r, """
+
+    r.check(r.print(), """
 Leaf           size:   8
  Ref   Key  Data
    6     5    55
@@ -490,9 +507,9 @@ Leaf           size:   8
    5     7    77
    7     8    88
 """);
+
     l.mergeRight(r);
-    //l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -525,7 +542,7 @@ Leaf           size:   8
     r.insert(r.new Int(5), r.new Int(55));
     r.insert(r.new Int(8), r.new Int(88));
    // r.new I() {void action() {testStop(r);}};
-    r.ok(()->r, """
+    r.check(r.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -540,7 +557,7 @@ Leaf           size:   8
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex).parent(r));
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -549,7 +566,7 @@ Leaf           size:   8
    1     4    44
 """);
     //r.new I() {void action() {testStop(r);}};
-    r.ok(()->r, """
+    r.check(r.print(), """
 Leaf           size:   8
  Ref   Key  Data
    6     5    55
@@ -559,7 +576,7 @@ Leaf           size:   8
 """);
     r.mergeLeft(l);
     //r.new I() {void action() {testStop(r);}};
-    r.ok(()->r, """
+    r.check(r.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -592,7 +609,7 @@ Leaf           size:   8
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
    // l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
    3     1    11
@@ -624,7 +641,7 @@ Leaf           size:   8
     l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
    // l.new I() {void action() {testStop(l);}};
-    l.ok(()->l, """
+    l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
 """);
@@ -676,10 +693,7 @@ Leaf           size:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    //test_splitRight(true);
-    test_mergeRight();
-    test_mergeLeft();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
