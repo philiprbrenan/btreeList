@@ -265,13 +265,18 @@ class Branch extends Program implements Program.Locatable                       
 
   StringBuilder printTitle()                                                                                            // Print the title line
    {final StringBuilder s = new StringBuilder();
-    s.append(f("Branch: size: "+formatKey+" top: "+formatKey+"\n", maxSize(), refTop.getInt(0)));
+    s.append(f("Branch size: "+formatKey+" top: "+formatKey+"\n", maxSize(), refTop.getInt(0)));
     return s;
    }
 
   public String toString()                                                                                              // Print a branch
-   {final StringBuilder s = printTitle();
-    s.append(" Ref   Key  Data\n");
+   {final StringBuilder s = new StringBuilder();
+    s.append(f("Branch"));
+    final int  a = byteMemoryRef.offset.i();
+    if (a > 0) s.append(f(" at: "+formatKey, a));
+    s.append(f(" size: "+formatKey, maxSize()));
+    s.append(f(" top: " +formatKey, refTop.getInt(0)));
+    s.append("\n Ref   Key  Data\n");
     for (int i : range(slots.numberOfSlotsToKeys()))
      {if (slots.getSlotToKeysInUse(i))
        {final String f = "%4d  %4d  %4d\n";
@@ -314,7 +319,7 @@ class Branch extends Program implements Program.Locatable                       
     l.insert(l.new Int(1), l.new Int(11));
     //new I() {void action() {testStop("AAAA", l);}};
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -352,7 +357,7 @@ Branch: size:   7 top:   0
     l.delete(l.new Int(2));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch size:   7 top:   0
  Ref   Key  Data
    3     1    11
    2     3    33
@@ -361,7 +366,7 @@ Branch: size:   7 top:   0
     l.compactLeft();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch size:   7 top:   0
  Ref   Key  Data
    0     1    11
    2     3    33
@@ -385,7 +390,7 @@ Branch: size:   7 top:   0
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -395,7 +400,7 @@ Branch: size:   7 top:   0
     l.compactRight();
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch size:   7 top:   0
  Ref   Key  Data
    3     1    11
    6     2    22
@@ -424,7 +429,7 @@ Branch: size:   7 top:   0
     l.top(l.new Int(99));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -439,7 +444,7 @@ Branch: size:   7 top:  99
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:  44
+Branch size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -447,7 +452,7 @@ Branch: size:   7 top:  44
 """);
     //l.new I() {void action() {testStop(r);}};
     l.ok(()->r, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -475,7 +480,7 @@ Branch: size:   7 top:  99
     r.top(r.new Int(99));
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -489,7 +494,7 @@ Branch: size:   7 top:  99
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:  44
+Branch size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -497,7 +502,7 @@ Branch: size:   7 top:  44
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -525,7 +530,7 @@ Branch: size:   7 top:  99
     l.top(l.new Int(99));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -539,7 +544,7 @@ Branch: size:   7 top:  99
     l.splitRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:  44
+Branch size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -547,7 +552,7 @@ Branch: size:   7 top:  44
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -556,7 +561,7 @@ Branch: size:   7 top:  99
     l.mergeRight(r);
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    1     1    11
    0     2    22
@@ -588,7 +593,7 @@ Branch: size:   7 top:  99
     r.top(r.new Int(99));
     // r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -602,7 +607,7 @@ Branch: size:   7 top:  99
     r.splitLeft(l);
     //r.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:  44
+Branch size:   7 top:  44
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -610,7 +615,7 @@ Branch: size:   7 top:  44
 """);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -619,7 +624,7 @@ Branch: size:   7 top:  99
     r.mergeLeft(l);
     //r.new I() {void action() {testStop(r);}};
     r.ok(()->r, """
-Branch: size:   7 top:  99
+Branch size:   7 top:  99
  Ref   Key  Data
    1     1    11
    0     2    22
@@ -650,7 +655,7 @@ Branch: size:   7 top:  99
     l.insert(l.new Int(5), l.new Int(55));
     //l.new I() {void action() {testStop(l);}};
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch size:   7 top:   0
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -678,7 +683,7 @@ Branch: size:   7 top:   0
     l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
     l.ok(()->l, """
-Branch: size:   7 top:   0
+Branch size:   7 top:   0
  Ref   Key  Data
 """);
 
