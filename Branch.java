@@ -7,7 +7,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 
-class Branch extends Program                                                                                            // A branch in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
+class Branch extends Program implements Program.Locatable                                                               // A branch in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
   final Int            at            = new Int();                                                                       // A representation of the location of the branch sufficient to be able to free it
@@ -67,7 +67,6 @@ class Branch extends Program                                                    
     maxSize       = Build.maxSize;
     if (maxSize % 2 == 0) stop("MaxSize should be odd not even:", maxSize);                                             // Not strictly true but slightly easier to cope with
     if (maxSize < 3)      stop("MaxSize must be at least 3:",     maxSize);
-    slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).parent(parentProgram));                           // Slots for branch
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
@@ -75,14 +74,17 @@ class Branch extends Program                                                    
     refTop        = byteMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
     if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
+    slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for branch
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
 
-  Branch initializeMemory()                                                                                               // Initialize slots and data associated with the branch
+  Branch initializeMemory()                                                                                             // Initialize slots and data associated with the branch
    {clear();                                                                                                            // Clear backing memory
     slots.initializeMemory();                                                                                           // Initialize slots
     return this;
    }
+
+  public Int getLocation() {return at;}                                                                                 // The location of this node in memory
 
   void branchCode() {}                                                                                                  // Override this method to provide code for testing the branch
 
