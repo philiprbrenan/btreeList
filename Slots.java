@@ -2088,6 +2088,37 @@ keys     :    0   0   0   0   0   0   0
     test_clear(false);
    }
 
+  static void test_full4(boolean Ex)
+   {final int N = 7;
+    final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
+     {void slotsCode()
+       {initializeMemory();
+        insert(new Int(1));
+        insert(new Int(2));
+        insert(new Int(3));
+        insert(new Int(4));
+        final Slots s = this;
+        new I() {void action() {testStop(s);}};
+        ok(()->this, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   1   0   2   6   3   0   4   0   5   0   0
+keysSlots:    1   3   5   7   9  11   6   0   0   0   0   0   0   0
+usedSlots:    .   X   .   X   .   X   X   X   .   X   .   X   .   .
+usedKeys :    X   X   X   X   X   X   X
+keys     :   11  12  13  15  16  17  14
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_full4()
+   {test_full4(true);
+    test_full4(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
     test_locateNearestFreeSlotToKey();
@@ -2113,7 +2144,8 @@ keys     :    0   0   0   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_full4();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
