@@ -55,13 +55,11 @@ public class BitSet extends Program                                             
    }
 
   BitSet initializeMemory()                                                                                             // Initialize memory
-   {say("DDDD11", bitSize);
-    new ForCount(bitSize)                                                                                               // Clear one tree
+   {new ForCount(bitSize)                                                                                               // Clear one tree
      {void body(Int I)
        {setBitNC(I, new Bool(false));
        }
      };
-    say("DDDD22", bitSize);
 
     final Int p = addressZeroTree();                                                                                    // Set zero tree
     new ForCount(bitSize)                                                                                               // For loop to set bits along path in One tree to actual bit
@@ -69,7 +67,6 @@ public class BitSet extends Program                                             
        {setBitNC(p.Add(I), new Bool(true));
        }
      };
-    say("DDDD33", bitSize, dumpMemory());
     return this;
    }
 
@@ -287,8 +284,6 @@ public class BitSet extends Program                                             
         new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};
        }
      };
-if (debug) say("BBBB", Index, Value, dumpMemory());
-
    }
 
   void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();}                                            // Next layer down in a bit tree
