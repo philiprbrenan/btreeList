@@ -173,8 +173,8 @@ class Tree extends Program                                                      
     return b;
    }
 
-  void dumpTree()                                                                                                       // Dump the tree
-   {final StringBuilder s = out;
+  StringBuilder dump()                                                                                                 // Dump the tree
+   {final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.count());
     new I()
      {void action()
@@ -195,19 +195,20 @@ class Tree extends Program                                                      
        {new If(isAllocated(Index))
          {void Then()
            {new If (isLeaf(Index))
-             {void Then() {s.append(leaf  (Index).toString());}
-              void Else() {s.append(branch(Index).toString());}
+             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void action() {s.append(t);}};}
+              void Else() {final StringBuilder t = branch(Index).print(); new I() {void action() {s.append(t);}};}
              };
            }
          };
        }
      };
+    return s;
    }
 
-  void dumpTree(String Expected)                                                                                        // Dump the tree
-   {dumpTree();
-    new I() {void action() {ok(""+out,  Expected);}};
-   }
+//  void dumpTree(String Expected)                                                                                        // Dump the tree
+//   {dump();
+//    new I() {void action() {ok(""+out,  Expected);}};
+//   }
 
   void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
    {new If (isRootLeaf())
@@ -1085,9 +1086,7 @@ class Tree extends Program                                                      
     B.insert(t.new Int(3), t.new Int(33));
     C.insert(t.new Int(6), t.new Int(66));
 
-    t.dumpTree();
-    //t.new I() {void action() {stop(t.out);}};
-    t.dumpTree("""
+    t.Check(t.dump(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1100,11 +1099,11 @@ Leaf           size:   2
  Ref   Key  Data
    1     1    11
    0     2    22
-Leaf   at: 121 size:   2
+Leaf   at:   1 size:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at: 242 size:   3 top:   0
+Branch at:   2 size:   3 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1112,9 +1111,7 @@ Branch at: 242 size:   3 top:   0
 
                t.isAllocated(a.at).ok(true);
     t.free(A); t.isAllocated(a.at).ok(false);
-    t.dumpTree();
-    //t.new I() {void action() {stop(t.out);}};
-    t.dumpTree("""
+    t.Check(t.dump(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1122,25 +1119,19 @@ Node   size   :  121
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
-Allocations   :    3
-Leaf           size:   2
- Ref   Key  Data
-   1     1    11
-   0     2    22
-Leaf   at: 121 size:   2
+Allocations   :    2
+Leaf   at:   1 size:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at: 242 size:   3 top:   0
+Branch at:   2 size:   3 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
 """);
                t.isAllocated(b.at).ok(true);
     t.free(b); t.isAllocated(b.at).ok(false);
-    t.dumpTree();
-    //t.new I() {void action() {stop(t.out);}};
-    t.dumpTree("""
+    t.Check(t.dump(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1149,7 +1140,7 @@ MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
-   2 Branch: size:   3 top:   0
+Branch at:   2 size:   3 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1157,9 +1148,7 @@ Allocations   :    1
 
                t.isAllocated(c.at).ok(true);
     t.free(c); t.isAllocated(c.at).ok(false);
-    t.dumpTree();
-    //t.new I() {void action() {stop(t.out);}};
-    t.dumpTree("""
+    t.Check(t.dump(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1186,8 +1175,7 @@ Allocations   :    0
     t.insert(t.new Int(2), t.new Int(22));
     t.insert(t.new Int(3), t.new Int(33));
     t.insert(t.new Int(4), t.new Int(44));
-    t.dumpTree();
-    t.dumpTree("""
+    t.check (t.dump(), """
 Tree memory dump
 Leaf   size   :  153
 Branch size   :  121
