@@ -64,20 +64,19 @@ class Leaf extends Program implements Program.Locatable                         
     maxSize       = Build.maxSize;
     if (maxSize % 2 == 1) stop("MaxSize should be even not odd:", maxSize);                                             // Not strictly true but slightly easier to cope with
     if (maxSize < 2)      stop("MaxSize must be at least 2:",     maxSize);
-    slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).parent(parentProgram));                           // Slots for leaf
     final Build.MemoryPositions m = build.memoryPositions;
     byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
     refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
     refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
     refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
     if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
+    slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for leaf
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
    }
 
   Leaf initializeMemory()                                                                                               // Initialize slots and data associated with the leaf
    {clear();                                                                                                            // Clear backing memory
     slots.initializeMemory();                                                                                           // Initialize slots
-if (debug) stop("XXXX");
     return this;
    }
 
@@ -216,10 +215,10 @@ if (debug) stop("XXXX");
 
   public String toString()                                                                                              // Print a leaf
    {final StringBuilder s = new StringBuilder();
-    s.append(f("Leaf: size: "+formatKey, maxSize()));
-    final int a = byteMemoryRef.offset.i();
-    if (a > 0) s.append(f(" at: "+formatKey, a));
-    s.append("\n");
+    s.append(f("Leaf: size: "+formatKey+"\n", maxSize()));
+    //final int a = byteMemoryRef.offset.i();
+    //if (a > 0) s.append(f(" at: "+formatKey, a));
+    //s.append("\n");
     s.append(" Ref   Key  Data\n");
     for (int i : range(slots.numberOfSlotsToKeys()))
      {if (slots.getSlotToKeysInUse(i))
