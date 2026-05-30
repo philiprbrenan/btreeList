@@ -856,7 +856,7 @@ public class Program extends Test                                               
   void Check(String Expected) {new I() {void action() {if (!Test.ok(output(), Expected)) stop(output())  ;}};}          // Test the normalized content of the output area against the specified string, print the actual output area contents and stop
 
   void check(StringBuilder Got, String Expected) {new I() {void action() {     Test.ok(""+Got, Expected); out.setLength(0);}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
-  void Check(StringBuilder Got, String Expected) {new I() {void action() {if (!Test.ok(""+Got, Expected)) stop(output())  ;}};} // Test the supplied content against the specified string, print the actual output area contents and stop
+  void Check(StringBuilder Got, String Expected) {new I() {void action() {if (!Test.ok(""+Got, Expected)) stop(Got, traceBack)       ;}};} // Test the supplied content against the specified string, print the actual output area contents and stop
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
