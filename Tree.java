@@ -145,56 +145,69 @@ class Tree extends Program                                                      
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
    {if (Check) isLeaf(Node).Flip().stop("Not a leaf:", Node);                                                           // Check the location actually holds a leaf
     final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
-    return new Leaf(build.leaf.parent(this).memory(r).at(Node));                                                        // Base leaf at the indexed address
+    return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                        // Base leaf at the indexed address
    }
 
   Leaf leaf()                                                                                                            // Create and initialize a leaf in memory and return its index
    {final Int  i = allocate();
-    final Leaf l = leaf(i, false).initializeMemory();
+    final Leaf l = leaf(i, false);
+    l.initializeMemory();
     setType(i, BranchOrLeaf.leaf);
     return l;
    }
 
   Branch branch(Int Node) {return branch(Node, true);}                                                                  // Index an existing branch in memory            confirming that it really is a branch
   Branch branch(Int Node, boolean Check)                                                                                // Index an existing branch in memory optionally confirming that it really is a branch
-   {isBranch(Node).Flip().stop("Not a branch:", Node);                                                                  // Check the location actually holds i branch
+   {if (Check) isBranch(Node).Flip().stop("Not a branch:", Node);                                                       // Check the location actually holds i branch
     final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address branch
-    return new Branch(build.branch.parent(this).memory(r).at(Node));                                                    // Base branch at the indexed address
+    return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
 
   Branch branch()                                                                                                       // Create and initialize a branch in memory and return its index
    {final Int    i = allocate();
-    final Branch b = branch(i).initializeMemory();
+    final Branch b = branch(i, false);
+    b.initializeMemory();
     setType(i, BranchOrLeaf.branch);
     return b;
    }
 
- String dumpTree()                                                                                                      // Dump the tree
-   {final StringBuilder s = new StringBuilder();
-    s.append(f("Tree memory dump\n"));
-    s.append(f("Leaf   size   : %4d\n", build.leafSize));
-    s.append(f("Branch size   : %4d\n", build.branchSize));
-    s.append(f("Node   size   : %4d\n", sizeOfNode));
-    s.append(f("MaxLeafSize   : %4d\n", maxLeafSize));
-    s.append(f("MaxBranchSize : %4d\n", maxBranchSize));
-    s.append(f("NumberNodes   : %4d\n", numberOfNodes));
+  void dumpTree()                                                                                                       // Dump the tree
+   {final StringBuilder s = out;
+    final Int           c = new Int(numberOfNodes).sub(freeChain.count());
 
-    for (int i : range(min(numberOfNodes, 20)))
-     {final Int  I = new Int(i);
-      new If(isAllocated(I))
-       {void Then()
-         {final int  n = sizeOfNode * i;
-          s.append(f("%4d ", n));
+    new I()
+     {void action()
+       {s.setLength(0);
+        s.append(f("Tree memory dump\n"));
+        s.append(f("Leaf   size   : %4d\n", build.leafSize));
+        s.append(f("Branch size   : %4d\n", build.branchSize));
+        s.append(f("Node   size   : %4d\n", sizeOfNode));
+        s.append(f("MaxLeafSize   : %4d\n", maxLeafSize));
+        s.append(f("MaxBranchSize : %4d\n", maxBranchSize));
+        s.append(f("NumberOfNodes : %4d\n", numberOfNodes));
+        s.append(f("Allocations   : %4d\n", c.i()));
+       }
+     };
 
-          final Bool l = isLeaf(I);
-          final Bool b = isBranch(I);
-          final String t = l.b() ? leaf(I).toString() : branch(I).toString();
-          s.append(t);
-         }
-       };
-     }
-    s.append(dumpMemory());
-    return ""+s;
+    new ForCount(new Int(min(numberOfNodes, 20)))
+     {void body(Int Index)
+       {new If(isAllocated(Index))
+         {void Then()
+           {new I() {void action() {s.append(f("%4d ", Index.i())); }};
+
+            new If (isLeaf(Index))
+             {void Then() {s.append(leaf  (Index).toString());}
+              void Else() {s.append(branch(Index).toString());}
+             };
+           }
+         };
+       }
+     };
+   }
+
+  void dumpTree(String Expected)                                                                                        // Dump the tree
+   {dumpTree();
+    new I() {void action() {ok(""+out,  Expected);}};
    }
 
 /*
@@ -1033,37 +1046,104 @@ class Tree extends Program                                                      
 
   static void test_tree(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-                                  t.freeChain.usedKeys.countZeros().ok(0);
-debug = true;
-    final Leaf a = t.leaf(); t.freeChain.usedKeys.countZeros().ok(1);
-stop();
-    final Leaf b = t.leaf(); t.freeChain.usedKeys.countZeros().ok(2);
+                                 t.freeChain.usedKeys.countZeros().ok(0);
+    final Leaf   a = t.leaf();   t.freeChain.usedKeys.countZeros().ok(1);
+    final Leaf   b = t.leaf();   t.freeChain.usedKeys.countZeros().ok(2);
+    final Branch c = t.branch(); t.freeChain.usedKeys.countZeros().ok(3);
+    a.insert(t.new Int(2), t.new Int(22));
+    b.insert(t.new Int(4), t.new Int(44));
+    c.insert(t.new Int(5), t.new Int(55));
 
-    final Leaf A = t.leaf(a.at); t.isAllocated(a.at).ok(true);
-    final Leaf B = t.leaf(b.at); t.isAllocated(b.at).ok(true);
+    final Leaf   A = t.leaf  (a.at); t.isAllocated(a.at).ok(true);
+    final Leaf   B = t.leaf  (b.at); t.isAllocated(b.at).ok(true);
+    final Branch C = t.branch(c.at); t.isAllocated(c.at).ok(true);
 
-    A.insert(t.new Int(2), t.new Int(22));
     A.insert(t.new Int(1), t.new Int(11));
-    B.insert(t.new Int(4), t.new Int(44));
     B.insert(t.new Int(3), t.new Int(33));
+    C.insert(t.new Int(6), t.new Int(66));
 
-    ok(t.dumpTree(), """
+    t.dumpTree();
+    //t.new I() {void action() {stop(t.out);}};
+    t.dumpTree("""
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
 Node   size   :  121
 MaxLeafSize   :    2
 MaxBranchSize :    3
-NumberNodes   :    4
+NumberOfNodes :    4
+Allocations   :    3
    0 Leaf: size:   2
  Ref   Key  Data
- 121 Leaf: size:   2
+   1     1    11
+   0     2    22
+   1 Leaf: size:   2
  Ref   Key  Data
+   1     3    33
+   0     4    44
+   2 Branch: size:   3 top:   0
+ Ref   Key  Data
+   0     5    55
+   1     6    66
 """);
 
-    t.free(a); t.isAllocated(a.at).ok(false);
+               t.isAllocated(a.at).ok(true);
+    t.free(A); t.isAllocated(a.at).ok(false);
+    t.dumpTree();
+    //t.new I() {void action() {stop(t.out);}};
+    t.dumpTree("""
+Tree memory dump
+Leaf   size   :   79
+Branch size   :  121
+Node   size   :  121
+MaxLeafSize   :    2
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    2
+   1 Leaf: size:   2
+ Ref   Key  Data
+   1     3    33
+   0     4    44
+   2 Branch: size:   3 top:   0
+ Ref   Key  Data
+   0     5    55
+   1     6    66
+""");
+               t.isAllocated(b.at).ok(true);
     t.free(b); t.isAllocated(b.at).ok(false);
-    t.freeChain.usedKeys.countZeros().ok(0);
+    t.dumpTree();
+    //t.new I() {void action() {stop(t.out);}};
+    t.dumpTree("""
+Tree memory dump
+Leaf   size   :   79
+Branch size   :  121
+Node   size   :  121
+MaxLeafSize   :    2
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    1
+   2 Branch: size:   3 top:   0
+ Ref   Key  Data
+   0     5    55
+   1     6    66
+""");
+
+               t.isAllocated(c.at).ok(true);
+    t.free(c); t.isAllocated(c.at).ok(false);
+    t.dumpTree();
+    //t.new I() {void action() {stop(t.out);}};
+    t.dumpTree("""
+Tree memory dump
+Leaf   size   :   79
+Branch size   :  121
+Node   size   :  121
+MaxLeafSize   :    2
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    0
+""");
+
+    t.maxSteps = 99999;
     t.execute();
    }
 
