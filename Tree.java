@@ -83,8 +83,8 @@ class Tree extends Program                                                      
     sizeOfNode = build.nodeSize;
 
     freeChain  = new Slots(build.freeChain.parent(this));                                                               // Memory for free chain
-    for (int i = 1, N = numberOfNodes; i < N; ++i) freeChain.setSlotAndKey(new Int(i), new Int(i), new Int(i));         // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
-    setType(new Int(0), BranchOrLeaf.leaf);                                                                             // The root starts as an empty allocated leaf
+    for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.setSlotAndKey(new Int(i), new Int(i), new Int(i));         // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+    leaf();                                                                                                             // Initialize the root as a leaf
    }
 
   int maxLeafSize  () {return maxLeafSize;}                                                                             // Maximum size of a leaf
@@ -216,7 +216,7 @@ class Tree extends Program                                                      
     new If (isRootLeaf())
      {void Then()                                                                                                       //
        {final Leaf R = leaf(new Int(0));
-say("AAAA11", R.slots);
+say("AAAA11", R);
 debug = Key.i() >= 3;
         new If (R.full())
          {void Then()
