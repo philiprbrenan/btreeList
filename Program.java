@@ -10,9 +10,8 @@ import java.util.function.Supplier;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final Stack<I>       code = new Stack<>();                                                                            // Machine code instructions
-  final Stack<Label> labels = new Stack<>();                                                                            // Labels for instructions in this process
-  final Stack<StringBuilder> put = new Stack<>();                                                                       // Output from execution
+ {final Stack<I>         code = new Stack<>();                                                                          // Machine code instructions
+  final Stack<Label>   labels = new Stack<>();                                                                          // Labels for instructions in this process
 
   final Program parentProgram;                                                                                          // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   final ByteMemory byteMemory;                                                                                          // Optional memory associated with the program
@@ -387,10 +386,13 @@ public class Program extends Test                                               
      }
 
     void stop(final Object...O)                                                                                         // Conditionally print a message and stop
-     {new If (this) {void Then() {new I() {void action() {Test.stop(O);}};}};
+     {if (O.length == 0)               new I() {void action() {Test.stop(out());}};                                     // Print the contents of the output are if no parameters supplied and stop
+      else new If (this) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                  // Print supplied message and stop
      }
 
-    Bool say() {final Bool i = this; new I() {void action() {Test.say(i);}}; return this;}                              // Say the boolean
+    Bool say() {final Bool i = this; new I() {void action() {Test.say(i)          ;}}; return this;}                    // Say the boolean
+    Bool out() {final Bool i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                    // Write the boolean value to the output area
+    Bool Out() {final Bool i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                    // Write the boolean value to the output area
 
     Bool ok(Boolean Value)
      {new I()
@@ -604,7 +606,9 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : "undefined Int: "+name;
      }
 
-    Int say() {final Int i = this; new I() {void action() {Test.say(i);}}; return this;}                                // Say the integer
+    Int say() {final Int i = this; new I() {void action() {Test.say(i);}};           return this;}                      // Say the integer
+    Int out() {final Int i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                      // Write the integer value to the output area
+    Int Out() {final Int i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                      // Write the integer value to the output area
 
     Int ok(Integer Value)                                                                                               // Check the integer
      {new I()
@@ -828,36 +832,28 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  static int[]range(Int Limit) {return range(Limit.i());}                                                               // Range of integers
-  static boolean ok(Bool b) {return ok(b.b());}                                                                         // Check test results match expected results.
+  <T> void put(T Value) {new I() {void action() {out.append(""+Value+' ' );}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a space
+  <T> void Put(T Value) {new I() {void action() {out.append(""+Value+'\n');}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a new line
 
-  void put()                                                                                                            // Say a variable value on a separate line
-   {new I() {void action() {push(new StringBuilder("\n"));}};
+  private String output()                                                                                               // Normalize and return the content of the output area, then clear the output area for the next report
+   {final String r = ""+out;                                                                                            // Get content
+    final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
+//  say("AAAA"+s+"BBBB length", s.length());
+//  for (int i = 0; i < s.length(); i++)
+//   {final char c = s.charAt(i);
+//    switch(c)
+//     {case ' '  -> {say(i, "space");}
+//      case '\n' -> {say(i, "new-line");}
+//      default   -> {say(i, c);}
+//     }
+//   }
+
+    return s;
    }
 
-  <T> void put(T Value)                                                                                                 // Say a variable value on a separate line
-   {new I() {void action() {push(saySb(Value).append("\n"));}};
-   }
-
-  <T> void Put(T Value)                                                                                                 // Say a variable value on the same line
-   {new I() {void action() {push(saySb(Value));}};
-   }
-
-  void push(StringBuilder Value)                                                                                        // Say on the same line
-   {final Stack<StringBuilder> p = parentProgram.put;
-    if (p.size() == 0) {p.push(Value); return;}
-    final StringBuilder q = p.lastElement();
-
-    final int           l = q.length();
-    if (l > 0 && q.charAt(l-1) == '\n') p.push(Value);
-    else if (l == 0)     q.append(Value);
-    else {q.append(" "); q.append(Value);}
-   }
-
-  String output()                                                                                                       // Output from execution
-   {final String r = parentProgram.put.size() > 0 ? joinStringBuilders(parentProgram.put, "") : "";
-    return r.replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");
-   }
+  void out()                {new I() {void action() {                                  stop(output())  ;}};}            // Say the normalized content of the output area and stop
+  void out(String Expected) {new I() {void action() {     Test.ok(output(), Expected); out.setLength(0);}};}            // Test the normalized content of the output area, then clear the output area ready for the next report
+  void Out(String Expected) {new I() {void action() {if (!Test.ok(output(), Expected)) stop(output())  ;}};}            // Test the normalized content of the output area, print the actual output area contents and stop
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -970,10 +966,10 @@ public class Program extends Test                                               
 
         final Bool O = new Bool().set(z);
                    O.or(o);
-        put(O);
+        O.Out();
         final Bool A = new Bool().set(o);
                    A.and(z);
-        put(A);
+        A.Out();
        }
      };
     P.execute();
@@ -1018,16 +1014,12 @@ public class Program extends Test                                               
         new For(N)
          {void body(Int Index, Bool Continue)
            {b.add(a.dup().inc());
-            Put(a);
-            put(b);
+            put(a);
+            Put(b);
             Continue.set();
            }
          };
-       }
-     };
-    P.execute();
-    //testStop(P.output());
-    ok(P.output(), """
+        out("""
 1 2
 1 4
 1 6
@@ -1039,6 +1031,9 @@ public class Program extends Test                                               
 1 18
 1 20
 """);
+        execute();
+       }
+     };
    }
 
   static void test_add()
@@ -1059,26 +1054,16 @@ public class Program extends Test                                               
             c.add(b);
             a.set(b);
             b.set(c);
-            put(c);
+            c.out();
             Continue.set();
            }
          };
+        Out("""
+1 2 3 5 8 13 21 34 55 89a
+""");
+        execute();
        }
      };
-    P.execute();
-    //testStop(P.output());
-    ok(P.output(), """
-1
-2
-3
-5
-8
-13
-21
-34
-55
-89
-""");
    }
 
   static void test_fibonnacci()
@@ -1100,20 +1085,17 @@ public class Program extends Test                                               
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
-            put(c);
+            c.out();
             Continue.set();
            }
          };
+      out("""
+2 1 3 2
+""");
+        execute();
        }
      };
-    P.execute();
     //testStop(P.output());
-    ok(P.output(), """
-2
-1
-3
-2
-""");
    }
 
   static void test_mod()
@@ -1125,18 +1107,15 @@ public class Program extends Test                                               
    {final Program P = new Program(new Build().immediate(Ex).trace(true))
      {void code()
        {final Int a = new Int(0);
-                 put(a);
-        a.inc(); put(a);
-        a.inc(); put(a);
+                 a.out();
+        a.inc(); a.out();
+        a.inc(); a.out();
+        out("""
+0 1 2
+""");
+        execute();
        }
      };
-    P.execute();
-    //testStop(P.output());
-    ok(P.output(), """
-0
-1
-2
-""");
     return P;
    }
 
