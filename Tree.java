@@ -147,16 +147,18 @@ class Tree extends Program                                                      
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
    {if (Check) isLeaf(Node).Flip().stop("Not a leaf:", Node);                                                           // Check the location actually holds a leaf
     final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
-    return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                        // Base leaf at the indexed address
+    return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                   // Base leaf at the indexed address
    }
 
-  Leaf leaf()                                                                                                            // Create and initialize a leaf in memory and return its index
+  Leaf makeLeaf(Int Node)                                                                                               // Make a leaf from the specified node
    {final Int  i = allocate();
-    final Leaf l = leaf(i, false);
+    final Leaf l = leaf(Node, false);
     l.initializeMemory();
-    setType(i, BranchOrLeaf.leaf);
+    setType(Node, BranchOrLeaf.leaf);
     return l;
    }
+
+  Leaf   leaf()   {return makeLeaf(allocate());}                                                                       // Create and initialize a branch in memory and return its index
 
   Branch branch(Int Node) {return branch(Node, true);}                                                                  // Index an existing branch in memory            confirming that it really is a branch
   Branch branch(Int Node, boolean Check)                                                                                // Index an existing branch in memory optionally confirming that it really is a branch
@@ -165,18 +167,19 @@ class Tree extends Program                                                      
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
 
-  Branch branch()                                                                                                       // Create and initialize a branch in memory and return its index
-   {final Int    i = allocate();
-    final Branch b = branch(i, false);
+  Branch makeBranch(Int Node)                                                                                           // Make a branch from the specified node
+   {final Branch b = branch(Node, false);
     b.initializeMemory();
-    setType(i, BranchOrLeaf.branch);
+    setType(Node, BranchOrLeaf.branch);
     return b;
    }
 
-  StringBuilder dump()                                                                                                 // Dump the tree
+  Branch branch() {return makeBranch(allocate());}                                                                      // Create and initialize a branch in memory and return its index
+
+  StringBuilder dump()                                                                                                  // Dump the tree
    {final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.count());
-    new I()
+    new I()                                                                                                             // Dump the tree statistics
      {void action()
        {s.setLength(0);
         s.append(f("Tree memory dump\n"));
@@ -190,7 +193,7 @@ class Tree extends Program                                                      
        }
      };
 
-    new ForCount(new Int(min(numberOfNodes, 20)))
+    new ForCount(new Int(min(numberOfNodes, 20)))                                                                       // Dump the leaves and branches
      {void body(Int Index)
        {new If(isAllocated(Index))
          {void Then()
@@ -215,12 +218,18 @@ class Tree extends Program                                                      
      {void Then()                                                                                                       //
        {final Leaf R = leaf(new Int(0));
         new If (R.full())
-         {void Then()
-           {
+         {void Then()                                                                                                   // Split a full leaf
+           {final Leaf l = leaf(), r = leaf();                                                                          // Child leaves of root branch
+            final Int sk = R.splittingKey();
+            l.copy(R);                                                                                                  // Duplicate the root
+            l.splitRight(r);                                                                                            // Split the root leaf in two
+            final Branch b = makeBranch(R.at());                                                                        // Make the root into a branch
+            b.insert(sk, l.at());                                                                                       // Insert the left leaf
+            b.top(r.at());                                                                                              // The right leaf becomes top of the root branch
            }
           void Else()                                                                                                   // Root is a non full leaf
            {R.insert(Key, Data);
-           }                                                                                                              //
+           }
          };
        }
      };
