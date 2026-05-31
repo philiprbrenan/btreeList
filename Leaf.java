@@ -143,7 +143,7 @@ class Leaf extends Program implements Program.Locatable                         
      };
    }
 
-  Int splittingKey()                                                                                                    // Splitting key for a leaf
+  private Int splittingKey()                                                                                            // Splitting key for a leaf assuming that the leaf has been compacted to the right
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Int l = slots.getSlotToKeyValue(new Int(maxSize/2-1));
     final Int r = slots.getSlotToKeyValue(new Int(maxSize/2  ));
@@ -619,8 +619,6 @@ Leaf           size:   8
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
-   // l.new I() {void action() {testStop(l);}};
-    l.splittingKey().ok(4);
     l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
@@ -652,7 +650,6 @@ Leaf           size:   8
     l.delete(l.new Int(6)).ok(66); l.find(l.new Int(6)).notValid().ok(true); l.count().ok(2);
     l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
-   // l.new I() {void action() {testStop(l);}};
     l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
