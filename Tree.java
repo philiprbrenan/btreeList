@@ -208,29 +208,32 @@ class Tree extends Program                                                      
    }
 
 //D1 Find, Insert, Delete                                                                                               // Find, insert and delete
-/*
-  class Find                                                                                                            // Find results
-   {final Leaf leaf;                                                                                                    // Leaf that should contain the key
-    final Int  key;                                                                                                      // Search key
-    final Slots.Locate locate;                                                                                          // Location details for key
 
-    Find(Key Key, Leaf Leaf)
-     {key    = Key;
-      leaf   = Leaf;
-      locate = Leaf.new Locate(Key);
+  class Find                                                                                                            // Find results
+   {Bool       valid = new Bool();                                                                                      // Whether the search results are valid
+    Int        key   = new Int();                                                                                       // Search key
+    Int        leaf  = new Int();                                                                                       // Leaf that should contain the key
+    Slots.Find foundSlot;                                                                                               // Search results within leaf
+
+    void set(Int Key, Int Leaf)                                                                                         // Set the find results
+     {valid     .set(true);
+      key       .set(Key);
+      leaf      .set(Leaf);
+      foundSlot = leaf(leaf).slots.find(Key);
      }
 
-    public String toString()
+    public String toString()                                                                                            // Print the find results
      {final StringBuilder s = new StringBuilder();
-      s.append("Find Key : "+key.i()+"\n");
-      if (leaf    != null) s.append(""+leaf);
-      if (locate  != null) s.append("Locate      : "+locate   +"\n");
+      if (key       != null) s.append("Find Key : "+key+"\n");
+//    if (leaf      != null) s.append(leaf.print());
+      if (foundSlot != null) s.append(""+foundSlot);
       final StringJoiner j = new StringJoiner(", ");
-      for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
-      if (leaf.up() != null) s.append("Path        : "+j+"\n");
+//    for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
+//    if (leaf.up() != null) s.append("Path        : "+j+"\n");
       return ""+s;
      }
    }
+/*
 
   Find find(Key Key)
    {final Slots r = root();                                                                                             // Root of tree
@@ -255,37 +258,28 @@ class Tree extends Program                                                      
      };
     return f.get();
    }
-
-  Find find(Key Key, Branch Start)
-   {final Ref<Branch> p = new Ref<>(Start);                                                                             // Start at root
-    final Ref<Find>   f = new Ref<>();                                                                                  // Find the Key
-
-    new For(MaximumNumberOfLevels)                                                                                      // Step down from branch to branch splitting as we go
-     {void body(Int i, Bool C)
-       {final Slots.Slot Q = p.get().locateFirstGe(Key);
-        final Slots      q = p.get().child(Q);
-        new If (q.isLeaf())                                                                                             // Step down to a leaf
+*/
+  Find find(Int Key)                                                                                                    // Find the specified key in a leaf in the tree
+   {final Int  p = new Int(0);                                                                                          // Start at root
+    final Find f = new Find();                                                                                          // Find results
+    f.valid.clear();
+    new For(new Int(mnl()))                                                                                             // Step down from branch to branch
+     {void body(Int Index, Bool Continue)
+       {new If (isLeaf(p))                                                                                              // On a leaf
          {void Then()
-           {final Leaf l = (Leaf)q;
-            l.up(p.get()); l.upIndex(Q);                                                                                // Parent of leaf along find path
-            f.set(new Find(Key, l));
+           {f.set(Key, p);
            }
-          void Else()
-           {final Branch b = (Branch)q;
-            b.up(p.get());                                                                                              // Record parent branch
-            b.upIndex(If (Q.valid(), ()->Q.value(), ()->b.new Slot()));
-            p.set(b);                                                                                                   // Step down into non full branch
+          void Else()                                                                                                   // On a branch
+           {p.set(branch(p).stepDown(Key));                                                                             // Step down
+            Continue.set();                                                                                             // Continue search
            }
          };
-        C.set(f.valid()).flip();
        }
      };
-    if (f.valid().Flip().b())
-     {stop("Find fell off the end of tree after this many searches:", mnl());
-     }
-    return f.get();
+    f.valid.Flip().stop("Find fell off the end of tree after this many searches:", mnl());
+    return f;
    }
-*/
+
   void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
    {new If (isRootLeaf())
      {void Then()                                                                                                       //
@@ -305,8 +299,17 @@ class Tree extends Program                                                      
            }
          };
        }
-      void Else()
-       {
+      void Else()                                                                                                       // The root is a branch
+       {final Find f = find(Key);                                                                                       // Find the leaf for the key
+        final Leaf l = leaf(f.leaf);
+        new If (l.full())
+         {void Then()
+           {
+           }
+          void Else()                                                                                                   // The leaf we have found is not full
+           {l.insert(Key, Data);                                                                                   // Insert into non full leaf
+           }
+         };
        }
      };
    }
@@ -1276,6 +1279,7 @@ Leaf           size:   4
    3     4    44
 """);
     t.insert(t.new Int(5), t.new Int(55));
+    t.insert(t.new Int(6), t.new Int(66));
     t.check (t.dump(), """
 Tree memory dump
 Leaf   size   :  153
@@ -1297,7 +1301,11 @@ Leaf   at:   2 size:   4
    2     3    33
    3     4    44
    0     5    55
+   1     6    66
 """);
+
+    t.find(t.new Int(2)).leaf.ok(1);
+
     t.maxSteps = 99_999;
     t.execute();
    }
@@ -2232,7 +2240,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
+    test_insert(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
