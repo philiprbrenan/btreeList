@@ -240,23 +240,26 @@ class Tree extends Program                                                      
    {Bool        valid = new Bool();                                                                                     // Whether the search results are valid
     Int         key   = new Int();                                                                                      // Search key
     Int         leaf  = new Int();                                                                                      // Leaf that should contain the key
-    final Slots path  = new Slots(new Slots.Build().numberOfKeys(mnl()).parent(program()));                             // Slots acting as a stuck
+    Int        steps  = new Int();                                                                                      // Number of steps in path
+    final Int[]step   = new Int[mnl()];                                                                                 // Steps in the path
 
-    void start(Int Key)                                                                                                 // Start path
-     {valid.invalidate();
-      key  .set(Key);
-      path .initializeMemory();
+    void start(Int Key)                                                                                                 // Start the path by recording the key and clearing the steps
+     {valid.invalidate(); key.set(Key); steps.set(0);
+      for(int i = 0, N = mnl; i < N; ++i) step[i] = new Int(0);                                                          // Create steps
      }
-
-    void step(Int Branch)  {path.stuckPush(Branch);}                                                                    // Step along the path
-    void end (Int Leaf)    {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
+    void step (Int Branch) {new I() {void action() {step[steps.i()].set(Branch);}}; steps.inc();}                       // Step along the path
+    void end  (Int Leaf)   {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
 
     void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
     void validate()   {valid.set();}                                                                                    // Show that the results are valid
 
     public String toString()                                                                                            // Print the find results
      {final StringBuilder s = new StringBuilder();
-      s.append(""+path);
+      new ForCount(steps)
+       {void body(Int Index)
+         {new I() {void action() {s.append(""+step[Index.i()]);}};
+         }
+       };
       return ""+s;
      }
    }
