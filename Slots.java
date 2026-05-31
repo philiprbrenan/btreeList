@@ -654,6 +654,40 @@ class Slots extends Program                                                     
      };
    }
 
+//D4 Stuck                                                                                                              // The bitset can be made to operate like a fixed size stack - a stuck - as long as only stuck operations are used on it
+
+  private String slotsAsStuck(String Message)            {return "BitSet acting as a stuck "+Message;}                  // Useful component of an error message
+  private String slotsStuckAs(String Message)            {return Message+" a bitSet acting as a stuck";}                // Useful component of an error message
+  private String slotsAsStuck(String Message, Int Index) {return Message+" a bitSet acting as a stuck: "+Index;}        // Useful component of an error message
+
+  void stuckPush(Int Key)                                                                                               // Push a key onto a bitset acting as a stuck
+   {full()               .stop(slotsStuckAs("is full so cannot push"));
+    final Int t = usedKeys.firstZero();
+    getSlotToKeysInUse(t).stop(slotsAsStuck("Non stuck operation has been applied to"));
+    setSlotAndKey(t, t, Key);
+   }
+
+  Int stuckPop()                                                                                                        // Push a key onto a bitset acting as a stuck
+    {empty()              .stop(slotsAsStuck("is empty so cannot pop"));
+    final Int t = usedKeys.firstZero().dec();
+    final Int v = getSlotToKeyValue(t);
+    delSlotAndKey(t);
+    return v;
+   }
+
+  void stuckPut(Int Index, Int Key)                                                                                     // Overwrite an existing key or extend the stuck by one element if possible to accommodate a new key
+   {Index.lt(0)                   .stop(slotsAsStuck("Index cannot be less than zero when accessing", Index));
+    Index.ge(numberOfKeys())      .stop(slotsAsStuck("Index too large for put on",                    Index));
+    Index.gt(usedKeys.firstZero()).stop(slotsAsStuck("Index addressing beyond bounds of",             Index));
+    setSlotAndKey(Index, Index, Key);
+   }
+
+  Int stuckGet(Int Index)                                                                                               // Get the element at the indicated position in the bitset acting as a stuck
+   {Index.lt(0)                   .stop(slotsAsStuck("Index cannot be less than zero when accessing", Index));
+    Index.ge(usedKeys.firstZero()).stop(slotsAsStuck("Index addressing beyond bounds of",             Index));
+    return getSlotToKeyValue(Index);
+   }
+
 //D2 High level operations                                                                                              // Find, insert, delete values in the slots
 
   class Find                                                                                                            // Find result
@@ -2073,6 +2107,35 @@ keys     :    0   0   0   0   0   0   0
     test_clear(false);
    }
 
+  static void test_stuck(boolean Ex)
+   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+     {void slotsCode()
+       {initializeMemory();
+        stuckPush(new Int(11));
+        stuckPush(new Int(22));
+        stuckPush(new Int(33));
+        stuckPush(new Int(44));
+        stuckPut (new Int(1), new Int(2));
+        stuckPut (new Int(3), new Int(4));
+        stuckGet (new Int(0)).ok(11);
+        stuckGet (new Int(1)).ok(2);
+        stuckGet (new Int(2)).ok(33);
+        stuckGet (new Int(3)).ok(4);
+        stuckPop ().ok(4);
+        stuckPop ().ok(33);
+        stuckPop ().ok(2);
+        stuckPop ().ok(11);
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_stuck()
+   {test_stuck(true);
+    test_stuck(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
     test_locateNearestFreeSlotToKey();
@@ -2095,6 +2158,7 @@ keys     :    0   0   0   0   0   0   0
     test_splitRightOdd();
     test_splitLeftOdd();
     test_clear();
+    test_stuck();
    }
 
   static void newTests()                                                                                                // Tests being worked on
