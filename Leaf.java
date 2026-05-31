@@ -137,10 +137,37 @@ class Leaf extends Program implements Program.Locatable                         
    {final Leaf source = this;
     new ForCount (Start, End)
      {void body(Int Index)
-       {final Int s =  source.slots.getSlotToKeyIndex(Index);                                                            // Index the key to be copied out
+       {final Int s =  source.slots.getSlotToKeyIndex(Index);                                                           // Index the key to be copied out
         Target.data(s, source.data(s));                                                                                 // Copy the data value from the source leaf into the exact same position in the left leaf
        }
      };
+   }
+
+  Int splittingKey()                                                                                                    // Splitting key for a leaf
+   {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
+    final Int n = new Int(0);
+    final Int s = new Int();
+    new For(new Int(slots.numberOfSlotsToKeys()))                                                                        // Check each slot to find the middle slot  - acan this be done in log time using the bit tree?s
+     {void body(Int Index, Bool Continue)
+       {Continue.set();
+        new If (slots.getSlotToKeysInUse(Index))                                                                        // In use lot
+         {void Then()
+           {n.inc();
+            new If (n.eq(new Int(maxSize/2)))                                                                           // Middle in use slot
+             {void Then()                                                                                               // Left middle
+               {s.set(slots.getSlotToKeyValue(Index));                                                                  // Left middle value
+                final Int p = slots.usedSlotsToKeys.nextOne(Index);                                                     // Right middle index
+
+                s.add(slots.getSlotToKeyValue(p)).down();                                                                      // Right middle value
+say("AAAA", Index, p, s, slots.getSlotToKeyValue(Index), slots.getSlotToKeyValue(p), slots);
+                Continue.clear();                                                                                       // Processing completed
+               }
+             };
+           }
+         };
+       }
+     };
+    return s;                                                                                                           // Splitting key
    }
 
   void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
@@ -609,6 +636,7 @@ Leaf           size:   8
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
    // l.new I() {void action() {testStop(l);}};
+    l.splittingKey().ok(4);
     l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
@@ -668,7 +696,7 @@ Leaf           size:   8
         r.copy(l);
 
         l.clear();
-        l.data(new Int(1))  .ok(0);
+        l.data(new Int(1))  .ok(1);
         r.data(new Int(1))  .ok(A);
         execute();
        }
@@ -693,7 +721,8 @@ Leaf           size:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_find(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
