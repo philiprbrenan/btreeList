@@ -213,20 +213,51 @@ class Tree extends Program                                                      
    {Bool       valid = new Bool();                                                                                      // Whether the search results are valid
     Int        key   = new Int();                                                                                       // Search key
     Int        leaf  = new Int();                                                                                       // Leaf that should contain the key
-    Slots.Find foundSlot;                                                                                               // Search results within leaf
+//  Slots.Find foundSlot;                                                                                               // Search results within leaf
 
     void set(Int Key, Int Leaf)                                                                                         // Set the find results
      {valid     .set(true);
       key       .set(Key);
       leaf      .set(Leaf);
-      foundSlot = leaf(leaf).slots.find(Key);
+//    foundSlot = leaf(leaf).slots.find(Key);
      }
 
     public String toString()                                                                                            // Print the find results
      {final StringBuilder s = new StringBuilder();
       if (key       != null) s.append("Find Key : "+key+"\n");
 //    if (leaf      != null) s.append(leaf.print());
-      if (foundSlot != null) s.append(""+foundSlot);
+//      if (foundSlot != null) s.append(""+foundSlot);
+      final StringJoiner j = new StringJoiner(", ");
+//    for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
+//    if (leaf.up() != null) s.append("Path        : "+j+"\n");
+      return ""+s;
+     }
+   }
+
+  class Path                                                                                                            // Record the path from the root to the leaf that should contain a key
+   {Bool       valid = new Bool();                                                                                      // Whether the search results are valid
+    Int        key   = new Int();                                                                                       // Search key
+    Int        leaf  = new Int();                                                                                       // Leaf that should contain the key
+    final BitSet path = new BitSet(new BitSet.Build().bitSize(mnl).parent(program()));                                  // Bitset description
+
+    void start(Int Key)                                                                                         // Set the find results
+     {valid.set(true);
+      key  .set(Key);
+      path .initializeMemory();
+     }
+
+    void step(Int Leaf)                                                                                         // Set the find results
+     {path.valid     .set(true);
+      key       .set(Key);
+      leaf      .set(Leaf);
+//    foundSlot = leaf(leaf).slots.find(Key);
+     }
+
+    public String toString()                                                                                            // Print the find results
+     {final StringBuilder s = new StringBuilder();
+      if (key       != null) s.append("Find Key : "+key+"\n");
+//    if (leaf      != null) s.append(leaf.print());
+//      if (foundSlot != null) s.append(""+foundSlot);
       final StringJoiner j = new StringJoiner(", ");
 //    for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
 //    if (leaf.up() != null) s.append("Path        : "+j+"\n");
