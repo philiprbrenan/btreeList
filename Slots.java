@@ -657,13 +657,21 @@ class Slots extends Program                                                     
 //D2 High level operations                                                                                              // Find, insert, delete values in the slots
 
   class Find                                                                                                            // Find result
-   {final Int   slot = new Int() ;                                                                                      // Slot found
+   {final Int   slot = new Int();                                                                                       // Slot found
     final Bool lower = new Bool(), higher = new Bool(), equal = new Bool(), empty = new Bool();                         // Position of search item relative to the slot found
 
-    void set(Int Slot, Bool Lower, Bool Higher)
+    void set(Int Slot, Bool Lower, Bool Higher)                                                                         // Set a find result
      {slot.set(Slot); lower.set(Lower); higher.set(Higher);
       equal.set(lower.dup().and(higher));
       empty.set(lower.dup().or (higher).flip());
+     }
+
+    void copy(Find Source)                                                                                              // Copy a find result
+     {slot  .set(Source.slot);
+      lower .set(Source.lower);
+      higher.set(Source.higher);
+      equal .set(Source.equal);
+      empty .set(Source.empty);
      }
 
     public String toString()
