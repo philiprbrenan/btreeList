@@ -226,12 +226,9 @@ class Tree extends Program                                                      
 
     public String toString()                                                                                            // Print the find results
      {final StringBuilder s = new StringBuilder();
-      if (key       != null) s.append("Find Key : "+key+"\n");
-//    if (leaf      != null) s.append(leaf.print());
-//      if (foundSlot != null) s.append(""+foundSlot);
-      final StringJoiner j = new StringJoiner(", ");
-//    for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
-//    if (leaf.up() != null) s.append("Path        : "+j+"\n");
+      new I() {void action() {s.append("Find Key : "+key+"\n");}};
+      final StringBuilder l = leaf(leaf).print();
+      new I() {void action() {s.append(l);}};
       return ""+s;
      }
    }
@@ -241,7 +238,81 @@ class Tree extends Program                                                      
     Int  key   = new Int();                                                                                             // Search key
     Int  leaf  = new Int();                                                                                             // Leaf that should contain the key
     Int  step  = new Int();                                                                                             // Current step in the path
+    Int  split = new Int();                                                                                             // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
     final ByteMemory path = new ByteMemory(mnl()*ib());                                                                 // Memory for the paths - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+
+    Path(Int Key)
+     {final Int p = new Int(0);                                                                                         // Start at root
+      start(Key);                                                                                                       // Start the path
+      new For(new Int(mnl()))                                                                                           // Step down from branch to branch
+       {void body(Int Index, Bool Continue)
+         {new If (isLeaf(p))                                                                                            // On a leaf
+           {void Then()
+             {end(p);                                                                                                   // End the path on a leaf
+              validate();                                                                                               // Show the results are valid
+             }
+            void Else()                                                                                                 // On a branch
+             {step(p);                                                                                                  // Record a step along the path
+              p.set(branch(p).stepDown(Key));                                                                           // Step down
+              Continue.set();                                                                                           // Continue search
+             }
+           };
+         }
+       };
+      valid.Flip().stop("Find fell off the end of tree after this many searches:", mnl());
+     }
+
+    void splitPoint()
+     {final Int u = new Int();                                                                                          // This is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
+      new For(step)                                                                                                     // Number of steps in path
+       {void body(Int Index, Bool Continue)
+         {final Int i = step.sub(Index).Dec();
+          new If (branch(i).full())
+           {void Then()
+             {u.set(Index);                                                                                             // A full leaf
+              Continue.set();
+             }
+           };
+         }
+       };
+      split.copy(u);                                                                                                    // There might be no such split point
+     }
+
+    void splitDown()                                                                                                    // Split from the splitting top most splitting branch if such a branch exosts
+     {new If (split.valid())
+       {void Then()
+         {new If (split.eq(0))                                                                                          // Split the root branch
+           {void Then()
+             {final Int sk = splitRootBranch();
+              new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
+               {void Then()
+                 {path.putInt(new Int(0), branch(new Int(0)).data(new Int(0)));
+                 }
+                void Else()
+                 {path.putInt(new Int(0), branch(new Int(0)).top());
+                 }
+               };
+              split.Inc();                                                                                              // Step up over split root which no longer needs spliting
+             }
+           };
+
+          new ForCount(split, step)                                                                                     // Split full branches which are not the root in descending order so that there is always enough room in the parent branch to accept the splitting key
+           {void body(Int Index)
+             {final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
+              final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent whose child should be split
+              final Branch l = branch();
+              final Int   sk = c.splitLeft(l);
+              p.insert(sk, l.getLocation());                                                                            // The parent is known to have enough space to permit the insertion of the new child branch
+              new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
+               {void Then()
+                 {path.putInt(Index, c.getLocation());
+                 }                                                                                                      // Update path with diversion through left branch
+               };
+             }
+           };
+         }
+       };
+     }
 
     void start(Int Key)                                                                                                 // Start path
      {valid.invalidate();
@@ -270,56 +341,6 @@ class Tree extends Program                                                      
      }
    }
 
-  class Path2                                                                                                            // Record the path from the root to the leaf that should contain a key
-   {Bool        valid = new Bool();                                                                                     // Whether the search results are valid
-    Int         key   = new Int();                                                                                      // Search key
-    Int         leaf  = new Int();                                                                                      // Leaf that should contain the key
-    final Slots path  = new Slots(new Slots.Build().numberOfKeys(mnl()).parent(program()));                             // Slots acting as a stuck
-
-    void start(Int Key)                                                                                                 // Start path
-     {valid.invalidate();
-      key  .set(Key);
-      path .initializeMemory();
-     }
-
-    void step(Int Branch)  {path.stuckPush(Branch);}                                                                    // Step along the path
-    void end (Int Leaf)    {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
-
-    void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
-    void validate()   {valid.set();}                                                                                    // Show that the results are valid
-
-    public String toString()                                                                                            // Print the find results
-     {final StringBuilder s = new StringBuilder();
-      s.append(""+path);
-      return ""+s;
-     }
-   }
-/*
-
-  Find find(Key Key)
-   {final Slots r = root();                                                                                             // Root of tree
-    final Ref<Find> f = new Ref<>();                                                                                    // Find details result
-    new If (r != null)                                                                                                  // Non empty tree
-     {void Then()
-       {new If (r.isLeaf())                                                                                             // Leaf root
-         {void Then()
-           {final Leaf L = (Leaf)r;
-            L.up(null);
-            L.upIndex(r.new Slot());                                                                                    // Trace path taken to this leaf
-            f.set(new Find(Key, L));
-           }
-          void Else()
-           {final Branch R = (Branch)r;                                                                                 // Start search from root
-            R.up(null);
-            R.upIndex(r.new Slot());                                                                                    // Show that there is nothing above the root
-            f.set(find(Key, R));                                                                                        // Start search from root
-           }
-         };
-       }
-     };
-    return f.get();
-   }
-*/
   Find find(Int Key)                                                                                                    // Find the specified key in a leaf in the tree
    {final Int  p = new Int(0);                                                                                          // Start at root
     final Find f = new Find();                                                                                          // Find results
@@ -343,25 +364,7 @@ class Tree extends Program                                                      
    }
 
   Path path(Int Key)                                                                                                    // The path from the root to the leaf that should contain the specified key
-   {final Int  p = new Int(0);                                                                                          // Start at root
-    final Path f = new Path();                                                                                          // Find results
-    f.start(Key);                                                                                                       // Start the path
-    new For(new Int(mnl()))                                                                                             // Step down from branch to branch
-     {void body(Int Index, Bool Continue)
-       {new If (isLeaf(p))                                                                                              // On a leaf
-         {void Then()
-           {f.end(p);                                                                                                   // End the path on a leaf
-            f.validate();                                                                                               // Show the results are valid
-           }
-          void Else()                                                                                                   // On a branch
-           {f.step(p);                                                                                                  // Record a step along the path
-            p.set(branch(p).stepDown(Key));                                                                             // Step down
-            Continue.set();                                                                                             // Continue search
-           }
-         };
-       }
-     };
-    f.valid.Flip().stop("Find fell off the end of tree after this many searches:", mnl());
+   {final Path f = new Path(Key);                                                                                          // Find results
     return f;
    }
 
@@ -400,10 +403,41 @@ class Tree extends Program                                                      
    }
 
   private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full
-   {
+   {final Path p = path(Key);                                                                                           // Path from root to full leaf
+    p.splitPoint();                                                                                                     // The lowest branch in the tree that is above the leaf and full and all the lower branches down to the leaf are full
+    p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
+    final Branch P = branch(p.path.getInt(p.step.Dec()));                                                               // Parent branch of full leaf
+    final Leaf   r = leaf(p.leaf);                                                                                      // The full leaf into which the key should be inserted
+    final Leaf   l = leaf();
+    final Int   sk = r.splitLeft(l);
+    P.insert(sk, l.getLocation());
+    new If (Key.le(sk))                                                                                                 // Insert the key in the left leaf if it less than the splitting key
+     {void Then()
+       {l.insert(Key, Data);                                                                                            // Insert key in the left leaf
+       }
+      void Else()
+       {r.insert(Key, Data);                                                                                            // Insert key in the right leaf
+       }
+     };
    }
+
+  private Int splitRootBranch()                                                                                         // Split the root assuming that it is a branch
+   {final Branch R = branch(new Int(0));                                                                                // The root
+    if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root because it is not a branch");                   // Check that it is a branch
+    if (immediate() && R.full().Flip().b()) stop("Cannot split the root because it is not full");                       // Check that the root is full
+    final Branch l = branch();                                                                                          // New left branch
+    final Branch r = branch();                                                                                          // New right branch
+    l.copy(R);                                                                                                          // Copy the root into the left branch
+    final Int sk = l.splitRight(r);                                                                                     // Splitting key
+    R.clear();                                                                                                          // Clear the root
+    makeBranch(R.getLocation());                                                                                        // Mark the root as a branch
+    R.insert(sk, l.getLocation());                                                                                      // Insert the left branch below the spitting key
+    R.top(r.getLocation());                                                                                             // Insert right as top of root
+    return sk;                                                                                                          // Retun the splitting key
+   }
+
 /*
-     final Ref<Branch> p = new Ref<>((Branch)root());                                                                    // Start at root
+     final Ref<Branch> p = new Ref<>((Branch)root());                                                                   // Start at root
     new If (p.get().full())                                                                                             // Split full root branch
      {void Then()
        {final Branch P = p.get();
@@ -1400,6 +1434,35 @@ Path steps: 1
 0
 """);
 
+    t.insert(t.new Int(7), t.new Int(77));
+    t.check (t.dump(), """
+Tree memory dump
+Leaf   size   :  153
+Branch size   :  121
+Node   size   :  153
+MaxLeafSize   :    4
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    4
+Branch         size:   3 top:   2
+ Ref   Key  Data
+   0     2     1
+   1     4     3
+Leaf   at:   1 size:   4
+ Ref   Key  Data
+   0     1    11
+   1     2    22
+Leaf   at:   2 size:   4
+ Ref   Key  Data
+   0     5    55
+   1     6    66
+   2     7    77
+Leaf   at:   3 size:   4
+ Ref   Key  Data
+   2     3    33
+   3     4    44
+""");
+
     t.maxSteps = 99_999;
     t.execute();
    }
@@ -2334,7 +2397,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(false);
+    test_insert(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
