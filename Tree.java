@@ -256,8 +256,9 @@ class Tree extends Program                                                      
     void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
     void validate()   {valid.set();}                                                                                    // Show that the results are valid
 
-    public String toString()                                                                                            // Print the find results
+   StringBuilder print()                                                                                                // Print the find results
      {final StringBuilder s = new StringBuilder();
+      new I() {void action() {s.setLength(0); }};
       new I() {void action() {s.append("Path steps: "+step+"\n");}};
       new ForCount(step)
        {void body(Int Index)
@@ -265,7 +266,7 @@ class Tree extends Program                                                      
           new I() {void action() {s.append(""+v.i()+"\n");}};
          }
        };
-      return ""+s;
+      return s;
      }
    }
 
@@ -386,9 +387,9 @@ class Tree extends Program                                                      
       void Else()                                                                                                       // The root is a branch
        {final Find f = find(Key);                                                                                       // Find the leaf for the key
         final Leaf l = leaf(f.leaf);
-        new If (l.full())
+        new If (l.full())                                                                                               // The target leaf is full
          {void Then()
-           {
+           {insertFullLeaf(Key, Data);                                                                                  // Insert into a tree known to have a branch at the root and a full target leaf for the key
            }
           void Else()                                                                                                   // The leaf we have found is not full
            {l.insert(Key, Data);                                                                                        // Insert into non full leaf
@@ -396,6 +397,10 @@ class Tree extends Program                                                      
          };
        }
      };
+   }
+
+  private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full
+   {
    }
 /*
      final Ref<Branch> p = new Ref<>((Branch)root());                                                                    // Start at root
@@ -1389,7 +1394,8 @@ Leaf   at:   2 size:   4
 """);
 
     t.find(t.new Int(2)).leaf.ok(1);
-    ok(t.path(t.new Int(2)), """
+    final StringBuilder p = t.path(t.new Int(2)).print();
+    t.ok(()->""+p, """
 Path steps: 1
 0
 """);
@@ -2328,7 +2334,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(true);
+    test_insert(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
