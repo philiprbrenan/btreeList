@@ -151,8 +151,7 @@ class Tree extends Program                                                      
    }
 
   Leaf makeLeaf(Int Node)                                                                                               // Make a leaf from the specified node
-   {final Int  i = allocate();
-    final Leaf l = leaf(Node, false);
+   {final Leaf l = leaf(Node, false);
     l.initializeMemory();
     setType(Node, BranchOrLeaf.leaf);
     return l;
@@ -208,11 +207,6 @@ class Tree extends Program                                                      
     return s;
    }
 
-//  void dumpTree(String Expected)                                                                                        // Dump the tree
-//   {dump();
-//    new I() {void action() {ok(""+out,  Expected);}};
-//   }
-
   void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
    {new If (isRootLeaf())
      {void Then()                                                                                                       //
@@ -220,15 +214,15 @@ class Tree extends Program                                                      
         new If (R.full())
          {void Then()                                                                                                   // Split a full leaf
            {final Leaf l = leaf(), r = leaf();                                                                          // Child leaves of root branch
-            final Int sk = R.splittingKey();
             l.copy(R);                                                                                                  // Duplicate the root
-            l.splitRight(r);                                                                                            // Split the root leaf in two
-            final Branch b = makeBranch(R.at());                                                                        // Make the root into a branch
-            b.insert(sk, l.at());                                                                                       // Insert the left leaf
-            b.top(r.at());                                                                                              // The right leaf becomes top of the root branch
+            final Int   sk = l.splitRight(r);                                                                           // Split the root leaf in two
+            final Branch b = makeBranch(R.getLocation());                                                               // Make the root into a branch
+            b.insert(sk, l.getLocation());                                                                              // Insert the left leaf
+            b.top(r.getLocation());                                                                                     // The right leaf becomes top of the root branch
+            new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};                // Insert left or right leaf depending on key versus splitting key
            }
           void Else()                                                                                                   // Root is a non full leaf
-           {R.insert(Key, Data);
+           {R.insert(Key, Data);                                                                                        // Insert in non full root leaf
            }
          };
        }
@@ -1168,7 +1162,7 @@ NumberOfNodes :    4
 Allocations   :    0
 """);
 
-    t.maxSteps = 99999;
+    t.maxSteps = 99_999;
     t.execute();
    }
 
@@ -1179,7 +1173,6 @@ Allocations   :    0
 
   static void test_insert(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-
     t.insert(t.new Int(1), t.new Int(11));
     t.insert(t.new Int(2), t.new Int(22));
     t.insert(t.new Int(3), t.new Int(33));
@@ -1193,19 +1186,43 @@ MaxLeafSize   :    4
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
-   0 Leaf: size:   4
+Leaf           size:   4
  Ref   Key  Data
    0     1    11
    1     2    22
    2     3    33
    3     4    44
 """);
+    t.insert(t.new Int(5), t.new Int(55));
+    t.check (t.dump(), """
+Tree memory dump
+Leaf   size   :  153
+Branch size   :  121
+Node   size   :  153
+MaxLeafSize   :    4
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    3
+Branch         size:   3 top:   2
+ Ref   Key  Data
+   0     2     1
+Leaf   at:   1 size:   4
+ Ref   Key  Data
+   0     1    11
+   1     2    22
+Leaf   at:   2 size:   4
+ Ref   Key  Data
+   2     3    33
+   3     4    44
+   0     5    55
+""");
+    t.maxSteps = 99_999;
     t.execute();
    }
 
   static void test_insert()
    {          test_insert(true);
-//            test_insert(false);
+              test_insert(false);
    }
 
 /*
@@ -2133,8 +2150,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_tree();
-    //test_insert();
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
