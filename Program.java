@@ -385,9 +385,14 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : "undefined Bool: "+name;
      }
 
-    void stop(final Object...O)                                                                                         // Conditionally print a message and stop
+    void stop(final Object...O)                                                                                         // Conditionally print a message if true and stop
      {if (O.length == 0)               new I() {void action() {Test.stop(out());}};                                     // Print the contents of the output are if no parameters supplied and stop
       else new If (this) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                  // Print supplied message and stop
+     }
+
+    void elseStop(final Object...O)                                                                                     // Conditionally print a message if false and stop
+     {if (O.length == 0)                 new I() {void action() {Test.stop(out());}};                                   // Print the contents of the output are if no parameters supplied and stop
+      else new If (Flip()) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                // Print supplied message and stop
      }
 
     Bool say() {final Bool i = this; new I() {void action() {Test.say(i)          ;}}; return this;}                    // Say the boolean
