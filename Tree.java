@@ -207,6 +207,85 @@ class Tree extends Program                                                      
     return s;
    }
 
+//D1 Find, Insert, Delete                                                                                               // Find, insert and delete
+/*
+  class Find                                                                                                            // Find results
+   {final Leaf leaf;                                                                                                    // Leaf that should contain the key
+    final Int  key;                                                                                                      // Search key
+    final Slots.Locate locate;                                                                                          // Location details for key
+
+    Find(Key Key, Leaf Leaf)
+     {key    = Key;
+      leaf   = Leaf;
+      locate = Leaf.new Locate(Key);
+     }
+
+    public String toString()
+     {final StringBuilder s = new StringBuilder();
+      s.append("Find Key : "+key.i()+"\n");
+      if (leaf    != null) s.append(""+leaf);
+      if (locate  != null) s.append("Locate      : "+locate   +"\n");
+      final StringJoiner j = new StringJoiner(", ");
+      for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
+      if (leaf.up() != null) s.append("Path        : "+j+"\n");
+      return ""+s;
+     }
+   }
+
+  Find find(Key Key)
+   {final Slots r = root();                                                                                             // Root of tree
+    final Ref<Find> f = new Ref<>();                                                                                    // Find details result
+    new If (r != null)                                                                                                  // Non empty tree
+     {void Then()
+       {new If (r.isLeaf())                                                                                             // Leaf root
+         {void Then()
+           {final Leaf L = (Leaf)r;
+            L.up(null);
+            L.upIndex(r.new Slot());                                                                                    // Trace path taken to this leaf
+            f.set(new Find(Key, L));
+           }
+          void Else()
+           {final Branch R = (Branch)r;                                                                                 // Start search from root
+            R.up(null);
+            R.upIndex(r.new Slot());                                                                                    // Show that there is nothing above the root
+            f.set(find(Key, R));                                                                                        // Start search from root
+           }
+         };
+       }
+     };
+    return f.get();
+   }
+
+  Find find(Key Key, Branch Start)
+   {final Ref<Branch> p = new Ref<>(Start);                                                                             // Start at root
+    final Ref<Find>   f = new Ref<>();                                                                                  // Find the Key
+
+    new For(MaximumNumberOfLevels)                                                                                      // Step down from branch to branch splitting as we go
+     {void body(Int i, Bool C)
+       {final Slots.Slot Q = p.get().locateFirstGe(Key);
+        final Slots      q = p.get().child(Q);
+        new If (q.isLeaf())                                                                                             // Step down to a leaf
+         {void Then()
+           {final Leaf l = (Leaf)q;
+            l.up(p.get()); l.upIndex(Q);                                                                                // Parent of leaf along find path
+            f.set(new Find(Key, l));
+           }
+          void Else()
+           {final Branch b = (Branch)q;
+            b.up(p.get());                                                                                              // Record parent branch
+            b.upIndex(If (Q.valid(), ()->Q.value(), ()->b.new Slot()));
+            p.set(b);                                                                                                   // Step down into non full branch
+           }
+         };
+        C.set(f.valid()).flip();
+       }
+     };
+    if (f.valid().Flip().b())
+     {stop("Find fell off the end of tree after this many searches:", mnl());
+     }
+    return f.get();
+   }
+*/
   void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
    {new If (isRootLeaf())
      {void Then()                                                                                                       //
@@ -225,6 +304,9 @@ class Tree extends Program                                                      
            {R.insert(Key, Data);                                                                                        // Insert in non full root leaf
            }
          };
+       }
+      void Else()
+       {
        }
      };
    }
