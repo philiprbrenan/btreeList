@@ -245,9 +245,9 @@ class Tree extends Program                                                      
 
     void start(Int Key)                                                                                                 // Start the path by recording the key and clearing the steps
      {valid.invalidate(); key.set(Key); steps.set(0);
-      for(int i = 0, N = mnl; i < N; ++i) step[i] = new Int(0);                                                          // Create steps
+      for(int i = 0, N = mnl(); i < N; ++i) step[i] = new Int(0);                                                       // Create steps
      }
-    void step (Int Branch) {new I() {void action() {step[steps.i()].set(Branch);}}; steps.inc();}                       // Step along the path
+    void step (Int Branch) {new I() {void action() {step[steps.i()].ex(Int.Ops.set, Branch);}}; steps.inc();}           // Step along the path
     void end  (Int Leaf)   {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
 
     void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
