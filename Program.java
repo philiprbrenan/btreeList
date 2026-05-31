@@ -651,6 +651,8 @@ public class Program extends Test                                               
     final  int byteMemoryId  = ++byteMemoryIds;
     byte[]bytes;                                                                                                        // Bytes of main memory
 
+    ByteMemory(int Length) {bytes = new byte[Length];  clear(new Int(0), Length);}                                      // Create the memory
+
     private byte getByte(int I)                                                                                         // Get the value of a byte
      {if (tracing()) trace("memory get byte: "+I+" value:"+bytes[I]);                                                   // Trace
       return bytes[I];                                                                                                  // Get the value of a byte
@@ -661,14 +663,17 @@ public class Program extends Test                                               
       bytes[I] = J;                                                                                                     // Set the value of a byte
      }
 
-    ByteMemory(int Length) {bytes = new byte[Length];  clear(new Int(0), Length);}                                      // Create the memory
-
     ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
      {new I()
        {void action()
          {System.arraycopy(SourceMemory.bytes, SourceOffset.i(), bytes, TargetOffset.i(), Width);
          }
        };
+      return this;
+     }
+
+    ByteMemory clear()
+     {new I() {void action() {Arrays.fill(bytes, 0, bytes.length, (byte)0);}};
       return this;
      }
 
