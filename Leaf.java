@@ -145,47 +145,31 @@ class Leaf extends Program implements Program.Locatable                         
 
   Int splittingKey()                                                                                                    // Splitting key for a leaf
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
-    final Int n = new Int(0);
-    final Int s = new Int();
-    new For(new Int(slots.numberOfSlotsToKeys()))                                                                        // Check each slot to find the middle slot  - acan this be done in log time using the bit tree?s
-     {void body(Int Index, Bool Continue)
-       {Continue.set();
-        new If (slots.getSlotToKeysInUse(Index))                                                                        // In use lot
-         {void Then()
-           {n.inc();
-            new If (n.eq(new Int(maxSize/2)))                                                                           // Middle in use slot
-             {void Then()                                                                                               // Left middle
-               {s.set(slots.getSlotToKeyValue(Index));                                                                  // Left middle value
-                final Int p = slots.usedSlotsToKeys.nextOne(Index);                                                     // Right middle index
-
-                s.add(slots.getSlotToKeyValue(p)).down();                                                                      // Right middle value
-say("AAAA", Index, p, s, slots.getSlotToKeyValue(Index), slots.getSlotToKeyValue(p), slots);
-                Continue.clear();                                                                                       // Processing completed
-               }
-             };
-           }
-         };
-       }
-     };
-    return s;                                                                                                           // Splitting key
+    final Int l = slots.getSlotToKeyValue(new Int(maxSize/2-1));
+    final Int r = slots.getSlotToKeyValue(new Int(maxSize/2  ));
+    return l.add(r).down();                                                                                             // Splitting key
    }
 
-  void splitRight(Leaf Right)                                                                                           // Split a full leaf rightwards into a supplied leaf
+  Int splitRight(Leaf Right)                                                                                            // Split a full leaf rightwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
-    final Leaf left = this;
+    final Leaf left = this;                                                                                             // Current leaf is on the left
     left .compactLeft();                                                                                                // Compact source slots so we know where they are
+    final Int sk = left.splittingKey();                                                                                 // Splitting key
     Right.slots.clear();                                                                                                // Clear the target
     left.copySplitData(Right, new Int(maxSize/2), new Int(maxSize()));                                                  // Copy the data values associated with the slots
     left.slots.splitRightEven(Right.slots);                                                                             // Split the slots
+    return sk;                                                                                                          // Return the splitting key
    }
 
-  void splitLeft(Leaf Left)                                                                                             // Split a full leaf leftwards into a supplied leaf
+  Int splitLeft(Leaf Left)                                                                                              // Split a full leaf leftwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
-    final Leaf right = this;
+    final Leaf right = this;                                                                                            // Current leaf is on the right
     right.compactLeft();                                                                                                // Compact source slots so we know where they are
+    final Int sk = right.splittingKey();                                                                                // Splitting key
     Left .slots.clear();                                                                                                // Clear target
     right.copySplitData(Left, new Int(0), new Int(maxSize() / 2));                                                      // Copy the data values associated with the slots
     right.slots.splitLeftEven(Left.slots);                                                                              // Split the slots
+    return sk;                                                                                                          // Return the splitting key
    }
 
   private void copyMergeData(Leaf Source, Int Start, Int End)                                                           // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
@@ -464,7 +448,7 @@ Leaf           size:   8
    7     8    88
 """);
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex).parent(r));
-    r.splitLeft(l);
+    r.splitLeft(l).ok(4);
     //r.new I() {void action() {testStop(l);}};
     l.check(l.print(), """
 Leaf           size:   8
@@ -516,7 +500,7 @@ Leaf           size:   8
    7     8    88
 """);
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
-    l.splitRight(r);
+    l.splitRight(r).ok(4);
     l.check(l.print(), """
 Leaf           size:   8
  Ref   Key  Data
@@ -690,13 +674,13 @@ Leaf           size:   8
        {final Leaf l = this;
         l.initializeMemory();
         l.data(new Int(1), new Int(A));
-        l.data(new Int(1))  .ok(A);
+        l.data(new Int(1))     .ok(A);
         final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
         r.initializeMemory();
         r.copy(l);
 
         l.clear();
-        l.data(new Int(1))  .ok(1);
+        l.data(new Int(1))  .ok(0);
         r.data(new Int(1))  .ok(A);
         execute();
        }
@@ -721,8 +705,7 @@ Leaf           size:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_find(true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
