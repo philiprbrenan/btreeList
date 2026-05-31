@@ -237,29 +237,59 @@ class Tree extends Program                                                      
    }
 
   class Path                                                                                                            // Record the path from the root to the leaf that should contain a key
-   {Bool        valid = new Bool();                                                                                     // Whether the search results are valid
-    Int         key   = new Int();                                                                                      // Search key
-    Int         leaf  = new Int();                                                                                      // Leaf that should contain the key
-    Int        steps  = new Int();                                                                                      // Number of steps in path
-    final Int[]step   = new Int[mnl()];                                                                                 // Steps in the path
+   {Bool valid = new Bool();                                                                                            // Whether the search results are valid
+    Int  key   = new Int();                                                                                             // Search key
+    Int  leaf  = new Int();                                                                                             // Leaf that should contain the key
+    Int  step  = new Int();                                                                                             // Current step in the path
+    final ByteMemory path = new ByteMemory(mnl()*ib());                                                                 // Memory for the paths - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
 
-    void start(Int Key)                                                                                                 // Start the path by recording the key and clearing the steps
-     {valid.invalidate(); key.set(Key); steps.set(0);
-      for(int i = 0, N = mnl(); i < N; ++i) step[i] = new Int(0);                                                       // Create steps
+    void start(Int Key)                                                                                                 // Start path
+     {valid.invalidate();
+      key .set(Key);
+      step.set(0);
+      path.clear();
      }
-    void step (Int Branch) {new I() {void action() {step[steps.i()].ex(Int.Ops.set, Branch);}}; steps.inc();}           // Step along the path
-    void end  (Int Leaf)   {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
+
+    void step(Int Branch)  {path.putInt(step, Branch); step.inc();}                                                     // Step along the path
+    void end (Int Leaf)    {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
 
     void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
     void validate()   {valid.set();}                                                                                    // Show that the results are valid
 
     public String toString()                                                                                            // Print the find results
      {final StringBuilder s = new StringBuilder();
-      new ForCount(steps)
+      new I() {void action() {s.append("Path steps: "+step+"\n");}};
+      new ForCount(step)
        {void body(Int Index)
-         {new I() {void action() {s.append(""+step[Index.i()]);}};
+         {final Int v = path.getInt(Index);
+          new I() {void action() {s.append(""+v.i()+"\n");}};
          }
        };
+      return ""+s;
+     }
+   }
+
+  class Path2                                                                                                            // Record the path from the root to the leaf that should contain a key
+   {Bool        valid = new Bool();                                                                                     // Whether the search results are valid
+    Int         key   = new Int();                                                                                      // Search key
+    Int         leaf  = new Int();                                                                                      // Leaf that should contain the key
+    final Slots path  = new Slots(new Slots.Build().numberOfKeys(mnl()).parent(program()));                             // Slots acting as a stuck
+
+    void start(Int Key)                                                                                                 // Start path
+     {valid.invalidate();
+      key  .set(Key);
+      path .initializeMemory();
+     }
+
+    void step(Int Branch)  {path.stuckPush(Branch);}                                                                    // Step along the path
+    void end (Int Leaf)    {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
+
+    void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
+    void validate()   {valid.set();}                                                                                    // Show that the results are valid
+
+    public String toString()                                                                                            // Print the find results
+     {final StringBuilder s = new StringBuilder();
+      s.append(""+path);
       return ""+s;
      }
    }
@@ -354,8 +384,7 @@ class Tree extends Program                                                      
          };
        }
       void Else()                                                                                                       // The root is a branch
-       {
-        final Find f = find(Key);                                                                                       // Find the leaf for the key
+       {final Find f = find(Key);                                                                                       // Find the leaf for the key
         final Leaf l = leaf(f.leaf);
         new If (l.full())
          {void Then()
@@ -1360,7 +1389,10 @@ Leaf   at:   2 size:   4
 """);
 
     t.find(t.new Int(2)).leaf.ok(1);
-    say("AAAA", t.path(t.new Int(2)));
+    ok(t.path(t.new Int(2)), """
+Path steps: 1
+0
+""");
 
     t.maxSteps = 99_999;
     t.execute();
