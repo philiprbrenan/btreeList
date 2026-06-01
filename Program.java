@@ -702,15 +702,14 @@ public class Program extends Test                                               
      }
 
     Int getInt(Int I)                                                                                                   // Get the int at the indicated position
-     {final int N = Integer.BYTES;
-      final Int r = new Int();
+     {final Int r = new Int();
       new I()
        {void action()
          {final int p = I.i();
           final int a = getByte(p+0);
-          final int b = getByte(p+1);
-          final int c = getByte(p+2);
-          final int d = getByte(p+3);
+          final int b = getByte(p+1) <<  8;
+          final int c = getByte(p+2) << 16;
+          final int d = getByte(p+3) << 24;
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
          }
@@ -720,9 +719,9 @@ public class Program extends Test                                               
 
     int getInt(int I)                                                                                                   // Get the int at the indicated position
      {final int a = getByte(I+0);
-      final int b = getByte(I+1);
-      final int c = getByte(I+2);
-      final int d = getByte(I+3);
+      final int b = getByte(I+1) <<  8;
+      final int c = getByte(I+2) << 16;
+      final int d = getByte(I+3) << 24;
       return d | c | b | a;
      }
 
@@ -826,11 +825,11 @@ public class Program extends Test                                               
        {if (i % 16 == 0) s.append(f("%08d ", i));
 
         final byte b = bytes[i];
-        if (b != 0) s.append(f("%02X ", b)); else s.append("  ");
+        if (b != 0) s.append(f("%02X ", b)); else s.append("   ");
         if ((i + 1) % 16 == 0) s.append("\n");
        }
       if (bytes.length % 16 != 0) s.append("\n");
-      return ""+s;
+      return (""+s).replaceAll("\\s*\n", "\n");
      }
    }
 
@@ -1244,11 +1243,45 @@ public class Program extends Test                                               
     P.execute();
     ok(P.byteMemory.getBool(32), false);
     ok(P.byteMemory.getBool(33), true);
+    if (Ex) ok(P.byteMemory.dumpHex(), """
+Memory for program    1
+         00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+00000000 01          02
+""");
+    else ok(P.byteMemory.dumpHex(), """
+Memory for program    2
+         00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+00000000 01          02
+""");
    }
 
   static void test_byteMemory()
    {test_byteMemory(true);
     test_byteMemory(false);
+   }
+
+  static void test_byteMemoryNegative(boolean Ex)
+   {final Program P = new Program(new Build().immediate(Ex).memory(8))
+     {void code()
+       {final ByteMemory m = byteMemory;
+        new For(2)
+         {void body(Int Index, Bool Continue)
+           {m.putInt(new Int(0), new Int(-2));
+            m.putInt(new Int(4), new Int(-3));
+            m.getInt(new Int(0)).ok(-2);
+            m.getInt(new Int(4)).ok(-3);
+            ok(()->m.getInt( 0), -2);
+            ok(()->m.getInt( 4), -3);
+            execute();
+           }
+         };
+       }
+     };
+   }
+
+  static void test_byteMemoryNegative()
+   {test_byteMemoryNegative(true);
+    test_byteMemoryNegative(false);
    }
 
   static void test_byteMemoryRef(boolean Ex)
@@ -1334,12 +1367,13 @@ public class Program extends Test                                               
     test_bits();
     test_copy();
     test_byteMemory();
+    test_byteMemoryNegative();
     test_byteMemoryRef();
     test_invalidate();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
