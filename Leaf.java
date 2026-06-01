@@ -261,6 +261,8 @@ class Leaf extends Program implements Program.Locatable                         
     return s;
    }
 
+  public String toString() {return ""+print();}                                                                         // Print leaf
+
 //D1 Tests                                                                                                              // Tests
 
   static void test_leaf(boolean Ex)
