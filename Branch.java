@@ -313,6 +313,8 @@ class Branch extends Program implements Program.Locatable                       
     return s;
    }
 
+  public String toString() {return ""+print();}                                                                         // Print branch
+
 //D1 Tests                                                                                                              // Tests
 
   static void test_branch(boolean Ex)
