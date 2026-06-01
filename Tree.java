@@ -827,30 +827,30 @@ class Tree extends Program                                                      
     Traverse() {ex();}
 
     void ex()
-     {node.clear(); action.clear(); depth.set(0);                                                                       // Clear the branch stack. This has teh effect of requesting the first child of teh root be added tothe stack
-      new If (isBranch(new Int(0)))                                                                                     // Tree starts with a branch
+     {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has teh effect of requesting the first child of teh root be added tothe stack
+      new If (isBranch(new Int(ib(0))))                                                                                 // Tree starts with a branch
        {void Then()
-         {new For(numberOfNodes)                                                                                        // Each node in the tree
+         {new For(numberOfNodes*2)                                                                                      // Each node in the tree
            {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
              {new If (depth.ge(0))                                                                                      // Branches waiting to be processed
                {void Then()                                                                                             // Branches still present on branches stack
                  {Continue.set();                                                                                       // Continue as long as thr are brancehs to be processed
-                  new If (isBranch(node.getInt(depth)))                                                                 // Processing a branch
+                  new If (isBranch(node.getInt(ib(depth))))                                                             // Processing a branch
                    {void Then()
-                     {final Int    a = action.getInt(depth);                                                            // Action to be performed on branch
-                      final Branch b = branch(node.getInt(depth));                                                      // Branch on which action is to be performed
+                     {final Int    a = action.getInt(ib(depth));  a.name = "action";                                    // Action to be performed on branch
+                      final Branch b = branch(node.getInt(ib(depth)));                                                  // Branch on which action is to be performed
                       new If (a.eq(new Int(action_first)))                                                              // Add first child
                        {void Then()
                          {final Int c = b.slots.usedSlotsToKeys.firstOne();                                             // First child if any
                           new If (c.valid())                                                                            // Put first child on stack
                            {void Then()
-                             {action.putInt(depth, c);                                                                  // Current child
+                             {action.putInt(ib(depth), c);                                                              // Current child
                               depth.inc();                                                                              // Next child next time
-                              node.putInt(depth, b.slots.getSlotToKeyValue(c));                                         // First child
-                              action.putInt(depth, new Int(action_first));
+                              node.putInt(ib(depth), b.data(b.slots.getSlotToKeyIndex(c)));                             // First child
+                              action.putInt(ib(depth), new Int(action_first));
                              }
                             void Else()
-                             {action.putInt(depth, new Int(action_top));                                                // No children so move to top
+                             {action.putInt(ib(depth), new Int(action_top));                                            // No children so move to top
                              }
                            };
                          }
@@ -858,10 +858,10 @@ class Tree extends Program                                                      
                         void Else()
                          {new If (a.eq(action_top))                                                                     // Add top
                            {void Then()
-                             {action.putInt(depth, new Int(action_remove));                                             // Remove after processing top
+                             {action.putInt(ib(depth), new Int(action_remove));                                         // Remove after processing top
                               depth.inc();                                                                              // Next child next time
-                              node.putInt(depth, b.top());                                                              // Add top
-                              action.putInt(depth, new Int(action_first));                                              // First child if any
+                              node.putInt(ib(depth), b.top());                                                          // Add top
+                              action.putInt(ib(depth), new Int(action_first));                                          // First child if any
                              }
 
                             void Else()                                                                                 // Remove
@@ -871,19 +871,20 @@ class Tree extends Program                                                      
                                   branchBody(b, null);                                                                  // Processed top for this branch
                                  }
                                 void Else()                                                                             // Next child
-                                 {final Int c = action.getInt(depth);                                                   // Current child slot
+                                 {final Int c = action.getInt(ib(depth));                                               // Current child slot
                                   branchBody(b, c);                                                                     // Processed this slot in this branch
                                   final Int n = b.slots.usedSlotsToKeys.nextOne(c);                                     // Next child slot
                                   new If (n.valid())                                                                    // Valid next child
                                    {void Then()
-                                     {action.putInt(depth, n);                                                          // Current child
+                                     {action.putInt(ib(depth), n);                                                      // Current child
                                       depth.inc();                                                                      // Next child next time
-                                      node.putInt(depth, b.slots.getSlotToKeyValue(n));                                 // First child
-                                      branchBody(b, a);
-                                      action.putInt(depth, new Int(action_first));                                      // Request first child of added branch if it is a branch else it wil be processed as a leaf
+                                      final Int N = b.data(b.slots.getSlotToKeyIndex(n));                               // Next child index
+                                      node.putInt(ib(depth), N);                                                        // First child
+                                      action.putInt(ib(depth), new Int(action_first));                                  // Request first child of added branch if it is a branch else it wil be processed as a leaf
+                                      branchBody(b, n);                                                                 // Process action
                                      }
                                     void Else()                                                                         // No more children so move to top
-                                     {action.putInt(depth, new Int(action_top));
+                                     {action.putInt(ib(depth), new Int(action_top));
                                      }
                                    };
                                  }
@@ -894,7 +895,7 @@ class Tree extends Program                                                      
                        };
                      }
                     void Else()                                                                                         // Process a leaf from the stack
-                     {leafBody(leaf(node.getInt(depth)));                                                               // Process the referenced leaf
+                     {leafBody(leaf(node.getInt(ib(depth))));                                                               // Process the referenced leaf
                       depth.dec();
                      }
                    };
