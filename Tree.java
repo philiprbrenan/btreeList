@@ -15,6 +15,8 @@ class Tree extends Program                                                      
   final int           numberOfNodes;                                                                                    // Maximum number of leaves plus branches in this tree
   final int   maximumNumberOfLevels;                                                                                    // Maximum number of levels in tree to prevent runaways while debugging
   final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node may hold a branch or a leaf
+  final int linesToPrintABranch = 4;                                                                                    // The number of lines required to print a branch
+  final int maxPrintLevels      = 3;                                                                                    // The maximum number of levels to print - this avoids endless print loops when something goes wrong
   final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
   final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
@@ -437,85 +439,6 @@ class Tree extends Program                                                      
    }
 
 /*
-     final Ref<Branch> p = new Ref<>((Branch)root());                                                                   // Start at root
-    new If (p.get().full())                                                                                             // Split full root branch
-     {void Then()
-       {final Branch P = p.get();
-        p.set(p.get().split());
-        root(p.get());
-        P.free();
-       }
-     };
-
-    final Ref<Branch> q = new Ref<>(find(Key).leaf.up());                                                               // First branch above leaf
-    final Ref<Branch> b = new Ref<>(q.get().up());                                                                      // Parent of first branch above leaf
-    final Bool        D = new Bool().clear();                                                                           // First unfull branch above leaf has been located when set
-    new If (b.valid())
-     {void Then()
-       {new For(numberOfNodes)                                                                                          // Look for first unfull branch along path up from leaf
-         {void body(Int i, Bool C)                                                                                      // Found the first unfull branch
-           {new If (b.get().full().Flip())
-             {void Then()
-               {p.set(b.get()); D.set();
-               }
-              void Else()
-               {q.set(b.get());
-                b.set(q.get().up());
-               }
-             };
-            C.set(D).flip().and(()->{return b.valid();});
-           }
-         };
-       }
-     };
-
-    final Bool d = new Bool().clear();                                                                                  // Set when done
-    new For(MaximumNumberOfLevels)                                                                                      // Step down through the tree from branch to branch splitting as we go until we reach a leaf
-     {void body(Int i, Bool C)
-       {final Slots q = p.get().stepDown(Key);                                                                          // Step down
-        C.set();
-        new If (q.isLeaf())                                                                                             // Step down to a leaf
-         {void Then()
-           {final Leaf r = (Leaf)q;                                                                                     // We have reached a leaf
-            new If (r.full())                                                                                           // Split the leaf if it is full
-             {void Then()
-              {final Int  sk = r.splittingKey();                                                                        // Splitting key
-                final Leaf l = r.splitLeft();                                                                           // Right leaf split out of the leaf
-                p.get().insert(new Key(sk), l);                                                                         // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                final Leaf L = If (Key.value().le(sk), ()->l, ()->r);                                                   // Choose left or right leaf depending on key
-                L.insert(Key, Data);                                                                                    // Insert into left or right leaf which will now have space
-               }
-              void Else() {r.insert(Key, Data);}                                                                        // Leaf has sufficient space
-             };
-            mergeAlongPath(Key);                                                                                        // Merge along the path taken by the key to compress the tree
-            C.clear(); d.set();
-           }
-          void Else()                                                                                                   // Step down to a branch
-           {final Branch r = (Branch)q;
-            new If (r.full())                                                                                           // Split the leaf if it is full
-             {void Then()
-               {final Int         sk = r.splittingKey();                                                                // Splitting key
-                final Branch.Split s = r.splitLeft();                                                                   // Branch split out on right from
-                p.get().insert(new Key(sk), s.left);                                                                    // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                p.set(If (Key.value().le(sk), ()->s.left, ()->s.right));                                                // Traverse left or right
-               }
-              void Else() {p.set(r);}                                                                                   // Step down into non full branch
-             };
-           }
-         };
-       }
-     };
-    new If (d.Flip())                                                                                                   // Unable to insert
-     {void Then()
-       {stop("Insert fell off the end of tree after this many searches:", mnl());
-       }
-     };
-   }
-
-/*
-
-
-
 //D2 Low Level                                                                                                          // Low level operations
 
   void mergeAlongPath(Key Key)                                                                                          // Merge along the path from the specified key to the root
@@ -634,256 +557,6 @@ class Tree extends Program                                                      
      };
    }
 
-//D2 High Level                                                                                                         // High level operations: insert, find, delete
-
-  class Find                                                                                                            // Find results
-   {final Leaf leaf;                                                                                                    // Leaf that should contain the key
-    final Key key;                                                                                                      // Search key
-    final Slots.Locate locate;                                                                                          // Location details for key
-
-    Find(Key Key, Leaf Leaf)
-     {key    = Key;
-      leaf   = Leaf;
-      locate = Leaf.new Locate(Key);
-     }
-
-    public String toString()
-     {final StringBuilder s = new StringBuilder();
-      s.append("Find Key : "+key.i()+"\n");
-      if (leaf    != null) s.append(""+leaf);
-      if (locate  != null) s.append("Locate      : "+locate   +"\n");
-      final StringJoiner j = new StringJoiner(", ");
-      for(Branch p = leaf.up(); p != null; p = p.up()) j.add(""+p.name());
-      if (leaf.up() != null) s.append("Path        : "+j+"\n");
-      return ""+s;
-     }
-   }
-
-  Find find(Key Key)
-   {final Slots r = root();                                                                                             // Root of tree
-    final Ref<Find> f = new Ref<>();                                                                                    // Find details result
-    new If (r != null)                                                                                                  // Non empty tree
-     {void Then()
-       {new If (r.isLeaf())                                                                                             // Leaf root
-         {void Then()
-           {final Leaf L = (Leaf)r;
-            L.up(null);
-            L.upIndex(r.new Slot());                                                                                    // Trace path taken to this leaf
-            f.set(new Find(Key, L));
-           }
-          void Else()
-           {final Branch R = (Branch)r;                                                                                 // Start search from root
-            R.up(null);
-            R.upIndex(r.new Slot());                                                                                    // Show that there is nothing above the root
-            f.set(find(Key, R));                                                                                        // Start search from root
-           }
-         };
-       }
-     };
-    return f.get();
-   }
-
-  Find find(Key Key, Branch Start)
-   {final Ref<Branch> p = new Ref<>(Start);                                                                             // Start at root
-    final Ref<Find>   f = new Ref<>();                                                                                  // Find the Key
-
-    new For(MaximumNumberOfLevels)                                                                                      // Step down from branch to branch splitting as we go
-     {void body(Int i, Bool C)
-       {final Slots.Slot Q = p.get().locateFirstGe(Key);
-        final Slots      q = p.get().child(Q);
-        new If (q.isLeaf())                                                                                             // Step down to a leaf
-         {void Then()
-           {final Leaf l = (Leaf)q;
-            l.up(p.get()); l.upIndex(Q);                                                                                // Parent of leaf along find path
-            f.set(new Find(Key, l));
-           }
-          void Else()
-           {final Branch b = (Branch)q;
-            b.up(p.get());                                                                                              // Record parent branch
-            b.upIndex(If (Q.valid(), ()->Q.value(), ()->b.new Slot()));
-            p.set(b);                                                                                                   // Step down into non full branch
-           }
-         };
-        C.set(f.valid()).flip();
-       }
-     };
-    if (f.valid().Flip().b())
-     {stop("Find fell off the end of tree after this many searches:", mnl());
-     }
-    return f.get();
-   }
-
-  void insert(Key Key, Data Data)                                                                                       // Insert a key, data pair or update key data pair in the tree
-   {final Bool d = new Bool().clear();                                                                                  // Try various insertion methods until one succeeds
-    new If (root() == null)                                                                                             // Empty tree
-     {void Then()
-       {final Leaf l = new Leaf(); root(l);                                                                             // Root is a leaf
-        l.insert(Key, Data);                                                                                            // Insert into leaf root
-        d.set();
-       }
-      void Else()                                                                                                       // Localize optimized insert for non full leaf or full leaf under non full parent
-       {final Find F = find(Key);                                                                                       // See if key is already present
-        new If (F.locate.found())                                                                                       // Key already present so update data associated with the key
-         {void Then()
-           {final Leaf l = F.leaf;                                                                                      // Child leaf
-            l.data(F.locate, Data);                                                                                     // Update data
-            d.set();                                                                                                    // Success
-           }
-         };
-        new If (d.Flip().and(()->{return F.leaf.full().Flip();}))                                                       // Leaf not full so insert directly
-         {void Then()
-           {final Leaf l = F.leaf;                                                                                      // Child leaf
-            l.insert(Key, Data);                                                                                        // Insert key
-            d.set();                                                                                                    // Success
-           }
-         };
-        new If (d.Flip().and(()->{return new Bool(F.leaf.up() != null);}, ()->{return F.leaf.up().full().Flip();}))     // Leaf is full, parent branch is not full so we can split leaf
-         {void Then()
-           {final Branch b = F.leaf.up();                                                                               // Parent branch
-            final Leaf   r = F.leaf;
-            final Int   sk = r.splittingKey();
-            final Leaf   l = r.splitLeft();
-            b.insert(new Key(sk), l);                                                                                   // Insert new left leaf into leaf
-
-            new If (Key.value().le(sk))                                                                                 // Insert new key, data pair into left leaf or right leaf depending on key
-             {void Then()
-               {l.insert(Key, Data);
-               }
-              void Else()
-               {r.insert(Key, Data);
-               }
-             };
-
-            final Slots.Slot K = b.locateFirstGe(Key);                                                                  // Position of leaf in parent
-            new If (d.Flip().and(()->{return b.mergeLeftSibling (K);})) {void Then() {d.set();}};                       // Merge inserted leaf into prior leaf if possible
-            new If (d.Flip().and(()->{return b.mergeRightSibling(K);})) {void Then() {d.set();}};                       // Merge inserted leaf into next leaf if possible
-            new If (d.Flip().and(()->{return K.valid();}))                                                              // Some where in the body of the parent branch
-             {void Then()
-               {final Slots.Slot L = K.stepLeft(), R = K.stepRight();                                                   // Further left and right if possible
-                new If (d.Flip().and(()->{return L.valid();}, ()->{return b.mergeLeftSibling (L);})) {void Then() {d.set();}};
-                new If (d.Flip().and(()->{return R.valid();}, ()->{return b.mergeLeftSibling (R);})) {void Then() {d.set();}};
-                new If (d.Flip().and(()->{return R.valid();}, ()->{return b.mergeRightSibling(R);})) {void Then() {d.set();}};
-               }
-             };
-            new If (d.Flip().and(()->{return K.notValid();}))                                                           // Some where in the body of the parent branch
-             {void Then()
-               {final Slots.Slot L = b.locateLastUsedSlot();
-                new If (d.Flip().and(()->{return L.valid();}, ()->{return b.mergeLeftSibling(L);}))
-                 {void Then()
-                   {d.set();
-                   }
-                 };
-               }
-             };
-            new If (d.Flip())                                                                                           // Merge towards top
-             {void Then()
-               {b.mergeLeftSibling(b.new Slot());
-                d.set();
-               }
-             };
-           }
-         };
-       }
-     };
-
-    new If (d.Flip())
-     {void Then()
-       {new If (root().isLeaf() )                                                                                       // Leaf root
-         {void Then()
-           {final Leaf l = (Leaf)root();
-            new If (l.full().Flip())                                                                                    // Still space in leaf root
-             {void Then()
-               {l.insert(Key, Data);                                                                                    // Insert into leaf root
-                return;
-               }
-              void Else()
-               {final Branch b = l.split();                                                                             // Split full leaf root
-                root(b);
-                insertTree(Key, Data);                                                                                  // Insert a key, data pair or update key data pair in the tree
-               }
-             };
-           }
-          void Else() {insertTree(Key, Data);}                                                                          // Insert a key, data pair or update key data pair in the tree
-         };
-       }
-     };
-   }
-
-  void insertTree(Key Key, Data Data)                                                                                   // Insert a key, data pair or update key data pair in the tree
-   {final Ref<Branch> p = new Ref<>((Branch)root());                                                                    // Start at root
-    new If (p.get().full())                                                                                             // Split full root branch
-     {void Then()
-       {final Branch P = p.get();
-        p.set(p.get().split());
-        root(p.get());
-        P.free();
-       }
-     };
-
-    final Ref<Branch> q = new Ref<>(find(Key).leaf.up());                                                               // First branch above leaf
-    final Ref<Branch> b = new Ref<>(q.get().up());                                                                      // Parent of first branch above leaf
-    final Bool        D = new Bool().clear();                                                                           // First unfull branch above leaf has been located when set
-    new If (b.valid())
-     {void Then()
-       {new For(numberOfNodes)                                                                                          // Look for first unfull branch along path up from leaf
-         {void body(Int i, Bool C)                                                                                      // Found the first unfull branch
-           {new If (b.get().full().Flip())
-             {void Then()
-               {p.set(b.get()); D.set();
-               }
-              void Else()
-               {q.set(b.get());
-                b.set(q.get().up());
-               }
-             };
-            C.set(D).flip().and(()->{return b.valid();});
-           }
-         };
-       }
-     };
-
-    final Bool d = new Bool().clear();                                                                                  // Set when done
-    new For(MaximumNumberOfLevels)                                                                                      // Step down through the tree from branch to branch splitting as we go until we reach a leaf
-     {void body(Int i, Bool C)
-       {final Slots q = p.get().stepDown(Key);                                                                          // Step down
-        C.set();
-        new If (q.isLeaf())                                                                                             // Step down to a leaf
-         {void Then()
-           {final Leaf r = (Leaf)q;                                                                                     // We have reached a leaf
-            new If (r.full())                                                                                           // Split the leaf if it is full
-             {void Then()
-              {final Int  sk = r.splittingKey();                                                                        // Splitting key
-                final Leaf l = r.splitLeft();                                                                           // Right leaf split out of the leaf
-                p.get().insert(new Key(sk), l);                                                                         // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                final Leaf L = If (Key.value().le(sk), ()->l, ()->r);                                                   // Choose left or right leaf depending on key
-                L.insert(Key, Data);                                                                                    // Insert into left or right leaf which will now have space
-               }
-              void Else() {r.insert(Key, Data);}                                                                        // Leaf has sufficient space
-             };
-            mergeAlongPath(Key);                                                                                        // Merge along the path taken by the key to compress the tree
-            C.clear(); d.set();
-           }
-          void Else()                                                                                                   // Step down to a branch
-           {final Branch r = (Branch)q;
-            new If (r.full())                                                                                           // Split the leaf if it is full
-             {void Then()
-               {final Int         sk = r.splittingKey();                                                                // Splitting key
-                final Branch.Split s = r.splitLeft();                                                                   // Branch split out on right from
-                p.get().insert(new Key(sk), s.left);                                                                    // The parent is known not to be full so the insert will work.  We are inserting left so this works even if we are splitting top
-                p.set(If (Key.value().le(sk), ()->s.left, ()->s.right));                                                // Traverse left or right
-               }
-              void Else() {p.set(r);}                                                                                   // Step down into non full branch
-             };
-           }
-         };
-       }
-     };
-    new If (d.Flip())                                                                                                   // Unable to insert
-     {void Then()
-       {stop("Insert fell off the end of tree after this many searches:", mnl());
-       }
-     };
-   }
 
   void delete(Key Key)                                                                                                  // Delete a key from the tree
    {new If (root() != null)                                                                                             // The tree is not empty so there might be something to delete
@@ -1140,19 +813,129 @@ class Tree extends Program                                                      
      };
     return f.get();
    }
+*/
+//D2 Traverse the tree                                                                                                  // Traverse the tree in order
+
+  class Traverse                                                                                                        // Traverse the tree in order by maintaining a stack of outstanding actions
+   {final ByteMemory node   = new ByteMemory(ib(mnl()));                                                                // Memory to hold outstanding branches and leaves
+    final ByteMemory action = new ByteMemory(ib(mnl()));                                                                // Memory to hold requested action against each branch
+    final int action_first  = -1,                                                                                       // Add first child branch and update to slot of the first child. Process through the children indicated by positive values then go to top when there are no more children to process
+              action_top    = -2,                                                                                       // Add top goto remove
+              action_remove = -3;                                                                                       // Remove this branch from stack
+    final Int        depth  = new Int("depth");                                                                         // Depth we have reached in the tree. -1 indicates thatthe stack is empty.
+
+    Traverse() {ex();}
+
+    void ex()
+     {node.clear(); action.clear(); depth.set(0);                                                                       // Clear the branch stack. This has teh effect of requesting the first child of teh root be added tothe stack
+      new If (isBranch(new Int(0)))                                                                                     // Tree starts with a branch
+       {void Then()
+         {new For(numberOfNodes)                                                                                        // Each node in the tree
+           {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
+             {new If (depth.ge(0))                                                                                      // Branches waiting to be processed
+               {void Then()                                                                                             // Branches still present on branches stack
+                 {Continue.set();                                                                                       // Continue as long as thr are brancehs to be processed
+                  new If (isBranch(node.getInt(depth)))                                                                 // Processing a branch
+                   {void Then()
+                     {final Int    a = action.getInt(depth);                                                            // Action to be performed on branch
+                      final Branch b = branch(node.getInt(depth));                                                      // Branch on which action is to be performed
+                      new If (a.eq(new Int(action_first)))                                                              // Add first child
+                       {void Then()
+                         {final Int c = b.slots.usedSlotsToKeys.firstOne();                                             // First child if any
+                          new If (c.valid())                                                                            // Put first child on stack
+                           {void Then()
+                             {action.putInt(depth, c);                                                                  // Current child
+                              depth.inc();                                                                              // Next child next time
+                              node.putInt(depth, b.slots.getSlotToKeyValue(c));                                         // First child
+                              action.putInt(depth, new Int(action_first));
+                             }
+                            void Else()
+                             {action.putInt(depth, new Int(action_top));                                                // No children so move to top
+                             }
+                           };
+                         }
+
+                        void Else()
+                         {new If (a.eq(action_top))                                                                     // Add top
+                           {void Then()
+                             {action.putInt(depth, new Int(action_remove));                                             // Remove after processing top
+                              depth.inc();                                                                              // Next child next time
+                              node.putInt(depth, b.top());                                                              // Add top
+                              action.putInt(depth, new Int(action_first));                                              // First child if any
+                             }
+
+                            void Else()                                                                                 // Remove
+                             {new If (a.eq(action_remove))
+                               {void Then()
+                                 {depth.dec();                                                                          // Remove from stack uncovering previous item
+                                  branchBody(b, null);                                                                  // Processed top for this branch
+                                 }
+                                void Else()                                                                             // Next child
+                                 {final Int c = action.getInt(depth);                                                   // Current child slot
+                                  branchBody(b, c);                                                                     // Processed this slot in this branch
+                                  final Int n = b.slots.usedSlotsToKeys.nextOne(c);                                     // Next child slot
+                                  new If (n.valid())                                                                    // Valid next child
+                                   {void Then()
+                                     {action.putInt(depth, n);                                                          // Current child
+                                      depth.inc();                                                                      // Next child next time
+                                      node.putInt(depth, b.slots.getSlotToKeyValue(n));                                 // First child
+                                      branchBody(b, a);
+                                      action.putInt(depth, new Int(action_first));                                      // Request first child of added branch if it is a branch else it wil be processed as a leaf
+                                     }
+                                    void Else()                                                                         // No more children so move to top
+                                     {action.putInt(depth, new Int(action_top));
+                                     }
+                                   };
+                                 }
+                               };
+                             }
+                           };
+                         }
+                       };
+                     }
+                    void Else()                                                                                         // Process a leaf from the stack
+                     {leafBody(leaf(node.getInt(depth)));                                                               // Process the referenced leaf
+                      depth.dec();
+                     }
+                   };
+                 }
+               };
+             }
+           };
+         }
+        void Else()                                                                                                     // Process a tree consisting of a single leaf
+         {leafBody(leaf(new Int(0)));
+         }
+       };
+     }
+
+    void leafBody  (Leaf   L)           {}                                                                              // Override to process each leaf
+    void branchBody(Branch B, Int Slot) {}                                                                              // Override to process each branch
+   }
 
 //D2 Print                                                                                                              // Print the tree horizontally
 
-  final int linesToPrintABranch = 4;                                                                                    // The number of lines required to print a branch
-  final int maxPrintLevels      = 3;                                                                                    // The maximum number of levels to print - this avoids endless print loops when something goes wrong
+   StringBuilder print()                                                                                                // Print the tree
+    {final StringBuilder s = new StringBuilder();                                                                       // a
+     final Traverse t = new Traverse()
+      {void leafBody(Leaf L)
+        {s.append(L.print());
+        }
+       void BranchBody(Branch B, Int Slot)
+        {s.append("Slot:"+Slot+B.print());
+        }
+      };
+     say("AAAA", ""+s);
+     return s;
+    }
 
-  void printLeaf                                                                                                        // Print leaf horizontally
-   (Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details,
-    Branch Parent, Integer Index)
+/*
+  void printLeaf(Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details, Branch Parent, Integer Index)            // Print leaf horizontally
    {final Leaf L = Leaf;
     padStrings(P, level);
 
     final StringJoiner s = new StringJoiner(",");
+    s.clear();
     for (int i : range(L.numberOfSlots()))
      {final Slots.Slot l = L.new Slot(i);
       if (L.usedSlots(l).b()) s.add(""+L.keys(l).i());
@@ -1167,9 +950,7 @@ class Tree extends Program                                                      
     padStrings(P, level);
    }
 
-  void printBranch                                                                                                      // Print branch horizontally
-   (Branch Branch, Stack<StringBuilder>P, int level, boolean Details,
-    Branch Parent, Integer Index)                                                                                       // Details of parent which might differ from what is actually stored in the tree
+  void printBranch (Branch Branch, Stack<StringBuilder>P, int level, boolean Details, Branch Parent, Integer Index)     // Print branch horizontally
    {final Branch B = Branch;
     final int L = level * linesToPrintABranch;                                                                          // Size of branch
 
@@ -1257,7 +1038,7 @@ class Tree extends Program                                                      
     else        printBranch((Branch)root(), P, 0, Details, null, null);                                                 // Tree has one or more branches
     return printCollapsed(P);                                                                                           // Remove blank lines and add right fence
    }
-
+/*
   String db()                                                                                                           // Raw dump of memory used by the tree to assist with debugging
    {final StringBuilder s = new StringBuilder();
     final ByteBuffer b = memory.bytes;
@@ -1462,6 +1243,8 @@ Leaf   at:   3 size:   4
    2     3    33
    3     4    44
 """);
+
+    t.print();
 
     t.maxSteps = 99_999;
     t.execute();
