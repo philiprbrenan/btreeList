@@ -84,6 +84,22 @@ class Leaf extends Program implements Program.Locatable                         
 
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
+  Bool empty()   {return slots.empty();}                                                                                // Is the leaf empty
+  Bool full ()   {return slots.full ();}                                                                                // Is the leaf full
+  Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the leaf
+  int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the leaf
+
+  Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
+  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+
+  int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
+  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
+
+  void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
+  void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
+
+//D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
+
   Int find          (Int Key) {return getDataFromKey(Key, false);}                                                      // Get the data associated with a key
   Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
@@ -109,19 +125,8 @@ class Leaf extends Program implements Program.Locatable                         
     return i;
    }
 
-  Bool empty()   {return slots.empty();}                                                                                // Is the leaf empty
-  Bool full ()   {return slots.full ();}                                                                                // Is the leaf full
-  Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the leaf
-  int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the leaf
-
-  Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
-  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
-
-  int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
-  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
-
-  void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
-  void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
+//D1 Compact, Split, Merge                                                                                              // Compact, split or merge leaves
+//D2 Compact                                                                                                            // Compact a leaf to the left or right
 
   void compactLeft()                                                                                                    // Compact a leaf to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
@@ -142,6 +147,8 @@ class Leaf extends Program implements Program.Locatable                         
        }
      };
    }
+
+//D2 Split                                                                                                              // Split a full leaf into two leaves
 
   private Int splittingKey()                                                                                            // Splitting key for a leaf assuming that the leaf has been compacted to the right
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
@@ -171,6 +178,8 @@ class Leaf extends Program implements Program.Locatable                         
     right.slots.splitLeftEven(Left.slots);                                                                              // Split the slots
     return sk;                                                                                                          // Return the splitting key
    }
+
+//D2 Merge                                                                                                              // Merge two leaves
 
   private void copyMergeData(Leaf Source, Int Start, Int End)                                                           // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
@@ -222,7 +231,29 @@ class Leaf extends Program implements Program.Locatable                         
 
   int splitSize() {return maxSize()>>>1;}                                                                               // Size of a split leaf
 
-//D2 Print                                                                                                              // Print the leaf
+//D1 Iterate                                                                                                            // Iterate over a leaf
+
+  interface Iterator                                                                                                    // Process a key data, value in a leaf when iterating over the leaf
+   {void process(Int Key, Int Data);
+   }
+
+  void iterate(Iterator Iterator)                                                                                       // Iterate over a leaf
+   {final Int f = slots.usedSlotsToKeys.firstOne();
+    new If (f.valid())
+     {void Then()
+       {new For(maxSize)
+         {void body(Int Index, Bool Continue)
+           {final Int k = slots.getSlotToKeyValue(f), d = data(slots.getSlotToKeyIndex(f));
+            new I() {void action() {Iterator.process(k, d);}};
+            f.copy(slots.usedSlotsToKeys.nextOne(f));
+            Continue.set(f.valid());
+           }
+         };
+       }
+     };                                                                                //
+   }
+
+//D1 Print                                                                                                              // Print the leaf
 
   StringBuilder print()                                                                                                 // Print a leaf
    {final StringBuilder s = new StringBuilder();
@@ -302,7 +333,7 @@ Leaf           size:   8
     test_leaf(false);
    }
 
-  static void test_compactLeft(boolean  Ex)
+  static void test_compactLeft(boolean Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
@@ -336,7 +367,7 @@ Leaf           size:   8
     test_compactLeft(false);
    }
 
-  static void test_compactRight(boolean  Ex)
+  static void test_compactRight(boolean Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
@@ -425,7 +456,7 @@ Leaf           size:   8
     test_splitRight(false);
    }
 
-  static void test_splitLeft(boolean  Ex)
+  static void test_splitLeft(boolean Ex)
    {final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
     r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
@@ -543,7 +574,7 @@ Leaf           size:   8
     test_mergeRight(false);
    }
 
-  static void test_mergeLeft(boolean  Ex)
+  static void test_mergeLeft(boolean Ex)
    {final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex));
     r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
@@ -610,7 +641,7 @@ Leaf           size:   8
     test_mergeLeft(false);
    }
 
-  static void test_find(boolean  Ex)
+  static void test_find(boolean Ex)
    {final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
@@ -666,7 +697,55 @@ Leaf           size:   8
     test_find(false);
    }
 
-  static void test_fixedFields(boolean  Ex)
+  static void test_iterate(boolean Ex)
+   {new Leaf(new Build().maxSize(8).immediate(Ex))
+     {@Override void leafCode()
+       {initializeMemory();
+        insert(new Int(2), new Int(22));
+        insert(new Int(4), new Int(44));
+        insert(new Int(3), new Int(33));
+        insert(new Int(1), new Int(11));
+        insert(new Int(6), new Int(66));
+        insert(new Int(7), new Int(77));
+        insert(new Int(5), new Int(55));
+        insert(new Int(8), new Int(88));
+        check(print(), """
+Leaf           size:   8
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+   6     5    55
+   4     6    66
+   5     7    77
+   7     8    88
+""");
+        final StringBuilder s = new StringBuilder();
+        iterate((k,d)->s.append(f("%4d  %4d\n", k.i(), d.i())));
+        ok(()->s, """
+   1    11
+   2    22
+   3    33
+   4    44
+   5    55
+   6    66
+   7    77
+   8    88
+""");
+
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_iterate()
+   {test_iterate(true);
+    test_iterate(false);
+   }
+
+  static void test_fixedFields(boolean Ex)
    {final int A = 22, B = 21;
     final Leaf l = new Leaf(new Build().maxSize(8).immediate(Ex))
      {void leafCode()
@@ -700,6 +779,7 @@ Leaf           size:   8
     test_mergeRight();
     test_mergeLeft();
     test_find();
+    test_iterate();
     test_fixedFields();
    }
 
