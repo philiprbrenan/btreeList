@@ -158,6 +158,9 @@ public class Test                                                               
       format(DateTimeFormatter.ISO_INSTANT).replace(":", "-");
    }
 
+  static void clearStringBuilder(StringBuilder S) {S.setLength(0);}                                                     // Clear a StringBuilder as java seems to have forgotten to provide this useful method
+  static void chompStringBuilder(StringBuilder S) {S.setLength(S.length()-1);}                                          // Remove last character from a StringBuilder
+
 //D1 Numeric routines                                                                                                   // Numeric routines
 
   static int abs(int i) {return i >= 0 ? +i : -i;}                                                                      // Absolute value of integer
