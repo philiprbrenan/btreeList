@@ -2,6 +2,9 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Replace insert() in splitDown() recognizing that we already know where to do the insertion
+// Replace slots freeChain with a bitset
+// Make freechain part of the memory for a tree so that it can be written and reloaded along with the rest of the memory
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -304,7 +307,7 @@ class Tree extends Program                                                      
               final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent whose child should be split
               final Branch l = branch();
               final Int   sk = c.splitLeft(l);
-              p.insert(sk, l.getLocation());                                                                            // The parent is known to have enough space to permit the insertion of the new child branch
+              p.insert(sk, l.getLocation());                                                                            // The parent is known to have enough space to permit the insertion of the new child branch. Using insert() is inefficient as we already know the insertion point
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
                  {path.putInt(Index, c.getLocation());
@@ -814,11 +817,12 @@ class Tree extends Program                                                      
     return f.get();
    }
 */
+
 //D2 Traverse the tree                                                                                                  // Traverse the tree in order
 
   class Traverse                                                                                                        // Traverse the tree in order by maintaining a stack of outstanding actions
-   {final ByteMemory node   = new ByteMemory(ib(mnl()));                                                                // Memory to hold outstanding branches and leaves
-    final ByteMemory action = new ByteMemory(ib(mnl()));                                                                // Memory to hold requested action against each branch
+   {final ByteMemory node   = new ByteMemory(ib(2*mnl()));                                                              // Memory to hold outstanding branches and leaves
+    final ByteMemory action = new ByteMemory(ib(2*mnl()));                                                              // Memory to hold requested action against each branch
     final int action_first  = -1,                                                                                       // Add first child branch and update to slot of the first child. Process through the children indicated by positive values then go to top when there are no more children to process
               action_top    = -2,                                                                                       // Add top goto remove
               action_remove = -3;                                                                                       // Remove this branch from stack
@@ -826,13 +830,34 @@ class Tree extends Program                                                      
 
     Traverse() {ex();}
 
+    Int parentBranch(Int Index)                                                                                         // Index of parent branch
+     {final Int B = new Int(-1);
+      new If (Index.ge(0))
+       {void Then()
+         {B.set(node.getInt(ib(Index)));                                                                                // Index of parent branch
+         }
+       };
+      return B;
+     }
+
     void ex()
-     {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has teh effect of requesting the first child of teh root be added tothe stack
+     {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added tothe stack
+      final Tree tree = Tree.this;
+//say("AAAA0000", tree.dump());
       new If (isBranch(new Int(ib(0))))                                                                                 // Tree starts with a branch
        {void Then()
          {new For(numberOfNodes*2)                                                                                      // Each node in the tree
            {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
-             {new If (depth.ge(0))                                                                                      // Branches waiting to be processed
+             {
+//say("AAAA1111", depth);
+//new For(depth.Inc())
+// {void body(Int Index, Bool Continue)
+//   {say("AAAA2222", node.getInt(ib(Index)), action.getInt(ib(Index))); Continue.set();
+//   }
+// };
+
+
+               new If (depth.ge(0))                                                                                      // Branches waiting to be processed
                {void Then()                                                                                             // Branches still present on branches stack
                  {Continue.set();                                                                                       // Continue as long as thr are brancehs to be processed
                   new If (isBranch(node.getInt(ib(depth))))                                                             // Processing a branch
@@ -846,11 +871,13 @@ class Tree extends Program                                                      
                            {void Then()
                              {action.putInt(ib(depth), c);                                                              // Current child
                               depth.inc();                                                                              // Next child next time
-                              node.putInt(ib(depth), b.data(b.slots.getSlotToKeyIndex(c)));                             // First child
+                              node  .putInt(ib(depth), b.data(b.slots.getSlotToKeyIndex(c)));                           // First child
                               action.putInt(ib(depth), new Int(action_first));
+//say("AAAA3333", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                              }
                             void Else()
                              {action.putInt(ib(depth), new Int(action_top));                                            // No children so move to top
+//say("AAAA4444", depth, action.getInt(ib(depth)));
                              }
                            };
                          }
@@ -862,17 +889,21 @@ class Tree extends Program                                                      
                               depth.inc();                                                                              // Next child next time
                               node.putInt(ib(depth), b.top());                                                          // Add top
                               action.putInt(ib(depth), new Int(action_first));                                          // First child if any
+//say("AAAA4444", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                              }
 
                             void Else()                                                                                 // Remove
                              {new If (a.eq(action_remove))
                                {void Then()
                                  {depth.dec();                                                                          // Remove from stack uncovering previous item
-                                  branchBody(b, null);                                                                  // Processed top for this branch
+                                  final Int B = parentBranch(depth);                                                    // Parent branch
+                                  branchBody(b.getLocation(), new Int(-1), depth, B);                                   // Processed top for this branch
+//say("AAAA5555", depth);
                                  }
                                 void Else()                                                                             // Next child
                                  {final Int c = action.getInt(ib(depth));                                               // Current child slot
-                                  branchBody(b, c);                                                                     // Processed this slot in this branch
+                                  final Int B = parentBranch(depth.Dec());                                              // Parent branch
+                                  branchBody(b.getLocation(), c, depth, B);                                             // Processed this slot in this branch
                                   final Int n = b.slots.usedSlotsToKeys.nextOne(c);                                     // Next child slot
                                   new If (n.valid())                                                                    // Valid next child
                                    {void Then()
@@ -881,10 +912,12 @@ class Tree extends Program                                                      
                                       final Int N = b.data(b.slots.getSlotToKeyIndex(n));                               // Next child index
                                       node.putInt(ib(depth), N);                                                        // First child
                                       action.putInt(ib(depth), new Int(action_first));                                  // Request first child of added branch if it is a branch else it wil be processed as a leaf
-                                      branchBody(b, n);                                                                 // Process action
+                                      branchBody(b.getLocation(), n, depth, B);                                         // Process action
+//say("AAAA6666", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                                      }
                                     void Else()                                                                         // No more children so move to top
                                      {action.putInt(ib(depth), new Int(action_top));
+//say("AAAA7777", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                                      }
                                    };
                                  }
@@ -895,8 +928,12 @@ class Tree extends Program                                                      
                        };
                      }
                     void Else()                                                                                         // Process a leaf from the stack
-                     {leafBody(leaf(node.getInt(ib(depth))));                                                               // Process the referenced leaf
+                     {final Int b = parentBranch(depth.Dec());
+//say("AAAA8881", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
+                      leafBody(node.getInt(ib(depth)), action.getInt(ib(depth)), depth, b);                             // Process the referenced leaf
+//say("AAAA8882", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                       depth.dec();
+//say("AAAA8883", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                      }
                    };
                  }
@@ -905,30 +942,89 @@ class Tree extends Program                                                      
            };
          }
         void Else()                                                                                                     // Process a tree consisting of a single leaf
-         {leafBody(leaf(new Int(0)));
+         {leafBody(new Int(0), new Int(0), new Int(0), null);
+//say("AAAA9999", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
          }
        };
      }
 
-    void leafBody  (Leaf   L)           {}                                                                              // Override to process each leaf
-    void branchBody(Branch B, Int Slot) {}                                                                              // Override to process each branch
+    void leafBody  (Int L, Int Slot, Int Depth, Int Parent) {}                                                          // Override to process each leaf
+    void branchBody(Int B, Int Slot, Int Depth, Int Parent) {}                                                          // Override to process each branch
    }
 
 //D2 Print                                                                                                              // Print the tree horizontally
 
-   StringBuilder print()                                                                                                // Print the tree
-    {final StringBuilder s = new StringBuilder();                                                                       // a
-     final Traverse t = new Traverse()
-      {void leafBody(Leaf L)
-        {s.append(L.print());
-        }
-       void BranchBody(Branch B, Int Slot)
-        {s.append("Slot:"+Slot+B.print());
-        }
-      };
-     say("AAAA", ""+s);
-     return s;
+//            2                    4                     6                                              10                    12                    14                                            18                   20                    22                                           26                28                30                  |
+//           [20.0]               [20.2]                [20.4]                                         [13.0]                [13.2]                [13.4]                                        [11.0]               [11.2]                [11.4]                                       [2.0]             [2.2]             [2.4]                |
+//           (3, 5, 0)            (21, 5, 0)            (22, 5, 0){23}                                 (16, 5, 2)            (17, 5, 2)            (24, 5, 2){14}                                (7, 5, 4)            (12, 5, 4)            (15, 5, 4){6}                                (1, 5, *)         (8, 5, *)         (4, 5, *){9}         |
+//           (3, -1, 0)           (21, -1, 0)           (22, -1, 0)                                    (16, -1, 0)           (17, -1, 0)           (24, -1, 0)                                   (7, -1, 0)           (12, -1, 0)           (15, -1, 0)                                  (1, 5, 0)         (8, 5, 0)         (4, 5, 0)            |
+// 1,2                 3,4                   5,6                      7,8                   9,10                  11,12                 13,14                    15,16                 17,18               19,20                 21,22                   23,24                  25,26             27,28             29,30                31,32    |
+// (3, 20, 0)          (21, 20, 2)           (22, 20, 4)              (23, 20, *)           (16, 13, 0)           (17, 13, 2)           (24, 13, 4)              (14, 13, *)           (7, 11, 0)          (12, 11, 2)           (15, 11, 4)             (6, 11, *)             (1, 2, 0)         (8, 2, 2)         (4, 2, 4)            (9, 2, *)|
+
+  class Print                                                                                                           // Print the tree
+   {final Stack<StringBuilder> P = new Stack<>();
+
+    Print(boolean Details)
+     {new Traverse()
+       {void leafBody(Int L, Int Slot, Int Depth, Int Parent)
+         {final Leaf          l = leaf(L);
+          final StringBuilder s = new StringBuilder();
+          l.iterate((k,d)->s.append(k+","));
+          new I()                                                                                                       // Place in output area
+           {void action()
+             {final int d = Depth.i() * linesToPrintABranch;
+              pad(d+1);
+              chompStringBuilder(s);
+              P.elementAt(d).append(s);
+              if (Parent != null)
+               {final StringBuilder t = new StringBuilder();
+                t.append("("+L.i()+","+Parent.i()+","+Slot.i()+")");
+                P.elementAt(d+1).append(s);
+               }
+             }
+           };
+         }
+
+        void BranchBody(Int B, Int Slot, Int Depth, Int Parent)
+         {final Branch  b = branch(B);
+          final Int     n = Depth.mul(linesToPrintABranch);
+          final StringBuilder s = new StringBuilder();
+          b.iterate((k,d)->s.append(k+","));
+          new I()                                                                                                       // Place in output area
+           {void action()
+             {final int d = Depth.i() * linesToPrintABranch;
+              pad(d);
+              P.elementAt(d).append(s);
+             }
+           };
+         }
+
+        void pad(int level)                                                                                             // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
+         {for (int i = P.size(); i <= level; ++i) P.push(new StringBuilder());                                          // Make sure we have a full deck of strings
+          int m = 0;                                                                                                    // Maximum length
+          for (StringBuilder s : P) m = m < s.length() ? s.length() : m;                                                // Find maximum length
+          for (StringBuilder s : P) if (s.length() < m) s.append(" ".repeat(m - s.length()));                           // Pad each string to the length of the longest string
+         }
+       };
+
+     say("AAAA", printCollapsed());
     }
+
+    StringBuilder printCollapsed()                                                                                      // Collapse horizontal representation into a string
+     {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
+      new I()
+       {void action()
+         {for  (StringBuilder s : P)
+           {final String l = ""+s;
+            if (!l.isBlank()) t.append(l+"|\n");
+           }
+         }
+       };
+      return t;
+     }
+   }
+
+  StringBuilder print() {return new Print(true).printCollapsed();}                                                             // Print the tree
 
 /*
   void printLeaf(Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details, Branch Parent, Integer Index)            // Print leaf horizontally
@@ -1049,7 +1145,9 @@ class Tree extends Program                                                      
       for (int i : range(sizeOfNode))
        {if (c++ >= N) break;
         j.add(""+b.get(l * sizeOfNode + i));
-       }
+       }                                        //    final StringBuilder s = t.print();
+//say("AAAA9999", t.code.size());
+
       s.append(""+j+"\n");
       if (c >= N) break;
      }
@@ -1153,7 +1251,9 @@ Allocations   :    0
 """);
 
     t.maxSteps = 99_999;
-    t.execute();
+    t.execute();                                //    final StringBuilder s = t.print();
+//say("AAAA9999", t.code.size());
+
    }
 
   static void test_tree()
@@ -1163,11 +1263,16 @@ Allocations   :    0
 
   static void test_insert(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-    t.insert(t.new Int(1), t.new Int(11));
-    t.insert(t.new Int(2), t.new Int(22));
-    t.insert(t.new Int(3), t.new Int(33));
-    t.insert(t.new Int(4), t.new Int(44));
-    t.check (t.dump(), """
+    if (true)
+     {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAALAAAAFgAAACEAAAAsAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAAAAFgAAACEAAAAsAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAABAAAABgAAAAcAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAADi/XsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH8EBQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA3AAAAQgAAACEAAAAsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");                                                                                //
+     }
+    else
+     {t.new ForCount(t.new Int(1), t.new Int(5))
+       {void body(Int Index)
+         {t.insert(t.new Int(Index), t.new Int(Index.Mul(10).add(Index)));
+         }
+       };
+      t.check (t.dump(), """
 Tree memory dump
 Leaf   size   :  153
 Branch size   :  121
@@ -1183,8 +1288,16 @@ Leaf           size:   4
    2     3    33
    3     4    44
 """);
-    t.insert(t.new Int(5), t.new Int(55));
-    t.insert(t.new Int(6), t.new Int(66));
+
+      t.new ForCount(t.new Int(5), t.new Int(7))
+       {void body(Int Index)
+         {t.insert(t.new Int(Index), t.new Int(Index.Mul(10).add(Index)));
+         }
+       };
+
+      t.new I() {void action() {say("Dump\n", t.byteMemory.save());}};
+     }
+
     t.check (t.dump(), """
 Tree memory dump
 Leaf   size   :  153
@@ -1215,39 +1328,45 @@ Leaf   at:   2 size:   4
 Path steps: 1
 0
 """);
-
-    t.insert(t.new Int(7), t.new Int(77));
-    t.check (t.dump(), """
-Tree memory dump
-Leaf   size   :  153
-Branch size   :  121
-Node   size   :  153
-MaxLeafSize   :    4
-MaxBranchSize :    3
-NumberOfNodes :    4
-Allocations   :    4
-Branch         size:   3 top:   2
- Ref   Key  Data
-   0     2     1
-   1     4     3
-Leaf   at:   1 size:   4
- Ref   Key  Data
-   0     1    11
-   1     2    22
-Leaf   at:   2 size:   4
- Ref   Key  Data
-   0     5    55
-   1     6    66
-   2     7    77
-Leaf   at:   3 size:   4
- Ref   Key  Data
-   2     3    33
-   3     4    44
-""");
-
-    t.print();
-
+    final StringBuilder s = t.print();
+    t.new I() {void action() {say("XXXX", s); }};
+//
+//    t.insert(t.new Int(7), t.new Int(77));
+//say("AAAA7777", t.code.size());
+//    t.check (t.dump(), """
+//Tree memory dump
+//Leaf   size   :  153
+//Branch size   :  121
+//Node   size   :  153
+//MaxLeafSize   :    4
+//MaxBranchSize :    3
+//NumberOfNodes :    4
+//Allocations   :    4
+//Branch         size:   3 top:   2
+// Ref   Key  Data
+//   0     2     1
+//   1     4     3
+//Leaf   at:   1 size:   4
+// Ref   Key  Data
+//   0     1    11
+//   1     2    22
+//Leaf   at:   2 size:   4
+// Ref   Key  Data
+//   0     5    55
+//   1     6    66
+//   2     7    77
+//Leaf   at:   3 size:   4
+// Ref   Key  Data
+//   2     3    33
+//   3     4    44
+//""");
+//say("AAAA8888", t.code.size());
+//
+//    final StringBuilder s = t.print();
+//say("AAAA9999", t.code.size());
+//    t.new I() {void action() {say("AAAA", s); }};
     t.maxSteps = 99_999;
+say("BBBB", t.code.size());
     t.execute();
    }
 
@@ -2181,7 +2300,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(true);
+    test_insert(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
