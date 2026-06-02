@@ -838,7 +838,7 @@ public class Program extends Test                                               
 
     void reload(String Dump)
      {final byte[]decoded = Base64.getDecoder().decode(Dump);
-
+      if (decoded.length != bytes.length) stop("Mismatched reloaded memory length:", decoded.length, bytes.length);
       System.arraycopy(decoded, 0, bytes, 0, bytes.length);
      }
    }
