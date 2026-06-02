@@ -895,9 +895,16 @@ class Tree extends Program                                                      
                             void Else()                                                                                 // Remove
                              {new If (a.eq(action_remove))
                                {void Then()
-                                 {depth.dec();                                                                          // Remove from stack uncovering previous item
-                                  final Int B = parentBranch(depth);                                                    // Parent branch
-                                  branchBody(b.getLocation(), new Int(-1), depth, B);                                   // Processed top for this branch
+                                 {new If (depth.gt(0))                                                                  // Branch has a parent
+                                   {void Then()
+                                     {final Int B = parentBranch(depth);                                                // Parent branch
+                                      branchBody(b.getLocation(), new Int(-1), depth, B);                               // Process branch
+                                     }
+                                    void Else()                                                                         // Branch has no parent
+                                     {branchBody(b.getLocation(), null,        depth, null);
+                                     }
+                                   };
+                                  depth.dec();                                                                          // Remove from stack uncovering previous item
 //say("AAAA5555", depth);
                                  }
                                 void Else()                                                                             // Next child
@@ -966,7 +973,7 @@ class Tree extends Program                                                      
 
     Print(boolean Details)
      {new Traverse()
-       {void leafBody(Int L, Int Slot, Int Depth, Int Parent)
+       {@Override void leafBody(Int L, Int Slot, Int Depth, Int Parent)
          {final Leaf          l = leaf(L);
           final StringBuilder s = new StringBuilder();
           l.iterate((k,d)->s.append(k+","));
@@ -985,9 +992,8 @@ class Tree extends Program                                                      
            };
          }
 
-        void BranchBody(Int B, Int Slot, Int Depth, Int Parent)
+        @Override void branchBody(Int B, Int Slot, Int Depth, Int Parent)
          {final Branch  b = branch(B);
-          final Int     n = Depth.mul(linesToPrintABranch);
           final StringBuilder s = new StringBuilder();
           b.iterate((k,d)->s.append(k+","));
           new I()                                                                                                       // Place in output area
