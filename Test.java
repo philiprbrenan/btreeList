@@ -158,8 +158,8 @@ public class Test                                                               
       format(DateTimeFormatter.ISO_INSTANT).replace(":", "-");
    }
 
-  static void clearStringBuilder(StringBuilder S) {S.setLength(0);}                                                     // Clear a StringBuilder as java seems to have forgotten to provide this useful method
-  static void chompStringBuilder(StringBuilder S) {if (S.length() > 0) S.setLength(S.length()-1);}                      // Remove last character from a StringBuilder
+  static StringBuilder clearStringBuilder(StringBuilder S) {S.setLength(0);                               return S;}    // Clear a StringBuilder as java seems to have forgotten to provide this useful method
+  static StringBuilder chompStringBuilder(StringBuilder S) {if (S.length() > 0) S.setLength(S.length()-1);return S;}    // Remove last character from a StringBuilder
 
 //D1 Numeric routines                                                                                                   // Numeric routines
 
