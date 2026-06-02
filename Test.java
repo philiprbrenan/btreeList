@@ -159,7 +159,7 @@ public class Test                                                               
    }
 
   static void clearStringBuilder(StringBuilder S) {S.setLength(0);}                                                     // Clear a StringBuilder as java seems to have forgotten to provide this useful method
-  static void chompStringBuilder(StringBuilder S) {S.setLength(S.length()-1);}                                          // Remove last character from a StringBuilder
+  static void chompStringBuilder(StringBuilder S) {if (S.length() > 0) S.setLength(S.length()-1);}                      // Remove last character from a StringBuilder
 
 //D1 Numeric routines                                                                                                   // Numeric routines
 
