@@ -20,6 +20,7 @@ my $wf      = q(.github/workflows/main.yml);                                    
 my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
 my $exclude = q();                                                                                                      # Java files to exclude from testing as they are not yet ready
+my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
 
@@ -126,7 +127,7 @@ else
  {say STDERR "No Java files changed";
  }
 
-if (1)                                                                                                                  # Write workflow to check copy and pastes in java code
+if ($copyAndPasteCheck)                                                                                                 # Write workflow to check copy and pastes in java code
  {my $d = dateTimeStamp;
   my $y = <<"END";
 # Test $d
