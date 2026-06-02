@@ -88,6 +88,22 @@ class Branch extends Program implements Program.Locatable                       
 
   void branchCode() {}                                                                                                  // Override this method to provide code for testing the branch
 
+  Bool empty()   {return slots.empty();}                                                                                // Is the branch empty
+  Bool full ()   {return slots.full ();}                                                                                // Is the branch full
+  Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the branch
+  int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the branch
+
+  Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
+  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+
+  int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a branch
+  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
+
+  void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
+  void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
+
+//D1  Delete, find, insert                                                                                              // Delete, find, insert keys and data in a branch
+
   Int find  (Int Key) {return getDataFromKey(Key, false);}                                                              // Get the data associated with a key
   Int delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
@@ -145,19 +161,8 @@ class Branch extends Program implements Program.Locatable                       
     return i;
    }
 
-  Bool empty()   {return slots.empty();}                                                                                // Is the branch empty
-  Bool full ()   {return slots.full ();}                                                                                // Is the branch full
-  Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the branch
-  int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the branch
-
-  Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
-  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
-
-  int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a branch
-  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
-
-  void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
-  void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
+//D1 Compact, Split, Merge                                                                                              // Compact, split or merge branches
+//D2 Compact                                                                                                            // Compact a branch to the left or right
 
   void compactLeft()                                                                                                    // Compact a branch to the left
    {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
@@ -178,6 +183,8 @@ class Branch extends Program implements Program.Locatable                       
        }
      };
    }
+
+//D2 Split                                                                                                              // Split a full branch into two branches
 
   private Int splittingKey()                                                                                            // Splitting key for a branch assuming that the branch has been compacted to the right
    {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
@@ -208,6 +215,8 @@ class Branch extends Program implements Program.Locatable                       
     slots.splitLeftOdd(Left.slots);                                                                                     // Split the slots
     return sk;                                                                                                          // Splitting key
    }
+
+//D2 Merge                                                                                                              // Merge two leaves
 
   private void copyMergeData(Branch Source, Int Start, Int End)                                                         // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
@@ -270,7 +279,29 @@ class Branch extends Program implements Program.Locatable                       
 
   int splitSize() {return maxSize()>>>1;}                                                                               // Size of a split branch
 
-//D2 Print                                                                                                              // Print the branch
+//D1 Iterate                                                                                                            // Iterate over a branch
+
+  interface Iterator                                                                                                    // Process a key data, value in a branch when iterating over the branch
+   {void process(Int Key, Int Data);
+   }
+
+  void iterate(Iterator Iterator)                                                                                       // Iterate over a leaf
+   {final Int f = slots.usedSlotsToKeys.firstOne();
+    new If (f.valid())
+     {void Then()
+       {new For(maxSize)
+         {void body(Int Index, Bool Continue)
+           {final Int k = slots.getSlotToKeyValue(f), d = data(slots.getSlotToKeyIndex(f));
+            new I() {void action() {Iterator.process(k, d);}};
+            f.copy(slots.usedSlotsToKeys.nextOne(f));
+            Continue.set(f.valid());
+           }
+         };
+       }
+     };                                                                                //
+   }
+
+//D1 Print                                                                                                              // Print the branch
 
   StringBuilder print()                                                                                                 // Print the branch
    {final StringBuilder s = new StringBuilder();
@@ -354,7 +385,7 @@ Branch         size:   7 top:   0
     test_branch(false);
    }
 
-  static void test_compactLeft(boolean  Ex)
+  static void test_compactLeft(boolean Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
@@ -388,7 +419,7 @@ Branch         size:   7 top:   0
     test_compactLeft(false);
    }
 
-  static void test_compactRight(boolean  Ex)
+  static void test_compactRight(boolean Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
@@ -474,7 +505,7 @@ Branch         size:   7 top:  99
     test_splitRight(false);
    }
 
-  static void test_splitLeft(boolean  Ex)
+  static void test_splitLeft(boolean Ex)
    {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
     r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
@@ -587,7 +618,7 @@ Branch         size:   7 top:  99
     test_mergeRight(false);
    }
 
-  static void test_mergeLeft(boolean  Ex)
+  static void test_mergeLeft(boolean Ex)
    {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
     r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
@@ -650,7 +681,7 @@ Branch         size:   7 top:  99
     test_mergeLeft(false);
    }
 
-  static void test_find(boolean  Ex)
+  static void test_find(boolean Ex)
    {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
@@ -703,7 +734,53 @@ Branch         size:   7 top:   0
     test_find(false);
    }
 
-  static void test_fixedFields(boolean  Ex)
+  static void test_iterate(boolean Ex)
+   {new Branch(new Build().maxSize(7).immediate(Ex))
+     {@Override void branchCode()
+       {initializeMemory();
+        insert(new Int(2), new Int(22));
+        insert(new Int(4), new Int(44));
+        insert(new Int(3), new Int(33));
+        insert(new Int(1), new Int(11));
+        insert(new Int(6), new Int(66));
+        insert(new Int(7), new Int(77));
+        insert(new Int(5), new Int(55));
+        top(new Int(88));
+        check(print(), """
+Branch         size:   7 top:  88
+ Ref   Key  Data
+   3     1    11
+   0     2    22
+   2     3    33
+   1     4    44
+   6     5    55
+   4     6    66
+   5     7    77
+""");
+        final StringBuilder s = new StringBuilder();
+        iterate((k,d)->s.append(f("%4d  %4d\n", k.i(), d.i())));
+        ok(()->s, """
+   1    11
+   2    22
+   3    33
+   4    44
+   5    55
+   6    66
+   7    77
+""");
+
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_iterate()
+   {test_iterate(true);
+    test_iterate(false);
+   }
+
+  static void test_fixedFields(boolean Ex)
    {final int A = 22, B = 21;
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
      {void branchCode()
@@ -728,7 +805,7 @@ Branch         size:   7 top:   0
     test_fixedFields(false);
    }
 
-  static void test_stepDown(boolean  Ex)
+  static void test_stepDown(boolean Ex)
    {final int    N = 4;
     final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
      {void branchCode()
@@ -761,12 +838,14 @@ Branch         size:   7 top:   0
     test_mergeRight();
     test_mergeLeft();
     test_find();
+    test_iterate();
     test_fixedFields();
     test_stepDown();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_iterate();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
