@@ -895,15 +895,15 @@ class Tree extends Program                                                      
                             void Else()                                                                                 // Remove
                              {new If (a.eq(action_remove))
                                {void Then()
-                                 {new If (depth.gt(0))                                                                  // Branch has a parent
-                                   {void Then()
-                                     {final Int B = parentBranch(depth);                                                // Parent branch
-                                      branchBody(b.getLocation(), new Int(-1), depth, B);                               // Process branch
-                                     }
-                                    void Else()                                                                         // Branch has no parent
-                                     {branchBody(b.getLocation(), null,        depth, null);
-                                     }
-                                   };
+                                 {//new If (depth.gt(0))                                                                  // Branch has a parent
+                                  // {void Then()
+                                  //   {final Int B = parentBranch(depth);                                                // Parent branch
+                                  //    branchBody(b.getLocation(), new Int(-1), depth, B);                               // Process branch
+                                  //   }
+                                  //  void Else()                                                                         // Branch has no parent
+                                  //   {branchBody(b.getLocation(), null,        depth, null);
+                                  //   }
+                                  // };
                                   depth.dec();                                                                          // Remove from stack uncovering previous item
 //say("AAAA5555", depth);
                                  }
@@ -937,7 +937,9 @@ class Tree extends Program                                                      
                     void Else()                                                                                         // Process a leaf from the stack
                      {final Int b = parentBranch(depth.Dec());
 //say("AAAA8881", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
-                      leafBody(node.getInt(ib(depth)), action.getInt(ib(depth)), depth, b);                             // Process the referenced leaf
+                      final Slots s = branch(b).slots;
+new I() {void action() {say("DDDD", s); }};
+                      leafBody(node.getInt(ib(depth)), action.getInt(ib(depth.Dec())), depth, b);                             // Process the referenced leaf
 //say("AAAA8882", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                       depth.dec();
 //say("AAAA8883", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
@@ -973,54 +975,63 @@ class Tree extends Program                                                      
 
     Print(boolean Details)
      {new Traverse()
-       {@Override void leafBody(Int L, Int Slot, Int Depth, Int Parent)
+       {@Override void leafBody(Int L, Int Slot, Int Depth, Int Parent)                                                 // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(L);
           final StringBuilder s = new StringBuilder();
-          l.iterate((k,d)->s.append(k+","));
-          new I()                                                                                                       // Place in output area
+          new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
+          l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
+          new I()                                                                                                       // Print leaf keys
            {void action()
-             {final int d = Depth.i() * linesToPrintABranch;
-              pad(d+1);
-              chompStringBuilder(s);
-              P.elementAt(d).append(s);
-              if (Parent != null)
+             {final int d = Depth.i() * linesToPrintABranch;                                                            // Line in output
+              pad(d+1);                                                                                                 // Pad the output area so that all the lines have the same length
+              chompStringBuilder(s);                                                                                    // Remove trailing comma
+              P.elementAt(d).append(s);                                                                                 // Write first line
+              if (Details && Parent != null)                                                                            // Parent details if requested
                {final StringBuilder t = new StringBuilder();
-                t.append("("+L.i()+","+Parent.i()+","+Slot.i()+")");
-                P.elementAt(d+1).append(s);
+                final int lI = L.i(), lP = Parent.i(), lS = Slot.i();                                                   // Components of second line: leaf number, parent branch number, slot in parent
+                if (lS < 0) t.append("("+lI+","+lP+")"); else t.append("("+lI+","+lP+","+lS+")");                       // Format second line
+                P.elementAt(d+1).append(t);                                                                             // Write second line
                }
              }
            };
          }
 
-        @Override void branchBody(Int B, Int Slot, Int Depth, Int Parent)
+        @Override void branchBody(Int B, Int Slot, Int Depth, Int Parent)                                               // Print keys of branch and optionally the details of the parent and the children of this branch
          {final Branch  b = branch(B);
           final StringBuilder s = new StringBuilder();
-          b.iterate((k,d)->s.append(k+","));
+          new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
+          b.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Place in output area
            {void action()
              {final int d = Depth.i() * linesToPrintABranch;
-              pad(d);
-              P.elementAt(d).append(s);
+              pad(d);                                                                                                   // Pad the output area so that all the lines have the same length
+              chompStringBuilder(s);                                                                                    // Remove trailing comma
+              P.elementAt(d).append(s);                                                                                 // Write keys into output area
+              if (Details && Parent != null)                                                                            // Parent details if requested
+               {final StringBuilder t = new StringBuilder();
+                final int bI = B.i(), bP = Parent.i(), bS = Slot.i();                                                   // Components of second line: leaf number, parent branch number, slot in parent
+                if (bS < 0) t.append("("+bI+","+bP+")"); else t.append("("+bI+","+bP+","+bS+")");                       // Format second line
+                P.elementAt(d+1).append(t);                                                                             // Write second line
+               }
              }
            };
          }
-
-        void pad(int level)                                                                                             // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
-         {for (int i = P.size(); i <= level; ++i) P.push(new StringBuilder());                                          // Make sure we have a full deck of strings
-          int m = 0;                                                                                                    // Maximum length
-          for (StringBuilder s : P) m = m < s.length() ? s.length() : m;                                                // Find maximum length
-          for (StringBuilder s : P) if (s.length() < m) s.append(" ".repeat(m - s.length()));                           // Pad each string to the length of the longest string
-         }
        };
-
-     say("AAAA", printCollapsed());
     }
+
+    void pad(int level)                                                                                                 // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
+     {for (int i = P.size(); i <= level; ++i) P.push(clearStringBuilder(new StringBuilder()));                          // Make sure we have a full deck of strings
+      int m = 0;                                                                                                        // Maximum length
+      for (StringBuilder s : P) m = m < s.length() ? s.length() : m;                                                    // Find maximum length
+      for (StringBuilder s : P) if (s.length() < m) s.append(" ".repeat(m - s.length()));                               // Pad each string to the length of the longest string
+     }
 
     StringBuilder printCollapsed()                                                                                      // Collapse horizontal representation into a string
      {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
       new I()
        {void action()
-         {for  (StringBuilder s : P)
+         {pad(0);
+           for  (StringBuilder s : P)
            {final String l = ""+s;
             if (!l.isBlank()) t.append(l+"|\n");
            }
