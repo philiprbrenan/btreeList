@@ -750,8 +750,7 @@ class Slots extends Program                                                     
                  }
                 void Else()                                                                                             // Previous free slot has intervening occupied slots
                  {shiftDownOne (p.Inc(), s.Sub(p).Dec());                                                               // Shift block starting one slot above lower free slot and ending one slot below nearest found key slot
-                  final Int k = s.Dec();                                                                                // Insert at this index
-                  setSlotAndKey(P.set(k), K, Key);                                                                      // Insert key immediately below nearest found key slot in a slot freed by moving the previous block down one step
+                  setSlotAndKey(P.set(s.Dec()), K, Key);                                                                // Insert key immediately below nearest found key slot in a slot freed by moving the previous block down one step
                  }
                };
              }
