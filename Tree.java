@@ -332,7 +332,7 @@ class Tree extends Program                                                      
     void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
     void validate()   {valid.set();}                                                                                    // Show that the results are valid
 
-   StringBuilder print()                                                                                                // Print the find results
+    StringBuilder print()                                                                                               // Print the find results
      {final StringBuilder s = new StringBuilder();
       new I() {void action() {s.setLength(0); }};
       new I() {void action() {s.append("Path steps: "+step+"\n");}};
@@ -354,7 +354,7 @@ class Tree extends Program                                                      
      {void body(Int Index, Bool Continue)
        {new If (isLeaf(p))                                                                                              // On a leaf
          {void Then()
-           {f.set(p);                                                                                              // Show the key and matching leaf
+           {f.set(p);                                                                                                   // Show the key and matching leaf
             f.validate();                                                                                               // Show the results are valid
            }
           void Else()                                                                                                   // On a branch
@@ -2359,7 +2359,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(false);
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
