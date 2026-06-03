@@ -830,6 +830,34 @@ class Tree extends Program                                                      
 
     Traverse() {ex();}
 
+    class BranchContext                                                                                                 // The context of a branch shows its relationship to its parent and currently being processed child
+     {final Bool root       = new Bool();                                                                               // Whether the current branch is the root or not
+      final Int  parent     = new Int();                                                                                // If the current branch is not the root then the parent of the current branch
+      final Int  parentSlot = new Int();                                                                                // If the current branch is not the root then the slot through which this branch was reached
+      final Int  branch     = new Int();                                                                                // The current branch
+      final Int  branchSlot = new Int();                                                                                // The slot in the current branch that has just been processed
+      final Int  child      = new Int();                                                                                // The child of the current branch that has just been procssed
+      final Int  Depth      = new Int();                                                                                // Depth of this branch
+      BranchContext()                                                                                                   // Set the current context
+       {new If(depth.eq(0))                                                                                             // The branch currently being processed is the root
+         {void Then()
+           {root.set(true);
+            parent.set(0); parentSlot.set(0);
+            branch.set(0);
+           }
+          void Else()                                                                                                   // The branch being currenbtly processed is not the root
+           {root.set(false);                                                                                            // Not on the root
+            parent     .set(node  .getInt(ib(depth.Dec())));                                                            // Parent branch
+            parentSlot .set(action.getInt(ib(depth.Dec())));                                                            // Slot in parent whereby we reached the current branch
+            branch     .set(node  .getInt(ib(depth)));                                                                  // The current branch
+           }
+         };
+        branchSlot .set(action.getInt(ib(depth)));                                                                      // The slot in the current branch that ha just been processed
+        child      .set(node  .getInt(ib(depth.Inc())));                                                                // The leaf or branch below this branch that has just been processed
+        Depth      .set(depth);                                                                                         // The leaf or branch below this branch that has just been processed
+       }
+     }
+
     Int parentBranch(Int Index)                                                                                         // Index of parent branch
      {final Int B = new Int(-1);
       new If (Index.ge(0))
@@ -908,10 +936,9 @@ class Tree extends Program                                                      
 //say("AAAA5555", depth);
                                  }
                                 void Else()                                                                             // Next child
-                                 {final Int c = action.getInt(ib(depth));                                               // Current child slot
-                                  final Int B = parentBranch(depth.Dec());                                              // Parent branch
-                                  branchBody(b.getLocation(), c, depth, B);                                             // Processed this slot in this branch
-                                  final Int n = b.slots.usedSlotsToKeys.nextOne(c);                                     // Next child slot
+                                 {final BranchContext bc = new BranchContext();                                         // Context of current brnach
+                                  branchBody(bc);                                                                       // Processed this slot in this branch
+                                  final Int n = b.slots.usedSlotsToKeys.nextOne(bc.branchSlot);                         // Next child slot
                                   new If (n.valid())                                                                    // Valid next child
                                    {void Then()
                                      {action.putInt(ib(depth), n);                                                      // Current child
@@ -919,7 +946,7 @@ class Tree extends Program                                                      
                                       final Int N = b.data(b.slots.getSlotToKeyIndex(n));                               // Next child index
                                       node.putInt(ib(depth), N);                                                        // First child
                                       action.putInt(ib(depth), new Int(action_first));                                  // Request first child of added branch if it is a branch else it wil be processed as a leaf
-                                      branchBody(b.getLocation(), n, depth, B);                                         // Process action
+                                      //branchBody(b.getLocation(), n, depth, B);                                       // Process action
 //say("AAAA6666", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                                      }
                                     void Else()                                                                         // No more children so move to top
@@ -938,7 +965,6 @@ class Tree extends Program                                                      
                      {final Int b = parentBranch(depth.Dec());
 //say("AAAA8881", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                       final Slots s = branch(b).slots;
-new I() {void action() {say("DDDD", s); }};
                       leafBody(node.getInt(ib(depth)), action.getInt(ib(depth.Dec())), depth, b);                             // Process the referenced leaf
 //say("AAAA8882", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                       depth.dec();
@@ -958,7 +984,7 @@ new I() {void action() {say("DDDD", s); }};
      }
 
     void leafBody  (Int L, Int Slot, Int Depth, Int Parent) {}                                                          // Override to process each leaf
-    void branchBody(Int B, Int Slot, Int Depth, Int Parent) {}                                                          // Override to process each branch
+    void branchBody(BranchContext BC) {}                                                                                // Override to process each branch
    }
 
 //D2 Print                                                                                                              // Print the tree horizontally
@@ -973,7 +999,7 @@ new I() {void action() {say("DDDD", s); }};
   class Print                                                                                                           // Print the tree
    {final Stack<StringBuilder> P = new Stack<>();
 
-    Print(boolean Details)
+    Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
      {new Traverse()
        {@Override void leafBody(Int L, Int Slot, Int Depth, Int Parent)                                                 // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(L);
@@ -986,7 +1012,7 @@ new I() {void action() {say("DDDD", s); }};
               pad(d+1);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(s);                                                                                 // Write first line
-              if (Details && Parent != null)                                                                            // Parent details if requested
+              if (Context && Parent != null)                                                                            // Parent details if requested
                {final StringBuilder t = new StringBuilder();
                 final int lI = L.i(), lP = Parent.i(), lS = Slot.i();                                                   // Components of second line: leaf number, parent branch number, slot in parent
                 if (lS < 0) t.append("("+lI+","+lP+")"); else t.append("("+lI+","+lP+","+lS+")");                       // Format second line
@@ -996,28 +1022,37 @@ new I() {void action() {say("DDDD", s); }};
            };
          }
 
-        @Override void branchBody(Int B, Int Slot, Int Depth, Int Parent)                                               // Print keys of branch and optionally the details of the parent and the children of this branch
-         {final Branch  b = branch(B);
+        @Override void branchBody(BranchContext BC)                                                                     // Print keys of branch and optionally the details of the parent and the children of this branch
+         {final Branch        b = branch(BC.branch);
           final StringBuilder s = new StringBuilder();
           new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
           b.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Place in output area
            {void action()
-             {final int d = Depth.i() * linesToPrintABranch;
-              pad(d);                                                                                                   // Pad the output area so that all the lines have the same length
+             {final int d = BC.Depth.i() * linesToPrintABranch;
+              pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(s);                                                                                 // Write keys into output area
-              if (Details && Parent != null)                                                                            // Parent details if requested
-               {final StringBuilder t = new StringBuilder();
-                final int bI = B.i(), bP = Parent.i(), bS = Slot.i();                                                   // Components of second line: leaf number, parent branch number, slot in parent
-                if (bS < 0) t.append("("+bI+","+bP+")"); else t.append("("+bI+","+bP+","+bS+")");                       // Format second line
-                P.elementAt(d+1).append(t);                                                                             // Write second line
+
+              if (Context)                                                                                              // Context requested
+               {if (BC.Depth.i() == 0)                                                                                  // Parent details if requested and there is a parent
+                 {P.elementAt(d+1).append("("+BC.branch.i()+")");                                                       // Format second line for a root
+                 }
+                else
+                 {final int bI = BC.branch.i(), bP = BC.parent.i(), bS = BC.parentSlot.i();                             // Components of second line: leaf number, parent branch number, slot in parent
+                  P.elementAt(d+1).append("("+bI+","+bP+","+bS+")");                                                    // Format second line for a non root branch showing the parent of the branch and thw slot in the parent this branch came from
+                 }
+
+                if (true)                                                                                               // Write directions to child as second line under branch
+                 {final int bS = BC.branchSlot.i(), bC = BC.child.i();                                                  // Components of second line: branch slot, child index
+                  P.elementAt(d+2).append("["+bC+","+bS+")");                                                           // Write second line
+                 }
                }
              }
            };
          }
        };
-    }
+     }
 
     void pad(int level)                                                                                                 // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
      {for (int i = P.size(); i <= level; ++i) P.push(clearStringBuilder(new StringBuilder()));                          // Make sure we have a full deck of strings
@@ -1342,8 +1377,13 @@ Leaf   at:   2 size:   4
 """);
 
     final StringBuilder s = t.print();
-    t.new I() {void action() {say("XXXX", s); }};
-
+    t.ok(()->s, """
+       2           |
+       (0)         |
+       [1,3)       |
+1,2         3,4,5,6|
+(1,0,3)     (2,0)  |
+""");
 //    t.find(t.new Int(2)).leaf.ok(1);
 //    final StringBuilder p = t.path(t.new Int(2)).print();
 //    t.ok(()->""+p, """
