@@ -695,7 +695,7 @@ class Slots extends Program                                                     
     final Bool lower = new Bool(), higher = new Bool(), equal = new Bool(), empty = new Bool();                         // Position of search item relative to the slot found
 
     void set(Int Slot, Bool Lower, Bool Higher)                                                                         // Set a find result
-     {slot.set(Slot); lower.set(Lower); higher.set(Higher);
+     {slot .set(Slot); lower.set(Lower); higher.set(Higher);
       equal.set(lower.dup().and(higher));
       empty.set(lower.dup().or (higher).flip());
      }
@@ -706,6 +706,69 @@ class Slots extends Program                                                     
       higher.set(Source.higher);
       equal .set(Source.equal);
       empty .set(Source.empty);
+     }
+
+    Int insert(Int Key)                                                                                                 // Insert a key into the slots in light of the find result and return the slot chosen
+     {final Int  P = new Int();                                                                                         // The slot into which the key was inserted
+      final Find f = this;                                                                                              // Find nearest existing key in slots
+      final Int  K = usedKeys.firstZero();                                                                              // Position for key in key slots
+      final Int  s = new Int(f.slot);                                                                                   // Nearest existing key slot
+      final Bool d = new Bool();                                                                                        // Nearest free slot is below - true or above - false relative to the nearest existing key
+      final Int  p = locateNearestFreeSlotToKey(s, f.lower, d);                                                         // Absolute position of nearest free slot
+
+      new If (s.Sub(p).abs().ge(redistributionWidth()))                                                                 // Redistribution width
+       {void Then()
+         {redistribute();                                                                                               // Redistribute slots
+          K.set(usedKeys.firstZero());                                                                                  // Position for key in key slots
+          final Find F = find(Key);                                                                                     // Locate key in redistributed slots
+          f.set(F.slot, F.lower, F.higher);                                                                             // Set find details as we do not have references available
+          s.set(new Int(f.slot));                                                                                       // Nearest existing key slot
+          p.set(locateNearestFreeSlotToKey(s, f.lower, d));                                                             // Absolute position of nearest free slot
+         }
+       };
+
+      new If (d)                                                                                                        // Free slot is lower than nearest found key slot
+       {void Then()
+         {new If (f.lower)                                                                                              // Insert key lower than nearest found key slot
+           {void Then()
+             {new If (s.Sub(p).eq(1))                                                                                   // Previous slot is free so no movement required
+               {void Then()                                                                                             // Insert key immediately below nearest found key slot in an already empty slot
+                 {setSlotAndKey(P.set(s.Dec()), K, Key);
+                 }
+                void Else()                                                                                             // Previous free slot has intervening occupied slots
+                 {shiftDownOne (p.Inc(), s.Sub(p).Dec());                                                               // Shift block starting one slot above lower free slot and ending one slot below nearest found key slot
+                  final Int k = s.Dec();                                                                                // Insert at this index
+                  setSlotAndKey(P.set(k), K, Key);                                                                      // Insert key immediately below nearest found key slot in a slot freed by moving the previous block down one step
+                 }
+               };
+             }
+            void Else()                                                                                                 // Insert above nearest found key slot
+             {shiftDownOne(p.Inc(), s.Sub(p));                                                                          // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
+              setSlotAndKey(P.set(s), K, Key);                                                                          // Insert key in nearest found key slot
+             }
+           };
+         }
+        void Else()                                                                                                     // Nearest free slot is higher than nearest found key slot
+         {new If (f.higher)                                                                                             // Insert higher than nearest found key slot
+           {void Then()
+             {new If (p.Sub(s).eq(1))                                                                                   // Next slot is free so no movement required
+               {void Then() {setSlotAndKey(P.set(p), K, Key);}                                                          // Insert key immediately above nearest found key slot in an already empty slot
+                void Else()                                                                                             // Next free slot has intervening occupied slots
+                 {shiftUpOne   (s.Inc(), p.Sub(s).Dec());                                                               // Shift block above nearest found key slot
+                  final Int k = s.Inc();                                                                                // Insert at this index
+                  setSlotAndKey(P.set(k), K, Key);                                                                      // Insert key immediately above nearest found key slot in a slot freed by moving the block above up one step
+                 }
+               };
+             }
+            void Else()                                                                                                 // Insert into nearest found key slot after shifting it and the following block up one step
+             {shiftUpOne   (s, p.Sub(s));                                                                               // Shift nearest found key and its following neighbors up one step
+              setSlotAndKey(P.set(s), K, Key);                                                                          // Insert key in nearest found key slot
+             }
+           };
+         }
+       };
+
+      return P;                                                                                                         // Slot into which the key was inserted
      }
 
     public String toString()
@@ -840,77 +903,20 @@ class Slots extends Program                                                     
     return r;                                                                                                           // Result found if valid, if invalid greater than any key in the slots
    }
 
-
   Int insert(Int Key)                                                                                                   // Insert a key into the slots and return the slot choosen
    {if (immediate() && usedKeys.full().b()) stop("No more space to insert key:", Key);                                  // No space left
-    final Int P = new Int();
+    final Int P = new Int();                                                                                            // Slot into which the key was inserted
 
     new If (empty())                                                                                                    // Slots are empty so insert immediately in the middle
      {void Then()
        {setSlotAndKey(P.set(new Int(numberOfKeys)), new Int(0), Key);                                                   // Insert immediately in the center
        }
       void Else()                                                                                                       // Insert into a free slot while maintaining the order of the slots
-       {final Int  K = usedKeys.firstZero();                                                                            // Position for key in key slots
-        final Find f = find(Key);                                                                                       // Find nearest existing key in slots
-        final Int  s = new Int(f.slot);                                                                                 // Nearest existing key slot
-        final Bool d = new Bool();                                                                                      // Nearest free slot is below - true or above - false relative to the nearest existing key
-        final Int  p = locateNearestFreeSlotToKey(s, f.lower, d);                                                       // Absolute position of nearest free slot
-
-        new If (s.Sub(p).abs().ge(redistributionWidth()))                                                               // Redistribution width
-         {void Then()
-           {redistribute();                                                                                             // Redistribute slots
-            K.set(usedKeys.firstZero());                                                                                // Position for key in key slots
-            final Find F = find(Key);                                                                                   // Locate key in redistributed slots
-            f.set(F.slot, F.lower, F.higher);                                                                           // Set find details as we do not have references available
-            s.set(new Int(f.slot));                                                                                     // Nearest existing key slot
-            p.set(locateNearestFreeSlotToKey(s, f.lower, d));                                                           // Absolute position of nearest free slot
-           }
-         };
-
-        new If (d)                                                                                                      // Free slot is lower than nearest found key slot
-         {void Then()
-           {new If (f.lower)                                                                                            // Insert key lower than nearest found key slot
-             {void Then()
-               {new If (s.Sub(p).eq(1))                                                                                 // Previous slot is free so no movement required
-                 {void Then()                                                                                           // Insert key immediately below nearest found key slot in an already empty slot
-                   {setSlotAndKey(P.set(s.Dec()), K, Key);
-                   }
-                  void Else()                                                                                           // Previous free slot has intervening occupied slots
-                   {shiftDownOne (p.Inc(), s.Sub(p).Dec());                                                             // Shift block starting one slot above lower free slot and ending one slot below nearest found key slot
-                    final Int k = s.Dec();                                                                              // Insert at this index
-                    setSlotAndKey(P.set(k), K, Key);                                                                    // Insert key immediately below nearest found key slot in a slot freed by moving the previous block down one step
-                   }
-                 };
-               }
-              void Else()                                                                                               // Insert above nearest found key slot
-               {shiftDownOne(p.Inc(), s.Sub(p));                                                                        // Shift block one slot up from nearest lower free slot and the nearest found key slot down one step
-                setSlotAndKey(P.set(s), K, Key);                                                                        // Insert key in nearest found key slot
-               }
-             };
-           }
-          void Else()                                                                                                   // Nearest free slot is higher than nearest found key slot
-           {new If (f.higher)                                                                                           // Insert higher than nearest found key slot
-             {void Then()
-               {new If (p.Sub(s).eq(1))                                                                                 // Next slot is free so no movement required
-                 {void Then() {setSlotAndKey(P.set(p), K, Key);}                                                        // Insert key immediately above nearest found key slot in an already empty slot
-                  void Else()                                                                                           // Next free slot has intervening occupied slots
-                   {shiftUpOne   (s.Inc(), p.Sub(s).Dec());                                                             // Shift block above nearest found key slot
-                    final Int k = s.Inc();                                                                              // Insert at this index
-                    setSlotAndKey(P.set(k), K, Key);                                                                    // Insert key immediately above nearest found key slot in a slot freed by moving the block above up one step
-                    P.set        (k);                                                                                   // Record insertion index
-                   }
-                 };
-               }
-              void Else()                                                                                               // Insert into nearest found key slot after shifting it and the following block up one step
-               {shiftUpOne   (s, p.Sub(s));                                                                             // Shift nearest found key and its following neighbors up one step
-                setSlotAndKey(P.set(s), K, Key);                                                                        // Insert key in nearest found key slot
-               }
-             };
-           }
-         };
+       {final Find f = find(Key);                                                                                       // Find nearest existing key in slots
+        P.set(f.insert(Key));                                                                                           // Insert the key based on the find result
        }
      };
-    return P;
+    return P;                                                                                                           // Slot into which the key was inserted
    }
 
 //D2 Print                                                                                                              // Print the slots
