@@ -170,6 +170,39 @@ class Branch extends Program implements Program.Locatable                       
     return i;                                                                                                           // Return the slot in the branch in which the key, data pair was inserted
    }
 
+  Int insert(Int Key, Int Data, Int BelowSlot)                                                                          // Insert a key data pair into a branch when the slot below which to make the insertion is known, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
+   {//final Int        i = slots.insert(Key); .// repalce with
+    //final Int        k = slots.getSlotToKeyIndex(i);
+    final Int r = new Int();                                                                                            // The slot containing the inserted key
+    new If(BelowSlot.valid())                                                                                           // Insert below the specified slot if it is valid
+     {void Then()
+       {if (immediate() && !slots.getSlotToKeysInUse(BelowSlot).b())
+         {stop("Slot should be set but is empty:", BelowSlot, slots);
+         }
+        final Slots.Find f = slots.new Find().set(BelowSlot, true);                                                     // Construct the find to indicate how and where to perform the insertion as if we had just done a find
+        r.set(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
+        final Int k = slots.getSlotToKeyIndex(r);
+        refData.putInt(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
+       }
+      void Else()                                                                                                       // No below slot supplied so we must insert at the end in the modle if empty or at the end Insert in the first
+       {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
+         {void Then()
+           {r.set(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
+            refData.putInt(new Int(0), Data);                                                                           // Place data in the location that corresponds to the key slot used to complete the insertion
+           }
+          void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
+           {final Int l = slots.locateLastUsedSlot();
+            final Slots.Find f = slots.new Find().set(l, false);                                                        // Construct the find to indicate how and where to perform the insertion as if we had just done a find
+            r.set(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
+            final Int k = slots.getSlotToKeyIndex(r);
+            refData.putInt(k, Data);                                                                                    // Place data in the location that corresponds to the key slot used to complete the insertion
+           }
+         };
+       }
+     };
+    return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
+   }
+
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge branches
 //D2 Compact                                                                                                            // Compact a branch to the left or right
 
@@ -832,6 +865,71 @@ Branch         size:   7 top:  88
      };
    }
 
+  static void test_knownInsert(boolean Ex)
+   {new Branch(new Build().maxSize(7).immediate(Ex))
+     {@Override void branchCode()
+       {initializeMemory();
+        insert(new Int(4), new Int(44), new Int());
+        check(print(), """
+Branch         size:   7 top:   0
+ Ref   Key  Data
+   0     4    44
+""");
+        ok(()->slots, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    7   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   .   X   .   .   .   .   .   .
+usedKeys :    X   .   .   .   .   .   .
+keys     :    4   0   0   0   0   0   0
+""");
+
+        insert(new Int(2), new Int(22), new Int(7));
+        check(print(), """
+Branch         size:   7 top:   0
+ Ref   Key  Data
+   1     2    22
+   0     4    44
+""");
+        ok(()->slots, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   1   0   0   0   0   0   0   0   0   0   0
+keysSlots:    7   3   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   X   .   .   .   X   .   .   .   .   .   .
+usedKeys :    X   X   .   .   .   .   .
+keys     :    4   2   0   0   0   0   0
+""");
+
+        insert(new Int(6), new Int(66), new Int());
+        check(print(), """
+Branch         size:   7 top:   0
+ Ref   Key  Data
+   1     2    22
+   0     4    44
+   2     6    66
+""");
+        ok(()->slots, """
+Slots    : refs:  7
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
+slotsKeys:    0   0   0   1   0   0   0   0   0   0   0   2   0   0
+keysSlots:    7   3  11   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   X   .   .   .   X   .   .   .   X   .   .
+usedKeys :    X   X   X   .   .   .   .
+keys     :    4   2   6   0   0   0   0
+""");
+        maxSteps = 99999;
+        execute();
+       }
+     };
+   }
+
+  static void test_knownInsert()
+   {test_knownInsert(true);
+    test_knownInsert(false);
+   }
+
   static void test_stepDown()
    {test_stepDown(true);
     test_stepDown(false);
@@ -849,11 +947,12 @@ Branch         size:   7 top:  88
     test_iterate();
     test_fixedFields();
     test_stepDown();
+    test_knownInsert();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_stepDown(false);
+   {oldTests();
+    //test_knownInsert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
