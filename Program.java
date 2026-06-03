@@ -381,8 +381,9 @@ public class Program extends Test                                               
     Bool invalidate()   {new I() {void action() {v = false;}};        return this;}                                     // Invalidate the boolean
 
     public String toString()                                                                                            // Print the boolean
-     {if (name == null) return v ? ""+i       : "undefined Bool";
-      else              return v ? name+"="+i : "undefined Bool: "+name;
+     {final String u = "undefined_Bool";
+      if (name == null) return v ? ""+i       : u;
+      else              return v ? name+"="+i : u+": "+name;
      }
 
     void stop(final Object...O)                                                                                         // Conditionally print a message if true and stop
@@ -607,8 +608,9 @@ public class Program extends Test                                               
     void bgetEx(Bool B, Int    I) {x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}
 
     public String toString()                                                                                            // Print the integer
-     {if (name == null) return v ? ""+i       : "undefined Int";
-      else              return v ? name+"="+i : "undefined Int: "+name;
+     {final String u = "undefined_Int";
+      if (name == null) return v ? ""+i       : u;
+      else              return v ? name+"="+i : u+": "+name;
      }
 
     Int say() {final Int i = this; new I() {void action() {Test.say(i);}};           return this;}                      // Say the integer
