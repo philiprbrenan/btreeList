@@ -2,7 +2,7 @@
 // Distributed sparse slots used to hold the key of the Btree
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Inserted keys in the middle of the gap between the nearest occupied lower and upper slots
+//Improvements
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -745,11 +745,14 @@ class Slots extends Program                                                     
            {public void run()
              {new If (s.Sub(p).eq(1))                                                                                   // Previous slot is free so no movement required
                {void Then()                                                                                             // Insert key immediately below nearest found key slot in an already empty slot
-                 {//Instead find the position of the previous occupied slot and then place this key half way?
-                   setSlotAndKey(P.set(s.Dec()), K, Key);
+                 {final Int l = usedSlotsToKeys.prevOne(p);                                                             // Previous used slot
+                  new If (l.notValid()) {void Then() {l.set(0);} void Else() {l.inc();}};                               // Last zero
+                  final Int a = l.add(p).down();                                                                        // Middle zero between lower and upper limit of zeros
+                  setSlotAndKey(P.set(a), K, Key);                                                                      // Insert key in the middle zero
                  }
                 void Else()                                                                                             // Previous free slot has intervening occupied slots
-                 {shiftDownOne (p.Inc(), s.Sub(p).Dec());                                                               // Shift block starting one slot above lower free slot and ending one slot below nearest found key slot
+                 {//Improvements Distribute block across any adjacent zeros
+                  shiftDownOne (p.Inc(), s.Sub(p).Dec());                                                               // Shift block starting one slot above lower free slot and ending one slot below nearest found key slot
                   setSlotAndKey(P.set(s.Dec()), K, Key);                                                                // Insert key immediately below nearest found key slot in a slot freed by moving the previous block down one step
                  }
                };
@@ -1751,9 +1754,9 @@ Zero:
         ok(()->this, """
 Slots    : refs:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-slotsKeys:    7   6   1   0   0   0   0   0   3   0   0   2   5   4   0   0
-keysSlots:    7   2  11   8  13  12   1   0   0   0   0   0   0   0   0   0
-usedSlots:    X   X   X   .   .   .   .   X   X   .   .   X   X   X   .   .
+slotsKeys:    7   6   0   1   0   0   0   0   3   2   5   4   0   0   0   0
+keysSlots:    7   3   9   8  11  10   1   0   0   0   0   0   0   0   0   0
+usedSlots:    X   X   .   X   .   .   .   X   X   X   X   X   .   .   .   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   14  13  16  15  18  17  12  11
 """);
@@ -2202,8 +2205,8 @@ keys     :    0   0   0   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_insert(false);
+   {//oldTests();
+    test_insert(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
