@@ -239,13 +239,14 @@ class Tree extends Program                                                      
    }
 
   class Path                                                                                                            // Record the path from the root to the leaf that should contain a key
-   {Bool valid = new Bool();                                                                                            // Whether the search results are valid
-    Int  key   = new Int();                                                                                             // Search key
-    Int  leaf  = new Int();                                                                                             // Leaf that should contain the key
-    Int  step  = new Int();                                                                                             // Current step in the path
-    Int  split = new Int();                                                                                             // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
-    final ByteMemory path = new ByteMemory(mnl()*ib());                                                                 // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-    final ByteMemory slot = new ByteMemory(mnl()*ib());                                                                 // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
+   {final Bool       valid = new Bool();                                                                                // Whether the search results are valid
+    final Int        key   = new Int();                                                                                 // Search key
+    final Int        leaf  = new Int();                                                                                 // Leaf that should contain the key
+    final Int        step  = new Int();                                                                                 // Current step in the path
+    final Int        split = new Int();                                                                                 // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
+    final ByteMemory path  = new ByteMemory(mnl()*ib());                                                                // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    final ByteMemory slot  = new ByteMemory(mnl()*ib());                                                                // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
+    final ByteMemory atop  = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);                                             // Bits showing whether the step was through top
 
     Path(Int Key)
      {final Int p = new Int(0);                                                                                         // Start at root
@@ -309,7 +310,16 @@ class Tree extends Program                                                      
               final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
               final Branch l = branch();
               final Int   sk = c.splitLeft(l);
-              p.insert(sk, l.getLocation());                                                                            // The parent is known to have enough space to permit the insertion of the new child branch. Using insert() is inefficient as we already know the insertion point
+
+              final Bool   t = new Bool(atop.getBool(Index));                                                           // true if we went through top
+              final Int    s = new Int(slot.getInt(Index));                                                             // Slot at which we stepped down
+              new If (atop.getBool(Index))                                                                              // Stepped through top
+               {void Then() {p.insert(sk, l.getLocation(), new Int());}                                                 // Insert split out branch as last element of parent branch body
+                void Else() {p.insert(sk, l.getLocation(), slot.getInt(Index));}                                        // Insert split out branch just below the key in this slot
+               };
+
+//            p.insert(sk, l.getLocation());                                                                            // The parent is known to have enough space to permit the insertion of the new child branch. Using insert() is inefficient as we already know the insertion point
+
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
                  {path.putInt(Index, c.getLocation());
@@ -328,8 +338,21 @@ class Tree extends Program                                                      
       path.clear();
      }
 
-    void step(Int Branch, Int Slot)  {path.putInt(step, Branch); slot.putInt(step, Slot); step.inc();}                  // Step along the path recording the details of each step
-    void end (Int Leaf)              {leaf.set(Leaf); validate();}                                                      // Finish path at leaf
+    void step(Int Branch, Int Slot)                                                                                     // Step along the path recording the details of each step
+     {path.putInt(step, Branch);
+      new If (Slot.valid())                                                                                             // Whether the step was through top or not
+       {void Then()
+         {slot.putInt (step, Slot);
+          atop.putBool(step, new Bool(false));
+         }
+        void Else()
+         {atop.putBool(step, new Bool(true));
+         }
+       };
+      step.inc();                                                                                                       // Position for next step
+     }
+
+    void end (Int Leaf) {leaf.set(Leaf); validate();}                                                                   // Finish path at leaf
 
     void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
     void validate()   {valid.set();}                                                                                    // Show that the results are valid
@@ -372,7 +395,7 @@ class Tree extends Program                                                      
    }
 
   Path path(Int Key)                                                                                                    // The path from the root to the leaf that should contain the specified key
-   {final Path f = new Path(Key);                                                                                          // Find results
+   {final Path f = new Path(Key);                                                                                       // Find results
     return f;
    }
 
