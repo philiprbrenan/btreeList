@@ -902,6 +902,8 @@ public class Program extends Test                                               
     abstract void action();                                                                                             // The action to be performed by the instruction
    }
 
+  int codeSize() {return program().code.size();}                                                                        // Number of instructions in current program
+
   class Label                                                                                                           // Label jump targets in the program
    {int offset;                                                                                                         // The instruction location to which this label applies
     Label()    {set(); program().labels.push(this);}                                                                    // A label assigned to an instruction location
