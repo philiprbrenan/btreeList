@@ -125,26 +125,35 @@ class Branch extends Program implements Program.Locatable                       
   Int  top()  {return refTop.getInt();}                                                                                 // Get value of top
   void top(Int Top) {refTop.putInt(Top);}                                                                               // Set value of top
 
-  Int stepDown(Int Key)                                                                                                 // Reference of the next branch down that might contain the specified key
+  class StepDown
+   {final Int node = new Int();                                                                                         // The next node down
+    final Int slot = new Int();                                                                                         // The slot used to step down.  If not set then stepped through top
+   }
+
+  StepDown stepDown(Int Key)                                                                                            // Reference of the next branch down that might contain the specified key
    {final Slots.Find f = slots.find(Key);                                                                               // Find result
-    final Int  r = new Int();                                                                                           // Result
+    final StepDown   r = new StepDown();                                                                                // Result
+
     new If (f.empty)                                                                                                    // Found the index of a key that is greater than or equal to the search key
-     {void Then()
-       {r.set(top());                                                                                                   // Slot index of found key
+     {void Then()                                                                                                       // Step through top because the body of the branch is empty
+       {r.slot.invalidate();
+        r.node.set(top());
        }
       void Else()
        {new If (f.equal.or(f.lower))                                                                                    // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
          {void Then()
-           {r.set(data(slots.getSlotToKeyIndex(f.slot)));                                                               // Data associated with found key
+           {r.slot.set(f.slot);                                                                                         // Step through slot
+            r.node.set(data(slots.getSlotToKeyIndex(f.slot)));                                                          // Next node
            }
-          void Else()
-           {final Int n = slots.usedSlotsToKeys.nextOne(f.slot);                                                        // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
-            new If (n.valid())                                                                                          // Found the index of a key that is greater than or equal to the search key
+          void Else()                                                                                                   // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
+           {final Int n = slots.usedSlotsToKeys.nextOne(f.slot);
+            r.slot.copy(n);                                                                                             // Copy the slot found if there was one
+            new If (n.valid())
              {void Then()
-               {r.set(data(slots.getSlotToKeyIndex(n)));                                                                // Data associated with next key
+               {r.node.set(data(slots.getSlotToKeyIndex(n)));                                                           // Node at next level down
                }
               void Else()
-               {r.set(top());                                                                                           // No next key so use default
+               {r.node.set(top());                                                                                      // No next key so step down through top
                }
              };
            }
@@ -252,7 +261,7 @@ class Branch extends Program implements Program.Locatable                       
     return r;
    }
 
-  Bool mergeLeft(Branch Left)                                                                                           // Merge the leaf into the right of this leaf
+  Bool mergeLeft(Branch Left)                                                                                           // Merge the supplied branch into the left hand side of this branch
    {final Branch right = this;
     final Int    lc    = Left .count();
     final Int    rc    = right.count();
@@ -271,7 +280,7 @@ class Branch extends Program implements Program.Locatable                       
         final Int rt = right.top();                                                                                     // Right top
         right.copyMergeData(Left, new Int(0), new Int(lc));                                                             // Copy the left data values into the right data values
         right.data(lc, lt);                                                                                             // Place left top in left data values
-        rs.mergeFromLeftOdd(Ls, null);                                                                                    // Split the slots
+        rs.mergeFromLeftOdd(Ls, null);                                                                                  // Split the slots
        }
      };
     return r;
@@ -814,11 +823,10 @@ Branch         size:   7 top:  88
         insert(new Int(20), new Int(2));
         insert(new Int(30), new Int(3));
         top   (             new Int(4));
-
-        stepDown(new Int(02)).ok(1);
-        stepDown(new Int(12)).ok(2);
-        stepDown(new Int(22)).ok(3);
-        stepDown(new Int(32)).ok(4);
+        final Branch.StepDown s1 = stepDown(new Int(02)); s1.node.ok(1); s1.slot.ok(1);
+        final Branch.StepDown s2 = stepDown(new Int(12)); s2.node.ok(2); s2.slot.ok(4);
+        final Branch.StepDown s3 = stepDown(new Int(22)); s3.node.ok(3); s3.slot.ok(5);
+        final Branch.StepDown s4 = stepDown(new Int(32)); s4.node.ok(4); s4.slot.notValid().ok(true);
         execute();
        }
      };
@@ -845,7 +853,7 @@ Branch         size:   7 top:  88
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_iterate();
+    test_stepDown(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
