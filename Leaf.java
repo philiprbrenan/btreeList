@@ -122,7 +122,7 @@ class Leaf extends Program implements Program.Locatable                         
    {final Int i = slots.insert(Key);
     final Int k = slots.getSlotToKeyIndex(i);
     refData.putInt(k, Data);
-    return i;
+    return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
 
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge leaves
