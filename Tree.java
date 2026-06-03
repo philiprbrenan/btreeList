@@ -244,7 +244,8 @@ class Tree extends Program                                                      
     Int  leaf  = new Int();                                                                                             // Leaf that should contain the key
     Int  step  = new Int();                                                                                             // Current step in the path
     Int  split = new Int();                                                                                             // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
-    final ByteMemory path = new ByteMemory(mnl()*ib());                                                                 // Memory for the paths - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    final ByteMemory path = new ByteMemory(mnl()*ib());                                                                 // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    final ByteMemory slot = new ByteMemory(mnl()*ib());                                                                 // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
 
     Path(Int Key)
      {final Int p = new Int(0);                                                                                         // Start at root
@@ -257,8 +258,9 @@ class Tree extends Program                                                      
               validate();                                                                                               // Show the results are valid
              }
             void Else()                                                                                                 // On a branch
-             {step(p);                                                                                                  // Record a step along the path
-              p.set(branch(p).stepDown(Key));                                                                           // Step down
+             {final Branch.StepDown d = branch(p).stepDown(Key);                                                        // Step down
+              step(p, d.slot);                                                                                          // Record a step along the path
+              p.set(d.node);                                                                                            // Step down
               Continue.set();                                                                                           // Continue search
              }
            };
@@ -304,7 +306,7 @@ class Tree extends Program                                                      
           new ForCount(split, step)                                                                                     // Split full branches which are not the root in descending order so that there is always enough room in the parent branch to accept the splitting key
            {void body(Int Index)
              {final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
-              final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent whose child should be split
+              final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
               final Branch l = branch();
               final Int   sk = c.splitLeft(l);
               p.insert(sk, l.getLocation());                                                                            // The parent is known to have enough space to permit the insertion of the new child branch. Using insert() is inefficient as we already know the insertion point
@@ -326,8 +328,8 @@ class Tree extends Program                                                      
       path.clear();
      }
 
-    void step(Int Branch)  {path.putInt(step, Branch); step.inc();}                                                     // Step along the path
-    void end (Int Leaf)    {leaf.set(Leaf); validate();}                                                                // Finish path at leaf
+    void step(Int Branch, Int Slot)  {path.putInt(step, Branch); slot.putInt(step, Slot); step.inc();}                  // Step along the path recording the details of each step
+    void end (Int Leaf)              {leaf.set(Leaf); validate();}                                                      // Finish path at leaf
 
     void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
     void validate()   {valid.set();}                                                                                    // Show that the results are valid
@@ -358,7 +360,8 @@ class Tree extends Program                                                      
             f.validate();                                                                                               // Show the results are valid
            }
           void Else()                                                                                                   // On a branch
-           {p.set(branch(p).stepDown(Key));                                                                             // Step down
+           {final Branch.StepDown d = branch(p).stepDown(Key);                                                          // Step down details
+            p.set(d.node);                                                                                              // Step down to next level
             Continue.set();                                                                                             // Continue search
            }
          };
