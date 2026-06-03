@@ -568,7 +568,7 @@ public class BitSet extends Program                                             
                            }
                          };
                         final Int P = new Int(new Int(B.Add(B)));                                                       // Address next level of bits in tree
-                        new If (getBit(P))                                                                              // Next zero bit from actual bits
+                        new If (getBitNC(P))                                                                            // Next zero bit from actual bits.  getBit() not usable if the bitset size os not a power of two
                          {void Then() {Next.set(P).inc();}
                           void Else() {Next.set(P);      }
                          };
