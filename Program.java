@@ -70,7 +70,7 @@ public class Program extends Test                                               
      }
    }
 
-//D1 Program                                                                                                            // Program ececution structures
+//D1 Program                                                                                                            // Program execution structures
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
