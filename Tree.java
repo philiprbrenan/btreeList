@@ -1028,13 +1028,6 @@ class Tree extends Program                                                      
 
 //D2 Print                                                                                                              // Print the tree horizontally
 
-//            2                    4                     6                                              10                    12                    14                                            18                   20                    22                                           26                28                30                  |
-//           [20.0]               [20.2]                [20.4]                                         [13.0]                [13.2]                [13.4]                                        [11.0]               [11.2]                [11.4]                                       [2.0]             [2.2]             [2.4]                |
-//           (3, 5, 0)            (21, 5, 0)            (22, 5, 0){23}                                 (16, 5, 2)            (17, 5, 2)            (24, 5, 2){14}                                (7, 5, 4)            (12, 5, 4)            (15, 5, 4){6}                                (1, 5, *)         (8, 5, *)         (4, 5, *){9}         |
-//           (3, -1, 0)           (21, -1, 0)           (22, -1, 0)                                    (16, -1, 0)           (17, -1, 0)           (24, -1, 0)                                   (7, -1, 0)           (12, -1, 0)           (15, -1, 0)                                  (1, 5, 0)         (8, 5, 0)         (4, 5, 0)            |
-// 1,2                 3,4                   5,6                      7,8                   9,10                  11,12                 13,14                    15,16                 17,18               19,20                 21,22                   23,24                  25,26             27,28             29,30                31,32    |
-// (3, 20, 0)          (21, 20, 2)           (22, 20, 4)              (23, 20, *)           (16, 13, 0)           (17, 13, 2)           (24, 13, 4)              (14, 13, *)           (7, 11, 0)          (12, 11, 2)           (15, 11, 4)             (6, 11, *)             (1, 2, 0)         (8, 2, 2)         (4, 2, 4)            (9, 2, *)|
-
   class Print                                                                                                           // Print the tree
    {final Stack<StringBuilder> P = new Stack<>();
 
@@ -1064,14 +1057,17 @@ class Tree extends Program                                                      
         @Override void branchBody(BranchContext BC)                                                                     // Print keys of branch and optionally the details of the parent and the children of this branch
          {final Branch        b = branch(BC.branch);
           final StringBuilder s = new StringBuilder();
+
           new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
-          b.iterate((k,d)->s.append(k+","));                                                                            // Format keys
+          //b.iterate((k,d)->s.append(k+","));                                                                            // Format keys
+          final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                   // Key of slot
+
           new I()                                                                                                       // Place in output area
            {void action()
              {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
-              P.elementAt(d).append(s);                                                                                 // Write keys into output area
+              P.elementAt(d).append(""+K.i());                                                                              // Write key into output area
 
               if (Context)                                                                                              // Context requested
                {if (BC.Depth.i() == 0)                                                                                  // Parent details if requested and there is a parent
@@ -1084,7 +1080,7 @@ class Tree extends Program                                                      
 
                 if (true)                                                                                               // Write directions to child as second line under branch
                  {final int bS = BC.branchSlot.i(), bC = BC.child.i();                                                  // Components of second line: branch slot, child index
-                  P.elementAt(d+2).append("["+bC+","+bS+")");                                                           // Write second line
+                  P.elementAt(d+2).append("["+bC+","+bS+"]");                                                           // Write second line
                  }
                }
              }
@@ -1415,13 +1411,52 @@ Leaf   at:   2 size:   4
    1     6    66
 """);
 
-    final StringBuilder s = t.print();
-    t.ok(()->s, """
+    t.Check(t.print(), """
        2           |
        (0)         |
-       [1,3)       |
+       [1,3]       |
 1,2         3,4,5,6|
 (1,0,3)     (2,0)  |
+""");
+
+    t.insert(t.new Int(7), t.new Int(77));
+    t.insert(t.new Int(8), t.new Int(88));
+
+    t.check (t.dump(), """
+Tree memory dump
+Leaf   size   :  153
+Branch size   :  121
+Node   size   :  153
+MaxLeafSize   :    4
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    4
+Branch         size:   3 top:   2
+ Ref   Key  Data
+   0     2     1
+   1     4     3
+Leaf   at:   1 size:   4
+ Ref   Key  Data
+   0     1    11
+   1     2    22
+Leaf   at:   2 size:   4
+ Ref   Key  Data
+   0     5    55
+   1     6    66
+   2     7    77
+   3     8    88
+Leaf   at:   3 size:   4
+ Ref   Key  Data
+   2     3    33
+   3     4    44
+""");
+
+    t.check(t.print(), """
+       2           4           |
+       (0)         (0)         |
+       [1,2]       [3,4]       |
+1,2         3,4         5,6,7,8|
+(1,0,2)     (3,0,4)     (2,0)  |
 """);
 //    t.find(t.new Int(2)).leaf.ok(1);
 //    final StringBuilder p = t.path(t.new Int(2)).print();
