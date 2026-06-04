@@ -19,7 +19,7 @@ class Tree extends Program                                                      
   final int linesToPrintABranch = 4;                                                                                    // The number of lines required to print a branch
   final int maxPrintLevels      = 3;                                                                                    // The maximum number of levels to print - this avoids endless print loops when something goes wrong
   final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
-  final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
+  final static String formatKey = "%3d";                                                                                // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
@@ -28,7 +28,7 @@ class Tree extends Program                                                      
      boolean           trace = true;                                                                                    // Trace execution
      int          branchSize;                                                                                           // Size of a branch
      int            leafSize;                                                                                           // Size of a leaf
-     int            nodeSize;                                                                                           // Size of a node: a leaf or a branch which ever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjustiung the branch and leaf sizes to be as equal as possible.
+     int            nodeSize;                                                                                           // Size of a node: a leaf or a branch whichever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjusting the branch and leaf sizes to be as equal as possible.
      Integer     maxLeafSize;
      Integer   maxBranchSize;
      Integer   numberOfNodes;
@@ -113,8 +113,8 @@ class Tree extends Program                                                      
   Int nodeAddress(Int Node)                                                                                             // Convert index to byte address of node in memory
    {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
     Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
-    final Bool f = freeChain.get(Node);                                                                              // Check not freed
-    f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                         // Complain of the node has been freed and not reallocated
+    final Bool f = freeChain.get(Node);                                                                                 // Check not freed
+    f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                         // Complain if the node has been freed and not reallocated
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
 
@@ -162,7 +162,7 @@ class Tree extends Program                                                      
 
   Branch branch(Int Node) {return branch(Node, true);}                                                                  // Index an existing branch in memory            confirming that it really is a branch
   Branch branch(Int Node, boolean Check)                                                                                // Index an existing branch in memory optionally confirming that it really is a branch
-   {if (Check) isBranch(Node).Flip().stop("Not a branch:", Node);                                                       // Check the location actually holds i branch
+   {if (Check) isBranch(Node).Flip().stop("Not a branch:", Node);                                                       // Check the location actually holds a branch
     final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address branch
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
@@ -239,7 +239,7 @@ class Tree extends Program                                                      
     final Int        key      = new Int("key");                                                                         // Search key
     final Int        leaf     = new Int("leaf");                                                                        // Leaf that should contain the key
     final Int        step     = new Int("step");                                                                        // Current step in the path
-    final Int        split    = new Int("split");                                                                       // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
+    final Int        split    = new Int("split");                                                                       // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
     final ByteMemory Path     = new ByteMemory(mnl()*ib());                                                             // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
     final ByteMemory Slot     = new ByteMemory(mnl()*ib());                                                             // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
     final ByteMemory Atop     = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);                                          // Bits showing whether the step was through top
@@ -286,7 +286,7 @@ class Tree extends Program                                                      
       split.copy(u);                                                                                                    // There might be no such splitting point
      }
 
-    void splitDown()                                                                                                    // Split from the splitting top most splitting branch if such a branch exosts
+    void splitDown()                                                                                                    // Split from the splitting top most splitting branch if such a branch exists
      {new If (split.valid())
        {void Then()
          {new If (split.eq(0))                                                                                          // Split the root branch
@@ -300,7 +300,7 @@ class Tree extends Program                                                      
                  {path.putInt(new Int(0), branch(new Int(0)).top());                                                    // Divert through top
                  }
                };
-              split.inc();                                                                                              // Step up over split root which no longer needs spliting
+              split.inc();                                                                                              // Step up over split root which no longer needs splitting
              }
            };
 
@@ -433,7 +433,7 @@ class Tree extends Program                                                      
 
   private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full
    {final Path p = path(Key);                                                                                           // Path from root to full leaf
-    p.splitPoint();                                                                                                     // The lowest branch in the tree that is above the leaf and full and all the lower branches down to the leaf are full
+    p.splitPoint();                                                                                                     // The lowest branch in the tree that is full and has a non full parent
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
     final Int    L = p.step.Dec();                                                                                      // Last step along path
     final Int    B = p.path.getInt(L);                                                                                  // Index of branch at last step along the path and thus the parent of the leaf
@@ -473,9 +473,9 @@ class Tree extends Program                                                      
     final Int sk = l.splitRight(r);                                                                                     // Splitting key
     R.clear();                                                                                                          // Clear the root
     makeBranch(R.getLocation());                                                                                        // Mark the root as a branch
-    R.insertEmpty(sk, l.getLocation());                                                                                 // Insert the left branch below the spitting key
+    R.insertEmpty(sk, l.getLocation());                                                                                 // Insert the left branch below the splitting key
     R.top(r.getLocation());                                                                                             // Insert right as top of root
-    return sk;                                                                                                          // Retun the splitting key
+    return sk;                                                                                                          // Return the splitting key
    }
 
 /*
