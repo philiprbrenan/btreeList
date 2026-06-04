@@ -2,7 +2,6 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Replace insert() in splitDown() recognizing that we already know where to do the insertion
 // Replace slots freeChain with a bitset
 // Make freechain part of the memory for a tree so that it can be written and reloaded along with the rest of the memory
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -105,10 +104,10 @@ class Tree extends Program                                                      
     return a;
    }
 
-  void free(Locatable Free)                                                                                                   // Free a leaf or a branch
+  void free(Locatable Free)                                                                                             // Free a leaf or a branch
    {final Int a = Free.getLocation();
-    nodeAddress(a);                                                                                                  // Check the viability of the node index
-    byteMemory.invalidate(nodeAddress(a), sizeOfNode);                                                               // Invalidate the memory
+    nodeAddress(a);                                                                                                     // Check the viability of the node index
+    byteMemory.invalidate(nodeAddress(a), sizeOfNode);                                                                  // Invalidate the memory
     freeChain.setSlotAndKey(a, a, a);
    }
 
@@ -129,8 +128,8 @@ class Tree extends Program                                                      
     int value()              {return value;}
    }
 
-  Bool isRootLeaf  () {return checkType(new Int(0), BranchOrLeaf.leaf);}                                                         // Whether the root is a leaf
-  Bool isRootBranch() {return checkType(new Int(0), BranchOrLeaf.branch);}                                                       // Whether the root is a branch
+  Bool isRootLeaf  () {return checkType(new Int(0), BranchOrLeaf.leaf);}                                                // Whether the root is a leaf
+  Bool isRootBranch() {return checkType(new Int(0), BranchOrLeaf.branch);}                                              // Whether the root is a branch
 
   Bool checkType(Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
    {final Int  a = nodeAddress(Node);
@@ -162,7 +161,7 @@ class Tree extends Program                                                      
     return l;
    }
 
-  Leaf   leaf()   {return makeLeaf(allocate());}                                                                       // Create and initialize a branch in memory and return its index
+  Leaf   leaf()   {return makeLeaf(allocate());}                                                                        // Create and initialize a branch in memory and return its index
 
   Branch branch(Int Node) {return branch(Node, true);}                                                                  // Index an existing branch in memory            confirming that it really is a branch
   Branch branch(Int Node, boolean Check)                                                                                // Index an existing branch in memory optionally confirming that it really is a branch
@@ -239,14 +238,17 @@ class Tree extends Program                                                      
    }
 
   class Path                                                                                                            // Record the path from the root to the leaf that should contain a key
-   {final Bool       valid = new Bool();                                                                                // Whether the search results are valid
-    final Int        key   = new Int();                                                                                 // Search key
-    final Int        leaf  = new Int();                                                                                 // Leaf that should contain the key
-    final Int        step  = new Int();                                                                                 // Current step in the path
-    final Int        split = new Int();                                                                                 // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
-    final ByteMemory path  = new ByteMemory(mnl()*ib());                                                                // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-    final ByteMemory slot  = new ByteMemory(mnl()*ib());                                                                // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
-    final ByteMemory atop  = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);                                             // Bits showing whether the step was through top
+   {final Bool       valid    = new Bool("valid");                                                                      // Whether the search results are valid
+    final Int        key      = new Int("key");                                                                         // Search key
+    final Int        leaf     = new Int("leaf");                                                                        // Leaf that should contain the key
+    final Int        step     = new Int("step");                                                                        // Current step in the path
+    final Int        split    = new Int("split");                                                                       // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
+    final ByteMemory Path     = new ByteMemory(mnl()*ib());                                                             // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    final ByteMemory Slot     = new ByteMemory(mnl()*ib());                                                             // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
+    final ByteMemory Atop     = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);                                          // Bits showing whether the step was through top
+    final ByteMemory.Ref path = Path.new Ref(0);                                                                        // Branches along path
+    final ByteMemory.Ref slot = Slot.new Ref(0);                                                                        // Slots along path
+    final ByteMemory.Ref atop = Atop.new Ref(0);                                                                        // Top transitions along path
 
     Path(Int Key)
      {final Int p = new Int(0);                                                                                         // Start at root
@@ -270,20 +272,21 @@ class Tree extends Program                                                      
       valid.Flip().stop("Find fell off the end of tree after this many searches:", mnl());
      }
 
-    void splitPoint()
-     {final Int u = new Int();                                                                                          // This is the uppermost branch directly connected to the leaf by intervening full branches which will al lhave to be split from the top down to permit the splitting of a full leaf
+    void splitPoint()                                                                                                   // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf
+     {final Int u = new Int();                                                                                          // Location of split point
       new For(step)                                                                                                     // Number of steps in path
-       {void body(Int Index, Bool Continue)
-         {final Int i = step.sub(Index).Dec();
-          new If (branch(i).full())
+       {void body(Int Index, Bool Continue)                                                                             // Step up from leaf to root
+         {final Int p = step.Sub(Index).Dec();                                                                          // Position on path
+          final Int b = path.getInt(p);                                                                                 // Branch index
+          new If (branch(b).full())                                                                                     // On a full branch
            {void Then()
-             {u.set(Index);                                                                                             // A full leaf
-              Continue.set();
+             {u.set(p);                                                                                                 // Highest full branch so far that might need splitting
+              Continue.set();                                                                                           // Continue up from the leaf until a branch that is not full is encountered
              }
            };
          }
        };
-      split.copy(u);                                                                                                    // There might be no such split point
+      split.copy(u);                                                                                                    // There might be no such splitting point
      }
 
     void splitDown()                                                                                                    // Split from the splitting top most splitting branch if such a branch exosts
@@ -294,13 +297,13 @@ class Tree extends Program                                                      
              {final Int sk = splitRootBranch();
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
-                 {path.putInt(new Int(0), branch(new Int(0)).data(new Int(0)));
+                 {path.putInt(new Int(0), branch(new Int(0)).data(new Int(0)));                                         // Divert through first element of root now that it has been split
                  }
                 void Else()
-                 {path.putInt(new Int(0), branch(new Int(0)).top());
+                 {path.putInt(new Int(0), branch(new Int(0)).top());                                                    // Divert through top
                  }
                };
-              split.Inc();                                                                                              // Step up over split root which no longer needs spliting
+              split.inc();                                                                                              // Step up over split root which no longer needs spliting
              }
            };
 
@@ -308,17 +311,15 @@ class Tree extends Program                                                      
            {void body(Int Index)
              {final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
               final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
-              final Branch l = branch();
-              final Int   sk = c.splitLeft(l);
+              final Branch l = branch();                                                                                // Branch to split into
+              final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
-              final Bool   t = new Bool(atop.getBool(Index));                                                           // true if we went through top
+              final Bool   t = new Bool(atop.getBool(Index));                                                           // True if we went through top
               final Int    s = new Int(slot.getInt(Index));                                                             // Slot at which we stepped down
               new If (atop.getBool(Index))                                                                              // Stepped through top
                {void Then() {p.insert(sk, l.getLocation(), new Int());}                                                 // Insert split out branch as last element of parent branch body
                 void Else() {p.insert(sk, l.getLocation(), slot.getInt(Index));}                                        // Insert split out branch just below the key in this slot
                };
-
-//            p.insert(sk, l.getLocation());                                                                            // The parent is known to have enough space to permit the insertion of the new child branch. Using insert() is inefficient as we already know the insertion point
 
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
@@ -335,7 +336,7 @@ class Tree extends Program                                                      
      {valid.invalidate();
       key .set(Key);
       step.set(0);
-      path.clear();
+      Path.clear();
      }
 
     void step(Int Branch, Int Slot)                                                                                     // Step along the path recording the details of each step
@@ -401,7 +402,7 @@ class Tree extends Program                                                      
 
   void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
    {new If (isRootLeaf())
-     {void Then()                                                                                                       //
+     {void Then()                                                                                                       // New right hand leaf
        {final Leaf R = leaf(new Int(0));
         new If (R.full())
          {void Then()                                                                                                   // Split a full leaf
@@ -867,8 +868,6 @@ class Tree extends Program                                                      
               action_remove = -3;                                                                                       // Remove this branch from stack
     final Int        depth  = new Int("depth");                                                                         // Depth we have reached in the tree. -1 indicates thatthe stack is empty.
 
-    Traverse() {ex();}
-
     class BranchContext                                                                                                 // The context of a branch shows its relationship to its parent and currently being processed child
      {final Bool root       = new Bool();                                                                               // Whether the current branch is the root or not
       final Int  parent     = new Int();                                                                                // If the current branch is not the root then the parent of the current branch
@@ -884,7 +883,7 @@ class Tree extends Program                                                      
             parent.set(0); parentSlot.set(0);
             branch.set(0);
            }
-          void Else()                                                                                                   // The branch being currenbtly processed is not the root
+          void Else()                                                                                                   // The branch being currently processed is not the root
            {root.set(false);                                                                                            // Not on the root
             parent     .set(node  .getInt(ib(depth.Dec())));                                                            // Parent branch
             parentSlot .set(action.getInt(ib(depth.Dec())));                                                            // Slot in parent whereby we reached the current branch
@@ -907,7 +906,7 @@ class Tree extends Program                                                      
       return B;
      }
 
-    void ex()
+    Traverse()                                                                                                          // Traverse the tree visiting each leaf and branch in order
      {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added tothe stack
       final Tree tree = Tree.this;
 //say("AAAA0000", tree.dump());
@@ -1075,7 +1074,8 @@ class Tree extends Program                                                      
                  }
                 else
                  {final int bI = BC.branch.i(), bP = BC.parent.i(), bS = BC.parentSlot.i();                             // Components of second line: leaf number, parent branch number, slot in parent
-                  P.elementAt(d+1).append("("+bI+","+bP+","+bS+")");                                                    // Format second line for a non root branch showing the parent of the branch and thw slot in the parent this branch came from
+                  if (bS >= 0) P.elementAt(d+1).append("("+bI+","+bP+","+bS+")");                                       // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
+                  else         P.elementAt(d+1).append("("+bI+","+bP+")");                                              // Format second line for a non root branch showing the parent of the branch and that it came from top
                  }
 
                 if (true)                                                                                               // Write directions to child as second line under branch
@@ -1458,47 +1458,6 @@ Leaf   at:   3 size:   4
 1,2         3,4         5,6,7,8|
 (1,0,2)     (3,0,4)     (2,0)  |
 """);
-//    t.find(t.new Int(2)).leaf.ok(1);
-//    final StringBuilder p = t.path(t.new Int(2)).print();
-//    t.ok(()->""+p, """
-//Path steps: 1
-//0
-//""");
-//
-//    t.insert(t.new Int(7), t.new Int(77));
-//say("AAAA7777", t.code.size());
-//    t.check (t.dump(), """
-//Tree memory dump
-//Leaf   size   :  153
-//Branch size   :  121
-//Node   size   :  153
-//MaxLeafSize   :    4
-//MaxBranchSize :    3
-//NumberOfNodes :    4
-//Allocations   :    4
-//Branch         size:   3 top:   2
-// Ref   Key  Data
-//   0     2     1
-//   1     4     3
-//Leaf   at:   1 size:   4
-// Ref   Key  Data
-//   0     1    11
-//   1     2    22
-//Leaf   at:   2 size:   4
-// Ref   Key  Data
-//   0     5    55
-//   1     6    66
-//   2     7    77
-//Leaf   at:   3 size:   4
-// Ref   Key  Data
-//   2     3    33
-//   3     4    44
-//""");
-//say("AAAA8888", t.code.size());
-//
-//    final StringBuilder s = t.print();
-//say("AAAA9999", t.code.size());
-//    t.new I() {void action() {say("AAAA", s); }};
     t.maxSteps = 99_999;
     t.execute();
    }
@@ -1506,6 +1465,41 @@ Leaf   at:   3 size:   4
   static void test_insert()
    {          test_insert(true);
               test_insert(false);
+   }
+
+  static void test_insert2(boolean Ex)
+   {final int N = 32 ;
+     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N))
+     {void body(Int Index)
+       {t.insert(Index, Index);
+       }
+     };
+    t.insert(t.new Int(N), t.new Int(N));
+  //new I() {void action() {stop(t.dump());}};
+
+    if (N == 32) t.Check(t.print(), """
+                                              8                                                            16                                                                                                         |
+                                              (0)                                                          (0)                                                                                                        |
+                                              [15,2]                                                       [23,4]                                                                                                     |
+                    4                                                       12                                                            20                             24                                           |
+                    (15,0,2)                                                (23,0,4)                                                      (16,0)                         (16,0)                                       |
+                    [5,2]                                                   [12,2]                                                        [20,2]                         [24,4]                                       |
+       2                           6                        10                               14                           18                             22                            26            28               |
+       (5,15,2)                    (9,15)                   (12,23,2)                        (17,23)                      (20,16,2)                      (24,16,4)                     (6,16)        (6,16)           |
+       [1,2]                       [4,2]                    [8,2]                            [11,2]                       [14,2]                         [19,2]                        [22,2]        [25,4]           |
+1,2            3,4          5,6          7,8        9,10             11,12          13,14           15,16        17,18             19,20        21,22             23,24        25,26         27,28         29,30,31,32|
+(1,5,2)        (3,5)        (4,9,2)      (7,9)      (8,12,2)         (10,12)        (11,17,2)       (13,17)      (14,20,2)         (18,20)      (19,24,2)         (21,24)      (22,6,2)      (25,6,4)      (2,6)      |
+""");
+
+    t.maxSteps = 9_999_999;
+//  say("ZZZZ", t.codeSize());   577_859
+    t.execute();
+   }
+
+  static void test_insert2()
+   {          test_insert2(!true);
+             //test_insert2(false);
    }
 
 /*
@@ -2419,7 +2413,7 @@ Delete 22
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_tree();
     test_insert();
-    //test_insert2();
+    test_insert2();
     //test_insert();
     //test_insert_reverse();
     //test_insert_random();
@@ -2433,7 +2427,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
+    test_insert2();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
