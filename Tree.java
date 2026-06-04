@@ -2,7 +2,6 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Replace slots freeChain with a bitset
 // Make freechain part of the memory for a tree so that it can be written and reloaded along with the rest of the memory
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -13,7 +12,7 @@ import java.util.function.Supplier;
 class Tree extends Program                                                                                              // A tree that translates keys into values to be implemented as an application specific integrated circuit
  {final int             maxLeafSize;                                                                                    // The maximum number of entries in a leaf of the tree
   final int           maxBranchSize;                                                                                    // The maximum number of entries in a branch of the tree
-  final Slots            freeChain;                                                                                     // Unallocated modes: leaves and branches
+  final BitSet            freeChain;                                                                                    // Nodes currently free
   final int           numberOfNodes;                                                                                    // Maximum number of leaves plus branches in this tree
   final int   maximumNumberOfLevels;                                                                                    // Maximum number of levels in tree to prevent runaways while debugging
   final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node may hold a branch or a leaf
@@ -34,7 +33,7 @@ class Tree extends Program                                                      
      Integer   maxBranchSize;
      Integer   numberOfNodes;
      Boolean         execute;
-     Slots .Build  freeChain;
+     BitSet.Build  freeChain;
      Branch.Build     branch;
      Leaf  .Build       leaf;
      int bytesNeededForNodes;                                                                                           // Bytes needed for all the nodes
@@ -49,14 +48,14 @@ class Tree extends Program                                                      
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
-      freeChain             = new Slots .Build().numberOfKeys(numberOfNodes); freeChain.build();                        // Size of free chain
-      branch                = new Branch.Build().maxSize(maxBranchSize)     ; branch   .build();                        // Size of a branch chain
-      leaf                  = new Leaf  .Build().maxSize(maxLeafSize)       ; leaf     .build();                        // Size of a leaf chain
+      freeChain             = new BitSet .Build().bitSize(numberOfNodes); freeChain.build();                            // Size of free chain
+      branch                = new Branch .Build().maxSize(maxBranchSize); branch   .build();                            // Size of a branch chain
+      leaf                  = new Leaf   .Build().maxSize(maxLeafSize)  ; leaf     .build();                            // Size of a leaf chain
       leafSize              = leaf.size();
       branchSize            = branch.size();
       nodeSize              = max(branchSize, leafSize);
       bytesNeededForNodes   = numberOfNodes * nodeSize;
-      bytesNeededForFree    = freeChain.size();
+      bytesNeededForFree    = freeChain.byteSize();
       p.memory   (bytesNeededForNodes);
       p.immediate(immediate);
       p.trace    (trace);
@@ -86,8 +85,8 @@ class Tree extends Program                                                      
     build      = Build;
     sizeOfNode = build.nodeSize;
 
-    freeChain  = new Slots(build.freeChain.parent(this));                                                               // Memory for free chain
-    for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.setSlotAndKey(new Int(i), new Int(i), new Int(i));         // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+    freeChain  = new BitSet(build.freeChain.parent(this));                                                              // Memory for free chain
+    for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i), new Bool(true));                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
    }
 
@@ -97,27 +96,25 @@ class Tree extends Program                                                      
   int           mnl() {return maximumNumberOfLevels;}                                                                   // Maximum number of levels
 
   Int allocate()                                                                                                        // Allocate a leaf or a branch using the free chain slots as an array that can be searched for the first used slot in log time
-   {freeChain.usedKeys.countOnes().eq(0).stop("No more leaves or branches");
-    final Int i = new Int("index")    .set(freeChain.getSlotToKeyIndex(freeChain.locateFirstUsedSlot()));               // Index of the key slot holding the index of the node to be allocated
-    final Int a = new Int("allocated").set(freeChain.getKeyValue(i));                                                   // Index of the node to be allocated
-    freeChain.delSlotAndKey(i);                                                                                         // Remove indexed node from free chain
-    return a;
+   {freeChain.countOnes().eq(0).stop("No more leaves or branches");
+    final Int i = new Int("index")    .set(freeChain.firstOne());                                                       // Index of the free node
+    freeChain.set(i, new Bool(false));                                                                                  // Remove indexed node from free chain
+    return i;
    }
 
   void free(Locatable Free)                                                                                             // Free a leaf or a branch
    {final Int a = Free.getLocation();
-    nodeAddress(a);                                                                                                     // Check the viability of the node index
     byteMemory.invalidate(nodeAddress(a), sizeOfNode);                                                                  // Invalidate the memory
-    freeChain.setSlotAndKey(a, a, a);
+    freeChain.set(a, new Bool(true));
    }
 
-  Bool isAllocated(Int Node) {return freeChain.find(Node).equal.Flip();}                                                // Convert index to byte address of node in memory
+  Bool isAllocated(Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
 
   Int nodeAddress(Int Node)                                                                                             // Convert index to byte address of node in memory
    {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
     Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
-    final Slots.Find F = freeChain.find(Node);                                                                          // Check not freed
-    F.equal.stop("Attempting to access a branch or leaf that has been freed:", Node);                                   // Complain of the node has been freed and not reallocated
+    final Bool f = freeChain.getBit(Node);                                                                              // Check not freed
+    f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                         // Complain of the node has been freed and not reallocated
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
 
@@ -181,7 +178,7 @@ class Tree extends Program                                                      
 
   StringBuilder dump()                                                                                                  // Dump the tree
    {final StringBuilder s = new StringBuilder();
-    final Int           c = new Int(numberOfNodes).sub(freeChain.count());
+    final Int           c = new Int(numberOfNodes).sub(freeChain.countOnes());
     new I()                                                                                                             // Dump the tree statistics
      {void action()
        {s.setLength(0);
@@ -892,7 +889,7 @@ class Tree extends Program                                                      
          };
         branchSlot .set(action.getInt(ib(depth)));                                                                      // The slot in the current branch that ha just been processed
         child      .set(node  .getInt(ib(depth.Inc())));                                                                // The leaf or branch below this branch that has just been processed
-        Depth      .set(depth);                                                                                         // The leaf or branch below this branch that has just been processed
+        Depth      .set(depth);                                                                                         // Show the depth of this branch
        }
      }
 
@@ -909,21 +906,12 @@ class Tree extends Program                                                      
     Traverse()                                                                                                          // Traverse the tree visiting each leaf and branch in order
      {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added tothe stack
       final Tree tree = Tree.this;
-//say("AAAA0000", tree.dump());
+
       new If (isBranch(new Int(ib(0))))                                                                                 // Tree starts with a branch
        {void Then()
          {new For(numberOfNodes*2)                                                                                      // Each node in the tree
            {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
-             {
-//say("AAAA1111", depth);
-//new For(depth.Inc())
-// {void body(Int Index, Bool Continue)
-//   {say("AAAA2222", node.getInt(ib(Index)), action.getInt(ib(Index))); Continue.set();
-//   }
-// };
-
-
-               new If (depth.ge(0))                                                                                      // Branches waiting to be processed
+             {new If (depth.ge(0))                                                                                      // Branches waiting to be processed
                {void Then()                                                                                             // Branches still present on branches stack
                  {Continue.set();                                                                                       // Continue as long as thr are brancehs to be processed
                   new If (isBranch(node.getInt(ib(depth))))                                                             // Processing a branch
@@ -939,11 +927,9 @@ class Tree extends Program                                                      
                               depth.inc();                                                                              // Next child next time
                               node  .putInt(ib(depth), b.data(b.slots.getSlotToKeyIndex(c)));                           // First child
                               action.putInt(ib(depth), new Int(action_first));
-//say("AAAA3333", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                              }
                             void Else()
                              {action.putInt(ib(depth), new Int(action_top));                                            // No children so move to top
-//say("AAAA4444", depth, action.getInt(ib(depth)));
                              }
                            };
                          }
@@ -955,23 +941,12 @@ class Tree extends Program                                                      
                               depth.inc();                                                                              // Next child next time
                               node.putInt(ib(depth), b.top());                                                          // Add top
                               action.putInt(ib(depth), new Int(action_first));                                          // First child if any
-//say("AAAA4444", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                              }
 
                             void Else()                                                                                 // Remove
                              {new If (a.eq(action_remove))
                                {void Then()
-                                 {//new If (depth.gt(0))                                                                  // Branch has a parent
-                                  // {void Then()
-                                  //   {final Int B = parentBranch(depth);                                                // Parent branch
-                                  //    branchBody(b.getLocation(), new Int(-1), depth, B);                               // Process branch
-                                  //   }
-                                  //  void Else()                                                                         // Branch has no parent
-                                  //   {branchBody(b.getLocation(), null,        depth, null);
-                                  //   }
-                                  // };
-                                  depth.dec();                                                                          // Remove from stack uncovering previous item
-//say("AAAA5555", depth);
+                                 {depth.dec();                                                                          // Remove from stack uncovering previous item
                                  }
                                 void Else()                                                                             // Next child
                                  {final BranchContext bc = new BranchContext();                                         // Context of current brnach
@@ -984,12 +959,9 @@ class Tree extends Program                                                      
                                       final Int N = b.data(b.slots.getSlotToKeyIndex(n));                               // Next child index
                                       node.putInt(ib(depth), N);                                                        // First child
                                       action.putInt(ib(depth), new Int(action_first));                                  // Request first child of added branch if it is a branch else it wil be processed as a leaf
-                                      //branchBody(b.getLocation(), n, depth, B);                                       // Process action
-//say("AAAA6666", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                                      }
                                     void Else()                                                                         // No more children so move to top
                                      {action.putInt(ib(depth), new Int(action_top));
-//say("AAAA7777", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                                      }
                                    };
                                  }
@@ -1001,12 +973,9 @@ class Tree extends Program                                                      
                      }
                     void Else()                                                                                         // Process a leaf from the stack
                      {final Int b = parentBranch(depth.Dec());
-//say("AAAA8881", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                       final Slots s = branch(b).slots;
-                      leafBody(node.getInt(ib(depth)), action.getInt(ib(depth.Dec())), depth, b);                             // Process the referenced leaf
-//say("AAAA8882", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
+                      leafBody(node.getInt(ib(depth)), action.getInt(ib(depth.Dec())), depth, b);                       // Process the referenced leaf
                       depth.dec();
-//say("AAAA8883", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
                      }
                    };
                  }
@@ -1016,7 +985,6 @@ class Tree extends Program                                                      
          }
         void Else()                                                                                                     // Process a tree consisting of a single leaf
          {leafBody(new Int(0), new Int(0), new Int(0), null);
-//say("AAAA9999", depth, node.getInt(ib(depth)), action.getInt(ib(depth)));
          }
        };
      }
@@ -1058,15 +1026,15 @@ class Tree extends Program                                                      
           final StringBuilder s = new StringBuilder();
 
           new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
-          //b.iterate((k,d)->s.append(k+","));                                                                            // Format keys
-          final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                   // Key of slot
+          //b.iterate((k,d)->s.append(k+","));                                                                          // Format keys
+          final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
 
           new I()                                                                                                       // Place in output area
            {void action()
              {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
-              P.elementAt(d).append(""+K.i());                                                                              // Write key into output area
+              P.elementAt(d).append(""+K.i());                                                                          // Write key into output area
 
               if (Context)                                                                                              // Context requested
                {if (BC.Depth.i() == 0)                                                                                  // Parent details if requested and there is a parent
@@ -1111,7 +1079,7 @@ class Tree extends Program                                                      
      }
    }
 
-  StringBuilder print() {return new Print(true).printCollapsed();}                                                             // Print the tree
+  StringBuilder print() {return new Print(true).printCollapsed();}                                                      // Print the tree
 
 /*
   void printLeaf(Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details, Branch Parent, Integer Index)            // Print leaf horizontally
@@ -1248,10 +1216,10 @@ class Tree extends Program                                                      
 
   static void test_tree(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-                                            t.freeChain.usedKeys.countZeros().ok(1);
-    final Leaf   a = t.leaf(t.new Int(0));  t.freeChain.usedKeys.countZeros().ok(1);
-    final Leaf   b = t.leaf();              t.freeChain.usedKeys.countZeros().ok(2);
-    final Branch c = t.branch();            t.freeChain.usedKeys.countZeros().ok(3);
+                                            t.freeChain.countZeros().ok(1);
+    final Leaf   a = t.leaf(t.new Int(0));  t.freeChain.countZeros().ok(1);
+    final Leaf   b = t.leaf();              t.freeChain.countZeros().ok(2);
+    final Branch c = t.branch();            t.freeChain.countZeros().ok(3);
     a.insert(t.new Int(2), t.new Int(22));
     b.insert(t.new Int(4), t.new Int(44));
     c.insert(t.new Int(5), t.new Int(55));
