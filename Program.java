@@ -1002,8 +1002,8 @@ public class Program extends Test                                               
    }
 
   static void test_bool()
-   {test_bool(true);
-    test_bool(false);
+   {          test_bool(true);
+              test_bool(false);
    }
 
 
@@ -1026,8 +1026,8 @@ public class Program extends Test                                               
    }
 
   static void test_andOr()
-   {test_andOr(true);
-    test_andOr(false);
+   {          test_andOr(true);
+              test_andOr(false);
    }
 
 
@@ -1063,8 +1063,8 @@ public class Program extends Test                                               
    }
 
   static void test_add()
-   {test_add(true);
-    test_add(false);
+   {          test_add(true);
+              test_add(false);
    }
 
   static void test_fibonnacci(boolean Ex)
@@ -1093,8 +1093,8 @@ public class Program extends Test                                               
    }
 
   static void test_fibonnacci()
-   {test_fibonnacci(true);
-    test_fibonnacci(false);
+   {          test_fibonnacci(true);
+              test_fibonnacci(false);
    }
 
   static void test_mod(Boolean Ex)
@@ -1125,8 +1125,8 @@ public class Program extends Test                                               
    }
 
   static void test_mod()
-   {test_mod(true);
-    test_mod(false);
+   {          test_mod(true);
+              test_mod(false);
    }
 
   static Program test_incremental(boolean Ex)
@@ -1175,8 +1175,8 @@ public class Program extends Test                                               
    }
 
   static void test_bits()
-   {test_bits(true);
-    test_bits(false);
+   {          test_bits(true);
+              test_bits(false);
    }
 
   static void test_remote(boolean Ex)
@@ -1196,8 +1196,8 @@ public class Program extends Test                                               
    }
 
   static void test_remote()
-   {test_remote(true);
-    test_remote(false);
+   {          test_remote(true);
+              test_remote(false);
    }
 
   static void test_copy(boolean Ex)
@@ -1225,8 +1225,8 @@ public class Program extends Test                                               
    }
 
   static void test_copy()
-   {test_copy(true);
-    test_copy(false);
+   {          test_copy(true);
+              test_copy(false);
    }
 
   static void test_byteMemory(boolean Ex)
@@ -1320,8 +1320,8 @@ public class Program extends Test                                               
    }
 
   static void test_byteMemoryRef()
-   {test_byteMemoryRef(true);
-    test_byteMemoryRef(false);
+   {          test_byteMemoryRef(true);
+              test_byteMemoryRef(false);
    }
 
   static void test_invalidate(boolean Ex)
@@ -1355,8 +1355,8 @@ public class Program extends Test                                               
    }
 
   static void test_invalidate()
-   {test_invalidate(true);
-    test_invalidate(false);
+   {          test_invalidate(true);
+              test_invalidate(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
