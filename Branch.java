@@ -3,6 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 // “8GB DDR4 2666 laptop SODIMM”
 //----------------------------------------------------------------------------------------------------------------------
+//Merge after insert or deletre
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -200,6 +201,14 @@ class Branch extends Program implements Program.Locatable                       
          };
        }
      };
+    return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
+   }
+
+  Int insertEmpty(Int Key, Int Data)                                                                                    // Insert a key data pair into a branch known to be empty
+   {if (immediate() && !slots.empty().b()) stop("Branch should be empty");
+    final Int r = new Int();                                                                                            // The slot containing the inserted key
+    r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
+    refData.putInt(new Int(0), Data);                                                                                   // Place data in first key slot
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
