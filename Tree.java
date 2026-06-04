@@ -437,11 +437,24 @@ class Tree extends Program                                                      
    {final Path p = path(Key);                                                                                           // Path from root to full leaf
     p.splitPoint();                                                                                                     // The lowest branch in the tree that is above the leaf and full and all the lower branches down to the leaf are full
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
-    final Branch P = branch(p.path.getInt(p.step.Dec()));                                                               // Parent branch of full leaf
+    final Int    L = p.step.Dec();                                                                                      // Last step along path
+    final Int    B = p.path.getInt(L);                                                                                  // Index of branch at last step along the path and thus the parent of the leaf
+    final Int    S = p.slot.getInt(L);                                                                                  // The slot stepped through to reach the leaf
+    final Bool   T = p.atop.getBool(L);                                                                                 // Stepped through top to reach the leaf
+    final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
     final Leaf   r = leaf(p.leaf);                                                                                      // The full leaf into which the key should be inserted
     final Leaf   l = leaf();
     final Int   sk = r.splitLeft(l);
-    P.insert(sk, l.getLocation());
+
+    new If (T)                                                                                                          // If the leaf was reached by stepping through top then insert the new left leaf high
+     {void Then()
+       {P.insert(sk, l.getLocation(), new Int());                                                                       // Insert new left leaf high
+       }
+      void Else()
+       {P.insert(sk, l.getLocation(), S);                                                                               // Insert new left leaf below the key in the indicated slot
+       }
+     };
+
     new If (Key.le(sk))                                                                                                 // Insert the key in the left leaf if it less than the splitting key
      {void Then()
        {l.insert(Key, Data);                                                                                            // Insert key in the left leaf
