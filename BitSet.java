@@ -839,8 +839,8 @@ Zero:
    }
 
   static void test_prevNext()                                                                                           // Test tree of searchable one bits
-   {test_prevNext(true);
-    test_prevNext(false);
+   {          test_prevNext(true);
+              test_prevNext(false);
    }
 
   static void test_prevNext01(boolean Ex)                                                                               // Test tree of searchable one bits
@@ -906,8 +906,8 @@ Zero:
    }
 
   static void test_prevNext01()                                                                                         // Test tree of searchable one bits
-   {test_prevNext01(true);
-    test_prevNext01(false);
+   {          test_prevNext01(true);
+              test_prevNext01(false);
    }
 
   static void test_prevNext10(boolean Ex)                                                                               // Test tree of searchable one bits
@@ -958,8 +958,8 @@ Zero:
    }
 
   static void test_prevNext10()                                                                                         // Test tree of searchable one bits
-   {test_prevNext10(true);
-    test_prevNext10(false);
+   {          test_prevNext10(true);
+              test_prevNext10(false);
    }
 
   static void test_oneZero(boolean Ex)
@@ -1170,8 +1170,8 @@ Zero:
    }
 
   static void test_oneZero()                                                                                            // Test tree of searchable one bits
-   {test_oneZero(true);
-    test_oneZero(false);
+   {          test_oneZero(true);
+              test_oneZero(false);
    }
 
   static void test_fullEmpty(int N, boolean Ex)
@@ -1194,10 +1194,10 @@ Zero:
    }
 
   static void test_fullEmpty()                                                                                          // Test tree of searchable one bits
-   {test_fullEmpty( 9, true);
-    test_fullEmpty( 9, false);
-    test_fullEmpty(16, true);
-    test_fullEmpty(16, false);
+   {          test_fullEmpty( 9, true);
+              test_fullEmpty( 9, false);
+              test_fullEmpty(16, true);
+              test_fullEmpty(16, false);
    }
 
   static void test_count(int N, boolean Ex)
@@ -1221,12 +1221,12 @@ Zero:
    }
 
   static void test_count()
-   {test_count( 9, true);
-    test_count( 9, false);
-    test_count(17, true);
-    test_count(17, false);
-    test_count(32, true);
-    test_count(32, false);
+   {          test_count( 9, true);
+              test_count( 9, false);
+              test_count(17, true);
+              test_count(17, false);
+              test_count(32, true);
+              test_count(32, false);
    }
 
 /*
@@ -1464,8 +1464,8 @@ Zero:
    }
 
   static void test_powerPosOneZero()
-   {test_powerPosOneZero(true);
-    test_powerPosOneZero(false);
+   {          test_powerPosOneZero(true);
+              test_powerPosOneZero(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
