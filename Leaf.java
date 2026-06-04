@@ -6,7 +6,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 
-class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
+class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in leaf
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
@@ -90,18 +90,18 @@ class Leaf extends Program implements Program.Locatable                         
   int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the leaf
 
   Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
-  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // Set the data at the specified index
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
   void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
-  void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
+  void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
   Int find          (Int Key) {return getDataFromKey(Key, false);}                                                      // Get the data associated with a key
-  Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
   Int getDataFromKey(Int Key, boolean Delete)                                                                           // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
@@ -197,7 +197,7 @@ class Leaf extends Program implements Program.Locatable                         
      };
    }
 
-  Bool mergeRight(Leaf Right)                                                                                           // Merge the leaf into the right of this leaf
+  Bool mergeRight(Leaf Right)                                                                                           // Merge the specified leaf into the right of this leaf
    {final Leaf left = this;
     final Int  lc   = left .count();
     final Int  rc   = Right.count();
@@ -241,7 +241,7 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D1 Iterate                                                                                                            // Iterate over a leaf
 
-  interface Iterator                                                                                                    // Process a key data, value in a leaf when iterating over the leaf
+  interface Iterator                                                                                                    // Process a key,data pair when iterating over the leaf
    {void process(Int Key, Int Data);
    }
 
