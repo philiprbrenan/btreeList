@@ -3,7 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 // “8GB DDR4 2666 laptop SODIMM”
 //----------------------------------------------------------------------------------------------------------------------
-//Merge after insert or deletre
+//Merge after insert or delete
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -95,18 +95,18 @@ class Branch extends Program implements Program.Locatable                       
   int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the branch
 
   Int  data(Int Index)            {return refData.getInt(Index);}                                                       // Get data at an index
-  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // The data values are arranged in reverse key order to make the results of compacting the corresponding slots
+  void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // Set data at the specified index
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a branch
   void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
 
   void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
-  void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errros if an attempt is made to reuse it with it initializing it first
+  void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
 
 //D1  Delete, find, insert                                                                                              // Delete, find, insert keys and data in a branch
 
   Int find  (Int Key) {return getDataFromKey(Key, false);}                                                              // Get the data associated with a key
-  Int delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no prefferd value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Int delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
   Int getDataFromKey(Int Key, boolean Delete)                                                                           // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
@@ -131,7 +131,7 @@ class Branch extends Program implements Program.Locatable                       
     final Int slot = new Int();                                                                                         // The slot used to step down.  If not set then stepped through top
    }
 
-  StepDown stepDown(Int Key)                                                                                            // Reference of the next branch down that might contain the specified key
+  StepDown stepDown(Int Key)                                                                                            // Reference to the next branch down that might contain the specified key
    {final Slots.Find f = slots.find(Key);                                                                               // Find result
     final StepDown   r = new StepDown();                                                                                // Result
 
@@ -172,9 +172,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Int insert(Int Key, Int Data, Int BelowSlot)                                                                          // Insert a key data pair into a branch when the slot below which to make the insertion is known, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
-   {//final Int        i = slots.insert(Key); .// repalce with
-    //final Int        k = slots.getSlotToKeyIndex(i);
-    final Int r = new Int();                                                                                            // The slot containing the inserted key
+   {final Int r = new Int();                                                                                            // The slot containing the inserted key
     new If(BelowSlot.valid())                                                                                           // Insert below the specified slot if it is valid
      {void Then()
        {if (immediate() && !slots.getSlotToKeysInUse(BelowSlot).b())
@@ -185,7 +183,7 @@ class Branch extends Program implements Program.Locatable                       
         final Int k = slots.getSlotToKeyIndex(r);
         refData.putInt(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
        }
-      void Else()                                                                                                       // No below slot supplied so we must insert at the end in the modle if empty or at the end Insert in the first
+      void Else()                                                                                                       // No below slot supplied so insert in the middle if empty otherwise at the end
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
          {void Then()
            {r.set(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
@@ -267,7 +265,7 @@ class Branch extends Program implements Program.Locatable                       
     return sk;                                                                                                          // Splitting key
    }
 
-//D2 Merge                                                                                                              // Merge two leaves
+//D2 Merge                                                                                                              // Merge two branches
 
   private void copyMergeData(Branch Source, Int Start, Int End)                                                         // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
    {new ForCount (Start, End)
@@ -277,7 +275,7 @@ class Branch extends Program implements Program.Locatable                       
      };
    }
 
-  Bool mergeRight(Branch Right)                                                                                         // Merge the leaf into the right of this leaf
+  Bool mergeRight(Branch Right)                                                                                         // Merge the specified branch into the right of this branch
    {final Branch left = this;
     final Int  lc     = left .count();
     final Int  rc     = Right.count();
@@ -332,7 +330,7 @@ class Branch extends Program implements Program.Locatable                       
 
 //D1 Iterate                                                                                                            // Iterate over a branch
 
-  interface Iterator                                                                                                    // Process a key data, value in a branch when iterating over the branch
+  interface Iterator                                                                                                    // Process a key,data pair when iterating over the branch
    {void process(Int Key, Int Data);
    }
 
