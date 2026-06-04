@@ -263,7 +263,9 @@ public class BitSet extends Program                                             
 
 //D1 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
-  public void set  (Int Index, Bool Value)                                                                              // Set or clear a bit in the bitset
+  public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void set  (Int Index, Bool Value)                                                                               // Set or clear a bit in the bitset
    {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value
      {void Then()
        {setBitNC(Index, Value);                                                                                         // Set the bit
@@ -273,6 +275,7 @@ public class BitSet extends Program                                             
      };
    }
 
+  public Bool get   (Int Index) {return getBit(Index);}                                                                 // Get a bit from the bit set
   public Bool getBit(Int Index)                                                                                         // Get a bit from the bit set
    {if (immediate()) checkIndex(Index);
     return getBitNC(Index);
@@ -283,9 +286,6 @@ public class BitSet extends Program                                             
 
   void setBit  (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value.
   void setBitNC(Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value without checking index
-
-  public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
 
   void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();}                                            // Next layer down in a bit tree
   void moveUpOneLayer  (Int B, Int p, Int w) {w.up();   p.sub(w); B.up()  ;}                                            // Move up one layer in the bit tree
