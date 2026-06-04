@@ -2,6 +2,7 @@
 // Locate set or cleared bits in a  fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Change getBit() to get().  Add set(Int i), clear(Int i)
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -262,7 +263,17 @@ public class BitSet extends Program                                             
 
 //D1 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
 
-  public Bool getBit(Int Index)                                                                                         // Get bit value at an index after checking that the index is valid
+  public void set  (Int Index, Bool Value)                                                                              // Set or clear a bit in the bitset
+   {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value
+     {void Then()
+       {setBitNC(Index, Value);                                                                                         // Set the bit
+        new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the ones  tree
+        new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the zeros tree
+       }
+     };
+   }
+
+  public Bool getBit(Int Index)                                                                                         // Get a bit from the bit set
    {if (immediate()) checkIndex(Index);
     return getBitNC(Index);
    }
@@ -275,16 +286,6 @@ public class BitSet extends Program                                             
 
   public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
   public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
-
-  public void set  (Int Index, Bool Value)                                                                              // Set or clear bits along the path from the indexed bit to the root of the bit tree
-   {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value
-     {void Then()
-       {setBitNC(Index, Value);                                                                                         // Set the bit
-        new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};
-        new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};
-       }
-     };
-   }
 
   void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();}                                            // Next layer down in a bit tree
   void moveUpOneLayer  (Int B, Int p, Int w) {w.up();   p.sub(w); B.up()  ;}                                            // Move up one layer in the bit tree
