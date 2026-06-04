@@ -138,7 +138,7 @@ class Slots extends Program                                                     
 
   Bool    empty             ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
   Bool    full              ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Int     count             ()             {return usedKeys.countOnes();}                                               // Count the nunber of keys in use
+  Int     count             ()             {return usedKeys.countOnes();}                                               // Count the number of keys in use
 
   void invalidateMemory     ()             {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   int  numberOfKeys         ()             {return numberOfKeys;}                                                       // The number of references in the slots definition
