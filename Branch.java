@@ -432,8 +432,8 @@ Branch         size:   7 top:   0
    }
 
   static void test_branch()
-   {test_branch(true);
-    test_branch(false);
+   {          test_branch(true);
+              test_branch(false);
    }
 
   static void test_compactLeft(boolean Ex)
@@ -466,8 +466,8 @@ Branch         size:   7 top:   0
    }
 
   static void test_compactLeft()
-   {test_compactLeft(true);
-    test_compactLeft(false);
+   {          test_compactLeft(true);
+              test_compactLeft(false);
    }
 
   static void test_compactRight(boolean Ex)
@@ -501,8 +501,8 @@ Branch         size:   7 top:   0
    }
 
   static void test_compactRight()
-   {test_compactRight(true);
-    test_compactRight(false);
+   {          test_compactRight(true);
+              test_compactRight(false);
    }
 
   static void test_splitRight(boolean Ex)
@@ -552,8 +552,8 @@ Branch         size:   7 top:  99
    }
 
   static void test_splitRight()
-   {test_splitRight(true);
-    test_splitRight(false);
+   {          test_splitRight(true);
+              test_splitRight(false);
    }
 
   static void test_splitLeft(boolean Ex)
@@ -602,8 +602,8 @@ Branch         size:   7 top:  99
    }
 
   static void test_splitLeft()
-   {test_splitLeft(true);
-    test_splitLeft(false);
+   {          test_splitLeft(true);
+              test_splitLeft(false);
    }
 
   static void test_mergeRight(boolean Ex)
@@ -665,8 +665,8 @@ Branch         size:   7 top:  99
    }
 
   static void test_mergeRight()
-   {test_mergeRight(true);
-    test_mergeRight(false);
+   {          test_mergeRight(true);
+              test_mergeRight(false);
    }
 
   static void test_mergeLeft(boolean Ex)
@@ -728,8 +728,8 @@ Branch         size:   7 top:  99
    }
 
   static void test_mergeLeft()
-   {test_mergeLeft(true);
-    test_mergeLeft(false);
+   {          test_mergeLeft(true);
+              test_mergeLeft(false);
    }
 
   static void test_find(boolean Ex)
@@ -781,8 +781,8 @@ Branch         size:   7 top:   0
    }
 
   static void test_find()
-   {test_find(true);
-    test_find(false);
+   {          test_find(true);
+              test_find(false);
    }
 
   static void test_iterate(boolean Ex)
@@ -827,8 +827,8 @@ Branch         size:   7 top:  88
    }
 
   static void test_iterate()
-   {test_iterate(true);
-    test_iterate(false);
+   {          test_iterate(true);
+              test_iterate(false);
    }
 
   static void test_fixedFields(boolean Ex)
@@ -852,8 +852,8 @@ Branch         size:   7 top:  88
    }
 
   static void test_fixedFields()
-   {test_fixedFields(true);
-    test_fixedFields(false);
+   {          test_fixedFields(true);
+              test_fixedFields(false);
    }
 
   static void test_stepDown(boolean Ex)
@@ -875,8 +875,8 @@ Branch         size:   7 top:  88
    }
 
   static void test_stepDown()
-   {test_stepDown(true);
-    test_stepDown(false);
+   {          test_stepDown(true);
+              test_stepDown(false);
    }
 
   static void test_knownInsert(boolean Ex)
@@ -940,8 +940,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void test_knownInsert()
-   {test_knownInsert(true);
-    test_knownInsert(false);
+   {          test_knownInsert(true);
+              test_knownInsert(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
