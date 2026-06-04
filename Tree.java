@@ -86,7 +86,7 @@ class Tree extends Program                                                      
     sizeOfNode = build.nodeSize;
 
     freeChain  = new BitSet(build.freeChain.parent(this));                                                              // Memory for free chain
-    for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i), new Bool(true));                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
+    for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
    }
 
@@ -98,22 +98,22 @@ class Tree extends Program                                                      
   Int allocate()                                                                                                        // Allocate a leaf or a branch using the free chain slots as an array that can be searched for the first used slot in log time
    {freeChain.countOnes().eq(0).stop("No more leaves or branches");
     final Int i = new Int("index")    .set(freeChain.firstOne());                                                       // Index of the free node
-    freeChain.set(i, new Bool(false));                                                                                  // Remove indexed node from free chain
+    freeChain.clear(i);                                                                                                 // Remove indexed node from free chain
     return i;
    }
 
   void free(Locatable Free)                                                                                             // Free a leaf or a branch
    {final Int a = Free.getLocation();
     byteMemory.invalidate(nodeAddress(a), sizeOfNode);                                                                  // Invalidate the memory
-    freeChain.set(a, new Bool(true));
+    freeChain.set(a);
    }
 
-  Bool isAllocated(Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
+  Bool isAllocated(Int Node) {return freeChain.get(Node).Flip();}                                                       // Check whether a node is allocated
 
   Int nodeAddress(Int Node)                                                                                             // Convert index to byte address of node in memory
    {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
     Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
-    final Bool f = freeChain.getBit(Node);                                                                              // Check not freed
+    final Bool f = freeChain.get(Node);                                                                              // Check not freed
     f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                         // Complain of the node has been freed and not reallocated
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
@@ -1316,38 +1316,16 @@ Allocations   :    0
     test_tree(false);
    }
 
-  static void test_insert(boolean Ex)
+  static void test_saveReload(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
     if (true)
-     {t.new I() {void action() {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAALAAAAFgAAACEAAAAsAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAAAAFgAAACEAAAAsAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAABAAAABgAAAAcAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAADi/XsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH8EBQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA3AAAAQgAAACEAAAAsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); }};
-      t.new I() {void action() {t.freeChain.byteMemory.reload("AAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAjSKQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6AMAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAAAAAA=="); }};
+     {t.new I() {void action() {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAGAAAACQAAAAwAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAGAAAACQAAAAwAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAABAAAABgAAAAcAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAADi/XsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH8EBQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); }};
+      t.new I() {void action() {t.freeChain.byteMemory.reload("6AM="); }};
      }
     else
-     {t.new ForCount(t.new Int(1), t.new Int(5))
+     {t.new ForCount(t.new Int(1), t.new Int(7))
        {void body(Int Index)
-         {t.insert(t.new Int(Index), t.new Int(Index.Mul(10).add(Index)));
-         }
-       };
-      t.check (t.dump(), """
-Tree memory dump
-Leaf   size   :  153
-Branch size   :  121
-Node   size   :  153
-MaxLeafSize   :    4
-MaxBranchSize :    3
-NumberOfNodes :    4
-Allocations   :    1
-Leaf           size:   4
- Ref   Key  Data
-   0     1    11
-   1     2    22
-   2     3    33
-   3     4    44
-""");
-
-      t.new ForCount(t.new Int(5), t.new Int(7))
-       {void body(Int Index)
-         {t.insert(t.new Int(Index), t.new Int(Index.Mul(10).add(Index)));
+         {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
          }
        };
 
@@ -1355,7 +1333,7 @@ Leaf           size:   4
       t.new I() {void action() {say("Dump chain\n", t.freeChain.byteMemory.save());}};
      }
 
-    t.check (t.dump(), """
+    t.Check (t.dump(), """
 Tree memory dump
 Leaf   size   :  153
 Branch size   :  121
@@ -1369,14 +1347,14 @@ Branch         size:   3 top:   2
    0     2     1
 Leaf   at:   1 size:   4
  Ref   Key  Data
-   0     1    11
-   1     2    22
+   0     1    12
+   1     2    24
 Leaf   at:   2 size:   4
  Ref   Key  Data
-   2     3    33
-   3     4    44
-   0     5    55
-   1     6    66
+   2     3    36
+   3     4    48
+   0     5    60
+   1     6    72
 """);
 
     t.Check(t.print(), """
@@ -1387,55 +1365,16 @@ Leaf   at:   2 size:   4
 (1,0,3)     (2,0)  |
 """);
 
-    t.insert(t.new Int(7), t.new Int(77));
-    t.insert(t.new Int(8), t.new Int(88));
-
-    t.check (t.dump(), """
-Tree memory dump
-Leaf   size   :  153
-Branch size   :  121
-Node   size   :  153
-MaxLeafSize   :    4
-MaxBranchSize :    3
-NumberOfNodes :    4
-Allocations   :    4
-Branch         size:   3 top:   2
- Ref   Key  Data
-   0     2     1
-   1     4     3
-Leaf   at:   1 size:   4
- Ref   Key  Data
-   0     1    11
-   1     2    22
-Leaf   at:   2 size:   4
- Ref   Key  Data
-   0     5    55
-   1     6    66
-   2     7    77
-   3     8    88
-Leaf   at:   3 size:   4
- Ref   Key  Data
-   2     3    33
-   3     4    44
-""");
-
-    t.check(t.print(), """
-       2           4           |
-       (0)         (0)         |
-       [1,2]       [3,4]       |
-1,2         3,4         5,6,7,8|
-(1,0,2)     (3,0,4)     (2,0)  |
-""");
     t.maxSteps = 99_999;
     t.execute();
    }
 
-  static void test_insert()
-   {          test_insert(true);
-              test_insert(false);
+  static void test_saveReload()
+   {          test_saveReload(true);
+              test_saveReload(false);
    }
 
-  static void test_insert2(boolean Ex)
+  static void test_insert(boolean Ex)
    {final int N = 32 ;
      final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
     t.new ForCount(t.new Int(1), t.new Int(N))
@@ -1465,9 +1404,9 @@ Leaf   at:   3 size:   4
     t.execute();
    }
 
-  static void test_insert2()
-   {          test_insert2(!true);
-             //test_insert2(false);
+  static void test_insert()
+   {          test_insert(true);
+              test_insert(false);
    }
 
 /*
@@ -2380,8 +2319,8 @@ Delete 22
 */
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_tree();
+    test_saveReload();
     test_insert();
-    test_insert2();
     //test_insert();
     //test_insert_reverse();
     //test_insert_random();
@@ -2395,7 +2334,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert2();
+    test_saveReload();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
