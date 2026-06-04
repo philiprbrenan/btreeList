@@ -337,8 +337,8 @@ Leaf           size:   8
    }
 
   static void test_leaf()
-   {test_leaf(true);
-    test_leaf(false);
+   {          test_leaf(true);
+              test_leaf(false);
    }
 
   static void test_compactLeft(boolean Ex)
@@ -371,8 +371,8 @@ Leaf           size:   8
    }
 
   static void test_compactLeft()
-   {test_compactLeft(true);
-    test_compactLeft(false);
+   {          test_compactLeft(true);
+              test_compactLeft(false);
    }
 
   static void test_compactRight(boolean Ex)
@@ -406,8 +406,8 @@ Leaf           size:   8
    }
 
   static void test_compactRight()
-   {test_compactRight(true);
-    test_compactRight(false);
+   {          test_compactRight(true);
+              test_compactRight(false);
    }
 
   static void test_splitRight(boolean Ex)
@@ -460,8 +460,8 @@ Leaf           size:   8
    }
 
   static void test_splitRight()
-   {test_splitRight(true);
-    test_splitRight(false);
+   {          test_splitRight(true);
+              test_splitRight(false);
    }
 
   static void test_splitLeft(boolean Ex)
@@ -513,8 +513,8 @@ Leaf           size:   8
    }
 
   static void test_splitLeft()
-   {test_splitLeft(true);
-    test_splitLeft(false);
+   {          test_splitLeft(true);
+              test_splitLeft(false);
    }
 
   static void test_mergeRight(boolean Ex)
@@ -578,8 +578,8 @@ Leaf           size:   8
    }
 
   static void test_mergeRight()
-   {test_mergeRight(true);
-    test_mergeRight(false);
+   {          test_mergeRight(true);
+              test_mergeRight(false);
    }
 
   static void test_mergeLeft(boolean Ex)
@@ -645,8 +645,8 @@ Leaf           size:   8
    }
 
   static void test_mergeLeft()
-   {test_mergeLeft(true);
-    test_mergeLeft(false);
+   {          test_mergeLeft(true);
+              test_mergeLeft(false);
    }
 
   static void test_find(boolean Ex)
@@ -701,8 +701,8 @@ Leaf           size:   8
    }
 
   static void test_find()
-   {test_find(true);
-    test_find(false);
+   {          test_find(true);
+              test_find(false);
    }
 
   static void test_iterate(boolean Ex)
@@ -749,8 +749,8 @@ Leaf           size:   8
    }
 
   static void test_iterate()
-   {test_iterate(true);
-    test_iterate(false);
+   {          test_iterate(true);
+              test_iterate(false);
    }
 
   static void test_fixedFields(boolean Ex)
@@ -774,8 +774,8 @@ Leaf           size:   8
    }
 
   static void test_fixedFields()
-   {test_fixedFields(true);
-    test_fixedFields(false);
+   {          test_fixedFields(true);
+              test_fixedFields(false);
    }
 
   static void test_empty(boolean Ex)
@@ -805,8 +805,8 @@ keys     :    2   0   0   0   0   0   0   0
    }
 
   static void test_empty()
-   {test_empty(true);
-    test_empty(false);
+   {          test_empty(true);
+              test_empty(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
