@@ -462,7 +462,7 @@ class Tree extends Program                                                      
     final Int sk = l.splitRight(r);                                                                                     // Splitting key
     R.clear();                                                                                                          // Clear the root
     makeBranch(R.getLocation());                                                                                        // Mark the root as a branch
-    R.insert(sk, l.getLocation());                                                                                      // Insert the left branch below the spitting key
+    R.insertEmpty(sk, l.getLocation());                                                                                 // Insert the left branch below the spitting key
     R.top(r.getLocation());                                                                                             // Insert right as top of root
     return sk;                                                                                                          // Retun the splitting key
    }
