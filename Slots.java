@@ -827,6 +827,9 @@ class Slots extends Program                                                     
      {return "Find(" + "slot=" + slot + ", lower=" + lower + ", higher=" + higher +
              ", equal=" + equal + ", empty=" + empty + ')';
      }
+
+    StringBuilder print() {return new StringBuilder(""+this);}
+
    }
 
   Find find(Int Key)                                                                                                    // Find a key in the slots
@@ -1060,8 +1063,8 @@ keys     :    0  11   0  22   0   0   0   0
    }
 
   static void test_slots()
-   {test_slots(true);
-    test_slots(false);
+   {          test_slots(true);
+              test_slots(false);
    }
 
   static void test_locateNearestFreeSlotToKey(boolean Ex)
@@ -1103,8 +1106,8 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
    }
 
   static void test_locateNearestFreeSlotToKey()
-   {test_locateNearestFreeSlotToKey(true);
-    test_locateNearestFreeSlotToKey(false);
+   {          test_locateNearestFreeSlotToKey(true);
+              test_locateNearestFreeSlotToKey(false);
    }
 
   static void test_alloc(boolean Ex)
@@ -1144,8 +1147,8 @@ keys     :    2   3   1   4
    }
 
   static void test_alloc()
-   {test_alloc(true);
-    test_alloc(false);
+   {          test_alloc(true);
+              test_alloc(false);
    }
 
   static void test_set_del_slot_key(boolean Ex)
@@ -1184,8 +1187,8 @@ keys     :    0   0   0   2
    }
 
   static void test_set_del_slot_key()
-   {test_set_del_slot_key(true);
-    test_set_del_slot_key(false);
+   {          test_set_del_slot_key(true);
+              test_set_del_slot_key(false);
    }
 
   static void test_compact(boolean Ex)
@@ -1294,8 +1297,8 @@ keys     :    0   0   1   2
    }
 
   static void test_compact()
-   {test_compact(true);
-    test_compact(false);
+   {          test_compact(true);
+              test_compact(false);
    }
 
   static void test_redistribute(boolean Ex)
@@ -1339,8 +1342,8 @@ keys     :    7   1   3   2   4   5   6   0
    }
 
   static void test_redistribute()
-   {test_redistribute(true);
-    test_redistribute(false);
+   {          test_redistribute(true);
+              test_redistribute(false);
    }
 
   static void test_shift(boolean Ex)
@@ -1413,8 +1416,8 @@ keys     :    7   1   3   2   4   5   6   0
    }
 
   static void test_shift()
-   {test_shift(true);
-    test_shift(false);
+   {          test_shift(true);
+              test_shift(false);
    }
 
   static void test_mergeFromRightEven(boolean Ex)
@@ -1458,8 +1461,8 @@ keys     :    0   0   4   3
    }
 
   static void test_mergeFromRightEven()
-   {test_mergeFromRightEven(true);
-    test_mergeFromRightEven(false);
+   {          test_mergeFromRightEven(true);
+              test_mergeFromRightEven(false);
    }
 
   static void test_mergeFromLeftEven(boolean Ex)
@@ -1505,8 +1508,8 @@ keys     :    2   1   4   3
    }
 
   static void test_mergeFromLeftEven()
-   {test_mergeFromLeftEven(true);
-    test_mergeFromLeftEven(false);
+   {          test_mergeFromLeftEven(true);
+              test_mergeFromLeftEven(false);
    }
 
   static void test_mergeFromRightOdd(boolean Ex)
@@ -1575,8 +1578,8 @@ keys     :    0   0   0   5   4
    }
 
   static void test_mergeFromRightOdd()
-   {test_mergeFromRightOdd(true);
-    test_mergeFromRightOdd(false);
+   {          test_mergeFromRightOdd(true);
+              test_mergeFromRightOdd(false);
    }
 
   static void test_mergeFromLeftOdd(boolean Ex)
@@ -1634,12 +1637,12 @@ keys     :    1   2   3   5   4
    }
 
   static void test_mergeFromLeftOdd()
-   {test_mergeFromLeftOdd(true);
-    test_mergeFromLeftOdd(false);
+   {          test_mergeFromLeftOdd(true);
+              test_mergeFromLeftOdd(false);
    }
 
-  static void test_find()
-   {final Slots s = new Slots(new Build().numberOfKeys(8))
+  static void test_find(boolean Ex)
+   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         putSlotToKeys(new Int( 0), new Int(1));
@@ -1670,7 +1673,7 @@ keys     :   44  11   0  22   0  33   0   0
        getSlotToKeyValue(new Int(8)).ok(44);
 
        //new I() {void action() {testStop(s.usedSlotsToKeys);}};
-       ok(s.usedSlotsToKeys, """
+       ok(()->s.usedSlotsToKeys, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  1  0  1  0  1  0  0  0  0  0  0  0  0  0  0  1
 One:
@@ -1686,21 +1689,26 @@ Zero:
 """);
         maxSteps = 99999;
         execute();
-        ok(find(new Int( 5)), "Find(slot=0, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(11)), "Find(slot=0, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(15)), "Find(slot=2, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(22)), "Find(slot=2, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(25)), "Find(slot=4, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(33)), "Find(slot=4, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(35)), "Find(slot=15, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(44)), "Find(slot=15, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(45)), "Find(slot=15, lower=false, higher=true, equal=false, empty=false)");
+        check(find(new Int( 5)).print(), "Find(slot=0, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(11)).print(), "Find(slot=0, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(15)).print(), "Find(slot=2, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(22)).print(), "Find(slot=2, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(25)).print(), "Find(slot=4, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(33)).print(), "Find(slot=4, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(35)).print(), "Find(slot=15, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(44)).print(), "Find(slot=15, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(45)).print(), "Find(slot=15, lower=false, higher=true, equal=false, empty=false)");
        }
      };
    }
 
-  static void test_findRight()                                                                                          // Same as find but with the slots on the right
-   {final Slots s = new Slots(new Build().numberOfKeys(8))
+  static void test_find()
+   {          test_find(true);
+              test_find(false);
+   }
+
+  static void test_findRight(boolean Ex)                                                                                          // Same as find but with the slots on the right
+   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         putSlotToKeys(new Int( 9), new Int(1));
@@ -1724,13 +1732,13 @@ usedKeys :    X   X   .   X   .   X   .   .
 keys     :   44  11   0  22   0  33   0   0
 """);
 
-       ok(getSlotToKeyValue( 9), 11);
-       ok(getSlotToKeyValue(11), 22);
-       ok(getSlotToKeyValue(13), 33);
-       ok(getSlotToKeyValue(15), 44);
+       getSlotToKeyValue(new Int( 9)).ok(11);
+       getSlotToKeyValue(new Int(11)).ok(22);
+       getSlotToKeyValue(new Int(13)).ok(33);
+       getSlotToKeyValue(new Int(15)).ok(44);
 
        //new I() {void action() {testStop(s.usedSlotsToKeys);}};
-       ok(s.usedSlotsToKeys, """
+       ok(()->s.usedSlotsToKeys, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  0  0  0  0  0  0  0  0  0  1  0  1  0  1  0  1
 One:
@@ -1746,17 +1754,22 @@ Zero:
 """);
         maxSteps = 99999;
         execute();
-        ok(find(new Int( 5)), "Find(slot=9, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(11)), "Find(slot=9, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(15)), "Find(slot=11, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(22)), "Find(slot=11, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(25)), "Find(slot=13, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(33)), "Find(slot=13, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(35)), "Find(slot=15, lower=true, higher=false, equal=false, empty=false)");
-        ok(find(new Int(44)), "Find(slot=15, lower=true, higher=true, equal=true, empty=false)");
-        ok(find(new Int(45)), "Find(slot=15, lower=false, higher=true, equal=false, empty=false)");
+        check(find(new Int( 5)).print(), "Find(slot=9, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(11)).print(), "Find(slot=9, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(15)).print(), "Find(slot=11, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(22)).print(), "Find(slot=11, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(25)).print(), "Find(slot=13, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(33)).print(), "Find(slot=13, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(35)).print(), "Find(slot=15, lower=true, higher=false, equal=false, empty=false)");
+        check(find(new Int(44)).print(), "Find(slot=15, lower=true, higher=true, equal=true, empty=false)");
+        check(find(new Int(45)).print(), "Find(slot=15, lower=false, higher=true, equal=false, empty=false)");
        }
      };
+   }
+
+  static void test_findRight()
+   {          test_findRight(true);
+              test_findRight(false);
    }
 
   static void test_insert(boolean Ex)
@@ -1838,8 +1851,8 @@ keys     :   14  13  16  15  18  17  12  11
    }
 
   static void test_insert()
-   {test_insert(true);
-    test_insert(false);
+   {          test_insert(true);
+              test_insert(false);
    }
 
   static void test_insert2(boolean Ex)
@@ -1872,8 +1885,8 @@ keys     :   11  12  13  15  16  17  18  14
    }
 
   static void test_insert2()
-   {test_insert2(true);
-    test_insert2(false);
+   {          test_insert2(true);
+              test_insert2(false);
    }
 
   static void test_findGe(boolean Ex)
@@ -1942,8 +1955,8 @@ Zero:
    }
 
   static void test_findGe()
-   {test_findGe(true);
-    test_findGe(false);
+   {          test_findGe(true);
+              test_findGe(false);
    }
 
   static void test_splitRightEven(boolean Ex)
@@ -2000,8 +2013,8 @@ keys     :    0   0   0  15  16  17  18   0
    }
 
   static void test_splitRightEven()
-   {test_splitRightEven(true);
-    test_splitRightEven(false);
+   {          test_splitRightEven(true);
+              test_splitRightEven(false);
    }
 
   static void test_splitLeftEven(boolean Ex)
@@ -2058,8 +2071,8 @@ keys     :    0   0   0  15  16  17  18   0
    }
 
   static void test_splitLeftEven()
-   {test_splitLeftEven(true);
-    test_splitLeftEven(false);
+   {          test_splitLeftEven(true);
+              test_splitLeftEven(false);
    }
 
   static void test_splitRightOdd(boolean Ex)
@@ -2115,8 +2128,8 @@ keys     :    0   0   0  15  16  17   0
    }
 
   static void test_splitRightOdd()
-   {test_splitRightOdd(true);
-    test_splitRightOdd(false);
+   {          test_splitRightOdd(true);
+              test_splitRightOdd(false);
    }
 
   static void test_splitLeftOdd(boolean Ex)
@@ -2172,8 +2185,8 @@ keys     :    0   0   0  15  16  17   0
    }
 
   static void test_splitLeftOdd()
-   {test_splitLeftOdd(true);
-    test_splitLeftOdd(false);
+   {          test_splitLeftOdd(true);
+              test_splitLeftOdd(false);
    }
 
   static void test_clear(boolean Ex)
@@ -2217,8 +2230,8 @@ keys     :    0   0   0   0   0   0   0
    }
 
   static void test_clear()
-   {test_clear(true);
-    test_clear(false);
+   {          test_clear(true);
+              test_clear(false);
    }
 
   static void test_stuck(boolean Ex)
@@ -2246,8 +2259,8 @@ keys     :    0   0   0   0   0   0   0
    }
 
   static void test_stuck()
-   {test_stuck(true);
-    test_stuck(false);
+   {          test_stuck(true);
+              test_stuck(false);
    }
 
   static void test_insertKnown(boolean Ex)
@@ -2286,8 +2299,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void test_insertKnown()
-   {test_insertKnown(true);
-    test_insertKnown(false);
+   {          test_insertKnown(true);
+              test_insertKnown(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
@@ -2318,7 +2331,6 @@ keys     :    4   2   6   0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    test_insertKnown();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
