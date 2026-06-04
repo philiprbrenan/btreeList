@@ -125,6 +125,14 @@ class Leaf extends Program implements Program.Locatable                         
     return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
 
+  Int insertEmpty(Int Key, Int Data)                                                                                    // Insert a key data pair into a leaf known to be empty
+   {if (immediate() && !slots.empty().b()) stop("Leaf must be empty, but it is not");                                   // Check that the leaf is empty
+    final Int r = new Int();                                                                                            // The slot containing the inserted key
+    r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
+    refData.putInt(new Int(0), Data);                                                                                   // Place data in first key slot
+    return r;                                                                                                           // Return the slot in the leaf in which the key, data pair was actually inserted
+   }
+
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge leaves
 //D2 Compact                                                                                                            // Compact a leaf to the left or right
 
@@ -770,6 +778,37 @@ Leaf           size:   8
     test_fixedFields(false);
    }
 
+  static void test_empty(boolean Ex)
+   {new Leaf(new Build().maxSize(8).immediate(Ex))
+     {@Override void leafCode()
+       {initializeMemory();
+        insertEmpty(new Int(2), new Int(22));
+        check(print(), """
+Leaf           size:   8
+ Ref   Key  Data
+   0     2    22
+""");
+
+        ok(()->slots, """
+Slots    : refs:  8
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    8   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    .   .   .   .   .   .   .   .   X   .   .   .   .   .   .   .
+usedKeys :    X   .   .   .   .   .   .   .
+keys     :    2   0   0   0   0   0   0   0
+""");
+
+        execute();
+       }
+     };
+   }
+
+  static void test_empty()
+   {test_empty(true);
+    test_empty(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_leaf();
     test_compactLeft();
@@ -781,10 +820,12 @@ Leaf           size:   8
     test_find();
     test_iterate();
     test_fixedFields();
+    test_empty();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_empty(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
