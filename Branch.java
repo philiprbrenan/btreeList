@@ -205,7 +205,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Int insertEmpty(Int Key, Int Data)                                                                                    // Insert a key data pair into a branch known to be empty
-   {if (immediate() && !slots.empty().b()) stop("Branch should be empty");
+   {if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
     refData.putInt(new Int(0), Data);                                                                                   // Place data in first key slot
@@ -874,11 +874,16 @@ Branch         size:   7 top:  88
      };
    }
 
+  static void test_stepDown()
+   {test_stepDown(true);
+    test_stepDown(false);
+   }
+
   static void test_knownInsert(boolean Ex)
    {new Branch(new Build().maxSize(7).immediate(Ex))
      {@Override void branchCode()
        {initializeMemory();
-        insert(new Int(4), new Int(44), new Int());
+        insertEmpty(new Int(4), new Int(44));
         check(print(), """
 Branch         size:   7 top:   0
  Ref   Key  Data
@@ -939,11 +944,6 @@ keys     :    4   2   6   0   0   0   0
     test_knownInsert(false);
    }
 
-  static void test_stepDown()
-   {test_stepDown(true);
-    test_stepDown(false);
-   }
-
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_branch();
     test_compactLeft();
@@ -960,8 +960,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_knownInsert();
+   {//oldTests();
+    test_knownInsert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
