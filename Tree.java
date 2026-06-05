@@ -478,6 +478,83 @@ class Tree extends Program                                                      
     return sk;                                                                                                          // Return the splitting key
    }
 
+  Bool mergeRoot()                                                                                                      // Merge the nodes below the root into the root if possible
+   {isRootLeaf().stop("Root must be a branch");                                                                         // Root must be a branch
+    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch R = branch(new Int(0));
+    new If (R.slots.usedKeys.twoOrMoreOnes().Flip())                                                                    // Root has one node reference in its body
+     {void Then()
+       {final Int f = R.data(R.slots.getSlotToKeyIndex(R.slots.usedSlotsToKeys.firstOne()));                            // Left child of root
+        new If (isLeaf(R.top()))                                                                                        // Root has leaves for children
+         {void Then()                                                                                                   // Merge leaves
+           {final Leaf l = leaf(f);                                                                                     // Left child of root
+            final Leaf r = leaf(R.top());
+            new If (l.count().add(r.count()).le(l.maxSize))                                                             // Room in root for content of leaf children
+             {void Then()
+               {R.clear();
+                final Leaf P = makeLeaf(R.getLocation());
+                P.mergeRight(l);
+                P.mergeRight(r);
+                m.set();
+               }
+             };
+           }
+          void Else()                                                                                                   // Merge branches
+           {final Branch l = branch(f);                                                                                 // Left child of root
+            final Branch r = branch(R.top());
+            new If (l.count().add(r.count()).lt(l.maxSize))                                                             // Room in root for content of leaf children
+             {void Then()
+               {R.copy(l);
+                R.mergeRight(r);
+                m.set();
+               }
+             };
+           }
+         };
+       }
+     };
+    return m;                                                                                                           // Whether the merge was performed or not
+   }
+
+  Bool mergeLeftLeft(Branch Branch, Int Pos)                                                                            // Merge the left hand sibling with its left hand sibling if this is possible. The specified position is teh slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch P = Branch;
+
+    new If (Pos.notValid())                                                                                             // Merging relative to top
+     {void Then()
+       {new If (P.slots.usedSlotsToKeys.twoOrMoreOnes())                                                                // Branch has at least two child references in its body
+         {void Then()
+           {final Int R = P.slots.usedSlotsToKeys.lastOne();                                                            // Last position
+            final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Next to last position
+            new If (isLeaf(P.top()))                                                                                    // Root has leaves for children
+             {void Then()                                                                                               // Merge last two leaves
+               {final Leaf l = leaf(P.data(P.slots.getSlotToKeyIndex(L)));                                              // Left leaf of merge
+                final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R)));                                              // Right leaf or merge
+                new If (r.mergeLeft(l))                                                                                 // Successfully merged
+                 {void Then()
+                   {P.slots.delSlotAndKey(L);
+                    m.set();
+                   }
+                 };
+               }
+              void Else()                                                                                               // Merge last two branches
+               {final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(L)));                                          // Left leaf of merge
+                final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R)));                                          // Right leaf or merge
+                new If (r.mergeLeft(l))                                                                                 // Successfully merged
+                 {void Then()
+                   {P.slots.delSlotAndKey(L);
+                    m.set();
+                   }
+                 };
+               }
+             };
+           }
+         };
+       }
+     };
+    return m;                                                                                                           // Whether the merge was performed or not
+   }
+
 /*
 //D2 Low Level                                                                                                          // Low level operations
 
