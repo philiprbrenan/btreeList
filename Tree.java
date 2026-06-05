@@ -516,36 +516,140 @@ class Tree extends Program                                                      
     return m;                                                                                                           // Whether the merge was performed or not
    }
 
-  Bool mergeLeftLeft(Branch Branch, Int Pos)                                                                            // Merge the left hand sibling with its left hand sibling if this is possible. The specified position is teh slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+//D3 Merge Left                                                                                                         // Merge single and double left
+
+  Bool mergeLeftSiblingIntoRight(Branch Parent, Int Left, Int Right)                                                    // Merge the left and right siblings specified by their slot positions into the right sibling under the specified parent assuming that the left and right siblings are known to exist
    {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
-    final Branch P = Branch;
+    final Branch P = Parent;
+
+    final Int L = Left;                                                                                                 // Left sibling
+    final Int R = Right;                                                                                                // Right sibling
+    new If (isLeaf(P.top()))                                                                                            // Root has leaves for children
+     {void Then()                                                                                                       // Merge last two leaves
+       {final Leaf l = leaf(P.data(P.slots.getSlotToKeyIndex(L)));                                                      // Left leaf of merge
+        final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R)));                                                      // Right leaf or merge
+        new If (r.mergeLeft(l))                                                                                         // Successfully merged
+         {void Then()
+           {P.slots.delSlotAndKey(L);
+            m.set();
+           }
+         };
+       }
+      void Else()                                                                                                       // Merge last two branches
+       {final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(L)));                                                  // Left leaf of merge
+        final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R)));                                                  // Right leaf or merge
+        new If (r.mergeLeft(l))                                                                                         // Successfully merged
+         {void Then()
+           {P.slots.delSlotAndKey(L);
+            m.set();
+           }
+         };
+       }
+     };
+    return m;
+   }
+
+  Bool mergeLeft(Branch Parent, Int Pos)                                                                                // Merge into the specified sibling from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch P = Parent;                                                                                            // Parent containing siblings
 
     new If (Pos.notValid())                                                                                             // Merging relative to top
      {void Then()
-       {new If (P.slots.usedSlotsToKeys.twoOrMoreOnes())                                                                // Branch has at least two child references in its body
+       {new If (P.slots.usedSlotsToKeys.empty().Flip())                                                                 // Branch has at least one child references in its body
          {void Then()
-           {final Int R = P.slots.usedSlotsToKeys.lastOne();                                                            // Last position
+           {final Int R = P.top();                                                                                      // Last position
             final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Next to last position
-            new If (isLeaf(P.top()))                                                                                    // Root has leaves for children
-             {void Then()                                                                                               // Merge last two leaves
-               {final Leaf l = leaf(P.data(P.slots.getSlotToKeyIndex(L)));                                              // Left leaf of merge
-                final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R)));                                              // Right leaf or merge
-                new If (r.mergeLeft(l))                                                                                 // Successfully merged
-                 {void Then()
-                   {P.slots.delSlotAndKey(L);
-                    m.set();
-                   }
-                 };
+            m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                             // Merge left sibling into right sibling
+           }
+         };
+       }
+      void Else()                                                                                                       // Merge entirely within body of parent
+       {final Int R = Pos;                                                                                              // Left once
+        final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                               // Left of left of position
+        new If (L.valid())                                                                                              // Left of left of position is valid so we can merge
+         {void Then()
+           {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                             // Merge left sibling into right sibling
+           }
+         };
+       }
+     };
+    return m;                                                                                                           // Whether the merge was performed or not
+   }
+
+  Bool mergeLeftLeft(Branch Parent, Int Pos)                                                                            // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch P = Parent;                                                                                            // Parent containing siblings
+
+    new If (Pos.notValid())                                                                                             // Merging relative to top
+     {void Then()
+       {final Int R = P.slots.usedSlotsToKeys.lastOne();                                                                // Left once from top
+        new If (R.valid())                                                                                              // Left of top exists
+         {void Then()
+           {final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Left of left of top
+            new If (L.valid())                                                                                          // Left of left of top exists
+             {void Then()
+               {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                         // Merge left of left of top into left of top
                }
-              void Else()                                                                                               // Merge last two branches
-               {final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(L)));                                          // Left leaf of merge
-                final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R)));                                          // Right leaf or merge
-                new If (r.mergeLeft(l))                                                                                 // Successfully merged
-                 {void Then()
-                   {P.slots.delSlotAndKey(L);
-                    m.set();
-                   }
-                 };
+             };
+           }
+         };
+       }
+      void Else()                                                                                                       // Merge entirely within body of parent
+       {final Int R = P.slots.usedSlotsToKeys.prevOne(Pos);                                                             // Left once
+        new   If (R.valid())                                                                                            // There is a left position
+         {void Then()
+           {final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Left of left of position
+            new If (L.valid())                                                                                          // Left of left of position is valid so we can merge
+             {void Then()
+               {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                         // Merge left of left of top into left of top
+               }
+             };
+           }
+         };
+       }
+     };
+    return m;                                                                                                           // Whether the merge was performed or not
+   }
+
+//D3 Merge Right                                                                                                        // Merge single and double right
+
+  Bool mergeRight(Branch Parent, Int Pos)                                                                               // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch P = Parent;                                                                                            // Parent containing siblings
+    final Int    L = Pos;                                                                                               // Specified position is valid
+
+    new If (L.valid())                                                                                                  // Not on top
+     {void Then()
+       {final Int R = P.slots.usedSlotsToKeys.nextOne(L);                                                               // Right of specified sibling
+        new If (R.valid())                                                                                              // Right sibling exists
+         {void Then()
+           {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                             // Merge right sibling into right of right sibling
+           }
+          void Else()
+           {m.set(mergeLeftSiblingIntoRight(Parent, L, P.top()));                                                       // Merge right sibling into top
+           }
+         };
+       }
+     };
+    return m;                                                                                                           // Whether the merge was performed or not
+   }
+
+  Bool mergeRightRight(Branch Parent, Int Pos)                                                                          // Merge the right hand sibling of the specified sibling with the right hand sibling os the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch P = Parent;                                                                                            // Parent containing siblings
+
+    new If (Pos.valid())                                                                                                // Not on top
+     {void Then()
+       {final Int L = P.slots.usedSlotsToKeys.nextOne(Pos);                                                             // Right once
+        new   If (L.valid())                                                                                            // There is a right sibling
+         {void Then()
+           {final Int R = P.slots.usedSlotsToKeys.nextOne(L);                                                           // Right of right sibling
+            new If (R.valid())                                                                                          // Left of left of position is valid so we can merge
+             {void Then()
+               {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                         // Merge right into right of right
+               }
+              void Else()
+               {m.set(mergeLeftSiblingIntoRight(Parent, L, P.top()));                                                   // Merge right into top
                }
              };
            }
