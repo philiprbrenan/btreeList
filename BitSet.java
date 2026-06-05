@@ -2,7 +2,6 @@
 // Locate set or cleared bits in a  fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Change getBit() to get().  Add set(Int i), clear(Int i)
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -111,8 +110,8 @@ public class BitSet extends Program                                             
   Int zeroToOne(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
   Int oneToZero(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
 
-  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}
-  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}
+  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                          // Step to low child in zero tree
+  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                          // Step to high child in zero tree
   Int parentZero   (Int Pos) {return oneToZero(parentOne   (zeroToOne(Pos)));}                                          // Step to the corresponding parent bit index for this child bit index
 
   Int childHighOne (Int Pos) {return childLowOne(Pos).Inc();}                                                           // Step to the corresponding child high bit index from this parent bit index
@@ -660,8 +659,39 @@ public class BitSet extends Program                                             
 
 //D2 Full or empty                                                                                                      // Check whether a bit set is full or empty
 
-  public Bool full () {return new Bool(firstZero().notValid());}                                                        // Whether the bitset is full - in log BN time,  But it might be better to keep a separate count field if this method is heavily used.
+  public Bool full () {return new Bool(firstZero().notValid());}                                                        // Whether the bitset is full - in log N time. It might be better to keep a separate count field if the extra overhead can be justified
   public Bool empty() {return new Bool(firstOne ().notValid());}                                                        // Whether the bitset is empty
+
+  public Bool twoOrMoreOnes()                                                                                           // Whether there two or more ones in the bitset
+   {final Bool r = new Bool(false);                                                                                     // Assume contrary
+    final Int  p = new Int(topOne());                                                                                   // Start at top of one tree
+
+    new If (getBitNC(p))                                                                                                // The root has a one so the bit set is not empty
+     {void Then()
+       {new For(new Int(logBitSize))                                                                                    // Step down looking for an adjacent sub tree that also has a one
+         {void body(Int Index, Bool Continue)
+           {final Int l = childLowOne (p);
+            final Int h = childHighOne(p);
+            new If (getBitNC(l))                                                                                        // Check lower child
+             {void Then()
+               {new If (getBitNC(h))
+                 {void Then() {r.set(true);}                                                                            // Two or more one bits are set to one in the bit set
+                  void Else() {p.set(l); Continue.set();}                                                               // Low is one so search sub tree
+                 };
+               }
+              void Else()                                                                                               // Low is zero
+               {new If (getBitNC(h))
+                 {void Then() {p.set(h); Continue.set();}                                                               // High is one so search sub tree
+                  void Else() {new I() {void action() {stop("Should not happen"); }};}                                  // Both high and low are zero but this should not happen
+                 };
+               }
+             };
+           }
+         };
+       }
+     };
+    return r;                                                                                                           // Whether the bitset has two or nore ones
+   }
 
 //D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset
 
@@ -763,7 +793,7 @@ public class BitSet extends Program                                             
     b.maxSteps = 99999;
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
-    for (int i : s) b.set(b.new Int(b.new Int(i)), b.new Bool(true));
+    for (int i : s) b.set(b.new Int(i));
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
@@ -1469,6 +1499,24 @@ Zero:
               test_powerPosOneZero(false);
    }
 
+  static void test_twoOrMoreOnes(boolean Ex)                                                                            // Two or more ones
+   {final BitSet b = test_bits(Ex, 32);
+
+    b.set  (b.new Int(17)); b.twoOrMoreOnes().ok(false);
+    b.set  (b.new Int(12)); b.twoOrMoreOnes().ok(true);
+    b.set  (b.new Int(24)); b.twoOrMoreOnes().ok(true);
+    b.clear(b.new Int(12)); b.twoOrMoreOnes().ok(true);
+    b.clear(b.new Int(11)); b.twoOrMoreOnes().ok(true);
+    b.clear(b.new Int(17)); b.twoOrMoreOnes().ok(false);
+
+    b.execute();
+   }
+
+  static void test_twoOrMoreOnes()
+   {          test_twoOrMoreOnes(true);
+              test_twoOrMoreOnes(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be stable.
    {test_prevNext01();
     test_prevNext();
@@ -1476,12 +1524,14 @@ Zero:
     test_prevNext10();
     test_oneZero();
     test_fullEmpty();
-    test_powerPosOneZero();
     test_count();
+    test_powerPosOneZero();
+    test_twoOrMoreOnes();
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();                                                                                                         // Run baseline tests.
+    test_twoOrMoreOnes();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
