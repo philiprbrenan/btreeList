@@ -16,10 +16,11 @@ class Tree extends Program                                                      
   final int           numberOfNodes;                                                                                    // Maximum number of leaves plus branches in this tree
   final int   maximumNumberOfLevels;                                                                                    // Maximum number of levels in tree to prevent runaways while debugging
   final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node may hold a branch or a leaf
-  final int linesToPrintABranch = 4;                                                                                    // The number of lines required to print a branch
-  final int maxPrintLevels      = 3;                                                                                    // The maximum number of levels to print - this avoids endless print loops when something goes wrong
   final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
-  final static String formatKey = "%3d";                                                                                // Format a key for dumping during testing
+  final int  linesToPrintABranch = 4;                                                                                   // The number of lines required to print a branch
+  final int  maxPrintLevels      = 3;                                                                                   // The maximum number of levels to print - this avoids endless print loops when something goes wrong
+  boolean        suppressMergeUp = false;                                                                               // Suppress merge up during development
+  final static  String formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
@@ -240,9 +241,10 @@ class Tree extends Program                                                      
     final Int        leaf     = new Int("leaf");                                                                        // Leaf that should contain the key
     final Int        step     = new Int("step");                                                                        // Current step in the path
     final Int        split    = new Int("split");                                                                       // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
-    final ByteMemory Path     = new ByteMemory(mnl()*ib());                                                             // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-    final ByteMemory Slot     = new ByteMemory(mnl()*ib());                                                             // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
-    final ByteMemory Atop     = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);                                          // Bits showing whether the step was through top
+    final ByteMemory Path     = new ByteMemory(mnl()*ib());                     //Remove capitalization                 // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    final ByteMemory Slot     = new ByteMemory(mnl()*ib());                     //Remove capitalization                 // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
+    final ByteMemory Atop     = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);  //Remove capitalization                 // Bits showing whether the step was through top
+    final ByteMemory left     = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);                                          // Bits showing whether the split was to the left or to the right
     final ByteMemory.Ref path = Path.new Ref(0);                                                                        // Branches along path
     final ByteMemory.Ref slot = Slot.new Ref(0);                                                                        // Slots along path
     final ByteMemory.Ref atop = Atop.new Ref(0);                                                                        // Top transitions along path
@@ -255,7 +257,7 @@ class Tree extends Program                                                      
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
              {end(p);                                                                                                   // End the path on a leaf
-              validate();                                                                                               // Show the results are valid
+              valid.set();                                                                                               // Show the results are valid
              }
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).stepDown(Key);                                                        // Step down
@@ -292,12 +294,15 @@ class Tree extends Program                                                      
          {new If (split.eq(0))                                                                                          // Split the root branch
            {void Then()
              {final Int sk = splitRootBranch();
+              final Int  z = new Int(0);
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
-                 {path.putInt(new Int(0), branch(new Int(0)).data(new Int(0)));                                         // Divert through first element of root now that it has been split
+                 {path.putInt(z, branch(z).data(z));                                                                    // Divert through first element of root now that it has been split
+                  left.putBool(z, new Bool(true));                                                                      // Path went left
                  }
                 void Else()
-                 {path.putInt(new Int(0), branch(new Int(0)).top());                                                    // Divert through top
+                 {path.putInt(z, branch(z).top());                                                                      // Divert through top
+                  left.putBool(z, new Bool(false));                                                                     // Path went right
                  }
                };
               split.inc();                                                                                              // Step up over split root which no longer needs splitting
@@ -318,11 +323,49 @@ class Tree extends Program                                                      
                 void Else() {p.insert(sk, l.getLocation(), slot.getInt(Index));}                                        // Insert split out branch just below the key in this slot
                };
 
+              left.putBool(Index, new Bool(false));                                                                     // Assume path goes to the right
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
-                 {path.putInt(Index, c.getLocation());
-                 }                                                                                                      // Update path with diversion through left branch
+                 {path.putInt(Index, c.getLocation());                                                                  // Update path with diversion through left branch
+                  left.putBool(Index, new Bool(true));                                                                  // Path went left
+                 }
                };
+             }
+           };
+         }
+       };
+     }
+
+    void mergeUp()                                                                                                      // Merge up from the leaf to the splitting point
+     {new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
+       {void body(Int Index)
+         {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
+          final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
+          final Branch.StepDown d1 = p.stepDown(key);                                                                    // Step down
+          mergeLeftLeft  (p, d1.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+          final Branch.StepDown d2 = p.stepDown(key);                                                                    // Step down
+          mergeRightRight(p, d2.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+          final Branch.StepDown d3 = p.stepDown(key);                                                                    // Step down
+          mergeLeft      (p, d3.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+          final Branch.StepDown d4 = p.stepDown(key);                                                                    // Step down
+          mergeRight     (p, d4.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+         }
+       };
+      final Branch R = branch(new Int(0));
+      new If (R.slots.empty())                                                                                          // Reduce the height of the tree if the body of the root is now empty
+       {void Then()
+         {final Int t = R.top();                                                                                        // Top
+          new If (isLeaf(t))                                                                                            // Root has leaves for children
+           {void Then()
+             {final Leaf L = makeLeaf(R.getLocation());                                                                 // Make the root into a leaf
+              final Leaf l = leaf(t);                                                                                   // Top as a leaf
+              L.copy(l);                                                                                                // Copy top into root decreasing height of tree
+              free(l);                                                                                                  // Free top as no longer needed
+             }
+            void Else()                                                                                                 // Root has branches for children
+             {final Branch b = branch(t);                                                                               // Top as a branch
+              R.copy(b);                                                                                                // Copy top into root
+              free(b);                                                                                                  // Free top as no longer needed
              }
            };
          }
@@ -350,10 +393,7 @@ class Tree extends Program                                                      
       step.inc();                                                                                                       // Position for next step
      }
 
-    void end (Int Leaf) {leaf.set(Leaf); validate();}                                                                   // Finish path at leaf
-
-    void invalidate() {valid.clear();}                                                                                  // Show that the results are not valid
-    void validate()   {valid.set();}                                                                                    // Show that the results are valid
+    void end (Int Leaf) {leaf.set(Leaf); valid.set();}                                                                  // Finish path at leaf
 
     StringBuilder print()                                                                                               // Print the find results
      {final StringBuilder s = new StringBuilder();
@@ -461,6 +501,7 @@ class Tree extends Program                                                      
        {r.insert(Key, Data);                                                                                            // Insert key in the right leaf
        }
      };
+    if (!suppressMergeUp) p.mergeUp();                                                                                  // Merge nodes on either side of the path going up from the leaf to towards the root
    }
 
   private Int splitRootBranch()                                                                                         // Split the root assuming that it is a branch
@@ -518,57 +559,87 @@ class Tree extends Program                                                      
 
 //D3 Merge Left                                                                                                         // Merge single and double left
 
-  Bool mergeLeftSiblingIntoRight(Branch Parent, Int Left, Int Right)                                                    // Merge the left and right siblings specified by their slot positions into the right sibling under the specified parent assuming that the left and right siblings are known to exist
+  Bool mergeLeftLeafIntoRightSibling(Branch Parent, Int Left, Leaf Right)                                               // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch P = Parent;
+    final Leaf   l = leaf(P.data(P.slots.getSlotToKeyIndex(Left)));                                                     // Left leaf of merge
+    new If (Right.mergeLeft(l))                                                                                         // Successfully merged
+     {void Then()
+       {P.slots.delSlotAndKey(Left);                                                                                    // The left sibling can now be freed
+        free(l);
+        m.set();
+       }
+     };
+    return m;                                                                                                           // Whether the merge succeeded
+   }
+
+  Bool mergeLeftBranchIntoRightSibling(Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Branch P = Parent;
+    final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(Left)));                                                   // Left branch of merge
+    new If (Right.mergeLeft(l))                                                                                         // Successfully merged
+     {void Then()
+       {P.slots.delSlotAndKey(Left);                                                                                    // The left sibling can now be freed
+        free(l);
+        m.set();
+       }
+     };
+    return m;                                                                                                           // Whether the merge succeeded
+   }
+
+  Bool mergeLeftIntoRightSibling(Branch Parent, Int Left)                                                               // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
    {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
 
-    final Int L = Left;                                                                                                 // Left sibling
-    final Int R = Right;                                                                                                // Right sibling
     new If (isLeaf(P.top()))                                                                                            // Root has leaves for children
-     {void Then()                                                                                                       // Merge last two leaves
-       {final Leaf l = leaf(P.data(P.slots.getSlotToKeyIndex(L)));                                                      // Left leaf of merge
-        final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R)));                                                      // Right leaf or merge
-        new If (r.mergeLeft(l))                                                                                         // Successfully merged
+     {void Then()
+       {final Int R = P.slots.usedSlotsToKeys.nextOne(Left);                                                            // Right sibling via next valid slot
+        new If (R.valid())                                                                                              // Next slot exists and so references the right sibling
          {void Then()
-           {P.slots.delSlotAndKey(L);
-            m.set();
+           {final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R)));                                                  // Right leaf of merge
+            m.set(mergeLeftLeafIntoRightSibling(P, Left, r));                                                           // Merge
+           }
+          void Else()                                                                                                   // Next sibling is top
+           {final Leaf r = leaf(P.top());                                                                               // Right leaf of merge
+            m.set(mergeLeftLeafIntoRightSibling(P, Left, r));                                                           // Merge
            }
          };
        }
       void Else()                                                                                                       // Merge last two branches
-       {final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(L)));                                                  // Left leaf of merge
-        final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R)));                                                  // Right leaf or merge
-        new If (r.mergeLeft(l))                                                                                         // Successfully merged
+       {final Int R = P.slots.usedSlotsToKeys.nextOne(Left);                                                            // Right sibling via next valid slot
+        new If (R.valid())                                                                                              // Next slot exists and so references the right sibling
          {void Then()
-           {P.slots.delSlotAndKey(L);
-            m.set();
+           {final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R)));                                              // Right branch of merge
+            m.set(mergeLeftBranchIntoRightSibling(P, Left, r));                                                         // Merge
+           }
+          void Else()                                                                                                   // Next sibling is top
+           {final Branch r = branch(P.top());                                                                           // Right leaf of merge
+            m.set(mergeLeftBranchIntoRightSibling(P, Left, r));                                                         // Merge
            }
          };
        }
      };
-    return m;
+    return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bool mergeLeft(Branch Parent, Int Pos)                                                                                // Merge into the specified sibling from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+  Bool mergeLeft(Branch Parent, Int Pos)                                                                                // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
    {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
 
     new If (Pos.notValid())                                                                                             // Merging relative to top
      {void Then()
-       {new If (P.slots.usedSlotsToKeys.empty().Flip())                                                                 // Branch has at least one child references in its body
+       {new If (P.slots.usedSlotsToKeys.empty().Flip())                                                                 // Branch has at least one child reference in its body
          {void Then()
-           {final Int R = P.top();                                                                                      // Last position
-            final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Next to last position
-            m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                             // Merge left sibling into right sibling
+           {final Int L = P.slots.usedSlotsToKeys.lastOne();                                                            // Last child in body of parent to be merged into top
+            m.set(mergeLeftIntoRightSibling(Parent, L));                                                                // Merge left sibling into right sibling
            }
          };
        }
       void Else()                                                                                                       // Merge entirely within body of parent
-       {final Int R = Pos;                                                                                              // Left once
-        final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                               // Left of left of position
+       {final Int L = P.slots.usedSlotsToKeys.prevOne(Pos);                                                             // Left of left of position
         new If (L.valid())                                                                                              // Left of left of position is valid so we can merge
          {void Then()
-           {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                             // Merge left sibling into right sibling
+           {m.set(mergeLeftIntoRightSibling(Parent, L));                                                                // Merge left sibling into right sibling
            }
          };
        }
@@ -588,7 +659,7 @@ class Tree extends Program                                                      
            {final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Left of left of top
             new If (L.valid())                                                                                          // Left of left of top exists
              {void Then()
-               {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                         // Merge left of left of top into left of top
+               {m.set(mergeLeftIntoRightSibling(Parent, L));                                                            // Merge left of left of top into left of top
                }
              };
            }
@@ -601,7 +672,7 @@ class Tree extends Program                                                      
            {final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Left of left of position
             new If (L.valid())                                                                                          // Left of left of position is valid so we can merge
              {void Then()
-               {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                         // Merge left of left of top into left of top
+               {m.set(mergeLeftIntoRightSibling(Parent, L));                                                            // Merge left of left of top into left of top
                }
              };
            }
@@ -616,19 +687,9 @@ class Tree extends Program                                                      
   Bool mergeRight(Branch Parent, Int Pos)                                                                               // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
    {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
-    final Int    L = Pos;                                                                                               // Specified position is valid
-
-    new If (L.valid())                                                                                                  // Not on top
+    new If (Pos.valid())                                                                                                // Not on top
      {void Then()
-       {final Int R = P.slots.usedSlotsToKeys.nextOne(L);                                                               // Right of specified sibling
-        new If (R.valid())                                                                                              // Right sibling exists
-         {void Then()
-           {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                             // Merge right sibling into right of right sibling
-           }
-          void Else()
-           {m.set(mergeLeftSiblingIntoRight(Parent, L, P.top()));                                                       // Merge right sibling into top
-           }
-         };
+       {m.set(mergeLeftIntoRightSibling(Parent, Pos));                                                                  // Merge right sibling into right of right sibling
        }
      };
     return m;                                                                                                           // Whether the merge was performed or not
@@ -643,15 +704,7 @@ class Tree extends Program                                                      
        {final Int L = P.slots.usedSlotsToKeys.nextOne(Pos);                                                             // Right once
         new   If (L.valid())                                                                                            // There is a right sibling
          {void Then()
-           {final Int R = P.slots.usedSlotsToKeys.nextOne(L);                                                           // Right of right sibling
-            new If (R.valid())                                                                                          // Left of left of position is valid so we can merge
-             {void Then()
-               {m.set(mergeLeftSiblingIntoRight(Parent, L, R));                                                         // Merge right into right of right
-               }
-              void Else()
-               {m.set(mergeLeftSiblingIntoRight(Parent, L, P.top()));                                                   // Merge right into top
-               }
-             };
+           {m.set(mergeLeftIntoRightSibling(Parent, L));                                                                // Merge right into right of right
            }
          };
        }
@@ -1557,7 +1610,8 @@ Leaf   at:   2 size:   4
 
   static void test_insert(boolean Ex)
    {final int N = 32 ;
-     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.suppressMergeUp = true;
     t.new ForCount(t.new Int(1), t.new Int(N))
      {void body(Int Index)
        {t.insert(Index, Index);
@@ -1588,6 +1642,42 @@ Leaf   at:   2 size:   4
   static void test_insert()
    {          test_insert(true);
               test_insert(false);
+   }
+
+
+  static void test_insertMerged(boolean Ex)
+   {final int N = 32;
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N))
+     {void body(Int Index)
+       {t.insert(Index, Index);
+       }
+     };
+    t.insert(t.new Int(N), t.new Int(N));
+    //final StringBuilder s = t.dump();
+    //t.new I() {void action() {stop(s);}};
+    //final StringBuilder S = t.print();
+    //t.new I() {void action() {stop(S);}};
+
+    if (N == 32) t.check(t.print(), """
+                                                        16                                                                |
+                                                        (0)                                                               |
+                                                        [9,2]                                                             |
+       4             8                12                                20               24              28               |
+       (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)            (6,0)           (6,0)            |
+       [3,0]         [4,2]            [7,4]                             [10,0]           [5,2]           [12,4]           |
+1,2,3,4       5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20      21,22,23,24     25,26,27,28      29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
+""");
+
+    t.maxSteps = 9_999_999;
+    say("ZZZZ", t.codeSize());   //577_859
+    t.execute();
+   }
+
+  static void test_insertMerged()
+   {          test_insertMerged(true);
+              test_insertMerged(false);
    }
 
 /*
@@ -2502,6 +2592,7 @@ Delete 22
    {test_tree();
     test_saveReload();
     test_insert();
+    test_insertMerged();
     //test_insert();
     //test_insert_reverse();
     //test_insert_random();
@@ -2515,7 +2606,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload();
+    test_insertMerged(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
