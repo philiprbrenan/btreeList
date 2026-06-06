@@ -1589,8 +1589,9 @@ Leaf   at:   2 size:   4
        }
      };
     t.insert(t.new Int(N), t.new Int(N));
-  //new I() {void action() {stop(t.dump());}};
 
+    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
     if (N == 32) t.Check(t.print(), """
                                               8                                                            16                                                                                                         |
                                               (0)                                                          (0)                                                                                                        |
@@ -1623,10 +1624,8 @@ Leaf   at:   2 size:   4
        }
      };
     t.insert(t.new Int(N), t.new Int(N));
-    //final StringBuilder s = t.dump();
-    //t.new I() {void action() {stop(s);}};
-    //final StringBuilder S = t.print();
-    //t.new I() {void action() {stop(S);}};
+    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
 
     if (N == 32) t.check(t.print(), """
                                                         16                                                                |
@@ -1656,10 +1655,8 @@ Leaf   at:   2 size:   4
        {t.insert(t.new Int(N).sub(Index), Index);
        }
      };
-    //final StringBuilder s = t.dump();
-    //t.new I() {void action() {stop(s);}};
-    //final StringBuilder S = t.print();
-    //t.new I() {void action() {stop(S);}};
+    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
 
     if (N == 32) t.check(t.print(), """
                                                          16                                                              |
@@ -1692,10 +1689,8 @@ Leaf   at:   2 size:   4
        }
      };
 
-    //final StringBuilder s = t.dump();
-    //t.new I() {void action() {stop(s);}};
-    //final StringBuilder S = t.print();
-    //t.new I() {void action() {stop(S);}};
+    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
 
     if (N == 32) t.check(t.print(), """
                                                         15                                                            26                          |
