@@ -143,39 +143,32 @@ class Branch extends Program implements Program.Locatable                       
    {final Slots.Find f = slots.find(Key);                                                                               // Find result
     final StepDown   d = new StepDown(Key);                                                                                // Result
 
-//if (debug) say("DDDD000");
     new If (f.empty)                                                                                                    // Found the index of a key that is greater than or equal to the search key
      {void Then()                                                                                                       // Step through top because the body of the branch is empty
        {d.slot.invalidate();
         d.node.set(top());
-//if (debug) say("DDDD1111", d);
        }
       void Else()
        {new If (f.equal.or(f.lower))                                                                                    // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
          {void Then()
            {d.slot.set(f.slot);                                                                                         // Step through slot
             d.node.set(data(slots.getSlotToKeyIndex(f.slot)));                                                          // Next node
-//if (debug) say("DDDD2222", d);
            }
           void Else()                                                                                                   // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
            {final Int n = slots.usedSlotsToKeys.nextOne(f.slot);
             d.slot.copy(n);                                                                                             // Copy the slot found if there was one
-//if (debug) say("DDDD3333", d);
             new If (n.valid())
              {void Then()
                {d.node.set(data(slots.getSlotToKeyIndex(n)));                                                           // Node at next level down
-//if (debug) say("DDDD4444", d);
                }
               void Else()
                {d.node.set(top());                                                                                      // No next key so step down through top
-//if (debug) say("DDDD5555", d);
                }
              };
            }
          };
        }
      };
-if (debug) say("DDDD6666", d);
     return d;                                                                                                           // Result
    }
 
