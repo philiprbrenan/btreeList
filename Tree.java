@@ -1606,7 +1606,6 @@ Leaf   at:   2 size:   4
 """);
 
     t.maxSteps = 9_999_999;
-//  say("ZZZZ", t.codeSize());   577_859
     t.execute();
    }
 
@@ -1641,13 +1640,45 @@ Leaf   at:   2 size:   4
 """);
 
     t.maxSteps = 9_999_999;
-    //say("ZZZZ", t.codeSize());   // 1.5M
     t.execute();
    }
 
   static void test_insertMerged()
    {          test_insertMerged(true);
               test_insertMerged(false);
+   }
+
+  static void test_insertReverse(boolean Ex)
+   {final int N = 32;
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(N))
+     {void body(Int Index)
+       {t.insert(t.new Int(N).sub(Index), Index);
+       }
+     };
+    //final StringBuilder s = t.dump();
+    //t.new I() {void action() {stop(s);}};
+    //final StringBuilder S = t.print();
+    //t.new I() {void action() {stop(S);}};
+
+    if (N == 32) t.check(t.print(), """
+                                                         16                                                              |
+                                                         (0)                                                             |
+                                                         [9,2]                                                           |
+        4             8                12                                20              24              28              |
+        (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)           (6,0)           (6,0)           |
+        [12,0]        [5,2]            [10,4]                            [7,0]           [4,2]           [3,4]           |
+1,2,3,4        5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20     21,22,23,24     25,26,27,28     29,30,31,32|
+(12,9,0)       (5,9,2)       (10,9,4)         (8,9)           (7,6,0)         (4,6,2)         (3,6,4)         (2,6)      |
+""");
+
+    t.maxSteps = 9_999_999;
+    t.execute();
+   }
+
+  static void test_insertReverse()
+   {          test_insertReverse(true);
+              test_insertReverse(false);
    }
 
   static void test_insertRandom32(boolean Ex)
@@ -1678,7 +1709,6 @@ Leaf   at:   2 size:   4
 """);
 
     t.maxSteps = 9_999_999;
-    say("ZZZZ", t.codeSize());   // 1.5M
     t.execute();
    }
 
@@ -2600,6 +2630,7 @@ Delete 22
     test_saveReload();
     test_insert();
     test_insertMerged();
+    test_insertReverse();
     test_insertRandom32();
     //test_insert();
     //test_insert_reverse();
@@ -2614,8 +2645,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertMerged(!true);
-    test_insertRandom32(!true);
+    test_insertReverse(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
