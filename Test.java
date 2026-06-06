@@ -999,7 +999,7 @@ public class Test                                                               
     final String[]s = b.toString().split("\n");                                                                         // Print first line with line position and message in a format understood by Geany with a re of: ([a-zA-Z0-9./]):(\d+)
     System.err.println(p.toString()+" "+s[0]);
 
-    for (int i=1; i < s.length; i++) System.err.println(" ".repeat(w)+" "+s[i]);// Any following lines are indented to match the first line
+    for (int i=1; i < s.length; i++) System.err.println(" ".repeat(w)+" "+s[i]);                                        // Any following lines are indented to match the first line
    }
 
   static void err(Object...O)                                                                                           // Say something and provide an error trace.
