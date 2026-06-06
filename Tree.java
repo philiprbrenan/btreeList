@@ -2,6 +2,7 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Reduce the number of calls to stepDown in mergeUp
 // Make freechain part of the memory for a tree so that it can be written and reloaded along with the rest of the memory
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -332,20 +333,26 @@ class Tree extends Program                                                      
      }
 
     void mergeUp()                                                                                                      // Merge up from the leaf to the splitting point
-     {new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
+     {
+say("AAAA0000", key);
+       new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
-          final Branch.StepDown d1 = p.stepDown(key);                                                                    // Step down
-          mergeLeftLeft  (p, d1.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
-          final Branch.StepDown d2 = p.stepDown(key);                                                                    // Step down
-          mergeRightRight(p, d2.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
-          final Branch.StepDown d3 = p.stepDown(key);                                                                    // Step down
-          mergeLeft      (p, d3.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
-          final Branch.StepDown d4 = p.stepDown(key);                                                                    // Step down
-          mergeRight     (p, d4.slot);                                                                                          // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+
+          final Branch.StepDown d1 = p.stepDown(key);                                                                   // Step down
+          mergeLeftLeft  (p, d1.slot);                                                                                  // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+          final Branch.StepDown d2 = p.stepDown(key);                                                                   // Step down
+          mergeRightRight(p, d2.slot);                                                                                  // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+          final Branch.StepDown d3 = p.stepDown(key);                                                                   // Step down
+          mergeLeft      (p, d3.slot);                                                                                  // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+          final Branch.StepDown d4 = p.stepDown(key);                                                                   // Step down
+say("AAAA1111", print(), d4, Tree.this.print());
+          mergeRight     (p, d4.slot);                                                                                  // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+say("AAAA2222", print(), Tree.this.print());
          }
        };
+
       final Branch R = branch(new Int(0));
       new If (R.slots.empty())                                                                                          // Reduce the height of the tree if the body of the root is now empty
        {void Then()
@@ -370,13 +377,14 @@ class Tree extends Program                                                      
     StringBuilder print()                                                                                               // Print the find results
      {final StringBuilder s = new StringBuilder();
       new I() {void action() {s.setLength(0); }};
-      new I() {void action() {s.append("Path steps: "+step+"\n");}};
+      new I() {void action() {s.append("Path: "+step+" steps: ");}};
       new ForCount(step)
        {void body(Int Index)
          {final Int v = path.getInt(Index);
-          new I() {void action() {s.append(""+v.i()+"\n");}};
+          new I() {void action() {s.append(" "+v.i());}};
          }
        };
+      new I() {void action() {s.append(" "+leaf+" "+split+"\n");}};
       return s;
      }
    }
@@ -449,7 +457,6 @@ class Tree extends Program                                                      
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
     final Int    L = p.step.Dec();                                                                                      // Last step along path
     final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
-if (debug) say("IIII", L, P, p.leaf);
     final Leaf   r = leaf(p.leaf);                                                                                      // The full leaf into which the key should be inserted
     final Leaf   l = leaf();
     final Int   sk = r.splitLeft(l);
@@ -474,6 +481,40 @@ if (debug) say("IIII", L, P, p.leaf);
      };
     if (!suppressMergeUp) p.mergeUp();                                                                                  // Merge nodes on either side of the path going up from the leaf to towards the root
    }
+
+  Int delete(Int Key)                                                                                                   // Delete a key from the tree and return the associated data if the key was present in the tree
+   {final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
+    new If (isRootLeaf())
+     {void Then()                                                                                                       // The root is a leaf
+       {final Leaf       R = leaf(new Int(0));                                                                          // Load root
+        final Slots.Find f = R.slots.find(Key);                                                                         // Search for key in root
+        new If (f.equal)
+         {void Then()                                                                                                   // Key exists in leaf
+           {data.set(R.data(R.slots.getSlotToKeyValue(f.slot)));                                                        // Data associated with key
+            R.slots.delSlotAndKey(f.slot);                                                                              // Remove key from leaf comprising tree
+           }
+         };
+       }
+      void Else()                                                                                                       // The root is a branch
+       {final Path       p = new Path(Key);                                                                             // Path to leaf that should contain key
+        final Leaf       l = leaf(p.leaf);                                                                              // Containing leaf
+        final Slots.Find f = l.slots.find(Key);                                                                         // Search for key in root
+say("DDDD1111", Key, p, f);
+        new If (f.equal)
+         {void Then()                                                                                                   // Key exists in leaf
+           {data.set(l.data(l.slots.getSlotToKeyValue(f.slot)));                                                        // Data associated with key
+            l.slots.delSlotAndKey(f.slot);                                                                              // Remove key from leaf in tree tree
+say("DDDD2222");
+            p.mergeUp();                                                                                                // Merge leaf and nodes above
+           }
+         };
+       }
+     };
+    return data;                                                                                                        // Data associated with key if valid else no such key
+   }
+
+//D1 Split and Merge                                                                                                    // Split and merge nodes in the tree
+//D2 Split                                                                                                              // Split nodes in the tree to make the tree wider
 
   private Int splitRootBranch()                                                                                         // Split the root assuming that it is a branch
    {final Branch R = branch(new Int(0));                                                                                // The root
@@ -528,6 +569,7 @@ if (debug) say("IIII", L, P, p.leaf);
     return m;                                                                                                           // Whether the merge was performed or not
    }
 
+//D2 Merge                                                                                                              // Merge nodes in the tree to make the tree narrower
 //D3 Merge Left                                                                                                         // Merge single and double left
 
   Bool mergeLeftLeafIntoRightSibling(Branch Parent, Int Left, Leaf Right)                                               // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
@@ -1143,6 +1185,12 @@ if (debug) say("IIII", L, P, p.leaf);
                          {new If (a.eq(action_top))                                                                     // Add top
                            {void Then()
                              {action.putInt(ib(depth), new Int(action_remove));                                         // Remove after processing top
+                              new If (b.slots.empty())                                                                  // Print a place holder if the body is empty
+                               {void Then()
+                                 {final BranchContext bc = new BranchContext();                                         // Context of current branch
+                                  branchBody(bc);                                                                       // Processed this slot in this branch
+                                 }
+                               };
                               depth.inc();                                                                              // Next child next time
                               node.putInt(ib(depth), b.top());                                                          // Add top
                               action.putInt(ib(depth), new Int(action_first));                                          // First child if any
@@ -1154,7 +1202,7 @@ if (debug) say("IIII", L, P, p.leaf);
                                  {depth.dec();                                                                          // Remove from stack uncovering previous item
                                  }
                                 void Else()                                                                             // Next child
-                                 {final BranchContext bc = new BranchContext();                                         // Context of current brnach
+                                 {final BranchContext bc = new BranchContext();                                         // Context of current branch
                                   branchBody(bc);                                                                       // Processed this slot in this branch
                                   final Int n = b.slots.usedSlotsToKeys.nextOne(bc.branchSlot);                         // Next child slot
                                   new If (n.valid())                                                                    // Valid next child
@@ -1590,6 +1638,11 @@ Leaf   at:   2 size:   4
      };
     t.insert(t.new Int(N), t.new Int(N));
 
+    if (true && Ex)
+     {t.new I() {void action() {say("Dump tree\n",  t.byteMemory.save());}};
+      t.new I() {void action() {say("Dump chain\n", t.freeChain.byteMemory.save());}};
+     }
+
     //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
     if (N == 32) t.Check(t.print(), """
@@ -1613,6 +1666,15 @@ Leaf   at:   2 size:   4
   static void test_insert()
    {          test_insert(true);
               test_insert(false);
+   }
+
+  static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
+   {final int N = 32 ;
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+     {t.new I() {void action() {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAEAAAAAAAAAAAAAAAAAAAAAAAAABT2fwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHCAAAABAAAAAAAAAAAAAAAAAAAAAAAAAADwAAABcAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAgAAAAMAAAAEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAgAAAAMAAAAEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAIAAAADAAAAAQAAAAUAAAAGAAAABwAAAAAAAAAAAAAAAAAAAAAAAADi/XsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH8EHQAAAB4AAAAfAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAdAAAAHgAAAB8AAAAgAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOwGAAAAAAAAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHBQAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFAAAABgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAMAAAAEAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAQAAAACAAAAAAAAAAAAAAAAAAAAAAAAABT2fwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHHAAAABoAAAAAAAAAAAAAAAAAAAAAAAAAGQAAABYAAAATAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOwGAAAAAAAAAAAHAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAAIAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHCQAAAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJAAAACgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOQHAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAABwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOwGAAAAAAAAAAALAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAMAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHDQAAAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAAAADgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANIHAAAAAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOwGAAAAAAAAAAAPAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAAQAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHEQAAABIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAEgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAAAkAAAAMAAAACQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAQAAAACAAAAAAAAAAAAAAAAAAAAAAAAABT2fwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHGAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAGAAAABQAAAAMAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOQHAAAAAAAAAAAOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAAAADQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOwGAAAAAAAAAAATAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABMAAAAUAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHFQAAABYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVAAAAFgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANIHAAAAABIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOwGAAAAAAAAAAAXAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABcAAAAYAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHGQAAABoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZAAAAGgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOQHAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAATSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOQHAAAAAAAAAAAWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATAAAAFQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOwGAAAAAAAAAAAbAAAAHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABsAAAAcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); }};
+      t.new I() {void action() {t.freeChain.byteMemory.reload("AAAA/ADgwOj/j78/"); }};
+     }
+    return t;
    }
 
   static void test_insertMerged(boolean Ex)
@@ -1710,6 +1772,40 @@ Leaf   at:   2 size:   4
   static void test_insertRandom32()
    {          test_insertRandom32(true);
               test_insertRandom32(false);
+   }
+
+  static void test_deleteAscending(boolean Ex)
+   {final int  N = 32;
+    final Tree t = test_reloadTree(Ex);
+    final StringBuilder s = new StringBuilder();
+    t.new ForCount(t.new Int(1))
+     {void body(Int Index)
+       {t.delete(Index.Inc());
+        final StringBuilder S = t.print();
+        t.new I() {void action() {s.append(S);}};
+       }
+     };
+
+    t.new I() {void action() {stop(s);}};
+
+    t.check(s, """
+                                                        15                                                            26                          |
+                                                        (0)                                                           (0)                         |
+                                                        [5,1]                                                         [11,4]                      |
+        4             7               11                                19              21              24                             30         |
+        (5,0,1)       (5,0,1)         (5,0,1)                           (11,0,4)        (11,0,4)        (11,0,4)                       (6,0)      |
+        [14,0]        [1,2]           [9,4]                             [12,1]          [3,4]           [8,5]                          [10,2]     |
+1,2,3,4        5,6,7         8,9,10,11       12,13,14,15     16,17,18,19        20,21           22,23,24        25,26       27,28,29,30      31,32|
+(14,5,0)       (1,5,2)       (9,5,4)         (4,5)           (12,11,1)          (3,11,4)        (8,11,5)        (7,11)      (10,6,2)         (2,6)|
+""");
+
+    t.maxSteps = 9_999_999;
+    t.execute();
+   }
+
+  static void test_deleteAscending()
+   {          test_deleteAscending(true);
+              test_deleteAscending(false);
    }
 
 /*
@@ -2640,7 +2736,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertReverse(true);
+    test_deleteAscending(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
