@@ -236,32 +236,32 @@ class Tree extends Program                                                      
    }
 
   class Path                                                                                                            // Record the path from the root to the leaf that should contain a key
-   {final Bool       valid    = new Bool("valid");                                                                      // Whether the search results are valid
-    final Int        key      = new Int("key");                                                                         // Search key
+   {final Int        key      = new Int("key");                                                                         // Search key
     final Int        leaf     = new Int("leaf");                                                                        // Leaf that should contain the key
     final Int        step     = new Int("step");                                                                        // Current step in the path
     final Int        split    = new Int("split");                                                                       // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
-    final ByteMemory Path     = new ByteMemory(mnl()*ib());                     //Remove capitalization                 // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-    final ByteMemory Slot     = new ByteMemory(mnl()*ib());                     //Remove capitalization                 // Memory for the slots taken along the path - each integer corresponds to the slot stepped through in the branch at this level or top if not defined
-    final ByteMemory Atop     = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);  //Remove capitalization                 // Bits showing whether the step was through top
-    final ByteMemory left     = new ByteMemory((mnl()+Byte.SIZE-1)/Byte.SIZE);                                          // Bits showing whether the split was to the left or to the right
+    final ByteMemory Path     = new ByteMemory(mnl()*ib());                                                             // Memory for the steps taken along the path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
     final ByteMemory.Ref path = Path.new Ref(0);                                                                        // Branches along path
-    final ByteMemory.Ref slot = Slot.new Ref(0);                                                                        // Slots along path
-    final ByteMemory.Ref atop = Atop.new Ref(0);                                                                        // Top transitions along path
 
     Path(Int Key)
      {final Int p = new Int(0);                                                                                         // Start at root
-      start(Key);                                                                                                       // Start the path
+      final Bool valid = new Bool(false);                                                                               // Whether a leaf was reached
+
+      key .set(Key);                                                                                                    // Record search key
+      step.set(0);                                                                                                      // Start at the root
+      Path.clear();                                                                                                     // Clear the path
+
       new For(new Int(mnl()))                                                                                           // Step down from branch to branch
        {void body(Int Index, Bool Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
-             {end(p);                                                                                                   // End the path on a leaf
-              valid.set();                                                                                               // Show the results are valid
+             {valid.set();                                                                                              // Reached a leaf
+              leaf.set(p);                                                                                              // End the path on a leaf
              }
             void Else()                                                                                                 // On a branch
-             {final Branch.StepDown d = branch(p).stepDown(Key);                                                        // Step down
-              step(p, d.slot);                                                                                          // Record a step along the path
+             {final Branch.StepDown d = branch(p).stepDown(key);                                                        // Step down
+              path.putInt(step, p);
+              step.inc();                                                                                                       // Position for next step
               p.set(d.node);                                                                                            // Step down
               Continue.set();                                                                                           // Continue search
              }
@@ -298,36 +298,34 @@ class Tree extends Program                                                      
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
                  {path.putInt(z, branch(z).data(z));                                                                    // Divert through first element of root now that it has been split
-                  left.putBool(z, new Bool(true));                                                                      // Path went left
                  }
                 void Else()
                  {path.putInt(z, branch(z).top());                                                                      // Divert through top
-                  left.putBool(z, new Bool(false));                                                                     // Path went right
                  }
                };
               split.inc();                                                                                              // Step up over split root which no longer needs splitting
              }
            };
 
+if (debug)say("SSS1111`", split, step);
           new ForCount(split, step)                                                                                     // Split full branches which are not the root in descending order so that there is always enough room in the parent branch to accept the splitting key
            {void body(Int Index)
-             {final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
-              final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
+             {final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
+              final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
+if (debug)say("SSS2222", p, c);
               final Branch l = branch();                                                                                // Branch to split into
               final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
-              final Bool   t = new Bool(atop.getBool(Index));                                                           // True if we went through top
-              final Int    s = new Int(slot.getInt(Index));                                                             // Slot at which we stepped down
-              new If (atop.getBool(Index))                                                                              // Stepped through top
+              final Branch.StepDown d = p.stepDown(key);                                                                // Step down
+if (debug)say("SSS3333", sk, p, l, d);
+              new If (d.slot.notValid())                                                                                // Stepped through top
                {void Then() {p.insert(sk, l.getLocation(), new Int());}                                                 // Insert split out branch as last element of parent branch body
-                void Else() {p.insert(sk, l.getLocation(), slot.getInt(Index));}                                        // Insert split out branch just below the key in this slot
+                void Else() {p.insert(sk, l.getLocation(), d.slot);}                                                    // Insert split out branch just below the key in this slot
                };
 
-              left.putBool(Index, new Bool(false));                                                                     // Assume path goes to the right
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
-                 {path.putInt(Index, c.getLocation());                                                                  // Update path with diversion through left branch
-                  left.putBool(Index, new Bool(true));                                                                  // Path went left
+                 {path.putInt (Index, c.getLocation());                                                                 // Update path with diversion through left branch
                  }
                };
              }
@@ -371,29 +369,6 @@ class Tree extends Program                                                      
          }
        };
      }
-
-    void start(Int Key)                                                                                                 // Start path
-     {valid.invalidate();
-      key .set(Key);
-      step.set(0);
-      Path.clear();
-     }
-
-    void step(Int Branch, Int Slot)                                                                                     // Step along the path recording the details of each step
-     {path.putInt(step, Branch);
-      new If (Slot.valid())                                                                                             // Whether the step was through top or not
-       {void Then()
-         {slot.putInt (step, Slot);
-          atop.putBool(step, new Bool(false));
-         }
-        void Else()
-         {atop.putBool(step, new Bool(true));
-         }
-       };
-      step.inc();                                                                                                       // Position for next step
-     }
-
-    void end (Int Leaf) {leaf.set(Leaf); valid.set();}                                                                  // Finish path at leaf
 
     StringBuilder print()                                                                                               // Print the find results
      {final StringBuilder s = new StringBuilder();
@@ -476,20 +451,18 @@ class Tree extends Program                                                      
     p.splitPoint();                                                                                                     // The lowest branch in the tree that is full and has a non full parent
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
     final Int    L = p.step.Dec();                                                                                      // Last step along path
-    final Int    B = p.path.getInt(L);                                                                                  // Index of branch at last step along the path and thus the parent of the leaf
-    final Int    S = p.slot.getInt(L);                                                                                  // The slot stepped through to reach the leaf
-    final Bool   T = p.atop.getBool(L);                                                                                 // Stepped through top to reach the leaf
     final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
     final Leaf   r = leaf(p.leaf);                                                                                      // The full leaf into which the key should be inserted
     final Leaf   l = leaf();
     final Int   sk = r.splitLeft(l);
 
-    new If (T)                                                                                                          // If the leaf was reached by stepping through top then insert the new left leaf high
+    final Branch.StepDown d = P.stepDown(Key);
+    new If (d.slot.notValid())                                                                                          // If the leaf was reached by stepping through top then insert the new left leaf high
      {void Then()
        {P.insert(sk, l.getLocation(), new Int());                                                                       // Insert new left leaf high
        }
       void Else()
-       {P.insert(sk, l.getLocation(), S);                                                                               // Insert new left leaf below the key in the indicated slot
+       {P.insert(sk, l.getLocation(), d.slot);                                                                          // Insert new left leaf below the key in the indicated slot
        }
      };
 
@@ -1644,7 +1617,6 @@ Leaf   at:   2 size:   4
               test_insert(false);
    }
 
-
   static void test_insertMerged(boolean Ex)
    {final int N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
@@ -1671,13 +1643,56 @@ Leaf   at:   2 size:   4
 """);
 
     t.maxSteps = 9_999_999;
-    say("ZZZZ", t.codeSize());   //577_859
+    //say("ZZZZ", t.codeSize());   // 1.5M
     t.execute();
    }
 
   static void test_insertMerged()
    {          test_insertMerged(true);
               test_insertMerged(false);
+   }
+
+  static void test_insertRandom32(boolean Ex)
+   {final int  N = 25; //random_32.length;
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(N))
+     {void body(Int Index)
+       {final Int k = t.new Int();
+        t.new I() {void action() {k.ex(Int.Ops.set, random_32[Index.i()]);}};
+        t.insert(k, Index);
+       }
+     };
+    debug = true;
+    say("AAAA", random_32[N], t.print());
+    final Int k = t.new Int();
+    t.new I() {void action() {k.ex(Int.Ops.set, random_32[N]);}};
+    t.insert(k, t.new Int(N));
+
+
+    //final StringBuilder s = t.dump();
+    //t.new I() {void action() {stop(s);}};
+    final StringBuilder S = t.print();
+    t.new I() {void action() {stop(S);}};
+
+    if (N == 32) t.check(t.print(), """
+                                                        16                                                                |
+                                                        (0)                                                               |
+                                                        [9,2]                                                             |
+       4             8                12                                20               24              28               |
+       (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)            (6,0)           (6,0)            |
+       [3,0]         [4,2]            [7,4]                             [10,0]           [5,2]           [12,4]           |
+1,2,3,4       5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20      21,22,23,24     25,26,27,28      29,30,31,32|
+(3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
+""");
+
+    t.maxSteps = 9_999_999;
+    say("ZZZZ", t.codeSize());   // 1.5M
+    t.execute();
+   }
+
+  static void test_insertRandom32()
+   {          test_insertRandom32(true);
+              test_insertRandom32(false);
    }
 
 /*
@@ -2593,6 +2608,7 @@ Delete 22
     test_saveReload();
     test_insert();
     test_insertMerged();
+    test_insertRandom32();
     //test_insert();
     //test_insert_reverse();
     //test_insert_random();
@@ -2606,7 +2622,7 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertMerged(!true);
+    test_insertRandom32(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
