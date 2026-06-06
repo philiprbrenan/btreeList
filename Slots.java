@@ -348,7 +348,7 @@ class Slots extends Program                                                     
                 new If (K.lt(k))                                                                                        // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
-                    if (CompactKey != null) CompactKey.update(slots, k, K);                                                    // Expose the compaction move
+                    if (CompactKey != null) CompactKey.update(slots, k, K);                                             // Expose the compaction move
                    }
                  };
                }
@@ -419,7 +419,7 @@ class Slots extends Program                                                     
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
     final Slots right = this;
-    right.compactSlotsLeft();                                                                                          // Compacting the source on the right will not affect the order of the keys
+    right.compactSlotsLeft();                                                                                           // Compacting the source on the right will not affect the order of the keys
     Left.copy(right);                                                                                                   // Duplicate right into left
 
     new ForCount(new Int(N/2))                                                                                          // Clear lower half of target left slots
