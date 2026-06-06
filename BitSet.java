@@ -576,7 +576,7 @@ public class BitSet extends Program                                             
                        }
                       void Else()
                        {moveDownOneLayer(b, p, w);                                                                      // Address next level of bits in tree
-                        new If (w.eq(0)) {void Then() {C.clear();}};                                                    // Address next level of bits in tree
+                        new If (w.eq(0)) {void Then() {C.clear();}};                                                    // Reached root of zeros tree
                        }
                      };
                    }
