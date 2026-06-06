@@ -307,17 +307,14 @@ class Tree extends Program                                                      
              }
            };
 
-if (debug)say("SSS1111`", split, step);
           new ForCount(split, step)                                                                                     // Split full branches which are not the root in descending order so that there is always enough room in the parent branch to accept the splitting key
            {void body(Int Index)
              {final Branch p = branch(path.getInt(Index.Dec()));                                                        // Parent branch whose child should be split
               final Branch c = branch(path.getInt(Index));                                                              // Child branch that should be split
-if (debug)say("SSS2222", p, c);
+              final Branch.StepDown d = p.stepDown(key);                                                                // Step down
               final Branch l = branch();                                                                                // Branch to split into
               final Int   sk = c.splitLeft(l);                                                                          // Splitting key
 
-              final Branch.StepDown d = p.stepDown(key);                                                                // Step down
-if (debug)say("SSS3333", sk, p, l, d);
               new If (d.slot.notValid())                                                                                // Stepped through top
                {void Then() {p.insert(sk, l.getLocation(), new Int());}                                                 // Insert split out branch as last element of parent branch body
                 void Else() {p.insert(sk, l.getLocation(), d.slot);}                                                    // Insert split out branch just below the key in this slot
@@ -325,7 +322,7 @@ if (debug)say("SSS3333", sk, p, l, d);
 
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
-                 {path.putInt (Index, c.getLocation());                                                                 // Update path with diversion through left branch
+                 {path.putInt (Index, l.getLocation());                                                                 // Update path with diversion through left branch
                  }
                };
              }
@@ -452,6 +449,7 @@ if (debug)say("SSS3333", sk, p, l, d);
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
     final Int    L = p.step.Dec();                                                                                      // Last step along path
     final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
+if (debug) say("IIII", L, P, p.leaf);
     final Leaf   r = leaf(p.leaf);                                                                                      // The full leaf into which the key should be inserted
     final Leaf   l = leaf();
     final Int   sk = r.splitLeft(l);
@@ -1653,7 +1651,7 @@ Leaf   at:   2 size:   4
    }
 
   static void test_insertRandom32(boolean Ex)
-   {final int  N = 25; //random_32.length;
+   {final int  N = random_32.length;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
@@ -1662,27 +1660,21 @@ Leaf   at:   2 size:   4
         t.insert(k, Index);
        }
      };
-    debug = true;
-    say("AAAA", random_32[N], t.print());
-    final Int k = t.new Int();
-    t.new I() {void action() {k.ex(Int.Ops.set, random_32[N]);}};
-    t.insert(k, t.new Int(N));
-
 
     //final StringBuilder s = t.dump();
     //t.new I() {void action() {stop(s);}};
-    final StringBuilder S = t.print();
-    t.new I() {void action() {stop(S);}};
+    //final StringBuilder S = t.print();
+    //t.new I() {void action() {stop(S);}};
 
     if (N == 32) t.check(t.print(), """
-                                                        16                                                                |
-                                                        (0)                                                               |
-                                                        [9,2]                                                             |
-       4             8                12                                20               24              28               |
-       (9,0,2)       (9,0,2)          (9,0,2)                           (6,0)            (6,0)           (6,0)            |
-       [3,0]         [4,2]            [7,4]                             [10,0]           [5,2]           [12,4]           |
-1,2,3,4       5,6,7,8       9,10,11,12       13,14,15,16     17,18,19,20      21,22,23,24     25,26,27,28      29,30,31,32|
-(3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
+                                                        15                                                            26                          |
+                                                        (0)                                                           (0)                         |
+                                                        [5,1]                                                         [11,4]                      |
+        4             7               11                                19              21              24                             30         |
+        (5,0,1)       (5,0,1)         (5,0,1)                           (11,0,4)        (11,0,4)        (11,0,4)                       (6,0)      |
+        [14,0]        [1,2]           [9,4]                             [12,1]          [3,4]           [8,5]                          [10,2]     |
+1,2,3,4        5,6,7         8,9,10,11       12,13,14,15     16,17,18,19        20,21           22,23,24        25,26       27,28,29,30      31,32|
+(14,5,0)       (1,5,2)       (9,5,4)         (4,5)           (12,11,1)          (3,11,4)        (8,11,5)        (7,11)      (10,6,2)         (2,6)|
 """);
 
     t.maxSteps = 9_999_999;
@@ -2622,7 +2614,8 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertRandom32(true);
+    test_insertMerged(!true);
+    test_insertRandom32(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
