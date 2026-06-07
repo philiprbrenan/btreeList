@@ -173,15 +173,17 @@ class Branch extends Program implements Program.Locatable                       
     return d;                                                                                                           // Result
    }
 
-  Int insert(Int Key, Int Data)                                                                                         // Insert a key data pair into a branch returning the index of the containing slot
-   {final Int i = slots.insert(Key);
-    final Int k = slots.getSlotToKeyIndex(i);
+  Slots.Insert insert(Int Key, Int Data)                                                                                // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
+   {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
+    final Slots.Insert i = slots.insert(Key);
+    final Int          k = slots.getSlotToKeyIndex(i.slot);
     refData.putInt(k, Data);
     return i;                                                                                                           // Return the slot in the branch in which the key, data pair was inserted
    }
 
-  Int insert(Int Key, Int Data, Int BelowSlot)                                                                          // Insert a key data pair into a branch when the slot below which to make the insertion is known, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
-   {final Int r = new Int();                                                                                            // The slot containing the inserted key
+  Int insert(Int Key, Int Data, Int BelowSlot)                                                                          // Insert a key data pair into a branch when the slot below which to make the insertion is known, assuming the key is not already present, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
+   {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
+    final Int r = new Int();                                                                                            // The slot containing the inserted key
     new If(BelowSlot.valid())                                                                                           // Insert below the specified slot if it is valid
      {void Then()
        {if (immediate() && !slots.getSlotToKeysInUse(BelowSlot).b())
@@ -877,6 +879,7 @@ Branch         size:   7 top:  88
      {@Override void branchCode()
        {initializeMemory();
         insertEmpty(new Int(4), new Int(44));
+        insert(new Int(4), new Int(44));
         check(print(), """
 Branch         size:   7 top:   0
  Ref   Key  Data
