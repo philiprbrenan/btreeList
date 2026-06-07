@@ -936,6 +936,30 @@ class Tree extends Program                                                      
               action_remove = -3;                                                                                       // Remove this branch from stack
     final Int        depth  = new Int("depth");                                                                         // Depth we have reached in the tree. -1 indicates thatthe stack is empty.
 
+    class LeafContext                                                                                                   // The context of a leaf shows its relationship to its parent branch
+     {final Bool root   = new Bool();                                                                                   // Whether the current leaf is the root or not
+      final Int  parent = new Int();                                                                                    // If the current leaf is not the root then the parent branch of the current leaf
+      final Int  leaf   = new Int();                                                                                    // The current leaf
+      final Int  slot   = new Int();                                                                                    // The slot in the parent branch
+      final Int  depth  = new Int();                                                                                    // Depth of this leaf
+
+      LeafContext(Int Leaf, Int Slot, Int Depth, Int Parent)                                                            // Leaf under a branch
+       {root  .set(false);
+        parent.set(Parent);
+        leaf  .set(Leaf);
+        slot  .set(Slot);
+        depth .set(Depth);
+       }
+
+      LeafContext()                                                                                                     // Leaf as a tree
+       {root  .set(true);
+        parent.set(0);
+        leaf  .set(0);
+        slot  .set(0);
+        depth .set(0);
+       }
+     }
+
     class BranchContext                                                                                                 // The context of a branch shows its relationship to its parent and currently being processed child
      {final Bool root       = new Bool();                                                                               // Whether the current branch is the root or not
       final Int  parent     = new Int();                                                                                // If the current branch is not the root then the parent of the current branch
@@ -1049,9 +1073,9 @@ class Tree extends Program                                                      
                        };
                      }
                     void Else()                                                                                         // Process a leaf from the stack
-                     {final Int b = parentBranch(depth.Dec());
+                     {final Int   b = parentBranch(depth.Dec());
                       final Slots s = branch(b).slots;
-                      leafBody(node.getInt(ib(depth)), action.getInt(ib(depth.Dec())), depth, b);                       // Process the referenced leaf
+                      leafBody(new LeafContext(node.getInt(ib(depth)), action.getInt(ib(depth.Dec())), depth, b));      // Process the referenced leaf
                       depth.dec();
                      }
                    };
@@ -1061,12 +1085,13 @@ class Tree extends Program                                                      
            };
          }
         void Else()                                                                                                     // Process a tree consisting of a single leaf
-         {leafBody(new Int(0), new Int(0), new Int(0), null);
+         {leafBody(new LeafContext());
          }
        };
      }
 
     void leafBody       (Int L, Int Slot, Int Depth, Int Parent) {}                                                     // Override to process each leaf
+    void leafBody       (LeafContext   LC) {}                                                                           // Override to process each leaf
     void branchBody     (BranchContext BC) {}                                                                           // Override to process each branch
     void branchBodyEmpty(BranchContext BC) {}                                                                           // Override to process branches that have a empty body
    }
@@ -1080,20 +1105,20 @@ class Tree extends Program                                                      
      {new I() {void action() {P.clear();}};                                                                             // Clear output area
 
       new Traverse()
-       {@Override void leafBody(Int L, Int Slot, Int Depth, Int Parent)                                                 // Print keys of leaf and optionally the details of the parent
-         {final Leaf          l = leaf(L);
+       {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
+         {final Leaf          l = leaf(LC.leaf);
           final StringBuilder s = new  StringBuilder();
           new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
            {void action()
-             {final int d = Depth.i() * linesToPrintABranch;                                                            // Line in output
+             {final int d = LC.depth.i() * linesToPrintABranch;                                                         // Line in output
               pad(d+1);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(s);                                                                                 // Write first line
-              if (Context && Parent != null)                                                                            // Parent details if requested
+              if (Context && !LC.root.b())                                                                              // Parent details if requested
                {final StringBuilder t = clearStringBuilder(new StringBuilder());
-                final int lI = L.i(), lP = Parent.i(), lS = Slot.i();                                                   // Components of second line: leaf number, parent branch number, slot in parent
+                final int lI = LC.leaf.i(), lP = LC.parent.i(), lS = LC.slot.i();                                       // Components of second line: leaf number, parent branch number, slot in parent
                 if (lS < 0) t.append("("+lI+","+lP+")"); else t.append("("+lI+","+lP+","+lS+")");                       // Format second line
                 P.elementAt(d+1).append(t);                                                                             // Write second line
                }
@@ -1873,7 +1898,7 @@ Leaf   at:   2 size:   4
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload();
+    test_deleteAscending();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
