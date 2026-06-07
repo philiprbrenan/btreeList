@@ -270,7 +270,7 @@ class Branch extends Program implements Program.Locatable                       
      };
    }
 
-  Bool mergeRight(Branch Right)                                                                                         // Merge the specified branch into the right of this branch
+  Bool mergeRight(Branch Right, Int Sk)                                                                                 // Merge the specified branch into the right of this branch separating the two by the specified splitting key
    {final Branch left = this;
     final Int    lc   = left .count();
     final Int    rc   = Right.count();
@@ -286,17 +286,17 @@ class Branch extends Program implements Program.Locatable                       
         Rs.compactKeysRight((S, t, s)->{Right.data(t, Right.data(s));});
 
         final Int lt = left .top();                                                                                     // Left top
-        final Int rt = Right.top();                                                                                     // Right top
+        final Int Rt = Right.top();                                                                                     // Right top
         left.copyMergeData(Right, new Int(maxSize).sub(rc), new Int(maxSize()));                                        // Copy the right data values into the left data values
-        left.top(rt);                                                                                                   // Set right top
+        left.top(Rt);                                                                                                   // Set right top
         left.data(lc, lt);                                                                                              // Place left top in left data values
-        ls.mergeFromRightOdd(Rs, null);                                                                                 // Split the slots
+        ls.mergeFromRightOdd(Rs, Sk);                                                                                   // Merge the slots
        }
      };
     return r;
    }
 
-  Bool mergeLeft(Branch Left)                                                                                           // Merge the supplied branch into the left hand side of this branch
+  Bool mergeLeft(Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
    {final Branch right = this;
     final Int    lc    = Left .count();
     final Int    rc    = right.count();
@@ -315,7 +315,7 @@ class Branch extends Program implements Program.Locatable                       
         final Int rt = right.top();                                                                                     // Right top
         right.copyMergeData(Left, new Int(0), new Int(lc));                                                             // Copy the left data values into the right data values
         right.data(lc, lt);                                                                                             // Place left top in left data values
-        rs.mergeFromLeftOdd(Ls, null);                                                                                  // Split the slots
+        rs.mergeFromLeftOdd(Ls, Sk);                                                                                    // Merge the slots
        }
      };
     return r;
@@ -640,7 +640,7 @@ Branch         size:   7 top:  99
    4     6    66
    5     7    77
 """);
-    l.mergeRight(r);
+    l.mergeRight(r, r.new Int(4));
     //l.new I() {void action() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 top:  99
@@ -703,7 +703,7 @@ Branch         size:   7 top:  99
    4     6    66
    5     7    77
 """);
-    r.mergeLeft(l);
+    r.mergeLeft(l, r.new Int(4));
     //r.new I() {void action() {testStop(r);}};
     r.check(r.print(), """
 Branch         size:   7 top:  99
@@ -953,7 +953,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_mergeRight(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
