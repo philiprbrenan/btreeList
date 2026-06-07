@@ -607,8 +607,8 @@ class Slots extends Program                                                     
             left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
            }
          };
-
-        setSlotAndKey(lc, lc, Sk);                                                                                      // Insert splitting key
+new I() {void action() {say("AAAA", lc, Sk); }};
+        left.setSlotAndKey(lc, lc, Sk);                                                                                 // Insert splitting key
 
         left .redistribute();                                                                                           // Redistribute left
         Right.redistribute();                                                                                           // Redistribute right
