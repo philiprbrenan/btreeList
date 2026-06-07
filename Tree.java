@@ -1361,7 +1361,7 @@ Leaf   at:   2 size:   4
      };
     t.insert(t.new Int(N), t.new Int(N));
 
-    if (true && Ex)
+    if (false && Ex)
      {t.new I() {void action() {say("Dump tree\n",  t.byteMemory.save());}};
       t.new I() {void action() {say("Dump chain\n", t.freeChain.byteMemory.save());}};
      }
@@ -1758,7 +1758,7 @@ Leaf   at:   2 size:   4
        }
      };
 
-    t.new I() {void action() {stop(s);}};
+    //t.new I() {void action() {stop(s);}};
     t.check(s, """
                8                         16                                                     |
        4                   12                          20            24                         |
