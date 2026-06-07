@@ -118,14 +118,15 @@ class Leaf extends Program implements Program.Locatable                         
     return r;                                                                                                           // Return data associated with key
    }
 
-  Int insert(Int Key, Int Data)                                                                                         // Insert a key data pair into a leaf returning the index of the containing slot
-   {final Int i = slots.insert(Key);
-    final Int k = slots.getSlotToKeyIndex(i);
+  Slots.Insert insert(Int Key, Int Data)                                                                                // Insert a key data pair into a leaf returning the index of the containing slot
+   {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                    // The key must not already be present
+    final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
+    final Int          k = slots.getSlotToKeyIndex(i.slot);                                                             // Key into which the insertion was performed
     refData.putInt(k, Data);
     return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
 
-  Int insertEmpty(Int Key, Int Data)                                                                                    // Insert a key data pair into a leaf known to be empty
+  Int insertEmpty22(Int Key, Int Data)                                                                                    // Insert a key data pair into a leaf known to be empty
    {if (immediate() && !slots.empty().b()) stop("Leaf must be empty, but it is not");                                   // Check that the leaf is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
@@ -766,7 +767,7 @@ Leaf           size:   8
    {new Leaf(new Build().maxSize(8).immediate(Ex))
      {@Override void leafCode()
        {initializeMemory();
-        insertEmpty(new Int(2), new Int(22));
+        insertEmpty22(new Int(2), new Int(22));
         check(print(), """
 Leaf           size:   8
  Ref   Key  Data
