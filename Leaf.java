@@ -52,10 +52,11 @@ class Leaf extends Program implements Program.Locatable                         
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
       final int posSlots = posMark  + ib();
       final int posData  = posSlots + slots.size();
-      final int size     = posData  + ib(maxSize);
+      final int size     = posData  + dataBytes();
      }
 
-    int size() {return memoryPositions.size;}                                                                           // Bytes needed for the slots
+    int size()      {return memoryPositions.size;}                                                                      // Bytes needed for the slots
+    int dataBytes() {return ib(maxSize);}                                                                               // Bytes needed for the data
    }
 
   Leaf(Build Build)                                                                                                     // Create a description of a leaf
@@ -79,10 +80,9 @@ class Leaf extends Program implements Program.Locatable                         
     slots.initializeMemory();                                                                                           // Initialize slots
     return this;
    }
+  void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
   public Int getLocation() {return at;}                                                                                 // The location of this node in memory
-
-  void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
   Bool empty()   {return slots.empty();}                                                                                // Is the leaf empty
   Bool full ()   {return slots.full ();}                                                                                // Is the leaf full
@@ -146,16 +146,6 @@ class Leaf extends Program implements Program.Locatable                         
     slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
    }
 
-  private void copySplitData(Leaf Target, Int Start, Int End)                                                           // Copy out the indexed data values in the specified key range from the specified source and place them in the exact same position in the target
-   {final Leaf source = this;
-    new ForCount (Start, End)
-     {void body(Int Index)
-       {final Int s =  source.slots.getSlotToKeyIndex(Index);                                                           // Index the key to be copied out
-        Target.data(s, source.data(s));                                                                                 // Copy the data value from the source leaf into the exact same position in the left leaf
-       }
-     };
-   }
-
 //D2 Split                                                                                                              // Split a full leaf into two leaves
 
   private Int splittingKey()                                                                                            // Splitting key for a leaf assuming that the leaf has been compacted to the right
@@ -168,23 +158,17 @@ class Leaf extends Program implements Program.Locatable                         
   Int splitRight(Leaf Right)                                                                                            // Split a full leaf rightwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf left = this;                                                                                             // Current leaf is on the left
-    left .compactLeft();                                                                                                // Compact source slots so we know where they are
-    final Int sk = left.splittingKey();                                                                                 // Splitting key
-    Right.slots.clear();                                                                                                // Clear the target
-    left.copySplitData(Right, new Int(maxSize/2), new Int(maxSize()));                                                  // Copy the data values associated with the slots
-    left.slots.splitRightEven(Right.slots);                                                                             // Split the slots
-    return sk;                                                                                                          // Return the splitting key
+    Right.slots.clear();                                                                                                // Clear target
+    Right.refData.copy(left.refData, build.dataBytes());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    return left.slots.splitRightEven(Right.slots);                                                                      // Split the slots
    }
 
   Int splitLeft(Leaf Left)                                                                                              // Split a full leaf leftwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf right = this;                                                                                            // Current leaf is on the right
-    right.compactLeft();                                                                                                // Compact source slots so we know where they are
-    final Int sk = right.splittingKey();                                                                                // Splitting key
-    Left .slots.clear();                                                                                                // Clear target
-    right.copySplitData(Left, new Int(0), new Int(maxSize() / 2));                                                      // Copy the data values associated with the slots
-    right.slots.splitLeftEven(Left.slots);                                                                              // Split the slots
-    return sk;                                                                                                          // Return the splitting key
+    Left.slots.clear();                                                                                                 // Clear target
+    Left.refData.copy(right.refData, build.dataBytes());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    return right.slots.splitLeftEven(Left.slots);                                                                              // Split the slots
    }
 
 //D2 Merge                                                                                                              // Merge two leaves
@@ -436,7 +420,7 @@ Leaf           size:   8
 """);
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
     r.initializeMemory();
-    l.splitRight(r);
+    l.splitRight(r).ok(4);
     //l.new I() {void action() {testStop(l);}};
     l.check(l.print(), """
 Leaf           size:   8
@@ -824,8 +808,7 @@ keys     :    2   0   0   0   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_empty(!true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
