@@ -264,7 +264,7 @@ class Tree extends Program                                                      
             void Else()                                                                                                 // On a branch
              {final Branch.StepDown d = branch(p).stepDown(key);                                                        // Step down
               path.putInt(step, p);
-              step.inc();                                                                                                       // Position for next step
+              step.inc();                                                                                               // Position for next step
               p.set(d.node);                                                                                            // Step down
               Continue.set();                                                                                           // Continue search
              }
@@ -419,45 +419,63 @@ class Tree extends Program                                                      
    {new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
        {final Leaf R = leaf(new Int(0));
-        new If (R.full())
-         {void Then()                                                                                                   // Split a full leaf
-           {final Leaf l = leaf(), r = leaf();                                                                          // Child leaves of root branch
-            l.copy(R);                                                                                                  // Duplicate the root
-            final Int   sk = l.splitRight(r);                                                                           // Split the root leaf in two
-            final Branch b = makeBranch(R.getLocation());                                                               // Make the root into a branch
-            b.insert(sk, l.getLocation());                                                                              // Insert the left leaf
-            b.top(r.getLocation());                                                                                     // The right leaf becomes top of the root branch
-            new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};                // Insert left or right leaf depending on key versus splitting key
+        final Slots.Find f = R.slots.find(Key);                                                                         // Perhaps the key is already present in the leaf root tree
+        new If (f.equal)                                                                                                // Key exists in leaf root
+         {void Then()
+           {final Int p = R.slots.getSlotToKeyIndex(f.slot);                                                            // Position of key in leaf root slots
+            R.data(p, Data);                                                                                            // Update data associated with key
            }
-          void Else()                                                                                                   // Root is a non full leaf
-           {R.insert(Key, Data);                                                                                        // Insert in non full root leaf
+          void Else()                                                                                                   // The key does not exist in the root leaf
+           {new If (R.full())                                                                                           // Is the leaf full
+             {void Then()                                                                                               // Split the leaf to make room for  the new key
+               {final Leaf l = leaf(), r = leaf();                                                                      // Child leaves of root branch
+                l.copy(R);                                                                                              // Duplicate the root
+                final Int   sk = l.splitRight(r);                                                                       // Split the root leaf in two
+                final Branch b = makeBranch(R.getLocation());                                                           // Make the root into a branch
+                b.insert(sk, l.getLocation());                                                                          // Insert the left leaf
+                b.top(r.getLocation());                                                                                 // The right leaf becomes top of the root branch
+                new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};            // Insert left or right leaf depending on key versus splitting key
+               }
+              void Else()                                                                                               // Root is a non full leaf that does not contain the key
+               {R.insert(Key, Data);                                                                                    // Insert in non full leaf that does not contain the key
+               }
+             };
            }
          };
        }
       void Else()                                                                                                       // The root is a branch
        {final Find f = find(Key);                                                                                       // Find the leaf for the key
         final Leaf l = leaf(f.leaf);
-        new If (l.full())                                                                                               // The target leaf is full
+        final Slots.Find F = l.slots.find(Key);                                                                         // Perhaps the key is already present in the leaf
+        new If (F.equal)                                                                                                // Key exists in full leaf
          {void Then()
-           {insertFullLeaf(Key, Data);                                                                                  // Insert into a tree known to have a branch at the root and a full target leaf for the key
+           {final Int p = l.slots.getSlotToKeyIndex(F.slot);                                                            // Position of key in leaf slots
+            l.data(p, Data);                                                                                            // Update data  associated with key
            }
-          void Else()                                                                                                   // The leaf we have found is not full
-           {l.insert(Key, Data);                                                                                        // Insert into non full leaf
+          void Else()                                                                                                   // Key is not present in the leaf
+           {new If (l.full())                                                                                           // The target leaf is full
+             {void Then()
+               {insertFullLeaf(Key, Data);                                                                              // Insert into a tree known to have a branch at the root and a full target leaf for the key
+               }
+              void Else()                                                                                               // Insert a new key into a non full leaf
+               {l.insert(Key, Data);                                                                                    // Insert into non full leaf
+               }
+             };
            }
          };
        }
      };
    }
 
-  private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full
+  private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full and the key does not exist in the leaf
    {final Path p = path(Key);                                                                                           // Path from root to full leaf
     p.splitPoint();                                                                                                     // The lowest branch in the tree that is full and has a non full parent
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
     final Int    L = p.step.Dec();                                                                                      // Last step along path
     final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
     final Leaf   r = leaf(p.leaf);                                                                                      // The full leaf into which the key should be inserted
-    final Leaf   l = leaf();
-    final Int   sk = r.splitLeft(l);
+    final Leaf   l = leaf();                                                                                            // New leaf
+    final Int   sk = r.splitLeft(l);                                                                                    // Split the full leaf into the new leaf
 
     final Branch.StepDown d = P.stepDown(Key);
     new If (d.slot.notValid())                                                                                          // If the leaf was reached by stepping through top then insert the new left leaf high
@@ -667,7 +685,7 @@ class Tree extends Program                                                      
     return m;                                                                                                           // Whether the merge was performed or not
    }
 
-  Bool mergeRightRight(Branch Parent, Int Pos)                                                                          // Merge the right hand sibling of the specified sibling with the right hand sibling os the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
+  Bool mergeRightRight(Branch Parent, Int Pos)                                                                          // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
    {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
 
@@ -724,7 +742,7 @@ class Tree extends Program                                                      
       final Int  parentSlot = new Int();                                                                                // If the current branch is not the root then the slot through which this branch was reached
       final Int  branch     = new Int();                                                                                // The current branch
       final Int  branchSlot = new Int();                                                                                // The slot in the current branch that has just been processed
-      final Int  child      = new Int();                                                                                // The child of the current branch that has just been procssed
+      final Int  child      = new Int();                                                                                // The child of the current branch that has just been processed
       final Int  Depth      = new Int();                                                                                // Depth of this branch
       BranchContext()                                                                                                   // Set the current context
        {new If(depth.eq(0))                                                                                             // The branch currently being processed is the root
@@ -740,7 +758,7 @@ class Tree extends Program                                                      
             branch     .set(node  .getInt(ib(depth)));                                                                  // The current branch
            }
          };
-        branchSlot .set(action.getInt(ib(depth)));                                                                      // The slot in the current branch that ha just been processed
+        branchSlot .set(action.getInt(ib(depth)));                                                                      // The slot in the current branch that has just been processed
         child      .set(node  .getInt(ib(depth.Inc())));                                                                // The leaf or branch below this branch that has just been processed
         Depth      .set(depth);                                                                                         // Show the depth of this branch
        }
@@ -757,7 +775,7 @@ class Tree extends Program                                                      
      }
 
     Traverse()                                                                                                          // Traverse the tree visiting each leaf and branch in order
-     {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added tothe stack
+     {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added to the stack
       final Tree tree = Tree.this;
 
       new If (isBranch(new Int(ib(0))))                                                                                 // Tree starts with a branch
@@ -766,7 +784,7 @@ class Tree extends Program                                                      
            {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
              {new If (depth.ge(0))                                                                                      // Branches waiting to be processed
                {void Then()                                                                                             // Branches still present on branches stack
-                 {Continue.set();                                                                                       // Continue as long as thr are brancehs to be processed
+                 {Continue.set();                                                                                       // Continue as long as there are branches to be processed
                   new If (isBranch(node.getInt(ib(depth))))                                                             // Processing a branch
                    {void Then()
                      {final Int    a = action.getInt(ib(depth));  a.name = "action";                                    // Action to be performed on branch
