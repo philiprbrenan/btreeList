@@ -607,7 +607,6 @@ class Slots extends Program                                                     
             left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
            }
          };
-new I() {void action() {say("AAAA", lc, Sk); }};
         left.setSlotAndKey(lc, lc, Sk);                                                                                 // Insert splitting key
 
         left .redistribute();                                                                                           // Redistribute left
@@ -976,20 +975,42 @@ new I() {void action() {say("AAAA", lc, Sk); }};
     return r;                                                                                                           // Result found if valid, if invalid greater than any key in the slots
    }
 
-  Int insert(Int Key)                                                                                                   // Insert a key into slots and return the slot chosen
-   {if (immediate() && usedKeys.full().b()) stop("No more space to insert key:", Key);                                  // No space left
-    final Int P = new Int();                                                                                            // Slot into which the key was inserted
+  class Insert                                                                                                          // Results of an insertion
+   {final Int  key      = new Int ("key");                                                                              // The key being inserted
+    final Int  slot     = new Int ("slot");                                                                             // Slot index referring to the inserted key
+    final Bool inserted = new Bool("inserted");                                                                         // True if the key did not exist prior to the insertion else false
 
+    void set(Int Key, Int Slot, boolean Inserted)                                                                   // Record insertion result
+     {key.set(Key); slot.set(Slot); inserted.set(Inserted);
+     }
+
+    public String toString()
+     {final StringBuilder s = new StringBuilder();                                                                      // Print insertion result
+      s.append("Insert: "+key+", "+slot+", "+inserted);
+      return ""+s;
+     }
+   }
+
+  Insert insert(Int Key)                                                                                                // Insert a key into slots and return the slot chosen and indicate whether this is a new key or an existing one
+   {if (immediate() && usedKeys.full().b()) stop("No more space to insert key:", Key);                                  // No space left
+    final Insert i = new Insert();                                                                                      // Record the insertion result
     new If (empty())                                                                                                    // Slots are empty so insert immediately in the middle
      {void Then()
-       {P.set(insertEmpty(Key));                                                                                        // Insert immediately in the middle of the empty slots
+       {i.set(Key, insertEmpty(Key), true);                                                                             // New key as slots are empty
        }
       void Else()                                                                                                       // Insert into a free slot while maintaining the order of the slots
        {final Find f = find(Key);                                                                                       // Find nearest existing key in slots
-        P.set(f.insert(Key));                                                                                           // Insert the key based on the find result
+        new If (f.equal)
+         {void Then()
+           {i.set(Key, f.slot, false);                                                                                  // Existing key
+           }
+          void Else()
+           {i.set(Key, f.insert(Key), true);                                                                            // New key in non empty slots per find results
+           }
+         };
        }
      };
-    return P;                                                                                                           // Slot into which the key was inserted
+    return i;                                                                                                           // Slot into which the key was inserted
    }
 
   Int insertEmpty(Int Key)                                                                                              // Insert a key into slots known to be empty and return the slot chosen
@@ -1449,8 +1470,10 @@ keys     :    7   1   3   2   4   5   6   0
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
          {void slotsCode()
            {initializeMemory();
-            insert(new Int(3));
-            insert(new Int(4));
+            final Insert i3 = insert(new Int(3)); i3.inserted.ok(true);
+            final Insert i4 = insert(new Int(4)); i4.inserted.ok(true);
+            final Insert j3 = insert(new Int(3)); j3.inserted.ok(false);  j3.slot.eq(i3.slot).ok(true);
+            final Insert j4 = insert(new Int(4)); j4.inserted.ok(false);  j4.slot.eq(i4.slot).ok(true);
            }
          };
         mergeFromRightEven(r).ok(true);
