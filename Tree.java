@@ -1237,7 +1237,7 @@ class Tree extends Program                                                      
        };
      }
 
-    void leafBody  (Int L, Int Slot, Int Depth, Int Parent) {}                                                          // Override to process each leaf
+    void leafBody       (Int L, Int Slot, Int Depth, Int Parent) {}                                                     // Override to process each leaf
     void branchBody     (BranchContext BC) {}                                                                           // Override to process each branch
     void branchBodyEmpty(BranchContext BC) {}                                                                           // Override to process branches that have a empty body
    }
@@ -1248,10 +1248,12 @@ class Tree extends Program                                                      
    {final Stack<StringBuilder> P = new Stack<>();
 
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
-     {new Traverse()
+     {new I() {void action() {P.clear();}};                                                                             // Clear output area
+
+      new Traverse()
        {@Override void leafBody(Int L, Int Slot, Int Depth, Int Parent)                                                 // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(L);
-          final StringBuilder s = new StringBuilder();
+          final StringBuilder s = new  StringBuilder();
           new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
@@ -1261,7 +1263,8 @@ class Tree extends Program                                                      
               chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(s);                                                                                 // Write first line
               if (Context && Parent != null)                                                                            // Parent details if requested
-               {final StringBuilder t = new StringBuilder();
+               {final StringBuilder t = new  StringBuilder();
+                new I() {void action() {clearStringBuilder(t); }};                                                      // Clear the print
                 final int lI = L.i(), lP = Parent.i(), lS = Slot.i();                                                   // Components of second line: leaf number, parent branch number, slot in parent
                 if (lS < 0) t.append("("+lI+","+lP+")"); else t.append("("+lI+","+lP+","+lS+")");                       // Format second line
                 P.elementAt(d+1).append(t);                                                                             // Write second line
@@ -1271,17 +1274,13 @@ class Tree extends Program                                                      
          }
 
         @Override void branchBody(BranchContext BC)                                                                     // Print keys of branch and optionally the details of the parent and the children of this branch
-         {final Branch        b = branch(BC.branch);
-          final StringBuilder s = new StringBuilder();
-
-          new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
+         {final Branch b = branch(BC.branch);
           final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
 
           new I()                                                                                                       // Place in output area
            {void action()
              {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
-              //chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(""+K.i());                                                                          // Write key into output area
 
               if (Context)                                                                                              // Context requested
@@ -1304,11 +1303,9 @@ class Tree extends Program                                                      
          }
 
         @Override void branchBodyEmpty(BranchContext BC)                                                                // Print a branch with an empty body
-         {final Branch        b = branch(BC.branch);
-          final Int           t = b.top();
-          final StringBuilder s = new StringBuilder();
+         {final Branch b = branch(BC.branch);
+          final Int    t = b.top();
 
-          new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
           final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
 
           new I()                                                                                                       // Place in output area
@@ -1347,8 +1344,9 @@ class Tree extends Program                                                      
      {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
       new I()
        {void action()
-         {pad(0);
-           for  (StringBuilder s : P)
+         {clearStringBuilder(t);
+          pad(0);
+          for  (StringBuilder s : P)
            {final String l = ""+s;
             if (!l.isBlank()) t.append(l+"|\n");
            }
@@ -1797,7 +1795,7 @@ Leaf   at:   2 size:   4
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
-       {t.delete(Index.Inc());
+       {t.delete(t.new Int(N).sub(Index));
         final StringBuilder T = t.print();
         t.new I() {void action() {s.append(T); }};
        }
@@ -1809,91 +1807,101 @@ Leaf   at:   2 size:   4
        4                   12                          20            24                         |
    2       6        10            14            18            22            26     28           |
 1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                                       16                                                     |
-             8           12                          20            24                         |
-     4   6        10            14            18            22            26     28           |
-2,3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                                     16                                                     |
-           8                                       20            24                         |
-   4            10     12     14            18            22            26     28           |
-3,4 5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                                   16                                                     |
-         8                                       20            24                         |
- 4            10     12     14            18            22            26     28           |
-4 5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                                 16                                                     |
-       8                                       20            24                         |
-            10     12     14            18            22            26     28           |
-5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                               16                                                     |
-     8                                       20            24                         |
-          10     12     14            18            22            26     28           |
-6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                             16                                                     |
-   8                                       20            24                         |
-        10     12     14            18            22            26     28           |
-7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                           16                                                     |
- 8                                       20            24                         |
-      10     12     14            18            22            26     28           |
-8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                          16                                                     |
-8                                       20            24                         |
-     10     12     14            18            22            26     28           |
- 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                       16            20            24                         |
-8  10           14            18            22            26     28           |
- 10  11,12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                  16                          24                         |
-           14            18     20     22            26     28           |
-11,12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-               16                          24                         |
-        14            18     20     22            26     28           |
-12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-           16                          24                         |
-                  18     20     22            26     28           |
-13,14,15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-        16                          24                         |
-               18     20     22            26     28           |
-14,15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-     16                          24                         |
-            18     20     22            26     28           |
-15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-  16                          24                         |
-         18     20     22            26     28           |
-16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-16                          24                         |
-       18     20     22            26     28           |
-  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
-                        24                         |
-16  18           22            26     28           |
-  18  19,20,21,22  23,24  25,26  27,28  29,30,31,32|
-                  24                         |
-           22            26     28           |
-19,20,21,22  23,24  25,26  27,28  29,30,31,32|
-               24                         |
-        22            26     28           |
-20,21,22  23,24  25,26  27,28  29,30,31,32|
-           24     26     28           |
-21,22,23,24  25,26  27,28  29,30,31,32|
-        24           28           |
-22,23,24  25,26,27,28  29,30,31,32|
-     24           28           |
-23,24  25,26,27,28  29,30,31,32|
-  24           28           |
-24  25,26,27,28  29,30,31,32|
-           28           |
-25,26,27,28  29,30,31,32|
-        28           |
-26,27,28  29,30,31,32|
-     28           |
-27,28  29,30,31,32|
-  28           |
-28  29,30,31,32|
-29,30,31,32|
-30,31,32|
-31,32|
-32|
+                                         16                                                 |
+       4       8           12                                        24                     |
+   2       6        10            14            18     20     22                  28        |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26,27,28  29,30,31|
+                                         16                                              |
+       4       8           12                                        24                  |
+   2       6        10            14            18     20     22                  28     |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26,27,28  29,30|
+                                         16                                           |
+       4       8           12                                        24               |
+   2       6        10            14            18     20     22                  28  |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26,27,28  29|
+                                         16                                       |
+       4       8           12                                        24           |
+   2       6        10            14            18     20     22                  |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26,27,28|
+                                         16                                    |
+       4       8           12                                        24        |
+   2       6        10            14            18     20     22               |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26,27|
+                                         16                                 |
+       4       8           12                                        24     |
+   2       6        10            14            18     20     22            |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26|
+                                         16                              |
+       4       8           12                                        24  |
+   2       6        10            14            18     20     22         |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25|
+                                         16                            |
+       4       8           12                                        24|
+   2       6        10            14            18     20     22       |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  |
+                                         16                        |
+       4       8           12                                      |
+   2       6        10            14            18           22  24|
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20,21,22  23  |
+                                         16                  |
+       4       8           12                                |
+   2       6        10            14            18           |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20,21,22|
+                                         16               |
+       4       8           12                             |
+   2       6        10            14            18        |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20,21|
+                                         16           |
+       4       8           12                         |
+   2       6        10            14                  |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18,19,20|
+                                         16        |
+       4       8           12                      |
+   2       6        10            14               |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18,19|
+                                         16     |
+       4       8           12                   |
+   2       6        10            14            |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18|
+                                         16  |
+       4       8           12                |
+   2       6        10            14         |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17|
+                                         16|
+       4       8           12              |
+   2       6        10            14       |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  |
+       4                   12        16|
+   2       6   8    10                 |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14,15  |
+       4                   12       |
+   2       6   8    10            16|
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  |
+       4                   12  |
+   2       6   8    10         |
+1,2 3,4 5,6 7,8 9,10  11,12  13|
+       4                   12|
+   2       6   8    10       |
+1,2 3,4 5,6 7,8 9,10  11,12  |
+       4                  |
+   2       6        10  12|
+1,2 3,4 5,6 7,8,9,10  11  |
+   2   4   6        |
+1,2 3,4 5,6 7,8,9,10|
+   2       6     |
+1,2 3,4,5,6 7,8,9|
+   2       6   |
+1,2 3,4,5,6 7,8|
+   2       6 |
+1,2 3,4,5,6 7|
+   2       |
+1,2 3,4,5,6|
+   2     |
+1,2 3,4,5|
+1,2,3,4|
+1,2,3|
+1,2|
+1|
 """);
 
     t.maxSteps = 9_999_999;
@@ -1905,6 +1913,115 @@ Leaf   at:   2 size:   4
               test_deleteDescending(false);
    }
 
+  static void test_deleteRandom32(boolean Ex)
+   {final int  N = random_32.length;
+    final Tree t = test_reloadTree(Ex);
+    final StringBuilder s = new StringBuilder();
+    final StringBuilder S = t.print();
+    t.new I() {void action() {s.append(S);}};
+
+    t.new ForCount(t.new Int(N))
+     {void body(Int Index)
+       {final Int i = t.new Int();
+        t.new I() {void action() {i.ex(Int.Ops.set, random_32[Index.i()]);}};
+        t.delete(i);
+        final StringBuilder T = t.print();
+        t.new I() {void action() {s.append(T); }};
+       }
+     };
+
+    t.new I() {void action() {stop(s);}};
+    t.check(s, """
+               8                         16                                                     |
+       4                   12                          20            24                         |
+   2       6        10            14            18            22            26     28           |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                     16                                                     |
+       4       8                                   20            24                         |
+   2       6           12     14            18            22            26     28           |
+1,2 3,4 5,6 7,8 9,10,11  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                   16                                                     |
+             8                                   20            24                         |
+     4   6           12     14            18            22            26     28           |
+1,2,4 5,6 7,8 9,10,11  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+             8                     16                          24                     |
+     4   6           12     14            18     20     22               28           |
+1,2,4 5,6 7,8 9,10,11  13,14  15,16  17,18  19,20  21,22  23,24  25,26,28  29,30,31,32|
+           8                     16                          24                     |
+   4               12     14            18     20     22               28           |
+2,4 5,6,7,8 9,10,11  13,14  15,16  17,18  19,20  21,22  23,24  25,26,28  29,30,31,32|
+           8                     16                      24                     |
+   4               12     14            18           22            28           |
+2,4 5,6,7,8 9,10,11  13,14  15,16  17,18  19,20,21,22  24  25,26,28  29,30,31,32|
+           8                     16                                         |
+   4               12     14            18           24        28           |
+2,4 5,6,7,8 9,10,11  13,14  15,16  17,18  19,21,22,24  25,26,28  29,30,31,32|
+         8                     16                                         |
+   4             12     14            18           24        28           |
+2,4 5,6,7 9,10,11  13,14  15,16  17,18  19,21,22,24  25,26,28  29,30,31,32|
+         8                     16                                      |
+   4             12     14         18           24        28           |
+2,4 5,6,7 9,10,11  13,14  15,16  17  19,21,22,24  25,26,28  29,30,31,32|
+                             16                                      |
+       8       12     14         18           24        28           |
+4,5,6,7 9,10,11  13,14  15,16  17  19,21,22,24  25,26,28  29,30,31,32|
+                             16                                   |
+       8       12     14         18           24        28        |
+4,5,6,7 9,10,11  13,14  15,16  17  19,21,22,24  25,26,28  29,30,32|
+                             16                                |
+       8       12     14         18           24     28        |
+4,5,6,7 9,10,11  13,14  15,16  17  19,21,22,24  26,28  29,30,32|
+                         16                                |
+       8       12            18           24     28        |
+4,5,6,7 9,10,11  13,14,15  17  19,21,22,24  26,28  29,30,32|
+                      16                                |
+       8       12         18           24     28        |
+4,5,6,7 9,10,11  14,15  17  19,21,22,24  26,28  29,30,32|
+                      16                            |
+       8       12         18           24           |
+4,5,6,7 9,10,11  14,15  17  19,21,22,24  26,28,29,30|
+                  16                            |
+       8              18           24           |
+4,5,6,7 9,10,14,15  17  19,21,22,24  26,28,29,30|
+       8          16           24           |
+4,5,6,7 9,10,14,15  17,19,22,24  26,28,29,30|
+     8          16           24           |
+4,6,7 9,10,14,15  17,19,22,24  26,28,29,30|
+     8          16        24           |
+4,6,7 9,10,14,15  17,19,22  26,28,29,30|
+   8          16        24           |
+6,7 9,10,14,15  17,19,22  26,28,29,30|
+   8       16        24           |
+6,7 9,14,15  17,19,22  26,28,29,30|
+   8       16        24        |
+6,7 9,14,15  17,19,22  28,29,30|
+   8       16        24     |
+6,7 9,14,15  17,19,22  28,29|
+         16        24     |
+6,7,14,15  17,19,22  28,29|
+       16        24     |
+7,14,15  17,19,22  28,29|
+       16           |
+7,14,15  17,19,22,28|
+       16        |
+7,14,15  19,22,28|
+       16     |
+7,14,15  19,22|
+7,14,19,22|
+7,19,22|
+7,22|
+22|
+""");
+
+    t.maxSteps = 9_999_999;
+    t.execute();
+   }
+
+  static void test_deleteRandom32()
+   {          test_deleteRandom32(true);
+              test_deleteRandom32(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_tree();
     test_saveReload();
@@ -1913,6 +2030,7 @@ Leaf   at:   2 size:   4
     test_insertReverse();
     test_insertRandom32();
     test_deleteAscending();
+    test_deleteDescending();
     //test_insert();
     //test_insert_reverse();
     //test_insert_random();
@@ -1926,6 +2044,7 @@ Leaf   at:   2 size:   4
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
+    test_deleteAscending(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
