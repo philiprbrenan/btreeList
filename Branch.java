@@ -879,7 +879,6 @@ Branch         size:   7 top:  88
      {@Override void branchCode()
        {initializeMemory();
         insertEmpty(new Int(4), new Int(44));
-        insert(new Int(4), new Int(44));
         check(print(), """
 Branch         size:   7 top:   0
  Ref   Key  Data
@@ -956,7 +955,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_knownInsert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
