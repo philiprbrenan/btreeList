@@ -525,44 +525,6 @@ class Tree extends Program                                                      
     return sk;                                                                                                          // Return the splitting key
    }
 
-//  Bool mergeRoot()                                                                                                      // Merge the nodes below the root into the root if possible
-//   {isRootLeaf().stop("Root must be a branch");                                                                         // Root must be a branch
-//    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
-//    final Branch R = branch(new Int(0));
-//    new If (R.slots.usedKeys.twoOrMoreOnes().Flip())                                                                    // Root has one node reference in its body
-//     {void Then()
-//       {final Int f = R.data(R.slots.getSlotToKeyIndex(R.slots.usedSlotsToKeys.firstOne()));                            // Left child of root
-//        new If (isLeaf(R.top()))                                                                                        // Root has leaves for children
-//         {void Then()                                                                                                   // Merge leaves
-//           {final Leaf l = leaf(f);                                                                                     // Left child of root
-//            final Leaf r = leaf(R.top());
-//            new If (l.count().add(r.count()).le(l.maxSize))                                                             // Room in root for content of leaf children
-//             {void Then()
-//               {R.clear();
-//                final Leaf P = makeLeaf(R.getLocation());
-//                P.mergeRight(l);
-//                P.mergeRight(r);
-//                m.set();
-//               }
-//             };
-//           }
-//          void Else()                                                                                                   // Merge branches
-//           {final Branch l = branch(f);                                                                                 // Left child of root
-//            final Branch r = branch(R.top());
-//            new If (l.count().add(r.count()).lt(l.maxSize))                                                             // Room in root for content of leaf children
-//             {void Then()
-//               {R.copy(l);
-//                R.mergeRight(r);
-//                m.set();
-//               }
-//             };
-//           }
-//         };
-//       }
-//     };
-//    return m;                                                                                                           // Whether the merge was performed or not
-//   }
-
 //D2 Merge                                                                                                              // Merge nodes in the tree to make the tree narrower
 //D3 Merge Left                                                                                                         // Merge single and double left
 
@@ -721,139 +683,6 @@ class Tree extends Program                                                      
    }
 
 /*
-//D2 Low Level                                                                                                          // Low level operations
-
-  void mergeAlongPath(Key Key)                                                                                          // Merge along the path from the specified key to the root
-   {final Find f = find(Key);                                                                                           // Locate the leaf that should contain the key
-    //if (f == null) return;                                                                                            // Empty tree
-
-    new If (f.leaf.up() != null)                                                                                        // Process path from leaf to root
-     {void Then()
-       {final Ref<Branch> B = new Ref<>(f.leaf.up());                                                                   // First branch
-        new For(numberOfNodes)                                                                                          // Go up the tree merging as we go: only one merge is needed at each level
-         {void body(Int i, Bool C)
-           {final Branch b = B.get();
-            final Bool m = new Bool().clear();                                                                          // Whether we have merged anything yet
-
-            new If (m.Flip())
-             {void Then()
-               {final Slots.Slot l = b.locateFirstGe(Key);                                                              // Position of key
-                m.set(l.valid().and(()->{return b.mergeRightSibling(l);}));                                             // Merge right sibling of keyed child
-               }
-             };
-
-            new If (m.Flip())
-             {void Then()
-               {final Slots.Slot L = b.locateFirstGe(Key);                                                              // Position of key
-                m.set(L.valid().and(()->{return b.mergeLeftSibling(L);}));                                              // Merge left sibling of keyed child
-               }
-             };
-
-            new If (m.Flip())
-             {void Then()
-               {final Slots.Slot k = b.locateFirstGe(Key);                                                              // Look further left
-                m.set(k.valid()
-                 .and(()->{return b.mergeLeftSibling(k.stepLeft());}));                                                 // Merge further left sibling
-                new If (m.Flip())                                                                                       // Top
-                 {void Then()
-                   {final Slots.Slot S = b.locateLastUsedSlot();
-                    m.set(S.valid().and(()->{return b.mergeLeftSibling(S);}));                                          // Merge further left of top
-                   }
-                 };
-               }
-             };
-
-            new If (m.Flip())
-             {void Then()
-               {final Slots.Slot r = b.locateFirstGe(Key);                                                              // Look further right
-                m.set(r.valid()
-                 .and(()->{return b.mergeRightSibling(r.stepRight());}));                                               // Merge further right sibling
-               }
-             };
-
-            new If (m.Flip())                                                                                           // Migrate into top
-             {void Then()
-               {b.mergeLeftSibling(b.new Slot());
-               }
-             };
-            B.set(b.up());                                                                                              // Go up the tree merging as we go: only one merge is needed at each level
-            C.set(B.valid());
-           }
-         };
-       }
-     };
-    mergeRoot(Key);                                                                                                     // Merge the root if possible
-   }
-
-  void mergeRoot(Key Key)                                                                                               // Collapse the root if possible
-   {new If (root() != null)                                                                                             // Tree has content
-     {void Then()
-       {mergeRootNotEmpty(Key);                                                                                         // Merge non empty root if possible
-       }
-     };
-    return;
-   }
-
-  void mergeRootNotEmpty(Key Key)                                                                                       // Collapse the root if possible
-   {new If (root().isLeaf())                                                                                            // Leaf root
-     {void Then()
-       {final Leaf l = (Leaf)root();
-        new If (l.empty()) {void Then() {l.free(); root((Leaf)null);}};                                                 // Free leaf if it is empty
-       }
-      void Else()
-       {final Branch b = (Branch)root();                                                                                // Branch root
-        new If (b.countUsed().eq(0))                                                                                    // Root body is empty so collapse to top
-         {void Then()
-           {final Slots t = b.top();
-            b.free();
-            new If (t.isLeaf())
-             {void Then()
-               {root((Leaf)t);
-               }
-              void Else()
-               {root((Branch)t);
-               }
-             };
-           }
-         };
-
-        new If (b.countUsed().eq(1))                                                                                    // Root body is right size to collapse
-         {void Then()
-           {new If (b.top().isLeaf())                                                                                   // Leaves for children
-             {void Then()
-               {final Leaf l = (Leaf)b.firstChild();
-                final Leaf r = (Leaf)b.top();
-                final Bool m = l.mergeFromRight(r);
-                new If (m) {void Then() {b.free(); r.free(); root(l);}};                                                // Update root if the leaves were successfully merged
-               }
-              void Else()
-               {final Branch l = (Branch)b.firstChild();                                                                // Root has branches for children
-                final Branch r = (Branch)b.top();
-                final Bool   m = r.mergeFromLeft(b.firstKey(), l);
-                new If (m) {void Then() {b.free(); l.free(); root(r);}};                                                // Update root if the leaves were successfully merged
-               }
-             };
-           }
-         };
-       }
-     };
-   }
-
-
-  void delete(Key Key)                                                                                                  // Delete a key from the tree
-   {new If (root() != null)                                                                                             // The tree is not empty so there might be something to delete
-     {void Then()
-       {final Find f = find(Key);                                                                                       // Locate the key in the tree
-        new If (f.locate.found())                                                                                       // Key found so delete it
-         {void Then()
-           {f.leaf.clearSlotAndRef(f.locate);                                                                           // Delete key and data from leaf
-            mergeAlongPath(Key);
-           }
-         };
-       }
-     };
-   }
-
   Int count()                                                                                                           // Count the number of entries in the tree
    {final Slots r = root();
     return If (new Bool(r == null),
@@ -1263,8 +1092,7 @@ class Tree extends Program                                                      
               chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(s);                                                                                 // Write first line
               if (Context && Parent != null)                                                                            // Parent details if requested
-               {final StringBuilder t = new  StringBuilder();
-                new I() {void action() {clearStringBuilder(t); }};                                                      // Clear the print
+               {final StringBuilder t = clearStringBuilder(new StringBuilder());
                 final int lI = L.i(), lP = Parent.i(), lS = Slot.i();                                                   // Components of second line: leaf number, parent branch number, slot in parent
                 if (lS < 0) t.append("("+lI+","+lP+")"); else t.append("("+lI+","+lP+","+lS+")");                       // Format second line
                 P.elementAt(d+1).append(t);                                                                             // Write second line
@@ -2031,6 +1859,7 @@ Leaf   at:   2 size:   4
     test_insertRandom32();
     test_deleteAscending();
     test_deleteDescending();
+    test_deleteRandom32();
     //test_insert();
     //test_insert_reverse();
     //test_insert_random();
@@ -2044,7 +1873,7 @@ Leaf   at:   2 size:   4
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending(false);
+    test_saveReload();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
