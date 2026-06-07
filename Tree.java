@@ -178,7 +178,7 @@ class Tree extends Program                                                      
 
   Branch branch() {return makeBranch(allocate());}                                                                      // Create and initialize a branch in memory and return its index
 
-  StringBuilder dump()                                                                                                  // Dump the tree
+  StringBuilder dumpTree()                                                                                              // Dump the tree
    {final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.countOnes());
     new I()                                                                                                             // Dump the tree statistics
@@ -333,9 +333,7 @@ class Tree extends Program                                                      
      }
 
     void mergeUp()                                                                                                      // Merge up from the leaf to the splitting point
-     {
-say("AAAA0000", key);
-       new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
+     {new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
@@ -347,9 +345,7 @@ say("AAAA0000", key);
           final Branch.StepDown d3 = p.stepDown(key);                                                                   // Step down
           mergeLeft      (p, d3.slot);                                                                                  // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
           final Branch.StepDown d4 = p.stepDown(key);                                                                   // Step down
-say("AAAA1111", print(), d4, Tree.this.print());
           mergeRight     (p, d4.slot);                                                                                  // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
-say("AAAA2222", print(), Tree.this.print());
          }
        };
 
@@ -499,12 +495,10 @@ say("AAAA2222", print(), Tree.this.print());
        {final Path       p = new Path(Key);                                                                             // Path to leaf that should contain key
         final Leaf       l = leaf(p.leaf);                                                                              // Containing leaf
         final Slots.Find f = l.slots.find(Key);                                                                         // Search for key in root
-say("DDDD1111", Key, p, f);
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(l.data(l.slots.getSlotToKeyValue(f.slot)));                                                        // Data associated with key
             l.slots.delSlotAndKey(f.slot);                                                                              // Remove key from leaf in tree tree
-say("DDDD2222");
             p.mergeUp();                                                                                                // Merge leaf and nodes above
            }
          };
@@ -531,43 +525,43 @@ say("DDDD2222");
     return sk;                                                                                                          // Return the splitting key
    }
 
-  Bool mergeRoot()                                                                                                      // Merge the nodes below the root into the root if possible
-   {isRootLeaf().stop("Root must be a branch");                                                                         // Root must be a branch
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
-    final Branch R = branch(new Int(0));
-    new If (R.slots.usedKeys.twoOrMoreOnes().Flip())                                                                    // Root has one node reference in its body
-     {void Then()
-       {final Int f = R.data(R.slots.getSlotToKeyIndex(R.slots.usedSlotsToKeys.firstOne()));                            // Left child of root
-        new If (isLeaf(R.top()))                                                                                        // Root has leaves for children
-         {void Then()                                                                                                   // Merge leaves
-           {final Leaf l = leaf(f);                                                                                     // Left child of root
-            final Leaf r = leaf(R.top());
-            new If (l.count().add(r.count()).le(l.maxSize))                                                             // Room in root for content of leaf children
-             {void Then()
-               {R.clear();
-                final Leaf P = makeLeaf(R.getLocation());
-                P.mergeRight(l);
-                P.mergeRight(r);
-                m.set();
-               }
-             };
-           }
-          void Else()                                                                                                   // Merge branches
-           {final Branch l = branch(f);                                                                                 // Left child of root
-            final Branch r = branch(R.top());
-            new If (l.count().add(r.count()).lt(l.maxSize))                                                             // Room in root for content of leaf children
-             {void Then()
-               {R.copy(l);
-                R.mergeRight(r);
-                m.set();
-               }
-             };
-           }
-         };
-       }
-     };
-    return m;                                                                                                           // Whether the merge was performed or not
-   }
+//  Bool mergeRoot()                                                                                                      // Merge the nodes below the root into the root if possible
+//   {isRootLeaf().stop("Root must be a branch");                                                                         // Root must be a branch
+//    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+//    final Branch R = branch(new Int(0));
+//    new If (R.slots.usedKeys.twoOrMoreOnes().Flip())                                                                    // Root has one node reference in its body
+//     {void Then()
+//       {final Int f = R.data(R.slots.getSlotToKeyIndex(R.slots.usedSlotsToKeys.firstOne()));                            // Left child of root
+//        new If (isLeaf(R.top()))                                                                                        // Root has leaves for children
+//         {void Then()                                                                                                   // Merge leaves
+//           {final Leaf l = leaf(f);                                                                                     // Left child of root
+//            final Leaf r = leaf(R.top());
+//            new If (l.count().add(r.count()).le(l.maxSize))                                                             // Room in root for content of leaf children
+//             {void Then()
+//               {R.clear();
+//                final Leaf P = makeLeaf(R.getLocation());
+//                P.mergeRight(l);
+//                P.mergeRight(r);
+//                m.set();
+//               }
+//             };
+//           }
+//          void Else()                                                                                                   // Merge branches
+//           {final Branch l = branch(f);                                                                                 // Left child of root
+//            final Branch r = branch(R.top());
+//            new If (l.count().add(r.count()).lt(l.maxSize))                                                             // Room in root for content of leaf children
+//             {void Then()
+//               {R.copy(l);
+//                R.mergeRight(r);
+//                m.set();
+//               }
+//             };
+//           }
+//         };
+//       }
+//     };
+//    return m;                                                                                                           // Whether the merge was performed or not
+//   }
 
 //D2 Merge                                                                                                              // Merge nodes in the tree to make the tree narrower
 //D3 Merge Left                                                                                                         // Merge single and double left
@@ -586,15 +580,16 @@ say("DDDD2222");
     return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bool mergeLeftBranchIntoRightSibling(Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+  Bool mergeLeftBranchIntoRightSibling(Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(Left)));                                                   // Left branch of merge
-    new If (Right.mergeLeft(l))                                                                                         // Successfully merged
-     {void Then()
-       {P.slots.delSlotAndKey(Left);                                                                                    // The left sibling can now be freed
-        free(l);
-        m.set();
+    final Int    k = P.slots.getSlotToKeyValue(Left);                                                                   // The parent key for the left sibling
+    new If (Right.mergeLeft(l, k))                                                                                      // Successfully merged
+     {void Then()                                                                                                       // The left sibling can now be freed
+       {P.slots.delSlotAndKey(Left);                                                                                    // Remove from parent
+        free(l);                                                                                                        // Free left branch
+        m.set();                                                                                                        // Success
        }
      };
     return m;                                                                                                           // Whether the merge succeeded
@@ -1188,7 +1183,7 @@ say("DDDD2222");
                               new If (b.slots.empty())                                                                  // Print a place holder if the body is empty
                                {void Then()
                                  {final BranchContext bc = new BranchContext();                                         // Context of current branch
-                                  branchBody(bc);                                                                       // Processed this slot in this branch
+                                  branchBodyEmpty(bc);                                                                  // Processed this slot in this branch
                                  }
                                };
                               depth.inc();                                                                              // Next child next time
@@ -1243,7 +1238,8 @@ say("DDDD2222");
      }
 
     void leafBody  (Int L, Int Slot, Int Depth, Int Parent) {}                                                          // Override to process each leaf
-    void branchBody(BranchContext BC) {}                                                                                // Override to process each branch
+    void branchBody     (BranchContext BC) {}                                                                           // Override to process each branch
+    void branchBodyEmpty(BranchContext BC) {}                                                                           // Override to process branches that have a empty body
    }
 
 //D2 Print                                                                                                              // Print the tree horizontally
@@ -1279,14 +1275,13 @@ say("DDDD2222");
           final StringBuilder s = new StringBuilder();
 
           new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
-          //b.iterate((k,d)->s.append(k+","));                                                                          // Format keys
           final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
 
           new I()                                                                                                       // Place in output area
            {void action()
              {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
-              chompStringBuilder(s);                                                                                    // Remove trailing comma
+              //chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(""+K.i());                                                                          // Write key into output area
 
               if (Context)                                                                                              // Context requested
@@ -1294,14 +1289,45 @@ say("DDDD2222");
                  {P.elementAt(d+1).append("("+BC.branch.i()+")");                                                       // Format second line for a root
                  }
                 else
-                 {final int bI = BC.branch.i(), bP = BC.parent.i(), bS = BC.parentSlot.i();                             // Components of second line: leaf number, parent branch number, slot in parent
+                 {final int bI = BC.branch.i(), bP = BC.parent.i(), bS = BC.parentSlot.i();                             // Components of second line: branch number, parent branch number, slot in parent
                   if (bS >= 0) P.elementAt(d+1).append("("+bI+","+bP+","+bS+")");                                       // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
                   else         P.elementAt(d+1).append("("+bI+","+bP+")");                                              // Format second line for a non root branch showing the parent of the branch and that it came from top
                  }
 
-                if (true)                                                                                               // Write directions to child as second line under branch
+                if (true)                                                                                               // Write directions to child as third line
                  {final int bS = BC.branchSlot.i(), bC = BC.child.i();                                                  // Components of second line: branch slot, child index
-                  P.elementAt(d+2).append("["+bC+","+bS+"]");                                                           // Write second line
+                  P.elementAt(d+2).append("["+bC+","+bS+"]");
+                 }
+               }
+             }
+           };
+         }
+
+        @Override void branchBodyEmpty(BranchContext BC)                                                                // Print a branch with an empty body
+         {final Branch        b = branch(BC.branch);
+          final Int           t = b.top();
+          final StringBuilder s = new StringBuilder();
+
+          new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
+          final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
+
+          new I()                                                                                                       // Place in output area
+           {void action()
+             {final int d = BC.Depth.i() * linesToPrintABranch;
+              pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
+
+              if (Context)                                                                                              // Context requested
+               {if (BC.Depth.i() == 0)                                                                                  // Parent details if requested and there is a parent
+                 {P.elementAt(d+1).append("("+BC.branch.i()+")");                                                       // Format second line for a root
+                 }
+                else
+                 {final int bI = BC.branch.i(), bP = BC.parent.i(), bS = BC.parentSlot.i();                             // Components of second line: branch number, parent branch number, slot in parent
+                  if (bS >= 0) P.elementAt(d+1).append("("+bI+","+bP+","+bS+")");                                       // Format second line for a non root branch showing the parent of the branch and the slot in the parent this branch came from
+                  else         P.elementAt(d+1).append("("+bI+","+bP+")");                                              // Format second line for a non root branch showing the parent of the branch and that it came from top
+                 }
+
+                if (true)                                                                                               // Write directions to child as third line
+                 {P.elementAt(d+2).append("["+t.i()+"]");
                  }
                }
              }
@@ -1332,136 +1358,9 @@ say("DDDD2222");
      }
    }
 
-  StringBuilder print() {return new Print(true).printCollapsed();}                                                      // Print the tree
+  StringBuilder dump () {return new Print(true) .printCollapsed();}                                                     // Dump the tree
+  StringBuilder print() {return new Print(false).printCollapsed();}                                                     // Print the tree
 
-/*
-  void printLeaf(Leaf Leaf, Stack<StringBuilder>P, int level, boolean Details, Branch Parent, Integer Index)            // Print leaf horizontally
-   {final Leaf L = Leaf;
-    padStrings(P, level);
-
-    final StringJoiner s = new StringJoiner(",");
-    s.clear();
-    for (int i : range(L.numberOfSlots()))
-     {final Slots.Slot l = L.new Slot(i);
-      if (L.usedSlots(l).b()) s.add(""+L.keys(l).i());
-     }
-    final int N = level * linesToPrintABranch;                                                                          // Start line at which to print branch
-    P.elementAt(N+0).append(s);
-    final String U = Parent != null ? "" + Parent.name() : "*";
-    final String I = Index  != null ? "" + Index         : "*";
-    if (Details)
-     {P.elementAt(N+1).append("("+L.name()+", "+U+", "+I+")");
-     }
-    padStrings(P, level);
-   }
-
-  void printBranch (Branch Branch, Stack<StringBuilder>P, int level, boolean Details, Branch Parent, Integer Index)     // Print branch horizontally
-   {final Branch B = Branch;
-    final int L = level * linesToPrintABranch;                                                                          // Size of branch
-
-    if (level > maxPrintLevels) return;
-    padStrings(P, level);
-
-    if (B.countUsed().gt(0).b())                                                                                        // Branch has key, next pairs
-     {for (int i : range(B.numberOfSlots()))
-       {if (B.usedSlots(B.new Slot(i)).b())
-         {final Slots s = B.data(B.new Slot(i));
-          if (s == null) continue;
-          final Bool l = s.isLeaf();
-          final Bool b = s.isBranch();
-
-          if      (l.b()) printLeaf  ((Leaf)  s, P, level+1, Details, B, i);
-          else if (b.b()) printBranch((Branch)s, P, level+1, Details, B, i);
-
-            P.elementAt(L+0).append(" "+B.keys(B.new Slot(i)).i());                                                     // Key
-          if (Details)
-           {P.elementAt(L+1).append("["+B.name()+"."+i+"]");                                                            // Branch, key, next pair
-            final String U = Parent != null ? ""+Parent.name() : "*";                                                   // Parent up from descent
-            final String I = Index  != null ? ""+Index         : "*";                                                   // Index in parent up
-            P.elementAt(L+2).append("("+s.name()+", "+U+", "+I+")");                                                    // Link to next level
-
-            final String um = ""+B.memory.up();                                                                         // Parent up as recorded
-            final Int    ii =    B.upIndex();                                                                           // Index in parent up as recorded
-            final String im = ii.v() ? ""+ii.i() : "0";                                                                 // Index in parent up as string
-            P.elementAt(L+3).append("("+s.name()+", "+um+", "+im+")");                                                  // Link to next level
-           }
-         }
-       }
-     }
-
-    if (Details)                                                                                                        // Top of branch
-     {P.elementAt(L+2).append
-       ("{"+(B.top() != null ? B.top().name() : "null")+"}");
-     }
-
-    final Bool l = B.top().isLeaf();
-    final Bool b = B.top().isBranch();                                                                                  // Print top leaf
-    if      (l.b()) printLeaf  (  (Leaf)B.top(), P, level+1, Details, B, null);
-    else if (b.b()) printBranch((Branch)B.top(), P, level+1, Details, B, null);
-
-    padStrings(P, level);                                                                                               // Equalize the strings used to print the tree
-   }
-
-  String printBoxed()                                                                                                   // Print a tree in a box
-   {final String  s = ""+this;
-    final int     n = longestLine(s)-1;
-    final String[]L = s.split("\n");
-    final StringJoiner t = new StringJoiner("\n",  "", "\n");
-    t.add("+"+("-".repeat(n))+"+");
-    for(String l : L) t.add("| "+l);
-    t.add("+"+("-".repeat(n))+"+");
-    return ""+t;
-   }
-
-  void padStrings(Stack<StringBuilder> S, int level)                                                                    // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
-   {final int N = level * linesToPrintABranch + maxLeafSize;                                                            // Number of lines we might want
-    for (int i = S.size(); i <= N; ++i) S.push(new StringBuilder());                                                    // Make sure we have a full deck of strings
-    int m = 0;                                                                                                          // Maximum length
-    for (StringBuilder s : S) m = m < s.length() ? s.length() : m;                                                      // Find maximum length
-    for (StringBuilder s : S)                                                                                           // Pad each string to maximum length
-     {if (s.length() < m) s.append(" ".repeat(m - s.length()));                                                         // Pad string to maximum length
-     }
-   }
-
-  String printCollapsed(Stack<StringBuilder> S)                                                                         // Collapse horizontal representation into a string
-   {final StringBuilder t = new StringBuilder();                                                                        // Print the lines of the tree that are not blank
-    for  (StringBuilder s : S)
-     {final String l = ""+s;
-      if (!l.isBlank()) t.append(l+"|\n");
-     }
-    return ""+t;
-   }
-
-  public String toString() {return print(false);}                                                                       // Print the tree without details
-  public String dump()     {return print(true); }                                                                       // Print the tree with details
-
-  String print(boolean Details)                                                                                         // Print the tree with and without linkage details
-   {final Stack<StringBuilder> P = new Stack<>();
-    if (root() == null) return "|\n";                                                                                   // Empty tree
-    final Bool lr = root().isLeaf() ;
-    if (lr.b()) printLeaf  ((Leaf)  root(), P, 0, Details, null, null);                                                 // Tree is a single leaf
-    else        printBranch((Branch)root(), P, 0, Details, null, null);                                                 // Tree has one or more branches
-    return printCollapsed(P);                                                                                           // Remove blank lines and add right fence
-   }
-/*
-  String db()                                                                                                           // Raw dump of memory used by the tree to assist with debugging
-   {final StringBuilder s = new StringBuilder();
-    final ByteBuffer b = memory.bytes;
-    final int N = b.capacity();
-    for (int l = 0, c = 0; l < 10; ++l)                                                                                 // Print first few nodes one per line
-     {final StringJoiner j = new StringJoiner(" ");
-      for (int i : range(sizeOfNode))
-       {if (c++ >= N) break;
-        j.add(""+b.get(l * sizeOfNode + i));
-       }                                        //    final StringBuilder s = t.print();
-//say("AAAA9999", t.code.size());
-
-      s.append(""+j+"\n");
-      if (c >= N) break;
-     }
-    return ""+s;
-   }
-*/
 //D1 Tests                                                                                                              // Tests
 
   final static int[]random_32 = {12, 3, 27, 1, 23, 20, 8, 18, 2, 31, 25, 16, 13, 32, 11, 21, 5, 24, 4, 10, 26, 30, 9, 6, 29, 17, 28, 15, 14, 19, 7, 22};
@@ -1485,7 +1384,7 @@ say("DDDD2222");
     B.insert(t.new Int(3), t.new Int(33));
     C.insert(t.new Int(6), t.new Int(66));
 
-    t.Check(t.dump(), """
+    t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1510,7 +1409,7 @@ Branch at:   2 size:   3 top:   0
 
                t.isAllocated(a.at).ok(true);
     t.free(A); t.isAllocated(a.at).ok(false);
-    t.Check(t.dump(), """
+    t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1530,7 +1429,7 @@ Branch at:   2 size:   3 top:   0
 """);
                t.isAllocated(b.at).ok(true);
     t.free(b); t.isAllocated(b.at).ok(false);
-    t.Check(t.dump(), """
+    t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1547,7 +1446,7 @@ Branch at:   2 size:   3 top:   0
 
                t.isAllocated(c.at).ok(true);
     t.free(c); t.isAllocated(c.at).ok(false);
-    t.Check(t.dump(), """
+    t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   79
 Branch size   :  121
@@ -1559,9 +1458,7 @@ Allocations   :    0
 """);
 
     t.maxSteps = 99_999;
-    t.execute();                                //    final StringBuilder s = t.print();
-//say("AAAA9999", t.code.size());
-
+    t.execute();
    }
 
   static void test_tree()
@@ -1586,7 +1483,7 @@ Allocations   :    0
       t.new I() {void action() {say("Dump chain\n", t.freeChain.byteMemory.save());}};
      }
 
-    t.Check (t.dump(), """
+    t.Check (t.dumpTree(), """
 Tree memory dump
 Leaf   size   :  153
 Branch size   :  121
@@ -1610,7 +1507,7 @@ Leaf   at:   2 size:   4
    1     6    72
 """);
 
-    t.Check(t.print(), """
+    t.Check(t.dump(), """
        2           |
        (0)         |
        [1,3]       |
@@ -1645,7 +1542,7 @@ Leaf   at:   2 size:   4
 
     //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
-    if (N == 32) t.Check(t.print(), """
+    if (N == 32) t.Check(t.dump(), """
                                               8                                                            16                                                                                                         |
                                               (0)                                                          (0)                                                                                                        |
                                               [15,2]                                                       [23,4]                                                                                                     |
@@ -1689,7 +1586,7 @@ Leaf   at:   2 size:   4
     //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
 
-    if (N == 32) t.check(t.print(), """
+    if (N == 32) t.check(t.dump(), """
                                                         16                                                                |
                                                         (0)                                                               |
                                                         [9,2]                                                             |
@@ -1720,7 +1617,7 @@ Leaf   at:   2 size:   4
     //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
 
-    if (N == 32) t.check(t.print(), """
+    if (N == 32) t.check(t.dump(), """
                                                          16                                                              |
                                                          (0)                                                             |
                                                          [9,2]                                                           |
@@ -1754,7 +1651,7 @@ Leaf   at:   2 size:   4
     //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
 
-    if (N == 32) t.check(t.print(), """
+    if (N == 32) t.check(t.dump(), """
                                                         15                                                            26                          |
                                                         (0)                                                           (0)                         |
                                                         [5,1]                                                         [11,4]                      |
@@ -1778,25 +1675,108 @@ Leaf   at:   2 size:   4
    {final int  N = 32;
     final Tree t = test_reloadTree(Ex);
     final StringBuilder s = new StringBuilder();
-    t.new ForCount(t.new Int(1))
+    final StringBuilder S = t.print();
+    t.new I() {void action() {s.append(S);}};
+
+    t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(Index.Inc());
-        final StringBuilder S = t.print();
-        t.new I() {void action() {s.append(S);}};
+        final StringBuilder T = t.print();
+        t.new I() {void action() {s.append(T); }};
        }
      };
 
-    t.new I() {void action() {stop(s);}};
-
+    //t.new I() {void action() {stop(s);}};
     t.check(s, """
-                                                        15                                                            26                          |
-                                                        (0)                                                           (0)                         |
-                                                        [5,1]                                                         [11,4]                      |
-        4             7               11                                19              21              24                             30         |
-        (5,0,1)       (5,0,1)         (5,0,1)                           (11,0,4)        (11,0,4)        (11,0,4)                       (6,0)      |
-        [14,0]        [1,2]           [9,4]                             [12,1]          [3,4]           [8,5]                          [10,2]     |
-1,2,3,4        5,6,7         8,9,10,11       12,13,14,15     16,17,18,19        20,21           22,23,24        25,26       27,28,29,30      31,32|
-(14,5,0)       (1,5,2)       (9,5,4)         (4,5)           (12,11,1)          (3,11,4)        (8,11,5)        (7,11)      (10,6,2)         (2,6)|
+               8                         16                                                     |
+       4                   12                          20            24                         |
+   2       6        10            14            18            22            26     28           |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                       16                                                     |
+             8           12                          20            24                         |
+     4   6        10            14            18            22            26     28           |
+2,3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                     16                                                     |
+           8                                       20            24                         |
+   4            10     12     14            18            22            26     28           |
+3,4 5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                   16                                                     |
+         8                                       20            24                         |
+ 4            10     12     14            18            22            26     28           |
+4 5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                 16                                                     |
+       8                                       20            24                         |
+            10     12     14            18            22            26     28           |
+5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                               16                                                     |
+     8                                       20            24                         |
+          10     12     14            18            22            26     28           |
+6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                             16                                                     |
+   8                                       20            24                         |
+        10     12     14            18            22            26     28           |
+7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                           16                                                     |
+ 8                                       20            24                         |
+      10     12     14            18            22            26     28           |
+8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                          16                                                     |
+8                                       20            24                         |
+     10     12     14            18            22            26     28           |
+ 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                       16            20            24                         |
+8  10           14            18            22            26     28           |
+ 10  11,12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                  16                          24                         |
+           14            18     20     22            26     28           |
+11,12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+               16                          24                         |
+        14            18     20     22            26     28           |
+12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+           16                          24                         |
+                  18     20     22            26     28           |
+13,14,15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+        16                          24                         |
+               18     20     22            26     28           |
+14,15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+     16                          24                         |
+            18     20     22            26     28           |
+15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+  16                          24                         |
+         18     20     22            26     28           |
+16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+16                          24                         |
+       18     20     22            26     28           |
+  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                        24                         |
+16  18           22            26     28           |
+  18  19,20,21,22  23,24  25,26  27,28  29,30,31,32|
+                  24                         |
+           22            26     28           |
+19,20,21,22  23,24  25,26  27,28  29,30,31,32|
+               24                         |
+        22            26     28           |
+20,21,22  23,24  25,26  27,28  29,30,31,32|
+           24     26     28           |
+21,22,23,24  25,26  27,28  29,30,31,32|
+        24           28           |
+22,23,24  25,26,27,28  29,30,31,32|
+     24           28           |
+23,24  25,26,27,28  29,30,31,32|
+  24           28           |
+24  25,26,27,28  29,30,31,32|
+           28           |
+25,26,27,28  29,30,31,32|
+        28           |
+26,27,28  29,30,31,32|
+     28           |
+27,28  29,30,31,32|
+  28           |
+28  29,30,31,32|
+29,30,31,32|
+30,31,32|
+31,32|
+32|
 """);
 
     t.maxSteps = 9_999_999;
@@ -1808,914 +1788,123 @@ Leaf   at:   2 size:   4
               test_deleteAscending(false);
    }
 
-/*
-
-  static void test_insert2()
-   {final Tree t = new Tree(2, 3);
-    final int N = 32;
+  static void test_deleteDescending(boolean Ex)
+   {final int  N = 32;
+    final Tree t = test_reloadTree(Ex);
     final StringBuilder s = new StringBuilder();
-    for (int i = 1; i <= N; ++i)
-     {Tree.debug = i >= 3;
-      t.insert(t.new Key(i), t.new Data(i));
-      t.freeCheck();
-      s.append("Insert: "+i+"\n"+t);
-     }
-  //testStop(s);
-    ok(""+s, """
-Insert: 1
-1|
-Insert: 2
-1,2|
-Insert: 3
-  1   |
-1  2,3|
-Insert: 4
-    2   |
-1,2  3,4|
-Insert: 5
-    2  3   |
-1,2  3  4,5|
-Insert: 6
-    2    4   |
-1,2  3,4  5,6|
-Insert: 7
-    2    4  5   |
-1,2  3,4  5  6,7|
-Insert: 8
-    2    4    6   |
-1,2  3,4  5,6  7,8|
-Insert: 9
-         4           |
-    2         6  7   |
-1,2  3,4  5,6  7  8,9|
-Insert: 10
-         4              |
-    2         6    8    |
-1,2  3,4  5,6  7,8  9,10|
-Insert: 11
-         4                  |
-    2         6    8  9     |
-1,2  3,4  5,6  7,8  9  10,11|
-Insert: 12
-                   8            |
-    2    4    6          10     |
-1,2  3,4  5,6  7,8  9,10   11,12|
-Insert: 13
-                   8                 |
-    2    4    6          10   11     |
-1,2  3,4  5,6  7,8  9,10   11   12,13|
-Insert: 14
-                   8                    |
-    2    4    6          10      12     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14|
-Insert: 15
-                   8                         |
-    2    4    6          10      12   13     |
-1,2  3,4  5,6  7,8  9,10   11,12   13   14,15|
-Insert: 16
-                   8                            |
-    2    4    6          10      12      14     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16|
-Insert: 17
-                   8             12                  |
-    2    4    6          10              14   15     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15   16,17|
-Insert: 18
-                   8             12                     |
-    2    4    6          10              14      16     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18|
-Insert: 19
-                   8             12                          |
-    2    4    6          10              14      16   17     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17   18,19|
-Insert: 20
-                   8                             16             |
-    2    4    6          10      12      14              18     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20|
-Insert: 21
-                   8                             16                  |
-    2    4    6          10      12      14              18   19     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19   20,21|
-Insert: 22
-                   8                             16                     |
-    2    4    6          10      12      14              18      20     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22|
-Insert: 23
-                   8                             16                          |
-    2    4    6          10      12      14              18      20   21     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21   22,23|
-Insert: 24
-                   8                             16                             |
-    2    4    6          10      12      14              18      20      22     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24|
-Insert: 25
-                   8                             16              20                  |
-    2    4    6          10      12      14              18              22   23     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23   24,25|
-Insert: 26
-                   8                             16              20                     |
-    2    4    6          10      12      14              18              22      24     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26|
-Insert: 27
-                   8                             16              20                          |
-    2    4    6          10      12      14              18              22      24   25     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25   26,27|
-Insert: 28
-                   8                             16                              24             |
-    2    4    6          10      12      14              18      20      22              26     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28|
-Insert: 29
-                   8                             16                              24                  |
-    2    4    6          10      12      14              18      20      22              26   27     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27   28,29|
-Insert: 30
-                   8                             16                              24                     |
-    2    4    6          10      12      14              18      20      22              26      28     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30|
-Insert: 31
-                   8                             16                              24                          |
-    2    4    6          10      12      14              18      20      22              26      28   29     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29   30,31|
-Insert: 32
-                   8                             16                              24                             |
-    2    4    6          10      12      14              18      20      22              26      28      30     |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32|
-""");
-   }
+    final StringBuilder S = t.print();
+    t.new I() {void action() {s.append(S);}};
 
-  static void test_insert()
-   {final Tree t = new Tree(4, 3);
-    ok(t.count(), 0);
-    t.insert(t.new Key(11), t.new Data(21));
-    ok(t, """
-11|
-""");
-    t.insert(t.new Key(13), t.new Data(23));
-    ok(t, """
-11,13|
-""");
-    t.insert(t.new Key(12), t.new Data(22));
-    ok(t, """
-11,12,13|
-""");
-    t.insert(t.new Key(14), t.new Data(24));
-    ok(t, """
-11,12,13,14|
-""");
-    t.insert(t.new Key(15), t.new Data(25));
-    ok(t, """
-      12        |
-11,12   13,14,15|
-""");
-    t.insert(t.new Key(16), t.new Data(26));
-    ok(t, """
-      12           |
-11,12   13,14,15,16|
-""");
-    t.insert(t.new Key(17), t.new Data(27));
-    ok(t, """
-            14        |
-11,12,13,14   15,16,17|
-""");
-    t.insert(t.new Key(18), t.new Data(28));
-    ok(t, """
-            14           |
-11,12,13,14   15,16,17,18|
-""");
-    t.insert(t.new Key(19), t.new Data(29));
-    ok(t, """
-            14      16        |
-11,12,13,14   15,16   17,18,19|
-""");
-    t.insert(t.new Key(20), t.new Data(30));
-    ok(t, """
-            14      16           |
-11,12,13,14   15,16   17,18,19,20|
-""");
-    t.insert(t.new Key(21), t.new Data(31));
-    ok(t, """
-            14            18        |
-11,12,13,14   15,16,17,18   19,20,21|
-""");
-    t.insert(t.new Key(22), t.new Data(32));
-    ok(t, """
-            14            18           |
-11,12,13,14   15,16,17,18   19,20,21,22|
-""");
-    t.insert(t.new Key(23), t.new Data(33));
-    ok(t, """
-            14            18      20        |
-11,12,13,14   15,16,17,18   19,20   21,22,23|
-""");
-    t.insert(t.new Key(24), t.new Data(34));
-    ok(t, """
-            14            18      20           |
-11,12,13,14   15,16,17,18   19,20   21,22,23,24|
-""");
-    t.insert(t.new Key(25), t.new Data(35));
-    ok(t, """
-            14            18            22        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25|
-""");
-    ok(t.count(), 15);
-    t.insert(t.new Key(26), t.new Data(36));
-    ok(t, """
-            14            18            22           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26|
-""");
-    ok(t.count(), 16);
-    t.insert(t.new Key(27), t.new Data(37));
-    ok(t, """
-                          18                              |
-            14                          22      24        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27|
-""");
-    ok(t.count(), 17);
-    t.insert(t.new Key(28), t.new Data(38));
-    ok(t, """
-                          18                                 |
-            14                          22      24           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24   25,26,27,28|
-""");
-    ok(t.count(), 18);
-    t.insert(t.new Key(29), t.new Data(39));
-    ok(t, """
-                          18                                    |
-            14                          22            26        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29|
-""");
-    t.insert(t.new Key(30), t.new Data(40));
-    ok(t, """
-                          18                                       |
-            14                          22            26           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30|
-""");
-    t.insert(t.new Key(31), t.new Data(41));
-    ok(t, """
-                          18                                            |
-            14                          22            26      28        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31|
-""");
-    t.insert(t.new Key(32), t.new Data(42));
-    ok(t, """
-                          18                                               |
-            14                          22            26      28           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28   29,30,31,32|
-""");
-    t.insert(t.new Key(33), t.new Data(43));
-    ok(""+t, """
-                                                      26                      |
-            14            18            22                          30        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33|
-""");
-    t.insert(t.new Key(34), t.new Data(44));
-    ok(t, """
-                                                      26                         |
-            14            18            22                          30           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34|
-""");
-    t.insert(t.new Key(35), t.new Data(45));
-    ok(t, """
-                                                      26                              |
-            14            18            22                          30      32        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35|
-""");
-    t.insert(t.new Key(36), t.new Data(46));
-    ok(t, """
-                                                      26                                 |
-            14            18            22                          30      32           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32   33,34,35,36|
-""");
-    t.insert(t.new Key(37), t.new Data(47));
-    ok(t, """
-                                                      26                                    |
-            14            18            22                          30            34        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37|
-""");
-    t.insert(t.new Key(38), t.new Data(48));
-    ok(t, """
-                                                      26                                       |
-            14            18            22                          30            34           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38|
-""");
-    t.insert(t.new Key(39), t.new Data(49));
-    ok(t, """
-                                                      26                                            |
-            14            18            22                          30            34      36        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39|
-""");
-    t.insert(t.new Key(40), t.new Data(50));
-    ok(t, """
-                                                      26                                               |
-            14            18            22                          30            34      36           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36   37,38,39,40|
-""");
-    t.insert(t.new Key(41), t.new Data(51));
-    ok(t, """
-                                                      26                                                  |
-            14            18            22                          30            34            38        |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41|
-""");
-    t.insert(t.new Key(42), t.new Data(52));
-    ok(t, """
-                                                      26                                                     |
-            14            18            22                          30            34            38           |
-11,12,13,14   15,16,17,18   19,20,21,22   23,24,25,26   27,28,29,30   31,32,33,34   35,36,37,38   39,40,41,42|
-""");
-    ok(t.count(), 32);
+    t.new ForCount(t.new Int(N))
+     {void body(Int Index)
+       {t.delete(Index.Inc());
+        final StringBuilder T = t.print();
+        t.new I() {void action() {s.append(T); }};
+       }
+     };
 
-    ok(t.find(t.new Key(10)), """
-Find Key : 10
-Leaf     : 1 up: 7 index: 0
-Slots    : name:  1, type:  0, refs:  4
-positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   1   0   2   0   3   0
-usedSlots:    X   .   X   .   X   .   X   .
-usedRefs :    X   X   X   X
-keys     :   11  12  13  14
-data     :   21  22  23  24
-Locate      :  0  below all
-Path        : 7, 9
-""");
-
-    ok(t.find(t.new Key(23)), """
-Find Key : 23
-Leaf     : 10 up: 7 index: null
-Slots    : name: 10, type:  0, refs:  4
-positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   1   0   2   0   3   0
-usedSlots:    X   .   X   .   X   .   X   .
-usedRefs :    X   X   X   X
-keys     :   23  24  25  26
-data     :   33  34  35  36
-Locate      : 0 found
-Path        : 7, 9
-""");
-   }
-
-  static void test_insert_reverse()
-   {final Tree t = new Tree(4, 3);
-    final int N = 32;
-    for (int i = N; i > 0; i--)
-     {t.insert(t.new Key(i), t.new Data(i));
-      ok(t.count(), N-i+1);
-     }
-    ok(t, """
-                                           16                                                     |
-        4        8           12                          20            24            28           |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-""");
-
-    final Find n1 = t.first();
-
-    ok(n1, """
-Find Key : 1
-Leaf     : 12 up: 7 index: 0
-Slots    : name: 12, type:  0, refs:  4
-positions:    0   1   2   3   4   5   6   7
-slots    :    3   0   2   0   1   0   0   0
-usedSlots:    X   .   X   .   X   .   X   .
-usedRefs :    X   X   X   X
-keys     :    4   3   2   1
-data     :    4   3   2   1
-Locate      : 0 found
-Path        : 7, 9
-""");
-
-    final Find  n2 = t.next(n1);  ok(n2.key.i(),   2);
-    final Find  n3 = t.next(n2);  ok(n3.key.i(),   3);
-    final Find  n4 = t.next(n3);  ok(n4.key.i(),   4);
-    final Find  n5 = t.next(n4);  ok(n5.key.i(),   5);
-    final Find  n6 = t.next(n5);  ok(n6.key.i(),   6);
-    final Find  n7 = t.next(n6);  ok(n7.key.i(),   7);
-    final Find  n8 = t.next(n7);  ok(n8.key.i(),   8);
-    final Find  n9 = t.next(n8);  ok(n9.key.i(),   9);
-    final Find n10 = t.next(n9);  ok(n10.key.i(), 10);
-    final Find n11 = t.next(n10); ok(n11.key.i(), 11);
-    final Find n12 = t.next(n11); ok(n12.key.i(), 12);
-    final Find n13 = t.next(n12); ok(n13.key.i(), 13);
-    final Find n14 = t.next(n13); ok(n14.key.i(), 14);
-    final Find n15 = t.next(n14); ok(n15.key.i(), 15);
-    final Find n16 = t.next(n15); ok(n16.key.i(), 16);
-    final Find n17 = t.next(n16); ok(n17.key.i(), 17);
-    final Find n18 = t.next(n17); ok(n18.key.i(), 18);
-    final Find n19 = t.next(n18); ok(n19.key.i(), 19);
-    final Find n20 = t.next(n19); ok(n20.key.i(), 20);
-    final Find n21 = t.next(n20); ok(n21.key.i(), 21);
-    final Find n22 = t.next(n21); ok(n22.key.i(), 22);
-    final Find n23 = t.next(n22); ok(n23.key.i(), 23);
-    final Find n24 = t.next(n23); ok(n24.key.i(), 24);
-    final Find n25 = t.next(n24); ok(n25.key.i(), 25);
-    final Find n26 = t.next(n25); ok(n26.key.i(), 26);
-    final Find n27 = t.next(n26); ok(n27.key.i(), 27);
-    final Find n28 = t.next(n27); ok(n28.key.i(), 28);
-    final Find n29 = t.next(n28); ok(n29.key.i(), 29);
-    final Find n30 = t.next(n29); ok(n30.key.i(), 30);
-    final Find n31 = t.next(n30); ok(n31.key.i(), 31);
-    final Find n32 = t.next(n31); ok(n32.key.i(), 32);
-    final Find n33 = t.next(n32); ok(n33 == null);
-
-    ok(t.last(), """
-Find Key : 32
-Leaf     : 3 up: 2 index: null
-Slots    : name:  3, type:  0, refs:  4
-positions:    0   1   2   3   4   5   6   7
-slots    :    0   0   1   0   2   0   3   0
-usedSlots:    X   .   X   .   X   .   X   .
-usedRefs :    X   X   X   X
-keys     :   29  30  31  32
-data     :   29  30  31  32
-Locate      : 6 found
-Path        : 2, 9
-""");
-
-
-    final Find p31 = t.prev(n32); ok(p31.key.i(), 31);
-    final Find p30 = t.prev(p31); ok(p30.key.i(), 30);
-    final Find p29 = t.prev(p30); ok(p29.key.i(), 29);
-    final Find p28 = t.prev(p29); ok(p28.key.i(), 28);
-    final Find p27 = t.prev(p28); ok(p27.key.i(), 27);
-    final Find p26 = t.prev(p27); ok(p26.key.i(), 26);
-    final Find p25 = t.prev(p26); ok(p25.key.i(), 25);
-    final Find p24 = t.prev(p25); ok(p24.key.i(), 24);
-    final Find p23 = t.prev(p24); ok(p23.key.i(), 23);
-    final Find p22 = t.prev(p23); ok(p22.key.i(), 22);
-    final Find p21 = t.prev(p22); ok(p21.key.i(), 21);
-    final Find p20 = t.prev(p21); ok(p20.key.i(), 20);
-    final Find p19 = t.prev(p20); ok(p19.key.i(), 19);
-    final Find p18 = t.prev(p19); ok(p18.key.i(), 18);
-    final Find p17 = t.prev(p18); ok(p17.key.i(), 17);
-    final Find p16 = t.prev(p17); ok(p16.key.i(), 16);
-    final Find p15 = t.prev(p16); ok(p15.key.i(), 15);
-    final Find p14 = t.prev(p15); ok(p14.key.i(), 14);
-    final Find p13 = t.prev(p14); ok(p13.key.i(), 13);
-    final Find p12 = t.prev(p13); ok(p12.key.i(), 12);
-    final Find p11 = t.prev(p12); ok(p11.key.i(), 11);
-    final Find p10 = t.prev(p11); ok(p10.key.i(), 10);
-    final Find  p9 = t.prev(p10); ok(p9.key.i(),   9);
-    final Find  p8 = t.prev(p9);  ok(p8.key.i(),   8);
-    final Find  p7 = t.prev(p8);  ok(p7.key.i(),   7);
-    final Find  p6 = t.prev(p7);  ok(p6.key.i(),   6);
-    final Find  p5 = t.prev(p6);  ok(p5.key.i(),   5);
-    final Find  p4 = t.prev(p5);  ok(p4.key.i(),   4);
-    final Find  p3 = t.prev(p4);  ok(p3.key.i(),   3);
-    final Find  p2 = t.prev(p3);  ok(p2.key.i(),   2);
-    final Find  p1 = t.prev(p2);  ok(p1.key.i(),   1);
-    final Find  p0 = t.prev(p1);  ok(p0 == null);
-   }
-
-  static Tree test_insert_random_32()
-   {final Tree t = new Tree(4, 3);
-    for (int i = 0; i < random_32.length; i++)
-     {t.insert(t.new Key(random_32[i]), t.new Data(i));
-      t.freeCheck();
-      ok(t.count(), i+1);
-     }
-    ok(t, """
-                                        15                                       26                   |
-        4      7          11                          19      21         24                    30     |
-1,2,3,4  5,6,7  8,9,10,11   12,13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
-""");
-    return t;
-   }
-
-  static Tree test_insert_random()
-   {final Tree t = new Tree(4, 3);
-
-    for (int i : range(random.length))
-     {t.insert(t.new Key(random[i]), t.new Data(i));
-      t.freeCheck();
-      ok(t.count(), i+1);
-     }
-  //testStop(t);
-    ok(""+t, """
-                                                                                            2152                                                                                                                              4957                                                                                      6829                                                                                                                                                           |
-                        706                                                                                                                             3441                                    4249                                                        5518                                                                                                               7866                                                             9250                                   |
-            368                           1232                1571           1788                          2453           2776                3210                3622           3855                          4524                     5156                          5736           6014           6346                          7071                7352      7606                               8325           8626           8921                               9599               |
- 98 226 285     484 583     838 1014 1081      1333 1430 1488      1616 1650      1971 2093      2253 2350      2545 2697      2927 3048 3126      3367      3536      3713 3782      4023 4167      4326 4401      4713 4797      5043      5221 5345 5449      5608      5815 5918      6133 6243      6493 6632 6740      7005      7120 7167 7256      7459      7713 7757      7997 8052 8157      8471 8549      8673 8779      9035 9172      9354 9423 9499      9687 9799 9864|
-""");
-
-    return t;
-   }
-
-  static void test_delete()
-   {final Tree t = new Tree(4, 3);
-    final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(t.new Key(i), t.new Data(i));
-
-    final StringBuilder s = new StringBuilder();
-    s.append("Start\n"+t);
-    for (int i = 1; i <= N; ++i)
-     {t.delete(t.new Key(i));
-      ok(t.count(), N-i);
-      s.append("Delete: "+i+"\n"+t);
-     }
-    ok(s, """
-Start
-                                           16                                                     |
-        4        8           12                          20            24            28           |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 1
-                                         16                                                     |
-      4        8           12                          20            24            28           |
-2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 2
+    //t.new I() {void action() {stop(s);}};
+    t.check(s, """
+               8                         16                                                     |
+       4                   12                          20            24                         |
+   2       6        10            14            18            22            26     28           |
+1,2 3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
                                        16                                                     |
-    4        8           12                          20            24            28           |
-3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 3
+             8           12                          20            24                         |
+     4   6        10            14            18            22            26     28           |
+2,3,4 5,6 7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
                                      16                                                     |
-  4        8           12                          20            24            28           |
-4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 4
-                                  16                                                     |
-        8           12                          20            24            28           |
-5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 5
-                                16                                                     |
-      8           12                          20            24            28           |
-6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 6
-                              16                                                     |
-    8           12                          20            24            28           |
-7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 7
-                            16                                                     |
-  8           12                          20            24            28           |
-8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 8
-                         16                                                     |
-           12                          20            24            28           |
-9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 9
-                       16                                                     |
-         12                          20            24            28           |
-10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 10
-                    16                                                     |
-      12                          20            24            28           |
-11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 11
-                 16                                                     |
-   12                          20            24            28           |
-12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 12
-            16                                                     |
-                          20            24            28           |
-13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 13
-         16                                                     |
-                       20            24            28           |
-14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 14
-      16                                                     |
-                    20            24            28           |
-15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 15
-   16                                                     |
-                 20            24            28           |
-16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 16
- 16                                                     |
-               20            24            28           |
-   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 17
- 16                                                  |
-            20            24            28           |
-   18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 18
- 16                                               |
-         20            24            28           |
-   19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 19
- 16                                            |
-      20            24            28           |
-   20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 20
- 16            24            28           |
-   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 21
-         24            28           |
-22,23,24   25,26,27,28   29,30,31,32|
-Delete: 22
-      24            28           |
-23,24   25,26,27,28   29,30,31,32|
-Delete: 23
-   24            28           |
-24   25,26,27,28   29,30,31,32|
-Delete: 24
-            28           |
-25,26,27,28   29,30,31,32|
-Delete: 25
-         28           |
-26,27,28   29,30,31,32|
-Delete: 26
-      28           |
-27,28   29,30,31,32|
-Delete: 27
-   28           |
-28   29,30,31,32|
-Delete: 28
+           8                                       20            24                         |
+   4            10     12     14            18            22            26     28           |
+3,4 5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                   16                                                     |
+         8                                       20            24                         |
+ 4            10     12     14            18            22            26     28           |
+4 5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                                 16                                                     |
+       8                                       20            24                         |
+            10     12     14            18            22            26     28           |
+5,6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                               16                                                     |
+     8                                       20            24                         |
+          10     12     14            18            22            26     28           |
+6,7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                             16                                                     |
+   8                                       20            24                         |
+        10     12     14            18            22            26     28           |
+7,8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                           16                                                     |
+ 8                                       20            24                         |
+      10     12     14            18            22            26     28           |
+8 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                          16                                                     |
+8                                       20            24                         |
+     10     12     14            18            22            26     28           |
+ 9,10  11,12  13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                       16            20            24                         |
+8  10           14            18            22            26     28           |
+ 10  11,12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                  16                          24                         |
+           14            18     20     22            26     28           |
+11,12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+               16                          24                         |
+        14            18     20     22            26     28           |
+12,13,14  15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+           16                          24                         |
+                  18     20     22            26     28           |
+13,14,15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+        16                          24                         |
+               18     20     22            26     28           |
+14,15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+     16                          24                         |
+            18     20     22            26     28           |
+15,16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+  16                          24                         |
+         18     20     22            26     28           |
+16  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+16                          24                         |
+       18     20     22            26     28           |
+  17,18  19,20  21,22  23,24  25,26  27,28  29,30,31,32|
+                        24                         |
+16  18           22            26     28           |
+  18  19,20,21,22  23,24  25,26  27,28  29,30,31,32|
+                  24                         |
+           22            26     28           |
+19,20,21,22  23,24  25,26  27,28  29,30,31,32|
+               24                         |
+        22            26     28           |
+20,21,22  23,24  25,26  27,28  29,30,31,32|
+           24     26     28           |
+21,22,23,24  25,26  27,28  29,30,31,32|
+        24           28           |
+22,23,24  25,26,27,28  29,30,31,32|
+     24           28           |
+23,24  25,26,27,28  29,30,31,32|
+  24           28           |
+24  25,26,27,28  29,30,31,32|
+           28           |
+25,26,27,28  29,30,31,32|
+        28           |
+26,27,28  29,30,31,32|
+     28           |
+27,28  29,30,31,32|
+  28           |
+28  29,30,31,32|
 29,30,31,32|
-Delete: 29
 30,31,32|
-Delete: 30
 31,32|
-Delete: 31
 32|
-Delete: 32
-|
 """);
-   }
-  static void test_delete_descending()
-   {final Tree t = new Tree(4, 3);
-    final int N = 32;
-    for (int i = 1; i <= N; ++i) t.insert(t.new Key(i), t.new Data(i));
 
-    final StringBuilder s = new StringBuilder();
-    s.append("Start\n"+t);
-    for (int i = N; i > 0; --i)
-     {t.delete(t.new Key(i));
-      ok(t.count(), i-1);
-      s.append("Delete: "+i+"\n"+t);
-     }
-    ok(s, """
-Start
-                                           16                                                     |
-        4        8           12                          20            24            28           |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31,32|
-Delete: 32
-                                           16                                                  |
-        4        8           12                          20            24            28        |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30,31|
-Delete: 31
-                                           16                                               |
-        4        8           12                          20            24            28     |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29,30|
-Delete: 30
-                                           16                                            |
-        4        8           12                          20            24            28  |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28   29|
-Delete: 29
-                                           16                                       |
-        4        8           12                          20            24           |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27,28|
-Delete: 28
-                                           16                                    |
-        4        8           12                          20            24        |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26,27|
-Delete: 27
-                                           16                                 |
-        4        8           12                          20            24     |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25,26|
-Delete: 26
-                                           16                              |
-        4        8           12                          20            24  |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24   25|
-Delete: 25
-                                           16                         |
-        4        8           12                          20           |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23,24|
-Delete: 24
-                                           16                      |
-        4        8           12                          20        |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22,23|
-Delete: 23
-                                           16                   |
-        4        8           12                          20     |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21,22|
-Delete: 22
-                                           16                |
-        4        8           12                          20  |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20   21|
-Delete: 21
-                                           16           |
-        4        8           12                         |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19,20|
-Delete: 20
-                                           16        |
-        4        8           12                      |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18,19|
-Delete: 19
-                                           16     |
-        4        8           12                   |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17,18|
-Delete: 18
-                                           16  |
-        4        8           12                |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   17|
-Delete: 17
-                                           16|
-        4        8           12              |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15,16   |
-Delete: 16
-                                        16|
-        4        8           12           |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14,15   |
-Delete: 15
-                                     16|
-        4        8           12        |
-1,2,3,4  5,6,7,8  9,10,11,12   13,14   |
-Delete: 14
-                                  16|
-        4        8           12     |
-1,2,3,4  5,6,7,8  9,10,11,12   13   |
-Delete: 13
-        4        8           16|
-1,2,3,4  5,6,7,8  9,10,11,12   |
-Delete: 12
-        4        8       |
-1,2,3,4  5,6,7,8  9,10,11|
-Delete: 11
-        4        8    |
-1,2,3,4  5,6,7,8  9,10|
-Delete: 10
-        4        8 |
-1,2,3,4  5,6,7,8  9|
-Delete: 9
-        4       |
-1,2,3,4  5,6,7,8|
-Delete: 8
-        4     |
-1,2,3,4  5,6,7|
-Delete: 7
-        4   |
-1,2,3,4  5,6|
-Delete: 6
-        4 |
-1,2,3,4  5|
-Delete: 5
-1,2,3,4|
-Delete: 4
-1,2,3|
-Delete: 3
-1,2|
-Delete: 2
-1|
-Delete: 1
-|
-""");
+    t.maxSteps = 9_999_999;
+    t.execute();
    }
 
-  static void test_delete_random_32()
-   {final Tree t = test_insert_random_32();
-    final StringBuilder s = new StringBuilder();
-    s.append("Start\n"+t);
-    for (int i = 0; i < random_32.length; i++)
-     {t.delete(t.new Key(random_32[i]));
-      ok(t.count(), random_32.length-i-1);
-      s.append("Delete "+random_32[i]+"\n"+t);
-     }
-    ok(""+s, """
-Start
-                                        15                                       26                   |
-        4      7          11                          19      21         24                    30     |
-1,2,3,4  5,6,7  8,9,10,11   12,13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
-Delete 12
-                                     15                                       26                   |
-        4      7          11                       19      21         24                    30     |
-1,2,3,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
-Delete 3
-                                   15                                       26                   |
-      4      7          11                       19      21         24                    30     |
-1,2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   27,28,29,30   31,32|
-Delete 27
-                                   15                                       26                |
-      4      7          11                       19      21         24                 30     |
-1,2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   28,29,30   31,32|
-Delete 1
-                                 15                                       26                |
-    4      7          11                       19      21         24                 30     |
-2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,23,24   25,26   28,29,30   31,32|
-Delete 23
-                                 15                                  26                |
-    4      7          11                       19      21                       30     |
-2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   20,21   22,24,25,26   28,29,30   31,32|
-Delete 20
-                                 15                               26                |
-    4      7          11                       19   21                       30     |
-2,4  5,6,7  8,9,10,11   13,14,15   16,17,18,19   21   22,24,25,26   28,29,30   31,32|
-Delete 8
-                               15                               26                |
-    4      7        11                       19   21                       30     |
-2,4  5,6,7  9,10,11   13,14,15   16,17,18,19   21   22,24,25,26   28,29,30   31,32|
-Delete 18
-                               15                                            |
-    4      7        11                       21            26         30     |
-2,4  5,6,7  9,10,11   13,14,15   16,17,19,21   22,24,25,26   28,29,30   31,32|
-Delete 2
-                            15                                            |
-        7        11                       21            26         30     |
-4,5,6,7  9,10,11   13,14,15   16,17,19,21   22,24,25,26   28,29,30   31,32|
-Delete 31
-                            15                                       |
-        7        11                       21            26           |
-4,5,6,7  9,10,11   13,14,15   16,17,19,21   22,24,25,26   28,29,30,32|
-Delete 25
-                            15                                    |
-        7        11                       21         26           |
-4,5,6,7  9,10,11   13,14,15   16,17,19,21   22,24,26   28,29,30,32|
-Delete 16
-                            15                                 |
-        7        11                    21         26           |
-4,5,6,7  9,10,11   13,14,15   17,19,21   22,24,26   28,29,30,32|
-Delete 13
-                         15                                 |
-        7        11                 21         26           |
-4,5,6,7  9,10,11   14,15   17,19,21   22,24,26   28,29,30,32|
-Delete 32
-                         15                              |
-        7        11                 21         26        |
-4,5,6,7  9,10,11   14,15   17,19,21   22,24,26   28,29,30|
-Delete 11
-                    15                              |
-        7                      21         26        |
-4,5,6,7  9,10,14,15   17,19,21   22,24,26   28,29,30|
-Delete 21
-                    15                           |
-        7                   21         26        |
-4,5,6,7  9,10,14,15   17,19   22,24,26   28,29,30|
-Delete 5
-                  15                           |
-      7                   21         26        |
-4,6,7  9,10,14,15   17,19   22,24,26   28,29,30|
-Delete 24
-      7           15            26        |
-4,6,7  9,10,14,15   17,19,22,26   28,29,30|
-Delete 4
-    7           15            26        |
-6,7  9,10,14,15   17,19,22,26   28,29,30|
-Delete 10
-    7        15            26        |
-6,7  9,14,15   17,19,22,26   28,29,30|
-Delete 26
-    7        15         26        |
-6,7  9,14,15   17,19,22   28,29,30|
-Delete 30
-    7        15         26     |
-6,7  9,14,15   17,19,22   28,29|
-Delete 9
-          15         26     |
-6,7,14,15   17,19,22   28,29|
-Delete 6
-        15         26     |
-7,14,15   17,19,22   28,29|
-Delete 29
-        15           |
-7,14,15   17,19,22,28|
-Delete 17
-        15        |
-7,14,15   19,22,28|
-Delete 28
-        15     |
-7,14,15   19,22|
-Delete 15
-7,14,19,22|
-Delete 14
-7,19,22|
-Delete 19
-7,22|
-Delete 7
-22|
-Delete 22
-|
-""");
+  static void test_deleteDescending()
+   {          test_deleteDescending(true);
+              test_deleteDescending(false);
    }
 
-  static void test_deep()
-   {final Tree t = new Tree(2, 3);
-    final int N = 256;
-    for (int i = 1; i <= N; ++i) t.insert(t.new Key(i), t.new Data(i));
-    ok(t, """
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            128                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-                                                                                                                 32                                                                                                                              64                                                                                                                              96                                                                                                                                                                                                                                                                                                                                                         160                                                                                                                                                                             192                                                                                                                                                                             224                                                                                                                                                                            |
-                   8                             16                              24                                                              40                              48                              56                                                              72                              80                              88                                                                     104                                         112                                         120                                                                                     136                                         144                                         152                                                                                     168                                         176                                         184                                                                                     200                                         208                                         216                                                                                     232                                         240                                         248                                        |
-    2    4    6          10      12      14              18      20      22              26      28      30              34      36      38              42      44      46              50      52      54              58      60      62              66      68      70              74      76      78              82      84      86              90      92      94              98       100        102                   106        108        110                   114        116        118                   122        124        126                   130        132        134                   138        140        142                   146        148        150                   154        156        158                   162        164        166                   170        172        174                   178        180        182                   186        188        190                   194        196        198                   202        204        206                   210        212        214                   218        220        222                   226        228        230                   234        236        238                   242        244        246                   250        252        254       |
-1,2  3,4  5,6  7,8  9,10   11,12   13,14   15,16   17,18   19,20   21,22   23,24   25,26   27,28   29,30   31,32   33,34   35,36   37,38   39,40   41,42   43,44   45,46   47,48   49,50   51,52   53,54   55,56   57,58   59,60   61,62   63,64   65,66   67,68   69,70   71,72   73,74   75,76   77,78   79,80   81,82   83,84   85,86   87,88   89,90   91,92   93,94   95,96   97,98   99,100    101,102    103,104    105,106    107,108    109,110    111,112    113,114    115,116    117,118    119,120    121,122    123,124    125,126    127,128    129,130    131,132    133,134    135,136    137,138    139,140    141,142    143,144    145,146    147,148    149,150    151,152    153,154    155,156    157,158    159,160    161,162    163,164    165,166    167,168    169,170    171,172    173,174    175,176    177,178    179,180    181,182    183,184    185,186    187,188    189,190    191,192    193,194    195,196    197,198    199,200    201,202    203,204    205,206    207,208    209,210    211,212    213,214    215,216    217,218    219,220    221,222    223,224    225,226    227,228    229,230    231,232    233,234    235,236    237,238    239,240    241,242    243,244    245,246    247,248    249,250    251,252    253,254    255,256|
-""");
-   }
-
-  static void test_idi()
-   {final int N = 32;
-    final Tree t = new Tree(new Tree.Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(32));
-    for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
-    for (int i = 1; i <= N; ++i) {t.delete(t.new Key(i));                t.freeCheck();}
-    for (int i = 1; i <= N; ++i) {t.insert(t.new Key(i), t.new Data(i)); t.freeCheck();}
-  //testStop(t.dump());
-    ok(t.dump(), """
-                                                                               8                                                                                          16                                                                                     24                                                                            |
-                                                                              [5.0]                                                                                      [5.2]                                                                                  [5.4]                                                                          |
-                                                                              (20, *, *)                                                                                 (13, *, *)                                                                             (11, *, *){2}                                                                  |
-                                                                              (20, 19, 0)                                                                                (13, 19, 0)                                                                            (11, 19, 0)                                                                    |
-           2                    4                     6                                              10                    12                    14                                            18                   20                    22                                           26                28                30                  |
-          [20.0]               [20.2]                [20.4]                                         [13.0]                [13.2]                [13.4]                                        [11.0]               [11.2]                [11.4]                                       [2.0]             [2.2]             [2.4]                |
-          (3, 5, 0)            (21, 5, 0)            (22, 5, 0){23}                                 (16, 5, 2)            (17, 5, 2)            (24, 5, 2){14}                                (7, 5, 4)            (12, 5, 4)            (15, 5, 4){6}                                (1, 5, *)         (8, 5, *)         (4, 5, *){9}         |
-          (3, -1, 0)           (21, -1, 0)           (22, -1, 0)                                    (16, -1, 0)           (17, -1, 0)           (24, -1, 0)                                   (7, -1, 0)           (12, -1, 0)           (15, -1, 0)                                  (1, 5, 0)         (8, 5, 0)         (4, 5, 0)            |
-1,2                 3,4                   5,6                      7,8                   9,10                  11,12                 13,14                    15,16                 17,18               19,20                 21,22                   23,24                  25,26             27,28             29,30                31,32    |
-(3, 20, 0)          (21, 20, 2)           (22, 20, 4)              (23, 20, *)           (16, 13, 0)           (17, 13, 2)           (24, 13, 4)              (14, 13, *)           (7, 11, 0)          (12, 11, 2)           (15, 11, 4)             (6, 11, *)             (1, 2, 0)         (8, 2, 2)         (4, 2, 4)            (9, 2, *)|
-""");
-   }
-*/
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_tree();
     test_saveReload();
@@ -2723,6 +1912,7 @@ Delete 22
     test_insertMerged();
     test_insertReverse();
     test_insertRandom32();
+    test_deleteAscending();
     //test_insert();
     //test_insert_reverse();
     //test_insert_random();
@@ -2736,7 +1926,6 @@ Delete 22
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
