@@ -244,9 +244,7 @@ class Branch extends Program implements Program.Locatable                       
     final Branch left = this;
     Right.slots.clear();                                                                                                // Clear the target
     Right.refData.copy(left.refData, left.build.dataBytes());                                                           // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-say("AAAA1111", left.slots);
     final Int sk = left.slots.splitRightOdd(Right.slots);                                                               // Split the slots  and get the index of the splitting key
-say("AAAA2222", sk);
     Right.top(left.top());                                                                                              // Right top becomes left top
     left .top(left.data(sk));                                                                                           // Left top is data from splitting key
     return left.slots.getKeyValue(sk);                                                                                  // Splitting key
@@ -955,8 +953,7 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_splitRight(true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
