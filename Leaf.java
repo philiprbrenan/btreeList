@@ -109,7 +109,7 @@ class Leaf extends Program implements Program.Locatable                         
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
        {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot)));                                                         // Get data associated with key
-        if (Delete) slots.delSlotAndKey(f.slot);                                                                        // Delete the key if requested
+        if (Delete) slots.delete(f.slot);                                                                               // Delete the key if requested
        }
       void Else()                                                                                                       // Key not found
        {r.invalidate();                                                                                                 // Data is invalid showing that the key was not found
