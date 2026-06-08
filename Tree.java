@@ -361,10 +361,15 @@ class Tree extends Program                                                      
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
-          final Branch.StepDown d1 = p.stepDown(key); mergeLeftLeft  (p, d1.slot);                                      // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
-          final Branch.StepDown d2 = p.stepDown(key); mergeRightRight(p, d2.slot);                                      // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
-          final Branch.StepDown d3 = p.stepDown(key); mergeLeft      (p, d3.slot);                                      // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
-          final Branch.StepDown d4 = p.stepDown(key); mergeRight     (p, d4.slot);                                      // Might be able to be able to merge left sibling with its left sibling.  Cannot merge with right sibling because the left node was split out of it to make room for the branch below to be split into the left sibling thereby making it too big to merge with its right sibling after being augmented by the splitting key of the branch below
+          new ForCount(new Int(4))                                                                                      // Each possible merge
+           {void body(Int Index)
+             {final Branch.StepDown d = p.stepDown(key);                                                                // Locate key slot
+              new If (Index.eq(0)) {void Then() {mergeLeftLeft  (p, d.slot);}};                                         // Various merges possible on either side of the path
+              new If (Index.eq(1)) {void Then() {mergeRightRight(p, d.slot);}};
+              new If (Index.eq(2)) {void Then() {mergeLeft      (p, d.slot);}};
+              new If (Index.eq(3)) {void Then() {mergeRight     (p, d.slot);}};
+             }
+           };
          }
        };
 
