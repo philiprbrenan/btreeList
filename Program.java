@@ -957,7 +957,8 @@ public class Program extends Test                                               
   static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   static void test_programming(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex).trace(true))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).trace(true))
      {void code()
        {final Int i = new Int(0);
         final Int N = new Int(11);
@@ -986,7 +987,8 @@ public class Program extends Test                                               
    }
 
   static void test_bool(boolean Ex)
-   {final Program  P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program  P = new Program(new Build().immediate(Ex))
      {void code()
        {final Bool z = new Bool().clear();
         final Bool o = new Bool().set();
@@ -1009,7 +1011,8 @@ public class Program extends Test                                               
 
 
   static void test_andOr(boolean Ex)
-   {final Program  P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program  P = new Program(new Build().immediate(Ex))
      {void code()
        {final Bool z = new Bool().clear();
         final Bool o = new Bool().set();
@@ -1033,7 +1036,8 @@ public class Program extends Test                                               
 
 
   static void test_add(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(1);
         final Int b = new Int(0);
@@ -1069,7 +1073,8 @@ public class Program extends Test                                               
    }
 
   static void test_fibonnacci(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(0);
         final Int b = new Int(1);
@@ -1099,7 +1104,8 @@ public class Program extends Test                                               
    }
 
   static void test_mod(Boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int  a = new Int ();
         final Bool b = new Bool();
@@ -1131,7 +1137,8 @@ public class Program extends Test                                               
    }
 
   static Program test_incremental(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex).trace(true))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).trace(true))
      {void code()
        {final Int a = new Int(0);
                  a.out();
@@ -1147,12 +1154,14 @@ public class Program extends Test                                               
    }
 
   static void test_incremental()
-   {final Program p = test_incremental(true), q = test_incremental(false);
+   {sayCurrentTestName();
+    final Program p = test_incremental(true), q = test_incremental(false);
     ok(readFile(p.tracing), readFile(q.tracing));
    }
 
   static void test_bits(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {new For(new Int(2))
          {void body(Int Index, Bool Continue)
@@ -1181,7 +1190,8 @@ public class Program extends Test                                               
    }
 
   static void test_remote(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(1);
         a.add(2).ok(3);
@@ -1202,7 +1212,8 @@ public class Program extends Test                                               
    }
 
   static void test_copy(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int  a = new Int();
         final Int  A = new Int();
@@ -1231,7 +1242,8 @@ public class Program extends Test                                               
    }
 
   static void test_byteMemory(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex).memory(16))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
        {final ByteMemory m = byteMemory;
         new For(2)
@@ -1266,7 +1278,8 @@ public class Program extends Test                                               
    }
 
   static void test_byteMemoryNegative(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex).memory(8))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).memory(8))
      {void code()
        {final ByteMemory m = byteMemory;
         new For(2)
@@ -1290,7 +1303,8 @@ public class Program extends Test                                               
    }
 
   static void test_byteMemoryRef(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex).memory(16))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
        {final ByteMemory     M = byteMemory;
         final ByteMemory.Ref m = M.new Ref(8);
@@ -1326,7 +1340,8 @@ public class Program extends Test                                               
    }
 
   static void test_invalidate(boolean Ex)
-   {final Program P = new Program(new Build().immediate(Ex).memory(16))
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
        {final ByteMemory     M = byteMemory;
         final ByteMemory.Ref m = M.new Ref(8);
