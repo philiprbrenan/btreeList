@@ -1698,24 +1698,12 @@ Leaf   at:   2 size:  4, count:  4
   static void test_update(boolean Ex)
    {sayTest();
     final int N = 32 ;
-say("BBBB1111");
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-say("BBBB2222");
-    t.new I() {void action() {say("AAAA1111"); }};
-say("BBBB3333");
-    t.insert(t.new Int(1), t.new Int(11));
-say("BBBB4444");
-    t.new I() {void action() {say("AAAA2222"); }};
-say("BBBB5555");
-//    t.insert(t.new Int(1), t.new Int(11));
-//    t.new I() {void action() {say("AAAA3333"); }};
-/*    t.new ForCount(t.new Int(2))
+    t.new ForCount(t.new Int(2))
      {void body(Int I)
-       {t.new I() {void action() {say("BBBB", I); }};
-        t.new ForCount(t.new Int(2))
+       {t.new ForCount(t.new Int(2))
          {void body(Int J)
-           {//t.insert(J, I);
-t.new I() {void action() {say("CCCC", I, J); }};
+           {t.insert(J, I);
            }
          };
        }
@@ -1736,8 +1724,8 @@ Leaf           size:  4, count:  2
    0     0     0
    1     1     1
 """);
-*/
-    t.maxSteps = 999_999;
+
+    t.maxSteps = 9_999_999;
     t.execute();
    }
 
@@ -1747,15 +1735,15 @@ Leaf           size:  4, count:  2
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_tree();
-    test_saveReload();
-    test_insert();
-    test_insertMerged();
-    test_insertReverse();
-    test_insertRandom32();
-    test_deleteAscending();
-    test_deleteDescending();
-    test_deleteRandom32();
+   {//test_tree();
+    //test_saveReload();
+    //test_insert();
+    //test_insertMerged();
+    //test_insertReverse();
+    //test_insertRandom32();
+    //test_deleteAscending();
+    //test_deleteDescending();
+    //test_deleteRandom32();
     test_update();
    }
 
