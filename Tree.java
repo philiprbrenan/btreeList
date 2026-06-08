@@ -363,6 +363,7 @@ class Tree extends Program                                                      
 //          new ForCount(new Int(4))                                                                                      // Each possible merge
 //           {void body(Int Index)
              {final Branch.StepDown d = p.stepDown(key);                                                                // Locate key slot
+say("AAAA0000 ------------------", d);
 say("AAAA1111", p.slots);
               new If (Index.eq(0)) {void Then() {mergeLeftLeft  (p, d.slot);}};                                         // Various merges possible on either side of the path
 say("AAAA2222", p.slots);
