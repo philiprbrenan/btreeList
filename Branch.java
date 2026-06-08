@@ -397,7 +397,8 @@ class Branch extends Program implements Program.Locatable                       
 //D1 Tests                                                                                                              // Tests
 
   static void test_branch(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
@@ -434,7 +435,8 @@ Branch         size:   7 count:   4 top:   0
    }
 
   static void test_compactLeft(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
@@ -468,7 +470,8 @@ Branch         size:   7 count:   3 top:   0
    }
 
   static void test_compactRight(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
@@ -503,7 +506,8 @@ Branch         size:   7 count:   4 top:   0
    }
 
   static void test_splitRight(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
@@ -554,7 +558,8 @@ Branch         size:   7 count:   3 top:  99
    }
 
   static void test_splitLeft(boolean Ex)
-   {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
     r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
@@ -604,7 +609,8 @@ Branch         size:   7 count:   3 top:  99
    }
 
   static void test_mergeRight(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
@@ -667,7 +673,8 @@ Branch         size:   7 count:   7 top:  99
    }
 
   static void test_mergeLeft(boolean Ex)
-   {final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
     r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
@@ -730,7 +737,8 @@ Branch         size:   7 count:   7 top:  99
    }
 
   static void test_find(boolean Ex)
-   {final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
+   {sayCurrentTestName();
+    final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
@@ -783,7 +791,8 @@ Branch         size:   7 count:   0 top:   0
    }
 
   static void test_iterate(boolean Ex)
-   {new Branch(new Build().maxSize(7).immediate(Ex))
+   {sayCurrentTestName();
+    new Branch(new Build().maxSize(7).immediate(Ex))
      {@Override void branchCode()
        {initializeMemory();
         insert(new Int(2), new Int(22));
@@ -829,7 +838,8 @@ Branch         size:   7 count:   7 top:  88
    }
 
   static void test_fixedFields(boolean Ex)
-   {final int A = 22, B = 21;
+   {sayCurrentTestName();
+    final int A = 22, B = 21;
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
      {void branchCode()
        {final Branch l = this;
@@ -854,7 +864,8 @@ Branch         size:   7 count:   7 top:  88
    }
 
   static void test_stepDown(boolean Ex)
-   {final int    N = 4;
+   {sayCurrentTestName();
+    final int    N = 4;
     final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
      {void branchCode()
        {initializeMemory();
@@ -877,7 +888,8 @@ Branch         size:   7 count:   7 top:  88
    }
 
   static void test_knownInsert(boolean Ex)
-   {new Branch(new Build().maxSize(7).immediate(Ex))
+   {sayCurrentTestName();
+    new Branch(new Build().maxSize(7).immediate(Ex))
      {@Override void branchCode()
        {initializeMemory();
         insertEmpty(new Int(4), new Int(44));
