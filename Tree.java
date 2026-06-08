@@ -19,6 +19,9 @@ class Tree extends Program                                                      
   final int           numberOfNodes;                                                                                    // Maximum number of leaves plus branches in this tree
   final int   maximumNumberOfLevels;                                                                                    // Maximum number of levels in tree to prevent runaways while debugging
   final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node may hold a branch or a leaf
+  final ByteMemory.Ref   refNodes;                                                                                      // The nodes associated with this tree
+  final ByteMemory.Ref   refFreeChain;                                                                                  // The free chain for this tree
+  final ByteMemory.Ref   refCount;                                                                                      // The number of keys in this tree
   final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
   final int  linesToPrintABranch = 4;                                                                                   // The number of lines required to print a branch
   final int  maxPrintLevels      = 3;                                                                                   // The maximum number of levels to print - this avoids endless print loops when something goes wrong
