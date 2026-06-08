@@ -393,7 +393,7 @@ public class Test                                                               
        {final StackTraceElement s = t[i-1];
         final String f = s.getFileName();
         final String l = String.format("%04d", s.getLineNumber());
-        return f+":"+l+":";
+        return f+":"+l+":"+m;
        }
      }
     stop("Not called in a test");
@@ -412,7 +412,7 @@ public class Test                                                               
 
   static void sayCurrentTestName()                                                                                      // Name of the current test
    {say(String.format("%2d %8.2f", ++currentTestNumber, elapsedTime()),
-      currentTestName());
+      currentTestName(), positionInTest());
    }
 
   static String testLine()                                                                                              // Locate line associated with the current test
