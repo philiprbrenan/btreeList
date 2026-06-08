@@ -363,10 +363,15 @@ class Tree extends Program                                                      
 //          new ForCount(new Int(4))                                                                                      // Each possible merge
 //           {void body(Int Index)
              {final Branch.StepDown d = p.stepDown(key);                                                                // Locate key slot
+say("AAAA1111", p.slots);
               new If (Index.eq(0)) {void Then() {mergeLeftLeft  (p, d.slot);}};                                         // Various merges possible on either side of the path
+say("AAAA2222", p.slots);
               new If (Index.eq(0)) {void Then() {mergeRightRight(p, d.slot);}};
+say("AAAA3333", p.slots);
               new If (Index.eq(0)) {void Then() {mergeLeft      (p, d.slot);}};
+say("AAAA4444", p.slots);
               new If (Index.eq(0)) {void Then() {mergeRight     (p, d.slot);}};
+say("AAAA5555", p.slots);
              }
 //           };
          }
@@ -1743,7 +1748,7 @@ Leaf           size:  4, count:  2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_update();
+    test_insertMerged(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
