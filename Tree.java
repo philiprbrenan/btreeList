@@ -2,7 +2,6 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Reduce the number of calls to stepDown in mergeUp
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -361,15 +360,15 @@ class Tree extends Program                                                      
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
-          new ForCount(new Int(4))                                                                                      // Each possible merge
-           {void body(Int Index)
+//          new ForCount(new Int(4))                                                                                      // Each possible merge
+//           {void body(Int Index)
              {final Branch.StepDown d = p.stepDown(key);                                                                // Locate key slot
               new If (Index.eq(0)) {void Then() {mergeLeftLeft  (p, d.slot);}};                                         // Various merges possible on either side of the path
-              new If (Index.eq(1)) {void Then() {mergeRightRight(p, d.slot);}};
-              new If (Index.eq(2)) {void Then() {mergeLeft      (p, d.slot);}};
-              new If (Index.eq(3)) {void Then() {mergeRight     (p, d.slot);}};
+              new If (Index.eq(0)) {void Then() {mergeRightRight(p, d.slot);}};
+              new If (Index.eq(0)) {void Then() {mergeLeft      (p, d.slot);}};
+              new If (Index.eq(0)) {void Then() {mergeRight     (p, d.slot);}};
              }
-           };
+//           };
          }
        };
 
@@ -1704,7 +1703,6 @@ Leaf   at:   2 size:  4, count:  4
          };
        }
      };
-say("AAAA", t.codeSize());
     t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :  157
