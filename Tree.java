@@ -360,22 +360,11 @@ class Tree extends Program                                                      
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
-             {final Branch.StepDown d = p.stepDown(key);                                                                // Locate key slot
-//say("AAAA", d, p, p.slots, Tree.this.dump());
-              mergeLeftLeft  (p, d.slot);                                         // Various merges possible on either side of the path
-//final Branch.StepDown d1 = p.stepDown(key);
-//if ((d.slot.notValid().b() && d1.slot.valid().b()) || (d.slot.valid().b() && d1.slot.notValid().b()) || (d.slot.valid().b() && d1.slot.valid().b() && d1.slot.ne(d.slot).b())) stop(Index, d, d1, p, p.slots, Tree.this.dump());
-              mergeRightRight(p, d.slot);;
-//final Branch.StepDown d2 = p.stepDown(key);
-//if ((d.slot.notValid().b() && d2.slot.valid().b()) || (d.slot.valid().b() && d2.slot.notValid().b()) || (d.slot.valid().b() && d2.slot.valid().b() && d2.slot.ne(d.slot).b())) stop(Index, d, d2, p, p.slots, Tree.this.dump());
-              mergeLeft      (p, d.slot);;
-///final Branch.StepDown d3 = p.stepDown(key);
-///if ((d.slot.notValid().b() && d3.slot.valid().b()) || (d.slot.valid().b() && d3.slot.notValid().b()) || (d.slot.valid().b() && d3.slot.valid().b() && d3.slot.ne(d.slot).b())) stop(Index, d, d3, p, p.slots, Tree.this.dump());
-              mergeRight     (p, d.slot);;
-///final Branch.StepDown d4 = p.stepDown(key);
-///if ((d.slot.notValid().b() && d4.slot.valid().b()) || (d.slot.valid().b() && d4.slot.notValid().b()) || (d.slot.valid().b() && d4.slot.valid().b() && d4.slot.ne(d.slot).b())) stop(Index, d, d4, p, p.slots, Tree.this.dump());
-///             }
-           };
+          final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
+          mergeLeftLeft  (p, d.slot);                                                                                   // Various merges possible on either side of the path
+          mergeRightRight(p, d.slot);;
+          mergeLeft      (p, d.slot);;
+          mergeRight     (p, d.slot);;
          }
        };
 
@@ -1749,14 +1738,7 @@ Leaf           size:  4, count:  2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    //test_insert(true);
-    //test_insertMerged(true);
-    //test_insertReverse(true);
-    //test_insertRandom32(true);
-    //test_deleteAscending(true);
-    //test_deleteDescending(true);
-      test_deleteRandom32(true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
