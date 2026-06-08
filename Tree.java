@@ -200,15 +200,9 @@ class Tree extends Program                                                      
 
   Branch branch() {return makeBranch(allocate());}                                                                      // Create and initialize a branch in memory and return its index
 
-  void countInc  ()                                                                                                     // Increment the key count
-   {final Int C = refCount.getInt();                                                                                    // Computed number of keys
-    refCount.putInt(C.inc());                                                                                           // Increment the count
-   }
-  void countDec  ()                                                                                                     // Decrement the key count
-   {final Int C = refCount.getInt();                                                                                    // Computed number of keys
-    if (immediate() && C.le(0).b()) stop("Key count would go negative");                                                // Check it will not go negative
-    refCount.putInt(C.dec());                                                                                           // Decrement the count
-   }
+  Int  count()    {return refCount.getInt();}                                                                           // Number of keys in tree
+  void countInc() {refCount.putInt(count().inc());}                                                                     // Increment the key count
+  void countDec() {refCount.putInt(count().dec());}                                                                     // Increment the key count
 
   StringBuilder dumpTree()                                                                                              // Dump the tree
    {final StringBuilder s = new StringBuilder();
@@ -224,6 +218,7 @@ class Tree extends Program                                                      
         s.append(f("MaxBranchSize : %4d\n", maxBranchSize));
         s.append(f("NumberOfNodes : %4d\n", numberOfNodes));
         s.append(f("Allocations   : %4d\n", c.i()));
+        s.append(f("Number of Keys: %4d\n", refCount.getInt(0)));
        }
      };
 
@@ -402,7 +397,7 @@ class Tree extends Program                                                      
        };
      }
 
-    StringBuilder print()                                                                                               // Print the find results
+    StringBuilder print()                                                                                               // Print the path
      {final StringBuilder s = new StringBuilder();
       new I() {void action() {s.setLength(0); }};
       new I() {void action() {s.append("Path: "+step+" steps: ");}};
@@ -445,7 +440,7 @@ class Tree extends Program                                                      
     return f;
    }
 
-  void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
+  public void insert(Int Key, Int Data)                                                                                        // Insert a key, data pair into the tree
    {new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
        {final Leaf R = leaf(new Int(0));
@@ -502,7 +497,6 @@ class Tree extends Program                                                      
   private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full and the key does not exist in the leaf
    {final Path p = path(Key);                                                                                           // Path from root to full leaf
     p.splitPoint();                                                                                                     // The lowest branch in the tree that is full and has a non full parent
-say("BBBB", p);
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
     final Int    L = p.step.Dec();                                                                                      // Last step along path
     final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
@@ -531,7 +525,7 @@ say("BBBB", p);
     if (!suppressMergeUp) p.mergeUp();                                                                                  // Merge nodes on either side of the path going up from the leaf to towards the root
    }
 
-  Int delete(Int Key)                                                                                                   // Delete a key from the tree and return the associated data if the key was present in the tree
+  public Int delete(Int Key)                                                                                            // Delete a key from the tree and return the associated data if the key was present in the tree
    {final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
     new If (isRootLeaf())
      {void Then()                                                                                                       // The root is a leaf
@@ -540,7 +534,7 @@ say("BBBB", p);
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(R.data(R.slots.getSlotToKeyValue(f.slot)));                                                        // Data associated with key
-            R.slots.delSlotAndKey(f.slot);                                                                              // Remove key from leaf comprising tree
+            R.slots.delete(f.slot);                                                                                     // Remove key from leaf comprising tree
             countDec();                                                                                                 // Count deleted key
            }
          };
@@ -552,7 +546,7 @@ say("BBBB", p);
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(l.data(l.slots.getSlotToKeyValue(f.slot)));                                                        // Data associated with key
-            l.slots.delSlotAndKey(f.slot);                                                                              // Remove key from leaf in tree tree
+            l.slots.delete(f.slot);                                                                                     // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
            }
@@ -572,7 +566,6 @@ say("BBBB", p);
     final Branch l = branch();                                                                                          // New left branch
     final Branch r = branch();                                                                                          // New right branch
     l.copy(R);                                                                                                          // Copy the root into the left branch
-say("AAAA", l);
     final Int sk = l.splitRight(r);                                                                                     // Splitting key
     R.clear();                                                                                                          // Clear the root
     makeBranch(R.getLocation());                                                                                        // Mark the root as a branch
@@ -590,7 +583,7 @@ say("AAAA", l);
     final Leaf   l = leaf(P.data(P.slots.getSlotToKeyIndex(Left)));                                                     // Left leaf of merge
     new If (Right.mergeLeft(l))                                                                                         // Successfully merged
      {void Then()
-       {P.slots.delSlotAndKey(Left);                                                                                    // The left sibling can now be freed
+       {P.slots.delete(Left);                                                                                           // The left sibling can now be freed
         free(l);
         m.set();
        }
@@ -605,7 +598,7 @@ say("AAAA", l);
     final Int    k = P.slots.getSlotToKeyValue(Left);                                                                   // The parent key for the left sibling
     new If (Right.mergeLeft(l, k))                                                                                      // Successfully merged
      {void Then()                                                                                                       // The left sibling can now be freed
-       {P.slots.delSlotAndKey(Left);                                                                                    // Remove from parent
+       {P.slots.delete(Left);                                                                                           // Remove from parent
         free(l);                                                                                                        // Free left branch
         m.set();                                                                                                        // Success
        }
@@ -1707,7 +1700,7 @@ Leaf   at:   2 size:  4, count:  4
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
+    test_insertMerged();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
