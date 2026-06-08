@@ -210,6 +210,7 @@ class Branch extends Program implements Program.Locatable                       
          };
        }
      };
+    slots.countInc();                                                                                                          // Update key count for branch
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
@@ -895,7 +896,7 @@ usedKeys :    X   .   .   .   .   .   .
 keys     :    4   0   0   0   0   0   0
 """);
 
-        insert(new Int(2), new Int(22), new Int(7)); slots.countInc();
+        insert(new Int(2), new Int(22), new Int(7));
         check(print(), """
 Branch         size:   7 count:   2 top:   0
  Ref   Key  Data
@@ -912,7 +913,7 @@ usedKeys :    X   X   .   .   .   .   .
 keys     :    4   2   0   0   0   0   0
 """);
 
-        insert(new Int(6), new Int(66), new Int()); slots.countInc();
+        insert(new Int(6), new Int(66), new Int());
         check(print(), """
 Branch         size:   7 count:   3 top:   0
  Ref   Key  Data
