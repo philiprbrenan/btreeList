@@ -1027,16 +1027,16 @@ class Tree extends Program                                                      
     final Leaf   a = t.leaf(t.new Int(0));  t.freeChain.countZeros().ok(1);
     final Leaf   b = t.leaf();              t.freeChain.countZeros().ok(2);
     final Branch c = t.branch();            t.freeChain.countZeros().ok(3);
-    a.insert(t.new Int(2), t.new Int(22));
-    b.insert(t.new Int(4), t.new Int(44));
+    a.insert(t.new Int(2), t.new Int(22)); t.countInc();
+    b.insert(t.new Int(4), t.new Int(44)); t.countInc();
     c.insert(t.new Int(5), t.new Int(55));
 
     final Leaf   A = t.leaf  (a.at); t.isAllocated(a.at).ok(true);
     final Leaf   B = t.leaf  (b.at); t.isAllocated(b.at).ok(true);
     final Branch C = t.branch(c.at); t.isAllocated(c.at).ok(true);
 
-    A.insert(t.new Int(1), t.new Int(11));
-    B.insert(t.new Int(3), t.new Int(33));
+    A.insert(t.new Int(1), t.new Int(11));  t.countInc();
+    B.insert(t.new Int(3), t.new Int(33));  t.countInc();
     C.insert(t.new Int(6), t.new Int(66));
 
     t.Check(t.dumpTree(), """
@@ -1048,6 +1048,7 @@ MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
+Number of Keys:    4
 Leaf           size:  2, count:  2
  Ref   Key  Data
    1     1    11
@@ -1063,7 +1064,7 @@ Branch at:   2 size:   3 count:   2 top:   0
 """);
 
                t.isAllocated(a.at).ok(true);
-    t.free(A); t.isAllocated(a.at).ok(false);
+    t.free(A); t.isAllocated(a.at).ok(false);  t.countDec(); t.countDec();
     t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   83
@@ -1073,6 +1074,7 @@ MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    2
+Number of Keys:    2
 Leaf   at:   1 size:  2, count:  2
  Ref   Key  Data
    1     3    33
@@ -1083,7 +1085,7 @@ Branch at:   2 size:   3 count:   2 top:   0
    1     6    66
 """);
                t.isAllocated(b.at).ok(true);
-    t.free(b); t.isAllocated(b.at).ok(false);
+    t.free(b); t.isAllocated(b.at).ok(false);   t.countDec(); t.countDec();
     t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   83
@@ -1093,6 +1095,7 @@ MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
+Number of Keys:    0
 Branch at:   2 size:   3 count:   2 top:   0
  Ref   Key  Data
    0     5    55
@@ -1103,13 +1106,14 @@ Branch at:   2 size:   3 count:   2 top:   0
     t.free(c); t.isAllocated(c.at).ok(false);
     t.Check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   79
-Branch size   :  121
-Node   size   :  121
+Leaf   size   :   83
+Branch size   :  125
+Node   size   :  125
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    0
+Number of Keys:    0
 """);
 
     t.maxSteps = 99_999;
@@ -1124,7 +1128,7 @@ Allocations   :    0
   static void test_saveReload(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
     if (true)
-     {t.new I() {void action() {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAEAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAEAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIvV/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTBwEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAEAAAAGAAAABwAAAAEAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAOL9ewAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfwQFAAAABgAAAAMAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgDAAAAAA==");}};
+     {t.new I() {void action() {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAEAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAEAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIvV/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTBwEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAEAAAAGAAAABwAAAAEAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAOL9ewAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfwQFAAAABgAAAAMAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgDBgAAAA==");}};
      }
     else
      {t.new ForCount(t.new Int(1), t.new Int(7))
@@ -1134,6 +1138,7 @@ Allocations   :    0
        };
 
       t.new I() {void action() {say("Dump tree\n",  t.byteMemory.save());}};
+      stop();
      }
 
     t.Check (t.dumpTree(), """
@@ -1145,6 +1150,7 @@ MaxLeafSize   :    4
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
+Number of Keys:    6
 Branch         size:   3 count:   1 top:   2
  Ref   Key  Data
    0     2     1
@@ -1699,8 +1705,7 @@ Leaf   at:   2 size:  4, count:  4
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_insertMerged();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
