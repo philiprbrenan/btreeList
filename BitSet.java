@@ -875,7 +875,8 @@ Zero:
    }
 
   static void test_prevNext01(boolean Ex)                                                                               // Test tree of searchable one bits
-   {final int N = 16;
+   {sayCurrentTestName();
+    final int N = 16;
     final BitSet b = test_bits(Ex, N);
 
     b.ok(()->b, """
@@ -942,7 +943,8 @@ Zero:
    }
 
   static void test_prevNext10(boolean Ex)                                                                               // Test tree of searchable one bits
-   {final int N = 16;
+   {sayCurrentTestName();
+    final int N = 16;
     final BitSet b = test_bits(Ex, N);
     for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 1));
 
@@ -994,7 +996,8 @@ Zero:
    }
 
   static void test_oneZero(boolean Ex)
-   {final int N = 8;
+   {sayCurrentTestName();
+    final int N = 8;
     final BitSet b = test_bits(Ex, N);
     final StringBuilder s = new StringBuilder();
     b.new I() {void action() {s.append("Start:\n"+b);}};
@@ -1206,7 +1209,8 @@ Zero:
    }
 
   static void test_fullEmpty(int N, boolean Ex)
-   {final BitSet b = test_bits(Ex, N);
+   {sayCurrentTestName();
+    final BitSet b = test_bits(Ex, N);
 
     b.empty().ok(true);
     b.new ForCount(b.new Int(N))
@@ -1232,7 +1236,8 @@ Zero:
    }
 
   static void test_count(int N, boolean Ex)
-   {final BitSet b = test_bits(Ex, N);
+   {sayCurrentTestName();
+    final BitSet b = test_bits(Ex, N);
 
     b.set(b.new Int(  1),   b.new Bool(true));
     b.set(b.new Int(N-1),   b.new Bool(true));
@@ -1283,7 +1288,8 @@ Zero:
 */
 
   static void test_powerPosOneZero(boolean Ex)
-   {final int N = 16;
+   {sayCurrentTestName();
+    final int N = 16;
     final BitSet b = test_bits(Ex, N);
 
     for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), b.new Bool(true));
@@ -1500,7 +1506,8 @@ Zero:
    }
 
   static void test_twoOrMoreOnes(boolean Ex)                                                                            // Two or more ones
-   {final BitSet b = test_bits(Ex, 32);
+   {sayCurrentTestName();
+    final BitSet b = test_bits(Ex, 32);
 
     b.set  (b.new Int(17)); b.twoOrMoreOnes().ok(false);
     b.set  (b.new Int(12)); b.twoOrMoreOnes().ok(true);
