@@ -895,7 +895,7 @@ public class Program extends Test                                               
       mightJump = MightJump;
       if (immediate()) {parentProgram.executing = this; action(); parentProgram.executing = null;}                      // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
-if (codeSize() % 1000 == 0) say("AAAA", codeSize());
+if (!immediate() && codeSize() % 100_000 == 1) say("AAAA", codeSize());
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
