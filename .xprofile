@@ -1,2 +1,2 @@
-xmodmap -e "keycode 127 = F8"
+xmodmap -e "keycode 127 = Insert"
 xmodmap -e "keycode 133 = F9"
