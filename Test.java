@@ -1008,6 +1008,8 @@ public class Test                                                               
     if (!testing) System.err.println(traceBack());
    }
 
+  static void sayTest(Object...O) {errTest(O);}                                                                                       // Say something about the current test
+
   static void errTest(Object...O)                                                                                       // Say something about the current test
    {say(O);
     final String t = testLine();
