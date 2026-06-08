@@ -360,21 +360,23 @@ class Tree extends Program                                                      
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
-//          new ForCount(new Int(4))                                                                                      // Each possible merge
-//           {void body(Int Index)
+          //new ForCount(new Int(4))                                                                                      // Each possible merge
+           //{void body(Int Index)
              {final Branch.StepDown d = p.stepDown(key);                                                                // Locate key slot
-say("AAAA0000 ------------------", d);
-say("AAAA1111", p.slots);
               new If (Index.eq(0)) {void Then() {mergeLeftLeft  (p, d.slot);}};                                         // Various merges possible on either side of the path
-say("AAAA2222", p.slots);
-              new If (Index.eq(0)) {void Then() {mergeRightRight(p, d.slot);}};
-say("AAAA3333", p.slots);
-              new If (Index.eq(0)) {void Then() {mergeLeft      (p, d.slot);}};
-say("AAAA4444", p.slots);
-              new If (Index.eq(0)) {void Then() {mergeRight     (p, d.slot);}};
-say("AAAA5555", p.slots);
-             }
-//           };
+final Branch.StepDown d1 = p.stepDown(key);
+if (d1.slot != d.slot) stop(Index, d, d1, p);
+              new If (Index.eq(1)) {void Then() {mergeRightRight(p, d.slot);}};
+final Branch.StepDown d2 = p.stepDown(key);
+if (d1.slot != d.slot) stop(Index, d, d2, p);
+              new If (Index.eq(2)) {void Then() {mergeLeft      (p, d.slot);}};
+final Branch.StepDown d3 = p.stepDown(key);
+if (d1.slot != d.slot) stop(Index, d, d3, p);
+              new If (Index.eq(3)) {void Then() {mergeRight     (p, d.slot);}};
+final Branch.StepDown d4 = p.stepDown(key);
+if (d1.slot != d.slot) stop(Index, d, d4, p);
+//             }
+           };
          }
        };
 
