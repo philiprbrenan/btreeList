@@ -1704,7 +1704,7 @@ Leaf   at:   2 size:  4, count:  4
          };
        }
      };
-
+say("AAAA", t.codeSize());
     t.Check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :  157
