@@ -1695,6 +1695,57 @@ Leaf   at:   2 size:  4, count:  4
               test_deleteRandom32(false);
    }
 
+  static void test_update(boolean Ex)
+   {sayTest();
+    final int N = 32 ;
+say("BBBB1111");
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
+say("BBBB2222");
+    t.new I() {void action() {say("AAAA1111"); }};
+say("BBBB3333");
+    t.insert(t.new Int(1), t.new Int(11));
+say("BBBB4444");
+    t.new I() {void action() {say("AAAA2222"); }};
+say("BBBB5555");
+//    t.insert(t.new Int(1), t.new Int(11));
+//    t.new I() {void action() {say("AAAA3333"); }};
+/*    t.new ForCount(t.new Int(2))
+     {void body(Int I)
+       {t.new I() {void action() {say("BBBB", I); }};
+        t.new ForCount(t.new Int(2))
+         {void body(Int J)
+           {//t.insert(J, I);
+t.new I() {void action() {say("CCCC", I, J); }};
+           }
+         };
+       }
+     };
+
+    ok(t.dumpTree(), """
+Tree memory dump
+Leaf   size   :  157
+Branch size   :  125
+Node   size   :  157
+MaxLeafSize   :    4
+MaxBranchSize :    3
+NumberOfNodes :    4
+Allocations   :    1
+Number of Keys:    2
+Leaf           size:  4, count:  2
+ Ref   Key  Data
+   0     0     0
+   1     1     1
+""");
+*/
+    t.maxSteps = 999_999;
+    t.execute();
+   }
+
+  static void test_update()
+   { //       test_update(true);
+              test_update(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_tree();
     test_saveReload();
@@ -1705,11 +1756,12 @@ Leaf   at:   2 size:  4, count:  4
     test_deleteAscending();
     test_deleteDescending();
     test_deleteRandom32();
+    test_update();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending();
+    test_update();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
