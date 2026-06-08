@@ -1077,7 +1077,8 @@ class Slots extends Program                                                     
 //D2 Slots                                                                                                              // Test the slots
 
   static void test_slots(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
                                                                 empty().ok(true);  usedSlotsToKeys.full().ok(false);
@@ -1143,7 +1144,8 @@ keys     :    0  11   0  22   0   0   0   0
    }
 
   static void test_locateNearestFreeSlotToKey(boolean Ex)
-   {final Slots s = new Slots(16)
+   {sayCurrentTestName();
+    final Slots s = new Slots(16)
      {void slotsCode()
        {initializeMemory();
         setSlots(2, 4, 5, 6, 9, 10, 12);
@@ -1186,7 +1188,8 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
    }
 
   static void test_alloc(boolean Ex)
-   {final Slots s = new Slots(4)
+   {sayCurrentTestName();
+    final Slots s = new Slots(4)
      {void slotsCode()
        {initializeMemory();
         putKey(new Int(2),  new Int(1)); countInc();
@@ -1227,7 +1230,8 @@ keys     :    2   3   1   4
    }
 
   static void test_set_del_slot_key(boolean Ex)
-   {final Slots s = new Slots(4)
+   {sayCurrentTestName();
+    final Slots s = new Slots(4)
      {void slotsCode()
        {initializeMemory();
         setSlotAndKey(new Int(3),  new Int(2),  new Int(1)); countInc();
@@ -1267,7 +1271,8 @@ keys     :    0   0   0   2
    }
 
   static void test_compact(boolean Ex)
-   {final Slots s = new Slots(4)
+   {sayCurrentTestName();
+    final Slots s = new Slots(4)
      {void slotsCode()
        {initializeMemory();
         setSlotAndKey(new Int(2),  new Int(1),  new Int(1)); countInc();
@@ -1377,7 +1382,8 @@ keys     :    0   0   1   2
    }
 
   static void test_redistribute(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         maxSteps = 99_999;
@@ -1422,7 +1428,8 @@ keys     :    7   1   3   2   4   5   6   0
    }
 
   static void test_shift(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         maxSteps = 99_999;
@@ -1496,7 +1503,8 @@ keys     :    7   1   3   2   4   5   6   0
    }
 
   static void test_mergeFromRightEven(boolean Ex)
-   {final int N = 4;
+   {sayCurrentTestName();
+    final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -1543,7 +1551,8 @@ keys     :    0   0   4   3
    }
 
   static void test_mergeFromLeftEven(boolean Ex)
-   {final int N = 4;
+   {sayCurrentTestName();
+    final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -1590,7 +1599,8 @@ keys     :    2   1   4   3
    }
 
   static void test_mergeFromRightOdd(boolean Ex)
-   {final int N = 5;
+   {sayCurrentTestName();
+    final int N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -1660,7 +1670,8 @@ keys     :    0   0   0   5   4
    }
 
   static void test_mergeFromLeftOdd(boolean Ex)
-   {final int   N = 5;
+   {sayCurrentTestName();
+    final int   N = 5;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -1719,7 +1730,8 @@ keys     :    1   2   3   5   4
    }
 
   static void test_find(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         putSlotToKeys(new Int( 0), new Int(1));
@@ -1785,7 +1797,8 @@ Zero:
    }
 
   static void test_findRight(boolean Ex)                                                                                          // Same as find but with the slots on the right
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         putSlotToKeys(new Int( 9), new Int(1));
@@ -1850,7 +1863,8 @@ Zero:
    }
 
   static void test_insert(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {final Slots s = this;
         final StringBuilder t = new StringBuilder();
@@ -1933,7 +1947,8 @@ keys     :   14  13  16  15  18  17  12  11
    }
 
   static void test_insert2(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         insert(new Int(11));
@@ -1967,7 +1982,8 @@ keys     :   11  12  13  15  16  17  18  14
    }
 
   static void test_findGe(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         insert(new Int(11));
@@ -2037,7 +2053,8 @@ Zero:
    }
 
   static void test_splitRightEven(boolean Ex)
-   {final int N = 8;
+   {sayCurrentTestName();
+    final int N = 8;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -2095,7 +2112,8 @@ keys     :    0   0   0  15  16  17  18   0
    }
 
   static void test_splitLeftEven(boolean Ex)
-   {final int N = 8;
+   {sayCurrentTestName();
+    final int N = 8;
     final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -2153,7 +2171,8 @@ keys     :    0   0   0  15  16  17  18   0
    }
 
   static void test_splitRightOdd(boolean Ex)
-   {final int N = 7;
+   {sayCurrentTestName();
+    final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -2210,7 +2229,8 @@ keys     :    0   0   0  15  16  17   0
    }
 
   static void test_splitLeftOdd(boolean Ex)
-   {final int N = 7;
+   {sayCurrentTestName();
+    final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -2267,7 +2287,8 @@ keys     :    0   0   0  15  16  17  14
    }
 
   static void test_clear(boolean Ex)
-   {final int N = 7;
+   {sayCurrentTestName();
+    final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
@@ -2312,7 +2333,8 @@ keys     :    0   0   0   0   0   0   0
    }
 
   static void test_stuck(boolean Ex)
-   {final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+   {sayCurrentTestName();
+    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         stuckPush(new Int(11));
@@ -2341,7 +2363,8 @@ keys     :    0   0   0   0   0   0   0
    }
 
   static void test_insertKnown(boolean Ex)
-   {final int N = 7;
+   {sayCurrentTestName();
+    final int N = 7;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots s = this;
@@ -2381,7 +2404,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void test_delete(boolean Ex)
-   {final int N = 4;
+   {sayCurrentTestName();
+    final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots s = this;
