@@ -3,9 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Reduce the number of calls to stepDown in mergeUp
-// Make freechain part of the memory for a tree so that it can be written and reloaded along with the rest of the memory
-// Count entries
-// Check that updates are being performed
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1697,7 +1694,6 @@ Leaf   at:   2 size:  4, count:  4
 
   static void test_update(boolean Ex)
    {sayCurrentTestName();
-    final int N = 32 ;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
     t.new ForCount(t.new Int(2))
      {void body(Int I)
@@ -1730,20 +1726,20 @@ Leaf           size:  4, count:  2
    }
 
   static void test_update()
-   { //       test_update(true);
+   {          test_update(true);
               test_update(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {//test_tree();
-    //test_saveReload();
-    //test_insert();
-    //test_insertMerged();
-    //test_insertReverse();
-    //test_insertRandom32();
-    //test_deleteAscending();
-    //test_deleteDescending();
-    //test_deleteRandom32();
+   {test_tree();
+    test_saveReload();
+    test_insert();
+    test_insertMerged();
+    test_insertReverse();
+    test_insertRandom32();
+    test_deleteAscending();
+    test_deleteDescending();
+    test_deleteRandom32();
     test_update();
    }
 
