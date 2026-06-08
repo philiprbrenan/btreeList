@@ -1232,8 +1232,7 @@ Leaf   at:   2 size:  4, count:  4
    }
 
   static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
-   {sayTest(Ex);
-    final int N = 32 ;
+   {final int N = 32 ;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
      {t.new I() {void action() {t.byteMemory.reload(tree32); }};
      }
