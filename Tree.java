@@ -45,6 +45,7 @@ class Tree extends Program                                                      
      Leaf  .Build       leaf;
      int bytesNeededForNodes;                                                                                           // Bytes needed for all the nodes
      int bytesNeededForFree;                                                                                            // Bytes needed for free chain
+     MemoryPositions memoryPositions;                                                                                   // Layout of memory
 
      Build immediate    (boolean Immediate    ) {immediate     = Immediate;     return this;}
      Build trace        (boolean Trace        ) {trace         = Trace;         return this;}
@@ -63,11 +64,22 @@ class Tree extends Program                                                      
       nodeSize              = max(branchSize, leafSize);
       bytesNeededForNodes   = numberOfNodes * nodeSize;
       bytesNeededForFree    = freeChain.byteSize();
-      p.memory   (bytesNeededForNodes);
+      memoryPositions       = new MemoryPositions();
+
+      p.memory   (size());
       p.immediate(immediate);
       p.trace    (trace);
       return p;
      }
+
+    class MemoryPositions                                                                                               // Layout of memory
+     {final int posNodes     = 0;                                                                                       // A tree consists of nodes: leaves and branches. This field tells us which one we have
+      final int posFreeChain = posNodes     + bytesNeededForNodes;
+      final int posCount     = posFreeChain + bytesNeededForFree;
+      final int size         = posCount     + ib();
+     }
+
+    int size()      {return memoryPositions.size;}                                                                      // Bytes needed for the slots
    }
 
   Tree(Build Build)                                                                                                     // Create the tree
@@ -92,7 +104,12 @@ class Tree extends Program                                                      
     build      = Build;
     sizeOfNode = build.nodeSize;
 
-    freeChain  = new BitSet(build.freeChain.parent(this));                                                              // Memory for free chain
+    final ByteMemory.Ref byteMemoryRef = byteMemory.new Ref(0);                                                         // Memory used by tree
+    refNodes      = byteMemoryRef.step(build.memoryPositions.posNodes);                                                 // Memory for nodes
+    refFreeChain  = byteMemoryRef.step(build.memoryPositions.posFreeChain);                                             // Memory for free chain
+    refCount      = byteMemoryRef.step(build.memoryPositions.posCount);                                                 // Memory for key count
+
+    freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
    }
@@ -182,6 +199,16 @@ class Tree extends Program                                                      
    }
 
   Branch branch() {return makeBranch(allocate());}                                                                      // Create and initialize a branch in memory and return its index
+
+  void countInc  ()                                                                                                     // Increment the key count
+   {final Int C = refCount.getInt();                                                                                    // Computed number of keys
+    refCount.putInt(C.inc());                                                                                           // Increment the count
+   }
+  void countDec  ()                                                                                                     // Decrement the key count
+   {final Int C = refCount.getInt();                                                                                    // Computed number of keys
+    if (immediate() && C.le(0).b()) stop("Key count would go negative");                                                // Check it will not go negative
+    refCount.putInt(C.dec());                                                                                           // Decrement the count
+   }
 
   StringBuilder dumpTree()                                                                                              // Dump the tree
    {final StringBuilder s = new StringBuilder();
@@ -443,6 +470,7 @@ class Tree extends Program                                                      
                {R.insert(Key, Data);                                                                                    // Insert in non full leaf that does not contain the key
                }
              };
+            countInc();                                                                                                 // Count inserted key
            }
          };
        }
@@ -464,6 +492,7 @@ class Tree extends Program                                                      
                {l.insert(Key, Data);                                                                                    // Insert into non full leaf
                }
              };
+            countInc();                                                                                                 // Count inserted key
            }
          };
        }
@@ -473,6 +502,7 @@ class Tree extends Program                                                      
   private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full and the key does not exist in the leaf
    {final Path p = path(Key);                                                                                           // Path from root to full leaf
     p.splitPoint();                                                                                                     // The lowest branch in the tree that is full and has a non full parent
+say("BBBB", p);
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
     final Int    L = p.step.Dec();                                                                                      // Last step along path
     final Branch P = branch(p.path.getInt(L));                                                                          // Parent branch of full leaf
@@ -511,6 +541,7 @@ class Tree extends Program                                                      
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(R.data(R.slots.getSlotToKeyValue(f.slot)));                                                        // Data associated with key
             R.slots.delSlotAndKey(f.slot);                                                                              // Remove key from leaf comprising tree
+            countDec();                                                                                                 // Count deleted key
            }
          };
        }
@@ -523,6 +554,7 @@ class Tree extends Program                                                      
            {data.set(l.data(l.slots.getSlotToKeyValue(f.slot)));                                                        // Data associated with key
             l.slots.delSlotAndKey(f.slot);                                                                              // Remove key from leaf in tree tree
             p.mergeUp();                                                                                                // Merge leaf and nodes above
+            countDec();                                                                                                 // Count deleted key
            }
          };
        }
@@ -540,6 +572,7 @@ class Tree extends Program                                                      
     final Branch l = branch();                                                                                          // New left branch
     final Branch r = branch();                                                                                          // New right branch
     l.copy(R);                                                                                                          // Copy the root into the left branch
+say("AAAA", l);
     final Int sk = l.splitRight(r);                                                                                     // Splitting key
     R.clear();                                                                                                          // Clear the root
     makeBranch(R.getLocation());                                                                                        // Mark the root as a branch
@@ -1015,22 +1048,22 @@ class Tree extends Program                                                      
 
     t.Check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   79
-Branch size   :  121
-Node   size   :  121
+Leaf   size   :   83
+Branch size   :  125
+Node   size   :  125
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
-Leaf           size:   2
+Leaf           size:  2, count:  2
  Ref   Key  Data
    1     1    11
    0     2    22
-Leaf   at:   1 size:   2
+Leaf   at:   1 size:  2, count:  2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at:   2 size:   3 top:   0
+Branch at:   2 size:   3 count:   2 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1040,18 +1073,18 @@ Branch at:   2 size:   3 top:   0
     t.free(A); t.isAllocated(a.at).ok(false);
     t.Check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   79
-Branch size   :  121
-Node   size   :  121
+Leaf   size   :   83
+Branch size   :  125
+Node   size   :  125
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    2
-Leaf   at:   1 size:   2
+Leaf   at:   1 size:  2, count:  2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at:   2 size:   3 top:   0
+Branch at:   2 size:   3 count:   2 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1060,14 +1093,14 @@ Branch at:   2 size:   3 top:   0
     t.free(b); t.isAllocated(b.at).ok(false);
     t.Check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   79
-Branch size   :  121
-Node   size   :  121
+Leaf   size   :   83
+Branch size   :  125
+Node   size   :  125
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
-Branch at:   2 size:   3 top:   0
+Branch at:   2 size:   3 count:   2 top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1098,8 +1131,7 @@ Allocations   :    0
   static void test_saveReload(boolean Ex)
    {final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
     if (true)
-     {t.new I() {void action() {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAGAAAACQAAAAwAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi9X8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFMHAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAGAAAACQAAAAwAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAABAAAABgAAAAcAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAADi/XsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH8EBQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); }};
-      t.new I() {void action() {t.freeChain.byteMemory.reload("6AM="); }};
+     {t.new I() {void action() {t.byteMemory.reload("AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjSfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANEHAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAEAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAEAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIvV/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTBwEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAEAAAAGAAAABwAAAAEAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAOL9ewAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfwQFAAAABgAAAAMAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgDAAAAAA==");}};
      }
     else
      {t.new ForCount(t.new Int(1), t.new Int(7))
@@ -1109,26 +1141,25 @@ Allocations   :    0
        };
 
       t.new I() {void action() {say("Dump tree\n",  t.byteMemory.save());}};
-      t.new I() {void action() {say("Dump chain\n", t.freeChain.byteMemory.save());}};
      }
 
     t.Check (t.dumpTree(), """
 Tree memory dump
-Leaf   size   :  153
-Branch size   :  121
-Node   size   :  153
+Leaf   size   :  157
+Branch size   :  125
+Node   size   :  157
 MaxLeafSize   :    4
 MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
-Branch         size:   3 top:   2
+Branch         size:   3 count:   1 top:   2
  Ref   Key  Data
    0     2     1
-Leaf   at:   1 size:   4
+Leaf   at:   1 size:  4, count:  2
  Ref   Key  Data
    0     1    12
    1     2    24
-Leaf   at:   2 size:   4
+Leaf   at:   2 size:  4, count:  4
  Ref   Key  Data
    2     3    36
    3     4    48
@@ -1676,7 +1707,7 @@ Leaf   at:   2 size:   4
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending();
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
