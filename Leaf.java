@@ -126,14 +126,6 @@ class Leaf extends Program implements Program.Locatable                         
     return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
 
-  Int insertEmpty22(Int Key, Int Data)                                                                                    // Insert a key data pair into a leaf known to be empty
-   {if (immediate() && !slots.empty().b()) stop("Leaf must be empty, but it is not");                                   // Check that the leaf is empty
-    final Int r = new Int();                                                                                            // The slot containing the inserted key
-    r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
-    refData.putInt(new Int(0), Data);                                                                                   // Place data in first key slot
-    return r;                                                                                                           // Return the slot in the leaf in which the key, data pair was actually inserted
-   }
-
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge leaves
 //D2 Compact                                                                                                            // Compact a leaf to the left or right
 
