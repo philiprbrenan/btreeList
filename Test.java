@@ -410,10 +410,7 @@ public class Test                                                               
     return d;
    }
 
-  static void sayCurrentTestName()                                                                                      // Name of the current test
-   {say(String.format("%2d %8.2f", ++currentTestNumber, elapsedTime()),
-      currentTestName(), positionInTest());
-   }
+  static void sayCurrentTestName() {say(f("%2d %8.2f", ++currentTestNumber, elapsedTime()), currentTestName());}        // Name of the current test
 
   static String testLine()                                                                                              // Locate line associated with the current test
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
