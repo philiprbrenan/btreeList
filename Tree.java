@@ -1235,12 +1235,11 @@ Leaf   at:   2 size:  4, count:  4
    {sayCurrentTestName();
     final int N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-    t.new ForCount(t.new Int(1), t.new Int(N))
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
      {void body(Int Index)
        {t.insert(Index, Index);
        }
      };
-    t.insert(t.new Int(N), t.new Int(N));
     //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
 
@@ -1738,7 +1737,8 @@ Leaf           size:  4, count:  2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_tree();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
