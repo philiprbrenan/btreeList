@@ -914,7 +914,8 @@ public class Program extends Test                                               
   void execute()                                                                                                        // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
     if (tracing()) deleteFile(tracing);
-    if (code.size() == 0) stop("No code to execute"); else say("            Code size: ", codeSize());
+
+    if (code.size() == 0) stop("No code to execute"); else say(f("            Code size: %,d", codeSize()));
     pc = 0;
     int c, N;
     for(c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                                 // Execute each instruction within a specified number of steps
