@@ -1768,8 +1768,8 @@ Leaf           size:  4, count:  2
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
-      testSummary();                                                                                                    // Summarize test results
       say(subPrint());
+      testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
