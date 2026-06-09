@@ -633,33 +633,30 @@ class Tree extends Program                                                      
     return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bool mergeLeft(Branch Parent, Int Pos)                                                                                // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
-   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
-    final Branch P = Parent;                                                                                            // Parent containing siblings
+// Code size: 809470
 
+  Bool mergeLeft(Branch Parent, Int Pos)                                                                                // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
+    final Branch P = Parent;                                                                                            // Parent containing siblings
+    final Int    L  = new Int();                                                                                         // Left child
     new If (Pos.notValid())                                                                                             // Merging relative to top
      {void Then()
-       {new If (P.slots.usedSlotsToKeys.empty().Flip())                                                                 // Branch has at least one child reference in its body
-         {void Then()
-           {final Int L = P.slots.usedSlotsToKeys.lastOne();                                                            // Last child in body of parent to be merged into top
-            m.set(mergeLeftIntoRightSibling(Parent, L));                                                                // Merge left sibling into right sibling
-           }
-         };
+       {L.copy(P.slots.usedSlotsToKeys.lastOne());                                                                      // Last child in body of parent to be merged into top
        }
       void Else()                                                                                                       // Merge entirely within body of parent
-       {final Int L = P.slots.usedSlotsToKeys.prevOne(Pos);                                                             // Left of left of position
-        new If (L.valid())                                                                                              // Left of left of position is valid so we can merge
-         {void Then()
-           {m.set(mergeLeftIntoRightSibling(Parent, L));                                                                // Merge left sibling into right sibling
-           }
-         };
+       {L.copy(P.slots.usedSlotsToKeys.prevOne(Pos));                                                                   // Left of left of position
+       }
+     };
+    new If (L.valid())                                                                                                  // Left of left of position is valid so we can merge
+     {void Then()
+       {m.set(mergeLeftIntoRightSibling(Parent, L));                                                                    // Merge left sibling into right sibling
        }
      };
     return m;                                                                                                           // Whether the merge was performed or not
    }
 
   Bool mergeLeftLeft(Branch Parent, Int Pos)                                                                            // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
-   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
 
     new If (Pos.notValid())                                                                                             // Merging relative to top
@@ -696,7 +693,7 @@ class Tree extends Program                                                      
 //D3 Merge Right                                                                                                        // Merge single and double right
 
   Bool mergeRight(Branch Parent, Int Pos)                                                                               // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
-   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
     new If (Pos.valid())                                                                                                // Not on top
      {void Then()
@@ -707,7 +704,7 @@ class Tree extends Program                                                      
    }
 
   Bool mergeRightRight(Branch Parent, Int Pos)                                                                          // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
-   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+   {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
 
     new If (Pos.valid())                                                                                                // Not on top
@@ -1738,7 +1735,7 @@ Leaf           size:  4, count:  2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_tree();
+    test_insertMerged(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
