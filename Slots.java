@@ -1312,7 +1312,7 @@ keys     :    0   1   0   2
 """);
 
         final StringBuilder T = new StringBuilder();
-        compactKeysLeft((S, b, a)->{T.append(a.i()+"->"+b.i()+";");});
+        compactKeysLeft((S, b, a)->{new I() {void action() {T.append(a.i()+"->"+b.i()+";");}};});
         //new I() {void action() {testStop(T, s);}};
         ok(()->T, "3->0;");
         ok(()->s, """
@@ -1326,7 +1326,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder U = new StringBuilder();
-        compactKeysRight((S, b, a)->{U.append(a.i()+"->"+b.i()+";");});
+        compactKeysRight((S, b, a)->{new I() {void action() {U.append(a.i()+"->"+b.i()+";");}};});
         //new I() {void action() {testStop(U, s);}};
         ok(()->U, "0->3;1->2;");
         ok(()->s, """
@@ -1340,7 +1340,7 @@ keys     :    0   0   1   2
 """);
 
         final StringBuilder W = new StringBuilder();
-        compactKeysLeft ((S, b, a)->{W.append(a.i()+"->"+b.i()+";");});
+        compactKeysLeft ((S, b, a)->{new I() {void action() {W.append(a.i()+"->"+b.i()+";");}};});
         compactSlotsLeft();
         //new I() {void action() {testStop(W, s);}};
         ok(()->W, "3->0;2->1;");
@@ -1355,7 +1355,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder X = new StringBuilder();
-        compactKeysRight ((S, b, a)->{X.append(a.i()+"->"+b.i()+";");});
+        compactKeysRight ((S, b, a)->{new I() {void action() {X.append(a.i()+"->"+b.i()+";");}};});
         compactSlotsRight();
         //new I() {void action() {testStop(X, s);}};
         ok(()->X, "0->3;1->2;");
@@ -1368,7 +1368,7 @@ usedSlots:    .   .   .   .   .   .   X   X
 usedKeys :    .   .   X   X
 keys     :    0   0   1   2
 """);
-
+        maxSteps = 999_999;
         execute();
        }
      };
@@ -2477,7 +2477,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_compact(false);
+    test_splitRightEven(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
