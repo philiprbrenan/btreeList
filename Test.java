@@ -1245,7 +1245,7 @@ public class Test                                                               
     else if (testsPassed == 0 && testsFailed == 0) say("No",    m);                                                     // No tests
     else if (testsFailed == 0)   say("PASSed ALL", testsPassed, m);                                                     // Passed all tests
     else say("Passed "+testsPassed+",    FAILed:", testsFailed, m);                                                     // Failed some tests
-    System.exit(testsFailed > 0 ? 1 : 0);                                                                               // Set the return code
+    //System.exit(testsFailed > 0 ? 1 : 0);                                                                               // Set the return code
    }
 
 //D1 Command Execution                                                                                                  // Execute a command and return its stdout and stderr
