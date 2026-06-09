@@ -98,8 +98,6 @@ class Slots extends Program                                                     
 
   void slotsCode() {}                                                                                                   // Override this method to provide code for testing the slots
 
-  Slots(int NumberOfKeys) {this(new Build().numberOfKeys(NumberOfKeys)); initializeMemory();}                           // Create the slots in local memory for testing
-
 //D2 Internal                                                                                                           // Low level internal operations on slots
 
   void putSlotToKeys(Int Index, Int Key)                                                                                // Set a slot to key reference and the corresponding back reference
@@ -1145,7 +1143,7 @@ keys     :    0  11   0  22   0   0   0   0
 
   static void test_locateNearestFreeSlotToKey(boolean Ex)
    {sayCurrentTestName();
-    final Slots s = new Slots(16)
+    final Slots s = new Slots(new Build().numberOfKeys(16).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         setSlots(2, 4, 5, 6, 9, 10, 12);
@@ -1189,7 +1187,7 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 
   static void test_alloc(boolean Ex)
    {sayCurrentTestName();
-    final Slots s = new Slots(4)
+    final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         putKey(new Int(2),  new Int(1)); countInc();
@@ -1231,7 +1229,7 @@ keys     :    2   3   1   4
 
   static void test_set_del_slot_key(boolean Ex)
    {sayCurrentTestName();
-    final Slots s = new Slots(4)
+    final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         setSlotAndKey(new Int(3),  new Int(2),  new Int(1)); countInc();
@@ -1272,7 +1270,7 @@ keys     :    0   0   0   2
 
   static void test_compact(boolean Ex)
    {sayCurrentTestName();
-    final Slots s = new Slots(4)
+    final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
      {void slotsCode()
        {initializeMemory();
         setSlotAndKey(new Int(2),  new Int(1),  new Int(1)); countInc();
@@ -2478,7 +2476,8 @@ keys     :    0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_compact(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
