@@ -25,6 +25,8 @@ public class Program extends Test                                               
   final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Number the programs
   final StringBuilder     out = new StringBuilder();                                                                    // Text output area
+  final static Stack<String> subs = new Stack<>();                                                                      // Name of the current method is cached here so that we can count instructions
+  final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
 
   static class Build                                                                                                    // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -887,11 +889,12 @@ public class Program extends Test                                               
    {final int instructionNumber;                                                                                        // The number of this instruction
     final boolean   mightJump;                                                                                          // The instruction might cause a jump
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
-    final String traceComment = ""; //tracing() ? traceComment() : null;                                                      // Line at which this instruction was created as a comment
+    final String traceComment = ""; //tracing() ? traceComment() : null;                                                // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
      {ai();
       instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sens in delayed execution mode
+      subInc();                                                                                                         // Count the number of instructions associated with each method
       mightJump = MightJump;
       if (immediate()) {parentProgram.executing = this; action(); parentProgram.executing = null;}                      // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
@@ -915,7 +918,7 @@ public class Program extends Test                                               
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
     if (tracing()) deleteFile(tracing);
 
-    if (code.size() == 0) stop("No code to execute"); else say(f("            Code size: %,d", codeSize()));
+    if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,d", codeSize()));
     pc = 0;
     int c, N;
     for(c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                                 // Execute each instruction within a specified number of steps
@@ -951,6 +954,36 @@ public class Program extends Test                                               
        {if (!ok(a.get(), b)) say("====\n", traceBack);
        }
      };
+   }
+
+//D2 Instruction counts                                                                                                 // Count the number of instructions in each subroutine minus the instructions supplied by called subroutines
+
+  static void subStart(String Name)
+   {subs.push(Name);
+    if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, 0);                                           // Initialize instruction count for this subroutine
+   }
+
+  static void subInc()                                                                                                  // Increment the number of instructions associated with a method
+   {if (subs.size() > 0)
+     {final String n = subs.lastElement();
+      instructionCounts.put(n, instructionCounts.get(n) + 1);
+     }
+   }
+
+  static void subFinish()                                                                                               // Finish a subroutine definition
+   {if (subs.size() == 0) stop("No matching subStart()");
+    subs.pop();
+   }
+
+  static String subPrint()                                                                                              // Print instruction counts
+   {final StringBuilder s = new StringBuilder();
+    int N = 0;
+    for (Map.Entry<String, Integer> e : instructionCounts.entrySet())
+     {s.append(f("%,8d  %s\n", e.getValue(), e.getKey()));
+      N += e.getValue();
+     }
+    s.append(f("%,8d  Total\n", N));
+    return ""+s;
    }
 
 //D1 Testing                                                                                                            // Test expected output against got output
