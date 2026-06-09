@@ -27,6 +27,7 @@ public class Program extends Test                                               
   final StringBuilder     out = new StringBuilder();                                                                    // Text output area
   final static Stack<String> subs = new Stack<>();                                                                      // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
+  //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
   static class Build                                                                                                    // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -209,11 +210,104 @@ public class Program extends Test                                               
     return Set;
    }
 
+//D2 Procedure                                                                                                          // Procedure with parameters and return value
+
+  abstract class Procedure                                                                                              // Procedure
+   {final Label       start = new Label(), end = new Label();                                                           // The location of the start and end of the procedure
+    final Int returnAddress = new Int();                                                                                // the address to be returned to after the subroutine has been called
+    final TreeSet<String>       parameters = new TreeSet<>();                                                           // Parameter names  must be unique over input or output, integer or boolean
+    final TreeMap<String, Int>   inputInt  = new TreeMap<>();                                                           // Input integer parameters
+    final TreeMap<String, Bool>  inputBool = new TreeMap<>();                                                           // Input boolean parameters
+    final TreeMap<String, Int>  outputInt  = new TreeMap<>();                                                           // Output integer parameters
+    final TreeMap<String, Bool> outputBool = new TreeMap<>();                                                           // Output boolean parameters
+
+    Procedure input(Data Data)                                                                                          // Add an input parameter
+     {final TreeSet<String>       P = parameters;
+      final TreeMap<String, Int>  I = inputInt;
+      final TreeMap<String, Bool> B = inputBool;
+      switch (Data)
+       {case Bool b ->
+         {if (b.name == null)     stop("No name supplied for input boolean parameter");
+          if (P.contains(b.name)) stop("Input parameter has already been defined:", b.name);
+          P.add(b.name); B.put(b.name, b);
+         }
+        case Int i ->
+         {if (i.name == null)     stop("No name supplied for integer parameter");
+          if (P.contains(i.name)) stop("Input parameter has already been defined:", i.name);
+          P.add(i.name); I.put(i.name, i);
+         }
+       }
+      return this;
+     }
+
+    Procedure output(Data Data)                                                                                         // Add an output parameter
+     {final TreeSet<String>       P = parameters;
+      final TreeMap<String, Int>  I = outputInt;
+      final TreeMap<String, Bool> B = outputBool;
+      switch (Data)
+       {case Bool b ->
+         {if (b.name == null)     stop("No name supplied for output boolean parameter");
+          if (P.contains(b.name)) stop("Output parameter has already been defined:", b.name);
+          P.add(b.name); B.put(b.name, b);
+         }
+        case Int i ->
+         {if (i.name == null)     stop("No name supplied for integer parameter");
+          if (P.contains(i.name)) stop("Output parameter has already been defined:", i.name);
+          P.add(i.name); I.put(i.name, i);
+         }
+       }
+      return this;
+     }
+
+    Procedure()                                                                                                         // Define the procedure in terms of its parameters
+     {if (immediate()) {}                                                                                               // In immediate mode the body is called as needed
+      else                                                                                                              // In non immediate mode the body is saved and then recalled
+       {Goto(end);                                                                                                      // Jump over the code of the subroutine when it is being defined
+        start.set();                                                                                                    // Start of subroutine code
+        body();                                                                                                         // Code of subroutine
+        Goto(returnAddress);                                                                                            // Address at at which to resume execution after the subroutine call
+        end.set();
+       }
+     }
+
+    Procedure call()                                                                                                    // Call the procedure.  Set the input parameters as needed.
+     {if (immediate()) {body();}                                                                                        // In immediate mode the body is executed as needed
+      else                                                                                                              // In non immediate mode the body is saved and then recalled
+       {new I() {void action() {returnAddress.ex(Int.Ops.set, pc+1);}};                                                                                          // Address of next instruction at which execution will resume after the call
+        Goto(start);
+       }
+      return this;
+     }
+
+    abstract void body();                                                                                               // Body of procedure
+
+    public String toString()                                                                                            // Print the procedure parameters
+     {final StringBuilder s = new StringBuilder();
+      s.append("Input  integers:");
+      for(String n: inputInt .keySet()) s.append(" "+n);
+      s.append("\nOutput integers:");
+      for(String n: outputInt.keySet()) s.append(" "+n);
+      return "\n"+s;
+     }
+
+    void cii(String Name) {new I() {void action() {if (! inputInt.containsKey(Name)) stop("No "+  "input integer parameter called:", Name, ""+Procedure.this);}};}              // Input integer
+    void cio(String Name) {new I() {void action() {if (!outputInt.containsKey(Name)) stop("No "+ "output integer parameter called:", Name, ""+Procedure.this);}};}              // Output integer
+
+    Int       getInt(String Name)        {cii(Name); final Int a = new Int(); new I() {void action() {                  a.ex(Int.Ops.set, inputInt.get(Name));}}; return a;   } // Get an input  integer parameter inside the procedure
+    Procedure putInt(String Name, Int I) {cio(Name);                          new I() {void action() {outputInt.get(Name).ex(Int.Ops.set,  I);}};                 return this;} // Put an output integer parameter inside the procedure
+
+    Procedure in(String Name, int I) {cii(Name); inputInt.get(Name).set(I); return this;}                               // Set an input  integer parameter by name to an integer constant before calling the procedure
+    Procedure in(String Name, Int I) {cii(Name); inputInt.get(Name).set(I); return this;}                               // Set an input  integer parameter by name to an integer variable before calling the procedure
+    Int   outInt(String Name)        {cio(Name); return outputInt.get(Name);}                                           // Get an output integer parameter after calling a procedure
+   }
+
 //D1 Data                                                                                                               // Operations on boolean and integer data
+
+  public sealed interface Data permits Bool, Int {}                                                                     // Known types of data
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  class Bool                                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
+  final class Bool implements Data                                                                                      // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = parentProgram.nextBoolId++;                                                                          // Unique id for Bool
@@ -428,7 +522,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  class Int                                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
+  final class Int implements Data                                                                                       // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
@@ -937,9 +1031,10 @@ public class Program extends Test                                               
     if (c >= maxSteps) stop("Out of steps after step:", c);
    }
 
-  void Goto(Label Target) {parentProgram.pc = Target.offset;}                                                           // Goto a label unconditionally
-  void Goto(Label Target, Bool If) {if ( If.b()) parentProgram.pc = Target.offset;}                                     // Goto a label conditionally
-  void Noto(Label Target, Bool If) {if (!If.b()) parentProgram.pc = Target.offset;}                                     // Goto a label not unconditionally
+  void Goto(Label Target)                                           {new I() {void action() {parentProgram.pc = Target.offset;}};}       // Goto a label unconditionally
+  void Goto(Label Target, Bool If) {new If (If.b())    {void Then() {new I() {void action() {parentProgram.pc = Target.offset;}};}};}    // Goto a label if the condition is true
+  void Noto(Label Target, Bool If) {new If (If.Flip()) {void Then() {new I() {void action() {parentProgram.pc = Target.offset;}};}};}    // Goto a label if the condition is false
+  void Goto(Int   Target)                                           {new I() {void action() {parentProgram.pc = Target.i()   ;}};}       // Goto a saved address
 
   void variableNotSet(String Type, String Name)                                                                         // Variable not yet set message
    {final I i = parentProgram.executing;
@@ -1412,6 +1507,32 @@ public class Program extends Test                                               
               test_invalidate(false);
    }
 
+  static void test_call(boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).memory(16))
+     {void code()
+       {final Procedure d = new Procedure()
+         {void body()
+           {final Int a = getInt("a");
+            putInt("b", a.Up());
+           }
+         }.input(new Int("a")).output(new Int("b"));
+
+        d.in("a", 5);
+        d.call();
+        d.outInt("b").ok(10);
+
+        maxSteps = 24;
+        execute();
+       }
+     };
+   }
+
+  static void test_call()
+   {          test_call(true);
+              test_call(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
@@ -1427,10 +1548,12 @@ public class Program extends Test                                               
     test_byteMemoryNegative();
     test_byteMemoryRef();
     test_invalidate();
+    test_call();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_call();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
