@@ -978,8 +978,11 @@ public class Program extends Test                                               
   static String subPrint()                                                                                              // Print instruction counts
    {final StringBuilder s = new StringBuilder();
     int N = 0;
-    for (Map.Entry<String, Integer> e : instructionCounts.entrySet())
-     {s.append(f("%,8d  %s\n", e.getValue(), e.getKey()));
+    final List<Map.Entry<String, Integer>> sorted = instructionCounts.entrySet().stream()
+                                                   .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                                                   .toList();
+    for (Map.Entry<String, Integer> e : sorted)
+     {s.append(f("%,12d  %s\n", e.getValue(), e.getKey()));
       N += e.getValue();
      }
     s.append(f("%,8d  Total\n", N));
