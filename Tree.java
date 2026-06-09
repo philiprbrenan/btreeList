@@ -201,7 +201,7 @@ class Tree extends Program                                                      
   void countDec() {refCount.putInt(count().dec());}                                                                     // Increment the key count
 
   StringBuilder dumpTree()                                                                                              // Dump the tree
-   {subStart("dumpTree");
+   {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.countOnes());
     new I()                                                                                                             // Dump the tree statistics
@@ -270,7 +270,7 @@ class Tree extends Program                                                      
     final ByteMemory.Ref path = Path.new Ref(0);                                                                        // Branches along path
 
     Path(Int Key)
-     {subStart("Path");
+     {subStart("Tree.Path");
       final Int p = new Int(0);                                                                                         // Start at root
       final Bool valid = new Bool(false);                                                                               // Whether a leaf was reached
 
@@ -300,7 +300,7 @@ class Tree extends Program                                                      
      }
 
     void splitPoint()                                                                                                   // Locate the split point: the uppermost full branch directly connected to the leaf by intervening full branches which will have to be split from the top back down to the parent of the leaf to permit the splitting of a full leaf
-     {subStart("splitPoint");
+     {subStart("Tree.splitPoint");
       final Int u = new Int();                                                                                          // Location of split point
       new For(step)                                                                                                     // Number of steps in path
        {void body(Int Index, Bool Continue)                                                                             // Step up from leaf to root
@@ -319,7 +319,7 @@ class Tree extends Program                                                      
      }
 
     void splitDown()                                                                                                    // Split from the splitting top most splitting branch if such a branch exists
-     {subStart("splitDown");
+     {subStart("Tree.splitDown");
       new If (split.valid())
        {void Then()
          {new If (split.eq(0))                                                                                          // Split the root branch
@@ -364,7 +364,7 @@ class Tree extends Program                                                      
      }
 
     void mergeUp()                                                                                                      // Merge up from the leaf to the splitting point
-     {subStart("mergeUp");
+     {subStart("Tree.mergeUp");
       new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
@@ -400,7 +400,7 @@ class Tree extends Program                                                      
      }
 
     StringBuilder print()                                                                                               // Print the path
-     {subStart("print");
+     {subStart("Tree.print");
       final StringBuilder s = new StringBuilder();
       new I() {void action() {s.setLength(0); }};
       new I() {void action() {s.append("Path: "+step+" steps: ");}};
@@ -417,7 +417,7 @@ class Tree extends Program                                                      
    }
 
   Find find(Int Key)                                                                                                    // Find the specified key in a leaf in the tree
-   {subStart("find");
+   {subStart("Tree.find");
     final Int  p = new Int(0);                                                                                          // Start at root
     final Find f = new Find();                                                                                          // Find results
     f.start(Key);
@@ -447,7 +447,7 @@ class Tree extends Program                                                      
    }
 
   public void insert(Int Key, Int Data)                                                                                 // Insert a key, data pair into the tree
-   {subStart("insert");
+   {subStart("Tree.insert");
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
        {final Leaf R = leaf(new Int(0));
@@ -503,7 +503,7 @@ class Tree extends Program                                                      
    }
 
   private void insertFullLeaf(Int Key, Int Data)                                                                        // Insert a key, data pair into the tree when tis known that the root is a branch and the target leaf is full and the key does not exist in the leaf
-   {subStart("insertFullLeaf");
+   {subStart("Tree.insertFullLeaf");
     final Path p = path(Key);                                                                                           // Path from root to full leaf
     p.splitPoint();                                                                                                     // The lowest branch in the tree that is full and has a non full parent
     p.splitDown();                                                                                                      // Split the branches down to the leaf as they are all full
@@ -536,7 +536,7 @@ class Tree extends Program                                                      
    }
 
   public Int delete(Int Key)                                                                                            // Delete a key from the tree and return the associated data if the key was present in the tree
-   {subStart("delete");
+   {subStart("Tree.delete");
     final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
     new If (isRootLeaf())
      {void Then()                                                                                                       // The root is a leaf
@@ -572,7 +572,7 @@ class Tree extends Program                                                      
 //D2 Split                                                                                                              // Split nodes in the tree to make the tree wider
 
   private Int splitRootBranch()                                                                                         // Split the root assuming that it is a branch
-   {subStart("splitRootBranch");
+   {subStart("Tree.splitRootBranch");
     final Branch R = branch(new Int(0));                                                                                // The root
     if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root because it is not a branch");                   // Check that it is a branch
     if (immediate() && R.full().Flip().b()) stop("Cannot split the root because it is not full");                       // Check that the root is full
@@ -592,7 +592,7 @@ class Tree extends Program                                                      
 //D3 Merge Left                                                                                                         // Merge single and double left
 
   Bool mergeLeftLeafIntoRightSibling(Branch Parent, Int Left, Leaf Right)                                               // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
-   {subStart("mergeLeftLeafIntoRightSibling");
+   {subStart("Tree.mergeLeftLeafIntoRightSibling");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Leaf   l = leaf(P.data(P.slots.getSlotToKeyIndex(Left)));                                                     // Left leaf of merge
@@ -608,7 +608,7 @@ class Tree extends Program                                                      
    }
 
   Bool mergeLeftBranchIntoRightSibling(Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
-   {subStart("mergeLeftBranchIntoRightSibling");
+   {subStart("Tree.mergeLeftBranchIntoRightSibling");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(Left)));                                                   // Left branch of merge
@@ -625,7 +625,7 @@ class Tree extends Program                                                      
    }
 
   Bool mergeLeftIntoRightSibling(Branch Parent, Int Left)                                                               // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
-   {subStart("mergeLeftIntoRightSibling");
+   {subStart("Tree.mergeLeftIntoRightSibling");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
 
@@ -662,7 +662,7 @@ class Tree extends Program                                                      
    }
 
   Bool mergeLeft(Branch Parent, Int Pos)                                                                                // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
-   {subStart("mergeLeft");
+   {subStart("Tree.mergeLeft");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
     final Int    L  = new Int();                                                                                         // Left child
@@ -715,7 +715,7 @@ class Tree extends Program                                                      
 //D3 Merge Right                                                                                                        // Merge single and double right
 
   Bool mergeRight(Branch Parent, Int Pos)                                                                               // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
-   {subStart("mergeRight");
+   {subStart("Tree.mergeRight");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
     new If (Pos.valid())                                                                                                // Not on top
@@ -728,7 +728,7 @@ class Tree extends Program                                                      
    }
 
   Bool mergeRightRight(Branch Parent, Int Pos)                                                                          // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
-   {subStart("mergeRightRight");
+   {subStart("Tree.mergeRightRight");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
 
