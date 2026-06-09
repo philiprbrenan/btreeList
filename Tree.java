@@ -658,31 +658,23 @@ class Tree extends Program                                                      
   Bool mergeLeftLeft(Branch Parent, Int Pos)                                                                            // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
    {final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
+    final Int    R = new Int();                                                                                         // Right child of merge
 
     new If (Pos.notValid())                                                                                             // Merging relative to top
      {void Then()
-       {final Int R = P.slots.usedSlotsToKeys.lastOne();                                                                // Left once from top
-        new If (R.valid())                                                                                              // Left of top exists
-         {void Then()
-           {final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Left of left of top
-            new If (L.valid())                                                                                          // Left of left of top exists
-             {void Then()
-               {m.set(mergeLeftIntoRightSibling(Parent, L));                                                            // Merge left of left of top into left of top
-               }
-             };
-           }
-         };
+       {R.copy(P.slots.usedSlotsToKeys.lastOne());                                                                      // Left once from top
        }
       void Else()                                                                                                       // Merge entirely within body of parent
-       {final Int R = P.slots.usedSlotsToKeys.prevOne(Pos);                                                             // Left once
-        new   If (R.valid())                                                                                            // There is a left position
+       {R.copy(P.slots.usedSlotsToKeys.prevOne(Pos));                                                                   // Left once
+       }
+     };
+
+    new If (R.valid())                                                                                                  // There is a left position
+     {void Then()
+       {final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                               // Left of left of position
+        new If (L.valid())                                                                                              // Left of left of position is valid so we can merge
          {void Then()
-           {final Int L = P.slots.usedSlotsToKeys.prevOne(R);                                                           // Left of left of position
-            new If (L.valid())                                                                                          // Left of left of position is valid so we can merge
-             {void Then()
-               {m.set(mergeLeftIntoRightSibling(Parent, L));                                                            // Merge left of left of top into left of top
-               }
-             };
+           {m.set(mergeLeftIntoRightSibling(Parent, L));                                                                // Merge left of left of top into left of top
            }
          };
        }
