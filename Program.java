@@ -27,7 +27,7 @@ public class Program extends Test                                               
   final StringBuilder     out = new StringBuilder();                                                                    // Text output area
   final static Stack<String> subs = new Stack<>();                                                                      // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
-  final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
+//final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -210,8 +210,8 @@ public class Program extends Test                                               
     return Set;
    }
 
-//D2 Procedure                                                                                                          // Procedure with parameters and return value
-
+//D2 Procedure                                                                                                          // Procedure with parameters and return value.  Only works for static classes because unable to emulate "this".
+/*
   abstract class Procedure                                                                                              // Procedure
    {final String      name;                                                                                             // The name of the procedure so it be cataloged and reused later by name which allows the just in time generation of procedures
     final Label       start = new Label(), end = new Label();                                                           // The location of the start and end of the procedure
@@ -322,14 +322,14 @@ public class Program extends Test                                               
     Procedure in(String Name, Bool    B) {cbi(Name); inputBool.get(Name).set(B); return this;}                          // Set an input  boolean parameter by name to an boolean variable before calling the procedure
     Bool      ob(String Name)            {cbo(Name); return outputBool.get(Name);}                                      // Get an output boolean parameter after calling a procedure
    }
-
+*/
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
   public sealed interface Data permits Bool, Int {}                                                                     // Known types of data
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  final class Bool implements Data                                                                                      // An integer that can be passed as a parameter to a method and modified there-in
+  class Bool implements Data                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = parentProgram.nextBoolId++;                                                                          // Unique id for Bool
@@ -544,7 +544,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  final class Int implements Data                                                                                       // An integer that can be passed as a parameter to a method and modified there-in
+  class Int implements Data                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
@@ -1528,7 +1528,7 @@ public class Program extends Test                                               
    {          test_invalidate(true);
               test_invalidate(false);
    }
-
+/*
   static void test_call(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(16))
@@ -1566,7 +1566,7 @@ public class Program extends Test                                               
    {          test_call(true);
               test_call(false);
    }
-
+*/
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_bool();
@@ -1582,12 +1582,11 @@ public class Program extends Test                                               
     test_byteMemoryNegative();
     test_byteMemoryRef();
     test_invalidate();
-    test_call();
+    //test_call();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_call();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
