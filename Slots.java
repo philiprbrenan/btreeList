@@ -22,7 +22,7 @@ class Slots extends Program                                                     
   final ByteMemory.Ref           refCount;                                                                              // The number of occupied slots and hence the number of keys in the slots
   final Build                       build;                                                                              // Build details
   final static String           formatKey = "%3d";                                                                      // Format a key for dumping during testing
-  Procedure compactSlotsLeft;                                                                                           // Precompiled procedures
+//Procedure compactSlotsLeft;                                                                                           // Precompiled procedures
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
