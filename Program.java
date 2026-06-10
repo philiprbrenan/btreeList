@@ -202,6 +202,13 @@ public class Program extends Test                                               
              void Else() {}                                                                                             // Else clause
    }
 
+  void If(Bool Choice, Runnable Then, Runnable Else)                                                                    // If then/else with lambdas
+   {new If (Choice)
+     {void Then() {Then.run();}
+      void Else() {Else.run();}
+     };
+   }
+
   <T extends Int> T If(Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                          // Choose between two alternatives
    {new If (Choice)
      {void Then() {Set.set(Then.get());}
@@ -778,9 +785,9 @@ public class Program extends Test                                               
       return bytes[I];                                                                                                  // Get the value of a byte
      }
 
-    private void putByte(int I, byte J)                                                                                 // Get the value of a byte
+    private void putByte(int I, int J)                                                                                  // Put a byte into memory
      {if (tracing()) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                           // Trace
-      bytes[I] = J;                                                                                                     // Set the value of a byte
+      bytes[I] = (byte)(J & 0xFF);                                                                                              // Set the value of a byte from an integer
      }
 
     ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
@@ -826,10 +833,10 @@ public class Program extends Test                                               
       new I()
        {void action()
          {final int p = I.i();
-          final int a = getByte(p+0);
-          final int b = getByte(p+1) <<  8;
-          final int c = getByte(p+2) << 16;
-          final int d = getByte(p+3) << 24;
+          final int a = Byte.toUnsignedInt(bytes[p+0]) <<  0;
+          final int b = Byte.toUnsignedInt(bytes[p+1]) <<  8;
+          final int c = Byte.toUnsignedInt(bytes[p+2]) << 16;
+          final int d = Byte.toUnsignedInt(bytes[p+3]) << 24;
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
          }
@@ -838,10 +845,10 @@ public class Program extends Test                                               
      }
 
     int getInt(int I)                                                                                                   // Get the int at the indicated position
-     {final int a = getByte(I+0);
-      final int b = getByte(I+1) <<  8;
-      final int c = getByte(I+2) << 16;
-      final int d = getByte(I+3) << 24;
+     {final int a = Byte.toUnsignedInt(bytes[I+0]) <<  0;
+      final int b = Byte.toUnsignedInt(bytes[I+1]) <<  8;
+      final int c = Byte.toUnsignedInt(bytes[I+2]) << 16;
+      final int d = Byte.toUnsignedInt(bytes[I+3]) << 24;
       return d | c | b | a;
      }
 
@@ -859,7 +866,7 @@ public class Program extends Test                                               
     boolean getBool(int I) {return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                      // Get the bit at the bit indexed location - debugging
 
     ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
-     {new I() {void action() {putByte(I.i(), (byte)J.i());}};
+     {new I() {void action() {putByte(I.i(), J.i());}};
       return this;
      }
 
@@ -867,10 +874,10 @@ public class Program extends Test                                               
      {new I()
        {void action()
          {final int p = I.i(), v = J.i();
-          putByte(p+0, (byte)((v >>>  0) & 0xFF));
-          putByte(p+1, (byte)((v >>>  8) & 0xFF));
-          putByte(p+2, (byte)((v >>> 16) & 0xFF));
-          putByte(p+3, (byte)((v >>> 24) & 0xFF));
+          putByte(p+0, v >>>  0);
+          putByte(p+1, v >>>  8);
+          putByte(p+2, v >>> 16);
+          putByte(p+3, v >>> 24);
          }
        };
       return this;
@@ -882,7 +889,7 @@ public class Program extends Test                                               
          {final int p = I.i();
           final int b = getByte(p);
           final int B = setBit(b, J.i(), K.b());
-          putByte(p, (byte)B);
+          putByte(p, B);
          }
        };
       return this;
