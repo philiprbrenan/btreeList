@@ -6,7 +6,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;                                                                                                     // Standard utility library.
 
-public class BitSet extends Program                                                                                     // Abstract fixed-size bit set using byte-level storage.
+final public class BitSet extends Program                                                                               // Abstract fixed-size bit set using byte-level storage.
  {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
   final int byteSize;                                                                                                   // Number of bytes in the bit set.
   final boolean oneTreeBit;                                                                                             // At most only one tree bit present
@@ -18,7 +18,7 @@ public class BitSet extends Program                                             
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
-  static class Build                                                                                                    // Specification of a bitset
+  final static class Build                                                                                              // Specification of a bitset
    {int              bitSize = 1;                                                                                       // Number of bits in the bit set.
     boolean        immediate = true;                                                                                    // Immediate mode execution by default
     Program           parent = null;                                                                                    // Parent program whose code is to be written into.
@@ -441,7 +441,7 @@ public class BitSet extends Program                                             
     return r;                                                                                                           // Result is valid if found
    }
 
-  public Int nextOne(Int Start)                                                                                         // Find the index of the next set bit above the specified start bit
+  public Int nextOne(Int Start)                                                                                         // Find the index of the next set bit above the specified start bit. This is the most heavily used routine by far
    {subStart("Bitset.nextOne");
     if (immediate()) checkIndex(Start);
     final Int Next = new Int();                                                                                         // Invalid indicates not found
