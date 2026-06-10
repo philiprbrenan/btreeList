@@ -27,7 +27,7 @@ public class Program extends Test                                               
   final StringBuilder     out = new StringBuilder();                                                                    // Text output area
   final static Stack<String> subs = new Stack<>();                                                                      // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
-  //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
+  final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
   static class Build                                                                                                    // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -213,7 +213,8 @@ public class Program extends Test                                               
 //D2 Procedure                                                                                                          // Procedure with parameters and return value
 
   abstract class Procedure                                                                                              // Procedure
-   {final Label       start = new Label(), end = new Label();                                                           // The location of the start and end of the procedure
+   {final String      name;                                                                                             // The name of the procedure so it be cataloged and reused later by name which allows the just in time generation of procedures
+    final Label       start = new Label(), end = new Label();                                                           // The location of the start and end of the procedure
     final Int returnAddress = new Int();                                                                                // the address to be returned to after the subroutine has been called
     final TreeSet<String>       parameters = new TreeSet<>();                                                           // Parameter names  must be unique over input or output, integer or boolean
     final TreeMap<String, Int>   inputInt  = new TreeMap<>();                                                           // Input integer parameters
@@ -259,21 +260,32 @@ public class Program extends Test                                               
       return this;
      }
 
-    Procedure()                                                                                                         // Define the procedure in terms of its parameters
-     {if (immediate()) {}                                                                                               // In immediate mode the body is called as needed
-      else                                                                                                              // In non immediate mode the body is saved and then recalled
-       {Goto(end);                                                                                                      // Jump over the code of the subroutine when it is being defined
-        start.set();                                                                                                    // Start of subroutine code
-        body();                                                                                                         // Code of subroutine
-        Goto(returnAddress);                                                                                            // Address at at which to resume execution after the subroutine call
-        end.set();
+    void generate()                                                                                                     // Generate the procedure
+     {Goto(end);                                                                                                        // Jump over the code of the subroutine when it is being defined
+      start.set();                                                                                                      // Start of subroutine code
+      body();                                                                                                           // Code of subroutine
+      Goto(returnAddress);                                                                                              // Address at at which to resume execution after the subroutine call
+      end.set();                                                                                                        // End of the procedure
+     }
+
+    Procedure()                                                                                                         // Define an unnamed procedure
+     {name = null;                                                                                                      // No name
+      if (!immediate()) generate();                                                                                     // Generate the procedure
+     }
+
+    Procedure(String Name)                                                                                              // Define the procedure in terms of its parameters
+     {name = Name;                                                                                                      // Name of the procedure
+      if (immediate()) {}                                                                                               // In immediate mode the body is called as needed
+      else if (!procedures.containsKey(Name))                                                                           // In non immediate mode the procedure is generated if it does not already exist
+       {generate();
+        procedures.put(Name, this);                                                                                     // Make procedure reusable
        }
      }
 
     Procedure call()                                                                                                    // Call the procedure.  Set the input parameters as needed.
      {if (immediate()) {body();}                                                                                        // In immediate mode the body is executed as needed
       else                                                                                                              // In non immediate mode the body is saved and then recalled
-       {new I() {void action() {returnAddress.ex(Int.Ops.set, pc+1);}};                                                                                          // Address of next instruction at which execution will resume after the call
+       {new I() {void action() {returnAddress.ex(Int.Ops.set, pc+1);}};                                                 // Address of next instruction at which execution will resume after the call
         Goto(start);
        }
       return this;
@@ -1528,7 +1540,7 @@ public class Program extends Test                                               
            }
          }.input(new Int("A")).output(new Int("B"));
 
-       final Procedure e = new Procedure()
+       final Procedure e = new Procedure("e")
          {void body()
            {d.in("A", getInt("a"));
             d.call();
@@ -1536,11 +1548,15 @@ public class Program extends Test                                               
            }
          }.input(new Int("a")).output(new Int("b"));
 
-        e.in("a", 5);
-        e.call();
-        e.oi("b").ok(10);
+        new ForCount(new Int(3))
+         {void body(Int Index)
+           {e.in("a", Index);
+            e.call();
+            e.oi("b").ok(Index.Up());
+           }
+         };
 
-        maxSteps = 40;
+        maxSteps = 999;
         execute();
        }
      };
