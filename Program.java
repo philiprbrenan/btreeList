@@ -29,7 +29,7 @@ public class Program extends Test                                               
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
-  static class Build                                                                                                    // Builder for this program
+  final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
     boolean trace;                                                                                                      // Trace execution
     Program parent;                                                                                                     // Parent program
@@ -766,7 +766,7 @@ public class Program extends Test                                               
   static int ib(int I) {return I * ib();}                                                                               // Number of bytes in a number of integers
   static Int ib(Int I) {return I.Mul(ib());}                                                                            // Number of bytes in a number of integers
 
-  class ByteMemory                                                                                                      // Bytes being used as the main memory program
+  final class ByteMemory                                                                                                // Bytes being used as the main memory program
    {static int byteMemoryIds = 0;
     final  int byteMemoryId  = ++byteMemoryIds;
     byte[]bytes;                                                                                                        // Bytes of main memory
@@ -892,7 +892,7 @@ public class Program extends Test                                               
 
 //D2 Memory references                                                                                                  // References to byte memory
 
-    class Ref                                                                                                           // Reference into memory
+    final class Ref                                                                                                     // Reference into memory
      {final Int offset = new Int("memoryReferenceOffset");                                                              // Offset of this reference in memory
       final int N = Integer.BYTES;
       final ByteMemory m = ByteMemory.this;
@@ -1024,7 +1024,7 @@ public class Program extends Test                                               
 
   int codeSize() {return program().code.size();}                                                                        // Number of instructions in current program
 
-  class Label                                                                                                           // Label jump targets in the program
+  final class Label                                                                                                     // Label jump targets in the program
    {int offset;                                                                                                         // The instruction location to which this label applies
     Label()    {set(); program().labels.push(this);}                                                                    // A label assigned to an instruction location
     void set() {offset = program().code.size();}                                                                        // Reassign the label to an instruction
