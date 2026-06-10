@@ -22,7 +22,7 @@ class Branch extends Program implements Program.Locatable                       
 
 //D1 Construction                                                                                                       // Construct and layout a branch
 
-  static class Build                                                                                                    // Parameters describing a branch
+  final static class Build                                                                                              // Parameters describing a branch
    {Integer         maxSize;                                                                                            // Maximum number of keys in branch
     Int             at;                                                                                                 // The location of the branch
     boolean         immediate = true;                                                                                   // Immediate execution mode
@@ -127,7 +127,7 @@ class Branch extends Program implements Program.Locatable                       
   Int  top()  {return refTop.getInt();}                                                                                 // Get value of top
   void top(Int Top) {refTop.putInt(Top);}                                                                               // Set value of top
 
-  class StepDown
+  final class StepDown                                                                                                  // Step down from one layer of the tree to the next lower one
    {final Int key  = new Int();                                                                                         // The key we are stepping down with
     final Int node = new Int();                                                                                         // The next node down
     final Int slot = new Int();                                                                                         // The slot used to step down.  If not set then stepped through top
