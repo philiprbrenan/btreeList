@@ -290,15 +290,25 @@ public class Program extends Test                                               
       return "\n"+s;
      }
 
-    void cii(String Name) {new I() {void action() {if (! inputInt.containsKey(Name)) stop("No "+  "input integer parameter called:", Name, ""+Procedure.this);}};}              // Input integer
+    void cii(String Name) {new I() {void action() {if (! inputInt.containsKey(Name)) stop("No "+  "input integer parameter called:", Name, ""+Procedure.this);}};}              // Input  integer
     void cio(String Name) {new I() {void action() {if (!outputInt.containsKey(Name)) stop("No "+ "output integer parameter called:", Name, ""+Procedure.this);}};}              // Output integer
 
     Int       getInt(String Name)        {cii(Name); final Int a = new Int(); new I() {void action() {                  a.ex(Int.Ops.set, inputInt.get(Name));}}; return a;   } // Get an input  integer parameter inside the procedure
-    Procedure putInt(String Name, Int I) {cio(Name);                          new I() {void action() {outputInt.get(Name).ex(Int.Ops.set,  I);}};                 return this;} // Put an output integer parameter inside the procedure
+    Procedure putInt(String Name, Int I) {cio(Name);                          new I() {void action() {outputInt.get(Name).ex(Int.Ops.set, I);}};                  return this;} // Put an output integer parameter inside the procedure
 
     Procedure in(String Name, int I) {cii(Name); inputInt.get(Name).set(I); return this;}                               // Set an input  integer parameter by name to an integer constant before calling the procedure
     Procedure in(String Name, Int I) {cii(Name); inputInt.get(Name).set(I); return this;}                               // Set an input  integer parameter by name to an integer variable before calling the procedure
-    Int   outInt(String Name)        {cio(Name); return outputInt.get(Name);}                                           // Get an output integer parameter after calling a procedure
+    Int       oi(String Name)        {cio(Name); return outputInt.get(Name);}                                           // Get an output integer parameter after calling a procedure
+
+    void cbi(String Name) {new I() {void action() {if (! inputBool.containsKey(Name)) stop("No "+  "input boolean parameter called:", Name, ""+Procedure.this);}};}              // Input  boolean
+    void cbo(String Name) {new I() {void action() {if (!outputBool.containsKey(Name)) stop("No "+ "output boolean parameter called:", Name, ""+Procedure.this);}};}              // Output boolean
+
+    Bool      getBool(String Name)        {cbi(Name); final Bool a = new Bool(); new I() {void action() {                   a.ex(Bool.Ops.set, inputBool.get(Name));}}; return a;   } // Get an input  boolean parameter inside the procedure
+    Procedure putBool(String Name, Int B) {cbo(Name);                            new I() {void action() {outputBool.get(Name).ex(Bool.Ops.set, B);}};                   return this;} // Put an output boolean parameter inside the procedure
+
+    Procedure in(String Name, boolean B) {cbi(Name); inputBool.get(Name).set(B); return this;}                          // Set an input  boolean parameter by name to an boolean constant before calling the procedure
+    Procedure in(String Name, Bool    B) {cbi(Name); inputBool.get(Name).set(B); return this;}                          // Set an input  boolean parameter by name to an boolean variable before calling the procedure
+    Bool      ob(String Name)            {cbo(Name); return outputBool.get(Name);}                                      // Get an output boolean parameter after calling a procedure
    }
 
 //D1 Data                                                                                                               // Operations on boolean and integer data
@@ -1513,16 +1523,24 @@ public class Program extends Test                                               
      {void code()
        {final Procedure d = new Procedure()
          {void body()
-           {final Int a = getInt("a");
-            putInt("b", a.Up());
+           {final Int a = getInt("A");
+            putInt("B", a.Up());
+           }
+         }.input(new Int("A")).output(new Int("B"));
+
+       final Procedure e = new Procedure()
+         {void body()
+           {d.in("A", getInt("a"));
+            d.call();
+            putInt("b", d.oi("B"));
            }
          }.input(new Int("a")).output(new Int("b"));
 
-        d.in("a", 5);
-        d.call();
-        d.outInt("b").ok(10);
+        e.in("a", 5);
+        e.call();
+        e.oi("b").ok(10);
 
-        maxSteps = 24;
+        maxSteps = 40;
         execute();
        }
      };
