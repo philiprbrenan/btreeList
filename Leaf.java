@@ -19,7 +19,7 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D1 Construction                                                                                                       // Construct and layout a leaf
 
-  static class Build                                                                                                    // Parameters describing a leaf
+  final static class Build                                                                                              // Parameters describing a leaf
    {Integer         maxSize;                                                                                            // Maximum number of keys in leaf
     Int             at;                                                                                                 // The location of the leaf
     boolean         immediate = true;                                                                                   // Immediate execution mode
@@ -48,7 +48,7 @@ class Leaf extends Program implements Program.Locatable                         
       return p;
      }
 
-    class MemoryPositions                                                                                               // Layout of memory
+    final class MemoryPositions                                                                                         // Layout of memory
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
       final int posSlots = posMark  + ib();
       final int posData  = posSlots + slots.size();
