@@ -26,29 +26,29 @@ class Tree extends Program                                                      
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
-   static class Build                                                                                                   // Parameters describing a tree
-    {boolean       immediate = true;                                                                                    // Immediate execution mode
-     boolean           trace = true;                                                                                    // Trace execution
-     int          branchSize;                                                                                           // Size of a branch
-     int            leafSize;                                                                                           // Size of a leaf
-     int            nodeSize;                                                                                           // Size of a node: a leaf or a branch whichever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjusting the branch and leaf sizes to be as equal as possible.
-     Integer     maxLeafSize;
-     Integer   maxBranchSize;
-     Integer   numberOfNodes;
-     Boolean         execute;
-     BitSet.Build  freeChain;
-     Branch.Build     branch;
-     Leaf  .Build       leaf;
-     int bytesNeededForNodes;                                                                                           // Bytes needed for all the nodes
-     int bytesNeededForFree;                                                                                            // Bytes needed for free chain
-     MemoryPositions memoryPositions;                                                                                   // Layout of memory
+  final static class Build                                                                                              // Parameters describing a tree
+   {boolean       immediate = true;                                                                                     // Immediate execution mode
+    boolean           trace = true;                                                                                     // Trace execution
+    int          branchSize;                                                                                            // Size of a branch
+    int            leafSize;                                                                                            // Size of a leaf
+    int            nodeSize;                                                                                            // Size of a node: a leaf or a branch whichever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjusting the branch and leaf sizes to be as equal as possible.
+    Integer     maxLeafSize;
+    Integer   maxBranchSize;
+    Integer   numberOfNodes;
+    Boolean         execute;
+    BitSet.Build  freeChain;
+    Branch.Build     branch;
+    Leaf  .Build       leaf;
+    int bytesNeededForNodes;                                                                                            // Bytes needed for all the nodes
+    int bytesNeededForFree;                                                                                             // Bytes needed for free chain
+    MemoryPositions memoryPositions;                                                                                    // Layout of memory
 
-     Build immediate    (boolean Immediate    ) {immediate     = Immediate;     return this;}
-     Build trace        (boolean Trace        ) {trace         = Trace;         return this;}
-     Build maxLeafSize  (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
-     Build maxBranchSize(int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
-     Build numberOfNodes(int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
-     Build execute      (boolean Execute      ) {execute       = Execute;       return this;}
+    Build immediate    (boolean Immediate    ) {immediate     = Immediate;     return this;}
+    Build trace        (boolean Trace        ) {trace         = Trace;         return this;}
+    Build maxLeafSize  (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
+    Build maxBranchSize(int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
+    Build numberOfNodes(int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
+    Build execute      (boolean Execute      ) {execute       = Execute;       return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -237,7 +237,7 @@ class Tree extends Program                                                      
 
 //D1 Find, Insert, Delete                                                                                               // Find, insert and delete
 
-  class Find                                                                                                            // Find results
+  final class Find                                                                                                      // Find results
    {Bool valid = new Bool();                                                                                            // Whether the search results are valid
     Int  key   = new Int();                                                                                             // Search key
     Int  leaf  = new Int();                                                                                             // Leaf that should contain the key
@@ -261,7 +261,7 @@ class Tree extends Program                                                      
      }
    }
 
-  class Path                                                                                                            // Record the path from the root to the leaf that should contain a key
+  final class Path                                                                                                      // Record the path from the root to the leaf that should contain a key
    {final Int        key      = new Int("key");                                                                         // Search key
     final Int        leaf     = new Int("leaf");                                                                        // Leaf that should contain the key
     final Int        step     = new Int("step");                                                                        // Current step in the path
@@ -756,7 +756,7 @@ class Tree extends Program                                                      
               action_remove = -3;                                                                                       // Remove this branch from stack
     final Int        depth  = new Int("depth");                                                                         // Depth we have reached in the tree. -1 indicates thatthe stack is empty.
 
-    class LeafContext                                                                                                   // The context of a leaf shows its relationship to its parent branch
+    final class LeafContext                                                                                             // The context of a leaf shows its relationship to its parent branch
      {final Bool root   = new Bool();                                                                                   // Whether the current leaf is the root or not
       final Int  parent = new Int();                                                                                    // If the current leaf is not the root then the parent branch of the current leaf
       final Int  leaf   = new Int();                                                                                    // The current leaf
@@ -780,7 +780,7 @@ class Tree extends Program                                                      
        }
      }
 
-    class BranchContext                                                                                                 // The context of a branch shows its relationship to its parent and currently being processed child
+    final class BranchContext                                                                                           // The context of a branch shows its relationship to its parent and currently being processed child
      {final Bool root       = new Bool();                                                                               // Whether the current branch is the root or not
       final Int  parent     = new Int();                                                                                // If the current branch is not the root then the parent of the current branch
       final Int  parentSlot = new Int();                                                                                // If the current branch is not the root then the slot through which this branch was reached
@@ -917,7 +917,7 @@ class Tree extends Program                                                      
 
 //D2 Print                                                                                                              // Print the tree horizontally
 
-  class Print                                                                                                           // Print the tree
+  final class Print                                                                                                     // Print the tree
    {final Stack<StringBuilder> P = new Stack<>();
 
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
