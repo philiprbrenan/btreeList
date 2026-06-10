@@ -8,7 +8,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 
-class Slots extends Program                                                                                             // A tree that translates keys into values to be implemented as an application specific integrated circuit
+class Slots extends Program                                                                                             // Maps a sparse slot to a key allowing keys to be inserted in order into an array that can be binary searched
  {final int                 numberOfKeys;                                                                               // The maximum number of references maintained by these slots
   final int                         size;                                                                               // Number of bytes needed to hold slots
   final BitSet            usedSlotsToKeys;                                                                              // The slots in use.  There are more slots than references so that they can be distributed with intervening empty slots to make insertions faster
@@ -22,10 +22,11 @@ class Slots extends Program                                                     
   final ByteMemory.Ref           refCount;                                                                              // The number of occupied slots and hence the number of keys in the slots
   final Build                       build;                                                                              // Build details
   final static String           formatKey = "%3d";                                                                      // Format a key for dumping during testing
+  Procedure compactSlotsLeft;                                                                                           // Precompiled procedures
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
-  static class Build                                                                                                    // Specification of slots
+  final static class Build                                                                                              // Specification of slots
    {boolean            immediate = true;                                                                                // Immediate mode
     boolean                trace = false;                                                                               // Trace execution
     int             numberOfKeys = 2;                                                                                   // Number of references in the slots
@@ -52,7 +53,7 @@ class Slots extends Program                                                     
     int numberOfKeys       () {return numberOfKeys;}                                                                    // The number of references in the slots definition
     int numberOfSlotsToKeys() {return numberOfKeys() << 1;}                                                             // Number of slots from number of refs
 
-    class MemoryPositions                                                                                               // Positions of fields in memory
+    final class MemoryPositions                                                                                         // Positions of fields in memory
      {final int N = numberOfSlotsToKeys();
       final int R = numberOfKeys();
 
@@ -291,9 +292,9 @@ class Slots extends Program                                                     
     Continue.set(true);                                                                                                 // Continue moving keys
    }
 
-  void copy(Slots Source)  {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                    // Copy source into this
+  void copy(Slots Source) {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                     // Copy source into this
 
-  void clear()     //Improvements Clear the slots with Array.fill()                                                     // Clear the slots
+  void clear()                                                                                                          // Clear the slots
    {final Slots slots = this;
     compactSlotsLeft();                                                                                                 // Place slots in a known position
     new ForCount(count())                                                                                               // Clear compacted slots
@@ -308,8 +309,9 @@ class Slots extends Program                                                     
 
 //D4 Compact                                                                                                            // Compact slots to the left or right
 
-  void compactSlotsLeft()                                                                                               // Compact the slots to the left hand end
+  void compactSlotsLeft()                                                                                               // Compact the slots to the left hand side
    {subStart("Slots.compactSlotsLeft");
+
     new If (empty().Flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
@@ -321,10 +323,11 @@ class Slots extends Program                                                     
          };
        }
      };
+
     subFinish();
    }
 
-  void compactSlotsRight()                                                                                              // Compact the slots to the right hand end
+  void compactSlotsRight()                                                                                              // Compact the slots to the right hand side
    {subStart("Slots.compactSlotsRight");
     final Slots slots = this;
     new If (empty())                                                                                                    // Compact slots
@@ -764,7 +767,7 @@ class Slots extends Program                                                     
 
 //D2 High level operations                                                                                              // Find, insert, delete values in the slots
 
-  class Find                                                                                                            // Find result
+  final class Find                                                                                                      // Find result
    {final Int   slot = new Int();                                                                                       // Slot found
     final Bool lower = new Bool(), higher = new Bool(), equal = new Bool(), empty = new Bool();                         // Position of search item relative to the slot found
     boolean insertBelow = false;                                                                                        // If true, then the key to be inserted should be inserted below the indicated slot, otherwise the insertion position will be determined at run time.  Setting this flag reduces the amount of code generated because the case where the key has to be inserted above the found key can be safely ignored
@@ -1030,7 +1033,7 @@ class Slots extends Program                                                     
     return r;                                                                                                           // Result found if valid, if invalid greater than any key in the slots
    }
 
-  class Insert                                                                                                          // Results of an insertion
+  final class Insert                                                                                                    // Results of an insertion
    {final Int  key      = new Int ("key");                                                                              // The key being inserted
     final Int  slot     = new Int ("slot");                                                                             // Slot index referring to the inserted key
     final Bool inserted = new Bool("inserted");                                                                         // True if the key did not exist prior to the insertion else false
