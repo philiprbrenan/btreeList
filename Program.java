@@ -325,11 +325,11 @@ public class Program extends Test                                               
 */
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
-  public sealed interface Data permits Bool, Int {}                                                                     // Known types of data
+  //public sealed interface Data permits Bool, Int {}                                                                     // Known types of data
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  class Bool implements Data                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
+  class Bool //implements Data                                                                                            // An integer that can be passed as a parameter to a method and modified there-in
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = parentProgram.nextBoolId++;                                                                          // Unique id for Bool
@@ -544,7 +544,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  class Int implements Data                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
+  class Int //implements Data                                                                                             // An integer that can be passed as a parameter to a method and modified there-in
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
