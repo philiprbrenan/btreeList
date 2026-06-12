@@ -144,49 +144,50 @@ class Slots extends Program                                                     
 
   Bool    empty             ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
   Bool    full              ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Int     countOnes         ()             {return usedKeys.countOnes();}                                               // Count the number of keys in use
   Int     count             ()                                                                                          // The computed number of keys in the slots
    {final Int C = refCount.getInt();                                                                                    // Computed number of keys
     if (immediate())                                                                                                    // Check matches the actual number
-     {final Int c = countOnes();
+     {final Int c = count();
       if (C.ne(c).b()) stop("Count mismatch:", C, c);
      }
     return C;                                                                                                           // Computed number of keys in slots
    }
-  void count             (Int N)                                                                                        //Set the computed number of keys in the slots
-   {final Int C = countOnes();
+  void count(Int N)                                                                                        //Set the computed number of keys in the slots
+   {final Int C = count();
     if (immediate())                                                                                                    // Check matches the actual number
      {if (C.ne(N).b()) stop("Count mismatch, expected:", C, "got:", N);
      }
     refCount.putInt(N);                                                                                                 // Increment the count
    }
+
   void countClear() {refCount.putInt(new Int(0));}                                                                      // Clear the count
+
   void countInc  ()                                                                                                     // Increment the key count
    {final Int C = refCount.getInt();                                                                                    // Computed number of keys
     refCount.putInt(C.inc());                                                                                           // Increment the count
-    if (immediate() && C.ne(countOnes()).b()) stop("Key count mismatch, expected:", countOnes(), "got:", C);            // Check it matches the expected value
+    if (immediate() && C.ne(count()).b()) stop("Key count mismatch, expected:", count(), "got:", C);                    // Check it matches the expected value
    }
+
   void countDec  ()                                                                                                     // Decrement the key count
    {final Int C = refCount.getInt();                                                                                    // Computed number of keys
     if (immediate() && C.le(0).b()) stop("Key count would go negative");                                                // Check it will not go negative
     refCount.putInt(C.dec());                                                                                           // Decrement the count
-    if (immediate() && C.ne(countOnes()).b()) stop("Key count mismatch, expected:", countOnes(), "got:", C);            // Check it matches the expected value
+    if (immediate() && C.ne(count()).b()) stop("Key count mismatch, expected:", count(), "got:", C);                    // Check it matches the expected value
    }
+
   void invalidateMemory     ()             {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   int  numberOfKeys         ()             {return numberOfKeys;}                                                       // The number of references in the slots definition
   int  numberOfSlotsToKeys  ()             {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
   int  redistributionWidth  ()             {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
-
   Int  locateFirstUsedSlot  ()             {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
   Int  locateLastUsedSlot   ()             {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
+  Int stepLeft              (Int Start)    {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
+  Int stepRight             (Int Start)    {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
 
   Int locateFirstUnusedKey  ()                                                                                          // Absolute position of the first unused key
    {final Int p = usedKeys.firstZero();
     final Int f = new Int(); new If (p.valid()) {void Then() {f.set(p);}}; return f;
    }
-
-  Int stepLeft             (Int Start)     {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
-  Int stepRight            (Int Start)     {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
 
   Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow, Bool Prev)                                                // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
    {subStart("Slots.locateNearestFreeSlotToKey");
@@ -570,8 +571,8 @@ class Slots extends Program                                                     
    {subStart("Slots.mergeFromRightEven");
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
-    final Int     lc = left .usedKeys.countOnes();                                                                      // Count on left
-    final Int     rc = Right.usedKeys.countOnes();                                                                      // Count on right
+    final Int     lc = left .count();                                                                                   // Count on left
+    final Int     rc = Right.count();                                                                                   // Count on right
     final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
 
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
@@ -604,8 +605,8 @@ class Slots extends Program                                                     
    {subStart("Slots.mergeFromLeftEven");
     final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
-    final Int      rc = right.usedKeys.countOnes();
-    final Int      lc = Left .usedKeys.countOnes();
+    final Int      rc = right.count();
+    final Int      lc = Left .count();
     final Bool      r = new Bool(false);
 
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
@@ -640,8 +641,8 @@ class Slots extends Program                                                     
    {subStart("Slots.mergeFromRightOdd");
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
-    final Int     lc = left .usedKeys.countOnes();                                                                      // Count on left
-    final Int     rc = Right.usedKeys.countOnes();                                                                      // Count on right
+    final Int     lc = left .count();                                                                                   // Count on left
+    final Int     rc = Right.count();                                                                                   // Count on right
     final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
 
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
@@ -675,8 +676,8 @@ class Slots extends Program                                                     
    {subStart("Slots.mergeFromLeftOdd");
     final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
-    final Int      rc = right.usedKeys.countOnes();
-    final Int      lc = Left .usedKeys.countOnes();
+    final Int      rc = right.count();
+    final Int      lc = Left .count();
     final Bool      r = new Bool(false);
 
     new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots with space for the additional key
