@@ -116,10 +116,10 @@ class Tree extends Program                                                      
   int           mnl() {return maximumNumberOfLevels;}                                                                   // Maximum number of levels
 
   Int allocate()                                                                                                        // Allocate a leaf or a branch using the free chain slots as an array that can be searched for the first used slot in log time
-   {freeChain.countOnes().eq(0).stop("No more leaves or branches");
-    final Int i = new Int("index")    .set(freeChain.firstOne());                                                       // Index of the free node
-    freeChain.clear(i);                                                                                                 // Remove indexed node from free chain
-    return i;
+   {final Int a = new Int("index") .set(freeChain.firstOne());                                                          // First element on free chain
+    a.notValid().stop("No more leaves or branches");
+    freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
+    return a;
    }
 
   void free(Locatable Free)                                                                                             // Free a leaf or a branch
@@ -203,7 +203,7 @@ class Tree extends Program                                                      
   StringBuilder dumpTree()                                                                                              // Dump the tree
    {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
-    final Int           c = new Int(numberOfNodes).sub(freeChain.countOnes());
+    final Int           c = new Int(numberOfNodes).sub(freeChain.countAllOnes());
     new I()                                                                                                             // Dump the tree statistics
      {void action()
        {s.setLength(0);
@@ -1056,10 +1056,10 @@ class Tree extends Program                                                      
   static void test_tree(boolean Ex)
    {sayCurrentTestName();
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-                                            t.freeChain.countZeros().ok(1);
-    final Leaf   a = t.leaf(t.new Int(0));  t.freeChain.countZeros().ok(1);
-    final Leaf   b = t.leaf();              t.freeChain.countZeros().ok(2);
-    final Branch c = t.branch();            t.freeChain.countZeros().ok(3);
+                                            t.freeChain.countAllZeros().ok(1);
+    final Leaf   a = t.leaf(t.new Int(0));  t.freeChain.countAllZeros().ok(1);
+    final Leaf   b = t.leaf();              t.freeChain.countAllZeros().ok(2);
+    final Branch c = t.branch();            t.freeChain.countAllZeros().ok(3);
     a.insert(t.new Int(2), t.new Int(22)); t.countInc();
     b.insert(t.new Int(4), t.new Int(44)); t.countInc();
     c.insert(t.new Int(5), t.new Int(55));
@@ -1799,9 +1799,6 @@ Leaf           size:  4, count:  2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending(true);
-    test_deleteDescending(true);
-    test_deleteRandom32(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
