@@ -2,8 +2,8 @@
 // Distributed sparse slots used to hold the key of the Btree
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-//Improvements Distribute block across any adjacent zeros
-//Improvements Clear the slots with Array.fill()
+//Improvements Distribute sequential block across any adjacent zeros
+//Improvements Clear the slots with Array.fill() once bitset has inverted the zeros tree
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
