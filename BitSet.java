@@ -2,18 +2,18 @@
 // Locate set or cleared bits in a  fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// CountOnes and zeros should skip over long blocks of the same bit type
-// Invert zeros tree to simplify nextZero and prevZero
 // Use zz() to remove all functions not called from Tree.java
+// CountOnes and zeros should skip over long blocks of the same bit type if these methods are still being used or be replaced with count()
+// ++Invert zeros tree to simplify nextZero and prevZero, and allowing the clearing of slots using Array.fill
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
 
 final public class BitSet extends Program                                                                               // Abstract fixed-size bit set using byte-level storage.
  {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
-  final int byteSize;                                                                                                   // Number of bytes in the bit set.
-  final boolean oneTreeBit;                                                                                             // At most only one tree bit present
-  final boolean powerOfTwo;                                                                                             // Able to optimize some operations because the requested bitset has a number of elements that is a power of two
+  final int             byteSize;                                                                                       // Number of bytes in the bit set.
+  final boolean       oneTreeBit;                                                                                       // At most only one tree bit present
+  final boolean       powerOfTwo;                                                                                       // Able to optimize some operations because the requested bitset has a number of elements that is a power of two
   final Build              build;                                                                                       // Memory to use
   final ByteMemory.Ref memoryRef;                                                                                       // Build used to create biotset
   static int bitsetNumbers = 0;                                                                                         // Bitsets created
@@ -86,26 +86,128 @@ final public class BitSet extends Program                                       
 
   public  int size() {return build.bitSize;}                                                                            // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
 
-  void limitsUpperOne()                                                                                                 // Upper limits of the one tree
-   {int l = bitSize1, w = bitSize;
-    for (int i = 0, N = top_one(); i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
+//D1 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
+
+  public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void set  (Int Index, Bool Value)                                                                              // Set or clear a bit in the bitset
+   {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value
+     {void Then()
+       {setBitNC(Index, Value);                                                                                         // Set the bit
+        new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the ones  tree
+        new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the zeros tree
+       }
+     };
    }
 
-  void limitsUpperZero()                                                                                                //  Upper limits of the zero tree
-   {for (int i = 0, N = top_one(); i <= N; ++i)
-     {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i]; else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
-     }
+  public Bool get   (Int Index) {return getBit(Index);}                                                                 // Get a bit from the bit set
+  public Bool getBit(Int Index)                                                                                         // Get a bit from the bit set
+   {if (immediate()) checkInActual(Index);
+    return getBitNC(Index);
    }
 
-  void limitsLowerOne()                                                                                                 // Lower limits of the one tree
-   {int l = 0, w = bitSize;
-    for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
+  Bool    getBitNC(Int Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
+  boolean getBitNC(int Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
+
+  void setBit  (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value.
+  void setBitNC(Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value without checking index
+
+  void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();}                                            // Next layer down in a bit tree
+  void moveUpOneLayer  (Int B, Int p, Int w) {w.up();   p.sub(w); B.up()  ;}                                            // Move up one layer in the bit tree
+
+  void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the ones tree
+   {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
+
+    new For(logBitSize)                                                                                                 // Set bits along the path to the root of the one tree
+     {void body(Int Index, Bool Continue)
+       {new If (getBitNC(p))                                                                                            // Is the bit already set
+         {void Then() {Continue.clear();}                                                                               // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+          void Else() {setBitNC(p, new Bool(true)); p.set(parentOne(p)); Continue.set(); }                              // Flip the bit and continue
+         };
+       }
+     };
    }
 
-  void limitsLowerZero()                                                                                                // Lower limits of the zero tree
-   {for (int i = 0, N = top_one(); i <= N; ++i)
-     {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i]; else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
-     }
+  void clearOnePath(Int Index)                                                                                          // Clear bits along the path to the root of the ones tree if both children are zero
+   {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
+
+    new For(logBitSize)                                                                                                 //
+     {void body(Int Index, Bool Continue)
+       {new If (getBitNC(p))                                                                                            // Bit might need to be cleared
+         {void Then()
+           {final Int q = childLowOne(p);
+            new If (getBitNC(q).Flip().and(getBitNC(q.Inc()).Flip()))                                                    // Both child bits are clear so the parent should be cleared as well
+             {void Then()
+               {setBitNC(p, new Bool(false));                                                                           // Clear set bit along path to root
+                Continue.set();                                                                                         // Continue up
+               }
+             };
+           }
+         };
+       }
+     };
+   }
+
+  Int addressZeroTree()                                                                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
+   {final Int p = new Int(bitSize+bitSize1);
+    return p;
+   }
+
+  private void clearZeroPath(Int Index)                                                                                 // Clear the target bit and set bits along the path from the indexed bit to the root of the bit tree
+   {final Int p = new Int(addressZeroTree());                                                                           // Address zero bit tree
+    final Int b = new Int(Index.Down());                                                                                // Position in layer
+    final Int w = new Int(bitSize2);                                                                                    // Width of this layer
+
+    new For(bitSize)                                                                                                    // Step from root to leaf
+     {void body(Int Index, Bool Continue)
+       {final Int  q = new Int(p.Add(b));
+        Continue.set();
+        new If (getBitNC(q))                                                                                            // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+         {void Then() {Continue.clear();}
+          void Else() {setBitNC(q, new Bool(true));}
+         };
+        moveDownOneLayer(b, p, w);                                                                                      // Next layer
+        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
+       }
+     };
+   }
+
+  private void setZeroPath(Int Index)                                                                                   // Set bits along the path from the indexed bit to the root of the bit tree unless there is another path running through each bit
+   {final Int w = new Int(bitSize2);                                                                                    // Width of child layer
+    final Int p = new Int(addressZeroTree());                                                                           // First child layer is the first layer of the zero bit tree
+    final Int b = new Int(Index.Down());                                                                                // Index of bit in child layer
+    final Int B = new Int(b.Up());                                                                                      // Position in layer above
+
+    new If (getBitNC(new Int(B)).and(getBitNC(new Int(B.Inc()))))                                                       // Check there is a zero
+     {void Then()
+       {final Int r = new Int(p.Add(b));                                                                                // Position in first layer of Zero tree
+        new If (getBitNC(r))                                                                                            // Bit is not already correctly set to show no path so there is nothing more to do
+         {void Then()
+           {setBitNC(r, new Bool(false));                                                                               // Clear set bit along path to root to show no path
+
+            new For(bitSize)                                                                                            // Step from root to leaf
+             {void body(Int Index, Bool Continue)
+               {final Int  P = p.dup();                                                                                 // Child layer becomes parent layer
+                moveDownOneLayer(b, p, w);                                                                              // Index of bit in child layer, position in child layer, width of child layer
+                final Int  Q = P.Add(b).add(b);
+                Continue.set();                                                                                         // Complete early if we found a bit that does not need setting
+                new If (getBitNC(new Int(Q)).or(getBitNC(new Int(Q.Inc()))))
+                 {void Then() {Continue.clear();}                                                                       // There is a one in the upper row so we do not need to clear further down
+                  void Else()                                                                                           // Need to show that there are no ones in the upper row
+                   {final Int r = new Int(p.Add(b));                                                                    // Bit to set
+                    new If (getBitNC(r).Flip())
+                     {void Then() {Continue.clear();}                                                                   // Bit is already correctly set so there is nothing more to do
+                      void Else() {setBitNC(r, new Bool(false));}                                                       // Clear set bit along path to root
+                     };
+                   }
+                 };
+                Continue.and(w.gt(0));                                                                                  // As long as we are in a valid level
+               }
+             };
+           }
+         };
+       }
+     };
    }
 
 //D1 Powers and Positions                                                                                               // Operations in numbers related to powers of two
@@ -168,6 +270,43 @@ final public class BitSet extends Program                                       
   Int childLowOne  (Int Pos) {return Pos.Dec().mul(2).sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
   Int parentOne    (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                  // Step to the corresponding parent bit index for this child bit index
 
+  int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
+  int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
+
+  Int baseZero ()        {final Int r = new Int("baseZero" );  new I() {void action() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} // Position in the current row
+  Int baseOne  ()        {final Int r = new Int("baseOne"  );  new I() {void action() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} // Position in the current row
+  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero"  ); new I() {void action() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
+  Int widthZero(Int Pos) {final Int r = new Int("widthZero");  new I() {void action() {r.ex(Int.Ops.set, widthZero (Pos.i()));}}; return r;} // Width of the current row
+  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"   ); new I() {void action() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} // Position in the current row
+  Int widthOne (Int Pos) {final Int r = new Int("widthOne" );  new I() {void action() {r.ex(Int.Ops.set, widthOne  (Pos.i()));}}; return r;} // Width of the current row
+
+  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void action() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);}}; return r;} // Upper limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
+  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void action() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
+  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void action() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);}}; return r;} // Lower limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
+  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void action() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);}}; return r;} // Lower limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
+
+  void limitsUpperOne()                                                                                                 // Upper limits of the one tree
+   {int l = bitSize1, w = bitSize;
+    for (int i = 0, N = top_one(); i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
+   }
+
+  void limitsUpperZero()                                                                                                //  Upper limits of the zero tree
+   {for (int i = 0, N = top_one(); i <= N; ++i)
+     {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i]; else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
+     }
+   }
+
+  void limitsLowerOne()                                                                                                 // Lower limits of the one tree
+   {int l = 0, w = bitSize;
+    for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
+   }
+
+  void limitsLowerZero()                                                                                                // Lower limits of the zero tree
+   {for (int i = 0, N = top_one(); i <= N; ++i)
+     {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i]; else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
+     }
+   }
+
   int pos_zero  (int Pos)                                                                                               // Position in the indicated row of the zero tree
    {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
     return pos_one(Pos - base_zero() + bitSize);
@@ -193,22 +332,6 @@ final public class BitSet extends Program                                       
     for (int i = 0; i < bitSize; i++) if (p >= b) {p -= b; b >>>= 1;} else break;
     return b;
    }
-
-
-  int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
-  int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
-
-  Int baseZero ()        {final Int r = new Int("baseZero" );  new I() {void action() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} // Position in the current row
-  Int baseOne  ()        {final Int r = new Int("baseOne"  );  new I() {void action() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} // Position in the current row
-  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero"  ); new I() {void action() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
-  Int widthZero(Int Pos) {final Int r = new Int("widthZero");  new I() {void action() {r.ex(Int.Ops.set, widthZero (Pos.i()));}}; return r;} // Width of the current row
-  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"   ); new I() {void action() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} // Position in the current row
-  Int widthOne (Int Pos) {final Int r = new Int("widthOne" );  new I() {void action() {r.ex(Int.Ops.set, widthOne  (Pos.i()));}}; return r;} // Width of the current row
-
-  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void action() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);}}; return r;} // Upper limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void action() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void action() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);}}; return r;} // Lower limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void action() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);}}; return r;} // Lower limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
 
   Int lowOne(Int Pos)                                                                                                   // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
    {subStart("Bitset.lowOne");
@@ -243,8 +366,8 @@ final public class BitSet extends Program                                       
        {new If (p.ge(bitSize))
          {void Then()
            {Continue.set();                                                                                             // Continue while we are in the ones tree
-            final Int q = childHighOne(p);                                                                                  // Lower level bit
-            new If (getBitNC(q))                                                                                            // Choose upper bit over lower bit if possible
+            final Int q = childHighOne(p);                                                                              // Lower level bit
+            new If (getBitNC(q))                                                                                        // Choose upper bit over lower bit if possible
              {void Then() {p.set(q);}
               void Else() {p.set(q.dec());}
              };
@@ -353,148 +476,6 @@ final public class BitSet extends Program                                       
 
      };
     return r;
-   }
-
-//D1 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
-
-  public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void set  (Int Index, Bool Value)                                                                              // Set or clear a bit in the bitset
-   {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value
-     {void Then()
-       {setBitNC(Index, Value);                                                                                         // Set the bit
-        new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the ones  tree
-        new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the zeros tree
-       }
-     };
-   }
-
-  public Bool get   (Int Index) {return getBit(Index);}                                                                 // Get a bit from the bit set
-  public Bool getBit(Int Index)                                                                                         // Get a bit from the bit set
-   {if (immediate()) checkInActual(Index);
-    return getBitNC(Index);
-   }
-
-  Bool    getBitNC(Int Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
-  boolean getBitNC(int Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
-
-  void setBit  (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value.
-  void setBitNC(Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value without checking index
-
-  void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();}                                            // Next layer down in a bit tree
-  void moveUpOneLayer  (Int B, Int p, Int w) {w.up();   p.sub(w); B.up()  ;}                                            // Move up one layer in the bit tree
-
-  void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the bit tree
-   {final Int b = new Int(Index);                                                                                       // Position in level
-    final Int p = new Int(0);                                                                                           // Position in bits, width
-    final Int w = new Int(bitSize);                                                                                     // Width
-
-    new For(bitSize)                                                                                                    // Set bits along the path to the actual bit in the One tree
-     {void body(Int Index, Bool Continue)
-       {Continue.set();
-                                                                                                                        // Complete early if we found a bit that does not need setting
-        new If (p.ne(0))                                                                                                // Not on the actual bits
-         {void Then()                                                                                                   // Not on the actual bits
-           {final Int q = new Int(p.Add(b));                                                                            // Position in One tree
-            new If (getBitNC(q))                                                                                        // Is the bit already set
-             {void Then() {Continue.clear();}                                                                           // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-              void Else() {setBitNC(q, new Bool(true));}                                                                // Flip the bit and continue
-             };
-           }
-         };
-        moveDownOneLayer(b, p, w);                                                                                      // Next level up
-        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
-       }
-     };
-   }
-
-  void clearOnePath(Int Index)                                                                                          // Clear bits along the path from the indexed bit to the root of the bit tree
-   {final Int b = new Int(Index);                                                                                       // Position in level
-    final Int p = new Int(0);                                                                                           // Position in bits, width
-    final Int w = new Int(bitSize);                                                                                     // Width
-
-    new For(bitSize)                                                                                                    // Step from root to leaf
-     {void body(Int Index, Bool Continue)
-       {final Int  B = b.Down();
-        final Int  q = p.Add(w).add(B);
-        final Int  Q = p.Add2(B);
-        Continue.set();                                                                                                 // Complete early if we found a bit that does not need setting
-        new If (B.Up().inc().lt(w).and(getBitNC(Q).Flip(), getBitNC(Q.Inc()).Flip()))                                   // Check both bits in the previous row are off
-         {void Then()
-           {final Int r = new Int(q);
-            new If (getBitNC(r).Flip())
-             {void Then() {Continue.clear();}                                                                           // Bit is already correctly set so there is nothing more to do
-              void Else() {setBitNC(r, new Bool(false));}                                                               // Clear set bit along path to root
-             };
-           }
-         };
-        moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
-       }
-     };
-   }
-
-  Int addressZeroTree()                                                                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {final Int p = new Int(bitSize+bitSize1);
-    return p;
-   }
-
-  private void clearZeroPath(Int Index)                                                                                 // Clear the target bit and set bits along the path from the indexed bit to the root of the bit tree
-   {final Int p = new Int(addressZeroTree());                                                                           // Address zero bit tree
-    final Int b = new Int(Index.Down());                                                                                // Position in layer
-    final Int w = new Int(bitSize2);                                                                                    // Width of this layer
-
-    new For(bitSize)                                                                                                    // Step from root to leaf
-     {void body(Int Index, Bool Continue)
-       {final Int  q = new Int(p.Add(b));
-        Continue.set();
-        new If (getBitNC(q))                                                                                            // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-         {void Then() {Continue.clear();}
-          void Else() {setBitNC(q, new Bool(true));}
-         };
-        moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
-       }
-     };
-   }
-
-
-  private void setZeroPath(Int Index)                                                                                   // Set bits along the path from the indexed bit to the root of the bit tree unless there is another path running through each bit
-   {final Int w = new Int(bitSize2);                                                                                    // Width of child layer
-    final Int p = new Int(addressZeroTree());                                                                           // First child layer is the first layer of the zero bit tree
-    final Int b = new Int(Index.Down());                                                                                // Index of bit in child layer
-    final Int B = new Int(b.Up());                                                                                      // Position in layer above
-
-    new If (getBitNC(new Int(B)).and(getBitNC(new Int(B.Inc()))))                                                       // Check there is a zero
-     {void Then()
-       {final Int r = new Int(p.Add(b));                                                                                // Position in first layer of Zero tree
-        new If (getBitNC(r))                                                                                            // Bit is not already correctly set to show no path so there is nothing more to do
-         {void Then()
-           {setBitNC(r, new Bool(false));                                                                               // Clear set bit along path to root to show no path
-
-            new For(bitSize)                                                                                            // Step from root to leaf
-             {void body(Int Index, Bool Continue)
-               {final Int  P = p.dup();                                                                                 // Child layer becomes parent layer
-                moveDownOneLayer(b, p, w);                                                                              // Index of bit in child layer, position in child layer, width of child layer
-                final Int  Q = P.Add(b).add(b);
-                Continue.set();                                                                                         // Complete early if we found a bit that does not need setting
-                new If (getBitNC(new Int(Q)).or(getBitNC(new Int(Q.Inc()))))
-                 {void Then() {Continue.clear();}                                                                       // There is a one in the upper row so we do not need to clear further down
-                  void Else()                                                                                           // Need to show that there are no ones in the upper row
-                   {final Int r = new Int(p.Add(b));                                                                    // Bit to set
-                    new If (getBitNC(r).Flip())
-                     {void Then() {Continue.clear();}                                                                   // Bit is already correctly set so there is nothing more to do
-                      void Else() {setBitNC(r, new Bool(false));}                                                       // Clear set bit along path to root
-                     };
-                   }
-                 };
-                Continue.and(w.gt(0));                                                                                  // As long as we are in a valid level
-               }
-             };
-           }
-         };
-       }
-     };
    }
 
 //D1 Locate Ones                                                                                                        // Find the first, last, next, previous bit set to one
@@ -660,7 +641,7 @@ final public class BitSet extends Program                                       
     return Next;                                                                                                        // Result is valid if found
    }
 
-  Int prevZero(Int Start)                                                                                               // Find the index of the previous set bit below the specified bit
+  public Int prevZero(Int Start)                                                                                        // Find the index of the previous set bit below the specified bit
    {subStart("Bitset.prevZero");
     checkInActual(Start);
     if (immediate()) checkInActual(Start);
@@ -1713,6 +1694,50 @@ Zero:
               test_lowHighZero(false);
    }
 
+  static void test_clearOnePath(boolean Ex)                                                                             // Test tree of searchable one bits
+   {sayCurrentTestName();
+    final int N = 16;
+    final BitSet b = test_bits(Ex, N);
+    for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 1));
+
+   //testStop(b);
+
+    b.ok(()->b, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   1    0   16 |  0  0  0  0  1  1  1  1  0  0  0  0  1  1  1  1
+One:
+   2   16    8 |  0  0  1  1  0  0  1  1
+   3   24    4 |  0  1  0  1
+   4   28    2 |  1  1
+   5   30    1 |  1
+Zero:
+   1   31    8 |  1  1  0  0  1  1  0  0
+   2   39    4 |  1  0  1  0
+   3   43    2 |  1  1
+   4   45    1 |  1
+""");
+
+    say("AAAA00", b);
+    b.setBitNC(    b.new Int(5), b.new Bool(false));
+    b.clearOnePath(b.new Int(5));
+    say("AAAA11", 5, b);
+    b.setBitNC(    b.new Int(4), b.new Bool(false));
+    b.clearOnePath(b.new Int(4));
+    say("AAAA22", 4, b);
+    b.setBitNC(    b.new Int(6), b.new Bool(false));
+    b.clearOnePath(b.new Int(6));
+    say("AAAA33", 6, b);
+debug = true;
+    b.setBitNC(    b.new Int(7), b.new Bool(false));
+    b.clearOnePath(b.new Int(7));
+    say("AAAA44", 7, b);
+   }
+
+  static void test_clearOnePath()                                                                                         // Test tree of searchable one bits
+   {          test_clearOnePath(true);
+              test_clearOnePath(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be stable.
    {test_prevNext01();
     test_prevNext();
@@ -1727,7 +1752,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();                                                                                                         // Run baseline tests.
+    test_clearOnePath(true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
