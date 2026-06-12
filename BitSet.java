@@ -2,7 +2,8 @@
 // Locate set or cleared bits in a  fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// CountOnes and zeros should skip ove long blocks of teh same
+// CountOnes and zeros should skip over long blocks of the same bit type
+// Invert zeros tree to simplify nextZero and prevZero
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -84,19 +85,6 @@ final public class BitSet extends Program                                       
 
   public  int size() {return build.bitSize;}                                                                            // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
 
-  private void checkIndex(Int Index)                                                                                    // Check that a bit index is valid
-   {new If (Index.lt(0))
-     {void Then() {stop("BitSet index cannot be negative:", Index);}
-     };
-
-    new If(Index.ge(size()))
-     {void Then()
-       {stop("BitSet index cannot be greater than or equal to:",
-             Index, size());
-       }
-     };
-   }
-
   void limitsUpperOne()                                                                                                 // Upper limits of the one tree
    {int l = bitSize1, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
@@ -123,7 +111,7 @@ final public class BitSet extends Program                                       
 
   void checkInActual(Int Pos)                                                                                           // Check that we are in the actual bits
    {if (immediate())
-     {final int a = 0, b = build.bitSize, P = Pos.i();
+     {final int a = 0, b = size(), P = Pos.i();
       if (P < a) stop("Position is below actual bits:", P, a);
       if (P > b) stop("Position is above ones tree:", P, b);
      }
@@ -137,11 +125,23 @@ final public class BitSet extends Program                                       
      }
    }
 
+  void checkInActualOrOnes(Int Pos)                                                                                     // Check that we are in the actual bits or the ones tree
+   {if (immediate())
+     {if (Pos.i() < size()) checkInActual(Pos); else checkInOnesTree(Pos);
+     }
+   }
+
   void checkInZerosTree(Int Pos)                                                                                        // Check that we are in the zeros tree
    {if (immediate())
      {final int a = base_zero(), b = a + bitSize, P = Pos.i();
       if (P < a) stop("Position is below zeros tree:", P, a);
       if (P > b) stop("Position is above zeros tree:", P, b);
+     }
+   }
+
+  void checkInActualOrZeros(Int Pos)                                                                                    // Check that we are in the zeros tree or the actual bots
+   {if (immediate())
+     {if (Pos.i() < size()) checkInActual(Pos); else checkInZerosTree(Pos);
      }
    }
 
@@ -211,6 +211,7 @@ final public class BitSet extends Program                                       
 
   Int lowOne(Int Pos)                                                                                                   // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
    {subStart("Bitset.lowOne");
+    checkInActualOrOnes(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
     new For (new Int(logBitSize))                                                                                       // Step down through the ones tree to reach the actual bits
@@ -233,6 +234,7 @@ final public class BitSet extends Program                                       
 
   Int highOne(Int Pos)                                                                                                  // Find the highest bit position with a one in it below the indicated subtree in the ones tree
    {subStart("Bitset.highOne");
+    checkInActualOrOnes(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
     new For(new Int(logBitSize))                                                                                        // Step down
@@ -255,6 +257,7 @@ final public class BitSet extends Program                                       
 
   Int lowZero(Int Pos)                                                                                                  // Find the lowest bit position with a zero in it below the indicated subtree in the zeros tree
    {subStart("Bitset.lowZero");
+    checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     final Int p = childLowZero(new Int(Pos));                                                                           // Step down through zeros tree - assumes we started in the zeros tree
 
@@ -284,6 +287,7 @@ final public class BitSet extends Program                                       
 
   Int highZero(Int Pos)                                                                                                 // Find the highest bit position with a zero in it below the indicated subtree in the zeros tree
    {subStart("Bitset.highZero");
+    checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the zeros tree
     final Int p = childHighZero(new Int(Pos));                                                                          // Step down through zeros tree - assumes we started in the zeros tree
     new For (new Int(logBitSize))                                                                                       // Step down through the ones tree to reach the actual bits
@@ -311,7 +315,7 @@ final public class BitSet extends Program                                       
     return p;
    }
 
-  Bool canGoLeft(Int Pos)                                                                                               // Whether we can go left from the current position
+  Bool canGoLeftToOne(Int Pos)                                                                                          // Whether we can go left from the current position
    {subStart("Bitset.canGoLeft");
     checkInOnesTree(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
@@ -320,7 +324,7 @@ final public class BitSet extends Program                                       
     return r;
    }
 
-  Bool canGoRight(Int Pos)                                                                                              // Whether we can go right from the current position
+  Bool canGoRightToOne(Int Pos)                                                                                         // Whether we can go right from the current position
    {subStart("Bitset.canGoRight");
     checkInOnesTree(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:",  Pos, this);                           // We can only step down from a one in the ones tree
@@ -329,8 +333,10 @@ final public class BitSet extends Program                                       
     return r;
    }
 
-  Bool adjacentOnes(Int A, Int B)                                                                                       // Whether two ones in the ones tree are adjacent
+  Bool adjacentOnes(Int A, Int B)                                                                                       // Whether two ones in the actual bits are separated by zero or more zeros
    {final Bool r = new Bool();
+    checkInActual(A);
+    checkInActual(B);
     if (immediate() && getBitNC(A).Flip().b()) stop("Bitset entry  is not a one", A);
     if (immediate() && getBitNC(B).Flip().b()) stop("Bitset entry  is not a one", B);
     new If (A.eq(B))
@@ -364,7 +370,7 @@ final public class BitSet extends Program                                       
 
   public Bool get   (Int Index) {return getBit(Index);}                                                                 // Get a bit from the bit set
   public Bool getBit(Int Index)                                                                                         // Get a bit from the bit set
-   {if (immediate()) checkIndex(Index);
+   {if (immediate()) checkInActual(Index);
     return getBitNC(Index);
    }
 
@@ -446,7 +452,7 @@ final public class BitSet extends Program                                       
           void Else() {setBitNC(q, new Bool(true));}
          };
         moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        Continue.and(w.gt(0));                                                                                                 // As long as we are in a valid level
+        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
        }
      };
    }
@@ -519,7 +525,8 @@ final public class BitSet extends Program                                       
 
   public Int nextOne(Int Start)                                                                                         // Find the index of the next set bit above the specified start bit. This is the most heavily used routine by far
    {subStart("Bitset.nextOne");
-    if (immediate()) checkIndex(Start);
+    checkInActual(Start);
+    if (immediate()) checkInActual(Start);
     final Int Next = new Int();                                                                                         // Invalid indicates not found
     final Int p    = new Int(Start);                                                                                    // Start position
 
@@ -556,7 +563,7 @@ final public class BitSet extends Program                                       
 
   public Int prevOne(Int Start)                                                                                         // Find the index of the previous set bit below the specified bit
    {subStart("Bitset.nextOne");
-    if (immediate()) checkIndex(Start);
+    if (immediate()) checkInActual(Start);
     final Int Prev = new Int();                                                                                         // Invalid indicates not found
     final Int p    = new Int(Start);                                                                                    // Start position
 
@@ -605,7 +612,8 @@ final public class BitSet extends Program                                       
 
   public Int nextZero(Int Start)                                                                                        // Find the index of the next clear  bit above the specified bit
    {subStart("Bitset.nextZero");
-    if (immediate()) checkIndex(Start);
+    checkInActual(Start);
+    if (immediate()) checkInActual(Start);
     final Int Next = new Int();                                                                                         // Invalid indicates not found
     final Int p    = new Int(Start);                                                                                    // Start position
     final Int Q    = p.Inc();
@@ -650,24 +658,11 @@ final public class BitSet extends Program                                       
     subFinish();
     return Next;                                                                                                        // Result is valid if found
    }
-/*
-BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16 |  1  1  1  1  0  0  0  0  1  1  1  1  0  0  0  0
-One:
-   2   16    8 |  1  1  0  0  1  1  0  0
-   3   24    4 |  1  0  1  0
-   4   28    2 |  1  1
-   5   30    1 |  1
-Zero:
-   1   31    8 |  0  0  1  1  0  0  1  1
-   2   39    4 |  0  1  0  1
-   3   43    2 |  1  1
-   4   45    1 |  1
-*/
 
   Int prevZero(Int Start)                                                                                               // Find the index of the previous set bit below the specified bit
    {subStart("Bitset.prevZero");
-    if (immediate()) checkIndex(Start);
+    checkInActual(Start);
+    if (immediate()) checkInActual(Start);
     final Int Prev = new Int();                                                                                         // Location of previous zero ro ivalid of thre is not one
     final Int p    = new Int(Start);                                                                                    // Start position in body of bitset
     new If (p.eq(0))                                                                                                    // At start of bitset
@@ -682,7 +677,7 @@ Zero:
            {new For(logBitSize)
              {void body(Int Up, Bool ContinueUp)
                {p.set(parentZero(p));                                                                                   // Every bit has a parent exceptteh topmost bit ion the tree but the loop will terminated on count before then
-                new If (pos_zero(p).eq(0))                                                                               // At start of row
+                new If (pos_zero(p).eq(0))                                                                              // At start of row
                  {void Then() {}                                                                                        // At start of row - not found
                   void Else()
                    {p.dec();                                                                                            // Position to left
@@ -1497,9 +1492,9 @@ Zero:
     b.lowZero(b.new Int(15+17)).ok( 2);   b.highZero(b.new Int(15+17)).ok( 3);
     b.lowZero(b.new Int(15+16)).ok( 0);   b.highZero(b.new Int(15+16)).ok( 1);
 
-    b.canGoLeft(b.new Int(30)).ok( true); b.canGoRight(b.new Int(30)).ok( true);
-    b.canGoLeft(b.new Int(26)).ok(false); b.canGoRight(b.new Int(26)).ok( true);
-    b.canGoLeft(b.new Int(29)).ok( true); b.canGoRight(b.new Int(29)).ok(false);
+    b.canGoLeftToOne(b.new Int(30)).ok( true); b.canGoRightToOne(b.new Int(30)).ok( true);
+    b.canGoLeftToOne(b.new Int(26)).ok(false); b.canGoRightToOne(b.new Int(26)).ok( true);
+    b.canGoLeftToOne(b.new Int(29)).ok( true); b.canGoRightToOne(b.new Int(29)).ok(false);
 
     b.baseOne() .ok(16);                                                    b.baseZero().ok(31);
     b.pos_one(b.new Int( 0)).ok( 0); b.widthOne(b.new Int( 0)).ok(16);       b.pos_zero(b.new Int(    0)).ok( 0); b.widthZero(b.new Int(    0)).ok(16);
