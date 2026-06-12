@@ -121,6 +121,30 @@ final public class BitSet extends Program                                       
 
 //D1 Powers and Positions                                                                                               // Operations in numbers related to powers of two
 
+  void checkInActual(Int Pos)                                                                                           // Check that we are in the actual bits
+   {if (immediate())
+     {final int a = 0, b = build.bitSize, P = Pos.i();
+      if (P < a) stop("Position is below actual bits:", P, a);
+      if (P > b) stop("Position is above ones tree:", P, b);
+     }
+   }
+
+  void checkInOnesTree(Int Pos)                                                                                         // Check that we are in the ones tree
+   {if (immediate())
+     {final int a = base_one(), b = a + bitSize, P = Pos.i();
+      if (P < a) stop("Position is below ones tree:", P, a);
+      if (P > b) stop("Position is above ones tree:", P, b);
+     }
+   }
+
+  void checkInZerosTree(Int Pos)                                                                                        // Check that we are in the zeros tree
+   {if (immediate())
+     {final int a = base_zero(), b = a + bitSize, P = Pos.i();
+      if (P < a) stop("Position is below zeros tree:", P, a);
+      if (P > b) stop("Position is above zeros tree:", P, b);
+     }
+   }
+
   int top_zero()     {return 2 * bitSize - 2 + bitSize1;}                                                               // Top of the zeros tree if it exists - zero based
   Int topZero()      {return new Int(top_zero());}                                                                      // Top of the zeros tree if it exists - zero based
   int top_one ()     {return 2 * bitSize - 2;}                                                                          // Top of the ones  tree if it exists - zero based
@@ -131,14 +155,6 @@ final public class BitSet extends Program                                       
 
   Int posOne (Int P) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posOne (P.i()));}}; return r;} // Position in the ones  tree if it exists, argument is zero based as is the result
   Int posZero(Int P) {final Int r = new Int(); new I() {void action() {r.ex(Int.Ops.set, posZero(P.i()));}}; return r;} // Position in the zeros tree if it exists, argument is zero based as is the result
-
-  void checkLow(Int Pos, int Low)                                                                                       // Check that we can step down
-   {if (immediate())
-     {final int p = topOne().i(), P = Pos.i();                                                                          // Number of elements in the tree
-      if (P < Low) stop("Position is below tree:", P);
-      if (P > p  ) stop("Position is above tree:", P, p);
-     }
-   }
 
   Int zeroToOne(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
   Int oneToZero(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
@@ -151,42 +167,42 @@ final public class BitSet extends Program                                       
   Int childLowOne  (Int Pos) {return Pos.Dec().mul(2).sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
   Int parentOne    (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                  // Step to the corresponding parent bit index for this child bit index
 
-  int zeroPos  (int Pos)                                                                                                // Position in the indicated row of the zero tree
+  int pos_zero  (int Pos)                                                                                               // Position in the indicated row of the zero tree
    {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
-    return onePos(Pos - zero_base() + bitSize);
+    return pos_one(Pos - base_zero() + bitSize);
    }
 
-  int zeroWidth(int Pos)                                                                                                // Width of the specified position in the indicated row of the zero tree
+  int widthZero(int Pos)                                                                                                // Width of the specified position in the indicated row of the zero tree
    {if (Pos < bitSize) return bitSize;
-    return oneWidth(Pos - zero_base() + bitSize);
+    return widthOne(Pos - base_zero() + bitSize);
    }
 
-  int onePos  (int Pos)                                                                                                 // Position in the indicated row of the one tree
+  int pos_one  (int Pos)                                                                                                // Position in the indicated row of the one tree
    {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
-    int p = Pos - one_base();
+    int p = Pos - base_one();
     int b = bitSize2;
     for (int i = 0; i < bitSize; i++) if (p >= b) {p -= b; b >>>= 1;} else break;
     return p;
    }
 
-  int oneWidth(int Pos)                                                                                                // Width of the specified position in the indicated row of the one tree
+  int widthOne(int Pos)                                                                                                 // Width of the specified position in the indicated row of the one tree
    {if (Pos < bitSize) return bitSize;
-    int p = Pos - one_base();
+    int p = Pos - base_one();
     int b = bitSize2;
     for (int i = 0; i < bitSize; i++) if (p >= b) {p -= b; b >>>= 1;} else break;
     return b;
    }
 
 
-  int zero_base()  {return posZero(0);}                                                                                 // Position in the current row
-  int one_base ()  {return posOne (0);}                                                                                 // Position in the current row
+  int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
+  int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
 
-  Int zeroBase ()        {final Int r = new Int("zeroBase" ); new I() {void action() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} // Position in the current row
-  Int oneBase  ()        {final Int r = new Int("oneBase"  ); new I() {void action() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} // Position in the current row
-  Int zeroPos  (Int Pos) {final Int r = new Int("zeroPos"  ); new I() {void action() {r.ex(Int.Ops.set, zeroPos   (Pos.i()));}}; return r;} // Position in the current row
-  Int zeroWidth(Int Pos) {final Int r = new Int("zeroWidth"); new I() {void action() {r.ex(Int.Ops.set, zeroWidth (Pos.i()));}}; return r;} // Width of the current row
-  Int onePos   (Int Pos) {final Int r = new Int("onePos"   ); new I() {void action() {r.ex(Int.Ops.set, onePos    (Pos.i()));}}; return r;} // Position in the current row
-  Int oneWidth (Int Pos) {final Int r = new Int("oneWidth" ); new I() {void action() {r.ex(Int.Ops.set, oneWidth  (Pos.i()));}}; return r;} // Width of the current row
+  Int baseZero ()        {final Int r = new Int("baseZero" );  new I() {void action() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} // Position in the current row
+  Int baseOne  ()        {final Int r = new Int("baseOne"  );  new I() {void action() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} // Position in the current row
+  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero"  ); new I() {void action() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
+  Int widthZero(Int Pos) {final Int r = new Int("widthZero");  new I() {void action() {r.ex(Int.Ops.set, widthZero (Pos.i()));}}; return r;} // Width of the current row
+  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"   ); new I() {void action() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} // Position in the current row
+  Int widthOne (Int Pos) {final Int r = new Int("widthOne" );  new I() {void action() {r.ex(Int.Ops.set, widthOne  (Pos.i()));}}; return r;} // Width of the current row
 
   Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void action() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);}}; return r;} // Upper limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
   Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void action() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
@@ -297,7 +313,7 @@ final public class BitSet extends Program                                       
 
   Bool canGoLeft(Int Pos)                                                                                               // Whether we can go left from the current position
    {subStart("Bitset.canGoLeft");
-    checkLow(Pos, bitSize);
+    checkInOnesTree(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     final Bool r = new Bool(getBitNC(childLowOne(Pos)));
     subFinish();
@@ -306,7 +322,7 @@ final public class BitSet extends Program                                       
 
   Bool canGoRight(Int Pos)                                                                                              // Whether we can go right from the current position
    {subStart("Bitset.canGoRight");
-    checkLow(Pos, bitSize);
+    checkInOnesTree(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:",  Pos, this);                           // We can only step down from a one in the ones tree
     final Bool r = new Bool(getBitNC(childHighOne(Pos)));
     subFinish();
@@ -369,7 +385,7 @@ final public class BitSet extends Program                                       
     new For(bitSize)                                                                                                    // Set bits along the path to the actual bit in the One tree
      {void body(Int Index, Bool Continue)
        {Continue.set();
-                                                                                               // Complete early if we found a bit that does not need setting
+                                                                                                                        // Complete early if we found a bit that does not need setting
         new If (p.ne(0))                                                                                                // Not on the actual bits
          {void Then()                                                                                                   // Not on the actual bits
            {final Int q = new Int(p.Add(b));                                                                            // Position in One tree
@@ -666,7 +682,7 @@ Zero:
            {new For(logBitSize)
              {void body(Int Up, Bool ContinueUp)
                {p.set(parentZero(p));                                                                                   // Every bit has a parent exceptteh topmost bit ion the tree but the loop will terminated on count before then
-                new If (zeroPos(p).eq(0))                                                                               // At start of row
+                new If (pos_zero(p).eq(0))                                                                               // At start of row
                  {void Then() {}                                                                                        // At start of row - not found
                   void Else()
                    {p.dec();                                                                                            // Position to left
@@ -1315,7 +1331,7 @@ Zero:
 
     for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), b.new Bool(true));
 
-    b.topOne().ok(30); b.topZero().ok(45); b.oneBase() .ok(16); b.zeroBase().ok(31);
+    b.topOne().ok(30); b.topZero().ok(45); b.baseOne() .ok(16); b.baseZero().ok(31);
 
     b.childHighZero(b.new Int(45)).ok(44);
     b.childLowZero (b.new Int(45)).ok(43);
@@ -1485,38 +1501,38 @@ Zero:
     b.canGoLeft(b.new Int(26)).ok(false); b.canGoRight(b.new Int(26)).ok( true);
     b.canGoLeft(b.new Int(29)).ok( true); b.canGoRight(b.new Int(29)).ok(false);
 
-    b.oneBase() .ok(16);                                                    b.zeroBase().ok(31);
-    b.onePos(b.new Int( 0)).ok( 0); b.oneWidth(b.new Int( 0)).ok(16);       b.zeroPos(b.new Int(    0)).ok( 0); b.zeroWidth(b.new Int(    0)).ok(16);
-    b.onePos(b.new Int( 1)).ok( 1); b.oneWidth(b.new Int( 1)).ok(16);       b.zeroPos(b.new Int(    1)).ok( 1); b.zeroWidth(b.new Int(    1)).ok(16);
-    b.onePos(b.new Int( 2)).ok( 2); b.oneWidth(b.new Int( 2)).ok(16);       b.zeroPos(b.new Int(    2)).ok( 2); b.zeroWidth(b.new Int(    2)).ok(16);
-    b.onePos(b.new Int( 3)).ok( 3); b.oneWidth(b.new Int( 3)).ok(16);       b.zeroPos(b.new Int(    3)).ok( 3); b.zeroWidth(b.new Int(    3)).ok(16);
-    b.onePos(b.new Int( 4)).ok( 4); b.oneWidth(b.new Int( 4)).ok(16);       b.zeroPos(b.new Int(    4)).ok( 4); b.zeroWidth(b.new Int(    4)).ok(16);
-    b.onePos(b.new Int( 5)).ok( 5); b.oneWidth(b.new Int( 5)).ok(16);       b.zeroPos(b.new Int(    5)).ok( 5); b.zeroWidth(b.new Int(    5)).ok(16);
-    b.onePos(b.new Int( 6)).ok( 6); b.oneWidth(b.new Int( 6)).ok(16);       b.zeroPos(b.new Int(    6)).ok( 6); b.zeroWidth(b.new Int(    6)).ok(16);
-    b.onePos(b.new Int( 7)).ok( 7); b.oneWidth(b.new Int( 7)).ok(16);       b.zeroPos(b.new Int(    7)).ok( 7); b.zeroWidth(b.new Int(    7)).ok(16);
-    b.onePos(b.new Int( 8)).ok( 8); b.oneWidth(b.new Int( 8)).ok(16);       b.zeroPos(b.new Int(    8)).ok( 8); b.zeroWidth(b.new Int(    8)).ok(16);
-    b.onePos(b.new Int( 9)).ok( 9); b.oneWidth(b.new Int( 9)).ok(16);       b.zeroPos(b.new Int(    9)).ok( 9); b.zeroWidth(b.new Int(    9)).ok(16);
-    b.onePos(b.new Int(10)).ok(10); b.oneWidth(b.new Int(10)).ok(16);       b.zeroPos(b.new Int(   10)).ok(10); b.zeroWidth(b.new Int(   10)).ok(16);
-    b.onePos(b.new Int(11)).ok(11); b.oneWidth(b.new Int(11)).ok(16);       b.zeroPos(b.new Int(   11)).ok(11); b.zeroWidth(b.new Int(   11)).ok(16);
-    b.onePos(b.new Int(12)).ok(12); b.oneWidth(b.new Int(12)).ok(16);       b.zeroPos(b.new Int(   12)).ok(12); b.zeroWidth(b.new Int(   12)).ok(16);
-    b.onePos(b.new Int(13)).ok(13); b.oneWidth(b.new Int(13)).ok(16);       b.zeroPos(b.new Int(   13)).ok(13); b.zeroWidth(b.new Int(   13)).ok(16);
-    b.onePos(b.new Int(14)).ok(14); b.oneWidth(b.new Int(14)).ok(16);       b.zeroPos(b.new Int(   14)).ok(14); b.zeroWidth(b.new Int(   14)).ok(16);
-    b.onePos(b.new Int(15)).ok(15); b.oneWidth(b.new Int(15)).ok(16);       b.zeroPos(b.new Int(   15)).ok(15); b.zeroWidth(b.new Int(   15)).ok(16);
-    b.onePos(b.new Int(16)).ok( 0); b.oneWidth(b.new Int(16)).ok(8);        b.zeroPos(b.new Int(15+16)).ok( 0); b.zeroWidth(b.new Int(15+16)).ok(8);
-    b.onePos(b.new Int(17)).ok( 1); b.oneWidth(b.new Int(17)).ok(8);        b.zeroPos(b.new Int(15+17)).ok( 1); b.zeroWidth(b.new Int(15+17)).ok(8);
-    b.onePos(b.new Int(18)).ok( 2); b.oneWidth(b.new Int(18)).ok(8);        b.zeroPos(b.new Int(15+18)).ok( 2); b.zeroWidth(b.new Int(15+18)).ok(8);
-    b.onePos(b.new Int(19)).ok( 3); b.oneWidth(b.new Int(19)).ok(8);        b.zeroPos(b.new Int(15+19)).ok( 3); b.zeroWidth(b.new Int(15+19)).ok(8);
-    b.onePos(b.new Int(20)).ok( 4); b.oneWidth(b.new Int(20)).ok(8);        b.zeroPos(b.new Int(15+20)).ok( 4); b.zeroWidth(b.new Int(15+20)).ok(8);
-    b.onePos(b.new Int(21)).ok( 5); b.oneWidth(b.new Int(21)).ok(8);        b.zeroPos(b.new Int(15+21)).ok( 5); b.zeroWidth(b.new Int(15+21)).ok(8);
-    b.onePos(b.new Int(22)).ok( 6); b.oneWidth(b.new Int(22)).ok(8);        b.zeroPos(b.new Int(15+22)).ok( 6); b.zeroWidth(b.new Int(15+22)).ok(8);
-    b.onePos(b.new Int(23)).ok( 7); b.oneWidth(b.new Int(23)).ok(8);        b.zeroPos(b.new Int(15+23)).ok( 7); b.zeroWidth(b.new Int(15+23)).ok(8);
-    b.onePos(b.new Int(24)).ok( 0); b.oneWidth(b.new Int(24)).ok(4);        b.zeroPos(b.new Int(15+24)).ok( 0); b.zeroWidth(b.new Int(15+24)).ok(4);
-    b.onePos(b.new Int(25)).ok( 1); b.oneWidth(b.new Int(25)).ok(4);        b.zeroPos(b.new Int(15+25)).ok( 1); b.zeroWidth(b.new Int(15+25)).ok(4);
-    b.onePos(b.new Int(26)).ok( 2); b.oneWidth(b.new Int(26)).ok(4);        b.zeroPos(b.new Int(15+26)).ok( 2); b.zeroWidth(b.new Int(15+26)).ok(4);
-    b.onePos(b.new Int(27)).ok( 3); b.oneWidth(b.new Int(27)).ok(4);        b.zeroPos(b.new Int(15+27)).ok( 3); b.zeroWidth(b.new Int(15+27)).ok(4);
-    b.onePos(b.new Int(28)).ok( 0); b.oneWidth(b.new Int(28)).ok(2);        b.zeroPos(b.new Int(15+28)).ok( 0); b.zeroWidth(b.new Int(15+28)).ok(2);
-    b.onePos(b.new Int(29)).ok( 1); b.oneWidth(b.new Int(29)).ok(2);        b.zeroPos(b.new Int(15+29)).ok( 1); b.zeroWidth(b.new Int(15+29)).ok(2);
-    b.onePos(b.new Int(30)).ok( 0); b.oneWidth(b.new Int(30)).ok(1);        b.zeroPos(b.new Int(15+30)).ok( 0); b.zeroWidth(b.new Int(15+30)).ok(1);
+    b.baseOne() .ok(16);                                                    b.baseZero().ok(31);
+    b.pos_one(b.new Int( 0)).ok( 0); b.widthOne(b.new Int( 0)).ok(16);       b.pos_zero(b.new Int(    0)).ok( 0); b.widthZero(b.new Int(    0)).ok(16);
+    b.pos_one(b.new Int( 1)).ok( 1); b.widthOne(b.new Int( 1)).ok(16);       b.pos_zero(b.new Int(    1)).ok( 1); b.widthZero(b.new Int(    1)).ok(16);
+    b.pos_one(b.new Int( 2)).ok( 2); b.widthOne(b.new Int( 2)).ok(16);       b.pos_zero(b.new Int(    2)).ok( 2); b.widthZero(b.new Int(    2)).ok(16);
+    b.pos_one(b.new Int( 3)).ok( 3); b.widthOne(b.new Int( 3)).ok(16);       b.pos_zero(b.new Int(    3)).ok( 3); b.widthZero(b.new Int(    3)).ok(16);
+    b.pos_one(b.new Int( 4)).ok( 4); b.widthOne(b.new Int( 4)).ok(16);       b.pos_zero(b.new Int(    4)).ok( 4); b.widthZero(b.new Int(    4)).ok(16);
+    b.pos_one(b.new Int( 5)).ok( 5); b.widthOne(b.new Int( 5)).ok(16);       b.pos_zero(b.new Int(    5)).ok( 5); b.widthZero(b.new Int(    5)).ok(16);
+    b.pos_one(b.new Int( 6)).ok( 6); b.widthOne(b.new Int( 6)).ok(16);       b.pos_zero(b.new Int(    6)).ok( 6); b.widthZero(b.new Int(    6)).ok(16);
+    b.pos_one(b.new Int( 7)).ok( 7); b.widthOne(b.new Int( 7)).ok(16);       b.pos_zero(b.new Int(    7)).ok( 7); b.widthZero(b.new Int(    7)).ok(16);
+    b.pos_one(b.new Int( 8)).ok( 8); b.widthOne(b.new Int( 8)).ok(16);       b.pos_zero(b.new Int(    8)).ok( 8); b.widthZero(b.new Int(    8)).ok(16);
+    b.pos_one(b.new Int( 9)).ok( 9); b.widthOne(b.new Int( 9)).ok(16);       b.pos_zero(b.new Int(    9)).ok( 9); b.widthZero(b.new Int(    9)).ok(16);
+    b.pos_one(b.new Int(10)).ok(10); b.widthOne(b.new Int(10)).ok(16);       b.pos_zero(b.new Int(   10)).ok(10); b.widthZero(b.new Int(   10)).ok(16);
+    b.pos_one(b.new Int(11)).ok(11); b.widthOne(b.new Int(11)).ok(16);       b.pos_zero(b.new Int(   11)).ok(11); b.widthZero(b.new Int(   11)).ok(16);
+    b.pos_one(b.new Int(12)).ok(12); b.widthOne(b.new Int(12)).ok(16);       b.pos_zero(b.new Int(   12)).ok(12); b.widthZero(b.new Int(   12)).ok(16);
+    b.pos_one(b.new Int(13)).ok(13); b.widthOne(b.new Int(13)).ok(16);       b.pos_zero(b.new Int(   13)).ok(13); b.widthZero(b.new Int(   13)).ok(16);
+    b.pos_one(b.new Int(14)).ok(14); b.widthOne(b.new Int(14)).ok(16);       b.pos_zero(b.new Int(   14)).ok(14); b.widthZero(b.new Int(   14)).ok(16);
+    b.pos_one(b.new Int(15)).ok(15); b.widthOne(b.new Int(15)).ok(16);       b.pos_zero(b.new Int(   15)).ok(15); b.widthZero(b.new Int(   15)).ok(16);
+    b.pos_one(b.new Int(16)).ok( 0); b.widthOne(b.new Int(16)).ok(8);        b.pos_zero(b.new Int(15+16)).ok( 0); b.widthZero(b.new Int(15+16)).ok(8);
+    b.pos_one(b.new Int(17)).ok( 1); b.widthOne(b.new Int(17)).ok(8);        b.pos_zero(b.new Int(15+17)).ok( 1); b.widthZero(b.new Int(15+17)).ok(8);
+    b.pos_one(b.new Int(18)).ok( 2); b.widthOne(b.new Int(18)).ok(8);        b.pos_zero(b.new Int(15+18)).ok( 2); b.widthZero(b.new Int(15+18)).ok(8);
+    b.pos_one(b.new Int(19)).ok( 3); b.widthOne(b.new Int(19)).ok(8);        b.pos_zero(b.new Int(15+19)).ok( 3); b.widthZero(b.new Int(15+19)).ok(8);
+    b.pos_one(b.new Int(20)).ok( 4); b.widthOne(b.new Int(20)).ok(8);        b.pos_zero(b.new Int(15+20)).ok( 4); b.widthZero(b.new Int(15+20)).ok(8);
+    b.pos_one(b.new Int(21)).ok( 5); b.widthOne(b.new Int(21)).ok(8);        b.pos_zero(b.new Int(15+21)).ok( 5); b.widthZero(b.new Int(15+21)).ok(8);
+    b.pos_one(b.new Int(22)).ok( 6); b.widthOne(b.new Int(22)).ok(8);        b.pos_zero(b.new Int(15+22)).ok( 6); b.widthZero(b.new Int(15+22)).ok(8);
+    b.pos_one(b.new Int(23)).ok( 7); b.widthOne(b.new Int(23)).ok(8);        b.pos_zero(b.new Int(15+23)).ok( 7); b.widthZero(b.new Int(15+23)).ok(8);
+    b.pos_one(b.new Int(24)).ok( 0); b.widthOne(b.new Int(24)).ok(4);        b.pos_zero(b.new Int(15+24)).ok( 0); b.widthZero(b.new Int(15+24)).ok(4);
+    b.pos_one(b.new Int(25)).ok( 1); b.widthOne(b.new Int(25)).ok(4);        b.pos_zero(b.new Int(15+25)).ok( 1); b.widthZero(b.new Int(15+25)).ok(4);
+    b.pos_one(b.new Int(26)).ok( 2); b.widthOne(b.new Int(26)).ok(4);        b.pos_zero(b.new Int(15+26)).ok( 2); b.widthZero(b.new Int(15+26)).ok(4);
+    b.pos_one(b.new Int(27)).ok( 3); b.widthOne(b.new Int(27)).ok(4);        b.pos_zero(b.new Int(15+27)).ok( 3); b.widthZero(b.new Int(15+27)).ok(4);
+    b.pos_one(b.new Int(28)).ok( 0); b.widthOne(b.new Int(28)).ok(2);        b.pos_zero(b.new Int(15+28)).ok( 0); b.widthZero(b.new Int(15+28)).ok(2);
+    b.pos_one(b.new Int(29)).ok( 1); b.widthOne(b.new Int(29)).ok(2);        b.pos_zero(b.new Int(15+29)).ok( 1); b.widthZero(b.new Int(15+29)).ok(2);
+    b.pos_one(b.new Int(30)).ok( 0); b.widthOne(b.new Int(30)).ok(1);        b.pos_zero(b.new Int(15+30)).ok( 0); b.widthZero(b.new Int(15+30)).ok(1);
 
     b.execute();
    }
