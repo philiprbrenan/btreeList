@@ -3,7 +3,6 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 // “8GB DDR4 2666 laptop SODIMM”
 //----------------------------------------------------------------------------------------------------------------------
-//Merge after insert or delete
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
