@@ -11,16 +11,15 @@ import java.util.*;                                                             
 final public class BitSet extends Program                                                                               // Abstract fixed-size bit set using byte-level storage.
  {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
   final int             byteSize;                                                                                       // Number of bytes in the bit set.
-  final boolean       oneTreeBit;                                                                                       // At most only ones tree bit present
-  final boolean       powerOfTwo;                                                                                       // Able to optimize some operations because the requested bitset has a number of elements that is a power of two
+  final boolean       powerOfTwo;                                                                                       // Some operations can be optimized if the bitset has a number of elements that is a power of two
   final Build              build;                                                                                       // Memory to use
-  final ByteMemory.Ref memoryRef;                                                                                       // Build used to create biotset
+  final ByteMemory.Ref memoryRef;                                                                                       // Build used to create bitset
   static int bitsetNumbers = 0;                                                                                         // Bitsets created
   final  int bitsetNumber  = ++bitsetNumbers;                                                                           // Number of this bitset
-  final  int[]limitsUpperOne;                                                                                           // The upper limit limit of the ones  tree for each possible position in the ones tree
-  final  int[]limitsUpperZero;                                                                                          // The upper limit limit of the zeros tree for each possible position in the ones tree
-  final  int[]limitsLowerOne;                                                                                           // The lower limit limit of the ones  tree for each possible position in the ones tree
-  final  int[]limitsLowerZero;                                                                                          // The lower limit limit of the zeros tree for each possible position in the ones tree
+  final  int[]limitsUpperOne;                                                                                           // The upper limit of the ones  tree for each possible position in the ones tree
+  final  int[]limitsUpperZero;                                                                                          // The upper limit of the zeros tree for each possible position in the ones tree
+  final  int[]limitsLowerOne;                                                                                           // The lower limit of the ones  tree for each possible position in the ones tree
+  final  int[]limitsLowerZero;                                                                                          // The lower limit of the zeros tree for each possible position in the ones tree
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
@@ -49,14 +48,13 @@ final public class BitSet extends Program                                       
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.build());
     build       = Build;
-    bitSize     = nextPowerOfTwo(size());                                                                              // Record size
+    bitSize     = nextPowerOfTwo(size());                                                                               // Record size
     bitSize1    = bitSize - 1;
     bitSize2    = bitSize >>> 1;
     powerOfTwo  = bitSize == size();
     logBitSize  = logTwo(bitSize);
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
     byteSize    = Build.byteSize();                                                                                     // Bytes needed for the bitset and its bit trees
-    oneTreeBit  = bitSize <= 2;                                                                                         // At most only ones tree bit present
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
     limitsUpperOne   = new int[top_one ()+1]; limitsUpperOne ();                                                        // Upper limits of ones tree
     limitsUpperZero  = new int[top_zero()+2]; limitsUpperZero();                                                        // Upper limits of zeros tree
@@ -65,10 +63,10 @@ final public class BitSet extends Program                                       
    }
 
   BitSet initializeMemory() {memoryRef.clear(bytesNeeded()); return this;}                                              // Initialize memory
-  int bytesNeeded() {return build.byteSize();}                                                                          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
+  int bytesNeeded() {return build.byteSize();}                                                                          // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int size()        {return build.bitSize;}                                                                             // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
 
-//D1 Get and Set                                                                                                        // Get and set bits in the  bit tree setting the corresponding paths in the bits trees if necessary
+//D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
 
   public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
   public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
@@ -82,19 +80,14 @@ final public class BitSet extends Program                                       
      };
    }
 
-  public Bool get   (Int Index) {return getBit(Index);}                                                                 // Get a bit from the bit set
-  public Bool getBit(Int Index)                                                                                         // Get a bit from the bit set
-   {if (immediate()) checkInActual(Index);
-    return getBitNC(Index);
-   }
+  Bool    getBit  (Int Index)             {if (immediate()) checkInActual(Index); return getBitNC(Index);}              // Get a bit from the bit set
+  Bool    getBitNC(Int Index)             {return memoryRef.getBool(Index);}                                            // Get bit value at an index without checking that the index is valid
+  boolean getBitNC(int Index)             {return memoryRef.getBool(Index);}                                            // Get bit value at an index without checking that the index is valid
 
-  Bool    getBitNC(Int Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
-  boolean getBitNC(int Index) {return memoryRef.getBool(Index);}                                                        // Get bit value at an index without checking that the index is valid
-
-  void setBit    (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                             // Set bit value.
-  void setBitNC  (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                             // Set bit value without checking index
-  void setBitNC  (Int Index)             {memoryRef.putBool(Index, new Bool(true));}                                    // Set bit value without checking index
-  void clearBitNC(Int Index)             {memoryRef.putBool(Index, new Bool(false));}                                   // Clear a bit value without checking index
+  void setBit     (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                            // Set bit value.
+  void setBitNC   (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                            // Set bit value without checking index
+  void setBitNC   (Int Index)             {memoryRef.putBool(Index, new Bool(true));}                                   // Set bit value without checking index
+  void clearBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(false));}                                  // Clear a bit value without checking index
 
   void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the ones tree
    {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
@@ -203,7 +196,7 @@ final public class BitSet extends Program                                       
      }
    }
 
-  void checkInActualOrZeros(Int Pos)                                                                                    // Check that we are in the zeros tree or the actual bots
+  void checkInActualOrZeros(Int Pos)                                                                                    // Check that we are in the zeros tree or the actual bits
    {if (immediate())
      {if (Pos.i() < size()) checkInActual(Pos); else checkInZerosTree(Pos);
      }
@@ -344,7 +337,7 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.lowZero");
     checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go low from Pos:", Pos, this);                                   // We can only step down from a one in the ones tree
-    final Int p = childLowZero(new Int(Pos));                                                                           // Step down through zeros tree - assumes we started in the zeros tree
+    final Int p = childLowZero(new Int(Pos));                                                                           // Step down through the zeros tree - assumes we started in the zeros tree
 
     new For (new Int(logBitSize))                                                                                       // Step down through the ones tree to reach the actual bits
      {void body(Int Index, Bool Continue)
@@ -356,12 +349,11 @@ final public class BitSet extends Program                                       
              {void Then() {q.set(p);}
               void Else() {q.set(p.inc());}
              };
-            p.set(childLowZero(q));                                                                                     // Step down through zeros tree - assumes we started in the zeros tree
+            p.set(childLowZero(q));                                                                                     // Step down through the zeros tree - assumes we started in the zeros tree
            }
           void Else()                                                                                                   // In actual bits
-//         {new If (getBitNC(p))                                                                                        // Take lower bit if it is a zero
            {new If (getBitNC(p))                                                                                        // Take lower bit if it is a zero
-             {void Then() {p.set(p.inc());}                                                                             // Otherwise the upper but must have the zero
+             {void Then() {p.set(p.inc());}                                                                             // Otherwise the upper bit must have the zero
              };
            }
          };
@@ -375,23 +367,23 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.highZero");
     checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go high from Pos:", Pos, this);                                  // We can only step down from a one in the zeros tree
-    final Int p = childHighZero(new Int(Pos));                                                                          // Step down through zeros tree - assumes we started in the zeros tree
-    new For (new Int(logBitSize))                                                                                       // Step down through the ones tree to reach the actual bits
+    final Int p = childHighZero(new Int(Pos));                                                                          // Step down through the zeros tree - assumes we started in the zeros tree
+    new For (new Int(logBitSize))                                                                                       // Step down through the zeros tree to reach the actual bits
      {void body(Int Index, Bool Continue)
        {new If (p.ge(bitSize))                                                                                          // Still in the zeros tree
          {void Then()
            {Continue.set();                                                                                             // Continue while we are in the zeros tree
             final Int q = new Int();
-            new If (getBitNC(p).Flip())                                                                                        // Take upper bit if possible else lower one
+            new If (getBitNC(p).Flip())                                                                                 // Take upper bit if possible else lower one
              {void Then() {q.set(p);}
               void Else() {q.set(p.Dec());}
              };
             p.set(childHighZero(q));                                                                                    // Step down through zeros tree - assumes we started in the zeros tree
            }
           void Else()                                                                                                   // In actual bits
-           {new If (getBitNC(p).Flip())                                                                                        // Take lower bit if it is a zero
-             {void Then() {p.set(p);}                                                                                   // Otherwise the upper but must have the zero
-              void Else() {p.set(p.Dec());}                                                                             // Otherwise the upper but must have the zero
+           {new If (getBitNC(p).Flip())                                                                                 // Take lower bit if it is a zero
+             {void Then() {p.set(p);}                                                                                   // Lower bit is a zero
+              void Else() {p.set(p.Dec());}                                                                             // Otherwise the upper bit must have the zero
              };
            }
          };
@@ -623,7 +615,7 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.prevZero");
     checkInActual(Start);
     if (immediate()) checkInActual(Start);
-    final Int Prev = new Int();                                                                                         // Location of previous zero ro ivalid of thre is not one
+    final Int Prev = new Int();                                                                                         // Location of previous zero or invalid of there is not one
     final Int p    = new Int(Start);                                                                                    // Start position in body of bitset
     new If (p.gt(0))                                                                                                    // Not at the start of bitset
      {void Then()
@@ -635,12 +627,12 @@ final public class BitSet extends Program                                       
           void Else()                                                                                                   // Go down through zeros tree looking for a one
            {new For(logBitSize)
              {void body(Int Up, Bool ContinueUp)
-               {p.set(parentZero(p));                                                                                   // Every bit has a parent except the topmost bit ion the tree but the loop will terminated on count before then
+               {p.set(parentZero(p));                                                                                   // Every bit has a parent except the topmost bit in the tree but the loop will terminated on count before then
                 new If (pos_zero(p).gt(0))                                                                              // At start of row
                  {void Then()                                                                                           // At start of row - not found
                    {p.dec();                                                                                            // Position to left
                     new If (getBitNC(p).Flip())                                                                         // Found a one
-                    {void Then()                                                                                        // Reached a one so we turn over and head back up the tree goinfg as high as possible
+                    {void Then()                                                                                        // Reached a one so we turn over and head back up the tree going as high as possible
                       {Prev.set(highZero(p));                                                                           // Highest zero from this point
                       }
                      void Else()                                                                                        // Continue the search for a one
@@ -694,7 +686,7 @@ final public class BitSet extends Program                                       
          };
        }
      };
-    return r;                                                                                                           // Whether the bitset has two or nore ones
+    return r;                                                                                                           // Whether the bitset has two or more ones
    }
 
 //D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset
@@ -792,7 +784,7 @@ final public class BitSet extends Program                                       
     return b;                                                                                                           // Return test bitset.
    }
 
-  static void test_prevNext(boolean Ex)                                                                                 // Test tree of searchable one bits
+  static void test_prevNext(boolean Ex)
    {final BitSet b = test_bits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
 
@@ -927,12 +919,12 @@ Zero:
                                 b.lastZero ()            .ok( 15);
    }
 
-  static void test_prevNext01()                                                                                         // Test tree of searchable one bits
+  static void test_prevNext01()
    {          test_prevNext01(true);
               test_prevNext01(false);
    }
 
-  static void test_prevNext10(boolean Ex)                                                                               // Test tree of searchable one bits
+  static void test_prevNext10(boolean Ex)
    {sayCurrentTestName();
     final int N = 16;
     final BitSet b = test_bits(Ex, N);
@@ -980,7 +972,7 @@ Zero:
                                 b.lastOne ()            .ok( 15);
    }
 
-  static void test_prevNext10()                                                                                         // Test tree of searchable one bits
+  static void test_prevNext10()
    {          test_prevNext10(true);
               test_prevNext10(false);
    }
@@ -1193,7 +1185,7 @@ Zero:
 """);
    }
 
-  static void test_oneZero()                                                                                            // Test tree of searchable one bits
+  static void test_oneZero()
    {          test_oneZero(true);
               test_oneZero(false);
    }
@@ -1218,7 +1210,7 @@ Zero:
     b.execute();
    }
 
-  static void test_fullEmpty()                                                                                          // Test tree of searchable one bits
+  static void test_fullEmpty()
    {          test_fullEmpty( 9, true);
               test_fullEmpty( 9, false);
               test_fullEmpty(16, true);
@@ -1495,7 +1487,7 @@ Zero:
               test_powerPosOneZero(false);
    }
 
-  static void test_twoOrMoreOnes(boolean Ex)                                                                            // Two or more ones
+  static void test_twoOrMoreOnes(boolean Ex)
    {sayCurrentTestName();
     final BitSet b = test_bits(Ex, 32);
 
