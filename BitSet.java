@@ -133,8 +133,12 @@ final public class BitSet extends Program                                       
        {new If (getBitNC(p))                                                                                            // Bit might need to be cleared
          {void Then()
            {final Int q = childLowOne(p);
-            new If (getBitNC(q).Flip().and(getBitNC(q.Inc()).Flip()))                                                   // Both child bits are clear so the parent should be clear as well
-             {void Then() {clearBitNC(p); p.set(parentOne(p)); Continue.set();}                                         // Zeroed the parent so  keep moving up until we encounter a correctly set parent or the root
+            new If (getBitNC(q).Flip())                                                                                 // Both child bits are clear so the parent should be clear as well
+             {void Then()
+               {new If (getBitNC(q.Inc()).Flip())
+                 {void Then() {clearBitNC(p); p.set(parentOne(p)); Continue.set();}                                     // Zeroed the parent so  keep moving up until we encounter a correctly set parent or the root
+                 };
+               }
              };
            }
          };
@@ -145,16 +149,28 @@ final public class BitSet extends Program                                       
   private void setZeroPath(Int Index)                                                                                   // There is a one in the actual bits below this position in the zeros tree
    {final Int p = parentZero(Index);                                                                                    // Parent position in zeros tree
     final Int q = childLowZero(p);                                                                                      // Children in actual bits
-    new If (getBitNC(q).and(getBitNC(q.Inc())))                                                                         // Both actual bits are one so the parent must be zero indicating no zeros
+    new If (getBitNC(q))                                                                                                // Both actual bits are one so the parent must be zero indicating no zeros
      {void Then()
-       {clearBitNC(p);                                                                                                  // Show parent has no zeros
-        p.set(parentZero(p));                                                                                           // Move up
+       {new If (getBitNC(q.Inc()))
+         {void Then()
+           {clearBitNC(p);                                                                                              // Show parent has no zeros
+            p.set(parentZero(p));                                                                                       // Move up
 
-        new For(logBitSize-1)                                                                                           // Remaining possible parents
-         {void body(Int Index, Bool Continue)
-           {final Int q = childLowZero(p);                                                                              // Children of parent
-            new If (getBitNC(q).Flip().and(getBitNC(q.Inc()).Flip()).and(getBitNC(p)))  //Improvement short circuit                           // Both children are zero so the parent must be zero also
-             {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}
+            new For(logBitSize-1)                                                                                       // Remaining possible parents
+             {void body(Int Index, Bool Continue)
+               {final Int q = childLowZero(p);                                                                          // Children of parent
+                new If (getBitNC(q).Flip())                                                                             // Both children are zero so the parent must be zero also
+                 {void Then()
+                   {new If (getBitNC(q.Inc()).Flip())
+                     {void Then()
+                       {new If (getBitNC(p))
+                         {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                            // Set parent and continue towards the root
+                         };
+                       }
+                     };
+                   }
+                 };
+               }
              };
            }
          };
@@ -479,13 +495,17 @@ final public class BitSet extends Program                                       
      {void body(Int I, Bool C)
        {final Int q = p.Inc();                                                                                          // next bit over
 
-        new If (q.le(limitUpperOne(p)).and(getBitNC(q)))                                                                // Found adjacent bit set to one to the right of the path up from the start bit
-         {void Then()                                                                                                   // Found the adjacent bit to the right
-           {Next.copy(lowOne(q));                                                                                       // Lowest one bit in adjacent ones tree
-           }
-          void Else()                                                                                                   // No adjacent one yet
-           {p.set(parentOne(p));                                                                                        // Move up to parent
-            C.set();                                                                                                    // Whether we are done yet
+        new If (q.le(limitUpperOne(p)))                                                                                 // Found adjacent bit set to one to the right of the path up from the start bit
+         {void Then()
+           {new If (getBitNC(q))
+             {void Then()                                                                                               // Found the adjacent bit to the right
+               {Next.copy(lowOne(q));                                                                                   // Lowest one bit in adjacent ones tree
+               }
+              void Else()                                                                                               // No adjacent one yet
+               {p.set(parentOne(p));                                                                                    // Move up to parent
+                C.set();                                                                                                // Whether we are done yet
+               }
+             };
            }
          };
        }
@@ -514,13 +534,17 @@ final public class BitSet extends Program                                       
 
     new For(logBitSize)                                                                                                 // Traverse down through the tree to the root
      {void body(Int I, Bool C)
-       {new If (p.gt(limitLowerOne(p)).and(getBitNC(p.Dec())))                                                          // Found adjacent bit set to one to the left of the path up from the start bit
+       {new If (p.gt(limitLowerOne(p)))                                                                                 // Found adjacent bit set to one to the left of the path up from the start bit
          {void Then()                                                                                                   // Found the adjacent bit to the left
-           {Prev.copy(highOne(p.Dec()));                                                                                // Highest one bit in adjacent ones tree
-           }
-          void Else()                                                                                                   // No adjacent one yet
-           {p.set(parentOne(p));                                                                                        // Move up to parent
-            C.set();                                                                                                    // Whether we are done yet
+           {new If (getBitNC(p.Dec()))                                                                                  // Found adjacent bit set to one to the left of the path up from the start bit
+             {void Then()                                                                                               // Found the adjacent bit to the left
+               {Prev.copy(highOne(p.Dec()));                                                                            // Highest one bit in adjacent ones tree
+               }
+              void Else()                                                                                               // No adjacent one yet
+               {p.set(parentOne(p));                                                                                    // Move up to parent
+                C.set();                                                                                                // Whether we are done yet
+               }
+             };
            }
          };
        }
@@ -563,28 +587,36 @@ final public class BitSet extends Program                                       
     final Int p    = new Int(Start);                                                                                    // Start position
     final Int Q    = p.Inc();
 
-    new If (Q.le(limitUpperZero(p)).and(getBitNC(Q)))                                                                   // Adjacent bit amongst the actual bits exists and is set so we must search
+    new If (Q.le(limitUpperZero(p)))                                                                                    // Adjacent bit amongst the actual bits exists and is set so we must search
      {void Then()                                                                                                       // Found the adjacent bit to the right
-       {p.set(parentZero(p));                                                                                           // Move int zeros tree
-        new For(logBitSize)                                                                                             // Traverse down through the tree to the root
-         {void body(Int I, Bool C)
-           {final Int q = p.Inc();                                                                                      // next bit over
+       {new If (getBitNC(Q))                                                                                            // Adjacent bit amongst the actual bits exists and is set so we must search
+         {void Then()                                                                                                   // Found the adjacent bit to the right
+           {p.set(parentZero(p));                                                                                       // Move int zeros tree
+            new For(logBitSize)                                                                                         // Traverse down through the tree to the root
+             {void body(Int I, Bool C)
+               {final Int q = p.Inc();                                                                                  // Next bit over
 
-            new If (q.le(limitUpperZero(p)).and(getBitNC(q)))                                                           // Found adjacent bit set to one to the right of the path up from the start bit
-             {void Then()                                                                                               // Found the adjacent bit to the right
-               {Next.copy(lowZero(q));                                                                                  // Lowest one bit in adjacent zero tree
-               }
-              void Else()                                                                                               // No adjacent one yet
-               {p.set(parentZero(p));                                                                                   // Move up to parent
-                C.set();                                                                                                // Whether we are done yet
+                new If (q.le(limitUpperZero(p)))                                                                        // Found adjacent bit set to one to the right of the path up from the start bit
+                 {void Then()                                                                                           // Found the adjacent bit to the right
+                   {new If (getBitNC(q))                                                                                // Found adjacent bit set to one to the right of the path up from the start bit
+                     {void Then()                                                                                        // Found the adjacent bit to the right
+                       {Next.copy(lowZero(q));                                                                           // Lowest one bit in adjacent zero tree
+                       }
+                      void Else()                                                                                       // No adjacent one yet
+                       {p.set(parentZero(p));                                                                           // Move up to parent
+                        C.set();                                                                                        // Whether we are done yet
+                       }
+                     };
+                   }
+                 };
                }
              };
            }
-         };
-       }
-      void Else()
-       {new If (Q.le(limitUpperZero(p)))                                                                                // Adjacent bit amongst the actual bits exists and is set so we must search
-         {void Then() {Next.set(Q);}                                                                                    // Next slot is zero and so the one we want
+          void Else()
+           {new If (Q.le(limitUpperZero(p)))                                                                            // Adjacent bit amongst the actual bits exists and is set so we must search
+             {void Then() {Next.set(Q);}                                                                                // Next slot is zero and so the one we want
+             };
+           }
          };
        }
      };
