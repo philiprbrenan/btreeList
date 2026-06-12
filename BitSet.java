@@ -65,22 +65,7 @@ final public class BitSet extends Program                                       
     limitsLowerZero  = new int[top_zero()+2]; limitsLowerZero();                                                        // Lower limits of zeros tree
    }
 
-  BitSet initializeMemory()                                                                                             // Initialize memory
-   {new ForCount(bitSize)                                                                                               // Clear ones tree
-     {void body(Int I)
-       {clearBitNC(I);
-       }
-     };
-
-    final Int p = baseZero();                                                                                           // Set zero tree
-    new ForCount(bitSize)                                                                                               // For loop to set bits along path in One tree to actual bit
-     {void body(Int I)
-       {clearBitNC(p.Add(I));
-       }
-     };
-    return this;
-   }
-
+  BitSet initializeMemory() {memoryRef.clear(bytesNeeded()); return this;}                                              // Initialize memory
   int bytesNeeded() {return build.byteSize();}                                                                          // Number of bytes needed for a bit set of specified size without the ability to locate zeroes or ones
   int size()        {return build.bitSize;}                                                                             // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
 
@@ -1741,11 +1726,11 @@ Zero:
     test_powerPosOneZero();
     test_twoOrMoreOnes();
     test_limits();
+    test_4();
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                         // Run baseline tests.
-    test_4(true);
+   {oldTests();                                                                                                         // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
