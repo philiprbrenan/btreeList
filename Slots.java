@@ -142,47 +142,21 @@ class Slots extends Program                                                     
   Int     getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
   int     getSlotToKeyValue (int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
-  Bool    empty             ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
-  Bool    full              ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Int     count             ()                                                                                          // The computed number of keys in the slots
-   {final Int C = refCount.getInt();                                                                                    // Computed number of keys
-    if (immediate())                                                                                                    // Check matches the actual number
-     {final Int c = count();
-      if (C.ne(c).b()) stop("Count mismatch:", C, c);
-     }
-    return C;                                                                                                           // Computed number of keys in slots
-   }
-  void count(Int N)                                                                                        //Set the computed number of keys in the slots
-   {final Int C = count();
-    if (immediate())                                                                                                    // Check matches the actual number
-     {if (C.ne(N).b()) stop("Count mismatch, expected:", C, "got:", N);
-     }
-    refCount.putInt(N);                                                                                                 // Increment the count
-   }
-
-  void countClear() {refCount.putInt(new Int(0));}                                                                      // Clear the count
-
-  void countInc  ()                                                                                                     // Increment the key count
-   {final Int C = refCount.getInt();                                                                                    // Computed number of keys
-    refCount.putInt(C.inc());                                                                                           // Increment the count
-    if (immediate() && C.ne(count()).b()) stop("Key count mismatch, expected:", count(), "got:", C);                    // Check it matches the expected value
-   }
-
-  void countDec  ()                                                                                                     // Decrement the key count
-   {final Int C = refCount.getInt();                                                                                    // Computed number of keys
-    if (immediate() && C.le(0).b()) stop("Key count would go negative");                                                // Check it will not go negative
-    refCount.putInt(C.dec());                                                                                           // Decrement the count
-    if (immediate() && C.ne(count()).b()) stop("Key count mismatch, expected:", count(), "got:", C);                    // Check it matches the expected value
-   }
-
+  Bool empty                ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
+  Bool full                 ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+  Int  count                ()             {return refCount.getInt();}                                                  // The computed number of keys in the slots
+  void count                (Int N)        {refCount.putInt(N);}                                                        // Set the computed number of keys in the slots
+  void countClear           ()             {refCount.putInt(new Int(0));}                                               // Clear the count
+  void countInc             ()             {refCount.putInt(refCount.getInt().inc());}                                  // Increment the key count
+  void countDec             ()             {refCount.putInt(refCount.getInt().dec());}                                  // Decrement the key count
   void invalidateMemory     ()             {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   int  numberOfKeys         ()             {return numberOfKeys;}                                                       // The number of references in the slots definition
   int  numberOfSlotsToKeys  ()             {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
   int  redistributionWidth  ()             {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
   Int  locateFirstUsedSlot  ()             {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
   Int  locateLastUsedSlot   ()             {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
-  Int stepLeft              (Int Start)    {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
-  Int stepRight             (Int Start)    {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
+  Int  stepLeft             (Int Start)    {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
+  Int  stepRight            (Int Start)    {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
 
   Int locateFirstUnusedKey  ()                                                                                          // Absolute position of the first unused key
    {final Int p = usedKeys.firstZero();
@@ -238,7 +212,7 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Int locateNearestFreeSlotToKey(Int Position, Bool Prev)                                                               // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
+  Int locateNearestFreeSlotToKey(Int Position, Bool Prev)                                                               // Locate the nearest free slot favoring a higher slot over a lower one if they are both the same  distance away
    {return locateNearestFreeSlotToKey(Position, new Bool(false), Prev);
    }
 
