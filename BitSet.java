@@ -5,7 +5,6 @@
 // Use zz() to remove all functions not called from Tree.java
 // CountOnes and zeros should skip over long blocks of the same bit type if these methods are still being used or be replaced with count()
 // use Array.fill() in initialize memory
-// replace highOne/Zero with 1+lowOne/Zero
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -248,13 +247,13 @@ final public class BitSet extends Program                                       
   Int zeroToOne(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
   Int oneToZero(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
 
-  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                          // Step to low child in zero tree
-  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                          // Step to high child in zero tree
-  Int parentZero   (Int Pos) {return oneToZero(parentOne   (zeroToOne(Pos)));}                                          // Step to the corresponding parent bit index for this child bit index
-
   Int childHighOne (Int Pos) {return childLowOne(Pos).Inc();}                                                           // Step to the corresponding child high bit index from this parent bit index
   Int childLowOne  (Int Pos) {return Pos.Dec().mul(2).sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
   Int parentOne    (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                  // Step to the corresponding parent bit index for this child bit index
+
+  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                          // Step to low child in zero tree
+  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                          // Step to high child in zero tree
+  Int parentZero   (Int Pos) {return oneToZero(parentOne   (zeroToOne(Pos)));}                                          // Step to the corresponding parent bit index for this child bit index
 
   int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
   int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
@@ -1704,6 +1703,33 @@ Zero:
               test_lowHighZero(false);
    }
 
+  static void test_4(boolean Ex)
+   {sayCurrentTestName();
+    final int N = 4;
+    final BitSet b = test_bits(Ex, N);
+
+    for (int i : range(N)) if (i == 2 || i == 3) b.set(b.new Int(i));
+
+    //testStop("AAAA", b);
+    b.ok(()->b, """
+BitSet            0  1  2  3
+   1    0    4 |  0  0  1  1
+One:
+   2    4    2 |  0  1
+   3    6    1 |  1
+Zero:
+   1    7    2 |  0  1
+   2    9    1 |  0
+""");
+
+    b.lastZero().ok(1);
+   }
+
+  static void test_4()
+   {          test_4(true);
+              test_4(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be stable.
    {test_prevNext01();
     test_prevNext();
@@ -1718,7 +1744,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();                                                                                                         // Run baseline tests.
+    test_4(true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
