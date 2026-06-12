@@ -22,7 +22,6 @@ class Slots extends Program                                                     
   final ByteMemory.Ref           refCount;                                                                              // The number of occupied slots and hence the number of keys in the slots
   final Build                       build;                                                                              // Build details
   final static String           formatKey = "%3d";                                                                      // Format a key for dumping during testing
-//Procedure compactSlotsLeft;                                                                                           // Precompiled procedures
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
@@ -311,7 +310,6 @@ class Slots extends Program                                                     
 
   void compactSlotsLeft()                                                                                               // Compact the slots to the left hand side
    {subStart("Slots.compactSlotsLeft");
-
     new If (empty().Flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
