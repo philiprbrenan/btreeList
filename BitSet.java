@@ -4,7 +4,6 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Use zz() to remove all functions not called from Tree.java
 // CountOnes and zeros should skip over long blocks of the same bit type if these methods are still being used or be replaced with count()
-// use Array.fill() in initialize memory
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -132,28 +131,22 @@ final public class BitSet extends Program                                       
   private void setZeroPath(Int Index)                                                                                   // There is a one in the actual bits below this position in the zeros tree
    {final Int p = parentZero(Index);                                                                                    // Parent position in zeros tree
     final Int q = childLowZero(p);                                                                                      // Children in actual bits
-//  new If (getBitNC(q))                                                                                                // Both actual bits are one so the parent must be zero indicating no zeros
     new If (getBitNC(q))                                                                                                // Both actual bits are one so the parent must be zero indicating no zeros
      {void Then()
-//     {new If (getBitNC(q.Inc()))
        {new If (getBitNC(q.Inc()))
          {void Then()
-           {setBitNC(p); //clearBitNC(p);                                                                                              // Show parent has no zeros
+           {setBitNC(p);                                                                                                // Show parent has no zeros
             p.set(parentZero(p));                                                                                       // Move up
 
             new For(logBitSize-1)                                                                                       // Remaining possible parents
              {void body(Int Index, Bool Continue)
                {final Int q = childLowZero(p);                                                                          // Children of parent
-//              new If (getBitNC(q).Flip())                                                                             // Both children are zero so the parent must be zero also
-                new If (getBitNC(q))                                                                             // Both children are zero so the parent must be zero also
+                new If (getBitNC(q))                                                                                    // Both children are zero so the parent must be zero also
                  {void Then()
-//                 {new If (getBitNC(q.Inc()).Flip())
                    {new If (getBitNC(q.Inc()))
                      {void Then()
-//                     {new If (getBitNC(p))
                        {new If (getBitNC(p).Flip())
-//                       {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                            // Set parent and continue towards the root
-                         {void Then() {setBitNC(p); p.set(parentZero(p)); Continue.set();}                            // Set parent and continue towards the root
+                         {void Then() {setBitNC(p); p.set(parentZero(p)); Continue.set();}                              // Set parent and continue towards the root
                          };
                        }
                      };
@@ -171,9 +164,7 @@ final public class BitSet extends Program                                       
    {final Int p = parentZero(Index);                                                                                    // Position in zeros tree
     new For(bitSize)
      {void body(Int Index, Bool Continue)
-//     {new If (getBitNC(p).Flip())                                                                                     // The bit is not already set
        {new If (getBitNC(p))                                                                                            // The bit is not already set
-//       {void Then() {setBitNC(p); p.set(parentZero(p)); Continue.set();}                                              // Stop creating the path once we have arrived at a zero tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                                            // Stop creating the path once we have arrived at a zero tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          };
        }
@@ -352,7 +343,6 @@ final public class BitSet extends Program                                       
   Int lowZero(Int Pos)                                                                                                  // Find the lowest bit position with a zero in it below the indicated subtree in the zeros tree
    {subStart("Bitset.lowZero");
     checkInActualOrZeros(Pos);
-//  if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go low from Pos:", Pos, this);                                   // We can only step down from a one in the ones tree
     final Int p = childLowZero(new Int(Pos));                                                                           // Step down through zeros tree - assumes we started in the zeros tree
 
@@ -362,7 +352,6 @@ final public class BitSet extends Program                                       
          {void Then()
            {Continue.set();                                                                                             // Continue while we are in the zeros tree
             final Int q = new Int();
-//          new If (getBitNC(p))                                                                                        // Take lower bit if possible else upper one
             new If (getBitNC(p).Flip())                                                                                 // Take lower bit if possible else upper one
              {void Then() {q.set(p);}
               void Else() {q.set(p.inc());}
@@ -385,7 +374,6 @@ final public class BitSet extends Program                                       
   Int highZero(Int Pos)                                                                                                 // Find the highest bit position with a zero in it below the indicated subtree in the zeros tree
    {subStart("Bitset.highZero");
     checkInActualOrZeros(Pos);
-//  if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the zeros tree
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go high from Pos:", Pos, this);                                  // We can only step down from a one in the zeros tree
     final Int p = childHighZero(new Int(Pos));                                                                          // Step down through zeros tree - assumes we started in the zeros tree
     new For (new Int(logBitSize))                                                                                       // Step down through the ones tree to reach the actual bits
@@ -394,7 +382,6 @@ final public class BitSet extends Program                                       
          {void Then()
            {Continue.set();                                                                                             // Continue while we are in the zeros tree
             final Int q = new Int();
-//          new If (getBitNC(p))                                                                                        // Take upper bit if possible else lower one
             new If (getBitNC(p).Flip())                                                                                        // Take upper bit if possible else lower one
              {void Then() {q.set(p);}
               void Else() {q.set(p.Dec());}
@@ -402,7 +389,6 @@ final public class BitSet extends Program                                       
             p.set(childHighZero(q));                                                                                    // Step down through zeros tree - assumes we started in the zeros tree
            }
           void Else()                                                                                                   // In actual bits
-//         {new If (getBitNC(p).Flip())                                                                                 // Take lower bit if it is a zero
            {new If (getBitNC(p).Flip())                                                                                        // Take lower bit if it is a zero
              {void Then() {p.set(p);}                                                                                   // Otherwise the upper but must have the zero
               void Else() {p.set(p.Dec());}                                                                             // Otherwise the upper but must have the zero
@@ -586,7 +572,6 @@ final public class BitSet extends Program                                       
 
     new If (Q.le(limitUpperZero(p)))                                                                                    // Adjacent bit amongst the actual bits exists and is set so we must search
      {void Then()                                                                                                       // Found the adjacent bit to the right
-//     {new If (getBitNC(Q))                                                                                            // Adjacent bit amongst the actual bits exists and is set so we must search
        {new If (getBitNC(Q))                                                                                            // Adjacent bit amongst the actual bits exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move int zeros tree
@@ -596,7 +581,6 @@ final public class BitSet extends Program                                       
 
                 new If (q.le(limitUpperZero(p)))                                                                        // Found adjacent bit set to one to the right of the path up from the start bit
                  {void Then()                                                                                           // Found the adjacent bit to the right
-//                 {new If (getBitNC(q))                                                                                // Found adjacent bit set to one to the right of the path up from the start bit
                    {new If (getBitNC(q).Flip())                                                                                // Found adjacent bit set to one to the right of the path up from the start bit
                      {void Then()                                                                                       // Found the adjacent bit to the right
                        {Next.copy(lowZero(q));                                                                          // Lowest one bit in adjacent zero tree
@@ -644,7 +628,6 @@ final public class BitSet extends Program                                       
     new If (p.gt(0))                                                                                                    // Not at the start of bitset
      {void Then()
        {final Int q = p.Dec();                                                                                          // Position to left
-//      new If (getBitNC(q).Flip())                                                                                     // Adjacent zero
         new If (getBitNC(q).Flip())                                                                                     // Adjacent zero
          {void Then()
            {Prev.set(q);
@@ -656,7 +639,6 @@ final public class BitSet extends Program                                       
                 new If (pos_zero(p).gt(0))                                                                              // At start of row
                  {void Then()                                                                                           // At start of row - not found
                    {p.dec();                                                                                            // Position to left
-//                  new If (getBitNC(p))                                                                                // Found a one
                     new If (getBitNC(p).Flip())                                                                         // Found a one
                     {void Then()                                                                                        // Reached a one so we turn over and head back up the tree goinfg as high as possible
                       {Prev.set(highZero(p));                                                                           // Highest zero from this point
@@ -717,7 +699,7 @@ final public class BitSet extends Program                                       
 
 //D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset
 
-  public Int countOnes()                                                                                                // Count ones in bitset
+  public Int countAllOnes()                                                                                             // Count ones in bitset
    {final Int c = new Int(0);                                                                                           // Count
     final Int p = firstOne();                                                                                           // Position in bitset starting at first one
     new For(new Int(size()))                                                                                            // Step from one to one
@@ -739,7 +721,7 @@ final public class BitSet extends Program                                       
     return c;                                                                                                           // Return count
    };
 
-  public Int countZeros()                                                                                               // Count zeros in bitset
+  public Int countAllZeros()                                                                                            // Count zeros in bitset
    {final Int c = new Int(0);                                                                                           // Count
     final Int p = firstZero();
     new For(new Int(size()))
@@ -832,8 +814,8 @@ Zero:
    5   93    1 |  0
 """);
 
-    final Int o = b.countOnes ().ok( 9);
-    final Int z = b.countZeros().ok(23);
+    final Int o = b.countAllOnes ().ok( 9);
+    final Int z = b.countAllZeros().ok(23);
 
     b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
     b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
@@ -1224,10 +1206,10 @@ Zero:
     b.new ForCount(b.new Int(N))
      {void body(Int Index)
        {b.full ().ok(false);
-        b.countOnes ().ok(Index);
+        b.countAllOnes ().ok(Index);
         b.set(b.new Int(Index));
         b.empty().ok(false);
-        b.countZeros().ok(b.new Int(N).Dec().sub(Index));
+        b.countAllZeros().ok(b.new Int(N).Dec().sub(Index));
        }
      };
     b.full().ok(true);
@@ -1249,16 +1231,16 @@ Zero:
 
     b.set(b.new Int(  1),   b.new Bool(true));
     b.set(b.new Int(N-1),   b.new Bool(true));
-    b.countOnes ().ok(2);
-    b.countZeros().ok(N-2);
+    b.countAllOnes ().ok(2);
+    b.countAllZeros().ok(N-2);
 
     b.set(b.new Int(N/2),   b.new Bool(true));
-    b.countOnes ().ok(3);
-    b.countZeros().ok(N-3);
+    b.countAllOnes ().ok(3);
+    b.countAllZeros().ok(N-3);
 
     b.set(b.new Int(N/2+1), b.new Bool(true));
-    b.countOnes ().ok(4);
-    b.countZeros().ok(N-4);
+    b.countAllOnes ().ok(4);
+    b.countAllZeros().ok(N-4);
 
     b.maxSteps = 99999;
     b.execute();
