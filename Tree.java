@@ -128,12 +128,12 @@ class Tree extends Program                                                      
     freeChain.set(a);
    }
 
-  Bool isAllocated(Int Node) {return freeChain.get(Node).Flip();}                                                       // Check whether a node is allocated
+  Bool isAllocated(Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
 
   Int nodeAddress(Int Node)                                                                                             // Convert index to byte address of node in memory
    {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
     Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
-    final Bool f = freeChain.get(Node);                                                                                 // Check not freed
+    final Bool f = freeChain.getBit(Node);                                                                              // Check not freed
     f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                         // Complain if the node has been freed and not reallocated
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
