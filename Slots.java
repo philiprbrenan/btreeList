@@ -384,6 +384,7 @@ class Slots extends Program                                                     
              {void body(Int Index, Bool Continue)
                {final Int k = usedKeys .lastZero();                                                                     // Last empty key
                 final Int K = usedKeys .firstOne();                                                                     // First used key so we get the longest possible move
+say("AAAA", Index, k, K, slots, usedKeys);
                 new If (K.lt(k))                                                                                        // Compaction possible
                  {void Then()
                    {moveKey(k, K, Continue);
