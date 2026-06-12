@@ -943,7 +943,7 @@ class Slots extends Program                                                     
                            {f.set(r, new Bool(false), new Bool(true));                                                  // Higher than the upper bound
                            }
                           void Else()                                                                                   // Search range
-                           {new If (u.canGoLeft(p))                                                                     // Go left if possible  to search first part of range if it exists
+                           {new If (u.canGoLeftToOne(p))                                                                // Go left if possible  to search first part of range if it exists
                              {void Then()
                                {final Int lp = u.childLowOne    (p);                                                    // Upper end of left range
                                 final Int lr = u.highOne        (lp);                                                   // Index of upper end of range
@@ -960,7 +960,7 @@ class Slots extends Program                                                     
                                         Continue.set();                                                                 // Continue the search  with new bounds
                                        }
                                       void Else()
-                                       {new If (u.canGoRight(p))                                                        // Greater than anything in the left subrange so perhaps part of right hand subrange
+                                       {new If (u.canGoRightToOne(p))                                                   // Greater than anything in the left subrange so perhaps part of right hand subrange
                                          {void Then()
                                            {final Int rp = u.childHighOne   (p);                                        // Low end of right range
                                             final Int rl = u.lowOne         (rp);                                       // Index of lower end of search range
