@@ -72,7 +72,7 @@ final public class BitSet extends Program                                       
        }
      };
 
-    final Int p = addressZeroTree();                                                                                    // Set zero tree
+    final Int p = baseZero();                                                                                           // Set zero tree
     new ForCount(bitSize)                                                                                               // For loop to set bits along path in One tree to actual bit
      {void body(Int I)
        {setBitNC(p.Add(I), new Bool(true));
@@ -112,17 +112,13 @@ final public class BitSet extends Program                                       
   void setBit  (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value.
   void setBitNC(Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                               // Set bit value without checking index
 
-  void moveDownOneLayer(Int b, Int p, Int w) {b.down(); p.add(w); w.down();}                                            // Next layer down in a bit tree
-  void moveUpOneLayer  (Int B, Int p, Int w) {w.up();   p.sub(w); B.up()  ;}                                            // Move up one layer in the bit tree
-
   void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the ones tree
    {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
 
     new For(logBitSize)                                                                                                 // Set bits along the path to the root of the one tree
      {void body(Int Index, Bool Continue)
-       {new If (getBitNC(p))                                                                                            // Is the bit already set
-         {void Then() {Continue.clear();}                                                                               // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-          void Else() {setBitNC(p, new Bool(true)); p.set(parentOne(p)); Continue.set(); }                              // Flip the bit and continue
+       {new If (getBitNC(p).Flip())                                                                                     // Is the bit not already set
+         {void Then() {setBitNC(p, new Bool(true)); p.set(parentOne(p)); Continue.set(); }                              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          };
        }
      };
@@ -130,15 +126,15 @@ final public class BitSet extends Program                                       
 
   void clearOnePath(Int Index)                                                                                          // Clear bits along the path to the root of the ones tree if both children are zero
    {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
-
     new For(logBitSize)                                                                                                 //
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p))                                                                                            // Bit might need to be cleared
          {void Then()
            {final Int q = childLowOne(p);
-            new If (getBitNC(q).Flip().and(getBitNC(q.Inc()).Flip()))                                                    // Both child bits are clear so the parent should be cleared as well
+            new If (getBitNC(q).Flip().and(getBitNC(q.Inc()).Flip()))                                                   // Both child bits are clear so the parent should be cleared as well
              {void Then()
                {setBitNC(p, new Bool(false));                                                                           // Clear set bit along path to root
+                p.set(parentOne(p));
                 Continue.set();                                                                                         // Continue up
                }
              };
@@ -148,63 +144,36 @@ final public class BitSet extends Program                                       
      };
    }
 
-  Int addressZeroTree()                                                                                                 // The zero tree will be held directly after the actual bits if there is no one tree, else beyond the one tree
-   {final Int p = new Int(bitSize+bitSize1);
-    return p;
-   }
+  private void setZeroPath(Int Index)                                                                                   // There is a one in the actual bits below this position in the zeros tree
+   {final Int p = parentZero(Index);                                                                                                // Position in one tree
+    final Int q = childLowZero(p);                                                                                                // Position in one tree
+    new If (getBitNC(q).and(getBitNC(q.Inc())))                                                                         // Both actual bits are one so teh parent must be zero showing no zeros
+     {void Then()
+       {setBitNC(p, new Bool(false));                                                                                   // Show parent has no zeros
+        p.set(parentZero(p));
 
-  private void clearZeroPath(Int Index)                                                                                 // Clear the target bit and set bits along the path from the indexed bit to the root of the bit tree
-   {final Int p = new Int(addressZeroTree());                                                                           // Address zero bit tree
-    final Int b = new Int(Index.Down());                                                                                // Position in layer
-    final Int w = new Int(bitSize2);                                                                                    // Width of this layer
-
-    new For(bitSize)                                                                                                    // Step from root to leaf
-     {void body(Int Index, Bool Continue)
-       {final Int  q = new Int(p.Add(b));
-        Continue.set();
-        new If (getBitNC(q))                                                                                            // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
-         {void Then() {Continue.clear();}
-          void Else() {setBitNC(q, new Bool(true));}
+        new For(logBitSize-1)                                                                                           //
+         {void body(Int Index, Bool Continue)
+           {final Int q = childLowZero(p);
+            new If (getBitNC(q).Flip().and(getBitNC(q.Inc()).Flip()).and(getBitNC(p)))       //IMprovemnt short circuit                           // Both children are zero so the parent must be zero also
+             {void Then()
+               {setBitNC(p, new Bool(false));                                                                           // Show parent has no zeros
+                p.set(parentZero(p));
+                Continue.set();                                                                                         // Continue up
+               }
+             };
+           }
          };
-        moveDownOneLayer(b, p, w);                                                                                      // Next layer
-        Continue.and(w.gt(0));                                                                                          // As long as we are in a valid level
        }
      };
    }
 
-  private void setZeroPath(Int Index)                                                                                   // Set bits along the path from the indexed bit to the root of the bit tree unless there is another path running through each bit
-   {final Int w = new Int(bitSize2);                                                                                    // Width of child layer
-    final Int p = new Int(addressZeroTree());                                                                           // First child layer is the first layer of the zero bit tree
-    final Int b = new Int(Index.Down());                                                                                // Index of bit in child layer
-    final Int B = new Int(b.Up());                                                                                      // Position in layer above
-
-    new If (getBitNC(new Int(B)).and(getBitNC(new Int(B.Inc()))))                                                       // Check there is a zero
-     {void Then()
-       {final Int r = new Int(p.Add(b));                                                                                // Position in first layer of Zero tree
-        new If (getBitNC(r))                                                                                            // Bit is not already correctly set to show no path so there is nothing more to do
-         {void Then()
-           {setBitNC(r, new Bool(false));                                                                               // Clear set bit along path to root to show no path
-
-            new For(bitSize)                                                                                            // Step from root to leaf
-             {void body(Int Index, Bool Continue)
-               {final Int  P = p.dup();                                                                                 // Child layer becomes parent layer
-                moveDownOneLayer(b, p, w);                                                                              // Index of bit in child layer, position in child layer, width of child layer
-                final Int  Q = P.Add(b).add(b);
-                Continue.set();                                                                                         // Complete early if we found a bit that does not need setting
-                new If (getBitNC(new Int(Q)).or(getBitNC(new Int(Q.Inc()))))
-                 {void Then() {Continue.clear();}                                                                       // There is a one in the upper row so we do not need to clear further down
-                  void Else()                                                                                           // Need to show that there are no ones in the upper row
-                   {final Int r = new Int(p.Add(b));                                                                    // Bit to set
-                    new If (getBitNC(r).Flip())
-                     {void Then() {Continue.clear();}                                                                   // Bit is already correctly set so there is nothing more to do
-                      void Else() {setBitNC(r, new Bool(false));}                                                       // Clear set bit along path to root
-                     };
-                   }
-                 };
-                Continue.and(w.gt(0));                                                                                  // As long as we are in a valid level
-               }
-             };
-           }
+  private void clearZeroPath(Int Index)                                                                                 // There is a zero in the actual bits under this position in the zero tree
+   {final Int p = parentZero(Index);                                                                                    // Position in one tree
+    new For(bitSize)
+     {void body(Int Index, Bool Continue)
+       {new If (getBitNC(p).Flip())                                                                                     // The bit is not already set
+         {void Then() {setBitNC(p, new Bool(true)); p.set(parentZero(p)); Continue.set();}                              // Stop creating the path once we have arrived at a zero tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          };
        }
      };
@@ -1694,50 +1663,6 @@ Zero:
               test_lowHighZero(false);
    }
 
-  static void test_clearOnePath(boolean Ex)                                                                             // Test tree of searchable one bits
-   {sayCurrentTestName();
-    final int N = 16;
-    final BitSet b = test_bits(Ex, N);
-    for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 1));
-
-   //testStop(b);
-
-    b.ok(()->b, """
-BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-   1    0   16 |  0  0  0  0  1  1  1  1  0  0  0  0  1  1  1  1
-One:
-   2   16    8 |  0  0  1  1  0  0  1  1
-   3   24    4 |  0  1  0  1
-   4   28    2 |  1  1
-   5   30    1 |  1
-Zero:
-   1   31    8 |  1  1  0  0  1  1  0  0
-   2   39    4 |  1  0  1  0
-   3   43    2 |  1  1
-   4   45    1 |  1
-""");
-
-    say("AAAA00", b);
-    b.setBitNC(    b.new Int(5), b.new Bool(false));
-    b.clearOnePath(b.new Int(5));
-    say("AAAA11", 5, b);
-    b.setBitNC(    b.new Int(4), b.new Bool(false));
-    b.clearOnePath(b.new Int(4));
-    say("AAAA22", 4, b);
-    b.setBitNC(    b.new Int(6), b.new Bool(false));
-    b.clearOnePath(b.new Int(6));
-    say("AAAA33", 6, b);
-debug = true;
-    b.setBitNC(    b.new Int(7), b.new Bool(false));
-    b.clearOnePath(b.new Int(7));
-    say("AAAA44", 7, b);
-   }
-
-  static void test_clearOnePath()                                                                                         // Test tree of searchable one bits
-   {          test_clearOnePath(true);
-              test_clearOnePath(false);
-   }
-
   static void oldTests()                                                                                                // Tests thought to be stable.
    {test_prevNext01();
     test_prevNext();
@@ -1752,8 +1677,7 @@ debug = true;
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                         // Run baseline tests.
-    test_clearOnePath(true);
+   {oldTests();                                                                                                         // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
