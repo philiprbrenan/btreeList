@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // CountOnes and zeros should skip over long blocks of the same bit type
 // Invert zeros tree to simplify nextZero and prevZero
+// Use zz() to remove all functions not called from Tree.java
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -358,7 +359,7 @@ final public class BitSet extends Program                                       
 
   public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
   public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void set  (Int Index, Bool Value)                                                                               // Set or clear a bit in the bitset
+  public void set  (Int Index, Bool Value)                                                                              // Set or clear a bit in the bitset
    {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value
      {void Then()
        {setBitNC(Index, Value);                                                                                         // Set the bit
