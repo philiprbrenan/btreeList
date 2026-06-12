@@ -989,7 +989,7 @@ class Slots extends Program                                                     
                                  };
                                }
                               void Else()
-                               {new If (u.canGoRight(p))                                                                // Could not go left so must have gone right
+                               {new If (u.canGoRightToOne(p))                                                           // Could not go left so must have gone right
                                  {void Then()
                                    {p.set(u.childHighOne(p));                                                           // Move to right sub range which has the same bounds as the parent range
                                     Continue.set();                                                                     // Continue the search
