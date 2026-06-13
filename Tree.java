@@ -682,20 +682,12 @@ class Tree extends Program                                                      
    {subStart("Tree.mergeLeft");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
-    final Int    L  = new Int();                                                                                         // Left child
+    final Int    L  = new Int();                                                                                        // Left child
     new If (Pos.notValid())                                                                                             // Merging relative to top
-     {void Then()
-       {L.copy(P.slots.usedSlotsToKeys.lastOne());                                                                      // Last child in body of parent to be merged into top
-       }
-      void Else()                                                                                                       // Merge entirely within body of parent
-       {L.copy(P.slots.usedSlotsToKeys.prevOne(Pos));                                                                   // Left of left of position
-       }
+     {void Then() {L.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // Last child in body of parent to be merged into top
+      void Else() {L.copy(P.slots.usedSlotsToKeys.prevOne(Pos));}                                                       // Merge entirely within body of parent
      };
-    new If (L.valid())                                                                                                  // Left of left of position is valid so we can merge
-     {void Then()
-       {m.set(mergeLeftIntoRightSibling(Parent, L));                                                                    // Merge left sibling into right sibling
-       }
-     };
+    new If (L.valid()) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L));}};                                    // Left of left of position is valid so we can merge
     subFinish();
     return m;                                                                                                           // Whether the merge was performed or not
    }
@@ -707,12 +699,8 @@ class Tree extends Program                                                      
     final Int    R = new Int();                                                                                         // Right child of merge
 
     new If (Pos.notValid())                                                                                             // Merging relative to top
-     {void Then()
-       {R.copy(P.slots.usedSlotsToKeys.lastOne());                                                                      // Left once from top
-       }
-      void Else()                                                                                                       // Merge entirely within body of parent
-       {R.copy(P.slots.usedSlotsToKeys.prevOne(Pos));                                                                   // Left once
-       }
+     {void Then() {R.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // Left once from top
+      void Else() {R.copy(P.slots.usedSlotsToKeys.prevOne(Pos));}                                                       // Merge entirely within body of parent
      };
 
     new If (R.valid())                                                                                                  // There is a left position
