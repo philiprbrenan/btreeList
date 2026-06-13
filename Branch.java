@@ -158,12 +158,8 @@ class Branch extends Program implements Program.Locatable                       
            {final Int n = slots.usedSlotsToKeys.nextOne(f.slot);
             d.slot.copy(n);                                                                                             // Copy the slot found if there was one
             new If (n.valid())
-             {void Then()
-               {d.node.set(data(slots.getSlotToKeyIndex(n)));                                                           // Node at next level down
-               }
-              void Else()
-               {d.node.set(top());                                                                                      // No next key so step down through top
-               }
+             {void Then() {d.node.set(data(slots.getSlotToKeyIndex(n)));}                                               // Node at next level down
+              void Else() {d.node.set(top());}                                                                          // No next key so step down through top
              };
            }
          };
