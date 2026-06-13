@@ -889,12 +889,6 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  private String nws(Object S)                                                                                          // Normalize white space in a string describing an object
-   {final String r = ""+S;                                                                                              // Get string description
-    final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
-    return s;
-   }
-
   void check(StringBuilder G, String E) {new I() {void action() {     Test.ok(nws(G), nws(E));}};}                      // Test the supplied content against the specified string, then clear the output area ready for the next report
   void Check(StringBuilder G, String E) {new I() {void action() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);}};}  // Test the supplied content against the specified string, print the actual output area contents and stop
 
@@ -922,8 +916,6 @@ public class Program extends Test                                               
 
     abstract void action();                                                                                             // The action to be performed by the instruction
    }
-
-  int codeSize() {return program().code.size();}                                                                        // Number of instructions in current program
 
   final class Label                                                                                                     // Label jump targets in the program
    {int offset;                                                                                                         // The instruction location to which this label applies
@@ -975,6 +967,8 @@ public class Program extends Test                                               
    }
 
 //D2 Instruction counts                                                                                                 // Count the number of instructions in each subroutine minus the instructions supplied by called subroutines
+
+  int codeSize() {return program().code.size();}                                                                        // Number of instructions in current program
 
   static void subStart(String Name)
    {subs.push(Name);
