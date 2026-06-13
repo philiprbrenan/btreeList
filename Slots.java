@@ -406,7 +406,7 @@ class Slots extends Program                                                     
 
 //D5 Even                                                                                                               // Splitting an even number of slots
 
-  Int splitRightEven(Slots Right)                                                                                      // Split a full set of slots that contains an even number of entries then redistribute the slots. Return the splitting key
+  Int splitRightEven(Slots Right)                                                                                       // Split a full set of slots that contains an even number of entries then redistribute the slots. Return the splitting key
    {subStart("Slots.splitRightEven");
     final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
@@ -419,18 +419,8 @@ class Slots extends Program                                                     
     final Int sk = new Int(left.getSlotToKeyValue(new Int(numberOfKeys/2-1))).                                          // Splitting key is half the two middle keys
                        add(left.getSlotToKeyValue(new Int(numberOfKeys/2-0))).down();
 
-    new ForCount(new Int(N/2))                                                                                          // Clear lower half of target right slots
-     {void body(Int Index)
-       {Right.delete(Index);
-       }
-     };
-
-    new ForCount(new Int(N/2), new Int(N))                                                                              // Clear upper half of left slots
-     {void body(Int Index)
-       {left.delete(Index);
-       }
-     };
-
+    new ForCount(new Int(N/2))             {void body(Int Index) {Right.delete(Index);}};                               // Clear lower half of target right slots
+    new ForCount(new Int(N/2), new Int(N)) {void body(Int Index) {left .delete(Index);}};                               // Clear upper half of left slots
     left .redistribute();                                                                                               // Redistribute source and target slots if requested
     Right.redistribute();
     subFinish();
@@ -450,17 +440,8 @@ class Slots extends Program                                                     
     final Int sk = new Int(right.getSlotToKeyValue(new Int(numberOfKeys/2-1))).                                         // Splitting key is half the two middle keys
                        add(right.getSlotToKeyValue(new Int(numberOfKeys/2-0))).down();
 
-    new ForCount(new Int(N/2))                                                                                          // Clear lower half of target left slots
-     {void body(Int Index)
-       {right.delete(Index);
-       }
-     };
-
-    new ForCount(new Int(N/2), new Int(N))                                                                              // Clear upper half of left slots
-     {void body(Int Index)
-       {Left.delete(Index);                                                                                      // Delete key
-       }
-     };
+    new ForCount(new Int(N/2))             {void body(Int Index) {right.delete(Index);}};                               // Clear lower half of target left slots
+    new ForCount(new Int(N/2), new Int(N)) {void body(Int Index) {Left .delete(Index);}};                               // Clear upper half of left slots
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
     subFinish();
@@ -484,18 +465,10 @@ class Slots extends Program                                                     
     final Int sk = new Int(left.getSlotToKeyIndex(M));                                                                  // Get the index of the splitting key. The actual key can be recovered from the index.
     final Int sK = new Int(left.getKeyValue(sk));                                                                       // Value of the splitting key
 
-    new ForCount(R)                                                                                                     // Clear lower half of target right slots
-     {void body(Int Index)
-       {Right.delete(Index);
-       }
-     };
+    new ForCount(R)             {void body(Int Index) {Right.delete(Index);}};                                          // Clear lower half of target right slots
+    new ForCount(M, new Int(N)) {void body(Int Index) {left .delete(Index);}};                                          // Clear upper half of left slots
 
-    new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
-     {void body(Int Index)
-       {left.delete(Index);
-       }
-     };
-    left.refKeys.putInt(sk, sK);                                                                                               // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
+    left.refKeys.putInt(sk, sK);                                                                                        // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
 
     left .redistribute();                                                                                               // Redistribute source and target slots if requested
     Right.redistribute();
@@ -518,19 +491,9 @@ class Slots extends Program                                                     
     final Int sk = new Int(right.getSlotToKeyIndex(M));                                                                 // Get the index of the splitting key. The actual key can be recovered from the index.
     final Int sK = new Int(right.getKeyValue(sk));                                                                      // Value of the splitting key
 
-    new ForCount(R)                                                                                                     // Clear lower half of target right slots
-     {void body(Int Index)
-       {right.delete(Index);
-       }
-     };
+    new ForCount(R)              {void body(Int Index) {right.delete(Index);}};                                         // Clear lower half of target right slots
     right.refKeys.putInt(sk, sK);                                                                                       // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
-
-    new ForCount(M, new Int(N))                                                                                         // Clear upper half of left slots
-     {void body(Int Index)
-       {Left.delete(Index);
-       }
-     };
-
+    new ForCount(M, new Int(N))  {void body(Int Index) {Left .delete(Index);}};                                         // Clear upper half of left slots
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
     subFinish();
@@ -997,12 +960,8 @@ class Slots extends Program                                                     
    {final Find f = find(Key);                                                                                           // Find the key result
     final Int  r = new Int();                                                                                           // If the slots contains keys and one of them is greater than or equal to the search key, then return the index of that key, else return invalid
     new If (f.equal.or(f.lower))                                                                                        // Found the index of a key that is greater than or equal to the search key
-     {void Then()
-       {r.set(f.slot);                                                                                                  // Slot index of found key
-       }
-      void Else()
-       {r.copy(usedSlotsToKeys.nextOne(f.slot));                                                                         // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want. Have to use copy because the value might be invalid.
-       }
+     {void Then() {r.set                         (f.slot) ;}                                                            // Slot index of found key
+      void Else() {r.copy(usedSlotsToKeys.nextOne(f.slot));}                                                            // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want. Have to use copy because the value might be invalid.
      };
     return r;                                                                                                           // Result found if valid, if invalid greater than any key in the slots
    }
@@ -1012,9 +971,7 @@ class Slots extends Program                                                     
     final Int  slot     = new Int ("slot");                                                                             // Slot index referring to the inserted key
     final Bool inserted = new Bool("inserted");                                                                         // True if the key did not exist prior to the insertion else false
 
-    void set(Int Key, Int Slot, boolean Inserted)                                                                       // Record insertion result
-     {key.set(Key); slot.set(Slot); inserted.set(Inserted);
-     }
+    void set(Int Key, Int Slot, boolean Inserted) {key.set(Key); slot.set(Slot); inserted.set(Inserted);}               // Record insertion result
 
     public String toString()
      {final StringBuilder s = new StringBuilder();                                                                      // Print insertion result
@@ -1033,13 +990,8 @@ class Slots extends Program                                                     
       void Else()                                                                                                       // Insert into a free slot while maintaining the order of the slots
        {final Find f = find(Key);                                                                                       // Find nearest existing key in slots
         new If (f.equal)
-         {void Then()
-           {i.set(Key, f.slot, false);                                                                                  // Existing key
-           }
-          void Else()
-           {i.set(Key, f.insert(Key), true);                                                                            // New key in non empty slots per find results
-            countInc();                                                                                                 // Increment the count of the number of keys
-           }
+         {void Then() {i.set(Key, f.slot,       false);}                                                                // Existing key
+          void Else() {i.set(Key, f.insert(Key), true); countInc(); }                                                   // New key in non empty slots per find results
          };
        }
      };
