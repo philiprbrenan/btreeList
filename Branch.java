@@ -17,7 +17,7 @@ class Branch extends Program implements Program.Locatable                       
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
   final ByteMemory.Ref refTop;                                                                                          // Target for keys greater than all the keys in the branch bitset
   final Build          build;                                                                                           // Build used to construct this branch
-  final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
+  final static String  formatKey = " %3d";                                                                              // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout a branch
 
@@ -355,7 +355,7 @@ class Branch extends Program implements Program.Locatable                       
      {void Then()
        {new If (a.gt(0))
          {void Then()
-           {new I() {void action() {s.append(f(" at: "+formatKey, a.i())); }};
+           {new I() {void action() {s.append(f(" at:"+formatKey, a.i())); }};
            }
           void Else()
            {new I() {void action() {s.append(" ".repeat(8)); }};
@@ -369,9 +369,9 @@ class Branch extends Program implements Program.Locatable                       
 
     new I()
      {void action()
-       {s.append(f(" size: "+formatKey, maxSize()));
-        s.append(f(" count: "  +formatKey, slots.refCount.getInt(0)));
-        s.append(f(" top: "    +formatKey, refTop.getInt(0)));
+       {s.append(f(" size:"  + formatKey, maxSize()));
+        s.append(f(" count:" + formatKey, slots.refCount.getInt(0)));
+        s.append(f(" top:"   + formatKey, refTop.getInt(0)));
         s.append("\n Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
