@@ -18,6 +18,7 @@ class Tree extends Program                                                      
   final ByteMemory.Ref     refCount;                                                                                    // The number of keys in this tree
   final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
   final int     linesToPrintABranch = 4;                                                                                // The number of lines required to print a branch
+  final Int                    root = new Int(0);                                                                       // The root is always at node zero
   boolean           suppressMergeUp = false;                                                                            // Suppress merge up during development
 
 //D1 Construction                                                                                                       // Construct and layout a tree
@@ -141,8 +142,8 @@ class Tree extends Program                                                      
     int value()              {return value;}
    }
 
-  Bool isRootLeaf  () {return checkType(new Int(0), BranchOrLeaf.leaf);}                                                // Whether the root is a leaf
-  Bool isRootBranch() {return checkType(new Int(0), BranchOrLeaf.branch);}                                              // Whether the root is a branch
+  Bool isRootLeaf  () {return checkType(root, BranchOrLeaf.leaf);}                                                // Whether the root is a leaf
+  Bool isRootBranch() {return checkType(root, BranchOrLeaf.branch);}                                              // Whether the root is a branch
 
   Bool checkType(Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
    {final Int  a = nodeAddress(Node);
@@ -277,7 +278,7 @@ class Tree extends Program                                                      
 
   FindLeaf findLeaf(Int Key)                                                                                            // Find the specified key in a leaf in the tree
    {subStart("Tree.findLeaf");
-    final Int      p = new Int(0);                                                                                      // Start at root
+    final Int      p = root;                                                                                      // Start at root
     final FindLeaf f = new FindLeaf();                                                                                  // Find results
     f.start(Key);
     new For(new Int(mnl()))                                                                                             // Step down from branch to branch
@@ -309,7 +310,7 @@ class Tree extends Program                                                      
 
     Path(Int Key)
      {subStart("Tree.Path");
-      final Int p = new Int(0);                                                                                         // Start at root
+      final Int p = root;                                                                                         // Start at root
       final Bool valid = new Bool(false);                                                                               // Whether a leaf was reached
 
       key .set(Key);                                                                                                    // Record search key
@@ -363,7 +364,7 @@ class Tree extends Program                                                      
          {new If (split.eq(0))                                                                                          // Split the root branch
            {void Then()
              {final Int sk = splitRootBranch();
-              final Int  z = new Int(0);
+              final Int  z = root;
               new If (key.le(sk))                                                                                       // Update the path if the key to be inserted is less then the splitting key as the path will now go through the split out left branch
                {void Then()
                  {path.putInt(z, branch(z).data(z));                                                                    // Divert through first element of root now that it has been split
@@ -415,7 +416,7 @@ class Tree extends Program                                                      
          }
        };
 
-      final Branch R = branch(new Int(0));
+      final Branch R = branch(root);
       new If (R.slots.empty())                                                                                          // Reduce the height of the tree if the body of the root is now empty
        {void Then()
          {final Int t = R.top();                                                                                        // Top
@@ -463,7 +464,7 @@ class Tree extends Program                                                      
    {subStart("Tree.insert");
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
-       {final Leaf R = leaf(new Int(0));
+       {final Leaf R = leaf(root);
         final Slots.Find f = R.slots.find(Key);                                                                         // Perhaps the key is already present in the leaf root tree
         new If (f.equal)                                                                                                // Key exists in leaf root
          {void Then()
@@ -553,7 +554,7 @@ class Tree extends Program                                                      
     final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
     new If (isRootLeaf())
      {void Then()                                                                                                       // The root is a leaf
-       {final Leaf       R = leaf(new Int(0));                                                                          // Load root
+       {final Leaf       R = leaf(root);                                                                          // Load root
         final Slots.Find f = R.slots.find(Key);                                                                         // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
@@ -586,7 +587,7 @@ class Tree extends Program                                                      
 
   private Int splitRootBranch()                                                                                         // Split the root assuming that it is a branch
    {subStart("Tree.splitRootBranch");
-    final Branch R = branch(new Int(0));                                                                                // The root
+    final Branch R = branch(root);                                                                                // The root
     if (immediate() && isRootLeaf()   .b()) stop("Cannot split the root because it is not a branch");                   // Check that it is a branch
     if (immediate() && R.full().Flip().b()) stop("Cannot split the root because it is not full");                       // Check that the root is full
     final Branch l = branch();                                                                                          // New left branch
@@ -823,7 +824,7 @@ class Tree extends Program                                                      
      {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added to the stack
       final Tree tree = Tree.this;
 
-      new If (isBranch(new Int(0)))                                                                                     // Tree starts with a branch
+      new If (isBranch(root))                                                                                     // Tree starts with a branch
        {void Then()
          {new For(numberOfNodes*2)                                                                                      // Each node in the tree
            {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
@@ -1041,7 +1042,7 @@ class Tree extends Program                                                      
    {sayCurrentTestName();
     final Tree t = new Tree(new Build().maxLeafSize(2).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
                                             t.freeChain.countAllZeros().ok(1);
-    final Leaf   a = t.leaf(t.new Int(0));  t.freeChain.countAllZeros().ok(1);
+    final Leaf   a = t.leaf(t.root);  t.freeChain.countAllZeros().ok(1);
     final Leaf   b = t.leaf();              t.freeChain.countAllZeros().ok(2);
     final Branch c = t.branch();            t.freeChain.countAllZeros().ok(3);
     a.insert(t.new Int(2), t.new Int(22)); t.countInc();
