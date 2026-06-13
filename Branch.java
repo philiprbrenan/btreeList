@@ -7,7 +7,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 
-class Branch extends Program implements Program.Locatable                                                               // A branch in a tree btree that translates keys into values to be implemented as an application specific integrated circuit
+class Branch extends Program implements Program.Locatable                                                               // A branch in a btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
   final Int            at            = new Int();                                                                       // A representation of the location of the branch sufficient to be able to free it
