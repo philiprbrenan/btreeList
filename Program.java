@@ -5,7 +5,7 @@
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
