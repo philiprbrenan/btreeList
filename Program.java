@@ -892,31 +892,14 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  //<T> void put(T Value) {new I() {void action() {out.append(""+Value+' ' );}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a space
-  //<T> void Put(T Value) {new I() {void action() {out.append(""+Value+'\n');}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a new line
-
-  private String output()                                                                                               // Normalize and return the content of the output area, then clear the output area for the next report
-   {final String r = "";//+out;                                                                                            // Get content
+  private String nws(Object S)                                                                                          // Normalize white space in a string describing an object
+   {final String r = ""+S;                                                                                              // Get string description
     final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
-//  say("AAAA"+s+"BBBB length", s.length());
-//  for (int i = 0; i < s.length(); i++)
-//   {final char c = s.charAt(i);
-//    switch(c)
-//     {case ' '  -> {say(i, "space");}
-//      case '\n' -> {say(i, "new-line");}
-//      default   -> {say(i, c);}
-//     }
-//   }
-
     return s;
    }
 
-  void check()                {new I() {void action() {                                  stop(output())  ;}};}          // Say the normalized content of the output area and stop
-//  void check(String Expected) {new I() {void action() {     Test.ok(output(), Expected); out.setLength(0);}};}          // Test the normalized content of the output area against the specified string, then clear the output area ready for the next report
-//  void Check(String Expected) {new I() {void action() {if (!Test.ok(output(), Expected)) stop(output())  ;}};}          // Test the normalized content of the output area against the specified string, print the actual output area contents and stop
-
-  void check(StringBuilder Got, String Expected) {new I() {void action() {     Test.ok(""+Got, Expected);}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
-  void Check(StringBuilder Got, String Expected) {new I() {void action() {if (!Test.ok(""+Got, Expected)) stop(Got, traceBack)       ;}};} // Test the supplied content against the specified string, print the actual output area contents and stop
+  void check(StringBuilder G, String E) {new I() {void action() {     Test.ok(nws(G), nws(E));}};}                      // Test the supplied content against the specified string, then clear the output area ready for the next report
+  void Check(StringBuilder G, String E) {new I() {void action() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);}};}  // Test the supplied content against the specified string, print the actual output area contents and stop
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1163,11 +1146,11 @@ public class Program extends Test                                               
             c.add(b);
             a.set(b);
             b.set(c);
-            new I() {void action() {s.append(f(" %d", c.i()));}};
+            new I() {void action() {s.append(""+c+" ");}};
             Continue.set();
            }
          };
-        Check(s, " 1 2 3 5 8 13 21 34 55 89");
+        Check(s, "1 2 3 5 8 13 21 34 55 89");
         execute();
        }
      };
@@ -1194,11 +1177,11 @@ public class Program extends Test                                               
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
-            new I() {void action() {s.append(" "+c);}};
+            new I() {void action() {s.append(""+c+" ");}};
             Continue.set();
            }
          };
-      Check(s, " 2 1 3 2");
+        Check(s, "2 1 3 2");
         execute();
        }
      };
