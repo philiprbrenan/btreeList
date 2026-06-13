@@ -153,6 +153,12 @@ public class Test                                                               
      }
    }
 
+  static String nws(Object S)                                                                                           // Normalize white space in a string describing an object
+   {final String r = ""+S;                                                                                              // Get string description
+    final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
+    return s;
+   }
+
   static String dateTimeStamp()                                                                                         // Date and time stamp
    {return ZonedDateTime.now(ZoneOffset.UTC).
       format(DateTimeFormatter.ISO_INSTANT).replace(":", "-");
@@ -1376,6 +1382,10 @@ CCCCC
     ok(longestLine("\n\n"),  1);
     ok(longestLine("\nA\n"), 2);
     ok(longestLine("A\nBBB\nCC\n"), 4);
+    ok(nws(" a \n\n\n b \n\n\n"), """
+ a
+ b
+""");
    }
 
   static void test_files()
