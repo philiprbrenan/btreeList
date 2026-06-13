@@ -20,7 +20,7 @@ class Slots extends Program                                                     
   final ByteMemory.Ref            refKeys;                                                                              // The keys are held unordered in this array but ordered by the slot references to them
   final ByteMemory.Ref           refCount;                                                                              // The number of occupied slots and hence the number of keys in the slots
   final Build                       build;                                                                              // Build details
-  final static String           formatKey = "%3d";                                                                      // Format a key for dumping during testing
+  final static String           formatKey =  "%3d";                                                                     // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
@@ -1015,12 +1015,12 @@ class Slots extends Program                                                     
     final int[]N = range(numberOfSlotsToKeys());
     final int[]R = range(numberOfKeys());
     s.append(f("Slots    : size: %2d, count: %2d\n", numberOfKeys, refCount.getInt(0)));                                // Title
-    s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
-    s.append("\nslotsKeys: "); for (int i : N) s.append(f(" "+formatKey, getSlotToKeyIndex(i)));
-    s.append("\nkeysSlots: "); for (int i : N) s.append(f(" "+formatKey, getKeyToSlotIndex(i)));
-    s.append("\nusedSlots: "); for (int i : N) s.append(                 usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
-    s.append("\nusedKeys : "); for (int i : R) s.append(                 usedKeys       .getBitNC(i) ? "   X" : "   .");
-    s.append("\nkeys     : "); for (int i : R) s.append(f(" "+formatKey, getKeyValue(i)));
+    s.append("positions: ");   for (int i : N) s.append(f(formatKey, i));
+    s.append("\nslotsKeys: "); for (int i : N) s.append(f(formatKey, getSlotToKeyIndex(i)));
+    s.append("\nkeysSlots: "); for (int i : N) s.append(f(formatKey, getKeyToSlotIndex(i)));
+    s.append("\nusedSlots: "); for (int i : N) s.append(             usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
+    s.append("\nusedKeys : "); for (int i : R) s.append(             usedKeys       .getBitNC(i) ? "   X" : "   .");
+    s.append("\nkeys     : "); for (int i : R) s.append(f(formatKey, getKeyValue(i)));
     return ""+s+"\n";
    }
 
