@@ -24,7 +24,6 @@ public class Program extends Test                                               
   private static int programs = 0;                                                                                      // Unique id for each program
   final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Number the programs
-  final StringBuilder     out2 = new StringBuilder();                                                                    // Text output area
   final static Stack<String> subs = new Stack<>();                                                                      // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
@@ -436,17 +435,9 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    void stop(final Object...O)                                                                                         // Conditionally print a message if true and stop
-     {new If (this) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                  // Print supplied message and stop
-     }
-
-    void elseStop(final Object...O)                                                                                     // Conditionally print a message if false and stop
-     {new If (Flip()) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                // Print supplied message and stop
-     }
-
-    Bool say() {final Bool i = this; new I() {void action() {Test.say(i)          ;}}; return this;}                    // Say the boolean
-    //Bool out() {final Bool i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                    // Write the boolean value to the output area
-    //Bool Out() {final Bool i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                    // Write the boolean value to the output area
+    void stop    (final Object...O) {new If (this)   {void Then()  {new I() {void action() {Test.stop(O);}};}};}        // Conditionally print a message if true and stop
+    void elseStop(final Object...O) {new If (Flip()) {void Then()  {new I() {void action() {Test.stop(O);}};}};}        // Conditionally print a message if false and stop
+    Bool say() {final Bool i = this; new I() {void action() {Test.say(i) ;}}; return this;}                             // Say the boolean
 
     Bool ok(Boolean Value)
      {new I()
@@ -1131,21 +1122,21 @@ public class Program extends Test                                               
         new For(N)
          {void body(Int Index, Bool Continue)
            {b.add(a.dup().inc());
-            new I() {void action() {s.append(f("%2d  $2d\n", a.i(), b.i()));}};
+            new I() {void action() {s.append(f("%2d  %2d\n", a.i(), b.i()));}};
             Continue.set();
            }
          };
-        check(s, """
-1 2
-1 4
-1 6
-1 8
-1 10
-1 12
-1 14
-1 16
-1 18
-1 20
+        Check(s, """
+ 1   2
+ 1   4
+ 1   6
+ 1   8
+ 1  10
+ 1  12
+ 1  14
+ 1  16
+ 1  18
+ 1  20
 """);
         execute();
        }
@@ -1172,13 +1163,11 @@ public class Program extends Test                                               
             c.add(b);
             a.set(b);
             b.set(c);
-            new I() {void action() {s.append(f("%2d", c.i()));}};
+            new I() {void action() {s.append(f(" %d", c.i()));}};
             Continue.set();
            }
          };
-        Check(s, """
-1 2 3 5 8 13 21 34 55 89
-""");
+        Check(s, " 1 2 3 5 8 13 21 34 55 89");
         execute();
        }
      };
@@ -1205,13 +1194,11 @@ public class Program extends Test                                               
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
-            new I() {void action() {s.append(c);}};
+            new I() {void action() {s.append(" "+c);}};
             Continue.set();
            }
          };
-      Check(s, """
-2 1 3 2
-""");
+      Check(s, " 2 1 3 2");
         execute();
        }
      };
@@ -1228,12 +1215,10 @@ public class Program extends Test                                               
      {void code()
        {final Int a = new Int(0);
         final StringBuilder s = new StringBuilder();
-                 new I() {void action() {s.append(a);}};
-        a.inc(); new I() {void action() {s.append(a);}};
-        a.inc(); new I() {void action() {s.append(a);}};
-        Check(s, """
-0 1 2
-""");
+                 new I() {void action() {s.append(" "+a);}};
+        a.inc(); new I() {void action() {s.append(" "+a);}};
+        a.inc(); new I() {void action() {s.append(" "+a);}};
+        Check(s, " 0 1 2");
         execute();
        }
      };
@@ -1519,7 +1504,7 @@ public class Program extends Test                                               
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
