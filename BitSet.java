@@ -2,7 +2,6 @@
 // Locate set or cleared bits in a fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Use zz() to remove all functions not called from Tree.java
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
