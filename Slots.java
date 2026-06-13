@@ -2,8 +2,7 @@
 // Distributed sparse slots used to hold the key of the Btree
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-//Improvements Distribute sequential block across any adjacent zeros
-//Improvements Clear the slots with Array.fill() once bitset has inverted the zeros tree
+//Improvements Distribute sequential occupied slots across any adjacent empty ones
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -91,9 +90,7 @@ class Slots extends Program                                                     
    }
 
   Slots initializeMemory()                                                                                              // Initialize memory
-   {//usedSlotsToKeys.initializeMemory();
-    //usedKeys       .initializeMemory();
-    byteMemoryRef.clear(build.size());
+   {byteMemoryRef.clear(build.size());
     return this;
    }
 
@@ -563,7 +560,7 @@ class Slots extends Program                                                     
             right.setSlotAndKey(Index, k, K);                                                                           // Reinsert left key in right target
            }
          };
-        right.count(lc.Add(rc));                                                                                         // Reset count
+        right.count(lc.Add(rc));                                                                                        // Reset count
         Left .redistribute();                                                                                           // Redistribute left
         right.redistribute();                                                                                           // Redistribute right
        }
@@ -1017,7 +1014,7 @@ class Slots extends Program                                                     
    {final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlotsToKeys());
     final int[]R = range(numberOfKeys());
-    s.append(f("Slots    : size: %2d, count: %2d\n", numberOfKeys, refCount.getInt(0)));                                 // Title
+    s.append(f("Slots    : size: %2d, count: %2d\n", numberOfKeys, refCount.getInt(0)));                                // Title
     s.append("positions: ");   for (int i : N) s.append(f(" "+formatKey, i));
     s.append("\nslotsKeys: "); for (int i : N) s.append(f(" "+formatKey, getSlotToKeyIndex(i)));
     s.append("\nkeysSlots: "); for (int i : N) s.append(f(" "+formatKey, getKeyToSlotIndex(i)));
