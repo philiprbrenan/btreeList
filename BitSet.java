@@ -155,7 +155,7 @@ final public class BitSet extends Program                                       
 
   private void clearZeroPath(Int Index)                                                                                 // There is a zero in the actual bits under this position in the zero tree
    {final Int p = parentZero(Index);                                                                                    // Position in zeros tree
-    new For(bitSize)
+    new For(logBitSize)
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p))                                                                                            // The bit is not already set
          {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                                            // Stop creating the path once we have arrived at a zero tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
