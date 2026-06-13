@@ -91,8 +91,9 @@ class Slots extends Program                                                     
    }
 
   Slots initializeMemory()                                                                                              // Initialize memory
-   {usedSlotsToKeys.initializeMemory();
-    usedKeys       .initializeMemory();
+   {//usedSlotsToKeys.initializeMemory();
+    //usedKeys       .initializeMemory();
+    byteMemoryRef.clear(build.size());
     return this;
    }
 
