@@ -24,7 +24,7 @@ public class Program extends Test                                               
   private static int programs = 0;                                                                                      // Unique id for each program
   final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Number the programs
-  final static Stack<String> subs = new Stack<>();                                                                      // Name of the current method is cached here so that we can count instructions
+  final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
@@ -55,7 +55,7 @@ public class Program extends Test                                               
   Program   program() {return parentProgram;}                                                                           // Address this program
 
   void executingCheck()     {if (!executing()) stop("Not executing or interpreting");}                                  // Use standard Java operators rather than this class to execute code that is not executed as machine code
-  void parentProgramCheck() {if (program() != program().program()) stop("Parent program not set to parent program");}   // Use standard Java operators rather than this class to execute code that is not executed as machine code
+  void parentProgramCheck() {if (program() != program().program()) stop("Parent program not set to parent program");}   // Check that code is being written to the expected program
 
   void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructions
    {final I      i = parentProgram.executing;
@@ -653,8 +653,6 @@ public class Program extends Test                                               
      }
 
     Int say() {final Int i = this; new I() {void action() {Test.say(i);}};           return this;}                      // Say the integer
-    //Int out() {final Int i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                      // Write the integer value to the output area
-    //Int Out() {final Int i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                      // Write the integer value to the output area
 
     Int ok(Integer Value)                                                                                               // Check the integer
      {new I()
@@ -678,7 +676,6 @@ public class Program extends Test                                               
        };
       return this;
      }
-
    }
 
 //D1 Byte Memory                                                                                                        // Operations on memory backed by bytes
@@ -701,7 +698,7 @@ public class Program extends Test                                               
 
     private void putByte(int I, int J)                                                                                  // Put a byte into memory
      {if (tracing()) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                           // Trace
-      bytes[I] = (byte)(J & 0xFF);                                                                                              // Set the value of a byte from an integer
+      bytes[I] = (byte)(J & 0xFF);                                                                                      // Set the value of a byte from an integer
      }
 
     ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
@@ -1044,30 +1041,6 @@ public class Program extends Test                                               
    {test_programming(true); test_programming(false);
    }
 
-//  static void test_bool(boolean Ex)
-//   {sayCurrentTestName();
-//    final Program  P = new Program(new Build().immediate(Ex))
-//     {void code()
-//       {final Bool z = new Bool().clear();
-//        final Bool o = new Bool().set();
-//
-//        final Bool O = new Bool().set(z);
-//                   O.or(o);
-//        O.Out();
-//        final Bool A = new Bool().set(o);
-//                   A.and(z);
-//        A.Out();
-//       }
-//     };
-//    P.execute();
-//   }
-//
-//  static void test_bool()
-//   {          test_bool(true);
-//              test_bool(false);
-//   }
-
-
   static void test_andOr(boolean Ex)
    {sayCurrentTestName();
     final Program  P = new Program(new Build().immediate(Ex))
@@ -1092,7 +1065,6 @@ public class Program extends Test                                               
    {          test_andOr(true);
               test_andOr(false);
    }
-
 
   static void test_add(boolean Ex)
    {sayCurrentTestName();
@@ -1430,7 +1402,7 @@ public class Program extends Test                                               
               test_invalidate(false);
    }
 /*
-  static void test_call(boolean Ex)
+  static void test_procedureCall(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
@@ -1463,14 +1435,13 @@ public class Program extends Test                                               
      };
    }
 
-  static void test_call()
-   {          test_call(true);
-              test_call(false);
+  static void test_procedureCall()
+   {          test_procedureCall(true);
+              test_procedureCall(false);
    }
 */
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
-//  test_bool();
     test_andOr();
     test_add();
     test_fibonnacci();
@@ -1483,7 +1454,7 @@ public class Program extends Test                                               
     test_byteMemoryNegative();
     test_byteMemoryRef();
     test_invalidate();
-    //test_call();
+    //test_procedureCall();
    }
 
   static void newTests()                                                                                                // Tests being worked on
