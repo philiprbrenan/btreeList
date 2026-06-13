@@ -419,59 +419,10 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool or(Bool b) {new I() {void action() {x(); b.x(); if (b.i) i = true;}}; return this;}                            // "Or" without short circuit. Modifies the target.
-    Bool Or(Bool b) {return dup().or(b);}                                                                               // "Or" without short circuit. Does not modify the target
-
-
-    @SafeVarargs
-    final Bool And(Supplier<Bool>...b)                                                                                  // "And" with short circuit
-     {final Bool r = new Bool();
-      new I() {void action() {AndEx(r, b);}};
-      return r;
-     }
-
-    @SafeVarargs
-    final void AndEx(Bool r, Supplier<Bool>...b)                                                                        // "And" with short circuit
-     {x(); r.set(b());                                                                                                  // Start with the current value
-      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
-       {if (!r.b()) break;                                                                                              // Finish when we know the result
-        r.set(b[i].get());                                                                                              // Check additional operands
-       }
-     }
-
-    @SafeVarargs
-    final Bool and(Supplier<Bool>...b)                                                                                  // "And" with short circuit modify target
-     {new I() {void action() {andEx(b);}};
-      return this;
-     }
-
-    @SafeVarargs
-    final void andEx(Supplier<Bool>...b)                                                                                // "And" with short circuit modify target
-      {x();
-      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
-       {if (!b()) break;                                                                                                // Finish when we know the result
-        ex(Ops.set, b[i].get());                                                                                        // Check additional operands
-       }
-     }
-
-    Bool and(Bool...b)                                                                                                  // "And" without short circuit. Modifies the target.
-     {new I()
-       {void action()
-         {x();
-          for (int j : range(b.length))
-           {b[j].x();
-            if (!b[j].i) i = false;
-           }
-         }
-       };
-      return this;
-     }
-
-    Bool And(Bool...b)                                                                                                  // "And" without short circuit. Does not modify the target
-     {final Bool r = new Bool(this);
-      r.and(b);
-      return r;
-     }
+    Bool or (Bool b) {new I() {void action() {x(); b.x(); if (b.i) i = true;}}; return this;}                           // "Or" without short circuit. Modifies the target.
+    Bool Or (Bool b) {return dup().or(b);}                                                                              // "Or" without short circuit. Does not modify the target
+    Bool and(Bool b) {new I() {void action() {x(); b.x(); if (!b.i) i = false;}}; return this;}                         // "And" without short circuit. Modifies the target.
+    Bool And(Bool b) {return dup().and(b);}                                                                             // "And" without short circuit. Does not modify the target
 
     Bool dup   ()       {                                             return new Bool(this);}                           // Duplicate a boolean so that the duplicated version can be modified without modifying the original
     Bool copy  (Bool I) {new I() {void action() {i = I.i; v = I.v;}}; return this;}                                     // Copy the state of a boolean without regard as to whether it is valid or not
@@ -1155,10 +1106,11 @@ public class Program extends Test                                               
         z.Or (o).ok(true);
         o.Or (z).ok(true);
         o.Or (o).ok(true);
-        o.And(z, z).ok(false);
-        o.And(z, o).ok(false);
-        o.And(o, z).ok(false);
-        o.And(o, o).ok(true);
+
+        z.And(z).ok(false);
+        z.And(o).ok(false);
+        o.And(z).ok(false);
+        o.And(o).ok(true);
         execute();
        }
      };
