@@ -12,7 +12,7 @@ class Tree extends Program                                                      
   final BitSet            freeChain;                                                                                    // Nodes currently free
   final int           numberOfNodes;                                                                                    // Maximum number of leaves plus branches in this tree
   final int   maximumNumberOfLevels;                                                                                    // Maximum number of levels in tree to prevent runaways while debugging
-  final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node may hold a branch or a leaf
+  final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node must be able to hold a branch or a leaf
   final ByteMemory.Ref     refNodes;                                                                                    // The nodes associated with this tree
   final ByteMemory.Ref refFreeChain;                                                                                    // The free chain for this tree
   final ByteMemory.Ref     refCount;                                                                                    // The number of keys in this tree
@@ -46,11 +46,11 @@ class Tree extends Program                                                      
     Build numberOfNodes(int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
     Build execute      (boolean Execute      ) {execute       = Execute;       return this;}
 
-    Program.Build build()                                                                                               // Create a description of the needed containing program
+    Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
       freeChain             = new BitSet .Build().bitSize(numberOfNodes); freeChain.build();                            // Size of free chain
-      branch                = new Branch .Build().maxSize(maxBranchSize); branch   .build();                            // Size of a branch chain
-      leaf                  = new Leaf   .Build().maxSize(maxLeafSize)  ; leaf     .build();                            // Size of a leaf chain
+      branch                = new Branch .Build().maxSize(maxBranchSize); branch   .build();                            // Size of a branch
+      leaf                  = new Leaf   .Build().maxSize(maxLeafSize)  ; leaf     .build();                            // Size of a leaf
       leafSize              = leaf.size();
       branchSize            = branch.size();
       nodeSize              = max(branchSize, leafSize);
@@ -111,14 +111,14 @@ class Tree extends Program                                                      
   int numberOfNodes() {return numberOfNodes;}                                                                           // Maximum number of nodes in tree
   int           mnl() {return maximumNumberOfLevels;}                                                                   // Maximum number of levels
 
-  Int allocate()                                                                                                        // Allocate a leaf or a branch using the free chain slots as an array that can be searched for the first used slot in log time
+  Int allocate()                                                                                                        // Allocate a leaf or a branch using the first free node on the free chain
    {final Int a = new Int("index") .set(freeChain.firstOne());                                                          // First element on free chain
     a.notValid().stop("No more leaves or branches");
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
     return a;
    }
 
-  void free(Locatable Free)                                                                                             // Free a leaf or a branch
+  void free(Locatable Free)                                                                                             // Free a leaf or a branch and invalidate its contents
    {final Int a = Free.getLocation();
     byteMemory.invalidate(nodeAddress(a), sizeOfNode);                                                                  // Invalidate the memory
     freeChain.set(a);
@@ -126,7 +126,7 @@ class Tree extends Program                                                      
 
   Bool isAllocated(Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
 
-  Int nodeAddress(Int Node)                                                                                             // Convert index to byte address of node in memory
+  Int nodeAddress(Int Node)                                                                                             // Convert an index to a byte address of node in memory
    {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
     Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
     final Bool f = freeChain.getBit(Node);                                                                              // Check not freed
@@ -152,13 +152,13 @@ class Tree extends Program                                                      
     return r;
    }
 
-  void setType(Int Node, BranchOrLeaf Type)                                                                             // Check the type of a node
+  void setType(Int Node, BranchOrLeaf Type)                                                                             // Set the type of a node
    {final Int a = nodeAddress(Node);
     byteMemory.putInt(a, new Int(Type.value()));
    }
 
-  Bool isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Is the indexed node a branch
-  Bool isLeaf  (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                // Is the indexed node a leaf
+  Bool isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Whether the indexed node a branch
+  Bool isLeaf  (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                // Whether the indexed node a leaf
 
   Leaf leaf(Int Node) {return leaf(Node, true);}                                                                        // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
@@ -240,7 +240,7 @@ class Tree extends Program                                                      
 
     new If (l.valid)
      {void Then()
-       {final Leaf       L = leaf(new Int(l.leaf));                                                                     // Load leaf
+       {final Leaf       L = leaf(l.leaf);                                                                              // Load leaf
         final Slots.Find f = L.slots.find(Key);                                                                         // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
