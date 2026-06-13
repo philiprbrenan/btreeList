@@ -15,7 +15,6 @@ class Leaf extends Program implements Program.Locatable                         
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
   final Build          build;                                                                                           // Build used to construct this leaf
-  final static String  formatKey = "%3d";                                                                               // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout a leaf
 
@@ -248,7 +247,7 @@ class Leaf extends Program implements Program.Locatable                         
      {void Then()
        {new If (a.gt(0))
          {void Then()
-           {new I() {void action() {s.append(f(" at: "+formatKey, a.i())); }};
+           {new I() {void action() {s.append(f(" at: %3d", a.i())); }};
            }
           void Else()
            {new I() {void action() {s.append(" ".repeat(8)); }};
