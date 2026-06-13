@@ -20,6 +20,8 @@ final public class BitSet extends Program                                       
   final  int[]limitsUpperZero;                                                                                          // The upper limit of the zeros tree for each possible position in the ones tree
   final  int[]limitsLowerOne;                                                                                           // The lower limit of the ones  tree for each possible position in the ones tree
   final  int[]limitsLowerZero;                                                                                          // The lower limit of the zeros tree for each possible position in the ones tree
+  final  int[]heightOne;                                                                                                // Position in ones tree to height in ones tree
+  final  int[]heightZero;                                                                                               // Position in zeros tree to height in zeros tree
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
@@ -60,6 +62,8 @@ final public class BitSet extends Program                                       
     limitsUpperZero  = new int[top_zero()+2]; limitsUpperZero();                                                        // Upper limits of zeros tree
     limitsLowerOne   = new int[top_one ()+1]; limitsLowerOne ();                                                        // Lower limits of ones tree
     limitsLowerZero  = new int[top_zero()+2]; limitsLowerZero();                                                        // Lower limits of zeros tree
+    heightOne        = new int[top_one() +1]; heightOne      ();                                                        // Height of each node in the ones tree
+    heightZero       = new int[top_zero()+2]; heightZero     ();                                                        // Height of each node in the zeros tree
    }
 
   BitSet initializeMemory() {memoryRef.clear(bytesNeeded()); return this;}                                              // Initialize memory
@@ -153,12 +157,12 @@ final public class BitSet extends Program                                       
      };
    }
 
-  private void clearZeroPath(Int Index)                                                                                 // There is a zero in the actual bits under this position in the zero tree
+  private void clearZeroPath(Int Index)                                                                                 // There is a zero in the actual bits under this position in the zeros tree
    {final Int p = parentZero(Index);                                                                                    // Position in zeros tree
     new For(logBitSize)
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p))                                                                                            // The bit is not already set
-         {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                                            // Stop creating the path once we have arrived at a zero tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
+         {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                                            // Stop creating the path once we have arrived at a zeros tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          };
        }
      };
@@ -220,8 +224,8 @@ final public class BitSet extends Program                                       
   Int childLowOne  (Int Pos) {return Pos.Dec().mul(2).sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
   Int parentOne    (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                  // Step to the corresponding parent bit index for this child bit index
 
-  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                          // Step to low child in zero tree
-  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                          // Step to high child in zero tree
+  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                          // Step to low child in zeros tree
+  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                          // Step to high child in zeros tree
   Int parentZero   (Int Pos) {return oneToZero(parentOne   (zeroToOne(Pos)));}                                          // Step to the corresponding parent bit index for this child bit index
 
   int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
@@ -238,13 +242,15 @@ final public class BitSet extends Program                                       
   Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void action() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
   Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void action() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);}}; return r;} // Lower limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
   Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void action() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);}}; return r;} // Lower limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
+  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void action() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);}}; return r;} // Height of the specified position in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
+  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void action() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);}}; return r;} // Height of the specified position in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
 
   void limitsUpperOne()                                                                                                 // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
    }
 
-  void limitsUpperZero()                                                                                                //  Upper limits of the zero tree
+  void limitsUpperZero()                                                                                                //  Upper limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i]; else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
@@ -255,18 +261,29 @@ final public class BitSet extends Program                                       
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
    }
 
-  void limitsLowerZero()                                                                                                // Lower limits of the zero tree
+  void limitsLowerZero()                                                                                                // Lower limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i]; else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
    }
 
-  int pos_zero  (int Pos)                                                                                               // Position in the indicated row of the zero tree
+  void heightOne()                                                                                                      // Height of each node in the ones tree
+   {int l = 0, w = bitSize, h = 0;
+    for (int i = 0, N = top_one(); i <= N; ++i) {heightOne[i] = h; if (i >= l+w-1) {l += w; w >>>= 1; ++h;}}
+   }
+
+  void heightZero()                                                                                                     // Height of each node in the zeros tree
+   {for (int i = 0, N = top_one(); i <= N; ++i)
+     {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
+     }
+   }
+
+  int pos_zero  (int Pos)                                                                                               // Position in the indicated row of the zeros tree
    {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
     return pos_one(Pos - base_zero() + bitSize);
    }
 
-  int widthZero(int Pos)                                                                                                // Width of the specified position in the indicated row of the zero tree
+  int widthZero(int Pos)                                                                                                // Width of the specified position in the indicated row of the zeros tree
    {if (Pos < bitSize) return bitSize;
     return widthOne(Pos - base_zero() + bitSize);
    }
@@ -292,17 +309,12 @@ final public class BitSet extends Program                                       
     checkInActualOrOnes(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
-    new For (new Int(logBitSize))                                                                                       // Step down through the ones tree to reach the actual bits
-     {void body(Int Index, Bool Continue)
-       {new If (p.ge(bitSize))                                                                                          // Still in the ones tree
-         {void Then()
-           {Continue.set();                                                                                             // Continue while we are in the ones tree
-            final Int a = childLowOne(p);                                                                               // Lower level bit
-            new If (getBitNC(a))                                                                                        // Take lower bit if possible else upper one
-             {void Then() {p.set(a);}
-              void Else() {p.set(a.inc());}
-             };
-           }
+    new ForCount(heightOne(Pos))                                                                                        // Step down through the ones tree to reach the actual bits
+     {void body(Int Index)
+       {p.set(childLowOne(p));                                                                                          // Lower level bit
+        new If (getBitNC(p))                                                                                            // Take lower bit if possible else upper one
+         {void Then() {p.set(p);}
+          void Else() {p.set(p.Inc());}
          };
        }
      };
@@ -315,17 +327,12 @@ final public class BitSet extends Program                                       
     checkInActualOrOnes(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
-    new For(new Int(logBitSize))                                                                                        // Step down
-     {void body(Int Index, Bool Continue)
-       {new If (p.ge(bitSize))
-         {void Then()
-           {Continue.set();                                                                                             // Continue while we are in the ones tree
-            final Int q = childHighOne(p);                                                                              // Lower level bit
-            new If (getBitNC(q))                                                                                        // Choose upper bit over lower bit if possible
-             {void Then() {p.set(q);}
-              void Else() {p.set(q.dec());}
-             };
-           }
+    new ForCount(heightOne(Pos))                                                                                        // Step down
+     {void body(Int Index)
+       {p.set(childHighOne(p));                                                                                         // Lower level bit
+        new If (getBitNC(p))                                                                                            // Choose upper bit over lower bit if possible
+         {void Then() {p.set(p);}
+          void Else() {p.set(p.Dec());}
          };
        }
      };
@@ -337,25 +344,14 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.lowZero");
     checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go low from Pos:", Pos, this);                                   // We can only step down from a one in the ones tree
-    final Int p = childLowZero(new Int(Pos));                                                                           // Step down through the zeros tree - assumes we started in the zeros tree
+    final Int p = new Int(Pos);                                                                                         // Step down through the zeros tree - assumes we started in the zeros tree
 
-    new For (new Int(logBitSize))                                                                                       // Step down through the ones tree to reach the actual bits
-     {void body(Int Index, Bool Continue)
-       {new If (p.ge(bitSize))                                                                                          // Still in the zeros tree
-         {void Then()
-           {Continue.set();                                                                                             // Continue while we are in the zeros tree
-            final Int q = new Int();
-            new If (getBitNC(p).Flip())                                                                                 // Take lower bit if possible else upper one
-             {void Then() {q.set(p);}
-              void Else() {q.set(p.inc());}
-             };
-            p.set(childLowZero(q));                                                                                     // Step down through the zeros tree - assumes we started in the zeros tree
-           }
-          void Else()                                                                                                   // In actual bits
-           {new If (getBitNC(p))                                                                                        // Take lower bit if it is a zero
-             {void Then() {p.set(p.inc());}                                                                             // Otherwise the upper bit must have the zero
-             };
-           }
+    new ForCount (heightZero(Pos))                                                                                      // Step down through the ones tree to reach the actual bits
+     {void body(Int Index)
+       {p.set(childLowZero(p));                                                                                         // Step down through the zeros tree - assumes we started in the zeros tree
+        new If (getBitNC(p))                                                                                            // Take lower bit if possible else upper one
+         {void Then() {p.set(p.Inc());}
+          void Else() {p.set(p);}
          };
        }
      };
@@ -367,25 +363,13 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.highZero");
     checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go high from Pos:", Pos, this);                                  // We can only step down from a one in the zeros tree
-    final Int p = childHighZero(new Int(Pos));                                                                          // Step down through the zeros tree - assumes we started in the zeros tree
-    new For (new Int(logBitSize))                                                                                       // Step down through the zeros tree to reach the actual bits
-     {void body(Int Index, Bool Continue)
-       {new If (p.ge(bitSize))                                                                                          // Still in the zeros tree
-         {void Then()
-           {Continue.set();                                                                                             // Continue while we are in the zeros tree
-            final Int q = new Int();
-            new If (getBitNC(p).Flip())                                                                                 // Take upper bit if possible else lower one
-             {void Then() {q.set(p);}
-              void Else() {q.set(p.Dec());}
-             };
-            p.set(childHighZero(q));                                                                                    // Step down through zeros tree - assumes we started in the zeros tree
-           }
-          void Else()                                                                                                   // In actual bits
-           {new If (getBitNC(p).Flip())                                                                                 // Take lower bit if it is a zero
-             {void Then() {p.set(p);}                                                                                   // Lower bit is a zero
-              void Else() {p.set(p.Dec());}                                                                             // Otherwise the upper bit must have the zero
-             };
-           }
+    final Int p = new Int(Pos);                                                                                         // Step down through the zeros tree - assumes we started in the zeros tree
+    new ForCount (heightZero(Pos))                                                                                      // Step down through the zeros tree to reach the actual bits
+     {void body(Int Index)
+       {p.set(childHighZero(p));                                                                                        // Step down through zeros tree - assumes we started in the zeros tree
+        new If (getBitNC(p))                                                                                            // Take upper bit if possible else lower one
+         {void Then() {p.set(p.Dec());}
+          void Else() {p.set(p);}
          };
        }
      };
@@ -575,7 +559,7 @@ final public class BitSet extends Program                                       
                  {void Then()                                                                                           // Found the adjacent bit to the right
                    {new If (getBitNC(q).Flip())                                                                                // Found adjacent bit set to one to the right of the path up from the start bit
                      {void Then()                                                                                       // Found the adjacent bit to the right
-                       {Next.copy(lowZero(q));                                                                          // Lowest one bit in adjacent zero tree
+                       {Next.copy(lowZero(q));                                                                          // Lowest one bit in adjacent zeros tree
                        }
                       void Else()                                                                                       // No adjacent one yet
                        {p.set(parentZero(p));                                                                           // Move up to parent
