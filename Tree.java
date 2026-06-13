@@ -823,7 +823,7 @@ class Tree extends Program                                                      
      {node.clear(); action.clear(); depth.set(0); action.putInt(ib(depth), new Int(action_first));                      // Clear the branch stack. This has the effect of requesting the first child of the root be added to the stack
       final Tree tree = Tree.this;
 
-      new If (isBranch(new Int(ib(0))))                                                                                 // Tree starts with a branch
+      new If (isBranch(new Int(0)))                                                                                     // Tree starts with a branch
        {void Then()
          {new For(numberOfNodes*2)                                                                                      // Each node in the tree
            {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
