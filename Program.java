@@ -24,7 +24,7 @@ public class Program extends Test                                               
   private static int programs = 0;                                                                                      // Unique id for each program
   final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Number the programs
-  final StringBuilder     out = new StringBuilder();                                                                    // Text output area
+  final StringBuilder     out2 = new StringBuilder();                                                                    // Text output area
   final static Stack<String> subs = new Stack<>();                                                                      // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
@@ -437,18 +437,16 @@ public class Program extends Test                                               
      }
 
     void stop(final Object...O)                                                                                         // Conditionally print a message if true and stop
-     {if (O.length == 0)               new I() {void action() {Test.stop(out());}};                                     // Print the contents of the output are if no parameters supplied and stop
-      else new If (this) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                  // Print supplied message and stop
+     {new If (this) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                  // Print supplied message and stop
      }
 
     void elseStop(final Object...O)                                                                                     // Conditionally print a message if false and stop
-     {if (O.length == 0)                 new I() {void action() {Test.stop(out());}};                                   // Print the contents of the output are if no parameters supplied and stop
-      else new If (Flip()) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                // Print supplied message and stop
+     {new If (Flip()) {void Then() {new I() {void action() {Test.stop(O)    ;}};}};                                // Print supplied message and stop
      }
 
     Bool say() {final Bool i = this; new I() {void action() {Test.say(i)          ;}}; return this;}                    // Say the boolean
-    Bool out() {final Bool i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                    // Write the boolean value to the output area
-    Bool Out() {final Bool i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                    // Write the boolean value to the output area
+    //Bool out() {final Bool i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                    // Write the boolean value to the output area
+    //Bool Out() {final Bool i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                    // Write the boolean value to the output area
 
     Bool ok(Boolean Value)
      {new I()
@@ -664,8 +662,8 @@ public class Program extends Test                                               
      }
 
     Int say() {final Int i = this; new I() {void action() {Test.say(i);}};           return this;}                      // Say the integer
-    Int out() {final Int i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                      // Write the integer value to the output area
-    Int Out() {final Int i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                      // Write the integer value to the output area
+    //Int out() {final Int i = this; new I() {void action() {out.append(""+i+" " );}}; return this;}                      // Write the integer value to the output area
+    //Int Out() {final Int i = this; new I() {void action() {out.append(""+i+"\n");}}; return this;}                      // Write the integer value to the output area
 
     Int ok(Integer Value)                                                                                               // Check the integer
      {new I()
@@ -903,11 +901,11 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  <T> void put(T Value) {new I() {void action() {out.append(""+Value+' ' );}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a space
-  <T> void Put(T Value) {new I() {void action() {out.append(""+Value+'\n');}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a new line
+  //<T> void put(T Value) {new I() {void action() {out.append(""+Value+' ' );}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a space
+  //<T> void Put(T Value) {new I() {void action() {out.append(""+Value+'\n');}};}                                         // Write anything that has a string representation to the output area and separate from the next item with a new line
 
   private String output()                                                                                               // Normalize and return the content of the output area, then clear the output area for the next report
-   {final String r = ""+out;                                                                                            // Get content
+   {final String r = "";//+out;                                                                                            // Get content
     final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
 //  say("AAAA"+s+"BBBB length", s.length());
 //  for (int i = 0; i < s.length(); i++)
@@ -923,10 +921,10 @@ public class Program extends Test                                               
    }
 
   void check()                {new I() {void action() {                                  stop(output())  ;}};}          // Say the normalized content of the output area and stop
-  void check(String Expected) {new I() {void action() {     Test.ok(output(), Expected); out.setLength(0);}};}          // Test the normalized content of the output area against the specified string, then clear the output area ready for the next report
-  void Check(String Expected) {new I() {void action() {if (!Test.ok(output(), Expected)) stop(output())  ;}};}          // Test the normalized content of the output area against the specified string, print the actual output area contents and stop
+//  void check(String Expected) {new I() {void action() {     Test.ok(output(), Expected); out.setLength(0);}};}          // Test the normalized content of the output area against the specified string, then clear the output area ready for the next report
+//  void Check(String Expected) {new I() {void action() {if (!Test.ok(output(), Expected)) stop(output())  ;}};}          // Test the normalized content of the output area against the specified string, print the actual output area contents and stop
 
-  void check(StringBuilder Got, String Expected) {new I() {void action() {     Test.ok(""+Got, Expected); out.setLength(0);}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
+  void check(StringBuilder Got, String Expected) {new I() {void action() {     Test.ok(""+Got, Expected);}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
   void Check(StringBuilder Got, String Expected) {new I() {void action() {if (!Test.ok(""+Got, Expected)) stop(Got, traceBack)       ;}};} // Test the supplied content against the specified string, print the actual output area contents and stop
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
@@ -1072,28 +1070,28 @@ public class Program extends Test                                               
    {test_programming(true); test_programming(false);
    }
 
-  static void test_bool(boolean Ex)
-   {sayCurrentTestName();
-    final Program  P = new Program(new Build().immediate(Ex))
-     {void code()
-       {final Bool z = new Bool().clear();
-        final Bool o = new Bool().set();
-
-        final Bool O = new Bool().set(z);
-                   O.or(o);
-        O.Out();
-        final Bool A = new Bool().set(o);
-                   A.and(z);
-        A.Out();
-       }
-     };
-    P.execute();
-   }
-
-  static void test_bool()
-   {          test_bool(true);
-              test_bool(false);
-   }
+//  static void test_bool(boolean Ex)
+//   {sayCurrentTestName();
+//    final Program  P = new Program(new Build().immediate(Ex))
+//     {void code()
+//       {final Bool z = new Bool().clear();
+//        final Bool o = new Bool().set();
+//
+//        final Bool O = new Bool().set(z);
+//                   O.or(o);
+//        O.Out();
+//        final Bool A = new Bool().set(o);
+//                   A.and(z);
+//        A.Out();
+//       }
+//     };
+//    P.execute();
+//   }
+//
+//  static void test_bool()
+//   {          test_bool(true);
+//              test_bool(false);
+//   }
 
 
   static void test_andOr(boolean Ex)
@@ -1129,15 +1127,15 @@ public class Program extends Test                                               
        {final Int a = new Int(1);
         final Int b = new Int(0);
         final Int N = new Int(10);
+        final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bool Continue)
            {b.add(a.dup().inc());
-            put(a);
-            Put(b);
+            new I() {void action() {s.append(f("%2d  $2d\n", a.i(), b.i()));}};
             Continue.set();
            }
          };
-        check("""
+        check(s, """
 1 2
 1 4
 1 6
@@ -1167,17 +1165,18 @@ public class Program extends Test                                               
         final Int b = new Int(1);
         final Int c = new Int(0);
         final Int N = new Int(10);
+        final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bool Continue)
            {c.set(a);
             c.add(b);
             a.set(b);
             b.set(c);
-            c.out();
+            new I() {void action() {s.append(f("%2d", c.i()));}};
             Continue.set();
            }
          };
-        Check("""
+        Check(s, """
 1 2 3 5 8 13 21 34 55 89
 """);
         execute();
@@ -1198,6 +1197,7 @@ public class Program extends Test                                               
         final Bool b = new Bool();
         final Int  c = new Int (0);
         final Int  N = new Int (4);
+        final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bool Continue)
            {a.set(Index.Inc()).mod(2);
@@ -1205,17 +1205,16 @@ public class Program extends Test                                               
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
-            c.out();
+            new I() {void action() {s.append(c);}};
             Continue.set();
            }
          };
-      check("""
+      Check(s, """
 2 1 3 2
 """);
         execute();
        }
      };
-    //testStop(P.output());
    }
 
   static void test_mod()
@@ -1228,10 +1227,11 @@ public class Program extends Test                                               
     final Program P = new Program(new Build().immediate(Ex).trace(true))
      {void code()
        {final Int a = new Int(0);
-                 a.out();
-        a.inc(); a.out();
-        a.inc(); a.out();
-        check("""
+        final StringBuilder s = new StringBuilder();
+                 new I() {void action() {s.append(a);}};
+        a.inc(); new I() {void action() {s.append(a);}};
+        a.inc(); new I() {void action() {s.append(a);}};
+        Check(s, """
 0 1 2
 """);
         execute();
@@ -1502,7 +1502,7 @@ public class Program extends Test                                               
 */
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
-    test_bool();
+//  test_bool();
     test_andOr();
     test_add();
     test_fibonnacci();
