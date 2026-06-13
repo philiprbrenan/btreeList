@@ -419,35 +419,9 @@ public class Program extends Test                                               
       return this;
      }
 
-    @SafeVarargs final Bool or(Supplier<Bool>...b) {new I() {void action() {orEx(b);}}; return this;}                   // "Or" with short circuit
+    Bool or(Bool b) {new I() {void action() {x(); b.x(); if (b.i) i = true;}}; return this;}                            // "Or" without short circuit. Modifies the target.
+    Bool Or(Bool b) {return dup().or(b);}                                                                               // "Or" without short circuit. Does not modify the target
 
-    @SafeVarargs
-    final void orEx(Supplier<Bool>...b)                                                                                 // "Or" with short circuit
-     {x();                                                                                                              // Start with the current value
-      for (int i : range(b.length))                                                                                     // Test each additional value as necessary
-       {if (b()) break;                                                                                                 // Finish when we know the result
-        ex(Ops.set, b[i].get());                                                                                        // Check additional operands
-       }
-     }
-
-    Bool or(Bool...b)                                                                                                   // "Or" without short circuit. Modifies the target.
-     {new I()
-       {void action()
-         {x();
-          for (int j : range(b.length))
-           {b[j].x();
-            if (b[j].i) i = true;
-           }
-         }
-       };
-      return this;
-     }
-
-    Bool Or(Bool...b)                                                                                                   // "Or" without short circuit. Does not modify the target
-     {final Bool r = new Bool(this);
-      r.set(this).or(b);
-      return r;
-     }
 
     @SafeVarargs
     final Bool And(Supplier<Bool>...b)                                                                                  // "And" with short circuit
@@ -1177,10 +1151,10 @@ public class Program extends Test                                               
      {void code()
        {final Bool z = new Bool().clear();
         final Bool o = new Bool().set();
-        z.Or (z, z).ok(false);
-        z.Or (z, o).ok(true);
-        z.Or (o, z).ok(true);
-        z.Or (o, o).ok(true);
+        z.Or (z).ok(false);
+        z.Or (o).ok(true);
+        o.Or (z).ok(true);
+        o.Or (o).ok(true);
         o.And(z, z).ok(false);
         o.And(z, o).ok(false);
         o.And(o, z).ok(false);
