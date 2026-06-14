@@ -1786,6 +1786,10 @@ Leaf           size:  4, count:  2
    {//oldTests();
    }
 
+void xxx()
+ {zz();
+ }
+
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
