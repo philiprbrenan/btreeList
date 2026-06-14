@@ -28,7 +28,7 @@ public class Test                                                               
   final static boolean        coverageAnalysis = true; //false;                                                                 // Enables coverage checks
 // Uncomment zz for methods not called analysis
 // Uncomment z  for blocks not called analysis
-  final static String coverageAnalysisSubStart = "z"+"z"+"();";                                                         // A string indicating the start of a subroutine - method entries only
+  final static String coverageAnalysisSubStart = "zz"+"();";                                                            // A string indicating the start of a subroutine - method entries only
 //final static String coverageAnalysisSubStart = "z"+"();";                                                             // Any labeled statement
   static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
 
@@ -460,10 +460,10 @@ public class Test                                                               
     return e.getFileName();
    }
 
-  static String callerFileAndLine2()                                                                                    // Locate file and line number of caller of caller
+  static String callerFileAndLine3()                                                                                    // Locate file and line number of caller of caller
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
-    if (t.length < 3) return null;
-    final StackTraceElement s = t[2];
+    if (t.length < 4) return null;
+    final StackTraceElement s = t[3];
     final String f = s.getFileName();
     final String m = s.getMethodName();
     final String l = String.format("%04d", s.getLineNumber());
@@ -487,13 +487,13 @@ public class Test                                                               
 //D1 Coverage                                                                                                           // Analyze code coverage
 
   static void z()                                                                                                       // A line that is being executed
-   {final String s = callerFileAndLine2();                                                                              // File method line
+   {final String s = callerFileAndLine3();                                                                              // File method line
     Integer c = coverage.get(s);
     coverage.put(s, c == null ? 1 : c+1);
    }
 
   static void zz()                                                                                                      // A subroutine that is being executed
-   {final String s = callerFileAndLine2();                                                                              // File method line
+   {final String s = callerFileAndLine3();                                                                              // File method line
     Integer c = coverage.get(s);
     coverage.put(s, c == null ? 1 : c+1);
    }
@@ -588,8 +588,7 @@ public class Test                                                               
        {final String line = sourceLines.elementAt(l-1);
         final String search = coverageAnalysisSubStart;
         if (line.contains(search) && !coverageExecuted(source, l, executed))                                            // Line has been marked as executable but was not executed
-         {final TreeSet<Integer> c = notExecuted.containsKey(source) ?
-            notExecuted.get(source) : new TreeSet<>();
+         {final TreeSet<Integer> c = notExecuted.containsKey(source) ? notExecuted.get(source) : new TreeSet<>();
           c.add(l);
           notExecuted.put(source, c);
          }
