@@ -202,14 +202,16 @@ public class Program extends Test                                               
    }
 
   void If(Bool Choice, Runnable Then, Runnable Else)                                                                    // If then/else with lambdas
-   {new If (Choice)
+   {zz();
+    new If (Choice)
      {void Then() {Then.run();}
       void Else() {Else.run();}
      };
    }
 
   <T extends Int> T If(Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                          // Choose between two alternatives
-   {new If (Choice)
+   {zz();
+    new If (Choice)
      {void Then() {Set.set(Then.get());}
       void Else() {Set.set(Else.get());}
      };
@@ -344,41 +346,41 @@ public class Program extends Test                                               
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
-    Bool (String Name)             {this();  name = Name;}                                                              // Constructors with name supplied
-    Bool (String Name, boolean  I) {this(I); name = Name;}
-    Bool (String Name, Bool     I) {this(I); name = Name;}
+    Bool (String Name)             {zz(); this();  name = Name;}                                                              // Constructors with name supplied
+    Bool (String Name, boolean  I) {zz(); this(I); name = Name;}
+    Bool (String Name, Bool     I) {zz(); this(I); name = Name;}
 
-    Bool           ()          {ai(); invalidate();}                                                                    // Constructors
-    Bool           (boolean I) {ai(); ie(Ops.set, I);}
-    Bool           (Bool    I) {ai(); ie(Ops.set, I);}
-    boolean       b()          {x(); return i;}
-    boolean       v()          {     return v;}
-    void          x()          {if (!v) variableNotSet("Bool", name);}                                                  // Check a value has been set for the boolean
-    Bool          X()          {v = true; return this;}
+    Bool           ()          {zz(); ai(); invalidate();}                                                                    // Constructors
+    Bool           (boolean I) {zz(); ai(); ie(Ops.set, I);}
+    Bool           (Bool    I) {zz(); ai(); ie(Ops.set, I);}
+    boolean       b()          {zz(); x(); return i;}
+    boolean       v()          {zz();      return v;}
+    void          x()          {zz(); if (!v) variableNotSet("Bool", name);}                                                  // Check a value has been set for the boolean
+    Bool          X()          {zz(); v = true; return this;}
 
-    Bool        set()          {return ie(Ops.set,  true); }                                                            // Boolean operations which modify the target
-    Bool        set(boolean I) {return ie(Ops.set,  I);    }
-    Bool        set(Bool    I) {return ie(Ops.set,  I);    }
-    Bool        set(Int     I) {return ie(Ops.set,  I);    }
-    Bool      clear()          {return ie(Ops.set,  false);}
-    Bool       flip()          {return ie(Ops.flip);       }
+    Bool        set()          {zz(); return ie(Ops.set,  true); }                                                            // Boolean operations which modify the target
+    Bool        set(boolean I) {zz(); return ie(Ops.set,  I);    }
+    Bool        set(Bool    I) {zz(); return ie(Ops.set,  I);    }
+    Bool        set(Int     I) {zz(); return ie(Ops.set,  I);    }
+    Bool      clear()          {zz(); return ie(Ops.set,  false);}
+    Bool       flip()          {zz(); return ie(Ops.flip);       }
 
-    Bool        Set()          {return dup().set();}                                                                    // Boolean operations that modify a copy of the target
-    Bool        Set(boolean I) {return dup().set(I);}
-    Bool        Set(Bool    I) {return dup().set(I);}
-    Bool      Clear()          {return dup().clear();}
-    Bool       Flip()          {return dup().flip();}
+    Bool        Set()          {zz(); return dup().set();}                                                                    // Boolean operations that modify a copy of the target
+    Bool        Set(boolean I) {zz(); return dup().set(I);}
+    Bool        Set(Bool    I) {zz(); return dup().set(I);}
+    Bool      Clear()          {zz(); return dup().clear();}
+    Bool       Flip()          {zz(); return dup().flip();}
 
-    Bool         eq(boolean I) {return ie(Ops.eq,  I);}
-    Bool         ne(boolean I) {return ie(Ops.ne,  I);}
+    Bool         eq(boolean I) {zz(); return ie(Ops.eq,  I);}
+    Bool         ne(boolean I) {zz(); return ie(Ops.ne,  I);}
 
-    Bool         eq(Bool    I) {return ie(Ops.eq,  I);}
-    Bool         ne(Bool    I) {return ie(Ops.ne,  I);}
+    Bool         eq(Bool    I) {zz(); return ie(Ops.eq,  I);}
+    Bool         ne(Bool    I) {zz(); return ie(Ops.ne,  I);}
 
-    Bool ie(Ops Op)            {new I() {void action() {ex(Op   );}}; return this;}                                     // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
-    Bool ie(Ops Op, boolean I) {new I() {void action() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Bool    I) {new I() {void action() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Int     I) {new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op)            {zz(); new I() {void action() {ex(Op   );}}; return this;}                                     // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
+    Bool ie(Ops Op, boolean I) {zz(); new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Bool    I) {zz(); new I() {void action() {ex(Op, I);}}; return this;}
+    Bool ie(Ops Op, Int     I) {zz(); new I() {void action() {ex(Op, I);}}; return this;}
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {executingCheck();
@@ -418,16 +420,16 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool or (Bool b) {new I() {void action() {x(); b.x(); if (b.i) i = true;}}; return this;}                           // "Or" without short circuit. Modifies the target.
-    Bool Or (Bool b) {return dup().or(b);}                                                                              // "Or" without short circuit. Does not modify the target
-    Bool and(Bool b) {new I() {void action() {x(); b.x(); if (!b.i) i = false;}}; return this;}                         // "And" without short circuit. Modifies the target.
-    Bool And(Bool b) {return dup().and(b);}                                                                             // "And" without short circuit. Does not modify the target
+    Bool or (Bool b) {zz(); new I() {void action() {x(); b.x(); if (b.i) i = true;}}; return this;}                           // "Or" without short circuit. Modifies the target.
+    Bool Or (Bool b) {zz(); return dup().or(b);}                                                                              // "Or" without short circuit. Does not modify the target
+    Bool and(Bool b) {zz(); new I() {void action() {x(); b.x(); if (!b.i) i = false;}}; return this;}                         // "And" without short circuit. Modifies the target.
+    Bool And(Bool b) {zz(); return dup().and(b);}                                                                             // "And" without short circuit. Does not modify the target
 
-    Bool dup   ()       {                                             return new Bool(this);}                           // Duplicate a boolean so that the duplicated version can be modified without modifying the original
-    Bool copy  (Bool I) {new I() {void action() {i = I.i; v = I.v;}}; return this;}                                     // Copy the state of a boolean without regard as to whether it is valid or not
-    Bool valid     ()   {return new Bool( v);}                                                                          // Whether the boolean is valid
-    Bool notValid  ()   {return new Bool(!v);}                                                                          // Whether the boolean is invalid
-    Bool invalidate()   {new I() {void action() {v = false;}};        return this;}                                     // Invalidate the boolean
+    Bool dup   ()       {zz();                                              return new Bool(this);}                           // Duplicate a boolean so that the duplicated version can be modified without modifying the original
+    Bool copy  (Bool I) {zz(); new I() {void action() {i = I.i; v = I.v;}}; return this;}                                     // Copy the state of a boolean without regard as to whether it is valid or not
+    Bool valid     ()   {zz(); return new Bool( v);}                                                                          // Whether the boolean is valid
+    Bool notValid  ()   {zz(); return new Bool(!v);}                                                                          // Whether the boolean is invalid
+    Bool invalidate()   {zz(); new I() {void action() {v = false;}};        return this;}                                     // Invalidate the boolean
 
     public String toString()                                                                                            // Print the boolean
      {final String u = "undefined_Bool";
@@ -435,9 +437,9 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    void stop    (final Object...O) {new If (this)   {void Then()  {new I() {void action() {Test.stop(O);}};}};}        // Conditionally print a message if true and stop
-    void elseStop(final Object...O) {new If (Flip()) {void Then()  {new I() {void action() {Test.stop(O);}};}};}        // Conditionally print a message if false and stop
-    Bool say() {final Bool i = this; new I() {void action() {Test.say(i) ;}}; return this;}                             // Say the boolean
+    void stop    (final Object...O) {zz(); new If (this)   {void Then()  {new I() {void action() {Test.stop(O);}};}};}        // Conditionally print a message if true and stop
+    void elseStop(final Object...O) {zz(); new If (Flip()) {void Then()  {new I() {void action() {Test.stop(O);}};}};}        // Conditionally print a message if false and stop
+    Bool say() {zz(); final Bool i = this; new I() {void action() {Test.say(i) ;}}; return this;}                             // Say the boolean
 
     Bool ok(Boolean Value)
      {new I()
@@ -472,51 +474,51 @@ public class Program extends Test                                               
     private final int id = parentProgram.nextIntId++;                                                                   // Unique id for Int
     private final String traceComment = tracing() ? traceComment() : null;                                              // Location
 
-    int         i()  {x(); return i;}                                                                                   // Current value
-    boolean     v()  {     return v;}                                                                                   // Value has been set
-    void        x()  {if (!v) variableNotSet("Int", name);}                                                             // Check a value has been set for the integer
+    int         i()  {zz(); x(); return i;}                                                                                   // Current value
+    boolean     v()  {zz();      return v;}                                                                                   // Value has been set
+    void        x()  {zz(); if (!v) variableNotSet("Int", name);}                                                             // Check a value has been set for the integer
 
     Int (String Name)        {this();  name = Name;}                                                                    // Constructors with name supplied
     Int (String Name, int I) {this(I); name = Name;}
     Int (String Name, Int I) {this(I); name = Name;}
 
-    Int      ()      {ai(); invalidate();}                                                                              // Constructors
-    Int (int I)      {ai(); ie(Ops.set, I);}
-    Int (Int I)      {ai(); ie(Ops.set, I);}
+    Int      ()      {zz(); ai(); invalidate();}                                                                              // Constructors
+    Int (int I)      {zz(); ai(); ie(Ops.set, I);}
+    Int (Int I)      {zz(); ai(); ie(Ops.set, I);}
 
-    Int  max (int I) {x(); return i < I ? new Int(I) : this;}
-    Int  min (int I) {x(); return i > I ? new Int(I) : this;}
-    Int  max (Int I) {final Int r = this; new If (lt(I)) {void Then() {r.set(I);}}; return r;}
-    Int  min (Int I) {final Int r = this; new If (gt(I)) {void Then() {r.set(I);}}; return r;}
+    Int  max (int I) {zz(); x(); return i < I ? new Int(I) : this;}
+    Int  min (int I) {zz(); x(); return i > I ? new Int(I) : this;}
+    Int  max (Int I) {zz(); final Int r = this; new If (lt(I)) {void Then() {r.set(I);}}; return r;}
+    Int  min (Int I) {zz(); final Int r = this; new If (gt(I)) {void Then() {r.set(I);}}; return r;}
                                                                                                                         // Possible integer operations
     enum Ops {X, abs, add, add2, bclr, bget, bset, dec, div, down, eq, ge, gt, inc, le, lt,
        max, min, mod, mul, neg, ne, set, sqrt, sub, up};
 
-    Int  X   ()      {return ie(Ops.X      );}                                                                          // Integer operations
-    Int  set (int I) {return ie(Ops.set , I);}
-    Int  set (Int I) {return ie(Ops.set , I);}
-    Int  add (int I) {return ie(Ops.add , I);}
-    Int  add (Int I) {return ie(Ops.add , I);}
-    Int  add2(Int I) {return ie(Ops.add2, I);}
-    Int  sub (int I) {return ie(Ops.sub , I);}
-    Int  sub (Int I) {return ie(Ops.sub , I);}
-    Int  mul (int I) {return ie(Ops.mul , I);}
-    Int  mul (Int I) {return ie(Ops.mul , I);}
-    Int  div (int I) {return ie(Ops.div , I);}
-    Int  div (Int I) {return ie(Ops.div , I);}
-    Int  mod (int I) {return ie(Ops.mod , I);}
-    Int  mod (Int I) {return ie(Ops.mod , I);}
-    Int  inc ()      {return ie(Ops.inc    );}
-    Int  dec ()      {return ie(Ops.dec    );}
-    Int  up  ()      {return ie(Ops.up     );}
-    Int  down()      {return ie(Ops.down   );}
-    Int  sqrt()      {return ie(Ops.sqrt   );}
-    Int  neg ()      {return ie(Ops.neg    );}
-    Int  abs ()      {return ie(Ops.abs    );}
+    Int  X   ()      {zz(); return ie(Ops.X      );}                                                                          // Integer operations
+    Int  set (int I) {zz(); return ie(Ops.set , I);}
+    Int  set (Int I) {zz(); return ie(Ops.set , I);}
+    Int  add (int I) {zz(); return ie(Ops.add , I);}
+    Int  add (Int I) {zz(); return ie(Ops.add , I);}
+    Int  add2(Int I) {zz(); return ie(Ops.add2, I);}
+    Int  sub (int I) {zz(); return ie(Ops.sub , I);}
+    Int  sub (Int I) {zz(); return ie(Ops.sub , I);}
+    Int  mul (int I) {zz(); return ie(Ops.mul , I);}
+    Int  mul (Int I) {zz(); return ie(Ops.mul , I);}
+    Int  div (int I) {zz(); return ie(Ops.div , I);}
+    Int  div (Int I) {zz(); return ie(Ops.div , I);}
+    Int  mod (int I) {zz(); return ie(Ops.mod , I);}
+    Int  mod (Int I) {zz(); return ie(Ops.mod , I);}
+    Int  inc ()      {zz(); return ie(Ops.inc    );}
+    Int  dec ()      {zz(); return ie(Ops.dec    );}
+    Int  up  ()      {zz(); return ie(Ops.up     );}
+    Int  down()      {zz(); return ie(Ops.down   );}
+    Int  sqrt()      {zz(); return ie(Ops.sqrt   );}
+    Int  neg ()      {zz(); return ie(Ops.neg    );}
+    Int  abs ()      {zz(); return ie(Ops.abs    );}
 
-    Int ie(Ops Op)        {new I() {void action() {ex(Op   );}}; return this;}                                          // Execute immediately or create an instruction for machine code to execute later
-    Int ie(Ops Op, int I) {new I() {void action() {ex(Op, I);}}; return this;}
-    Int ie(Ops Op, Int I) {new I() {void action() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op)        {zz(); new I() {void action() {ex(Op   );}}; return this;}                                          // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op, int I) {zz(); new I() {void action() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op, Int I) {zz(); new I() {void action() {ex(Op, I);}}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingCheck();
@@ -558,47 +560,49 @@ public class Program extends Test                                               
       I.x(); return ex(Op, I.i());
      }
 
-    Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
-    Int  Add (Int I) {return dup().add(I) ;}
-    Int  Add2(Int I) {return dup().add2(I);}
-    Int  Sub (int I) {return dup().sub(I) ;}
-    Int  Sub (Int I) {return dup().sub(I) ;}
-    Int  Mul (int I) {return dup().mul(I) ;}
-    Int  Mul (Int I) {return dup().mul(I) ;}
-    Int  Div (int I) {return dup().div(I) ;}
-    Int  Div (Int I) {return dup().div(I) ;}
-    Int  Mod (int I) {return dup().mod(I) ;}
-    Int  Mod (Int I) {return dup().mod(I) ;}
-    Int  Inc ()      {return dup().add(1) ;}
-    Int  Dec ()      {return dup().sub(1) ;}
-    Int  Up  ()      {return dup().up()   ;}
-    Int  Down()      {return dup().down() ;}
-    Int  Sqrt()      {return dup().sqrt() ;}
-    Int  Neg()       {return dup().neg()  ;}
-    Int  Abs()       {return dup().abs()  ;}
+    Int  Add (int I) {zz(); return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
+    Int  Add (Int I) {zz(); return dup().add(I) ;}
+    Int  Add2(Int I) {zz(); return dup().add2(I);}
+    Int  Sub (int I) {zz(); return dup().sub(I) ;}
+    Int  Sub (Int I) {zz(); return dup().sub(I) ;}
+    Int  Mul (int I) {zz(); return dup().mul(I) ;}
+    Int  Mul (Int I) {zz(); return dup().mul(I) ;}
+    Int  Div (int I) {zz(); return dup().div(I) ;}
+    Int  Div (Int I) {zz(); return dup().div(I) ;}
+    Int  Mod (int I) {zz(); return dup().mod(I) ;}
+    Int  Mod (Int I) {zz(); return dup().mod(I) ;}
+    Int  Inc ()      {zz(); return dup().add(1) ;}
+    Int  Dec ()      {zz(); return dup().sub(1) ;}
+    Int  Up  ()      {zz(); return dup().up()   ;}
+    Int  Down()      {zz(); return dup().down() ;}
+    Int  Sqrt()      {zz(); return dup().sqrt() ;}
+    Int  Neg ()      {zz(); return dup().neg()  ;}
+    Int  Abs ()      {zz(); return dup().abs()  ;}
 
-    Bool eq(int I) {return bie(Ops.eq, I);}                                                                             // Comparisons with a constant integer
-    Bool ne(int I) {return bie(Ops.ne, I);}
-    Bool le(int I) {return bie(Ops.le, I);}
-    Bool lt(int I) {return bie(Ops.lt, I);}
-    Bool ge(int I) {return bie(Ops.ge, I);}
-    Bool gt(int I) {return bie(Ops.gt, I);}
+    Bool eq  (int I) {zz(); return bie(Ops.eq, I);}                                                                             // Comparisons with a constant integer
+    Bool ne  (int I) {zz(); return bie(Ops.ne, I);}
+    Bool le  (int I) {zz(); return bie(Ops.le, I);}
+    Bool lt  (int I) {zz(); return bie(Ops.lt, I);}
+    Bool ge  (int I) {zz(); return bie(Ops.ge, I);}
+    Bool gt  (int I) {zz(); return bie(Ops.gt, I);}
 
-    Bool eq(Int I) {return bie(Ops.eq, I);}                                                                             // Comparisons with a variable integer
-    Bool ne(Int I) {return bie(Ops.ne, I);}
-    Bool le(Int I) {return bie(Ops.le, I);}
-    Bool lt(Int I) {return bie(Ops.lt, I);}
-    Bool ge(Int I) {return bie(Ops.ge, I);}
-    Bool gt(Int I) {return bie(Ops.gt, I);}
+    Bool eq  (Int I) {zz(); return bie(Ops.eq, I);}                                                                             // Comparisons with a variable integer
+    Bool ne  (Int I) {zz(); return bie(Ops.ne, I);}
+    Bool le  (Int I) {zz(); return bie(Ops.le, I);}
+    Bool lt  (Int I) {zz(); return bie(Ops.lt, I);}
+    Bool ge  (Int I) {zz(); return bie(Ops.ge, I);}
+    Bool gt  (Int I) {zz(); return bie(Ops.gt, I);}
 
-    Bool bie(Ops Op, int I)                                                                                             // Execute immediately or create an instruction for machine code to execute later
-     {final Bool b = new Bool();
+    Bool bie (Ops Op, int I)                                                                                             // Execute immediately or create an instruction for machine code to execute later
+     {zz();
+      final Bool b = new Bool();
       new I() {void action() {bex(Op, b, I);}};
       return b;
      }
 
     Bool bie(Ops Op, Int I)
-     {final Bool b = new Bool();
+     {zz();
+      final Bool b = new Bool();
       new I() {void action() {I.x(); bex(Op, b, I);}};
       return b;
      }
@@ -619,14 +623,14 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
-    Int  dup       () {return new Int(this);}                                                                           // Duplicate an integer so that the duplicated version can be modified without modifying the original
-    Int  copy (Int I) {                           new I() {void action() {i = I.i; v = I.v;}};     return this;}        // Copy the state of an integer without regard as to whether it is valid or not
-    Bool valid     () {final Bool b = new Bool(); new I() {void action() {b.i =  v; b.v = true;}}; return b;}           // Whether the integer is valid
-    Bool notValid  () {final Bool b = new Bool(); new I() {void action() {b.i = !v; b.v = true;}}; return b;}           // Whether the integer is invalid
-    Int  invalidate() {                           new I() {void action() {v = false;}};            return this;}        // Invalidate the integer
+    Int  dup       () {zz(); return new Int(this);}                                                                           // Duplicate an integer so that the duplicated version can be modified without modifying the original
+    Int  copy (Int I) {zz();                            new I() {void action() {i = I.i; v = I.v;}};     return this;}        // Copy the state of an integer without regard as to whether it is valid or not
+    Bool valid     () {zz(); final Bool b = new Bool(); new I() {void action() {b.i =  v; b.v = true;}}; return b;}           // Whether the integer is valid
+    Bool notValid  () {zz(); final Bool b = new Bool(); new I() {void action() {b.i = !v; b.v = true;}}; return b;}           // Whether the integer is invalid
+    Int  invalidate() {zz();                            new I() {void action() {v = false;}};            return this;}        // Invalidate the integer
 
-    Int  bclr (Int I) {new I() {void action() {bclrEx(I);}}; return this;}                                              // Clear the indicated bit
-    Int  bset (Int I) {new I() {void action() {bsetEx(I);}}; return this;}                                              // Set the indicated bit
+    Int  bclr (Int I) {zz(); new I() {void action() {bclrEx(I);}}; return this;}                                              // Clear the indicated bit
+    Int  bset (Int I) {zz(); new I() {void action() {bsetEx(I);}}; return this;}                                              // Set the indicated bit
     Int  bset (Int I, boolean V)                                                                                        // Set the indicated bit in the integer to the specified value
      {new I() {void action() {bsetEx(I, V);}};
       return this;
@@ -640,11 +644,11 @@ public class Program extends Test                                               
       new I() {void action() {bgetEx(B, I);}};
       return B;
      }
-    void bclrEx(Int I)            {x(); I.x();        ex(Int .Ops.set, clrBit(i(), I.i()));}                            // Clear the specified bit
-    void bsetEx(Int I)            {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i()));}                            // Set the indicated bit in the integer
-    void bsetEx(Int I, boolean V) {x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i(), V));}                         // Set the indicated bit in the integer to the specified value
-    void bsetEx(Int I, Bool    V) {x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}                     // Get the indicated bit in the integer
-    void bgetEx(Bool B, Int    I) {x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}
+    void bclrEx(Int I)            {zz(); x(); I.x();        ex(Int .Ops.set, clrBit(i(), I.i()));}                            // Clear the specified bit
+    void bsetEx(Int I)            {zz(); x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i()));}                            // Set the indicated bit in the integer
+    void bsetEx(Int I, boolean V) {zz(); x(); I.x();        ex(Int .Ops.set, setBit(i(), I.i(), V));}                         // Set the indicated bit in the integer to the specified value
+    void bsetEx(Int I, Bool    V) {zz(); x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}                     // Get the indicated bit in the integer
+    void bgetEx(Bool B, Int    I) {zz(); x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}
 
     public String toString()                                                                                            // Print the integer
      {final String u = "undefined_Int";
@@ -689,20 +693,23 @@ public class Program extends Test                                               
     final  int byteMemoryId  = ++byteMemoryIds;
     byte[]bytes;                                                                                                        // Bytes of main memory
 
-    ByteMemory(int Length) {bytes = new byte[Length];  clear(new Int(0), Length);}                                      // Create the memory
+    ByteMemory(int Length) {zz(); bytes = new byte[Length];  clear(new Int(0), Length);}                                      // Create the memory
 
     private byte getByte(int I)                                                                                         // Get the value of a byte
-     {if (tracing()) trace("memory get byte: "+I+" value:"+bytes[I]);                                                   // Trace
+     {zz();
+      if (tracing()) trace("memory get byte: "+I+" value:"+bytes[I]);                                                   // Trace
       return bytes[I];                                                                                                  // Get the value of a byte
      }
 
     private void putByte(int I, int J)                                                                                  // Put a byte into memory
-     {if (tracing()) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                           // Trace
+     {zz();
+      if (tracing()) trace("memory put byte: "+I+" was:"+bytes[I]+" set:"+J);                                           // Trace
       bytes[I] = (byte)(J & 0xFF);                                                                                      // Set the value of a byte from an integer
      }
 
     ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
-     {new I()
+     {zz();
+      new I()
        {void action()
          {System.arraycopy(SourceMemory.bytes, SourceOffset.i(), bytes, TargetOffset.i(), Width);
          }
@@ -711,36 +718,42 @@ public class Program extends Test                                               
      }
 
     ByteMemory clear()
-     {new I() {void action() {Arrays.fill(bytes, 0, bytes.length, (byte)0);}};
+     {zz();
+      new I() {void action() {Arrays.fill(bytes, 0, bytes.length, (byte)0);}};
       return this;
      }
 
     ByteMemory clear(Int Start, int Width)
-     {final Int w = Start.Add(Width);
+     {zz();
+      final Int w = Start.Add(Width);
       new I() {void action() {Arrays.fill(bytes, Start.i(),  Start.i()+Width, (byte)0);}};
       return this;
      }
 
     ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
-     {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
+     {zz();
+      Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
       return this;
      }
 
     ByteMemory invalidate(Int Start, int Width)
-     {new I() {void action() {invalidate(Start.i(),  Width);}};
+     {zz();
+      new I() {void action() {invalidate(Start.i(),  Width);}};
       return this;
      }
 
-    int size() {return bytes.length;}                                                                                   // Size of memory
+    int size() {zz(); return bytes.length;}                                                                                   // Size of memory
 
     Int getByte(Int I)                                                                                                  // Get the byte at the indicated position
-     {final Int r = new Int();
+     {zz();
+      final Int r = new Int();
       new I() {void action() {r.set(getByte(I.i()));}};
       return r;
      }
 
     Int getInt(Int I)                                                                                                   // Get the int at the indicated position
-     {final Int r = new Int();
+     {zz();
+      final Int r = new Int();
       new I()
        {void action()
          {final int p = I.i();
@@ -756,7 +769,8 @@ public class Program extends Test                                               
      }
 
     int getInt(int I)                                                                                                   // Get the int at the indicated position
-     {final int a = Byte.toUnsignedInt(bytes[I+0]) <<  0;
+     {zz();
+      final int a = Byte.toUnsignedInt(bytes[I+0]) <<  0;
       final int b = Byte.toUnsignedInt(bytes[I+1]) <<  8;
       final int c = Byte.toUnsignedInt(bytes[I+2]) << 16;
       final int d = Byte.toUnsignedInt(bytes[I+3]) << 24;
@@ -764,7 +778,8 @@ public class Program extends Test                                               
      }
 
     Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
-     {Bool r = new Bool();
+     {zz();
+      Bool r = new Bool();
       new I()
        {void action()
          {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));
@@ -773,16 +788,18 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool    getBool(Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                        // Get the bit at the bit indexed location
-    boolean getBool(int I) {return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                      // Get the bit at the bit indexed location - debugging
+    Bool    getBool(Int I) {zz(); return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                        // Get the bit at the bit indexed location
+    boolean getBool(int I) {zz(); return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                      // Get the bit at the bit indexed location - debugging
 
     ByteMemory putByte(Int I, Int J)                                                                                    // Set the byte at the indicated position relative to the start to the specified value
-     {new I() {void action() {putByte(I.i(), J.i());}};
+     {zz();
+      new I() {void action() {putByte(I.i(), J.i());}};
       return this;
      }
 
     ByteMemory putInt(Int I, Int J)                                                                                     // Set the int at the indicated position relative to the start to the specified value
-     {new I()
+     {zz();
+      new I()
        {void action()
          {final int p = I.i(), v = J.i();
           putByte(p+0, v >>>  0);
@@ -795,7 +812,8 @@ public class Program extends Test                                               
      }
 
     ByteMemory putBool(Int I, Int J, Bool K)                                                                            // Set the bit at the indicated position in the byte at the specified position to the specified value
-     {new I()
+     {zz();
+      new I()
        {void action()
          {final int p = I.i();
           final int b = getByte(p);
@@ -806,7 +824,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory putBool(Int I, Bool K) {putBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE), K); return this;}                    // Set the bit at the bit indexed position
+    ByteMemory putBool(Int I, Bool K) {zz(); putBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE), K); return this;}                    // Set the bit at the bit indexed position
 
 //D2 Memory references                                                                                                  // References to byte memory
 
@@ -820,25 +838,25 @@ public class Program extends Test                                               
       ByteMemory byteMemory() {return ByteMemory.this;}
       Program    program()    {return Program.this;}
 
-      Ref       copy(Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}               // Copy the specified memory possibly from another byte memory
-      Ref      clear(int Width)            {m.clear     (offset, Width);                    return this;}               // Clear memory by setting its bytes to zero
-      Ref invalidate(int Width)            {m.invalidate(offset, Width);                    return this;}               // Invalidate memory by setting its bytes to values unlikely to be valid
-      Int    getByte(Int I)                {return m.getByte(I.Add(offset));}                                           // Get the byte at the indicated position
-      Int    getInt (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                    // Get the int at the indicated position
-      Bool   getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                        // Get the bit in the specified byte at the specified position within the byte
-      Bool   getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                            // Get the bit at the bit indexed location
-      Ref    putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                    return this;}               // Set the byte at the indicated position relative to the start to the specified value
-      Ref    putInt (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);             return this;}               // Set the int at the indicated position relative to the start to the specified value
-      Ref    putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}               // Set the bit at the indicated position in the byte at the specified position to the specified value
-      Ref    putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}               // Set the bit at the bit indexed position
-      int     getInt(int I)                {return m.getInt (I*N+offset.i());}                                          // Get an int immediately when debugging
-      Int     getInt()                     {                                                return m.getInt (offset);}  // Get the referenced int
-      Ref     putInt(Int J)                {m.putInt (offset, J);                           return this;}               // Put the referenced int
+      Ref       copy(Ref Source, int Width){zz(); m.copy(Source.m, Source.offset, offset, Width); return this;}               // Copy the specified memory possibly from another byte memory
+      Ref      clear(int Width)            {zz(); m.clear     (offset, Width);                    return this;}               // Clear memory by setting its bytes to zero
+      Ref invalidate(int Width)            {zz(); m.invalidate(offset, Width);                    return this;}               // Invalidate memory by setting its bytes to values unlikely to be valid
+      Int    getByte(Int I)                {zz(); return m.getByte(I.Add(offset));}                                           // Get the byte at the indicated position
+      Int    getInt (Int I)                {zz(); return m.getInt (I.Mul(N).add(offset));}                                    // Get the int at the indicated position
+      Bool   getBool(Int I, Int J)         {zz(); return m.getBool(I.Add(offset), J);}                                        // Get the bit in the specified byte at the specified position within the byte
+      Bool   getBool(Int I)                {zz(); return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                            // Get the bit at the bit indexed location
+      Ref    putByte(Int I, Int J)         {zz(); m.putByte(I.Add(offset), J);                    return this;}               // Set the byte at the indicated position relative to the start to the specified value
+      Ref    putInt (Int I, Int J)         {zz(); m.putInt (I.Mul(N).add(offset), J);             return this;}               // Set the int at the indicated position relative to the start to the specified value
+      Ref    putBool(Int I, Int J, Bool K) {zz(); m.putBool(I.Add(offset), J, K);                 return this;}               // Set the bit at the indicated position in the byte at the specified position to the specified value
+      Ref    putBool(Int I,        Bool K) {zz(); m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}               // Set the bit at the bit indexed position
+      int     getInt(int I)                {zz(); return m.getInt (I*N+offset.i());}                                          // Get an int immediately when debugging
+      Int     getInt()                     {zz();                                                 return m.getInt (offset);}  // Get the referenced int
+      Ref     putInt(Int J)                {zz(); m.putInt (offset, J);                           return this;}               // Put the referenced int
 
-      boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}           // Get the bit at the bit indexed location - debugging
+      boolean getBool(int I) {zz(); return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}           // Get the bit at the bit indexed location - debugging
 
-      Ref step(int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
-      Ref step(Int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
+      Ref step(int Width) {zz(); return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
+      Ref step(Int Width) {zz(); return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
 
       public String toString()                                                                                          // Print memory reference
        {final StringBuilder s = saySb("Ref: " , offset.i());
