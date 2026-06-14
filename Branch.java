@@ -108,9 +108,8 @@ class Branch extends Program implements Program.Locatable                       
   Int find  (Int Key) {return getDataFromKey(Key, false);}                                                              // Get the data associated with a key
   Int delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
-  Int getDataFromKey(Int Key, boolean Delete)                                                                           // Get the data associated with a key with the option of deleting the key if found
-   {zz();
-    final Slots.Find f = slots.find(Key);                                                                               // Find the key
+  Int getDataFromKey(Int Key, boolean Delete)                                                                           //N Get the data associated with a key with the option of deleting the key if found
+   {final Slots.Find f = slots.find(Key);                                                                               // Find the key
     final Int        r = new Int();                                                                                     // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
@@ -141,8 +140,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   StepDown stepDown(Int Key)                                                                                            // Reference to the next branch down that might contain the specified key
-   {zz();
-    final Slots.Find f = slots.find(Key);                                                                               // Find result
+   {final Slots.Find f = slots.find(Key);                                                                               // Find result
     final StepDown   d = new StepDown(Key);                                                                                // Result
 
     new If (f.empty)                                                                                                    // Found the index of a key that is greater than or equal to the search key
@@ -171,8 +169,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Slots.Insert insert(Int Key, Int Data)                                                                                // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
-   {zz();
-    if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
+   {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
     final Slots.Insert i = slots.insert(Key);
     final Int          k = slots.getSlotToKeyIndex(i.slot);
     refData.putInt(k, Data);
@@ -180,8 +177,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Int insert(Int Key, Int Data, Int BelowSlot)                                                                          // Insert a key data pair into a branch when the slot below which to make the insertion is known, assuming the key is not already present, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
-   {zz();
-    if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
+   {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     new If(BelowSlot.valid())                                                                                           // Insert below the specified slot if it is valid
      {void Then()
@@ -214,8 +210,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Int insertEmpty(Int Key, Int Data)                                                                                    // Insert a key data pair into a branch known to be empty
-   {zz();
-    if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
+   {if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
     refData.putInt(new Int(0), Data);                                                                                   // Place data in first key slot
@@ -226,14 +221,12 @@ class Branch extends Program implements Program.Locatable                       
 //D2 Compact                                                                                                            // Compact a branch to the left or right
 
   void compactLeft()                                                                                                    // Compact a branch to the left
-   {zz();
-    slots.compactSlotsLeft();                                                                                           // Compact the slots to match
+   {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                          // Compact the slots to match
    }
 
   void compactRight()                                                                                                   // Compact a branch to the right
-   {zz();
-    slots.compactSlotsRight();                                                                                          // Compact the slots to match
+   {slots.compactSlotsRight();                                                                                          // Compact the slots to match
     slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
    }
 
@@ -245,8 +238,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Int splitRight(Branch Right)                                                                                          // Split a full branch rightwards into a supplied branch and return the splitting key
-   {zz();
-    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch left = this;
     Right.slots.clear();                                                                                                // Clear the target
     Right.refData.copy(left.refData, left.build.dataBytes());                                                           // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -257,8 +249,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Int splitLeft(Branch Left)                                                                                            // Split a full branch leftwards into a supplied branch and return the splitting key
-   {zz();
-    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
     Left.slots.clear();                                                                                                 // Clear target
     Left.refData.copy(right.refData, right.build.dataBytes());                                                          // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -270,17 +261,15 @@ class Branch extends Program implements Program.Locatable                       
 //D2 Merge                                                                                                              // Merge two branches
 
   private void copyMergeData(Branch Source, Int Start, Int End)                                                         // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
-   {zz();
-    new ForCount (Start, End)
+   {new ForCount (Start, End)
      {void body(Int Index)
        {data(Index, Source.data(Index));                                                                                // The keys have been compacted left and right so we can copy them from the source position into the same position in the target without collisions
        }
      };
    }
 
-  Bool mergeRight(Branch Right, Int Sk)                                                                                 // Merge the specified branch into the right of this branch separating the two by the specified splitting key
-   {zz();
-    final Branch left = this;
+  Bool mergeRight(Branch Right, Int Sk)                                                                                 //N Merge the specified branch into the right of this branch separating the two by the specified splitting key
+   {final Branch left = this;
     final Int    lc   = left .count();
     final Int    rc   = Right.count();
     final Bool   r    = new Bool().clear();
@@ -306,8 +295,7 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   Bool mergeLeft(Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
-   {zz();
-    final Branch right = this;
+   {final Branch right = this;
     final Int    lc    = Left .count();
     final Int    rc    = right.count();
     final Bool   r     = new Bool().clear();
@@ -346,7 +334,7 @@ class Branch extends Program implements Program.Locatable                       
        {new For(maxSize)
          {void body(Int Index, Bool Continue)
            {final Int k = slots.getSlotToKeyValue(f), d = data(slots.getSlotToKeyIndex(f));
-            new I() {void action() {Iterator.process(k, d);}};
+            new I() {void a() {Iterator.process(k, d);}};
             f.copy(slots.usedSlotsToKeys.nextOne(f));
             Continue.set(f.valid());
            }
@@ -360,27 +348,27 @@ class Branch extends Program implements Program.Locatable                       
   StringBuilder print()                                                                                                 // Print the branch
    {final StringBuilder s = new StringBuilder();
 
-    new I() {void action() {s.setLength(0); s.append(f("Branch"));}};
+    new I() {void a() {s.setLength(0); s.append(f("Branch"));}};
 
     final Int a = new Int().copy(getLocation());                                                                        // Index in memory if present
     new If (a.valid())
      {void Then()
        {new If (a.gt(0))
          {void Then()
-           {new I() {void action() {s.append(f(" at:"+formatKey, a.i())); }};
+           {new I() {void a() {s.append(f(" at:"+formatKey, a.i())); }};
            }
           void Else()
-           {new I() {void action() {s.append(" ".repeat(8)); }};
+           {new I() {void a() {s.append(" ".repeat(8)); }};
            }
          };
        }
       void Else()
-       {new I() {void action() {s.append(" ".repeat(8)); }};
+       {new I() {void a() {s.append(" ".repeat(8)); }};
        }
      };
 
     new I()
-     {void action()
+     {void a()
        {s.append(f(" size:"  + formatKey, maxSize()));
         s.append(f(" count:" + formatKey, slots.refCount.getInt(0)));
         s.append(f(" top:"   + formatKey, refTop.getInt(0)));
@@ -411,7 +399,7 @@ class Branch extends Program implements Program.Locatable                       
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
-    //new I() {void action() {testStop("AAAA", l);}};
+    //new I() {void a() {testStop("AAAA", l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   4 top:   0
  Ref   Key  Data
@@ -450,7 +438,7 @@ Branch         size:   7 count:   4 top:   0
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
     l.delete(l.new Int(2));
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   3 top:   0
  Ref   Key  Data
@@ -459,7 +447,7 @@ Branch         size:   7 count:   3 top:   0
    1     4    44
 """);
     l.compactLeft();
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   3 top:   0
  Ref   Key  Data
@@ -484,7 +472,7 @@ Branch         size:   7 count:   3 top:   0
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   4 top:   0
  Ref   Key  Data
@@ -494,7 +482,7 @@ Branch         size:   7 count:   4 top:   0
    1     4    44
 """);
     l.compactRight();
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   4 top:   0
  Ref   Key  Data
@@ -524,7 +512,7 @@ Branch         size:   7 count:   4 top:   0
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
     l.top(l.new Int(99));
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   7 top:  99
  Ref   Key  Data
@@ -539,7 +527,7 @@ Branch         size:   7 count:   7 top:  99
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
     r.initializeMemory();
     l.splitRight(r).ok(4);
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   3 top:  44
  Ref   Key  Data
@@ -547,7 +535,7 @@ Branch         size:   7 count:   3 top:  44
    0     2    22
    2     3    33
 """);
-    //l.new I() {void action() {testStop(r);}};
+    //l.new I() {void a() {testStop(r);}};
     l.check(r.print(), """
 Branch         size:   7 count:   3 top:  99
  Ref   Key  Data
@@ -576,7 +564,7 @@ Branch         size:   7 count:   3 top:  99
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
     r.top(r.new Int(99));
-    //r.new I() {void action() {testStop(r);}};
+    //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
 Branch         size:   7 count:   7 top:  99
  Ref   Key  Data
@@ -590,7 +578,7 @@ Branch         size:   7 count:   7 top:  99
 """);
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex).parent(r));
     r.splitLeft(l).ok(4);
-    //r.new I() {void action() {testStop(l);}};
+    //r.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   3 top:  44
  Ref   Key  Data
@@ -598,7 +586,7 @@ Branch         size:   7 count:   3 top:  44
    0     2    22
    2     3    33
 """);
-    //r.new I() {void action() {testStop(r);}};
+    //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
 Branch         size:   7 count:   3 top:  99
  Ref   Key  Data
@@ -627,7 +615,7 @@ Branch         size:   7 count:   3 top:  99
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
     l.top(l.new Int(99));
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   7 top:  99
  Ref   Key  Data
@@ -641,7 +629,7 @@ Branch         size:   7 count:   7 top:  99
 """);
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
     l.splitRight(r).ok(4);
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   3 top:  44
  Ref   Key  Data
@@ -649,7 +637,7 @@ Branch         size:   7 count:   3 top:  44
    0     2    22
    2     3    33
 """);
-    //r.new I() {void action() {testStop(r);}};
+    //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
 Branch         size:   7 count:   3 top:  99
  Ref   Key  Data
@@ -658,7 +646,7 @@ Branch         size:   7 count:   3 top:  99
    5     7    77
 """);
     l.mergeRight(r, r.new Int(4));
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   7 top:  99
  Ref   Key  Data
@@ -691,7 +679,7 @@ Branch         size:   7 count:   7 top:  99
     r.insert(r.new Int(7), r.new Int(77));
     r.insert(r.new Int(5), r.new Int(55));
     r.top(r.new Int(99));
-    // r.new I() {void action() {testStop(r);}};
+    // r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
 Branch         size:   7 count:   7 top:  99
  Ref   Key  Data
@@ -705,7 +693,7 @@ Branch         size:   7 count:   7 top:  99
 """);
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex).parent(r));
     r.splitLeft(l);
-    //r.new I() {void action() {testStop(l);}};
+    //r.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   3 top:  44
  Ref   Key  Data
@@ -713,7 +701,7 @@ Branch         size:   7 count:   3 top:  44
    0     2    22
    2     3    33
 """);
-    //r.new I() {void action() {testStop(r);}};
+    //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
 Branch         size:   7 count:   3 top:  99
  Ref   Key  Data
@@ -722,7 +710,7 @@ Branch         size:   7 count:   3 top:  99
    5     7    77
 """);
     r.mergeLeft(l, r.new Int(4));
-    //r.new I() {void action() {testStop(r);}};
+    //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
 Branch         size:   7 count:   7 top:  99
  Ref   Key  Data
@@ -754,7 +742,7 @@ Branch         size:   7 count:   7 top:  99
     l.insert(l.new Int(6), l.new Int(66));
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
-    //l.new I() {void action() {testStop(l);}};
+    //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   7 top:   0
  Ref   Key  Data
