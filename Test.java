@@ -25,7 +25,7 @@ public class Test                                                               
   final static TreeSet<String>   testsExecuted = new TreeSet<>();                                                       // Tests executed
   final static boolean theShorterIsTheDaughter = true;                                                                  // True for a shorter traceback during tests to get more counts on the page at a time in Geany
   static       boolean                   debug = false;                                                                 // Global debug flag
-  final static boolean        coverageAnalysis = true; //false;                                                                 // Enables coverage checks
+  final static boolean        coverageAnalysis = false;                                                                 // Enables coverage checks
 // Uncomment zz for methods not called analysis
 // Uncomment z  for blocks not called analysis
   final static String coverageAnalysisSubStart = "zz"+"();";                                                            // A string indicating the start of a subroutine - method entries only
@@ -603,7 +603,7 @@ public class Test                                                               
      }
     else say("All methods executed");                                                                                   // All lines were executed
 
-    if (top > 0)                                                                                                        // Most frequently executed
+    if (executed.size() > 0 && top > 0)                                                                                 // Most frequently executed
      {final Stack<LineCount> lc = new Stack<>();                                                                        // Lines executed most frequently
       coverage.entrySet().stream()                                                                                      // Find most frequently executed lines
        .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))                                                      // Sort by value in descending order
@@ -1007,7 +1007,7 @@ public class Test                                                               
     if (!testing) System.err.println(traceBack());
    }
 
-  static void sayTest(Object...O) {errTest(O);}                                                                                       // Say something about the current test
+  static void sayTest(Object...O) {errTest(O);}                                                                         // Say something about the current test
 
   static void errTest(Object...O)                                                                                       // Say something about the current test
    {say(O);
