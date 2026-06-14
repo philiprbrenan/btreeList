@@ -202,7 +202,7 @@ class Tree extends Program                                                      
     final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.countAllOnes());
     new I()                                                                                                             // Dump the tree statistics
-     {void action()
+     {void a()
        {s.setLength(0);
         s.append(f("Tree memory dump\n"));
         s.append(f("Leaf   size   : %4d\n", build.leafSize));
@@ -221,8 +221,8 @@ class Tree extends Program                                                      
        {new If(isAllocated(Index))
          {void Then()
            {new If (isLeaf(Index))
-             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void action() {s.append(t);}};}
-              void Else() {final StringBuilder t = branch(Index).print(); new I() {void action() {s.append(t);}};}
+             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {s.append(t);}};}
+              void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {s.append(t);}};}
              };
            }
          };
@@ -269,9 +269,9 @@ class Tree extends Program                                                      
 
     public String toString()                                                                                            // Print the find results
      {final StringBuilder s = new StringBuilder();
-      new I() {void action() {s.append("Find : "+key+" "+valid+"\n");}};
+      new I() {void a() {s.append("Find : "+key+" "+valid+"\n");}};
       final StringBuilder l = leaf(leaf).print();
-      new I() {void action() {s.append(l);}};
+      new I() {void a() {s.append(l);}};
       return ""+s;
      }
    }
@@ -441,15 +441,15 @@ class Tree extends Program                                                      
     StringBuilder print()                                                                                               // Print the path
      {subStart("Tree.print");
       final StringBuilder s = new StringBuilder();
-      new I() {void action() {s.setLength(0); }};
-      new I() {void action() {s.append("Path: "+step+" steps: ");}};
+      new I() {void a() {s.setLength(0); }};
+      new I() {void a() {s.append("Path: "+step+" steps: ");}};
       new ForCount(step)
        {void body(Int Index)
          {final Int v = path.getInt(Index);
-          new I() {void action() {s.append(" "+v.i());}};
+          new I() {void a() {s.append(" "+v.i());}};
          }
        };
-      new I() {void action() {s.append(" "+leaf+" "+split+"\n");}};
+      new I() {void a() {s.append(" "+leaf+" "+split+"\n");}};
       subFinish();
       return s;
      }
@@ -923,16 +923,16 @@ class Tree extends Program                                                      
    {final Stack<StringBuilder> P = new Stack<>();
 
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
-     {new I() {void action() {P.clear();}};                                                                             // Clear output area
+     {new I() {void a() {P.clear();}};                                                                             // Clear output area
 
       new Traverse()
        {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(LC.leaf);
           final StringBuilder s = new  StringBuilder();
-          new I() {void action() {clearStringBuilder(s); }};                                                            // Clear the print
+          new I() {void a() {clearStringBuilder(s); }};                                                            // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
-           {void action()
+           {void a()
              {final int d = LC.depth.i() * linesToPrintABranch;                                                         // Line in output
               pad(d+1);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
@@ -952,7 +952,7 @@ class Tree extends Program                                                      
           final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
 
           new I()                                                                                                       // Place in output area
-           {void action()
+           {void a()
              {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
               P.elementAt(d).append(""+K.i());                                                                          // Write key into output area
@@ -983,7 +983,7 @@ class Tree extends Program                                                      
           final Int K = b.slots.getSlotToKeyValue(BC.branchSlot);                                                       // Key of slot
 
           new I()                                                                                                       // Place in output area
-           {void action()
+           {void a()
              {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
 
@@ -1017,7 +1017,7 @@ class Tree extends Program                                                      
     StringBuilder printCollapsed()                                                                                      // Collapse horizontal representation into a string
      {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
       new I()
-       {void action()
+       {void a()
          {clearStringBuilder(t);
           pad(0);
           for  (StringBuilder s : P)
@@ -1149,7 +1149,7 @@ Number of Keys:    0
    {sayCurrentTestName();
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
     if (true)
-     {t.new I() {void action() {t.byteMemory.reload(tree6);}};
+     {t.new I() {void a() {t.byteMemory.reload(tree6);}};
      }
     else
      {t.new ForCount(t.new Int(1), t.new Int(7))
@@ -1158,7 +1158,7 @@ Number of Keys:    0
          }
        };
 
-      t.new I() {void action() {say("  static String tree6 = \""+ t.byteMemory.save()+"\";");}};
+      t.new I() {void a() {say("  static String tree6 = \""+ t.byteMemory.save()+"\";");}};
       stop();
      }
 
@@ -1218,12 +1218,12 @@ Leaf   at:   2 size:  4, count:  4
      };
 
     if (false && Ex)
-     {t.new I() {void action() {say("  final static String tree32 = \""+ t.byteMemory.save()+"\";");}};
+     {t.new I() {void a() {say("  final static String tree32 = \""+ t.byteMemory.save()+"\";");}};
       stop();
      }
 
-    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
+    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
     if (N == 32) t.Check(t.dump(), """
                                               8                                                            16                                                                                                         |
                                               (0)                                                          (0)                                                                                                        |
@@ -1250,7 +1250,7 @@ Leaf   at:   2 size:  4, count:  4
   static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
    {final int N = 32 ;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-     {t.new I() {void action() {t.byteMemory.reload(tree32); }};
+     {t.new I() {void a() {t.byteMemory.reload(tree32); }};
      }
     return t;
    }
@@ -1264,8 +1264,8 @@ Leaf   at:   2 size:  4, count:  4
        {t.insert(Index, Index);
        }
      };
-    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
+    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
     if (N == 32) t.check(t.dump(), """
                                                         16                                                                |
@@ -1296,8 +1296,8 @@ Leaf   at:   2 size:  4, count:  4
        {t.insert(t.new Int(N).sub(Index), Index);
        }
      };
-    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
+    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
     if (N == 32) t.check(t.dump(), """
                                                          16                                                              |
@@ -1326,13 +1326,13 @@ Leaf   at:   2 size:  4, count:  4
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int k = t.new Int();
-        t.new I() {void action() {k.ex(Int.Ops.set, random_32[Index.i()]);}};
+        t.new I() {void a() {k.ex(Int.Ops.set, random_32[Index.i()]);}};
         t.insert(k, Index);
        }
      };
 
-    //final StringBuilder s = t.dump();  t.new I() {void action() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void action() {stop(S);}};
+    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
+    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
     if (N == 32) t.check(t.dump(), """
                                                         15                                                            26                          |
@@ -1360,17 +1360,17 @@ Leaf   at:   2 size:  4, count:  4
     final Tree t = test_reloadTree(Ex);
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
-    t.new I() {void action() {s.append(S);}};
+    t.new I() {void a() {s.append(S);}};
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(Index.Inc());
         final StringBuilder T = t.print();
-        t.new I() {void action() {s.append(T); }};
+        t.new I() {void a() {s.append(T); }};
        }
      };
 
-    //t.new I() {void action() {stop(s);}};
+    //t.new I() {void a() {stop(s);}};
     t.check(s, """
                8                         16                                                     |
        4                   12                          20            24                         |
@@ -1478,17 +1478,17 @@ Leaf   at:   2 size:  4, count:  4
     final Tree t = test_reloadTree(Ex);
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
-    t.new I() {void action() {s.append(S);}};
+    t.new I() {void a() {s.append(S);}};
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(t.new Int(N).sub(Index));
         final StringBuilder T = t.print();
-        t.new I() {void action() {s.append(T); }};
+        t.new I() {void a() {s.append(T); }};
        }
      };
 
-    //t.new I() {void action() {stop(s);}};
+    //t.new I() {void a() {stop(s);}};
     t.check(s, """
                8                         16                                                     |
        4                   12                          20            24                         |
@@ -1606,19 +1606,19 @@ Leaf   at:   2 size:  4, count:  4
     final Tree t = test_reloadTree(Ex);
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
-    t.new I() {void action() {s.append(S);}};
+    t.new I() {void a() {s.append(S);}};
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int i = t.new Int();
-        t.new I() {void action() {i.ex(Int.Ops.set, random_32[Index.i()]);}};
+        t.new I() {void a() {i.ex(Int.Ops.set, random_32[Index.i()]);}};
         t.delete(i);
         final StringBuilder T = t.print();
-        t.new I() {void action() {s.append(T); }};
+        t.new I() {void a() {s.append(T); }};
        }
      };
 
-    //t.new I() {void action() {stop(s);}};
+    //t.new I() {void a() {stop(s);}};
     t.check(s, """
                8                         16                                                     |
        4                   12                          20            24                         |
@@ -1787,8 +1787,7 @@ Leaf           size:  4, count:  2
    }
 
 void xxx()
- {zz();
- }
+ {}
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
