@@ -24,8 +24,13 @@ public class Test                                                               
   final static TreeSet<String>    filesWritten = new TreeSet<>();                                                       // Files written
   final static TreeSet<String>   testsExecuted = new TreeSet<>();                                                       // Tests executed
   final static boolean theShorterIsTheDaughter = true;                                                                  // True for a shorter traceback during tests to get more counts on the page at a time in Geany
-  final static boolean        coverageAnalysis = false;                                                                 // Enables coverage checks
   static       boolean                   debug = false;                                                                 // Global debug flag
+  final static boolean        coverageAnalysis = true; //false;                                                                 // Enables coverage checks
+// Uncomment zz for methods not called analysis
+// Uncomment z  for blocks not called analysis
+  final static String coverageAnalysisSubStart = "zz();";                                                               // A string indicating the start of a subroutine - method entries only
+//final static String coverageAnalysisSubStart = "z();";                                                                // Any labelled statement
+  static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
 
   Test Test() {return this;}                                                                                            // Instance
 
@@ -481,8 +486,6 @@ public class Test                                                               
 
 //D1 Coverage                                                                                                           // Analyze code coverage
 
-  static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
-
   static void z()                                                                                                       // A line that is being executed
    {final String s = callerFileAndLine2();                                                                              // File method line
     Integer c = coverage.get(s);
@@ -560,12 +563,7 @@ public class Test                                                               
     return e.containsKey(line);                                                                                         // Whether this line in this file was executed
    }
 
-// Uncomment zz for methods not called analysis
-// Uncomment z  for blocks not called analysis
-  final static String coverageAnalysisSubStart = "zz();";                                                               // A string indicating the start of a subroutine - method entries only
-//final static String coverageAnalysisSubStart = "z();";                                                                // Any labelled statement
-
-  static void coverageAnalysis(int top, String...Ignore)                                                                // Coverage analysis: unexecuted lines and top lines most frequently executed over all files encountered in a Geany clickable format.
+  static void coverageAnalysis(int top, String...Ignore)                                                                // Coverage analysis: lines not executed and the lines most frequently executed over all files encountered in a Geany clickable format.  For a file to be included in the coverage analysis one of the functions: z() or zz() function must have been made to bring that file to our attention.
    {final TreeMap<String,TreeSet<Integer>> notExecuted      = new TreeMap<>();                                          // File, lines not executed
     final TreeMap<String,TreeMap<Integer,Integer>> executed = new TreeMap<>();                                          // Lines executed
     final TreeSet<String> ignore                            = new TreeSet<>();
