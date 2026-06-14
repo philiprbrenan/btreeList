@@ -158,7 +158,7 @@ class Slots extends Program                                                     
    }
 
   Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow, Bool Prev)                                                // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
-   {subStart("Slots.locateNearestFreeSlotToKey");
+   {zz(); subStart("Slots.locateNearestFreeSlotToKey");
     final Slots slots = this;
     final Int r = new Int(0);
     Prev.invalidate();                                                                                                  // Assume no free slot will be found
@@ -278,7 +278,7 @@ class Slots extends Program                                                     
 //D4 Compact                                                                                                            // Compact slots to the left or right
 
   void compactSlotsLeft()                                                                                               // Compact the slots to the left hand side
-   {subStart("Slots.compactSlotsLeft");
+   {zz(); subStart("Slots.compactSlotsLeft");
     new If (empty().Flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
@@ -295,7 +295,7 @@ class Slots extends Program                                                     
    }
 
   void compactSlotsRight()                                                                                              // Compact the slots to the right hand side
-   {subStart("Slots.compactSlotsRight");
+   {zz(); subStart("Slots.compactSlotsRight");
     final Slots slots = this;
     new If (empty())                                                                                                    // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
@@ -316,7 +316,7 @@ class Slots extends Program                                                     
 
   void compactKeysLeft() {compactKeysLeft((S, t, s)->{});}                                                              // Compact the keys to the left using as few moves as possible
   void compactKeysLeft(CompactKey CompactKey)                                                                           // Compact the keys to the left using as few moves as possible while allowing the caller to observe the moves made
-   {subStart("Slots.compactKeysLeft");
+   {zz(); subStart("Slots.compactKeysLeft");
     final Slots slots = this;
     new If (empty().Flip())                                                                                             // Keys cannot be compacted if the slots are full or empty
      {void Then()
@@ -343,7 +343,7 @@ class Slots extends Program                                                     
 
   void compactKeysRight() {compactKeysRight((S, t, s)->{});}                                                            // Compact the keys to the right using as few moves as possible
   void compactKeysRight(CompactKey CompactKey)                                                                          // Compact the keys to the right using as few moves as possible while allowing the caller to observe the moves made
-   {subStart("Slots.compactKeysRight");
+   {zz(); subStart("Slots.compactKeysRight");
     final Slots slots = this;
      new If (empty().Flip())                                                                                            // Keys cannot be compacted if the slots are full or empty
       {void Then()
@@ -369,7 +369,7 @@ class Slots extends Program                                                     
    }
 
   void redistribute()                                                                                                   // Improve insert performance by making the slots sparse while leaving the keys in their current positions
-   {subStart("Slots.redistribute");
+   {zz(); subStart("Slots.redistribute");
     final Slots slots = this;
     new If (empty().Flip())                                                                                             // Something to redistribute
      {void Then()                                                                                                       // Redistribute
@@ -400,7 +400,7 @@ class Slots extends Program                                                     
 //D5 Even                                                                                                               // Splitting an even number of slots
 
   Int splitRightEven(Slots Right)                                                                                       // Split a full set of slots that contains an even number of entries then redistribute the slots. Return the splitting key
-   {subStart("Slots.splitRightEven");
+   {zz(); subStart("Slots.splitRightEven");
     final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
@@ -421,7 +421,7 @@ class Slots extends Program                                                     
    }
 
   Int splitLeftEven(Slots Left)                                                                                         // Split a full set of slots that contains an even number of entries, redistribute the slots. Return the splitting key
-   {subStart("Slots.splitLeftEven");
+   {zz(); subStart("Slots.splitLeftEven");
     final int N = numberOfKeys();
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
@@ -444,7 +444,7 @@ class Slots extends Program                                                     
 //D5 Odd                                                                                                                // Splitting an odd number of slots
 
   Int splitRightOdd(Slots Right)                                                                                        // Split a full set of slots that contains an odd number of entries redistributing the slots in the source and target slots. Return the index of the splitting key
-   {subStart("Slots.splitRightOdd");
+   {zz(); subStart("Slots.splitRightOdd");
     final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
@@ -470,7 +470,7 @@ class Slots extends Program                                                     
    }
 
   Int splitLeftOdd(Slots Left)                                                                                          // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots. Return the index of the splitting key
-   {subStart("Slots.splitLeftOdd");
+   {zz(); subStart("Slots.splitLeftOdd");
     final int N = numberOfKeys();
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
@@ -499,7 +499,7 @@ class Slots extends Program                                                     
 
   Bool mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                               // Merge the specified slots from the right without observing the results
   Bool mergeFromRightEven(Slots Right, CompactKey CompactKey)                                                           // Merge the specified slots from the right
-   {subStart("Slots.mergeFromRightEven");
+   {zz(); subStart("Slots.mergeFromRightEven");
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
     final Int     lc = left .count();                                                                                   // Count on left
@@ -533,7 +533,7 @@ class Slots extends Program                                                     
 
   Bool mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                                   // Merge the specified slots from the right
   Bool mergeFromLeftEven(Slots Left, CompactKey CompactKey)                                                             // Merge the specified slots from the right
-   {subStart("Slots.mergeFromLeftEven");
+   {zz(); subStart("Slots.mergeFromLeftEven");
     final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
     final Int      rc = right.count();
@@ -569,7 +569,7 @@ class Slots extends Program                                                     
 
   Bool mergeFromRightOdd(Slots Right, Int Sk) {return mergeFromRightOdd(Right, Sk, (S, t, s)->{});}                     // Merge the specified slots from the right without observing the key compaction process
   Bool mergeFromRightOdd(Slots Right, Int Sk, CompactKey CompactKey)                                                    // Merge the specified slots from the right observing the key compaction process
-   {subStart("Slots.mergeFromRightOdd");
+   {zz(); subStart("Slots.mergeFromRightOdd");
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
     final Int     lc = left .count();                                                                                   // Count on left
@@ -604,7 +604,7 @@ class Slots extends Program                                                     
 
   Bool mergeFromLeftOdd(Slots Left, Int Sk) {return mergeFromLeftOdd(Left, Sk, (S, t, s)->{});}                         // Merge the specified slots from the right without observing the key compaction process
   Bool mergeFromLeftOdd(Slots Left, Int Sk, CompactKey CompactKey)                                                      // Merge the specified slots from the right observing the key compaction process
-   {subStart("Slots.mergeFromLeftOdd");
+   {zz(); subStart("Slots.mergeFromLeftOdd");
     final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
     final Int      rc = right.count();
