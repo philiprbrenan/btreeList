@@ -121,10 +121,6 @@ class Slots extends Program                                                     
     usedKeys.set  (Index, new Bool(false));
    }
 
-  void freeKey(Int Index)                                                                                                // Clear a key
-   {usedKeys.set  (Index, new Bool(false));
-   }
-
   Bool    getSlotToKeysInUse(Int Index)    {return usedSlotsToKeys.getBit(Index);}                                      // Check whether a slot is in use
   Int     getSlotToKeyIndex (Int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slots
   Int     getKeyToSlotIndex (Int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index to slots from keys
