@@ -1661,10 +1661,6 @@ Zero:
    {oldTests();                                                                                                         // Run baseline tests.
    }
 
-void yyy()
- {zz();
- }
-
   public static void main(String[] args)                                                                                // Program entry point for testing.
    {try                                                                                                                 // Protected execution block.
      {if (github_actions) oldTests(); else newTests();                                                                  // Select tests.
