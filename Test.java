@@ -28,8 +28,8 @@ public class Test                                                               
   final static boolean        coverageAnalysis = true; //false;                                                                 // Enables coverage checks
 // Uncomment zz for methods not called analysis
 // Uncomment z  for blocks not called analysis
-  final static String coverageAnalysisSubStart = "zz();";                                                               // A string indicating the start of a subroutine - method entries only
-//final static String coverageAnalysisSubStart = "z();";                                                                // Any labelled statement
+  final static String coverageAnalysisSubStart = "z"+"z"+"();";                                                         // A string indicating the start of a subroutine - method entries only
+//final static String coverageAnalysisSubStart = "z"+"();";                                                             // Any labeled statement
   static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
 
   Test Test() {return this;}                                                                                            // Instance
