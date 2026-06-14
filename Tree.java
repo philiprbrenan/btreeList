@@ -923,13 +923,13 @@ class Tree extends Program                                                      
    {final Stack<StringBuilder> P = new Stack<>();
 
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
-     {new I() {void a() {P.clear();}};                                                                             // Clear output area
+     {new I() {void a() {P.clear();}};                                                                                  // Clear output area
 
       new Traverse()
        {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(LC.leaf);
           final StringBuilder s = new  StringBuilder();
-          new I() {void a() {clearStringBuilder(s); }};                                                            // Clear the print
+          new I() {void a() {clearStringBuilder(s); }};                                                                 // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
            {void a()
