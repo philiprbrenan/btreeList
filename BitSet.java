@@ -434,7 +434,7 @@ final public class BitSet extends Program                                       
 
     new For(logBitSize)                                                                                                 // Traverse down through the tree to the root
      {void body(Int I, Bool C)
-       {final Int q = p.Inc();                                                                                          // next bit over
+       {final Int q = p.Inc();                                                                                          // Next bit over
 
         new If (q.le(limitUpperOne(p)))                                                                                 // Found adjacent bit set to one to the right of the path up from the start bit
          {void Then()
