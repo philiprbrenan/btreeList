@@ -20,7 +20,7 @@ class Slots extends Program                                                     
   final ByteMemory.Ref            refKeys;                                                                              // The keys are held unordered in this array but ordered by the slot references to them
   final ByteMemory.Ref           refCount;                                                                              // The number of occupied slots and hence the number of keys in the slots
   final Build                       build;                                                                              // Build details
-  final static String           formatKey =  "%3d";                                                                     // Format a key for dumping during testing
+  final static String           formatKey =  " %3d";                                                                    // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
@@ -157,11 +157,10 @@ class Slots extends Program                                                     
     final Int f = new Int(); new If (p.valid()) {void Then() {f.set(p);}}; return f;
    }
 
-  Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow, Bool Prev)                                                // Absolute position of the nearest free slot to the indicated position if there is one. Prev will be true if the previous free slot is closest, true if the next free slot is closest, or invalid if there is no free slot
+  Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow, Bool Prev)                                                // Absolute position of the nearest free slot to the indicated position.  There will always be one as there are always more slots than keys. Prev will be true if the previous free slot is closest, else false if the next free slot is closest.
    {subStart("Slots.locateNearestFreeSlotToKey");
-    final Slots slots = this;
-    final Int r = new Int(0);
-    Prev.invalidate();                                                                                                  // Assume no free slot will be found
+    final Slots slots = this;                                                                                           // Slots to search
+    final Int r = new Int(0);                                                                                           // Search radius
     new If (getSlotToKeysInUse(Position))                                                                               // The slot is in use
      {void Then()
        {final Int  p = usedSlotsToKeys.prevZero(Position);                                                              // Prev free slot
@@ -200,6 +199,9 @@ class Slots extends Program                                                     
              };
            }
          };
+       }
+      void Else()                                                                                                       // Complain if we are handed an empty slot
+       {if (immediate()) stop("Slot required to be in use but is not in use:", Position, slots);
        }
      };
     subFinish();
@@ -1110,20 +1112,20 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 """);
 
         final Bool P = new Bool();
-        locateNearestFreeSlotToKey(new Int( 0), P).ok( 0); final Bool  p0 = P.valid(); ok(()-> p0, false);
-        locateNearestFreeSlotToKey(new Int( 1), P).ok( 0); final Bool  p1 = P.valid(); ok(()-> p1, false);
-        locateNearestFreeSlotToKey(new Int( 2), P).ok( 3);                             ok(()-> P,  false);
-        locateNearestFreeSlotToKey(new Int( 3), P).ok( 0); final Bool  p3 = P.valid(); ok(()-> p3, false);
-        locateNearestFreeSlotToKey(new Int( 4), P).ok( 3);                             ok(()-> P,  true);
-        locateNearestFreeSlotToKey(new Int( 5), P).ok( 7);                             ok(()-> P,  false);
-        locateNearestFreeSlotToKey(new Int( 6), P).ok( 7);                             ok(()-> P,  false);
-        locateNearestFreeSlotToKey(new Int( 7), P).ok( 0); final Bool  p7 = P.valid(); ok(()-> p7, false);
-        locateNearestFreeSlotToKey(new Int( 8), P).ok( 0); final Bool  p8 = P.valid(); ok(()-> p8, false);
-        locateNearestFreeSlotToKey(new Int( 9), P).ok( 8);                             ok(()-> P,  true);
-        locateNearestFreeSlotToKey(new Int(10), P).ok(11);                             ok(()-> P,  false);
-        locateNearestFreeSlotToKey(new Int(11), P).ok( 0); final Bool p11 = P.valid(); ok(()->p11, false);
-        locateNearestFreeSlotToKey(new Int(12), P).ok(13);                             ok(()-> P,  false);
-        locateNearestFreeSlotToKey(new Int(13), P).ok( 0); final Bool p13 = P.valid(); ok(()->p13, false);
+      //locateNearestFreeSlotToKey(new Int( 0), P).ok( 0); P.ok(false);
+      //locateNearestFreeSlotToKey(new Int( 1), P).ok( 0); P.ok(false);
+        locateNearestFreeSlotToKey(new Int( 2), P).ok( 3); P.ok(false);
+      //locateNearestFreeSlotToKey(new Int( 3), P).ok( 0); P.ok(false);
+        locateNearestFreeSlotToKey(new Int( 4), P).ok( 3); P.ok(true);
+        locateNearestFreeSlotToKey(new Int( 5), P).ok( 7); P.ok(false);
+        locateNearestFreeSlotToKey(new Int( 6), P).ok( 7); P.ok(false);
+      //locateNearestFreeSlotToKey(new Int( 7), P).ok( 0); P.ok(false);
+      //locateNearestFreeSlotToKey(new Int( 8), P).ok( 0); P.ok(false);
+        locateNearestFreeSlotToKey(new Int( 9), P).ok( 8); P.ok(true);
+        locateNearestFreeSlotToKey(new Int(10), P).ok(11); P.ok(false);
+      //locateNearestFreeSlotToKey(new Int(11), P).ok( 0); P.ok(false);
+        locateNearestFreeSlotToKey(new Int(12), P).ok(13); P.ok(false);
+      //locateNearestFreeSlotToKey(new Int(13), P).ok( 0); P.ok(false);
 
         execute();
        }
@@ -1719,10 +1721,10 @@ One:
    4   28    2 |  1  1
    5   30    1 |  1
 Zero:
-   1   31    8 |  1  1  1  1  1  1  1  1
-   2   39    4 |  1  1  1  1
-   3   43    2 |  1  1
-   4   45    1 |  1
+   1   31    8 |  0  0  0  0  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
 """);
         maxSteps = 99_999;
         execute();
@@ -1785,10 +1787,10 @@ One:
    4   28    2 |  0  1
    5   30    1 |  1
 Zero:
-   1   31    8 |  1  1  1  1  1  1  1  1
-   2   39    4 |  1  1  1  1
-   3   43    2 |  1  1
-   4   45    1 |  1
+   1   31    8 |  0  0  0  0  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
 """);
         maxSteps = 99_999;
         execute();
@@ -1964,10 +1966,10 @@ One:
    4   28    2 |  1  1
    5   30    1 |  1
 Zero:
-   1   31    8 |  1  1  1  1  1  1  1  1
-   2   39    4 |  1  1  1  1
-   3   43    2 |  1  1
-   4   45    1 |  1
+   1   31    8 |  0  0  0  0  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
 """);
 
         findGe(new Int(11)).ok( 0);
@@ -2427,7 +2429,6 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitRightEven(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
