@@ -2,6 +2,8 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// remove Bool.invalid/notvalid/Invalidate
+// remove Int .invalid/notvalid/Invalidate
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -383,7 +385,7 @@ public class Program extends Test                                               
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {executingCheck();
       switch(Op)
-       {case flip -> {x(); i = !i;                }
+       {case flip -> {x(); i = !i;}
         default   -> stop("Op not implemented:", Op);
        }
       if (tracing()) trace("Bool1 "+Op+" "+this, traceComment);
@@ -423,11 +425,11 @@ public class Program extends Test                                               
     Bool and(Bool b) {new I() {void a() {x(); b.x(); if (!b.i) i = false;}}; return this;}                              // "And" without short circuit. Modifies the target.
     Bool And(Bool b) {return dup().and(b);}                                                                             //N "And" without short circuit. Does not modify the target
 
-    Bool dup   ()       {                                             return new Bool(this);}                           // Duplicate a boolean so that the duplicated version can be modified without modifying the original
-    Bool copy  (Bool I) {new I() {void a() {i = I.i; v = I.v;}}; return this;}                                          //N Copy the state of a boolean without regard as to whether it is valid or not
-    Bool valid     ()   {return new Bool( v);}                                                                          //N Whether the boolean is valid
-    Bool notValid  ()   {return new Bool(!v);}                                                                          //N Whether the boolean is invalid
-    Bool invalidate()   {new I() {void a() {v = false;}};        return this;}                                          // Invalidate the boolean
+            Bool dup       ()       {                                        return new Bool(this);}                    // Duplicate a boolean so that the duplicated version can be modified without modifying the original
+    private Bool copy      (Bool I) {new I() {void a() {i = I.i; v = I.v;}}; return this;}                              //N Copy the state of a boolean without regard as to whether it is valid or not
+    private Bool valid     ()       {                                        return new Bool( v);}                      //N Whether the boolean is valid
+    private Bool notValid  ()       {                                        return new Bool(!v);}                      //N Whether the boolean is invalid
+    private Bool invalidate()       {new I() {void a() {v = false;}};        return this;}                              // Invalidate the boolean
 
     public String toString()                                                                                            // Print the boolean
      {final String u = "undefined_Bool";
@@ -514,9 +516,9 @@ public class Program extends Test                                               
     Int  neg ()      {return ie(Ops.neg    );}                                                                          //N
     Int  abs ()      {return ie(Ops.abs    );}
 
-    Int ie(Ops Op)        {new I() {void a() {ex(Op   );}}; return this;}                                               // Execute immediately or create an instruction for machine code to execute later
-    Int ie(Ops Op, int I) {new I() {void a() {ex(Op, I);}}; return this;}
-    Int ie(Ops Op, Int I) {new I() {void a() {ex(Op, I);}}; return this;}
+    Int ie(Ops Op)        {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}};    return this;}             // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op, int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/};return this;}
+    Int ie(Ops Op, Int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/};return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingCheck();
@@ -556,6 +558,46 @@ public class Program extends Test                                               
     Int ex(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
      {executingCheck();
       I.x(); return ex(Op, I.i());
+     }
+
+    String ev(Ops Op)                                                                                                   // Execute a zeradic integer operation in verilog
+     {final String        n = "intVar_"+id;
+      final StringBuilder s = new StringBuilder();                                                                      // a
+      switch(Op)
+       {case inc  -> {s.append(n +" = "+n+" + 1;\n"  );}
+        case dec  -> {s.append(n +" = "+n+" - 1;\n"  );}
+        case up   -> {s.append(n +" = "+n+"<< 1;\n"  );}
+        case down -> {s.append(n +" = "+n+">>>1;\n"  );}
+        case sqrt -> {s.append(n +" = sqrt("+n+");\n");}
+        case neg  -> {s.append(n +" = -"+n+";\n"     );}
+        case abs  -> {s.append(n +" = abs("+n+");\n" );}
+        default   -> stop("Op not implemented:", Op);
+       }
+
+      if (tracing()) s.append("Int1 "+n+"."+Op+(traceComment != null ? " "+traceComment : ""));
+      return ""+s;
+     }
+
+    String ev(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
+     {final String        n = "intVar_"+id;
+      final StringBuilder s = new StringBuilder();                                                                      // a
+      switch (Op)
+       {case set  -> {s.append(n + " = "        +I+";");}
+        case add  -> {s.append(n + " = "+n+" + "+I+";");}
+        case sub  -> {s.append(n + " = "+n+" - "+I+";");}
+        case mul  -> {s.append(n + " = "+n+" * "+I+";");}
+        case div  -> {s.append(n + " = "+n+" / "+I+";");}
+        case mod  -> {s.append(n + " = "+n+" % "+I+";");}
+        case add2 -> {s.append(n + " = "+n+" + "+I+" + "+I+";");}
+        default   -> stop("Op not implemented:", Op);
+       }
+      v = true;
+      if (tracing()) s.append("Int2 "+n+"."+Op+" "+I+(traceComment != null ? " "+traceComment : ""));
+      return ""+s;
+     }
+
+    String ev(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
+     {return ev(Op, I.i());
      }
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
@@ -675,6 +717,28 @@ public class Program extends Test                                               
          }
        };
       return this;
+     }
+   }
+
+//D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the verilog representationOperations on integer values
+
+  final class Bint                                                                                                      // An integer that can be specified as valid or invalid
+   {private final Bool b = new Bool(false);                                                                             // Whether the associated integer is valid or invalid
+    private final Int  i = new Int();                                                                                   // The integer component
+    Int set(Int I) {b.set(); i.set(I); return i;}                                                                       // Set to a known value
+    Bool  b()      {return b;}                                                                                          // Return boolean component
+    Int   i()      {if (b.b()) return i; else {stop("Requested int component from unset Bint"); return null;}}          // Return integer component but only if it has been set
+
+    public String toString()
+     {final StringBuilder s = new StringBuilder("Bint: ");
+      new I()
+       {void a()
+         {s.append("valid: "+b);
+          if (b.b()) s.append("value: "+i);
+          s.append("\n");
+         }
+       };
+      return ""+s;
      }
    }
 
@@ -901,6 +965,7 @@ public class Program extends Test                                               
     final boolean   mightJump;                                                                                          // The instruction might cause a jump
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
     final String traceComment = ""; //tracing() ? traceComment() : null;                                                // Line at which this instruction was created as a comment
+    final String      verilog;                                                                                          // Verilog code for this instruction
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
      {ai();
@@ -910,12 +975,13 @@ public class Program extends Test                                               
       if (immediate()) {parentProgram.executing = this; a(); parentProgram.executing = null;}                           // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
       //if (!immediate() && codeSize() % 100_000 == 1) say("AAAA", codeSize());
+      verilog = v();                                                                                                    // Generate the verilog for this instruction
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
 
     abstract void a();                                                                                                  // The action to be performed by the instruction
-             void v() {}                                                                                                // The action to be performed by the instruction
+    String        v() {return "Not set";}                                                                               // The action to be performed by the instruction written in verilog
    }
 
   final class Label                                                                                                     // Label jump targets in the program
@@ -1003,8 +1069,6 @@ public class Program extends Test                                               
    }
 
 //D1 Testing                                                                                                            // Test expected output against got output
-
-  static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   static void test_programming(boolean Ex)
    {sayCurrentTestName();
