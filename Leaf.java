@@ -244,9 +244,10 @@ class Leaf extends Program implements Program.Locatable                         
 
     new If (l)
      {void Then()
-       {new If (l.i().gt(0))
+       {final Int i = new Int().set(l);
+        new If (i.gt(0))
          {void Then()                                                                                                   // Print the index if it is not the root
-           {new I() {void a() {s.append(f(" at: %3d", l.i())); }};
+           {new I() {void a() {s.append(f(" at: %3d", i.i())); }};
            }
           void Else()
            {new I() {void a() {s.append(" ".repeat(8)); }};
