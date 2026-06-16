@@ -348,9 +348,10 @@ class Branch extends Program implements Program.Locatable                       
     final Bint l = getLocation();                                                                                       // Index in memory if present
     new If (l)
      {void Then()
-       {new If (l.i().gt(0))
+       {final Int i = new Int().set(l);
+        new If (i.gt(0))
          {void Then()
-           {new I() {void a() {s.append(f(" at:"+formatKey, l.i())); }};
+           {new I() {void a() {s.append(f(" at:"+formatKey, i.i())); }};
            }
           void Else()
            {new I() {void a() {s.append(" ".repeat(8)); }};
