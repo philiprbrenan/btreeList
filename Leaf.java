@@ -10,7 +10,7 @@ class Leaf extends Program implements Program.Locatable                         
  {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in leaf
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
-  final Int            at            = new Int();                                                                       // A representation of the location of the leaf sufficient to be able to free it
+  final Bint           at            = new Bint();                                                                      // An optional representation of the location of the leaf sufficient to be able to free it
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
   final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
@@ -81,7 +81,7 @@ class Leaf extends Program implements Program.Locatable                         
    }
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
-  public Int getLocation() {return at;}                                                                                 // The location of this node in memory
+  public Bint getLocation() {return at;}                                                                                 // The location of this node in memory
 
   Bool empty()   {return slots.empty();}                                                                                // Is the leaf empty
   Bool full ()   {return slots.full ();}                                                                                // Is the leaf full
@@ -99,19 +99,16 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
-  Int find          (Int Key) {return getDataFromKey(Key, false);}                                                      // Get the data associated with a key
-  Int delete        (Int Key) {return getDataFromKey(Key, true);}                                                       // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Bint find          (Int Key) {return getDataFromKey(Key, false);}                                                     // Get the data associated with a key
+  Bint delete        (Int Key) {return getDataFromKey(Key, true);}                                                      // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preferred value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
-  Int getDataFromKey(Int Key, boolean Delete)                                                                           //N Get the data associated with a key with the option of deleting the key if found
+  Bint getDataFromKey(Int Key, boolean Delete)                                                                          // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
-    final Int        r = new Int();                                                                                     // Result
+    final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot)));                                                         // Get data associated with key
-        if (Delete) slots.delete(f.slot);                                                                               // Delete the key if requested
-       }
-      void Else()                                                                                                       // Key not found
-       {r.invalidate();                                                                                                 // Data is invalid showing that the key was not found
+       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
+        if (Delete) slots.delete(f.slot.i());                                                                           // Delete the key if requested
        }
      };
     return r;                                                                                                           // Return data associated with key
@@ -120,7 +117,7 @@ class Leaf extends Program implements Program.Locatable                         
   Slots.Insert insert(Int Key, Int Data)                                                                                // Insert a key data pair into a leaf returning the index of the containing slot
    {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in leaf:", Key, print());                    // The key must not already be present
     final Slots.Insert i = slots.insert(Key);                                                                           // Insert key
-    final Int          k = slots.getSlotToKeyIndex(i.slot);                                                             // Key into which the insertion was performed
+    final Int          k = slots.getSlotToKeyIndex(i.slot.i());                                                         // Key into which the insertion was performed
     refData.putInt(k, Data);
     return i;                                                                                                           // Return the slot in the leaf in which the key, data pair was inserted
    }
@@ -222,14 +219,15 @@ class Leaf extends Program implements Program.Locatable                         
    }
 
   void iterate(Iterator Iterator)                                                                                       // Iterate over a leaf
-   {final Int f = slots.usedSlotsToKeys.firstOne();
+   {final Bint f = slots.usedSlotsToKeys.firstOne();
     new If (f.valid())
      {void Then()
        {new For(maxSize)
          {void body(Int Index, Bool Continue)
-           {final Int k = slots.getSlotToKeyValue(f), d = data(slots.getSlotToKeyIndex(f));
+           {final Int i = f.i();
+            final Int k = slots.getSlotToKeyValue(i), d = data(slots.getSlotToKeyIndex(i));
             new I() {void a() {Iterator.process(k, d);}};
-            f.copy(slots.usedSlotsToKeys.nextOne(f));
+            f.copy(slots.usedSlotsToKeys.nextOne(i));
             Continue.set(f.valid());
            }
          };
@@ -242,12 +240,13 @@ class Leaf extends Program implements Program.Locatable                         
   StringBuilder print()                                                                                                 // Print a leaf
    {final StringBuilder s = new StringBuilder();
     new I() {void a() {s.setLength(0); s.append(f("Leaf  "));}};
-    final Int a = new Int().copy(getLocation());
-    new If (a.valid())                                                                                                  // Index in memory if present
+    final Bint l = getLocation();
+
+    new If (l)
      {void Then()
-       {new If (a.gt(0))
-         {void Then()
-           {new I() {void a() {s.append(f(" at: %3d", a.i())); }};
+       {new If (l.i().gt(0))
+         {void Then()                                                                                                   // Print the index if it is not the root
+           {new I() {void a() {s.append(f(" at: %3d", l.i())); }};
            }
           void Else()
            {new I() {void a() {s.append(" ".repeat(8)); }};
@@ -258,6 +257,7 @@ class Leaf extends Program implements Program.Locatable                         
        {new I() {void a() {s.append(" ".repeat(8)); }};
        }
      };
+
     new I()                                                                                                             // Key/Data pairs in key order
      {void a()
        {s.append(f(" size: %2d, count: %2d\n", maxSize(), slots.refCount.getInt(0)));
@@ -288,7 +288,7 @@ class Leaf extends Program implements Program.Locatable                         
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
     l.insert(l.new Int(1), l.new Int(11));
-    //new I() {void a() {testStop("AAAA", l);}};
+    //testStop("AAAA", l.print());
     l.check(l.print(), """
 Leaf           size:  8, count:  4
  Ref   Key  Data
