@@ -147,7 +147,7 @@ class Branch extends Program implements Program.Locatable                       
       void Else()
        {new If (f.equal.or(f.lower))                                                                                    // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
          {void Then()
-           {d.slot.i().set(f.slot.i());                                                                                 // Step through slot
+           {d.slot.set(f.slot.i());                                                                                     // Step through slot
             d.node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
            }
           void Else()                                                                                                   // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
@@ -416,7 +416,7 @@ Branch         size:   7 count:   4 top:   0
 
     l.delete(l.new Int(1)).valid().ok(false);
 
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -451,7 +451,7 @@ Branch         size:   7 count:   3 top:   0
    2     3    33
    1     4    44
 """);
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -487,7 +487,7 @@ Branch         size:   7 count:   4 top:   0
    4     3    33
    5     4    44
 """);
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -539,7 +539,7 @@ Branch         size:   7 count:   3 top:  99
    4     6    66
    5     7    77
 """);
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -590,7 +590,7 @@ Branch         size:   7 count:   3 top:  99
    4     6    66
    5     7    77
 """);
-    r.maxSteps = 99999;
+    r.maxSteps = 99_999;
     r.execute();
    }
 
@@ -654,7 +654,7 @@ Branch         size:   7 count:   7 top:  99
    4     6    66
    5     7    77
 """);
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -718,7 +718,7 @@ Branch         size:   7 count:   7 top:  99
    4     6    66
    5     7    77
 """);
-    r.maxSteps = 99999;
+    r.maxSteps = 99_999;
     r.execute();
    }
 
@@ -772,7 +772,7 @@ Branch         size:   7 count:   0 top:   0
  Ref   Key  Data
 """);
 
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -817,7 +817,7 @@ Branch         size:   7 count:   7 top:  88
    7    77
 """);
 
-        maxSteps = 99999;
+        maxSteps = 99_999;
         execute();
        }
      };
@@ -933,7 +933,7 @@ usedSlots:    .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    X   X   X   .   .   .   .
 keys     :    4   2   6   0   0   0   0
 """);
-        maxSteps = 99999;
+        maxSteps = 99_999;
         execute();
        }
      };
@@ -960,7 +960,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_stepDown(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
