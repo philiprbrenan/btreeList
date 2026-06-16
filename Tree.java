@@ -681,10 +681,10 @@ class Tree extends Program                                                      
     final Branch P = Parent;                                                                                            // Parent containing siblings
     final Bint   L  = new Bint();                                                                                       // Left child
     new If (Pos)                                                                                                        // Merging relative to top
-     {void Then() {L.set(P.slots.usedSlotsToKeys.prevOne(Pos.i()).i());}                                                    // Merge entirely within body of parent
-      void Else() {L.set(P.slots.usedSlotsToKeys.lastOne().i());}                                                       // Last child in body of parent to be merged into top
+     {void Then() {L.copy(P.slots.usedSlotsToKeys.prevOne(Pos.i()));}                                                   // Merge entirely within body of parent
+      void Else() {L.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // Last child in body of parent to be merged into top
      };
-    new If (L) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L.i()));}};                                    // Left of left of position is valid so we can merge
+    new If (L) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L.i()));}};                                        // Left of left of position is valid so we can merge
     subFinish();
     return m;                                                                                                           // Whether the merge was performed or not
    }
@@ -693,19 +693,19 @@ class Tree extends Program                                                      
    {subStart("mergeLeftLeft");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
-    final Bint   R = new Bint();                                                                                         // Right child of merge
+    final Bint   R = new Bint();                                                                                        // Right child of merge
 
     new If (Pos)                                                                                                        // Merging relative to top
-     {void Then() {R.set(P.slots.usedSlotsToKeys.prevOne(Pos.i()).i());}                                                       // Merge entirely within body of parent
-      void Else() {R.set(P.slots.usedSlotsToKeys.lastOne().i());}                                                          // Left once from top
+     {void Then() {R.copy(P.slots.usedSlotsToKeys.prevOne(Pos.i()));}                                                   // Merge entirely within body of parent
+      void Else() {R.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // Left once from top
      };
 
     new If (R.valid())                                                                                                  // There is a left position
      {void Then()
-       {final Bint L = P.slots.usedSlotsToKeys.prevOne(R.i());                                                               // Left of left of position
-        new If (L)                                                                                              // Left of left of position is valid so we can merge
+       {final Bint L = P.slots.usedSlotsToKeys.prevOne(R.i());                                                          // Left of left of position
+        new If (L)                                                                                                      // Left of left of position is valid so we can merge
          {void Then()
-           {m.set(mergeLeftIntoRightSibling(Parent, L.i()));                                                                // Merge left of left of top into left of top
+           {m.set(mergeLeftIntoRightSibling(Parent, L.i()));                                                            // Merge left of left of top into left of top
            }
          };
        }
@@ -1783,8 +1783,7 @@ Leaf           size:  4, count:  2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_insert();
+   {oldTests();
    }
 
 void xxx()
