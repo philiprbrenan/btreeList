@@ -3,9 +3,6 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// remove Bool.invalid/notvalid/Invalidate
-// remove Int .invalid/notvalid/Invalidate
-// reverse Bit.get()
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -58,7 +55,7 @@ public class Program extends Test                                               
   boolean   tracing() {return tracing != null;}                                                                         // Trace execution
   Program   program() {return parentProgram;}                                                                           // Address this program
 
-  void executingCheck()     {if (!executing()) stop("Not executing or interpreting");}                                  // Use standard Java operators rather than this class to execute code that is not executed as machine code
+  void executingCheck()     {if (!executing()) stop("Not executing");}                                                  // Confirm that code is being executed and that consequently an instruction should be executed otherwise complain
   void parentProgramCheck() {if (program() != program().program()) stop("Parent program not set to parent program");}   // Check that code is being written to the expected program
 
   void  ai()                                                                                                            // An executing program cannot be extended by adding new data or instructions
@@ -110,15 +107,15 @@ public class Program extends Test                                               
         index.inc();                                                                                                    // Increment loop counter
         new I(true)
          {void a()
-           {program().pc = cont.b() ? start.offset : end.offset;                                                        // Continue while requested
+           {program().pc = cont.b() ? start.offset : end.offset;                                                        // Continue execution of the loop as long as requested
            }
          };
         end.set();                                                                                                      // End of the loop
        }
      }
 
-    For(int End) {this(new Int(0), new Int(End));}                                                                      // Execute the loop the specified number of times as long as it returns true
-    For(Int End) {this(new Int(0),         End);}                                                                       // Execute the loop the specified number of times as long as it returns true
+    For(int End) {this(new Int("Start", 0), new Int("End", End));}                                                                      // Execute the loop the specified number of times as long as it returns true
+    For(Int End) {this(new Int("Start", 0),                End);}                                                                       // Execute the loop the specified number of times as long as it returns true
 
     abstract void body(Int Index, Bool Continue);                                                                       // Body of the for loop - execute while in range and continuation requested
    }
@@ -156,9 +153,9 @@ public class Program extends Test                                               
        }
      }
 
-    ForCount(int  End) {this(new Int(0), new Int(End)   );}                                                             // Execute the loop the specified number of times
-    ForCount(Int  End) {this(new Int(0),         End    );}                                                             // Execute the loop the specified number of times
-    ForCount(Bint End) {this(new Int(0),         End.i());}                                                             // Execute the loop the specified number of times
+    ForCount(int  End) {this(new Int("Start", 0), new Int("End", End)   );}                                                             // Execute the loop the specified number of times
+    ForCount(Int  End) {this(new Int("Start", 0),                End    );}                                                             // Execute the loop the specified number of times
+    ForCount(Bint End) {this(new Int("Start", 0),                End.i());}                                                             // Execute the loop the specified number of times
 
     abstract void body(Int Index);                                                                                      // Body of the for loop - execute while in range and continuation requested
    }
@@ -501,20 +498,20 @@ public class Program extends Test                                               
        max, min, mod, mul, neg, ne, set, sqrt, sub, up};
 
     Int  X   ()       {return ie(Ops.X      );}                                                                         //N Integer operations
-    Int  set (int I)  {return ie(Ops.set , I);}
-    Int  set (Int I)  {return ie(Ops.set , I);}
+    Int  set (int  I) {return ie(Ops.set , I);}
+    Int  set (Int  I) {return ie(Ops.set , I);}
     Int  set (Bint I) {return ie(Ops.set , I.i());}
-    Int  add (int I)  {return ie(Ops.add , I);}
-    Int  add (Int I)  {return ie(Ops.add , I);}
-    Int  add2(Int I)  {return ie(Ops.add2, I);}                                                                         //N
-    Int  sub (int I)  {return ie(Ops.sub , I);}
-    Int  sub (Int I)  {return ie(Ops.sub , I);}
-    Int  mul (int I)  {return ie(Ops.mul , I);}
-    Int  mul (Int I)  {return ie(Ops.mul , I);}
-    Int  div (int I)  {return ie(Ops.div , I);}
-    Int  div (Int I)  {return ie(Ops.div , I);}
-    Int  mod (int I)  {return ie(Ops.mod , I);}
-    Int  mod (Int I)  {return ie(Ops.mod , I);}                                                                         //N
+    Int  add (int  I) {return ie(Ops.add , I);}
+    Int  add (Int  I) {return ie(Ops.add , I);}
+    Int  add2(Int  I) {return ie(Ops.add2, I);}                                                                         //N
+    Int  sub (int  I) {return ie(Ops.sub , I);}
+    Int  sub (Int  I) {return ie(Ops.sub , I);}
+    Int  mul (int  I) {return ie(Ops.mul , I);}
+    Int  mul (Int  I) {return ie(Ops.mul , I);}
+    Int  div (int  I) {return ie(Ops.div , I);}
+    Int  div (Int  I) {return ie(Ops.div , I);}
+    Int  mod (int  I) {return ie(Ops.mod , I);}
+    Int  mod (Int  I) {return ie(Ops.mod , I);}                                                                         //N
     Int  inc ()       {return ie(Ops.inc    );}
     Int  dec ()       {return ie(Ops.dec    );}
     Int  up  ()       {return ie(Ops.up     );}                                                                         //N
@@ -523,9 +520,9 @@ public class Program extends Test                                               
     Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
     Int  abs ()       {return ie(Ops.abs    );}
 
-    Int ie(Ops Op)        {new I() {void a() {ex(Op   );} /*String v() {return ev(Op   );}*/}; return this;}            // Execute immediately or create an instruction for machine code to execute later
-    Int ie(Ops Op, int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/}; return this;}
-    Int ie(Ops Op, Int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/}; return this;}
+    Int ie(Ops Op)        {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}                // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op, int I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Int ie(Ops Op, Int I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingCheck();
@@ -568,43 +565,57 @@ public class Program extends Test                                               
      }
 
     String ev(Ops Op)                                                                                                   // Execute a zeradic integer operation in verilog
-     {final String        n = "intVar_"+id;
-      final StringBuilder s = new StringBuilder();                                                                      // a
+     {final String        n = vn();                                                                                     // Name of the variable in verilog
+      final StringBuilder s = new StringBuilder();
       switch(Op)
-       {case inc  -> {s.append(n +" = "+n+" + 1;\n"  );}
-        case dec  -> {s.append(n +" = "+n+" - 1;\n"  );}
-        case up   -> {s.append(n +" = "+n+"<< 1;\n"  );}
-        case down -> {s.append(n +" = "+n+">>>1;\n"  );}
-        case sqrt -> {s.append(n +" = sqrt("+n+");\n");}
-        case neg  -> {s.append(n +" = -"+n+";\n"     );}
-        case abs  -> {s.append(n +" = abs("+n+");\n" );}
+       {case inc  -> {s.append(n +" <= "+n+" + 1;"  );}
+        case dec  -> {s.append(n +" <= "+n+" - 1;"  );}
+        case up   -> {s.append(n +" <= "+n+"<< 1;"  );}
+        case down -> {s.append(n +" <= "+n+">>>1;"  );}
+        case sqrt -> {s.append(n +" <= sqrt("+n+");");}
+        case neg  -> {s.append(n +" <= -"+n+";"     );}
+        case abs  -> {s.append(n +" <= abs("+n+");" );}
         default   -> stop("Op not implemented:", Op);
        }
-
-      if (tracing()) s.append("Int1 "+n+"."+Op+(traceComment != null ? " "+traceComment : ""));
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
     String ev(Ops Op, int I)                                                                                            // Execute a monadic integer operation on a constant
-     {final String        n = "intVar_"+id;
-      final StringBuilder s = new StringBuilder();                                                                      // a
+     {final String        n = vn();                                                                                     // Name of the variable in verilog
+      final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set  -> {s.append(n + " = "        +I+";");}
-        case add  -> {s.append(n + " = "+n+" + "+I+";");}
-        case sub  -> {s.append(n + " = "+n+" - "+I+";");}
-        case mul  -> {s.append(n + " = "+n+" * "+I+";");}
-        case div  -> {s.append(n + " = "+n+" / "+I+";");}
-        case mod  -> {s.append(n + " = "+n+" % "+I+";");}
-        case add2 -> {s.append(n + " = "+n+" + "+I+" + "+I+";");}
+       {case set  -> {s.append(n + " <= "        +I+";");}
+        case add  -> {s.append(n + " <= "+n+" + "+I+";");}
+        case sub  -> {s.append(n + " <= "+n+" - "+I+";");}
+        case mul  -> {s.append(n + " <= "+n+" * "+I+";");}
+        case div  -> {s.append(n + " <= "+n+" / "+I+";");}
+        case mod  -> {s.append(n + " <= "+n+" % "+I+";");}
+        case add2 -> {s.append(n + " <= "+n+" + "+I+" + "+I+";");}
         default   -> stop("Op not implemented:", Op);
        }
-      v = true;
-      if (tracing()) s.append("Int2 "+n+"."+Op+" "+I+(traceComment != null ? " "+traceComment : ""));
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
     String ev(Ops Op, Int I)                                                                                            // Execute a monadic integer operation on a variable
-     {return ev(Op, I.i());
+     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
+      final StringBuilder s = new StringBuilder();
+      switch (Op)
+       {case set  -> {s.append(n + " <= "        +i+";");}
+        case add  -> {s.append(n + " <= "+n+" + "+i+";");}
+        case sub  -> {s.append(n + " <= "+n+" - "+i+";");}
+        case mul  -> {s.append(n + " <= "+n+" * "+i+";");}
+        case div  -> {s.append(n + " <= "+n+" / "+i+";");}
+        case mod  -> {s.append(n + " <= "+n+" % "+i+";");}
+        case add2 -> {s.append(n + " <= "+n+" + "+i+" + "+i+";");}
+        default   -> stop("Op not implemented:", Op);
+       }
+      pad(s, 20);
+      if (tracing()) s.append((traceComment != null ? traceComment : ""));
+      return ""+s;
      }
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
@@ -700,6 +711,8 @@ public class Program extends Test                                               
       if (name == null) return v ? ""+i       : u;
       else              return v ? name+"="+i : u+": "+name;
      }
+
+    String vn() {return pad("i"+(name != null ? "_"+name : "") + "_" + id, 12);}                                        // Verilog name of this variable
 
     Int say() {final Int i = this; new I() {void a() {Test.say(i);}};           return this;}                           // Say the integer
 
@@ -1003,8 +1016,7 @@ public class Program extends Test                                               
    {final int instructionNumber;                                                                                        // The number of this instruction
     final boolean   mightJump;                                                                                          // The instruction might cause a jump
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
-    final String traceComment = ""; //tracing() ? traceComment() : null;                                                // Line at which this instruction was created as a comment
-    final String      verilog;                                                                                          // Verilog code for this instruction
+    final String traceComment = tracing() ? traceComment() : null;                                                      // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
      {ai();
@@ -1014,13 +1026,12 @@ public class Program extends Test                                               
       if (immediate()) {parentProgram.executing = this; a(); parentProgram.executing = null;}                           // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
       //if (!immediate() && codeSize() % 100_000 == 1) say("AAAA", codeSize());
-      verilog = v();                                                                                                    // Generate the verilog for this instruction
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
 
     abstract void a();                                                                                                  // The action to be performed by the instruction
-    String        v() {return "Not set";}                                                                               // The action to be performed by the instruction written in verilog
+    String        v() {return traceComment != null ? traceComment : "Not set";}                                         // The action to be performed by the instruction written in verilog
    }
 
   final class Label                                                                                                     // Label jump targets in the program
@@ -1203,12 +1214,12 @@ public class Program extends Test                                               
 
   static void test_fibonnacci(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex))
+    final Program P = new Program(new Build().immediate(Ex).trace(true))
      {void code()
-       {final Int a = new Int(0);
-        final Int b = new Int(1);
-        final Int c = new Int(0);
-        final Int N = new Int(10);
+       {final Int a = new Int("a", 0);
+        final Int b = new Int("b", 1);
+        final Int c = new Int("c", 0);
+        final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bool Continue)
@@ -1220,8 +1231,11 @@ public class Program extends Test                                               
             Continue.set();
            }
          };
-        Check(s, "1 2 3 5 8 13 21 34 55 89");
+        Check(s, "c=1 c=2 c=3 c=5 c=8 c=13 c=21 c=34 c=55 c=89");
         execute();
+for(I i : code)
+ {say("AAAA", i.v());
+ }
        }
      };
    }
@@ -1556,7 +1570,9 @@ public class Program extends Test                                               
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_fibonnacci(false);
+
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
