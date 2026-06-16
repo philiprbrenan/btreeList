@@ -52,6 +52,8 @@ writeFileUsingSavedToken($user, $repo,  q(.config/geany/snippets.conf),         
                         readFile(qq($home/.config/geany/snippets.conf)));
 writeFileUsingSavedToken($user, $repo,  q(.config/geany/keybindings.conf),                                              # Save the keybindings file for the same reason
                         readFile(qq($home/.config/geany/keybindings.conf)));
+writeFileUsingSavedToken($user, $repo,  q(.config/geany/filetypes.java),                                                # Save build commands
+                        readFile(qq($home/.config/geany/filetypes.java)));
 writeFileUsingSavedToken($user, $repo,  q(.xprofile),                                                                   # Save key bindings
                         readFile(qq($home/.xprofile)));
 
