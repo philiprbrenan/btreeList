@@ -234,12 +234,12 @@ final public class BitSet extends Program                                       
   Int pos_zero (Int Pos) {final Int r = new Int("pos_zero"  ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
   Int pos_one  (Int Pos) {final Int r = new Int("pos_one"   ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} //N Position in the current row
 
-  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);}}; return r;} // Upper limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);}}; return r;} // Lower limit of the current row in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);}}; return r;} //N Lower limit of the current row in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);}}; return r;} // Height of the specified position in the ones tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
-  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);}}; return r;} // Height of the specified position in the zeros tree                                                                                                // The upper edge of the layer containing the specified position in the ones tree
+  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);}}; return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree
+  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);}}; return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);}}; return r;} //N Lower limit of the current row in the zeros tree
+  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);}}; return r;} // Height of the specified position in the ones tree
+  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);}}; return r;} // Height of the specified position in the zeros tree
 
   void limitsUpperOne()                                                                                                 // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
@@ -400,9 +400,9 @@ final public class BitSet extends Program                                       
 
 //D1 Locate Ones                                                                                                        // Find the first, last, next, previous bit set to one
 
-  public Bint firstOne()                                                                                                 // Find the index of the first set bit
+  public Bint firstOne()                                                                                                // Find the index of the first set bit
    {subStart("Bitset.firstOne");
-    final Int  p = new Int(0);                                                                                           // Offset of first bit
+    final Int  p = new Int(0);                                                                                          // Offset of first bit
     final Bint r = new Bint();                                                                                          // Result
 
     new If (getBit(p))
@@ -413,7 +413,7 @@ final public class BitSet extends Program                                       
     return r;                                                                                                           // Result is valid if found
    }
 
-  public Bint lastOne()                                                                                                  // Find the index of the last set bit
+  public Bint lastOne()                                                                                                 // Find the index of the last set bit
    {subStart("Bitset.lastOne");
     final Int  p = new Int(size()-1);                                                                                   // Offset of last bit
     final Bint r = new Bint();                                                                                          // Result
@@ -429,7 +429,7 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.nextOne");
     checkInActual(Start);
     if (immediate()) checkInActual(Start);
-    final Bint Next = new Bint();                                                                                        // Next one if any
+    final Bint Next = new Bint();                                                                                       // Next one if any
     final Int  p    = new Int(Start);                                                                                   // Start position
 
     new For(logBitSize)                                                                                                 // Traverse down through the tree to the root
@@ -577,12 +577,12 @@ final public class BitSet extends Program                                       
     return Next;                                                                                                        // Result is valid if found
    }
 
-  public Bint prevZero(Int Start)                                                                                        // Find the index of the previous set bit below the specified bit
+  public Bint prevZero(Int Start)                                                                                       // Find the index of the previous set bit below the specified bit
    {subStart("Bitset.prevZero");
     checkInActual(Start);
     if (immediate()) checkInActual(Start);
-    final Bint Prev = new Bint();                                                                                         // Location of previous zero or invalid of there is not one
-    final Int  p    = new Int(Start);                                                                                    // Start position in body of bitset
+    final Bint Prev = new Bint();                                                                                       // Location of previous zero or invalid of there is not one
+    final Int  p    = new Int(Start);                                                                                   // Start position in body of bitset
     new If (p.gt(0))                                                                                                    // Not at the start of bitset
      {void Then()
        {final Int q = p.Dec();                                                                                          // Position to left
