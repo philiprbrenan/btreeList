@@ -112,7 +112,7 @@ class Tree extends Program                                                      
   int           mnl() {return maximumNumberOfLevels;}                                                                   // Maximum number of levels
 
   Int allocate()                                                                                                        // Allocate a leaf or a branch using the first free node on the free chain
-   {final Bint A = freeChain.firstOne();                                                                                 // First element on free chain
+   {final Bint A = freeChain.firstOne();                                                                                // First element on free chain
     A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
     final Int a = new Int("index") .set(A);                                                                             // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
@@ -121,7 +121,7 @@ class Tree extends Program                                                      
 
   void free(Locatable Free)                                                                                             // Free a leaf or a branch and invalidate its contents
    {final Bint a = Free.getLocation();
-    byteMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                                  // Invalidate the memory
+    byteMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                              // Invalidate the memory
     freeChain.set(a.i());
    }
 
@@ -235,7 +235,7 @@ class Tree extends Program                                                      
 
 //D1 Find, Insert, Delete                                                                                               // Find, insert and delete
 
-  Bint find(Int Key)                                                                                                     // Find the data associated with the specified key in the tree
+  Bint find(Int Key)                                                                                                    // Find the data associated with the specified key in the tree
    {subStart("Tree.find");
     final FindLeaf l = findLeaf(Key);                                                                                   // Find leaf that should contain the key
     final Bint  data = new Bint();
@@ -348,7 +348,7 @@ class Tree extends Program                                                      
           final Int b = path.getInt(p);                                                                                 // Branch index
           new If (branch(b).full())                                                                                     // On a full branch
            {void Then()
-             {split.set(p);                                                                                                 // Highest full branch so far that might need splitting
+             {split.set(p);                                                                                             // Highest full branch so far that might need splitting
               Continue.set();                                                                                           // Continue up from the leaf until a branch that is not full is encountered
              }
            };
@@ -373,7 +373,7 @@ class Tree extends Program                                                      
                  {path.putInt(z, branch(z).top());                                                                      // Divert through top
                  }
                };
-              split.set(split.i().inc());                                                                                          // Step up over split root which no longer needs splitting
+              split.set(split.i().inc());                                                                               // Step up over split root which no longer needs splitting
              }
            };
 
@@ -530,10 +530,10 @@ class Tree extends Program                                                      
     final Branch.StepDown d = P.stepDown(Key);
     new If (d.slot.notValid())                                                                                          // If the leaf was reached by stepping through top then insert the new left leaf high
      {void Then()
-       {P.insert(sk, l.getLocation().i(), new Bint());                                                                       // Insert new left leaf high
+       {P.insert(sk, l.getLocation().i(), new Bint());                                                                  // Insert new left leaf high
        }
       void Else()
-       {P.insert(sk, l.getLocation().i(), d.slot);                                                                          // Insert new left leaf below the key in the indicated slot
+       {P.insert(sk, l.getLocation().i(), d.slot);                                                                      // Insert new left leaf below the key in the indicated slot
        }
      };
 
@@ -572,7 +572,7 @@ class Tree extends Program                                                      
          {void Then()                                                                                                   // Key exists in leaf
            {data.set(l.data(l.slots.getSlotToKeyValue(f.slot.i())));                                                    // Data associated with key
             l.slots.delete(f.slot.i());                                                                                 // Remove key from leaf in tree tree
-            p.mergeUp();                                                                                               // Merge leaf and nodes above
+            p.mergeUp();                                                                                                // Merge leaf and nodes above
             countDec();                                                                                                 // Count deleted key
            }
          };
@@ -648,7 +648,7 @@ class Tree extends Program                                                      
        {final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
         new If (R)                                                                                                      // Next slot exists and so references the right sibling
          {void Then()
-           {final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R.i())));                                                  // Right leaf of merge
+           {final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R.i())));                                              // Right leaf of merge
             m.set(mergeLeftLeafIntoRightSibling(P, Left, r));                                                           // Merge
            }
           void Else()                                                                                                   // Next sibling is top
@@ -675,7 +675,7 @@ class Tree extends Program                                                      
     return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bool mergeLeft(Branch Parent, Bint Pos)                                                                                // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+  Bool mergeLeft(Branch Parent, Bint Pos)                                                                               // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
    {subStart("Tree.mergeLeft");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
@@ -689,7 +689,7 @@ class Tree extends Program                                                      
     return m;                                                                                                           // Whether the merge was performed or not
    }
 
-  Bool mergeLeftLeft(Branch Parent, Bint Pos)                                                                            // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+  Bool mergeLeftLeft(Branch Parent, Bint Pos)                                                                           // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
    {subStart("mergeLeftLeft");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
@@ -722,7 +722,7 @@ class Tree extends Program                                                      
     final Branch P = Parent;                                                                                            // Parent containing siblings
     new If (Pos)                                                                                                        // Not on top
      {void Then()
-       {m.set(mergeLeftIntoRightSibling(Parent, Pos.i()));                                                               // Merge right sibling into right of right sibling
+       {m.set(mergeLeftIntoRightSibling(Parent, Pos.i()));                                                              // Merge right sibling into right of right sibling
        }
      };
     subFinish();
@@ -736,7 +736,7 @@ class Tree extends Program                                                      
 
     new If (Pos.valid())                                                                                                // Not on top
      {void Then()
-       {final Bint L = P.slots.usedSlotsToKeys.nextOne(Pos.i());                                                         // Right once
+       {final Bint L = P.slots.usedSlotsToKeys.nextOne(Pos.i());                                                        // Right once
         new If (L)                                                                                                      // There is a right sibling
          {void Then()
            {m.set(mergeLeftIntoRightSibling(Parent, L.i()));                                                            // Merge right into right of right
@@ -879,7 +879,7 @@ class Tree extends Program                                                      
                                    {void Then()
                                      {action.putInt(ib(depth), n.i());                                                  // Current child
                                       depth.inc();                                                                      // Next child next time
-                                      final Int N = b.data(b.slots.getSlotToKeyIndex(n.i()));                               // Next child index
+                                      final Int N = b.data(b.slots.getSlotToKeyIndex(n.i()));                           // Next child index
                                       node.putInt(ib(depth), N);                                                        // First child
                                       action.putInt(ib(depth), new Int(action_first));                                  // Request first child of added branch if it is a branch else it wil be processed as a leaf
                                      }
@@ -1804,3 +1804,4 @@ Leaf           size:  4, count:  2
      }
    }
  }
+//rsync -az ~/btreeList/ nb:~/btreeList/;javac -g -d ~/btreeList/Classes -cp ~/btreeList/Classes ~/btreeList/*.java;ssh nb java -XX:+UseZGC -cp ~/btreeList/Classes/ com/AppaApps/Silicon/Tree
