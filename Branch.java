@@ -10,7 +10,7 @@ import java.util.*;
 class Branch extends Program implements Program.Locatable                                                               // A branch in a btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
-  final Int            at            = new Int();                                                                       // A representation of the location of the branch sufficient to be able to free it
+  final Bint           at            = new Bint();                                                                       // A representation of the location of the branch sufficient to be able to free it
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a branch
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
@@ -85,7 +85,7 @@ class Branch extends Program implements Program.Locatable                       
     return this;
    }
 
-  public Int getLocation() {return at;}                                                                                 // The location of this node in memory
+  public Bint getLocation() {return at;}                                                                                // The location of this node in memory
 
   void branchCode() {}                                                                                                  // Override this method to provide code for testing the branch
 
@@ -105,19 +105,16 @@ class Branch extends Program implements Program.Locatable                       
 
 //D1  Delete, find, insert                                                                                              // Delete, find, insert keys and data in a branch
 
-  Int find  (Int Key) {return getDataFromKey(Key, false);}                                                              // Get the data associated with a key
-  Int delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Bint find  (Int Key) {return getDataFromKey(Key, false);}                                                              // Get the data associated with a key
+  Bint delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
-  Int getDataFromKey(Int Key, boolean Delete)                                                                           //N Get the data associated with a key with the option of deleting the key if found
+  Bint getDataFromKey(Int Key, boolean Delete)                                                                          //N Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
-    final Int        r = new Int();                                                                                     // Result
+    final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
      {void Then()
-       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot)));                                                         // Get data associated with key
-        if (Delete) slots.delete(f.slot);                                                                               // Delete the key if requested
-       }
-      void Else()                                                                                                       // Key not found
-       {r.invalidate();                                                                                                 // Data is invalid showing that the key was not found
+       {r.set(refData.getInt(slots.getSlotToKeyIndex(f.slot.i())));                                                     // Get data associated with key
+        if (Delete) slots.delete(f.slot.i());                                                                           // Delete the key if requested
        }
      };
     return r;                                                                                                           // Return data associated with key
@@ -127,9 +124,9 @@ class Branch extends Program implements Program.Locatable                       
   void top(Int Top) {refTop.putInt(Top);}                                                                               // Set value of top
 
   final class StepDown                                                                                                  // Step down from one layer of the tree to the next lower one
-   {final Int key  = new Int();                                                                                         // The key we are stepping down with
-    final Int node = new Int();                                                                                         // The next node down
-    final Int slot = new Int();                                                                                         // The slot used to step down.  If not set then stepped through top
+   {final Int  key  = new Int();                                                                                        // The key we are stepping down with
+    final Int  node = new Int();                                                                                        // The next node down
+    final Bint slot = new Bint();                                                                                       // The slot used to step down.  If not set then stepped through top
     StepDown(Int Key) {key.set(Key);}
 
     public String toString()
@@ -145,20 +142,19 @@ class Branch extends Program implements Program.Locatable                       
 
     new If (f.empty)                                                                                                    // Found the index of a key that is greater than or equal to the search key
      {void Then()                                                                                                       // Step through top because the body of the branch is empty
-       {d.slot.invalidate();
-        d.node.set(top());
+       {d.node.set(top());
        }
       void Else()
        {new If (f.equal.or(f.lower))                                                                                    // Found the index of a key that is greater than or equal to the search key. Lower refers to the relative position of the search key versus the found key
          {void Then()
-           {d.slot.set(f.slot);                                                                                         // Step through slot
-            d.node.set(data(slots.getSlotToKeyIndex(f.slot)));                                                          // Next node
+           {d.slot.i().set(f.slot.i());                                                                                 // Step through slot
+            d.node.set(data(slots.getSlotToKeyIndex(f.slot.i())));                                                      // Next node
            }
           void Else()                                                                                                   // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want
-           {final Int n = slots.usedSlotsToKeys.nextOne(f.slot);
-            d.slot.copy(n);                                                                                             // Copy the slot found if there was one
+           {final Bint n = slots.usedSlotsToKeys.nextOne(f.slot.i());
+                                                                                                                        // Copy the slot found if there was one
             new If (n.valid())
-             {void Then() {d.node.set(data(slots.getSlotToKeyIndex(n)));}                                               // Node at next level down
+             {void Then() {d.node.set(data(slots.getSlotToKeyIndex(n.i()))); d.slot.set(n.i());}                        // Node at next level down
               void Else() {d.node.set(top());}                                                                          // No next key so step down through top
              };
            }
@@ -171,20 +167,20 @@ class Branch extends Program implements Program.Locatable                       
   Slots.Insert insert(Int Key, Int Data)                                                                                // Insert a key data pair into a branch assuming the key is not already present. Return the slot insertion details
    {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
     final Slots.Insert i = slots.insert(Key);
-    final Int          k = slots.getSlotToKeyIndex(i.slot);
+    final Int          k = slots.getSlotToKeyIndex(i.slot.i());
     refData.putInt(k, Data);
     return i;                                                                                                           // Return the slot in the branch in which the key, data pair was inserted
    }
 
-  Int insert(Int Key, Int Data, Int BelowSlot)                                                                          // Insert a key data pair into a branch when the slot below which to make the insertion is known, assuming the key is not already present, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
+  Int insert(Int Key, Int Data, Bint BelowSlot)                                                                         // Insert a key data pair into a branch when the slot below which to make the insertion is known, assuming the key is not already present, returning the index of the containing slot. If the specified slot is not valid, the key data pair are added at the end of the slots. This method generates less code than a normal insert does because it does not need to do a find to locate the slot in which to place the key
    {if (immediate() && slots.find(Key).equal.b()) stop("Key already exists in branch:", Key, print());                  // The key must not already be present
     final Int r = new Int();                                                                                            // The slot containing the inserted key
-    new If(BelowSlot.valid())                                                                                           // Insert below the specified slot if it is valid
+    new If (BelowSlot)                                                                                                  // Insert below the specified slot if it is valid
      {void Then()
-       {if (immediate() && !slots.getSlotToKeysInUse(BelowSlot).b())
+       {if (immediate() && !slots.getSlotToKeysInUse(BelowSlot.i()).b())
          {stop("Slot should be set but is empty:", BelowSlot, slots);
          }
-        final Slots.Find f = slots.new Find().set(BelowSlot, true);                                                     // Construct the find to indicate how and where to perform the insertion as if we had just done a find
+        final Slots.Find f = slots.new Find().set(BelowSlot.i(), true);                                                 // Construct the find to indicate how and where to perform the insertion as if we had just done a find
         r.set(f.insert(Key));                                                                                           // Insert knowing the insertion slot in advance
         final Int k = slots.getSlotToKeyIndex(r);
         refData.putInt(k, Data);                                                                                        // Place data in the location that corresponds to the key slot used to complete the insertion
@@ -196,7 +192,7 @@ class Branch extends Program implements Program.Locatable                       
             refData.putInt(new Int(0), Data);                                                                           // Place data in the location that corresponds to the key slot used to complete the insertion
            }
           void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
-           {final Int l = slots.locateLastUsedSlot();
+           {final Int l = slots.locateLastUsedSlot().i();
             final Slots.Find f = slots.new Find().set(l, false);                                                        // Construct the find to indicate how and where to perform the insertion as if we had just done a find
             r.set(f.insert(Key));                                                                                       // Insert knowing the insertion slot in advance
             final Int k = slots.getSlotToKeyIndex(r);
@@ -328,14 +324,14 @@ class Branch extends Program implements Program.Locatable                       
    }
 
   void iterate(Iterator Iterator)                                                                                       // Iterate over a leaf
-   {final Int f = slots.usedSlotsToKeys.firstOne();
-    new If (f.valid())
+   {final Bint f = slots.usedSlotsToKeys.firstOne();
+    new If (f)
      {void Then()
        {new For(maxSize)
          {void body(Int Index, Bool Continue)
-           {final Int k = slots.getSlotToKeyValue(f), d = data(slots.getSlotToKeyIndex(f));
+           {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
             new I() {void a() {Iterator.process(k, d);}};
-            f.copy(slots.usedSlotsToKeys.nextOne(f));
+            f.copy(slots.usedSlotsToKeys.nextOne(f.i()));
             Continue.set(f.valid());
            }
          };
@@ -347,15 +343,14 @@ class Branch extends Program implements Program.Locatable                       
 
   StringBuilder print()                                                                                                 // Print the branch
    {final StringBuilder s = new StringBuilder();
-
     new I() {void a() {s.setLength(0); s.append(f("Branch"));}};
 
-    final Int a = new Int().copy(getLocation());                                                                        // Index in memory if present
-    new If (a.valid())
+    final Bint l = getLocation();                                                                                       // Index in memory if present
+    new If (l)
      {void Then()
-       {new If (a.gt(0))
+       {new If (l.i().gt(0))
          {void Then()
-           {new I() {void a() {s.append(f(" at:"+formatKey, a.i())); }};
+           {new I() {void a() {s.append(f(" at:"+formatKey, l.i())); }};
            }
           void Else()
            {new I() {void a() {s.append(" ".repeat(8)); }};
@@ -903,7 +898,7 @@ usedKeys :    X   .   .   .   .   .   .
 keys     :    4   0   0   0   0   0   0
 """);
 
-        insert(new Int(2), new Int(22), new Int(7));
+        insert(new Int(2), new Int(22), new Bint().set(new Int(7)));
         check(print(), """
 Branch         size:   7 count:   2 top:   0
  Ref   Key  Data
@@ -920,7 +915,7 @@ usedKeys :    X   X   .   .   .   .   .
 keys     :    4   2   0   0   0   0   0
 """);
 
-        insert(new Int(6), new Int(66), new Int());
+        insert(new Int(6), new Int(66), new Bint());
         check(print(), """
 Branch         size:   7 count:   3 top:   0
  Ref   Key  Data
@@ -965,7 +960,7 @@ keys     :    4   2   6   0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_knownInsert();
+    test_knownInsert(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
