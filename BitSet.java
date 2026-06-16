@@ -229,10 +229,10 @@ final public class BitSet extends Program                                       
   int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
   int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
 
-  Int baseZero ()        {final Int r = new Int("baseZero" );  new I() {void a() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} //N Position in the current row
-  Int baseOne  ()        {final Int r = new Int("baseOne"  );  new I() {void a() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} //N Position in the current row
-  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero"  ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
-  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"   ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} //N Position in the current row
+  Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} //N Position in the current row
+  Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} //N Position in the current row
+  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
+  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} //N Position in the current row
 
   Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);}}; return r;} // Upper limit of the current row in the ones tree
   Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree
