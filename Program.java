@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // remove Bool.invalid/notvalid/Invalidate
 // remove Int .invalid/notvalid/Invalidate
+// reverse Bit.get()
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -199,6 +200,8 @@ public class Program extends Test                                               
        }
      }
 
+    If (Bint Condition) {this(Condition.b);}                                                                            // If from boolean integer
+
     abstract void Then();                                                                                               // Then clause
              void Else() {}                                                                                             // Else clause
    }
@@ -362,6 +365,7 @@ public class Program extends Test                                               
     Bool        set(boolean I) {return ie(Ops.set,  I);    }
     Bool        set(Bool    I) {return ie(Ops.set,  I);    }
     Bool        set(Int     I) {return ie(Ops.set,  I);    }                                                            //N
+    Bool        set(Bint    I) {return ie(Ops.set,  I.i());}
     Bool      clear()          {return ie(Ops.set,  false);}
     Bool       flip()          {return ie(Ops.flip);       }
 
@@ -494,31 +498,32 @@ public class Program extends Test                                               
     enum Ops {X, abs, add, add2, bclr, bget, bset, dec, div, down, eq, ge, gt, inc, le, lt,
        max, min, mod, mul, neg, ne, set, sqrt, sub, up};
 
-    Int  X   ()      {return ie(Ops.X      );}                                                                          //N Integer operations
-    Int  set (int I) {return ie(Ops.set , I);}
-    Int  set (Int I) {return ie(Ops.set , I);}
-    Int  add (int I) {return ie(Ops.add , I);}
-    Int  add (Int I) {return ie(Ops.add , I);}
-    Int  add2(Int I) {return ie(Ops.add2, I);}                                                                          //N
-    Int  sub (int I) {return ie(Ops.sub , I);}
-    Int  sub (Int I) {return ie(Ops.sub , I);}
-    Int  mul (int I) {return ie(Ops.mul , I);}
-    Int  mul (Int I) {return ie(Ops.mul , I);}
-    Int  div (int I) {return ie(Ops.div , I);}
-    Int  div (Int I) {return ie(Ops.div , I);}
-    Int  mod (int I) {return ie(Ops.mod , I);}
-    Int  mod (Int I) {return ie(Ops.mod , I);}                                                                          //N
-    Int  inc ()      {return ie(Ops.inc    );}
-    Int  dec ()      {return ie(Ops.dec    );}
-    Int  up  ()      {return ie(Ops.up     );}                                                                          //N
-    Int  down()      {return ie(Ops.down   );}
-    Int  sqrt()      {return ie(Ops.sqrt   );}                                                                          //N
-    Int  neg ()      {return ie(Ops.neg    );}                                                                          //N
-    Int  abs ()      {return ie(Ops.abs    );}
+    Int  X   ()       {return ie(Ops.X      );}                                                                         //N Integer operations
+    Int  set (int I)  {return ie(Ops.set , I);}
+    Int  set (Int I)  {return ie(Ops.set , I);}
+    Int  set (Bint I) {return ie(Ops.set , I.i());}
+    Int  add (int I)  {return ie(Ops.add , I);}
+    Int  add (Int I)  {return ie(Ops.add , I);}
+    Int  add2(Int I)  {return ie(Ops.add2, I);}                                                                         //N
+    Int  sub (int I)  {return ie(Ops.sub , I);}
+    Int  sub (Int I)  {return ie(Ops.sub , I);}
+    Int  mul (int I)  {return ie(Ops.mul , I);}
+    Int  mul (Int I)  {return ie(Ops.mul , I);}
+    Int  div (int I)  {return ie(Ops.div , I);}
+    Int  div (Int I)  {return ie(Ops.div , I);}
+    Int  mod (int I)  {return ie(Ops.mod , I);}
+    Int  mod (Int I)  {return ie(Ops.mod , I);}                                                                         //N
+    Int  inc ()       {return ie(Ops.inc    );}
+    Int  dec ()       {return ie(Ops.dec    );}
+    Int  up  ()       {return ie(Ops.up     );}                                                                         //N
+    Int  down()       {return ie(Ops.down   );}
+    Int  sqrt()       {return ie(Ops.sqrt   );}                                                                         //N
+    Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
+    Int  abs ()       {return ie(Ops.abs    );}
 
-    Int ie(Ops Op)        {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}};    return this;}             // Execute immediately or create an instruction for machine code to execute later
-    Int ie(Ops Op, int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/};return this;}
-    Int ie(Ops Op, Int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/};return this;}
+    Int ie(Ops Op)        {new I() {void a() {ex(Op   );} /*String v() {return ev(Op   );}*/}; return this;}                // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op, int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/}; return this;}
+    Int ie(Ops Op, Int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/}; return this;}
 
     Int ex(Ops Op)                                                                                                      // Execute a zeradic integer operation
      {executingCheck();
@@ -661,11 +666,11 @@ public class Program extends Test                                               
 
     void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
-    Int  dup       () {return new Int(this);}                                                                           // Duplicate an integer so that the duplicated version can be modified without modifying the original
-    Int  copy (Int I) {                           new I() {void a() {i = I.i; v = I.v;}};     return this;}             // Copy the state of an integer without regard as to whether it is valid or not
-    Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}}; return b;}                // Whether the integer is valid
-    Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}}; return b;}                // Whether the integer is invalid
-    Int  invalidate() {                           new I() {void a() {v = false;}};            return this;}             // Invalidate the integer
+            Int  dup       () {return new Int(this);}                                                                   // Duplicate an integer so that the duplicated version can be modified without modifying the original
+    private Int  copy (Int I) {                           new I() {void a() {i = I.i; v = I.v;}};     return this;}     // Copy the state of an integer without regard as to whether it is valid or not
+    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}}; return b;}        // Whether the integer is valid
+    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}}; return b;}        // Whether the integer is invalid
+    private Int  invalidate() {                           new I() {void a() {v = false;}};            return this;}     // Invalidate the integer
 
     Int  bclr (Int I) {new I() {void a() {bclrEx(I);}}; return this;}                                                   //N Clear the indicated bit
     Int  bset (Int I) {new I() {void a() {bsetEx(I);}}; return this;}                                                   //N Set the indicated bit
@@ -725,17 +730,46 @@ public class Program extends Test                                               
   final class Bint                                                                                                      // An integer that can be specified as valid or invalid
    {private final Bool b = new Bool(false);                                                                             // Whether the associated integer is valid or invalid
     private final Int  i = new Int();                                                                                   // The integer component
-    Int set(Int I) {b.set(); i.set(I); return i;}                                                                       // Set to a known value
-    Bool  b()      {return b;}                                                                                          // Return boolean component
-    Int   i()      {if (b.b()) return i; else {stop("Requested int component from unset Bint"); return null;}}          // Return integer component but only if it has been set
+    Bint set(Int I) {b.set(); i.set(I); return this;}                                                                   // Set to a known value
+    Bool  b()       {return b;}                                                                                          // Return boolean component
+    Int   i()
+     {final Int I = new Int();
+      b.Flip().stop("Requested int component from unset Bint");                                                         // Complain if there is no integer component to return
+      new I() {void a() {I.ex(Int.Ops.set, i);}};                                                                       // Return integer component
+      return I;
+     }
+
+//  Bint get(Int I)                                                                                                     // Transfer the value of the integer field of the boolean integer to an integer variable
+//   {b.Flip().stop("Requested transfer of int component from unset Bint");                                             // Complain if there is no integer component to return
+//    new I() {void a() {I.ex(Int.Ops.set, i);}};                                                                       // Set integer from boolean integer
+//    return this;                                                                                                      // Chain
+//   }
+
+    Bool valid     () {return b;}                                                                                       // Whether the boolean integer is valid
+    Bool notValid  () {return b.Flip();}                                                                                // Whether the boolean integer is invalid
+    Bint invalidate() {b.clear(); return this;}                                                                         // Mark the integer as invalid after all
+
+    Bint copy(Bint Source)                                                                                              // Copy a boolean integer
+     {new If (Source.b)
+       {void Then()                                                                                                     // The source has been set
+         {b.set(); i.set(Source.i());                                                                                   // Set target as valid and copy the associated integer
+         }
+        void Else()
+         {b.clear();
+         }                                                                                                              // The source has not been set yet so mark the target as unset too
+       };
+      return this;
+     }
+
+    Bint ok(boolean Value) {new I() {void a() {Test.ok(b.b(), Value);}}; return this;}                                  // Test the boolean value of the boolean integer
+    Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);}}; return this;}                                  // Test the integer value of the boolean integer
+
 
     public String toString()
-     {final StringBuilder s = new StringBuilder("Bint: ");
+     {final StringBuilder s = new StringBuilder();
       new I()
        {void a()
-         {s.append("valid: "+b);
-          if (b.b()) s.append("value: "+i);
-          s.append("\n");
+         {if (b.b()) s.append("Bint("+i+")"); else s.append("Bint(invalid)");
          }
        };
       return ""+s;
@@ -946,7 +980,7 @@ public class Program extends Test                                               
    }
 
   interface Locatable                                                                                                   // The location of an object in memory
-   {Int getLocation();
+   {Bint getLocation();
    }
 
   String dumpMemory() {return program().byteMemory.dumpHex();}                                                          // Dump memory in hexadecimal format
