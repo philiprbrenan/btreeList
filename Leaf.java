@@ -81,7 +81,7 @@ class Leaf extends Program implements Program.Locatable                         
    }
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
 
-  public Bint getLocation() {return at;}                                                                                 // The location of this node in memory
+  public Bint getLocation() {return at;}                                                                                // The location of this node in memory
 
   Bool empty()   {return slots.empty();}                                                                                // Is the leaf empty
   Bool full ()   {return slots.full ();}                                                                                // Is the leaf full
@@ -157,7 +157,7 @@ class Leaf extends Program implements Program.Locatable                         
     final Leaf right = this;                                                                                            // Current leaf is on the right
     Left.slots.clear();                                                                                                 // Clear target
     Left.refData.copy(right.refData, build.dataBytes());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
-    return right.slots.splitLeftEven(Left.slots);                                                                              // Split the slots
+    return right.slots.splitLeftEven(Left.slots);                                                                       // Split the slots
    }
 
 //D2 Merge                                                                                                              // Merge two leaves
