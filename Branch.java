@@ -507,7 +507,7 @@ Branch         size:   7 count:   4 top:   0
     l.insert(l.new Int(7), l.new Int(77));
     l.insert(l.new Int(5), l.new Int(55));
     l.top(l.new Int(99));
-    //l.new I() {void a() {testStop(l);}};
+    //testStop(l.print());
     l.check(l.print(), """
 Branch         size:   7 count:   7 top:  99
  Ref   Key  Data
@@ -959,8 +959,7 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_knownInsert(false);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
