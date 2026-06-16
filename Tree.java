@@ -1754,7 +1754,10 @@ Leaf           size:  4, count:  2
     t.new ForCount(t.new Int(N+2))
      {void body(Int Index)
        {final Bint d = t.find(Index);
-        t.If (Index.gt(0).and(Index.le(N)), ()->d.ok(Index.Mul(11).i()), ()->d.notValid().ok(true));
+        t.new If (d)
+         {void Then() {d.ok(Index.Mul(11));}
+          void Else() {d.ok(false);}
+         };
        }
      };
 
@@ -1785,9 +1788,6 @@ Leaf           size:  4, count:  2
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
    }
-
-void xxx()
- {}
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
