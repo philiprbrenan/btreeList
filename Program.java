@@ -762,8 +762,9 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bint ok(boolean Value) {new I() {void a() {Test.ok(b.b(), Value);}}; return this;}                                  // Test the boolean value of the boolean integer
-    Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);}}; return this;}                                  // Test the integer value of the boolean integer
+    Bint ok(boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    }}; return this;}                              // Test the boolean value of the boolean integer
+    Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);    }}; return this;}                              // Test the integer value of the boolean integer
+    Bint ok(Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());}}; return this;}                              // Test the integer value of the boolean integer
 
     void     stop(final Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);}};}};} // Conditionally print a message if false and stop
     void elseStop(final Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);}};}};} // Conditionally print a message if true and stop
