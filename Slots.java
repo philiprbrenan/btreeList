@@ -211,10 +211,8 @@ class Slots extends Program                                                     
 
   Int allocKey()                                                                                                        // Allocate a key
    {final Bint I = locateFirstUnusedKey();
-    new If (I)                                                                                                          // Found an empty key
-     {void Then() {usedKeys.set(I.i());}                                                                                // Show key has been allocated
-      void Else() {new I() {void a() {stop("No room for key");}};}                                                      // No more keys slots available
-     };
+    I.elseStop("No room for key");                                                                                      // No more keys slots available
+    new If (I) {void Then() {usedKeys.set(I.i());}};                                                                    // Show that the key as having been allocated
     return I.i();
    }
 
