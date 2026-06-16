@@ -171,6 +171,20 @@ public class Test                                                               
   static StringBuilder clearStringBuilder(StringBuilder S) {S.setLength(0);                               return S;}    // Clear a StringBuilder as java seems to have forgotten to provide this useful method
   static StringBuilder chompStringBuilder(StringBuilder S) {if (S.length() > 0) S.setLength(S.length()-1);return S;}    // Remove last character from a StringBuilder
 
+  static String pad(String S, int Length)                                                                               // Pad a string to a specified length or to a multiple of half of said length
+   {final int l = S.length(), L = Length, T = L / 2;                                                                    // Current length, moinimum length, increments beyond minimum
+    if      (l < L) return S+" ".repeat(L - l);                                                                         // Pad to specified length
+    else if (l > L) return S+" ".repeat(T - ((l - L) % T));                                                             // Extend to a multiple of the specified increment
+    return S;
+   }
+
+  static StringBuilder pad(StringBuilder S, int Length)                                                                 // Pad a string builder to a specified length or to a multiple of half of said length
+   {final int l = S.length(), L = Length, T = L / 2;                                                                    // Current length, moinimum length, increments beyond minimum
+    if      (l < L) S.append(" ".repeat(L - l));                                                                        // Pad to specified length
+    else if (l > L) S.append(" ".repeat(T - ((l - L) % T)));                                                            // Extend to a multiple of the specified increment
+    return S;
+   }
+
 //D1 Numeric routines                                                                                                   // Numeric routines
 
   static int abs(int i) {return i >= 0 ? +i : -i;}                                                                      // Absolute value of integer
