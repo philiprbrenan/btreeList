@@ -753,7 +753,7 @@ class Slots extends Program                                                     
                {void Then()                                                                                             // Insert key immediately below nearest found key slot in an already empty slot
                  {final Bint L = usedSlotsToKeys.prevOne(p);                                                            // Previous used slot
                   final Int  l = new Int();                                                                             // Previous used slot
-                  new If (L.notValid()) {void Then() {l.set(0);} void Else() {l.set(L).Inc();}};                        // Last zero
+                  new If (L.notValid()) {void Then() {l.set(0);} void Else() {l.set(L).inc();}};                        // Last zero
                   final Int m = l.add(p).down();                                                                        // Middle zero between lower and upper limit of zeros
                   setSlotAndKey(P.set(m), K.i(), Key);                                                                  // Insert key in the middle zero
                  }
