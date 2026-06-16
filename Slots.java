@@ -240,11 +240,11 @@ class Slots extends Program                                                     
      };
    }
 
-  private void moveSlot(Int T, Int S)                                                                                 // Move a slot from the specified source position to the specified target position
-   {final Int k = getSlotToKeyIndex(S);                                                                             // Index of key being moved
+  private void moveSlot(Int T, Int S)                                                                                   // Move a slot from the specified source position to the specified target position
+   {final Int k = getSlotToKeyIndex(S);                                                                                 // Index of key being moved
     final Int K = getKeyValue(k);                                                                                       // Value of key being moved
-    delSlotAndKey(S);                                                                                               // Remove source
-    setSlotAndKey(T, k, K);                                                                                         // Reinsert source at target
+    delSlotAndKey(S);                                                                                                   // Remove source
+    setSlotAndKey(T, k, K);                                                                                             // Reinsert source at target
    }
 
   private void moveKey(Bint T, Bint S, Bool Continue)                                                                   // Move a key from the source position to the target position
@@ -945,9 +945,9 @@ class Slots extends Program                                                     
     return f;
    }
 
-  Bint findGe(Int Key)                                                                                                   // Find the index of the first key in the slots that is either equal to or greater than the specified key else return invalid if there is no such key
+  Bint findGe(Int Key)                                                                                                  // Find the index of the first key in the slots that is either equal to or greater than the specified key else return invalid if there is no such key
    {final Find f = find(Key);                                                                                           // Find the key result
-    final Bint r = new Bint();                                                                                           // If the slots contains keys and one of them is greater than or equal to the search key, then return the index of that key, else return invalid
+    final Bint r = new Bint();                                                                                          // If the slots contains keys and one of them is greater than or equal to the search key, then return the index of that key, else return invalid
     new If (f.equal.or(f.lower))                                                                                        // Found the index of a key that is greater than or equal to the search key
      {void Then() {r.set                         (f.slot.i()) ;}                                                        // Slot index of found key
       void Else() {r.copy(usedSlotsToKeys.nextOne(f.slot.i()));}                                                        // Found the index of a key that was less than the search key, so the next index up, if it exists must be the one we want. Have to use copy because the value might be invalid.
