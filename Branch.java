@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Branch of a btree implemented using distributed sparse slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
-// “8GB DDR4 2666 laptop SODIMM”
 //----------------------------------------------------------------------------------------------------------------------
+// Insert should accept Locatable instead of data
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -10,7 +10,7 @@ import java.util.*;
 class Branch extends Program implements Program.Locatable                                                               // A branch in a btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
-  final Bint           at            = new Bint();                                                                       // A representation of the location of the branch sufficient to be able to free it
+  final Bint           at            = new Bint();                                                                      // A representation of the location of the branch sufficient to be able to free it
   ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final ByteMemory.Ref refMark;                                                                                         // Mark this node as a branch
   final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
@@ -105,8 +105,8 @@ class Branch extends Program implements Program.Locatable                       
 
 //D1  Delete, find, insert                                                                                              // Delete, find, insert keys and data in a branch
 
-  Bint find  (Int Key) {return getDataFromKey(Key, false);}                                                              // Get the data associated with a key
-  Bint delete(Int Key) {return getDataFromKey(Key, true);}                                                               // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
+  Bint find  (Int Key) {return getDataFromKey(Key, false);}                                                             // Get the data associated with a key
+  Bint delete(Int Key) {return getDataFromKey(Key, true);}                                                              // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
   Bint getDataFromKey(Int Key, boolean Delete)                                                                          //N Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
@@ -138,7 +138,7 @@ class Branch extends Program implements Program.Locatable                       
 
   StepDown stepDown(Int Key)                                                                                            // Reference to the next branch down that might contain the specified key
    {final Slots.Find f = slots.find(Key);                                                                               // Find result
-    final StepDown   d = new StepDown(Key);                                                                                // Result
+    final StepDown   d = new StepDown(Key);                                                                             // Result
 
     new If (f.empty)                                                                                                    // Found the index of a key that is greater than or equal to the search key
      {void Then()                                                                                                       // Step through top because the body of the branch is empty
@@ -201,7 +201,7 @@ class Branch extends Program implements Program.Locatable                       
          };
        }
      };
-    slots.countInc();                                                                                                          // Update key count for branch
+    slots.countInc();                                                                                                   // Update key count for branch
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
@@ -336,7 +336,7 @@ class Branch extends Program implements Program.Locatable                       
            }
          };
        }
-     };                                                                                //
+     };
    }
 
 //D1 Print                                                                                                              // Print the branch
