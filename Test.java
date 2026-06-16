@@ -952,7 +952,7 @@ public class Test                                                               
 
     if (sayThisOrStop.size() > 0)                                                                                       // Convert the say into a stop if the expected message does not eventuate
      {final String act = b.toString() .replace("\n", "\\n").trim();                                                     // Message we actually got
-      final String exp = sayThisOrStop.removeFirst().replace("\n","\\n").trim();// Message we expected
+      final String exp = sayThisOrStop.removeFirst().replace("\n","\\n").trim();                                        // Message we expected
       if (!act.startsWith(exp))                                                                                         // Expected message does not match what we have got
        {stop("Actual message does not equal expected message:\n"+
           "Actual  :"+act+" length("+act.length()+")\n"+
@@ -1129,7 +1129,7 @@ public class Test                                                               
         final String error = "Line: "+l+" character: "+c+                                                               // Location of error
          ", expected="+ee+"= got="+gg+"=";
 
-        say(b, error);                                         //say(b, ruler);
+        say(b, error); //say(b, ruler);
 
         final String[]sg = G.split("\\n");                                                                              // Got as lines
         final String[]se = E.split("\\n");                                                                              // Expected as lines
@@ -1150,9 +1150,9 @@ public class Test                                                               
               final String r = ruler.repeat(1 + n / 100);                                                               // A sufficiently long ruler to bracket the difference lines
               say(b, r);                                                                                                // Write the difference lines bracketed with rulers
               say(b, sg[k]);                                                                                            // What we got
-                                                      //say(b, dg);
+            //say(b, dg);
               say(b, de); say(b, dm);                                                                                   // Difference markers
-                                                      //say(b, error); say(b, r);                                       // Error detail
+            //say(b, error); say(b, r);                                                                                 // Error detail
              }
            }
           else say(b, sg[k]);                                                                                           // Line that is not the first error line
