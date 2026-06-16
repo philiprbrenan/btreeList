@@ -48,14 +48,19 @@ if  (1)                                                                         
  }
 
 
-writeFileUsingSavedToken($user, $repo,  q(.config/geany/snippets.conf),                                                 # Save the snippets file as this was the thing I missed most after a rebuild
-                        readFile(qq($home/.config/geany/snippets.conf)));
-writeFileUsingSavedToken($user, $repo,  q(.config/geany/keybindings.conf),                                              # Save the keybindings file for the same reason
-                        readFile(qq($home/.config/geany/keybindings.conf)));
-writeFileUsingSavedToken($user, $repo,  q(.config/geany/filedefs/filetypes.java),                                                # Save build commands
-                        readFile(qq($home/.config/geany/filedefs/filetypes.java)));
-writeFileUsingSavedToken($user, $repo,  q(.xprofile),                                                                   # Save key bindings
-                        readFile(qq($home/.xprofile)));
+if (rand() < 0.1)                                                                                                       # Save configuration files that only change occasionally
+ {writeFileUsingSavedToken($user, $repo,  q(.config/geany/snippets.conf),                                               # Save the snippets file as this was the thing I missed most after a rebuild
+                          readFile(qq($home/.config/geany/snippets.conf)));
+  writeFileUsingSavedToken($user, $repo,  q(.config/geany/keybindings.conf),                                            # Save the keybindings file for the same reason
+                          readFile(qq($home/.config/geany/keybindings.conf)));
+  writeFileUsingSavedToken($user, $repo,  q(.config/geany/filedefs/filetypes.java),                                     # Save build commands
+                          readFile(qq($home/.config/geany/filedefs/filetypes.java)));
+  writeFileUsingSavedToken($user, $repo,  q(.config/MakeWithPerl.pm),                                                   # Make with perl
+                          readFile(qq($home/perl/cpan/MakeWithPerl/lib/MakeWithPerl.pm)));
+  writeFileUsingSavedToken($user, $repo,  q(.xprofile),                                                                 # Save key bindings
+                          readFile(qq($home/.xprofile)));
+}
+
 
 if (@java)                                                                                                              # Write workflow to test java files
  {my @j = map {fn $_} @java;                                                                                            # Java files
