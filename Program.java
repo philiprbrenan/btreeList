@@ -156,8 +156,9 @@ public class Program extends Test                                               
        }
      }
 
-    ForCount(int End) {this(new Int(0), new Int(End));}                                                                 // Execute the loop the specified number of times as long as it returns true
-    ForCount(Int End) {this(new Int(0),         End);}                                                                  // Execute the loop the specified number of times as long as it returns true
+    ForCount(int  End) {this(new Int(0), new Int(End)   );}                                                             // Execute the loop the specified number of times
+    ForCount(Int  End) {this(new Int(0),         End    );}                                                             // Execute the loop the specified number of times
+    ForCount(Bint End) {this(new Int(0),         End.i());}                                                             // Execute the loop the specified number of times
 
     abstract void body(Int Index);                                                                                      // Body of the for loop - execute while in range and continuation requested
    }
@@ -337,7 +338,7 @@ public class Program extends Test                                               
 */
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
-  //public sealed interface Data permits Bool, Int {}                                                                   // Known types of data
+//public sealed interface Data permits Bool, Int {}                                                                     // Known types of data
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
@@ -522,7 +523,7 @@ public class Program extends Test                                               
     Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
     Int  abs ()       {return ie(Ops.abs    );}
 
-    Int ie(Ops Op)        {new I() {void a() {ex(Op   );} /*String v() {return ev(Op   );}*/}; return this;}                // Execute immediately or create an instruction for machine code to execute later
+    Int ie(Ops Op)        {new I() {void a() {ex(Op   );} /*String v() {return ev(Op   );}*/}; return this;}            // Execute immediately or create an instruction for machine code to execute later
     Int ie(Ops Op, int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/}; return this;}
     Int ie(Ops Op, Int I) {new I() {void a() {ex(Op, I);} /*String v() {return ev(Op, I);}*/}; return this;}
 
@@ -584,7 +585,7 @@ public class Program extends Test                                               
       return ""+s;
      }
 
-    String ev(Ops Op, int I)                                                                                               // Execute a monadic integer operation on a constant
+    String ev(Ops Op, int I)                                                                                            // Execute a monadic integer operation on a constant
      {final String        n = "intVar_"+id;
       final StringBuilder s = new StringBuilder();                                                                      // a
       switch (Op)
@@ -602,7 +603,7 @@ public class Program extends Test                                               
       return ""+s;
      }
 
-    String ev(Ops Op, Int I)                                                                                               // Execute a monadic integer operation on a variable
+    String ev(Ops Op, Int I)                                                                                            // Execute a monadic integer operation on a variable
      {return ev(Op, I.i());
      }
 
@@ -732,7 +733,7 @@ public class Program extends Test                                               
    {private final Bool b = new Bool(false);                                                                             // Whether the associated integer is valid or invalid
     private final Int  i = new Int();                                                                                   // The integer component
     Bint set(Int I) {b.set(); i.set(I); return this;}                                                                   // Set to a known value
-    Bool  b()       {return b;}                                                                                          // Return boolean component
+    Bool  b()       {return b;}                                                                                         // Return boolean component
     Int   i()
      {final Int I = new Int();
       b.Flip().stop("Requested int component from unset Bint");                                                         // Complain if there is no integer component to return
