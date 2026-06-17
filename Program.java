@@ -97,25 +97,23 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         new I(true)
-         {void a()
-           {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
-           }
+         {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
+          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= "+ end.offset + ";"+traceComment();}             // Index out of range
          };
-        if (tracing()) new I() {void a() {trace("For "+index.i); }};                                                    // Trace at run time
+        if (tracing()) new I() {void a() {trace("For "+index.i);} String v() {return "";}};                             // Trace at run time
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
         new I(true)
-         {void a()
-           {program().pc = cont.b() ? start.offset : end.offset;                                                        // Continue execution of the loop as long as requested
-           }
+         {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
+          String v() {return "if ("+ cont.vn()+") pc <= "+start.offset+"; else pc <= "+end.offset+";"+traceComment();}    // Continue execution of the loop as long as requested
          };
         end.set();                                                                                                      // End of the loop
        }
      }
 
-    For(int End) {this(new Int("Start", 0), new Int("End", End));}                                                                      // Execute the loop the specified number of times as long as it returns true
-    For(Int End) {this(new Int("Start", 0),                End);}                                                                       // Execute the loop the specified number of times as long as it returns true
+    For(int End) {this(new Int("Start", 0), new Int("End", End));}                                                      // Execute the loop the specified number of times as long as it returns true
+    For(Int End) {this(new Int("Start", 0),                End);}                                                       // Execute the loop the specified number of times as long as it returns true
 
     abstract void body(Int Index, Bool Continue);                                                                       // Body of the for loop - execute while in range and continuation requested
    }
@@ -380,10 +378,10 @@ public class Program extends Test                                               
     Bool         eq(Bool    I) {return ie(Ops.eq,  I);}                                                                 //N
     Bool         ne(Bool    I) {return ie(Ops.ne,  I);}
 
-    Bool ie(Ops Op)            {new I() {void a() {ex(Op   );}}; return this;}                                          // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
-    Bool ie(Ops Op, boolean I) {new I() {void a() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Bool    I) {new I() {void a() {ex(Op, I);}}; return this;}
-    Bool ie(Ops Op, Int     I) {new I() {void a() {ex(Op, I);}}; return this;}                                          //N
+    Bool ie(Ops Op)            {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}                  // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
+    Bool ie(Ops Op, boolean I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Bool ie(Ops Op, Bool    I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Bool ie(Ops Op, Int     I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}                   //N
 
     Bool ex(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {executingCheck();
@@ -423,22 +421,76 @@ public class Program extends Test                                               
       return this;
      }
 
+    String ev(Ops Op)                                                                                                     // Execute a zeradic boolean operation
+     {final String        n = vn();                                                                                     // Name of the variable in verilog
+      final StringBuilder s = new StringBuilder();
+      switch(Op)
+       {case flip -> {s.append(n + " <= ~"+n+";");}
+        default   -> stop("Op not implemented:", Op);
+       }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
+      return ""+s;
+     }
+
+    String ev(Ops Op, boolean I)                                                                                        // Execute a monadic boolean operation on a constant
+     {final String        n = vn();                                                                                     // Name of the variable in verilog
+      final StringBuilder s = new StringBuilder();
+      switch (Op)
+       {case set -> {s.append(n + " <= " +               (I ? 1 : 0) + ";");}
+        case eq  -> {s.append(n + " <= " + n + "  == " + (I ? 1 : 0) + ";");}
+        case ne  -> {s.append(n + " <= " + n + "  != " + (I ? 1 : 0) + ";");}
+        default  -> stop("Op not implemented:", Op);
+       }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
+      return ""+s;
+     }
+
+    String ev(Ops Op, Bool I)                                                                                           // Execute a monadic boolean operation on a variable
+     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
+      final StringBuilder s = new StringBuilder();
+      switch (Op)
+       {case set -> {s.append(n + " <= " + i + ";");}
+        case eq  -> {s.append(n + " <= " + n + "  == " + i + ";");}
+        case ne  -> {s.append(n + " <= " + n + "  != " + i + ";");}
+        default  -> stop("Op not implemented:", Op);
+       }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
+      return ""+s;
+     }
+
+    String ev(Ops Op, Int I)                                                                                            // Execute a monadic boolean operation on an integer variable
+     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
+      final StringBuilder s = new StringBuilder();
+      switch (Op)
+       {case set -> {s.append(n + " <= " + i + "!= 0;");}
+        default  -> stop("Op not implemented:", Op);
+       }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
+      return ""+s;
+     }
+
     Bool or (Bool b) {new I() {void a() {x(); b.x(); if (b.i) i = true;}}; return this;}                                // "Or" without short circuit. Modifies the target.
     Bool Or (Bool b) {return dup().or(b);}                                                                              //N "Or" without short circuit. Does not modify the target
     Bool and(Bool b) {new I() {void a() {x(); b.x(); if (!b.i) i = false;}}; return this;}                              // "And" without short circuit. Modifies the target.
     Bool And(Bool b) {return dup().and(b);}                                                                             //N "And" without short circuit. Does not modify the target
 
             Bool dup       ()       {                                        return new Bool(this);}                    // Duplicate a boolean so that the duplicated version can be modified without modifying the original
-    private Bool copy      (Bool I) {new I() {void a() {i = I.i; v = I.v;}}; return this;}                              //N Copy the state of a boolean without regard as to whether it is valid or not
     private Bool valid     ()       {                                        return new Bool( v);}                      //N Whether the boolean is valid
     private Bool notValid  ()       {                                        return new Bool(!v);}                      //N Whether the boolean is invalid
-    private Bool invalidate()       {new I() {void a() {v = false;}};        return this;}                              // Invalidate the boolean
+    private Bool invalidate()       {new I() {void a() {i = v = false;   } String v() {return ev(Ops.set, false);}}; return this;} // Invalidate the boolean
+    private Bool copy      (Bool I) {new I() {void a() {i = I.i; v = I.v;} String v() {return ev(Ops.set, I    );}}; return this;} //N Copy the state of a boolean without regard as to whether it is valid or not
 
     public String toString()                                                                                            // Print the boolean
      {final String u = "undefined_Bool";
       if (name == null) return v ? ""+i       : u;
       else              return v ? name+"="+i : u+": "+name;
      }
+
+    String vn() {return pad("b"+ "_" + id+(name != null ? "_"+name : ""), 12);}                                         // Verilog name of this variable
 
     void stop    (final Object...O) {new If (this)   {void Then()  {new I() {void a() {Test.stop(O);}};}};}             // Conditionally print a message if true and stop
     void elseStop(final Object...O) {new If (Flip()) {void Then()  {new I() {void a() {Test.stop(O);}};}};}             //N Conditionally print a message if false and stop
@@ -680,10 +732,10 @@ public class Program extends Test                                               
     void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
             Int  dup       () {return new Int(this);}                                                                   // Duplicate an integer so that the duplicated version can be modified without modifying the original
-    private Int  copy (Int I) {                           new I() {void a() {i = I.i; v = I.v;}};     return this;}     // Copy the state of an integer without regard as to whether it is valid or not
-    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}}; return b;}        // Whether the integer is valid
-    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}}; return b;}        // Whether the integer is invalid
-    private Int  invalidate() {                           new I() {void a() {v = false;}};            return this;}     // Invalidate the integer
+    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true; }}; return b;}       // Whether the integer is valid
+    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true; }}; return b;}       // Whether the integer is invalid
+    private Int  invalidate() {                           new I() {void a() {  i = -1;   v = false;} String v() {return ev(Ops.set, -1);}}; return this;} // Invalidate the integer
+    private Int  copy (Int I) {                           new I() {void a() {i = I.i;    v = I.v;  } String v() {return ev(Ops.set,  I);}}; return this;} // Copy the state of an integer without regard as to whether it is valid or not
 
     Int  bclr (Int I) {new I() {void a() {bclrEx(I);}}; return this;}                                                   //N Clear the indicated bit
     Int  bset (Int I) {new I() {void a() {bsetEx(I);}}; return this;}                                                   //N Set the indicated bit
@@ -712,7 +764,7 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String vn() {return pad("i"+(name != null ? "_"+name : "") + "_" + id, 12);}                                        // Verilog name of this variable
+    String vn() {return pad("i" + "_" + id+(name != null ? "_"+name : ""), 12);}                                        // Verilog name of this variable
 
     Int say() {final Int i = this; new I() {void a() {Test.say(i);}};           return this;}                           // Say the integer
 
@@ -1005,8 +1057,8 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  void check(StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E));}};}                           // Test the supplied content against the specified string, then clear the output area ready for the next report
-  void Check(StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);}};}       // Test the supplied content against the specified string, print the actual output area contents and stop
+  void check(StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} String v() {return "// check"+traceComment();}};}                           // Test the supplied content against the specified string, then clear the output area ready for the next report
+  void Check(StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} String v() {return "// check"+traceComment();}};} // Test the supplied content against the specified string, print the actual output area contents and stop
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1025,13 +1077,14 @@ public class Program extends Test                                               
       mightJump = MightJump;
       if (immediate()) {parentProgram.executing = this; a(); parentProgram.executing = null;}                           // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
-      //if (!immediate() && codeSize() % 100_000 == 1) say("AAAA", codeSize());
+      //if (!immediate() && codeSize() % 100_000 == 1) say("CodeSize", codeSize());
      }
 
     I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
 
-    abstract void a();                                                                                                  // The action to be performed by the instruction
-    String        v() {return traceComment != null ? traceComment : "Not set";}                                         // The action to be performed by the instruction written in verilog
+    abstract void     a();                                                                                              // The action to be performed by the instruction
+    String            v() {return "Not set" + traceComment();}                                                          // The action to be performed by the instruction written in verilog
+    String traceComment() {return traceComment != null ? traceComment : "";}                                            // Trace comment if it exists
    }
 
   final class Label                                                                                                     // Label jump targets in the program
@@ -1227,14 +1280,14 @@ public class Program extends Test                                               
             c.add(b);
             a.set(b);
             b.set(c);
-            new I() {void a() {s.append(""+c+" ");}};
+            new I() {void a() {s.append(""+c+" ");} String v() {return "";}};
             Continue.set();
            }
          };
         Check(s, "c=1 c=2 c=3 c=5 c=8 c=13 c=21 c=34 c=55 c=89");
         execute();
 for(I i : code)
- {say("AAAA", i.v());
+ {say(f("%04d %s", i.instructionNumber, i.v()));
  }
        }
      };
