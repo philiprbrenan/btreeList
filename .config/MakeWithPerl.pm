@@ -14,22 +14,23 @@ use Data::Table::Text qw(:all);
 use Getopt::Long;
 use Time::HiRes qw(time);
 use utf8;
-sub mwpl {qq(makeWithPerlLocally.pl)}                                           # Make with Perl locally
+sub mwpl {qq(makeWithPerlLocally.pl)}                                                                                   # Make with Perl locally
 
-my $javaHome;                                                                   # Location of java files
-my $cIncludes;                                                                  # C includes folder
-my $compile;                                                                    # Compile
-my $coverage;                                                                   # Get coverage of code
-my $doc;                                                                        # Documentation
-my $gccVersion;                                                                 # Alternate version of gcc is set.  Example: --gccVersion gcc-10
-my $run;                                                                        # Run
-my $search;                                                                     # Search for a local file to make the specified file
-my $showHtml;                                                                   # Show html in opera
-#my   $upload;                                                                  # Upload files
-my $valgrind;                                                                   # Check C memory usage
-my $xmlCatalog;                                                                 # Verify xml
+my $javaHome;                                                                                                           # Location of java files
+my $cIncludes;                                                                                                          # C includes folder
+my $compile;                                                                                                            # Compile
+my $coverage;                                                                                                           # Get coverage of code
+my $doc;                                                                                                                # Documentation
+my $gccVersion;                                                                                                         # Alternate version of gcc is set.  Example: --gccVersion gcc-10
+my $run;                                                                                                                # Run
+my $search;                                                                                                             # Search for a local file to make the specified file
+my $showHtml;                                                                                                           # Show html in opera
+#my   $upload;                                                                                                          # Upload files
+my $valgrind;                                                                                                           # Check C memory usage
+my $xmlCatalog;                                                                                                         # Verify xml
+my $timeOut = "120s";                                                                                                   # Time out
 
-sub makeWithPerl {                                                              # Make a file
+sub makeWithPerl {                                                                                                      # Make a file
 
 GetOptions(
   'cIncludes=s' =>\$cIncludes,
@@ -46,22 +47,22 @@ GetOptions(
   'xmlCatalog=s'=>\$xmlCatalog,
  );
 
-my $file = shift @ARGV // $0;                                                   # File to process
+my $file = shift @ARGV // $0;                                                                                           # File to process
 
-$cIncludes //= "-I/home/phil/c/ -I.";                                           # Includes used in C files if not already set
+$cIncludes //= "-I/home/phil/c/ -I.";                                                                                   # Includes used in C files if not already set
 
-unless($file)                                                                   # Confirm we have a file
+unless($file)                                                                                                           # Confirm we have a file
  {confess "Use %f to specify the file to process";
  }
 
-if (! -e $file)                                                                 # No such file
+if (! -e $file)                                                                                                         # No such file
  {confess "No such file:\n$file"
  }
 
-if ($search)                                                                    # Upload files to GitHub or run some other action defined in the containing folder hierarchy unless search is forbidden
- {my @d = split m{/}, $file;                                                    # Split file name
+if ($search)                                                                                                            # Upload files to GitHub or run some other action defined in the containing folder hierarchy unless search is forbidden
+ {my @d = split m{/}, $file;                                                                                            # Split file name
   pop @d;
-  while(@d)                                                                     # Look for a folder that contains a push command
+  while(@d)                                                                                                             # Look for a folder that contains a push command
    {for my $n(qw(pushToGitHub upload package))
      {my $u = "/".fpe(@d, $n, q(pl));
       if (-e $u)
@@ -75,17 +76,69 @@ if ($search)                                                                    
   confess "Unable to find pushToGitHub in folders down to $file";
  }
 
-if ($doc)                                                                       # Documentation
- {if ($file =~ m((pl|pm)\Z)s)                                                   # Document perl
+# Java
+
+if ($file =~ m(\.java\Z))                                                                                               # Java
+ {my  $name   = fn $file;                                                                                               # Parse file name
+  !$javaHome and confess "Specify --javaHome keyword to specify the folder where class files are to go.";
+
+  my $package = &getPackageNameFromFile($file);                                                                         # Get package name
+  my $d       = fpd($javaHome, qw(Classes));                                                                            # Folder containing java classes.
+     $d       = fpd($javaHome, qw(../Classes))       unless -e $d;
+     $d       = fpd($javaHome, qw(../../Classes))    unless -e $d;
+     $d       = fpd($javaHome, qw(../../../Classes)) unless -e $d;
+
+  if (!-d $d)                                                                                                           # Make a local classes folder if none is present above this folder
+   {$d = fpd($javaHome, qw(Classes));                                                                                   # Folder containing java classes.
+    makePath $d;
+   }
+
+  my @jars = readFile($file) =~ m{^//jar\s+(\S+\.jar)}mg;                                                               # Get jar files mentioned in source code
+  my $jars = join ":", @jars;
+
+  my $cp = $d; $cp = "$d:$jars" if @jars;                                                                               # Class path needs the classes created by this compile and any mentioned jar files
+
+  if ($compile)                                                                                                         # Compile
+   {my $c = "javac -g -d $d -cp $cp -Xlint -Xdiags:verbose $file -Xmaxerrs 8";                                          # Syntax check Java
+    say STDERR $c;
+    print STDERR qx($c);
+   }
+  else                                                                                                                  # Compile and run
+   {my $Name = ucfirst($name);                                                                                          # Insist that the class name start with a capital letter. This allows a skeleton to be held in a lowercase file name and then upgraded to a properly cased file while still wlloing the skeleton to be tested.
+
+    my $class = $package ? "$package.$Name" : $Name;                                                                    # Class location
+    my $p = join ' ', @ARGV;                                                                                            # Collect the remaining parameters and pass them to the java application
+#   my $f = profile($file);
+    my $f = $file;
+    my $c = "javac -g -d $d -cp $cp $f && timeout $timeOut java -XX:+UseZGC -ea -cp $cp $class $p";
+#   xxx($c);
+    qx($c);
+#   runTests($file, $c);
+#   unlink $f;
+   }
+  &removeClasses;
+  exit;
+ }
+
+if ($file =~ m(\.j\Z))                                                                                                  # Java single source file
+ {my $a = $compile ? "compile" : "run";
+  my $c = "java --enable-preview --source 21 -XX:StartFlightRecording:filename=recording.jfr $file $a";                 # With flight recorder
+     $c = "java --enable-preview --source 21 $file $a";
+  say   STDERR    $c;
+  print STDERR qx($c);
+ }
+
+if ($doc)                                                                                                               # Documentation
+ {if ($file =~ m((pl|pm)\Z)s)                                                                                           # Document perl
    {say STDERR "Document perl $file";
     updatePerlModuleDocumentation($file);
    }
-  elsif ($file =~ m((java)\Z)s)                                                 # Document java
+  elsif ($file =~ m((java)\Z)s)                                                                                         # Document java
    {say STDERR "Document java $file";
 
     my %files;
     for(findFiles($javaHome))
-     {next if m/Test\.java\Z/ or m(/java/z/);                                   # Exclude test files and /java/ sub folders
+     {next if m/Test\.java\Z/ or m(/java/z/);                                                                           # Exclude test files and /java/ sub folders
       $files{$_}++ if /\.java\Z/
      }
     confess;
@@ -102,42 +155,42 @@ if ($doc)                                                                       
   exit
  }
 
-if (-e mwpl and $run)                                                           # Make with Perl locally
+if (-e mwpl and $run)                                                                                                  # Make with Perl locally
  {my $p = join ' ', @ARGV;
   my $c = mwpl;
   print STDERR qx(perl -CSDA $c $p);
   exit;
  }
-if ($file =~ m(\.(p[lm]|cgi)\Z))                                                # Perl
- {if ($compile)                                                                 # Syntax check perl
+if ($file =~ m(\.(p[lm]|cgi)\Z))                                                                                       # Perl
+ {if ($compile)                                                                                                        # Syntax check perl
    {print STDERR qx(perl -CSDA -cw "$file");
    }
-  elsif ($run)                                                                  # Run perl
-   {if ($file =~ m(.cgi\Z)s)                                                    # Run from web server
+  elsif ($run)                                                                                                         # Run perl
+   {if ($file =~ m(.cgi\Z)s)                                                                                           # Run from web server
      {&cgiPerl($file);
      }
-    else                                                                        # Run from command line
+    else                                                                                                               # Run from command line
      {my $cmd = qq(timeout 3m  perl -CSDA -w  "$file");
       #say qq($cmd);
       system($cmd);
      }
    }
-  elsif ($doc)                                                                  # Document perl
+  elsif ($doc)                                                                                                         # Document perl
    {say STDERR "Document perl $file";
     updatePerlModuleDocumentation($file);
    }
   exit;
  }
 
-if ($file =~ m(\.(txt|htm)\Z))                                                  # Html
+if ($file =~ m(\.(txt|htm)\Z))                                                                                         # Html
  {my $s = spellCheck
           expandWellKnownUrlsInHtmlFormat
           expandWellKnownWordsAsUrlsInHtmlFormat
-          join "", includeFiles $file;                                          # Expand any include files
-  my $o = setFileExtension $file, q(html);                                      # Output file
+          join "", includeFiles $file;                                                                                 # Expand any include files
+  my $o = setFileExtension $file, q(html);                                                                             # Output file
   my $f = owf $o, $s;
 
-  if ($compile)                                                                 # Check table of contents requested
+  if ($compile)                                                                                                        # Check table of contents requested
    {if ($s =~ m(id=toc))
      {if (htmlToc(update => $file))
        {say STDERR "Generated table of contents";
@@ -147,7 +200,7 @@ if ($file =~ m(\.(txt|htm)\Z))                                                  
        }
      }
    }
-  if ($run)                                                                     # Show html in firefox
+  if ($run)                                                                                                            # Show html in firefox
    {my $c = qq(timeout 3m firefox $o);
     say STDERR qq($c);
     say STDERR qx($c);
@@ -155,7 +208,7 @@ if ($file =~ m(\.(txt|htm)\Z))                                                  
   exit;
  }
 
-if ($file =~ m(\.(v|sv|tb)\Z))                                                  # Verilog
+if ($file =~ m(\.(v|sv|tb)\Z))                                                                                         # Verilog
  {my $n = fn $file;
 
   my $ext = fe $file;
@@ -175,7 +228,7 @@ if ($file =~ m(\.(v|sv|tb)\Z))                                                  
     $tb = '' unless -e $tb;
    }
 
-#  my @i =  split m(/), $file;                                                   # Locate include files in parent verilog folder
+#  my @i =  split m(/), $file;                                                                                          # Locate include files in parent verilog folder
 #  pop @i while @i and $i[-1] !~ m(\Averilog\Z);
 #  push @i, q(includes);
 #  my $i = '/'.fpd @i;
@@ -187,7 +240,7 @@ if ($file =~ m(\.(v|sv|tb)\Z))                                                  
   exit;
  }
 
-if ($file =~ m(\.go\Z))                                                         # Process go
+if ($file =~ m(\.go\Z))                                                                                                 # Process go
  {my $source = readFile($file);
   my $c = qq(go $file);
   say STDERR $c;
@@ -195,7 +248,7 @@ if ($file =~ m(\.go\Z))                                                         
   exit;
  }
 
-if ($file =~ m(\.(dita|ditamap|xml)\Z))                                         # Process xml
+if ($file =~ m(\.(dita|ditamap|xml)\Z))                                                                                 # Process xml
  {my $source = readFile($file);
   my $C = $xmlCatalog;
   my $c = qq(xmllint --noent --noout "$file" && echo "Parses OK!" && export XML_CATALOG_FILES=$C && xmllint --noent --noout --valid - < "$file" && echo Valid);
@@ -204,7 +257,7 @@ if ($file =~ m(\.(dita|ditamap|xml)\Z))                                         
   exit;
  }
 
-if ($file =~ m(\.asm\Z))                                                        # Process assembler
+if ($file =~ m(\.asm\Z))                                                                                                # Process assembler
  {my $o = setFileExtension $file, q(o);
   my $e = setFileExtension $file;
   my $l = setFileExtension $file, q(txt);
@@ -221,48 +274,48 @@ if ($file =~ m(\.asm\Z))                                                        
   exit;
  }
 
-sub profile($)                                                                  # Add profile lines
- {my ($file) = @_;                                                              # Parameters
-  my @lines  = readFile($file);                                                 # Source file
-  my $ext    = fe $file;                                                        # File extension shows type
+sub profile($)                                                                                                          # Add profile lines
+ {my ($file) = @_;                                                                                                      # Parameters
+  my @lines  = readFile($file);                                                                                         # Source file
+  my $ext    = fe $file;                                                                                                # File extension shows type
   my $re;
-     $re = qr(final static int..lined = null;) if $ext =~ m(java);              # Profile requested from Java
-     $re = qr(int lined\[LINES\] = \{\};)      if $ext =~ m(c);                 # Profile requested from C
+     $re = qr(final static int..lined = null;) if $ext =~ m(java);                                                      # Profile requested from Java
+     $re = qr(int lined\[LINES\] = \{\};)      if $ext =~ m(c);                                                         # Profile requested from C
 
   my $p = 0;
-  for my $i(keys @lines)                                                        # Check for profile if supplied
+  for my $i(keys @lines)                                                                                                # Check for profile if supplied
    {$p = $i if $lines[$i] =~ m($re);
    }
 
-  if ($p)                                                                       # Profile requested
+  if ($p)                                                                                                               # Profile requested
    {my @lined;
-    for my $l(keys @lines)                                                      # Profiler
+    for my $l(keys @lines)                                                                                              # Profiler
      {my $l1 = $l + 1;
-      if ($lines[$l] =~ m(\A//p))                                               # Capture profile statistics
+      if ($lines[$l] =~ m(\A//p))                                                                                       # Capture profile statistics
        {  $lines[$l] = "line[$l1]++;\n";
         push @lined, $l1;
        }
      }
-    my $lined = join '', '{', join(', ', @lined), '}';                          # Missed lines
+    my $lined = join '', '{', join(', ', @lined), '}';                                                                  # Missed lines
     if ($ext =~ m(java)i)
      {$lines[$p] =~ s(null) ($lined);
      }
     else
      {$lines[$p] =~ s(\{\}) ($lined);
      }
-    return owf(fpe(fpn($file)."2", fe($file)), join '', @lines);                # Similar file name
+    return owf(fpe(fpn($file)."2", fe($file)), join '', @lines);                                                        # Similar file name
    }
   $file
  }
 
-sub runTests($$)                                                                # Run some tests embedded in a source file
- {my ($file, $command) = @_;                                                    # Source file, compile && run command
-  my  @tests = split m(\n(?=//test\s+))i, readFile($file);                      # Split on tests
+sub runTests($$)                                                                                                        # Run some tests embedded in a source file
+ {my ($file, $command) = @_;                                                                                            # Source file, compile && run command
+  my  @tests = split m(\n(?=//test\s+))i, readFile($file);                                                              # Split on tests
   shift @tests;
 
-  if (@tests > 0)                                                               # Tests present
+  if (@tests > 0)                                                                                                       # Tests present
    {my $passed = 0; my $failed = 0;
-    my ($compile, $run) = split /&&/, $command, 2;                              # Commands to compile and execute java
+    my ($compile, $run) = split /&&/, $command, 2;                                                                      # Commands to compile and execute java
     print qx($compile);
 
     my $start = time();
@@ -278,7 +331,7 @@ sub runTests($$)                                                                
         next;
        }
 
-      my ($input, @expected) = split /\n\-{4,}\n/, $test;                       # Each test can possibly have multiple answers
+      my ($input, @expected) = split /\n\-{4,}\n/, $test;                                                               # Each test can possibly have multiple answers
 
       $expected[-1] =~ s/\s*\*\//\n/s;
       for my $i(keys @expected)
@@ -291,7 +344,7 @@ sub runTests($$)                                                                
       my $out   = temporaryFile;
 
       my $start = time;
-      print STDERR qx($run $line --expected="$expected[0]" <$in >$out);         # Run program
+      print STDERR qx($run $line --expected="$expected[0]" <$in >$out);                                                 # Run program
       if ($? != 0)
        {my $c = $? >> 8;
         lll "Exiting on non zero return code $c";
@@ -301,16 +354,16 @@ sub runTests($$)                                                                
       my $got   = readFile($out);
       unlink $in, $out;
 
-      my $matches = 0;                                                          # Number of tests matched
+      my $matches = 0;                                                                                                  # Number of tests matched
       for my $expected(@expected)
-       {if ($got eq $expected)                                                  # Evaluate test
+       {if ($got eq $expected)                                                                                          # Evaluate test
          {++$passed;
           say STDERR sprintf "%4d passed in %8.4f seconds ++ %s", $testI, $time, $title;
           ++$matches;
           last;
          }
        }
-      if ($matches == 0)                                                        # Nothing matched
+      if ($matches == 0)                                                                                                # Nothing matched
        {for my $expected(@expected)
          {say STDERR "FAILED, got : $got";
           say STDERR "But expected: $expected";
@@ -340,15 +393,15 @@ sub runTests($$)                                                                
    }
  }
 
-if ($file =~ m(\.cp*\Z))                                                        # GCC
+if ($file =~ m(\.cp*\Z))                                                                                                # GCC
  {my $cp = "-fmax-errors=7 -fno-omit-frame-pointer -finline-functions ".
            "-Wall -Wextra -Wno-unused-function -O3 -g3 -rdynamic -I.";
   if ($compile)
-   {my $cmd = qq(gcc $cp -fsyntax-only  -o /dev/null "$file");                  # Syntax check
+   {my $cmd = qq(gcc $cp -fsyntax-only  -o /dev/null "$file");                                                          # Syntax check
     say STDERR $cmd;
     print STDERR $_ for qx($cmd);
    }
-  else                                                                          # Run
+  else                                                                                                                  # Run
    {my $e = fn $file;
     unlink $e;
     my $cmd = qq(gcc $cp -o "$e" $file && timeout 10s ./$e);
@@ -359,10 +412,10 @@ if ($file =~ m(\.cp*\Z))                                                        
   exit;
  }
 
-if ($file =~ m(\.cp*\Z))                                                        # GCC
- {my $mix = "sde-mix-out.txt";                                                  # Mix performance file produced by Intel emulator
+if ($file =~ m(\.cp*\Z))                                                                                                # GCC
+ {my $mix = "sde-mix-out.txt";                                                                                          # Mix performance file produced by Intel emulator
   unlink $mix;
-  my $cp = join ' ', map {split /\s+/} grep {!/\A#/} split /\n/, <<END;         # Compiler options
+  my $cp = join ' ', map {split /\s+/} grep {!/\A#/} split /\n/, <<END;                                                 # Compiler options
 -fopenmp
 -finput-charset=UTF-8 -fmax-errors=7 -rdynamic
 -Wall -Wextra -Wno-unused-function
@@ -370,30 +423,30 @@ $cIncludes
 -I.
 END
 #-O3
-  my $source   = readFile($file);                                               # Check source for specific capabilities needed
-  my $avx512   = $source =~ m'//sde';                                           # Avx512 instructions
-  my $valgrind = $source =~ m(//valgrind)i;                                     # Request Valgrind
-  my $optimize = $source =~ m(//optimize)i;                                     # Request optimization
+  my $source   = readFile($file);                                                                                       # Check source for specific capabilities needed
+  my $avx512   = $source =~ m'//sde';                                                                                   # Avx512 instructions
+  my $valgrind = $source =~ m(//valgrind)i;                                                                             # Request Valgrind
+  my $optimize = $source =~ m(//optimize)i;                                                                             # Request optimization
   $cp .= " -mavx512f" if $avx512;
   $cp .= $optimize ? " -O3 " : " -O0 -g3 -rdynamic ";
 
 # -pg for gprof executable gmon.out
-  my $gcc = $gccVersion // 'gcc';                                               # Gcc version 10
+  my $gcc = $gccVersion // 'gcc';                                                                                       # Gcc version 10
   if ($compile)
-   {my $cmd = qq($gcc $cp -c "$file" -o /dev/null);                             # Syntax check
+   {my $cmd = qq($gcc $cp -c "$file" -o /dev/null);                                                                     # Syntax check
     say STDERR $cmd;
     print STDERR $_ for qx($cmd);
    }
   else
-   {my $e = $file =~ s(\.cp?p?\Z) ()gsr;                                        # Execute
-    my $o = fpe($e, q(o));                                                      # Object file
+   {my $e = $file =~ s(\.cp?p?\Z) ()gsr;                                                                                # Execute
+    my $o = fpe($e, q(o));                                                                                              # Object file
     unlink $e, $o;
     my $E = $avx512 ? "sde -mix -- $e" : $e;
 
     my $f = profile($file);
     my $l = q(-lm);
 
-    my  $c = $valgrind ?                                                        # Compile and run
+    my  $c = $valgrind ?                                                                                                # Compile and run
         qq($gcc $cp -o "$e" "$f" && valgrind --leak-check=full --leak-resolution=high --show-leak-kinds=definite  --track-origins=yes $E 2>&1)
        :qq($gcc $cp -o "$e" "$f" $l && timeout 100s $E);
     say STDERR $c;
@@ -410,7 +463,7 @@ END
   exit;
  }
 
-if ($file =~ m(\.rkt\Z))                                                        # Racket
+if ($file =~ m(\.rkt\Z))                                                                                                # Racket
  {my $c = qq(racket -f "$file");
   say STDERR $c;
   print STDERR qx($c);
@@ -418,13 +471,13 @@ if ($file =~ m(\.rkt\Z))                                                        
   exit;
  }
 
-if ($file =~ m(\.js\Z))                                                         # Javascript
+if ($file =~ m(\.js\Z))                                                                                                 # Javascript
  {if ($compile)
    {say STDERR "Compile javascript $file";
-    print STDERR qx(nodejs -c "$file");                                         # Syntax check javascript
+    print STDERR qx(nodejs -c "$file");                                                                                 # Syntax check javascript
    }
   else
-   {my $c = qq(nodejs  --max_old_space_size=4096  "$file");                     # Run javascript
+   {my $c = qq(nodejs  --max_old_space_size=4096  "$file");                                                             # Run javascript
     say STDERR $c;
     print STDERR qx($c);
     say STDERR q();
@@ -432,23 +485,23 @@ if ($file =~ m(\.js\Z))                                                         
   exit;
  }
 
-if ($file =~ m(\.tcl\Z))                                                        # Tcl script
+if ($file =~ m(\.tcl\Z))                                                                                                # Tcl script
  {print STDERR qx(tclsh "$file");
   exit;
  }
 
-if ($file =~ m(\.sh\Z))                                                         # Bash script
+if ($file =~ m(\.sh\Z))                                                                                                 # Bash script
  {if ($compile)
    {say STDERR "Test bash $file";
-    print STDERR qx(bash -x "$file");                                           # Debug bash
+    print STDERR qx(bash -x "$file");                                                                                   # Debug bash
    }
   else
-   {print STDERR qx(bash "$file");                                              # Bash
+   {print STDERR qx(bash "$file");                                                                                      # Bash
    }
   exit;
  }
 
-if ($file =~ m(\.adblog\Z))                                                     # Android log
+if ($file =~ m(\.adblog\Z))                                                                                             # Android log
  {my $adb = q(/home/phil/android/sdk/platform-tools/adb);
   my $c = qq($adb -e logcat "*:W" -d > $file && $adb -e logcat -c);
   say STDERR "Android log\n$c";
@@ -456,62 +509,11 @@ if ($file =~ m(\.adblog\Z))                                                     
   exit;
  }
 
-# Java
-
-if ($file =~ m(\.java\Z))                                                       # Java
- {my  $name   = fn $file;                                                       # Parse file name
-  !$javaHome and confess "Specify --javaHome keyword to specify the folder where class files are to go.";
-
-  my $package = &getPackageNameFromFile($file);                                 # Get package name
-  my $d       = fpd($javaHome, qw(Classes));                                    # Folder containing java classes.
-     $d       = fpd($javaHome, qw(../Classes))       unless -e $d;
-     $d       = fpd($javaHome, qw(../../Classes))    unless -e $d;
-     $d       = fpd($javaHome, qw(../../../Classes)) unless -e $d;
-
-  if (!-d $d)                                                                   # Make a local classes folder if none is present above this folder
-   {$d = fpd($javaHome, qw(Classes));                                           # Folder containing java classes.
-    makePath $d;
-   }
-
-  my @jars = readFile($file) =~ m{^//jar\s+(\S+\.jar)}mg;                       # Get jar files mentioned in source code
-  my $jars = join ":", @jars;
-
-  my $cp = $d; $cp = "$d:$jars" if @jars;                                       # Class path needs the classes created by this compile and any mentioned jar files
-
-  if ($compile)                                                                 # Compile
-   {my $c = "javac -g -d $d -cp $cp -Xlint -Xdiags:verbose $file -Xmaxerrs 9";  # Syntax check Java
-    say STDERR $c;
-    print STDERR qx($c);
-   }
-  else                                                                          # Compile and run
-   {my $Name = ucfirst($name);                                                  # Insist that the class name start with a capital letter. This allows a skeleton to be held in a lowercase file name and then upgraded to a properly cased file while still wlloing the skeleton to be tested.
-
-    my $class = $package ? "$package.$Name" : $Name;                            # Class location
-    my $p = join ' ', @ARGV;                                                    # Collect the remaining parameters and pass them to the java application
-    my $f = profile($file);
-    my $c = "javac -g -d $d -cp $cp $f && java -XX:+UseZGC -ea -cp $cp $class $p";
-    say STDERR $c;
-
-    runTests($file, $c);
-#   unlink $f;
-   }
-  &removeClasses;
-  exit;
- }
-
-if ($file =~ m(\.j\Z))                                                          # Java single source file
- {my $a = $compile ? "compile" : "run";
-  my $c = "java --enable-preview --source 21 -XX:StartFlightRecording:filename=recording.jfr $file $a"; # With flight recorder
-     $c = "java --enable-preview --source 21 $file $a";
-  say   STDERR    $c;
-  print STDERR qx($c);
- }
-
-if ($file =~ m(\.py\Z))                                                         # Python
- {if ($compile)                                                                 # Syntax check
+if ($file =~ m(\.py\Z))                                                                                                 # Python
+ {if ($compile)                                                                                                         # Syntax check
    {print STDERR qx(python3 -m py_compile "$file");
    }
-  elsif ($run)                                                                  # Run
+  elsif ($run)                                                                                                          # Run
    {my $x = "./venv/bin/python3";
     if (-e $x)
      {print STDERR qx($x "$file");
@@ -520,64 +522,64 @@ if ($file =~ m(\.py\Z))                                                         
      {print STDERR qx(python3 "$file");
      }
    }
-  elsif ($doc)                                                                  # Document
+  elsif ($doc)                                                                                                          # Document
    {say STDERR "Document perl $file";
     updatePerlModuleDocumentation($file);
    }
   exit;
  }
 
-if ($file =~ m(\.lua\Z))                                                        # Lua
- {if ($compile)                                                                 # Syntax check
+if ($file =~ m(\.lua\Z))                                                                                                # Lua
+ {if ($compile)                                                                                                         # Syntax check
    {print STDERR qx(luac "$file");
    }
-  else                                                                          # Run
+  else                                                                                                                  # Run
    {print STDERR qx(lua  "$file");
    }
   exit;
  }
 
-if ($file =~ m(\.php\Z))                                                        # PHP
- {if ($compile)                                                                 # Syntax check
+if ($file =~ m(\.php\Z))                                                                                                # PHP
+ {if ($compile)                                                                                                         # Syntax check
    {print STDERR qx(php -l "$file");
    }
-  else                                                                          # Run
+  else                                                                                                                  # Run
    {print STDERR qx(php "$file");
    }
   exit;
  }
 
-if ($file =~ m(\.(vala)\Z))                                                     # Vala
- {my $lib = "--pkg gtk+-3.0";                                                   # Libraries
-   if ($compile)                                                                # Syntax check
+if ($file =~ m(\.(vala)\Z))                                                                                             # Vala
+ {my $lib = "--pkg gtk+-3.0";                                                                                           # Libraries
+   if ($compile)                                                                                                        # Syntax check
    {print STDERR qx(valac -c "$file" $lib);
    }
-  elsif ($run)                                                                  # Run
+  elsif ($run)                                                                                                          # Run
    {print STDERR qx(vala "$file" $lib);
    }
-  elsif ($doc)                                                                  # Document
+  elsif ($doc)                                                                                                          # Document
    {say STDERR "Document perl $file";
     updatePerlModuleDocumentation($file);
    }
   exit;
  }
 
-if ($file =~ m(\.ttk\Z))                                                        # Perl Template Toolkit
+if ($file =~ m(\.ttk\Z))                                                                                                # Perl Template Toolkit
  {print STDERR qx(tpage --evalperl "$file");
  }
 
-if ($file =~ m(\.(cs)\Z))                                                       # C#
+if ($file =~ m(\.(cs)\Z))                                                                                               # C#
  {my $mono = q(/opt/mono/bin/);
   my $cmp  = fpf $mono, q(csc);
   my $run  = fpf $mono, q(mono);
-  if ($compile)                                                                 # Syntax check
+  if ($compile)                                                                                                         # Syntax check
    {print STDERR qx($cmp -nologo -parallel $file);
    }
-  elsif ($run)                                                                  # Run
+  elsif ($run)                                                                                                          # Run
    {my $exe = setFileExtension $file, q(exe);
     print STDERR qx($cmp -nologo -parallel $file && $run $exe);
    }
-  elsif ($doc)                                                                  # Document
+  elsif ($doc)                                                                                                          # Document
    {say STDERR "Document perl $file";
     updatePerlModuleDocumentation($file);
    }
@@ -588,15 +590,15 @@ sub removeClasses
  {unlink for fileList("*.class")
  }
 
-sub getPackageNameFromFile($)                                                   # Get package name from java file
- {my ($file) = @_;                                                              # File to read
+sub getPackageNameFromFile($)                                                                                           # Get package name from java file
+ {my ($file) = @_;                                                                                                      # File to read
   my $s = readFile($file);
   my ($p) = $s =~ m/package\s+(\S+)\s*;/;
   $p
  }
 
-sub cgiPerl($)                                                                  # Run perl on web server
- {my ($file) = @_;                                                              # File to read
+sub cgiPerl($)                                                                                                          # Run perl on web server
+ {my ($file) = @_;                                                                                                      # File to read
 
   my $r = qx(perl -CSDA -cw "$file" 2>&1);
   if ($r !~ m(syntax OK))
@@ -612,8 +614,8 @@ sub cgiPerl($)                                                                  
  }
 }
 
-sub remotePerlExample($)                                                        # Running perl remotely - example
- {my ($file) = @_;                                                              # File
+sub remotePerlExample($)                                                                                                # Running perl remotely - example
+ {my ($file) = @_;                                                                                                      # File
   my $b  = q(phil@booktrolls.com);
   my $f1 = q(/home/phil/zzz1.txt);
   my $f2 = q(/home/phil/zzz2.txt);
@@ -621,12 +623,12 @@ sub remotePerlExample($)                                                        
   my $o  = q(-I/home/phil/booktrolls/lib/);
   my $k  = qq(1>$f1 2>$f2);
 
-  if ($compile)                                                                 # Syntax check perl
+  if ($compile)                                                                                                         # Syntax check perl
    {my $c = qq(ssh -4 $b 'perl $o -cw $p $k');
     say STDERR qq($c);
     say STDERR qx($c);
    }
-  else                                                                          # Run perl
+  else                                                                                                                  # Run perl
    {my $c = qq(ssh -4 $b 'perl $o     $p $k');
     say STDERR qq($c);
     say STDERR qx($c);
