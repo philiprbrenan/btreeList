@@ -261,7 +261,7 @@ class Leaf extends Program implements Program.Locatable                         
 
     new I()                                                                                                             // Key/Data pairs in key order
      {void a()
-       {s.append(f(" size: %2d, count: %2d\n", maxSize(), slots.refCount.getInt(0)));
+       {s.append(f(" size: %2d, count: %2d\n", maxSize(), slots.countI()));
         s.append(" Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
