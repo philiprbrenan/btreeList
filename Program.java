@@ -1285,7 +1285,7 @@ module %s;                                                                      
       end
     end
   endfunction
-
+                                                                                      , input string TraceBack
   function automatic integer traceInt(input integer Id, input integer Value);                                           // Trace integer operations
     integer file;
     begin
@@ -1308,7 +1308,7 @@ endmodule
 """);
 
     makePath(projectFolder);
-    deleteAllFiles(projectFolder, 2);
+    deleteAllFiles(projectFolder, 9);
     writeFile(codeFile, ""+s);                                                                                          // Write verilog code to a file
 
     return ""+s;
