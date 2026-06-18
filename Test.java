@@ -791,7 +791,7 @@ public class Test                                                               
      {Files.createDirectories(Paths.get(folder));
      }
     catch (FileAlreadyExistsException e)
-     {
+     {stop("Cannot make path", folder, e);
      }
     catch (Exception e)
      {stop("Cannot make path", folder, e);
@@ -868,7 +868,7 @@ public class Test                                                               
       filePath.substring(p + 1) : null;
    }
 
-  static String fne(String...Names)                                                                                     // Join file name components
+  static String fe(String...Names)                                                                                      // Join file name components to make a file name with an extension
    {final StringBuilder f = new StringBuilder();
     final int N = Names.length;
     for (int i = 0; i < N-2; i++)
@@ -881,7 +881,7 @@ public class Test                                                               
     return ""+f+Names[N-2]+"."+Names[N-1];
    }
 
-  static String fn(String...Names)                                                                                      // Join file name components
+  static String fn(String...Names)                                                                                      // Join file name components to make a file name
    {final StringBuilder f = new StringBuilder();
     final int N = Names.length;
     for (int i = 0; i < N-1; i++)
@@ -893,6 +893,23 @@ public class Test                                                               
      }
     return ""+f+Names[N-1];
    }
+
+  static String fp(String...Names)                                                                                      // Join file name components to make a file path
+   {final StringBuilder f = new StringBuilder();
+    final int N = Names.length;
+    for (int i = 0; i < N; i++)
+     {f.append(Names[i]) ;
+      while(f.length() > 0 && f.charAt(f.length()-1) == '/')
+       {f.setLength(f.length()-1);
+       }
+      f.append("/");
+     }
+    return ""+f;
+   }
+
+  static String fex(String Path) {return Path.replaceFirst("^.*\\.", "");}                                              // Extract file extension from path
+  static String fnx(String Path) {return Path.replaceFirst("^.*/", "");}                                                // Extract file name from path
+  static String fpx(String Path) {return Path.replaceFirst("[^/]*$", "");}                                              // Extract file path from path
 
   class CompressFile
    {final  String sourceFile;
@@ -1267,11 +1284,11 @@ public class Test                                                               
     //System.exit(testsFailed > 0 ? 1 : 0);                                                                             // Set the return code
    }
 
-//D1 Command Execution                                                                                                  // Execute a command and return its stdout and stderr
+//D1 Command Execution                                                                                                  // Execute a command sequence and return its stdout and stderr
 
   static String pwd() {return System.getProperty("user.dir");}                                                          // Current working folder
 
-  static class ExecCommand
+  static class ExecCommand                                                                                              // Execute a command sequence
    {final String    command;
     final StringBuilder out = new StringBuilder();
     final StringBuilder err = new StringBuilder();
@@ -1482,8 +1499,12 @@ BBBB
    }
 
   static void test_fileNames()
-   {ok(fne("/home/phil", "a", "b", "c"), "/home/phil/a/b.c");
-    ok(fn ("/home/phil", "a", "b.c"),    "/home/phil/a/b.c");
+   {ok(fe("/home/phil", "a", "b", "c"), "/home/phil/a/b.c");
+    ok(fn("/home/phil", "a", "b.c"),    "/home/phil/a/b.c");
+    ok(fp("/home/phil", "a", "b", "c"), "/home/phil/a/b/c/");
+    ok(fex("/home/phil/a/b.c"), "c");
+    ok(fnx("/home/phil/a/b.c"), "b.c");
+    ok(fpx("/home/phil/a/b.c"), "/home/phil/a/");
    }
 
   static void test_executed()
