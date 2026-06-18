@@ -1,4 +1,4 @@
-# Test 2026-06-17 at 02:05:02
+# Test 2026-06-18 at 03:06:28
 
 name: Test
 run-name: btreeList
@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        task: [BitSet, Branch, Leaf, Program, Slots, Test, Tree]
+        task: [BitSet, Branch, Leaf, Program, Slots, Test, Tree, BitSet, Branch, Leaf, Program, Slots, Test, Tree]
 
     steps:
     - uses: actions/checkout@v4
@@ -37,12 +37,54 @@ jobs:
     - name: Position files in package
       run: |
         mkdir -p com/AppaApps/Silicon
-        cp BitSet.java Branch.java Leaf.java Program.java Slots.java Test.java Tree.java com/AppaApps/Silicon
+        cp BitSet.java Branch.java Leaf.java Program.java Slots.java Test.java Tree.java BitSet.java Branch.java Leaf.java Program.java Slots.java Test.java Tree.java com/AppaApps/Silicon
         tree
 
     - name: Java
       run: |
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
+
+    - name: Test BitSet
+      if: matrix.task == 'BitSet'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet
+
+
+    - name: Test Branch
+      if: matrix.task == 'Branch'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch
+
+
+    - name: Test Leaf
+      if: matrix.task == 'Leaf'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf
+
+
+    - name: Test Program
+      if: matrix.task == 'Program'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program
+
+
+    - name: Test Slots
+      if: matrix.task == 'Slots'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots
+
+
+    - name: Test Test
+      if: matrix.task == 'Test'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test
+
+
+    - name: Test Tree
+      if: matrix.task == 'Tree'
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree
+
 
     - name: Test BitSet
       if: matrix.task == 'BitSet'
