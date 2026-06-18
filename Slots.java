@@ -2,6 +2,7 @@
 // Distributed sparse slots used to hold the key of the Btree.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+//Transfer count() to BitSet where it should be optional
 //Improvements Distribute sequential occupied slots across any adjacent empty ones
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
