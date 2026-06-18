@@ -790,6 +790,9 @@ public class Test                                                               
     try
      {Files.createDirectories(Paths.get(folder));
      }
+    catch (FileAlreadyExistsException e)
+     {
+     }
     catch (Exception e)
      {stop("Cannot make path", folder, e);
      }
