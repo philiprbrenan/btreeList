@@ -200,7 +200,6 @@ class Branch extends Program implements Program.Locatable                       
          };
        }
      };
-    slots.countInc();                                                                                                   // Update key count for branch
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
@@ -365,7 +364,7 @@ class Branch extends Program implements Program.Locatable                       
     new I()
      {void a()
        {s.append(f(" size:"  + formatKey, maxSize()));
-        s.append(f(" count:" + formatKey, slots.refCount.getInt(0)));
+        s.append(f(" count:" + formatKey, slots.countI()));
         s.append(f(" top:"   + formatKey, refTop.getInt(0)));
         s.append("\n Ref   Key  Data\n");
 
