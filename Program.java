@@ -426,44 +426,48 @@ public class Program extends Test                                               
      {final String        n = vn();                                                                                     // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
-       {case flip -> {s.append(n + " <= ~"+n+";");}
+       {case flip -> {s.append("~"+n);}
         default   -> stop("Op not implemented:", Op);
        }
-      return ""+s;
+      return vtrace(n, s);                                                                                              // Trace the operation
      }
 
     String ev(Ops Op, boolean I)                                                                                        // Execute a monadic boolean operation on a constant
      {final String        n = vn();                                                                                     // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set -> {s.append(n + " <= " +               (I ? 1 : 0) + ";");}
-        case eq  -> {s.append(n + " <= " + n + "  == " + (I ? 1 : 0) + ";");}
-        case ne  -> {s.append(n + " <= " + n + "  != " + (I ? 1 : 0) + ";");}
+       {case set -> {s.append(              (I ? 1 : 0));}
+        case eq  -> {s.append(n + "  == " + (I ? 1 : 0));}
+        case ne  -> {s.append(n + "  != " + (I ? 1 : 0));}
         default  -> stop("Op not implemented:", Op);
        }
-      return ""+s;
+      return vtrace(n, s);                                                                                              // Trace the operation
      }
 
     String ev(Ops Op, Bool I)                                                                                           // Execute a monadic boolean operation on a variable
      {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set -> {s.append(n + " <= " + i + ";");}
-        case eq  -> {s.append(n + " <= " + n + "  == " + i + ";");}
-        case ne  -> {s.append(n + " <= " + n + "  != " + i + ";");}
+       {case set -> {s.append(i + ";");}
+        case eq  -> {s.append(n + "  == " + i);}
+        case ne  -> {s.append(n + "  != " + i);}
         default  -> stop("Op not implemented:", Op);
        }
-      return ""+s;
+      return vtrace(n, s);                                                                                              // Trace the operation
      }
 
     String ev(Ops Op, Int I)                                                                                            // Execute a monadic boolean operation on an integer variable
      {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set -> {s.append(n + " <= " + i + "!= 0;");}
+       {case set -> {s.append(i + "!= 0");}
         default  -> stop("Op not implemented:", Op);
        }
-      return ""+s;
+      return vtrace(n, s);                                                                                              // Trace the operation
+     }
+
+    String vtrace(String Name, StringBuilder Value)                                                                     // Trace a boolean operation
+     {return Name+" <= traceBool("+id+", "+Value+");";
      }
 
     Bool or (Bool b) {new I() {void a() {x(); b.x(); if (b.i) i = true;}}; return this;}                                // "Or" without short circuit. Modifies the target.
@@ -613,48 +617,52 @@ public class Program extends Test                                               
      {final String        n = vn();                                                                                     // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
-       {case inc  -> {s.append(n +" <= "+n+" + 1;"  );}
-        case dec  -> {s.append(n +" <= "+n+" - 1;"  );}
-        case up   -> {s.append(n +" <= "+n+"<< 1;"  );}
-        case down -> {s.append(n +" <= "+n+">>>1;"  );}
-        case sqrt -> {s.append(n +" <= sqrt("+n+");");}
-        case neg  -> {s.append(n +" <= -"+n+";"     );}
-        case abs  -> {s.append(n +" <= abs("+n+");" );}
+       {case inc  -> {s.append(n+" + 1"     );}
+        case dec  -> {s.append(n+" - 1"     );}
+        case up   -> {s.append(n+"<< 1"     );}
+        case down -> {s.append(n+">>>1"     );}
+        case sqrt -> {s.append("sqrt("+n+")");}
+        case neg  -> {s.append("-"+n        );}
+        case abs  -> {s.append("abs("+n+")" );}
         default   -> stop("Op not implemented:", Op);
        }
-      return ""+s;
+      return vtrace(n, s);
      }
 
     String ev(Ops Op, int I)                                                                                            // Execute a monadic integer operation on a constant
      {final String        n = vn();                                                                                     // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set  -> {s.append(n + " <= "        +I+";");}
-        case add  -> {s.append(n + " <= "+n+" + "+I+";");}
-        case sub  -> {s.append(n + " <= "+n+" - "+I+";");}
-        case mul  -> {s.append(n + " <= "+n+" * "+I+";");}
-        case div  -> {s.append(n + " <= "+n+" / "+I+";");}
-        case mod  -> {s.append(n + " <= "+n+" % "+I+";");}
-        case add2 -> {s.append(n + " <= "+n+" + "+I+" + "+I+";");}
+       {case set  -> {s.append(        I);}
+        case add  -> {s.append(n+" + "+I);}
+        case sub  -> {s.append(n+" - "+I);}
+        case mul  -> {s.append(n+" * "+I);}
+        case div  -> {s.append(n+" / "+I);}
+        case mod  -> {s.append(n+" % "+I);}
+        case add2 -> {s.append(n+" + "+I+" + "+I);}
         default   -> stop("Op not implemented:", Op);
        }
-      return ""+s;
+      return vtrace(n, s);
      }
 
     String ev(Ops Op, Int I)                                                                                            // Execute a monadic integer operation on a variable
      {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set  -> {s.append(n + " <= "        +i+";");}
-        case add  -> {s.append(n + " <= "+n+" + "+i+";");}
-        case sub  -> {s.append(n + " <= "+n+" - "+i+";");}
-        case mul  -> {s.append(n + " <= "+n+" * "+i+";");}
-        case div  -> {s.append(n + " <= "+n+" / "+i+";");}
-        case mod  -> {s.append(n + " <= "+n+" % "+i+";");}
-        case add2 -> {s.append(n + " <= "+n+" + "+i+" + "+i+";");}
+       {case set  -> {s.append(        i);}
+        case add  -> {s.append(n+" + "+i);}
+        case sub  -> {s.append(n+" - "+i);}
+        case mul  -> {s.append(n+" * "+i);}
+        case div  -> {s.append(n+" / "+i);}
+        case mod  -> {s.append(n+" % "+i);}
+        case add2 -> {s.append(n+" + "+i+" + "+i);}
         default   -> stop("Op not implemented:", Op);
        }
-      return ""+s;
+      return vtrace(n, s);
+     }
+
+    String vtrace(String Name, StringBuilder Value)                                                                     // Trace an integer operation
+     {return Name+" <= traceInt("+id+", "+Value+");";
      }
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
@@ -1053,7 +1061,7 @@ public class Program extends Test                                               
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
     I(Jump Jump)                                                                                                        // Add this instruction to the code for the process
-     {ai();
+     {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
       instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sens in delayed execution mode
       subInc();                                                                                                         // Count the number of instructions associated with each method
       jump = Jump;                                                                                                      // Ability to jump
@@ -1156,11 +1164,14 @@ public class Program extends Test                                               
 //D1 Verilog                                                                                                            // Generate verilog
 
   String generateVerilog()
-   {final String     name    = currentTestNameSuffix();                                                                 // Name of program
-    final int  sizeMemory    = byteMemory != null ? byteMemory.size() : 0;                                              // Size of memory
-    final int  numberOfInts  = nextIntId;                                                                               // Size of memory
-    final int  numberOfBools = nextBoolId;                                                                              // Size of memory
-    final StringBuilder s    = new StringBuilder();                                                                     // Verilog
+   {final String          name = currentTestNameSuffix();                                                               // Name of program
+    final String     traceFile = "trace.txt";                                                                           // Trace file
+    final String projectFolder = "verilog/"+name+"/";                                                                   // Project folder
+    final String      codeFile = projectFolder+name+".v";                                                               // Code file
+    final int       sizeMemory = byteMemory != null ? byteMemory.size() : 0;                                            // Size of memory
+    final int     numberOfInts = nextIntId;                                                                             // Size of memory
+    final int    numberOfBools = nextBoolId;                                                                            // Size of memory
+    final StringBuilder      s = new StringBuilder();                                                                   // Verilog
     s.append(f("""
 module %s;                                                                                                              // Bit machine to support current test
   parameter  MEMORY    = %d;                                                                                            // Amount of memory
@@ -1238,23 +1249,68 @@ module %s;                                                                      
   task automatic execute;                                                                                               // Execute actual code
     begin
       case(pc)
-""", name, sizeMemory, numberOfInts, numberOfBools));
+""", name, sizeMemory, numberOfInts, numberOfBools));                                                                   // Parameterize code
 
-    for(I i : code)
+
+    for(I i : code)                                                                                                     // Compile each instruction to verilog
      {s.append(f("        %4d: begin %s", i.instructionNumber, i.v()));
       if (i.jump == I.Jump.might) s.append(" else");
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
       s.append(" end\n");
      }
 
-    s.append("""
+
+    s.append(f("""
         default: $finish;
       endcase
       pc = pc + 1;
     end
   endtask
+
+  function automatic integer traceBool(input integer Id, input integer Value);                                          // Trace boolean operations
+    integer file;
+    begin
+      traceBool = Value;
+""", name));
+
+    s.append(f("      file = $fopen(\"%s\", \"a\");\n", traceFile));                                                    // Open named trace file
+
+    s.append("""
+      if (file == 0) begin
+        $display("ERROR: Cannot open trace file");
+      end
+      else begin
+        $fdisplay(file, "%8d b %8d = %8d ", pc, Id, Value);
+        $fclose(file);
+      end
+    end
+  endfunction
+
+  function automatic integer traceInt(input integer Id, input integer Value);                                           // Trace integer operations
+    integer file;
+    begin
+      traceInt = Value;
+""");
+
+    s.append(f("      file = $fopen(\"%s\", \"a\");\n", traceFile));                                                    // Open named trace file
+
+    s.append("""
+      if (file == 0) begin
+        $display("ERROR: Cannot open trace file");
+      end
+      else begin
+        $fdisplay(file, "%8d i %8d = %8d ", pc, Id, Value);
+        $fclose(file);
+      end
+    end
+  endfunction
 endmodule
 """);
+
+    makePath(projectFolder);
+    deleteAllFiles(projectFolder, 2);
+    writeFile(codeFile, ""+s);                                                                                          // Write verilog code to a file
+
     return ""+s;
    }
 
