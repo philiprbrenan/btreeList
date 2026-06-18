@@ -1,4 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -105,7 +106,7 @@ public class Program extends Test                                               
         index.inc();                                                                                                    // Increment loop counter
         new I(true)
          {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
-          String v() {return "if ("+ cont.vn()+") pc <= "+start.offset+"; else pc <= "+end.offset+";"+traceComment();}  // Continue execution of the loop as long as requested
+          String v() {return "if ("+ cont.vn()+") pc <= "+start.offset+"; else pc <= "+end.offset+";"+traceComment();}    // Continue execution of the loop as long as requested
          };
         end.set();                                                                                                      // End of the loop
        }
@@ -388,7 +389,7 @@ public class Program extends Test                                               
        {case flip -> {x(); i = !i;}
         default   -> stop("Op not implemented:", Op);
        }
-      if (tracing()) trace("Bool1 "+Op+" "+this, traceComment());
+      if (tracing()) trace("Bool1 "+Op+" "+this, traceComment);
       return this;
      }
 
@@ -401,7 +402,7 @@ public class Program extends Test                                               
         default  -> stop("Op not implemented:", Op);
        }
       v = true;
-      if (tracing()) trace("Bool2 "+Op+" "+this+" "+I, traceComment());
+      if (tracing()) trace("Bool2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
@@ -416,7 +417,7 @@ public class Program extends Test                                               
        {case set -> {I.x(); i = I.i > 0; v = true;}
         default  -> stop("Op not implemented:", Op);
        }
-      if (tracing()) trace("Bool4 "+Op+" "+this+" "+I, traceComment());
+      if (tracing()) trace("Bool4 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
@@ -427,6 +428,8 @@ public class Program extends Test                                               
        {case flip -> {s.append(n + " <= ~"+n+";");}
         default   -> stop("Op not implemented:", Op);
        }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -439,6 +442,8 @@ public class Program extends Test                                               
         case ne  -> {s.append(n + " <= " + n + "  != " + (I ? 1 : 0) + ";");}
         default  -> stop("Op not implemented:", Op);
        }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -451,6 +456,8 @@ public class Program extends Test                                               
         case ne  -> {s.append(n + " <= " + n + "  != " + i + ";");}
         default  -> stop("Op not implemented:", Op);
        }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -461,6 +468,8 @@ public class Program extends Test                                               
        {case set -> {s.append(n + " <= " + i + "!= 0;");}
         default  -> stop("Op not implemented:", Op);
        }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -581,7 +590,7 @@ public class Program extends Test                                               
         default   -> stop("Op not implemented:", Op);
        }
 
-      if (tracing()) trace("Int1 "+Op, traceComment());
+      if (tracing()) trace("Int1 "+Op, traceComment);
       return this;
      }
 
@@ -598,7 +607,7 @@ public class Program extends Test                                               
         default   -> stop("Op not implemented:", Op);
        }
       v = true;
-      if (tracing()) trace("Int2 "+Op+" "+this+" "+I, traceComment());
+      if (tracing()) trace("Int2 "+Op+" "+this+" "+I, traceComment);
       return this;
      }
 
@@ -620,6 +629,8 @@ public class Program extends Test                                               
         case abs  -> {s.append(n +" <= abs("+n+");" );}
         default   -> stop("Op not implemented:", Op);
        }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -636,6 +647,8 @@ public class Program extends Test                                               
         case add2 -> {s.append(n + " <= "+n+" + "+I+" + "+I+";");}
         default   -> stop("Op not implemented:", Op);
        }
+      pad(s, 20);
+      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -652,6 +665,8 @@ public class Program extends Test                                               
         case add2 -> {s.append(n + " <= "+n+" + "+i+" + "+i+";");}
         default   -> stop("Op not implemented:", Op);
        }
+      pad(s, 20);
+      if (tracing()) s.append((traceComment != null ? traceComment : ""));
       return ""+s;
      }
 
@@ -1053,7 +1068,7 @@ public class Program extends Test                                               
    {final int instructionNumber;                                                                                        // The number of this instruction
     final boolean   mightJump;                                                                                          // The instruction might cause a jump
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
-    final String traceComment = tracing() ? Test.traceComment() : null;                                                 // Line at which this instruction was created as a comment
+    final String traceComment = tracing() ? traceComment() : null;                                                      // Line at which this instruction was created as a comment
 
     I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
      {ai();
@@ -1155,57 +1170,6 @@ public class Program extends Test                                               
     s.append(f("%,8d  Total\n", N));
     return ""+s;
    }
-
-//D1 Verilog                                                                                                            // Generate Verilog code that performs the exact same actions as the Java code
-
-  String printVerilog()                                                                                                 // Print verilog
-   {final StringBuilder s = new StringBuilder();                                                                        // Generated code                                                                                //
-    for(I i : code)
-     {s.append(f("%04d %s %s\n", i.instructionNumber, pad(i.v(), 20), i.traceComment()));
-     }
-    return ""+s;
-   }
-
-  String programVerilog()                                                                                               // Complete verilog program representing a test
-   {final StringBuilder    v = new StringBuilder();                                                                     // Generated code                                                                                //
-    final String programName = currentTestName();
-    return """
-module test;
-
-  reg        clock;
-  reg        reset;
-  reg [7:0]  mem [0:15];
-
-  integer i;
-
-  // Reset logic
-  always @(posedge clock) begin
-    if (reset) begin
-      for (i = 0; i < 16; i = i + 1)
-        mem[i] <= 8'd0;
-    end
-  end
-
-  // Clock generation
-  initial begin
-    clock = 0;
-    forever #5 clock = ~clock;
-  end
-
-  // Test sequence
-  initial begin
-    reset = 0;
-
-    #12 reset = 1;
-    #10 reset = 0;
-
-    #20 $display("mem[0] = %0d", mem[0]);
-    #20 $finish;
-  end
-
-endmodule
-""";
-}
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
@@ -1322,7 +1286,9 @@ endmodule
          };
         Check(s, "c=1 c=2 c=3 c=5 c=8 c=13 c=21 c=34 c=55 c=89");
         execute();
-        say("ZZZZ", tracing(), printVerilog());
+for(I i : code)
+ {say(f("%04d %s", i.instructionNumber, i.v()));
+ }
        }
      };
    }
@@ -1659,6 +1625,7 @@ endmodule
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     test_fibonnacci(false);
+
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
