@@ -420,7 +420,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    String ev(Ops Op)                                                                                                   // Execute a zeradic boolean operation
+    String ev(Ops Op)                                                                                                     // Execute a zeradic boolean operation
      {final String        n = vn();                                                                                     // Name of the variable in verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
@@ -1167,7 +1167,9 @@ public class Program extends Test                                               
    }
 
   String programVerilog()                                                                                               // Complete verilog program representing a test
-   {return """
+   {final StringBuilder    v = new StringBuilder();                                                                     // Generated code                                                                                //
+    final String programName = currentTestName();
+    return """
 module test;
 
   reg        clock;
@@ -1197,13 +1199,13 @@ module test;
     #12 reset = 1;
     #10 reset = 0;
 
-    #20 $display("mem[0] = %%0d", mem[0]);
+    #20 $display("mem[0] = %0d", mem[0]);
     #20 $finish;
   end
 
 endmodule
 """;
-   }
+}
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
@@ -1320,7 +1322,7 @@ endmodule
          };
         Check(s, "c=1 c=2 c=3 c=5 c=8 c=13 c=21 c=34 c=55 c=89");
         execute();
-        //say("ZZZZ", tracing(), printVerilog());
+        say("ZZZZ", tracing(), printVerilog());
        }
      };
    }
@@ -1367,9 +1369,9 @@ endmodule
      {void code()
        {final Int a = new Int(0);
         final StringBuilder s = new StringBuilder();
-        a      .ok(0); new I() {void a() {s.append(" "+a);}};
-        a.inc().ok(1); new I() {void a() {s.append(" "+a);}};
-        a.inc().ok(2); new I() {void a() {s.append(" "+a);}};
+                 new I() {void a() {s.append(" "+a);}};
+        a.inc(); new I() {void a() {s.append(" "+a);}};
+        a.inc(); new I() {void a() {s.append(" "+a);}};
         Check(s, " 0 1 2");
         execute();
        }
@@ -1380,7 +1382,7 @@ endmodule
   static void test_incremental()
    {sayCurrentTestName();
     final Program p = test_incremental(true), q = test_incremental(false);
-    //ok(readFile(p.tracing), readFile(q.tracing));
+    ok(readFile(p.tracing), readFile(q.tracing));
    }
 
   static void test_bits(boolean Ex)
@@ -1655,8 +1657,8 @@ endmodule
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_fibonnacci(false);
+   {//oldTests();
+    test_fibonnacci(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
