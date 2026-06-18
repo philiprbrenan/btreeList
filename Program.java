@@ -7,6 +7,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 import java.util.function.*;
+import java.util.function.*;
 
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
@@ -96,17 +97,17 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        new I(true)
+        new I(I.Jump.might)                                                                                             // Will jump
          {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
-          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= "+ end.offset + ";"+traceComment();}             // Index out of range
+          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= "+ end.offset + ";"+traceComment();}            // Index out of range
          };
         if (tracing()) new I() {void a() {trace("For "+index.i);} String v() {return "";}};                             // Trace at run time
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
-        new I(true)
+        new I(I.Jump.will)
          {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
-          String v() {return "if ("+ cont.vn()+") pc <= "+start.offset+"; else pc <= "+end.offset+";"+traceComment();}    // Continue execution of the loop as long as requested
+          String v() {return "if ("+ cont.vn()+") pc <= "+start.offset+"; else pc <= "+end.offset+";"+traceComment();}  // Continue execution of the loop as long as requested
          };
         end.set();                                                                                                      // End of the loop
        }
@@ -134,7 +135,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        new I(true)                                                                                                     // The for loop will not be executed if the execution count is less than 1
+        new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
          {void a()
            {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
            }
@@ -142,7 +143,7 @@ public class Program extends Test                                               
         if (tracing()) new I() {void a() {trace("ForCount "+index.i);}};                                                // Trace at run time
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
-        new I(true)
+        new I(I.Jump.will)                                                                                              // Will jump
          {void a()
            {program().pc = start.offset;                                                                                // Restart loop
            }
@@ -151,9 +152,9 @@ public class Program extends Test                                               
        }
      }
 
-    ForCount(int  End) {this(new Int("Start", 0), new Int("End", End)   );}                                                             // Execute the loop the specified number of times
-    ForCount(Int  End) {this(new Int("Start", 0),                End    );}                                                             // Execute the loop the specified number of times
-    ForCount(Bint End) {this(new Int("Start", 0),                End.i());}                                                             // Execute the loop the specified number of times
+    ForCount(int  End) {this(new Int("Start", 0), new Int("End", End)   );}                                             // Execute the loop the specified number of times
+    ForCount(Int  End) {this(new Int("Start", 0),                End    );}                                             // Execute the loop the specified number of times
+    ForCount(Bint End) {this(new Int("Start", 0),                End.i());}                                             // Execute the loop the specified number of times
 
     abstract void body(Int Index);                                                                                      // Body of the for loop - execute while in range and continuation requested
    }
@@ -178,14 +179,14 @@ public class Program extends Test                                               
      else                                                                                                               // Machine code
        {final Label lse = new Label();                                                                                  // Start of else
         final Label end = new Label();                                                                                  // End of if
-        new I(true)                                                                                                     // Jump to else if condition is false
+        new I(I.Jump.might)                                                                                             // Jump to else if condition is false
          {void a()
            {if (!Condition.b()) program().pc = lse.offset;
            }
          };
         if (tracing()) new I() {void a() {trace("Then");}};                                                             // Trace at run time
         Then();                                                                                                         // Then body
-        new I(true)                                                                                                     // Jump over else to end
+        new I(I.Jump.will)                                                                                              // Jump over else to end
          {void a()
            {program().pc = end.offset;
            }
@@ -428,8 +429,6 @@ public class Program extends Test                                               
        {case flip -> {s.append(n + " <= ~"+n+";");}
         default   -> stop("Op not implemented:", Op);
        }
-      pad(s, 20);
-      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -442,8 +441,6 @@ public class Program extends Test                                               
         case ne  -> {s.append(n + " <= " + n + "  != " + (I ? 1 : 0) + ";");}
         default  -> stop("Op not implemented:", Op);
        }
-      pad(s, 20);
-      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -456,8 +453,6 @@ public class Program extends Test                                               
         case ne  -> {s.append(n + " <= " + n + "  != " + i + ";");}
         default  -> stop("Op not implemented:", Op);
        }
-      pad(s, 20);
-      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -468,8 +463,6 @@ public class Program extends Test                                               
        {case set -> {s.append(n + " <= " + i + "!= 0;");}
         default  -> stop("Op not implemented:", Op);
        }
-      pad(s, 20);
-      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -490,7 +483,7 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String vn() {return pad("b"+ "_" + id+(name != null ? "_"+name : ""), 12);}                                         // Verilog name of this variable
+    String vn() {return pad("b["+ id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
 
     void stop    (final Object...O) {new If (this)   {void Then()  {new I() {void a() {Test.stop(O);}};}};}             // Conditionally print a message if true and stop
     void elseStop(final Object...O) {new If (Flip()) {void Then()  {new I() {void a() {Test.stop(O);}};}};}             //N Conditionally print a message if false and stop
@@ -629,8 +622,6 @@ public class Program extends Test                                               
         case abs  -> {s.append(n +" <= abs("+n+");" );}
         default   -> stop("Op not implemented:", Op);
        }
-      pad(s, 20);
-      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -647,8 +638,6 @@ public class Program extends Test                                               
         case add2 -> {s.append(n + " <= "+n+" + "+I+" + "+I+";");}
         default   -> stop("Op not implemented:", Op);
        }
-      pad(s, 20);
-      if (tracing()) s.append(traceComment != null ? traceComment : "");
       return ""+s;
      }
 
@@ -665,8 +654,6 @@ public class Program extends Test                                               
         case add2 -> {s.append(n + " <= "+n+" + "+i+" + "+i+";");}
         default   -> stop("Op not implemented:", Op);
        }
-      pad(s, 20);
-      if (tracing()) s.append((traceComment != null ? traceComment : ""));
       return ""+s;
      }
 
@@ -764,7 +751,7 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String vn() {return pad("i" + "_" + id+(name != null ? "_"+name : ""), 12);}                                        // Verilog name of this variable
+    String vn() {return pad("i[" +id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
 
     Int say() {final Int i = this; new I() {void a() {Test.say(i);}};           return this;}                           // Say the integer
 
@@ -805,12 +792,6 @@ public class Program extends Test                                               
       new I() {void a() {I.ex(Int.Ops.set, i);}};                                                                       // Return integer component
       return I;
      }
-
-//  Bint get(Int I)                                                                                                     // Transfer the value of the integer field of the boolean integer to an integer variable
-//   {b.Flip().stop("Requested transfer of int component from unset Bint");                                             // Complain if there is no integer component to return
-//    new I() {void a() {I.ex(Int.Ops.set, i);}};                                                                       // Set integer from boolean integer
-//    return this;                                                                                                      // Chain
-//   }
 
     Bool valid     () {return b;}                                                                                       // Whether the boolean integer is valid
     Bool notValid  () {return b.Flip();}                                                                                // Whether the boolean integer is invalid
@@ -1057,8 +1038,8 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  void check(StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} String v() {return "// check"+traceComment();}};}                           // Test the supplied content against the specified string, then clear the output area ready for the next report
-  void Check(StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} String v() {return "// check"+traceComment();}};} // Test the supplied content against the specified string, print the actual output area contents and stop
+  void check(StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} String v() {return "";}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
+  void Check(StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} String v() {return "";}};} // Test the supplied content against the specified string, print the actual output area contents and stop
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1066,21 +1047,22 @@ public class Program extends Test                                               
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber;                                                                                        // The number of this instruction
-    final boolean   mightJump;                                                                                          // The instruction might cause a jump
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
     final String traceComment = tracing() ? traceComment() : null;                                                      // Line at which this instruction was created as a comment
+    enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
+    final Jump jump;                                                                                                    // The instruction might cause a jump
 
-    I(boolean MightJump)                                                                                                // Add this instruction to the code for the process
+    I(Jump Jump)                                                                                                        // Add this instruction to the code for the process
      {ai();
       instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sens in delayed execution mode
       subInc();                                                                                                         // Count the number of instructions associated with each method
-      mightJump = MightJump;
+      jump = Jump;                                                                                                      // Ability to jump
       if (immediate()) {parentProgram.executing = this; a(); parentProgram.executing = null;}                           // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
       //if (!immediate() && codeSize() % 100_000 == 1) say("CodeSize", codeSize());
      }
 
-    I() {this(false);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
+    I() {this(I.Jump.no);}                                                                                              // Add this instruction to the process's code assuming it will not jump
 
     abstract void     a();                                                                                              // The action to be performed by the instruction
     String            v() {return "Not set" + traceComment();}                                                          // The action to be performed by the instruction written in verilog
@@ -1168,6 +1150,111 @@ public class Program extends Test                                               
       N += e.getValue();
      }
     s.append(f("%,8d  Total\n", N));
+    return ""+s;
+   }
+
+//D1 Verilog                                                                                                            // Generate verilog
+
+  String generateVerilog()
+   {final String     name    = currentTestNameSuffix();                                                                 // Name of program
+    final int  sizeMemory    = byteMemory != null ? byteMemory.size() : 0;                                              // Size of memory
+    final int  numberOfInts  = nextIntId;                                                                               // Size of memory
+    final int  numberOfBools = nextBoolId;                                                                              // Size of memory
+    final StringBuilder s    = new StringBuilder();                                                                     // Verilog
+    s.append(f("""
+module %s;                                                                                                              // Bit machine to support current test
+  parameter  MEMORY    = %d;                                                                                            // Amount of memory
+  parameter  INT_VARS  = %d;                                                                                            // Number of integer variables
+  parameter  BOOL_VARS = %d;                                                                                            // Number of boolean variables
+  reg        clock;                                                                                                     // Clock for chip
+  reg        reset;                                                                                                     // Reset for chip
+  integer    pc;                                                                                                        // Program counter for stepping through user code
+  integer    index;
+  reg[7:0]   m[MEMORY-1:0];                                                                                             // Byte memory
+  integer    i[INT_VARS-1:0];                                                                                           // Integers
+  reg        b[BOOL_VARS-1:0];                                                                                          // Booleans
+
+  typedef enum integer                                                                                                  // Possible states of machine
+   {state_clearMemory = 0,
+    state_clearInts   = 1,
+    state_clearBool   = 2,
+    state_execute     = 3
+   } State;
+
+  State state;                                                                                                          // Current state of machine
+
+  always @(posedge clock) begin
+    if (reset) begin                                                                                                    // Reset
+      state = state_clearMemory;
+      index = 0;
+      pc = 0;
+    end
+    else begin                                                                                                          // Initialize bit machine then execute user code
+      case (state)
+        state_clearMemory: clearMemory();
+        state_clearInts  : clearInts  ();
+        state_clearBool  : clearBool  ();
+        state_execute    : execute();
+      endcase
+    end
+  end
+
+  initial begin                                                                                                         // Clock generation
+    clock = 0;
+    forever #1 clock = ~clock;
+  end
+
+  initial begin                                                                                                         // Reset then wait for the program to execute in a reasonable amount of time
+       reset = 0;
+    #1 reset = 1;
+    #1 reset = 0;
+//  #200 $finish;
+  end
+
+  task automatic clearMemory;                                                                                           // Clear memory element by element
+    begin
+      m[index] = 0;
+      index = index + 1;
+      if (index >= MEMORY) state = state_clearInts;
+    end
+  endtask
+
+  task automatic clearInts;                                                                                             // Clear integers
+    begin
+      i[index] = 0;
+      index = index + 1;
+      if (index >= INT_VARS) state = state_clearBool;
+    end
+  endtask
+
+  task automatic clearBool;                                                                                             // Clear bools
+    begin
+      b[index] = 0;
+      index = index + 1;
+      if (index >= BOOL_VARS) state = state_execute;
+    end
+  endtask
+
+  task automatic execute;                                                                                               // Execute actual code
+    begin
+      case(pc)
+""", name, sizeMemory, numberOfInts, numberOfBools));
+
+    for(I i : code)
+     {s.append(f("        %4d: begin %s", i.instructionNumber, i.v()));
+      if (i.jump == I.Jump.might) s.append(" else");
+      if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
+      s.append(" end\n");
+     }
+
+    s.append("""
+        default: $finish;
+      endcase
+      pc = pc + 1;
+    end
+  endtask
+endmodule
+""");
     return ""+s;
    }
 
@@ -1286,9 +1373,7 @@ public class Program extends Test                                               
          };
         Check(s, "c=1 c=2 c=3 c=5 c=8 c=13 c=21 c=34 c=55 c=89");
         execute();
-for(I i : code)
- {say(f("%04d %s", i.instructionNumber, i.v()));
- }
+        say(generateVerilog());
        }
      };
    }
