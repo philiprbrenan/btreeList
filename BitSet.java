@@ -11,10 +11,7 @@ final public class BitSet extends Program                                       
   final int             byteSize;                                                                                       // Number of bytes in the bit set.
   final boolean       powerOfTwo;                                                                                       // Some operations can be optimized if the bitset has a number of elements that is a power of two
   final Build              build;                                                                                       // Memory to use
-  final boolean       maintainCount;                                                                                    // Whether a count of ones in actual bits is maintained
-  final int         bitStorageBytes;                                                                                    // Bytes occupied by actual bits and search trees
   final ByteMemory.Ref memoryRef;                                                                                       // Build used to create bitset
-  final ByteMemory.Ref    refCount;                                                                                     // Maintained count of ones in actual bits, if any
   static int bitsetNumbers = 0;                                                                                         // Bitsets created
   final  int bitsetNumber  = ++bitsetNumbers;                                                                           // Number of this bitset
   final  int[]limitsUpperOne;                                                                                           // The upper limit of the ones  tree for each possible position in the ones tree
@@ -29,18 +26,15 @@ final public class BitSet extends Program                                       
   final static class Build                                                                                              // Specification of a bitset
    {int              bitSize = 1;                                                                                       // Number of bits in the bit set.
     boolean        immediate = true;                                                                                    // Immediate mode execution by default
-    boolean     maintainCount = false;                                                                                  // Maintain a count of ones in actual bits
     Program           parent = null;                                                                                    // Parent program whose code is to be written into.
     ByteMemory.Ref memoryRef = null;                                                                                    // Program memory to be used
 
     Build bitSize  (int     BitSize  ) {bitSize   = BitSize  ;    return this;}
     Build immediate(boolean Immediate) {immediate = Immediate;    return this;}
-    Build maintainCount(boolean MaintainCount) {maintainCount = MaintainCount; return this;}
     Build memory   (Program.ByteMemory.Ref Ref) {memoryRef = Ref; return this;}
     Build parent   (Program Parent)    {parent    = Parent   ;    return this;}
 
-    int bitStorageBytes() {return (Byte.SIZE - 1 + 3 * nextPowerOfTwo(bitSize)) / Byte.SIZE;}                            // Bytes for actual bits and search trees
-    int byteSize() {return bitStorageBytes() + (maintainCount ? ib() : 0);}                                             // Bytes needed for the bitset, trees, and optional count
+    int byteSize() {return (Byte.SIZE - 1 + 3 * nextPowerOfTwo(bitSize)) / Byte.SIZE;}                                  // Bytes needed for the bitset and its bit trees
 
     Program.Build build()                                                                                               // Description of containing program
      {final Program.Build p = new Program.Build();
@@ -60,11 +54,8 @@ final public class BitSet extends Program                                       
     powerOfTwo  = bitSize == size();
     logBitSize  = logTwo(bitSize);
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
-    maintainCount   = Build.maintainCount;
-    bitStorageBytes = Build.bitStorageBytes();
-    byteSize        = Build.byteSize();                                                                                 // Bytes needed for the bitset and its bit trees
+    byteSize    = Build.byteSize();                                                                                     // Bytes needed for the bitset and its bit trees
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
-    refCount        = maintainCount ? memoryRef.step(bitStorageBytes) : null;                                           // Count field follows bit storage when maintained
     limitsUpperOne   = new int[top_one ()+1]; limitsUpperOne ();                                                        // Upper limits of ones tree
     limitsUpperZero  = new int[top_zero()+2]; limitsUpperZero();                                                        // Upper limits of zeros tree
     limitsLowerOne   = new int[top_one ()+1]; limitsLowerOne ();                                                        // Lower limits of ones tree
@@ -85,9 +76,6 @@ final public class BitSet extends Program                                       
    {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value in actual bits
      {void Then()
        {setBitNC(Index, Value);                                                                                         // Set the bit
-        if (maintainCount)
-         {new If (Value) {void Then() {countInc();} void Else() {countDec();}};
-         }
         new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the ones  tree
         new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the zeros tree
        }
@@ -667,16 +655,9 @@ final public class BitSet extends Program                                       
     return r;                                                                                                           // Whether the bitset has two or more ones
    }
 
-//D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset
+//D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset. Superceded by Slots.count as it is believed that the extra cost of maintaining the count is offset by faster access to the current count. However, the count is not being maintained at the bitset level to avoid duplicating effort.  It might be better to transfer the counting logic to Bitset from Slots with the possibility of making it optional when a count is not required
 
-  public Int count()             {return refCount.getInt();}                                                            // Number of ones in actual bits when maintainCount is enabled
-  int        countI()            {return maintainCount ? refCount.getInt(0) : 0;}                                      // Immediate read of maintained count for debug print
-  void       count(Int N)        {refCount.putInt(N);}                                                                  // Set the maintained count directly
-  void       countClear()        {refCount.putInt(new Int(0));}                                                         // Clear the maintained count
-  void       countInc()          {refCount.putInt(refCount.getInt().inc());}                                            // Increment the maintained count
-  void       countDec()          {refCount.putInt(refCount.getInt().dec());}                                            // Decrement the maintained count
-
-  public Int countAllOnes()                                                                                             // Count ones in bitset by search
+  public Int countAllOnes()                                                                                             // Count ones in bitset
    {final Int  c = new Int(0);                                                                                          // Count
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
     new For(new Int(size()))                                                                                            // Step from one to one
@@ -1232,35 +1213,6 @@ Zero:
               test_count(32, false);
    }
 
-  static BitSet test_bitsCounted(boolean Ex, int N)                                                                     // Create test bitset with maintained count.
-   {final Build build = new Build().bitSize(N).immediate(Ex).maintainCount(true);
-    return new BitSet(build).initializeMemory();
-   }
-
-  static void test_maintainedCount(boolean Ex)
-   {sayCurrentTestName();
-    final BitSet b = test_bitsCounted(Ex, 16);
-
-    b.count().ok(0);
-    b.set(b.new Int(3));  b.count().ok(1);  b.countAllOnes().ok(1);
-    b.set(b.new Int(7));  b.count().ok(2);  b.countAllOnes().ok(2);
-    b.set(b.new Int(3));  b.count().ok(2);
-    b.clear(b.new Int(7)); b.count().ok(1); b.countAllOnes().ok(1);
-    b.clear(b.new Int(3)); b.count().ok(0); b.empty().ok(true);
-
-    final BitSet c = test_bitsCounted(Ex, 9);
-    c.set(c.new Int(8)); c.count().ok(1); c.countAllOnes().ok(1);
-    c.nextOne(c.new Int(8)).notValid().ok(true);
-
-    b.maxSteps = 99999;
-    b.execute();
-   }
-
-  static void test_maintainedCount()
-   {          test_maintainedCount(true);
-              test_maintainedCount(false);
-   }
-
 /*
   0    1    2    3    4    5    6    7   8   9  10  11  12  13  14  15
  16        17        18        19       20      21      22      23
@@ -1679,7 +1631,6 @@ Zero:
     test_oneZero();
     test_fullEmpty();
     test_count();
-    test_maintainedCount();
     test_powerPosOneZero();
     test_twoOrMoreOnes();
     test_limits();
