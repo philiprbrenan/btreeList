@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Leaf of a btree implemented using distributed sparse slots
+// Leaf of a btree implemented using distributed sparse slots.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -261,7 +261,7 @@ class Leaf extends Program implements Program.Locatable                         
 
     new I()                                                                                                             // Key/Data pairs in key order
      {void a()
-       {s.append(f(" size: %2d, count: %2d\n", maxSize(), slots.countI()));
+       {s.append(f(" size: %2d, count: %2d\n", maxSize(), slots.refCount.getInt(0)));
         s.append(" Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
