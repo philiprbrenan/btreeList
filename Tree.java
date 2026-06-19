@@ -1788,7 +1788,8 @@ Leaf           size:  4, count:  2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
