@@ -243,7 +243,15 @@ final public class BitSet extends Program                                       
 
   void limitsUpperOne()                                                                                                 // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
-    for (int i = 0, N = top_one(); i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
+    final int N = top_one();
+    for (int i = 0; i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
+
+    final StringJoiner j = new StringJoiner(",");                                                                       // Verilog to get a specified element of the array
+
+    for (int i = 0; i <= limitsUpperOne.length; ++i) j.add(""+limitsUpperOne[i]);                                       // Array elements
+    final StringBuilder s = new StringBuilder();                                                                        // Array definition
+    s.append(f("localparam integer xBitSet_%s [0:%d] = '{%s};\n", "limitsUpperOne", limitsUpperOne.length, ""+j));
+    program().extraVerilogMethods.push(""+s);
    }
 
   void limitsUpperZero()                                                                                                // Upper limits of the zeros tree
@@ -829,6 +837,7 @@ Zero:
 
     b.maxSteps = 99_999;
     b.execute();
+    b.generateAndRunVerilog();
    }
 
   static void test_prevNext()                                                                                           // Test tree of searchable one bits
@@ -883,6 +892,7 @@ Zero:
     for (int i : range(13, 16)) b.prevZero(b.new Int( i)).ok(i-1);
                                 b.firstZero()            .ok(  4);
                                 b.lastZero ()            .ok( 15);
+
    }
 
   static void test_prevNext01()
