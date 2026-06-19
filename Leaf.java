@@ -95,7 +95,7 @@ class Leaf extends Program implements Program.Locatable                         
   void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
-  void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
+//void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
