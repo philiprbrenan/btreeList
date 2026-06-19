@@ -907,9 +907,11 @@ public class Test                                                               
     return ""+f;
    }
 
-  static String fex(String Path) {return Path.replaceFirst("^.*\\.", "");}                                              // Extract file extension from path
-  static String fnx(String Path) {return Path.replaceFirst("^.*/", "");}                                                // Extract file name from path
-  static String fpx(String Path) {return Path.replaceFirst("[^/]*$", "");}                                              // Extract file path from path
+  static String fex (String Path) {return Path.replaceFirst("^.*\\.", "");}                                             // Extract file extension from path
+  static String fnex(String Path) {return Path.replaceFirst("^.*/", "");}                                               // Extract file name and extension from path
+  static String fnx (String Path) {return fnex(Path).replaceFirst("\\.[^.]*$", "");}                                     // Extract file name without extension from path
+  static String fpnx(String Path) {return Path.replaceFirst("\\.[^.]*$", "");}                                          // Remove extension from file path
+  static String fpx (String Path) {return Path.replaceFirst("[^/]*$", "");}                                             // Extract file path from path
 
   class CompressFile
    {final  String sourceFile;
@@ -1270,6 +1272,10 @@ public class Test                                                               
     return ok(g, e);
    }
 
+  static boolean ok(Stack<String>G, Stack<String>E)                                                                     // Check that two stacks of strings are equal
+   {return ok(joinLines(G), joinLines(E));
+   }
+
   static void testSummary()                                                                                             // Print a summary of the testing
    {final double d = (System.nanoTime() - start) / (double)(1<<30);                                                     // Run time in seconds
     final String
@@ -1499,12 +1505,14 @@ BBBB
    }
 
   static void test_fileNames()
-   {ok(fe("/home/phil", "a", "b", "c"), "/home/phil/a/b.c");
-    ok(fn("/home/phil", "a", "b.c"),    "/home/phil/a/b.c");
-    ok(fp("/home/phil", "a", "b", "c"), "/home/phil/a/b/c/");
-    ok(fex("/home/phil/a/b.c"), "c");
-    ok(fnx("/home/phil/a/b.c"), "b.c");
-    ok(fpx("/home/phil/a/b.c"), "/home/phil/a/");
+   {ok(fe  ("/home/phil", "a", "b", "c"), "/home/phil/a/b.c");
+    ok(fn  ("/home/phil", "a", "b.c"),    "/home/phil/a/b.c");
+    ok(fp  ("/home/phil", "a", "b", "c"), "/home/phil/a/b/c/");
+    ok(fex ("/home/phil/a/b.c"),          "c");
+    ok(fnx ("/home/phil/a/b.c"),          "b");
+    ok(fnex("/home/phil/a/b.c"),          "b.c");
+    ok(fpx ("/home/phil/a/b.c"),          "/home/phil/a/");
+    ok(fpnx("/home/phil/a/b.c"),          "/home/phil/a/b");
    }
 
   static void test_executed()
