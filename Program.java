@@ -406,7 +406,7 @@ public class Program extends Test                                               
        {case flip -> {s.append("!"+n);}
         default   -> stop("Op not implemented:", Op);
        }
-      return vtrace(n, s);                                                                                              // Trace the operation
+      return vtrace(s);                                                                                                 // Trace the operation
      }
 
     String ev(Ops Op, boolean I)                                                                                        // Execute a monadic boolean operation on a constant
@@ -418,7 +418,7 @@ public class Program extends Test                                               
         case ne  -> {s.append(n + "  != " + (I ? 1 : 0));}
         default  -> stop("Op not implemented:", Op);
        }
-      return vtrace(n, s);                                                                                              // Trace the operation
+      return vtrace(s);                                                                                                 // Trace the operation
      }
 
     String ev(Ops Op, Bool I)                                                                                           // Execute a monadic boolean operation on a variable
@@ -430,7 +430,7 @@ public class Program extends Test                                               
         case ne  -> {s.append(n + "  != " + i);}
         default  -> stop("Op not implemented:", Op);
        }
-      return vtrace(n, s);                                                                                              // Trace the operation
+      return vtrace(s);                                                                                                 // Trace the operation
      }
 
     String ev(Ops Op, Int I)                                                                                            // Execute a monadic boolean operation on an integer variable
@@ -440,10 +440,10 @@ public class Program extends Test                                               
        {case set -> {s.append(i + "!= 0");}
         default  -> stop("Op not implemented:", Op);
        }
-      return vtrace(n, s);                                                                                              // Trace the operation
+      return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String vtrace(String Name, StringBuilder Value) {return Name+" <= traceBool("+id+", "+Value+");";}                  // Trace a boolean operation
+    String vtrace(StringBuilder Value) {return vn()+" <= traceBool("+id+", "+Value+");";}                               // Trace a boolean operation
 
     Bool or (Bool b) {new I() {void a() {x(); b.x(); if (b.i) i = true;}}; return this;}                                // "Or" without short circuit. Modifies the target.
     Bool Or (Bool b) {return dup().or(b);}                                                                              //N "Or" without short circuit. Does not modify the target
@@ -606,7 +606,7 @@ public class Program extends Test                                               
         case abs  -> {s.append("abs("+n+")" );}
         default   -> stop("Op not implemented:", Op);
        }
-      return vtrace(n, s);
+      return vtrace(s);
      }
 
     String ev(Ops Op, int I)                                                                                            // Execute a monadic integer operation on a constant
@@ -622,7 +622,7 @@ public class Program extends Test                                               
         case add2 -> {s.append(n+" + "+I+" + "+I);}
         default   -> stop("Op not implemented:", Op);
        }
-      return vtrace(n, s);
+      return vtrace(s);
      }
 
     String ev(Ops Op, Int I)                                                                                            // Execute a monadic integer operation on a variable
@@ -638,10 +638,10 @@ public class Program extends Test                                               
         case add2 -> {s.append(n+" + "+i+" + "+i);}
         default   -> stop("Op not implemented:", Op);
        }
-      return vtrace(n, s);
+      return vtrace(s);
      }
 
-    String vtrace(String Name, StringBuilder Value)  {return Name+" <= traceInt("+id+", "+Value+");";}                  // Trace an integer operation
+    String vtrace(StringBuilder Value)  {return vn()+" <= traceInt("+id+", "+Value+");";}                               // Trace an integer operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -924,6 +924,11 @@ public class Program extends Test                                               
           final int d = Byte.toUnsignedInt(bytes[p+3]) << 24;
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
+         }
+        String v()
+         {final String n = I.vn();
+          final StringBuilder s = new StringBuilder("{ m["+n+"+3], m["+n+"+2], m["+n+"+1], m["+n+"]}");
+          return r.vtrace(s);
          }
        };
       return r;
