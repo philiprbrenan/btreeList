@@ -850,8 +850,8 @@ public class Program extends Test                                               
      {new ForCount(new Int(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {        bytes[TargetOffset.Add(Index).i()] = SourceMemory.bytes[SourceOffset        .Add(Index).i()];}
-            String v() {return "m[" + TargetOffset.i() + "+" + Index.i()+"] = m["     + SourceOffset.i() + "+" + Index .i()+"];";} // Does not work across different program memories
+           {void   a() {        bytes[TargetOffset.i() +       Index.i()] = SourceMemory.bytes[SourceOffset.i() +       Index.i()];}
+            String v() {return "m[" + TargetOffset.i() + "+" + Index.i()+"] = m["            + SourceOffset.i() + "+" + Index.i()+"];";} // Does not work across different program memories
            };
          }
        };
