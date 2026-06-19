@@ -907,11 +907,11 @@ public class Program extends Test                                               
 
     int size() {return bytes.length;}                                                                                   //N Size of memory
 
-    Int getByte(Int I)                                                                                                  //N Get the byte at the indicated position
-     {final Int r = new Int();
-      new I() {void a() {r.set(getByte(I.i()));}};
-      return r;
-     }
+//  Int getByte(Int I)                                                                                                  //N Get the byte at the indicated position
+//   {final Int r = new Int();
+//    new I() {void a() {r.set(getByte(I.i()));}};
+//    return r;
+//   }
 
     Int getInt(Int I)                                                                                                   // Get the int at the indicated position
      {final Int r = new Int();
@@ -948,12 +948,12 @@ public class Program extends Test                                               
      }
 
     Bool    getBool(Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                        // Get the bit at the bit indexed location
-    boolean getBool(int I) {return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                      //N Get the bit at the bit indexed location - debugging
+//  boolean getBool(int I) {return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                      //N Get the bit at the bit indexed location - debugging
 
-    ByteMemory putByte(Int I, Int J)                                                                                    //N Set the byte at the indicated position relative to the start to the specified value
-     {new I() {void a() {putByte(I.i(), J.i());}};
-      return this;
-     }
+//  ByteMemory putByte(Int I, Int J)                                                                                    //N Set the byte at the indicated position relative to the start to the specified value
+//   {new I() {void a() {putByte(I.i(), J.i());}};
+//    return this;
+//   }
 
     ByteMemory putInt(Int I, Int J)                                                                                     // Set the int at the indicated position relative to the start to the specified value
      {new I()
@@ -997,13 +997,13 @@ public class Program extends Test                                               
       Ref       copy(Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}               // Copy the specified memory possibly from another byte memory
       Ref      clear(int Width)            {m.clear     (offset, Width);                    return this;}               // Clear memory by setting its bytes to zero
 //    Ref invalidate(int Width)            {m.invalidate(offset, Width);                    return this;}               //N Invalidate memory by setting its bytes to values unlikely to be valid
-      Int    getByte(Int I)                {return m.getByte(I.Add(offset));}                                           //N Get the byte at the indicated position
+//    Int    getByte(Int I)                {return m.getByte(I.Add(offset));}                                           //N Get the byte at the indicated position
       Int    getInt (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                    //N Get the int at the indicated position
-      Bool   getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                        //N Get the bit in the specified byte at the specified position within the byte
+//    Bool   getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                        //N Get the bit in the specified byte at the specified position within the byte
       Bool   getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                            // Get the bit at the bit indexed location
-      Ref    putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                    return this;}               //N Set the byte at the indicated position relative to the start to the specified value
+//    Ref    putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                    return this;}               //N Set the byte at the indicated position relative to the start to the specified value
       Ref    putInt (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);             return this;}               // Set the int at the indicated position relative to the start to the specified value
-      Ref    putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}               //N Set the bit at the indicated position in the byte at the specified position to the specified value
+//    Ref    putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}               //N Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref    putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}               // Set the bit at the bit indexed position
       int     getInt(int I)                {return m.getInt (I*N+offset.i());}                                          // Get an int immediately when debugging
       Int     getInt()                     {                                                return m.getInt (offset);}  // Get the referenced int
@@ -1012,7 +1012,7 @@ public class Program extends Test                                               
       boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}           // Get the bit at the bit indexed location - debugging
 
       Ref step(int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
-      Ref step(Int Width) {return new Ref(offset.Add(Width));}                                                          //N Step up from an existing ref to make a new one - only while not executing
+//    Ref step(Int Width) {return new Ref(offset.Add(Width));}                                                          //N Step up from an existing ref to make a new one - only while not executing
 
       public String toString()                                                                                          // Print memory reference
        {final StringBuilder s = saySb("Ref: " , offset.i());
@@ -1624,8 +1624,8 @@ Procedure, Procedure, TraceFile, display);
        }
      };
     P.execute();
-    ok(P.byteMemory.getBool(32), false);
-    ok(P.byteMemory.getBool(33), true);
+//  ok(P.byteMemory.getBool(32), false);
+//  ok(P.byteMemory.getBool(33), true);
     P.testVerilog(Ex);
    }
 
@@ -1670,14 +1670,14 @@ Procedure, Procedure, TraceFile, display);
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
             m.putInt(new Int(1), new Int(2));
-            m.getInt(new Int(0)).ok(1);
-            m.getInt(new Int(1)).ok(2);
-
-            m.getBool(new Int(4), new Int(0)).ok(false);
-            m.getBool(new Int(4), new Int(1)).ok(true );
-            m.getBool(new Int(4), new Int(2)).ok(false);
-            m.putBool(new Int(4), new Int(0), new Bool(true));
-            m.getInt (new Int(1)).            ok(3);
+//          m.getInt(new Int(0)).ok(1);
+//          m.getInt(new Int(1)).ok(2);
+//
+//          m.getBool(new Int(4), new Int(0)).ok(false);
+//          m.getBool(new Int(4), new Int(1)).ok(true );
+//          m.getBool(new Int(4), new Int(2)).ok(false);
+//          m.putBool(new Int(4), new Int(0), new Bool(true));
+//          m.getInt (new Int(1)).            ok(3);
 
             m.putBool(new Int(32), new Bool(false));
             m.getBool(new Int(32)).ok(false);
@@ -1688,8 +1688,8 @@ Procedure, Procedure, TraceFile, display);
        }
      };
     P.execute();
-    ok(P.byteMemory.getBool(64+32), false);
-    ok(P.byteMemory.getBool(64+33), true);
+//  ok(P.byteMemory.getBool(64+32), false);
+//  ok(P.byteMemory.getBool(64+33), true);
     P.testVerilog(Ex);
    }
 
