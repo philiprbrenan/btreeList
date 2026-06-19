@@ -30,6 +30,7 @@ public class Program extends Test                                               
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output
+  final Stack<String>                extraVerilogMethods = new Stack<>();                                               // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
   final static class Build                                                                                              // Builder for this program
@@ -48,7 +49,7 @@ public class Program extends Test                                               
     parentProgram = Build.parent == null ? this : Build.parent;                                                         // Parent program that will contain the code
     byteMemory    = Build.size   != null ? new ByteMemory(Build.size) : null;                                           // Memory associated with program if any
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
-    deleteAllFiles(verilogTestFolder(), 9);                                                                             // Delete generated verilog files created by a prior run of the current test
+    deleteAllFiles(verilogTestFolder(), 9);                                                                             // Delete generated Verilog files created by a prior run of the current test
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -126,7 +127,7 @@ public class Program extends Test                                               
         final Label   end = new Label();                                                                                // End of for loop code
         new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
          {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
-          String v() {return "if ("+index.vn()+" >= "+End.i()+") pc <= "+end.offset+";";}                               // Index out of range
+          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= "+end.offset+";";}                              // Index out of range
          };
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
@@ -399,7 +400,7 @@ public class Program extends Test                                               
      }
 
     String ev(Ops Op)                                                                                                   // Execute a zeradic boolean operation
-     {final String        n = vn();                                                                                     // Name of the variable in verilog
+     {final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case flip -> {s.append("!"+n);}
@@ -409,7 +410,7 @@ public class Program extends Test                                               
      }
 
     String ev(Ops Op, boolean I)                                                                                        // Execute a monadic boolean operation on a constant
-     {final String        n = vn();                                                                                     // Name of the variable in verilog
+     {final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set -> {s.append(              (I ? 1 : 0));}
@@ -421,10 +422,10 @@ public class Program extends Test                                               
      }
 
     String ev(Ops Op, Bool I)                                                                                           // Execute a monadic boolean operation on a variable
-     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
+     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set -> {s.append(i + ";");}
+       {case set -> {s.append(i);}
         case eq  -> {s.append(n + "  == " + i);}
         case ne  -> {s.append(n + "  != " + i);}
         default  -> stop("Op not implemented:", Op);
@@ -433,7 +434,7 @@ public class Program extends Test                                               
      }
 
     String ev(Ops Op, Int I)                                                                                            // Execute a monadic boolean operation on an integer variable
-     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
+     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set -> {s.append(i + "!= 0");}
@@ -442,18 +443,19 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String vtrace(StringBuilder Value) {return vn()+" <= traceBool("+id+", "+Value+");";}                               // Trace a boolean operation
+    String vtrace(String        Value) {return vn()+" <= traceBool("+id+", "+Value+");";}                               // Trace a boolean operation
+    String vtrace(StringBuilder Value) {return vtrace(""+Value);}                                                       // Trace a boolean operation
 
-    Bool or (Bool b) {new I() {void a() {x(); b.x(); if (b.i) i = true;}}; return this;}                                // "Or" without short circuit. Modifies the target.
-    Bool Or (Bool b) {return dup().or(b);}                                                                              //N "Or" without short circuit. Does not modify the target
-    Bool and(Bool b) {new I() {void a() {x(); b.x(); if (!b.i) i = false;}}; return this;}                              // "And" without short circuit. Modifies the target.
-    Bool And(Bool b) {return dup().and(b);}                                                                             //N "And" without short circuit. Does not modify the target
+    Bool or (Bool b) {new I() {void a() {x(); b.x(); if ( b.i) i = true ; jtrace();} String v() {return vtrace(vn()+" || "+b.vn());}}; return this;}  // "Or" without short circuit. Modifies the target.
+    Bool Or (Bool b) {return dup().or(b);}                                                                                                  //N "Or" without short circuit. Does not modify the target
+    Bool and(Bool b) {new I() {void a() {x(); b.x(); if (!b.i) i = false; jtrace();} String v() {return vtrace(vn()+" && "+b.vn());}}; return this;}  // "And" without short circuit. Modifies the target.
+    Bool And(Bool b) {return dup().and(b);}                                                                                                 //N "And" without short circuit. Does not modify the target
 
             Bool dup       ()       {return new Bool(this);}                                                            // Duplicate a boolean so that the duplicated version can be modified without modifying the original
     private Bool valid     ()       {return new Bool( v);}                                                              //N Whether the boolean is valid
     private Bool notValid  ()       {return new Bool(!v);}                                                              //N Whether the boolean is invalid
-    private Bool invalidate()       {new I() {void a() {ex(Ops.set, false);} String v() {return ev(Ops.set, false);}}; return this;} // Invalidate the boolean
-    private Bool copy      (Bool I) {new I() {void a() {i = I.i; v = I.v;}   String v() {return ev(Ops.set, I    );}}; return this;} //N Copy the state of a boolean without regard as to whether it is valid or not
+    private Bool invalidate()       {new I() {void a() {ex(Ops.set, false);          } String v() {return ev(Ops.set, false);}}; return this;} // Invalidate the boolean
+    private Bool copy      (Bool I) {new I() {void a() {i = I.i; v = I.v  ; jtrace();} String v() {return ev(Ops.set, I    );}}; return this;} //N Copy the state of a boolean without regard as to whether it is valid or not
 
     public String toString()                                                                                            // Print the boolean
      {final String u = "undefined_Bool";
@@ -475,7 +477,7 @@ public class Program extends Test                                               
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
-        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in verilog if the verilog trace matches the java trace
+        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
        };
       return this;
      }
@@ -489,7 +491,7 @@ public class Program extends Test                                               
         void Else()
          {new I() {void a() {Test.ok(got.notValid(), true);}};
          }
-        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in verilog if the verilog trace matches the java trace
+        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
        };
       return this;
      }
@@ -592,8 +594,8 @@ public class Program extends Test                                               
       return ex(Op, I.i());
      }
 
-    String ev(Ops Op)                                                                                                   // Execute a zeradic integer operation in verilog
-     {final String        n = vn();                                                                                     // Name of the variable in verilog
+    String ev(Ops Op)                                                                                                   // Execute a zeradic integer operation in Verilog
+     {final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case inc  -> {s.append(n+" + 1"     );}
@@ -609,7 +611,7 @@ public class Program extends Test                                               
      }
 
     String ev(Ops Op, int I)                                                                                            // Execute a monadic integer operation on a constant
-     {final String        n = vn();                                                                                     // Name of the variable in verilog
+     {final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        I);}
@@ -625,7 +627,7 @@ public class Program extends Test                                               
      }
 
     String ev(Ops Op, Int I)                                                                                            // Execute a monadic integer operation on a variable
-     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in verilog
+     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        i);}
@@ -675,19 +677,25 @@ public class Program extends Test                                               
     Bool ge  (Int I) {return bie(Ops.ge, I);}                                                                           //N
     Bool gt  (Int I) {return bie(Ops.gt, I);}
 
-    Bool bie (Ops Op, int I)                                                                                            // Execute immediately or create an instruction for machine code to execute later
+    Bool bie (Ops Op, int I)                                                                                            // Instruction to perform a boolean comparison between an integer variable and an integer constant
      {final Bool b = new Bool();
-      new I() {void a() {bex(Op, b, I);}};
+      new I()
+       {void   a() {       bex(Op, b, I);}
+        String v() {return bev(Op, b, I);}
+       };
       return b;
      }
 
-    Bool bie(Ops Op, Int I)
+    Bool bie(Ops Op, Int I)                                                                                             // Instruction to perform a boolean comparison between two integer variables
      {final Bool b = new Bool();
-      new I() {void a() {I.x(); bex(Op, b, I);}};
+      new I()
+       {void   a() {I.x(); bex(Op, b, I);}
+        String v() {return bev(Op, b, I);}
+       };
       return b;
      }
 
-    void bex(Ops Op, Bool B, int I)
+    void bex(Ops Op, Bool B, int I)                                                                                     // Boolean comparison between an integer variable and an integer constant
      {x();
       switch(Op)
        {case eq -> B.ex(Bool.Ops.set, i == I);
@@ -700,12 +708,42 @@ public class Program extends Test                                               
        }
      }
 
-    void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
+    void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}                                                           // Boolean comparison between two integer variables
+
+    String bev(Ops Op, Bool B, int I)                                                                                   // Boolean comparison between an integer variable and an integer constant
+     {final StringBuilder s = new StringBuilder();
+      final String n = vn();
+      switch(Op)
+       {case eq -> s.append(n + " == "+I);
+        case ne -> s.append(n + " != "+I);
+        case le -> s.append(n + " <= "+I);
+        case lt -> s.append(n + " <  "+I);
+        case ge -> s.append(n + " >= "+I);
+        case gt -> s.append(n + " >  "+I);
+        default  -> stop("Op not implemented:", Op);
+       }
+      return B.vtrace(s);
+     }
+
+    String bev(Ops Op, Bool B, Int I)                                                                                   // Boolean comparison between two integer variables
+     {final StringBuilder s = new StringBuilder();
+      final String n = vn(), i = I.vn();
+      switch(Op)
+       {case eq -> s.append(n + " == "+i);
+        case ne -> s.append(n + " != "+i);
+        case le -> s.append(n + " <= "+i);
+        case lt -> s.append(n + " <  "+i);
+        case ge -> s.append(n + " >= "+i);
+        case gt -> s.append(n + " >  "+i);
+        default  -> stop("Op not implemented:", Op);
+       }
+      return B.vtrace(s);
+     }
 
             Int  dup       () {return new Int(this);}                                                                   // Duplicate an integer so that the duplicated version can be modified without modifying the original
-    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is valid   - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the verilog is identical to that of the java and thus there is no need to test the validity of the integers
-    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the verilog is identical to that of the java and thus there is no need to test the validity of the integers
-    private Int  invalidate() {                           new I() {void a() {ex(Ops.set, -1); v = false;}            String v() {return ev(Ops.set, -1);}}; return this;} // Invalidate the integer. The invalidation is done in such a away as to make the instruction sequences for java and verilog match. Recall that that the verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to verilog.
+    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is valid   - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
+    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
+    private Int  invalidate() {                           new I() {void a() {ex(Ops.set, -1); v = false;}            String v() {return ev(Ops.set, -1);}}; return this;} // Invalidate the integer. The invalidation is done in such a away as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
     private Int  copy (Int I) {                           new I() {void a() {i = I.i;         v = I.v  ;  jtrace();} String v() {return ev(Ops.set,  I);}}; return this;} // Copy the state of an integer without regard as to whether it is valid or not
 
 //    Int  bclr (Int I) {new I() {void a() {bclrEx(I);}}; return this;}                                                   //N Clear the indicated bit
@@ -747,7 +785,7 @@ public class Program extends Test                                               
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
-        String v() {return "";}                                                                                         // No need to test  under verilog as long as all data accesses match
+        String v() {return "";}                                                                                         // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
@@ -761,13 +799,13 @@ public class Program extends Test                                               
         void Else()
          {new I() {void a() {Test.ok(got.notValid(), true);}};
          }
-        String v() {return "";}                                                                                         // No need to test  under verilog as long as all data accesses match
+        String v() {return "";}                                                                                         // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
    }
 
-//D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the verilog representationOperations on integer values
+//D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
   final class Bint                                                                                                      // An integer that can be specified as valid or invalid
    {private final Bool b = new Bool(false);                                                                             // Whether the associated integer is valid or invalid
@@ -1081,10 +1119,10 @@ public class Program extends Test                                               
   void check(StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} String v() {return "";}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
   void Check(StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} String v() {return "";}};} // Test the supplied content against the specified string, print the actual output area contents and stop
 
-  String verilogTestFolder() {return fp(verilogFolder,       currentTestNameSuffix());}                                 // Folder for this test using verilog
+  String verilogTestFolder() {return fp(verilogFolder,       currentTestNameSuffix());}                                 // Folder for this test using Verilog
   String verilogTraceFile()  {return fe(verilogTestFolder(), "traceVerilog", "txt");}                                   // Verilog trace file
   String    javaTraceFile()  {return fe(verilogTestFolder(), "traceJava",    "txt");}                                   // Java trace file
-  String verilogCodeFile()   {return fe(verilogTestFolder(),  currentTestNameSuffix(), "v");}                           // Verilog code file
+  String VerilogCodeFile()   {return fe(verilogTestFolder(),  currentTestNameSuffix(), "v");}                           // Verilog code file
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1110,7 +1148,7 @@ public class Program extends Test                                               
     I() {this(I.Jump.no);}                                                                                              // Add this instruction to the process's code assuming it will not jump
 
     abstract void     a();                                                                                              // The action to be performed by the instruction
-    String            v() {return "Not set" + traceComment();}                                                          // The action to be performed by the instruction written in verilog
+    String            v() {return "Not set" + traceComment();}                                                          // The action to be performed by the instruction written in Verilog
     String traceComment() {return traceComment != null ? traceComment : "";}                                            // Trace comment if it exists
    }
 
@@ -1140,6 +1178,12 @@ public class Program extends Test                                               
        }
      }
     if (c >= maxSteps) stop("Out of steps after step:", c);
+
+    generateVerilog();                                                                                                  // Generate corresponding Verilog code and run it
+
+    new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
+
+    ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                        // Compare corresponding java and Verilog trace files
    }
 
   void Goto(Label Target)                                           {new I() {void a() {parentProgram.pc = Target.offset;}};}       // Goto a label unconditionally
@@ -1196,12 +1240,12 @@ public class Program extends Test                                               
     return ""+s;
    }
 
-//D1 Verilog                                                                                                            // Generate verilog
+//D1 Verilog                                                                                                            // Generate Verilog
 
-  String generateAndExecuteVerilog()                                                                                    // Generate and execute the corresponding Verilog
+  String generateVerilog()                                                                                              // Generate and execute the corresponding Verilog
    {final String          name = currentTestNameSuffix();                                                               // Name of program
-    final String     traceFile = fnx(verilogTraceFile());                                                               // Trace file name relative to verilog code
-    final String      codeFile = verilogCodeFile();                                                                     // Code file
+    final String     traceFile = fnex(verilogTraceFile());                                                              // Trace file name relative to Verilog code
+    final String      codeFile = VerilogCodeFile();                                                                     // Code file
     final int       sizeMemory = byteMemory != null ? byteMemory.size() : 0;                                            // Size of memory
     final int     numberOfInts = nextIntId;                                                                             // Size of memory
     final int    numberOfBools = nextBoolId;                                                                            // Size of memory
@@ -1294,14 +1338,15 @@ traceVerilogVariable("traceInt",  "i", traceFile)));
       case(pc)
 """);
 
-    for(I i : code)                                                                                                     // Compile each instruction to verilog
+    for(String m : extraVerilogMethods) s.append(m);                                                                    // Incorporate extra Verilog methods required to support generated instructions
+
+    for(I i : code)                                                                                                     // Compile each instruction to Verilog
      {s.append(f("        %4d: begin %s", i.instructionNumber, i.v()));
       if (i.jump == I.Jump.might) s.append(" else");
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
       if (appendTraceComments) s.append(i.traceComment());
       s.append(" end\n");
      }
-
 
     s.append("""
         default: $finish;
@@ -1312,9 +1357,7 @@ traceVerilogVariable("traceInt",  "i", traceFile)));
 endmodule
 """);
 
-    writeFile(codeFile, ""+s);                                                                                          // Write verilog code to a file
-
-    new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), name));
+    writeFile(codeFile, ""+s);                                                                                          // Write Verilog code to a file
     return ""+s;
    }
 
@@ -1322,7 +1365,7 @@ endmodule
    {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, Id, Value);";                               // Trace line to be written out
 
     return f("""
-function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
+function automatic integer %s(input integer Id, input integer Value);                                                   // Trace variable
     integer file;
     begin
       %s = Value;                                                                                                       // Return value
@@ -1340,14 +1383,18 @@ function automatic integer %s(input integer Id, input integer Value);           
 Procedure, Procedure, TraceFile, display);
    }
 
-//D1 Testing                                                                                                            // Test expected output against got output
+  String defineConstantVerilogArray(String Name, int[]Array)                                                            // Define an array of constant integers for use in the Verilog representation of instructions
+   {final StringJoiner j = new StringJoiner(",");                                                                       // Verilog to get a specified element of the array
 
-  void testVerilog(boolean Ex)                                                                                         // Generate verilog and compare it to the java execution trace
-   {if (!Ex)
-     {generateAndExecuteVerilog();
-      ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));
-     }
+    for (int i = 0; i <= Array.length; ++i) j.add(""+Array[i]);                                                         // Array elements
+    final String a = "x_"+fnx(sourceFileName())+"_"+Name;                                                               // A unique name for the array
+    final StringBuilder s = new StringBuilder();                                                                        // Array definition
+    s.append(f("localparam integer %s [0:%d] = '{%s};\n", a, Array.length, ""+j));                                      // The name of the array
+    program().extraVerilogMethods.push(""+s);                                                                           // Array definition
+    return a;                                                                                                           // Add the array definition to the Verilog code
    }
+
+//D1 Testing                                                                                                            // Test expected output against got output
 
   static void test_programming(boolean Ex)
    {sayCurrentTestName();
@@ -1415,7 +1462,10 @@ Procedure, Procedure, TraceFile, display);
         new For(N)
          {void body(Int Index, Bool Continue)
            {b.add(a.dup().inc());
-            new I() {void a() {s.append(f("%2d  %2d\n", a.i(), b.i()));}};
+            new I()
+             {void   a() {s.append(f("%2d  %2d\n", a.i(), b.i()));}
+              String v() {return "";}
+             };
             Continue.set();
            }
          };
@@ -1462,7 +1512,6 @@ Procedure, Procedure, TraceFile, display);
          };
         Check(s, "c=1 c=2 c=3 c=5 c=8 c=13 c=21 c=34 c=55 c=89");
         execute();
-        testVerilog(Ex);
        }
      };
    }
@@ -1494,7 +1543,6 @@ Procedure, Procedure, TraceFile, display);
          };
         Check(s, "2 1 3 2");
         execute();
-        testVerilog(Ex);
        }
      };
    }
@@ -1515,7 +1563,6 @@ Procedure, Procedure, TraceFile, display);
         a.inc().ok(2); new I() {void a() {s.append(a+" ");} String v() {return "";}};
         Check(s, "0 1 2");
         execute();
-        testVerilog(Ex);
        }
      };
     return P;
@@ -1573,7 +1620,6 @@ Procedure, Procedure, TraceFile, display);
        }
      };
     P.execute();
-    P.testVerilog(Ex);
    }
 
   static void test_remote()
@@ -1604,7 +1650,6 @@ Procedure, Procedure, TraceFile, display);
        }
      };
     P.execute();
-    P.testVerilog(Ex);
    }
 
   static void test_copy()
@@ -1641,7 +1686,6 @@ Procedure, Procedure, TraceFile, display);
     P.execute();
 //  ok(P.byteMemory.getBool(32), false);
 //  ok(P.byteMemory.getBool(33), true);
-    P.testVerilog(Ex);
    }
 
   static void test_byteMemory()
@@ -1663,7 +1707,6 @@ Procedure, Procedure, TraceFile, display);
             ok(()->m.getInt( 0), -2);
             ok(()->m.getInt( 4), -3);
             execute();
-            testVerilog(Ex);
            }
          };
        }
@@ -1705,7 +1748,6 @@ Procedure, Procedure, TraceFile, display);
     P.execute();
 //  ok(P.byteMemory.getBool(64+32), false);
 //  ok(P.byteMemory.getBool(64+33), true);
-    P.testVerilog(Ex);
    }
 
   static void test_byteMemoryRef()
@@ -1788,6 +1830,20 @@ Procedure, Procedure, TraceFile, display);
               test_procedureCall(false);
    }
 */
+
+  static void test_defineConstantVerilogArray()
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(false).memory(16))
+     {void code()
+       {final int[]array = {2,4,6};
+        defineConstantVerilogArray("array", array);
+        generateVerilog();
+       }
+     };
+    P.execute();
+//  ok(P.byteMemory.getBool(64+32), false);
+//  ok(P.byteMemory.getBool(64+33), true);
+   }
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_andOr();
@@ -1811,7 +1867,7 @@ Procedure, Procedure, TraceFile, display);
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFiles(verilogFolder, 21);                                                                                 // Delete generated verilog files created by a prior run of the current test
+     {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
