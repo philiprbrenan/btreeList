@@ -144,7 +144,7 @@ class Slots extends Program                                                     
   void countClear           ()             {refCount.putInt(new Int(0));}                                               // Clear the count
   void countInc             ()             {refCount.putInt(refCount.getInt().inc());}                                  // Increment the key count
   void countDec             ()             {refCount.putInt(refCount.getInt().dec());}                                  // Decrement the key count
-  void invalidateMemory     ()             {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
+//void invalidateMemory     ()             {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   int  numberOfKeys         ()             {return numberOfKeys;}                                                       // The number of references in the slots definition
   int  numberOfSlotsToKeys  ()             {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
   int  redistributionWidth  ()             {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
