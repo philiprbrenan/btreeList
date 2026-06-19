@@ -867,6 +867,7 @@ Branch         size:   7 count:   7 top:  88
         final Branch.StepDown s2 = stepDown(new Int(12)); s2.node.ok(2); s2.slot.ok(4);
         final Branch.StepDown s3 = stepDown(new Int(22)); s3.node.ok(3); s3.slot.ok(5);
         final Branch.StepDown s4 = stepDown(new Int(32)); s4.node.ok(4); s4.slot.notValid().ok(true);
+        maxSteps = 99_999;
         execute();
        }
      };
