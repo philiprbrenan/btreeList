@@ -29,6 +29,7 @@ public class Program extends Test                                               
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
+  final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
   final static class Build                                                                                              // Builder for this program
@@ -124,16 +125,14 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
-         {void a()
-           {if (index.i() >=  End.i()) program().pc = end.offset;                                                       // Index out of range
-           }
+         {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
+          String v() {return "if ("+index.vn()+" >= "+End.i()+") pc <= "+end.offset+";";}                               // Index out of range
          };
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
         new I(I.Jump.will)                                                                                              // Will jump
-         {void a()
-           {program().pc = start.offset;                                                                                // Restart loop
-           }
+         {void   a() {program().pc = start.offset;}                                                                     // Restart loop
+          String v() {return "pc <= "+start.offset+";";}                                                                // Index out of range
          };
         end.set();                                                                                                      // End of the loop
        }
@@ -827,7 +826,8 @@ public class Program extends Test                                               
     final  int byteMemoryId  = ++byteMemoryIds;
     byte[]bytes;                                                                                                        // Bytes of main memory
 
-    ByteMemory(int Length) {bytes = new byte[Length];  clear(new Int(0), Length);}                                      // Create the memory
+    ByteMemory(int Length) {bytes = new byte[Length];                                                                   // Create the memory
+    clear(new Int(0), Length);}                                                                                         // Clear the memory
 
     private byte getByte(int I)                                                                                         // Get the value of a byte
      {return bytes[I];                                                                                                  // Get the value of a byte
@@ -888,7 +888,7 @@ public class Program extends Test                                               
        {void body(Int Index)
          {new I()
            {void   a() {bytes[Index.i()] = (byte)0;}
-            String v() {return "m["+Index.i()+"] = (byte)0;";}
+            String v() {return "m["+Index.vn()+"] = 0;";}
            };
          }
        };
@@ -945,9 +945,8 @@ public class Program extends Test                                               
     Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
      {Bool r = new Bool();
       new I()
-       {void a()
-         {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));
-         }
+       {void   a() {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));}
+        String v() {return r.vtrace(new StringBuilder("m["+I.vn()+"]["+J.vn()+"]"));}
        };
       return r;
      }
@@ -969,6 +968,13 @@ public class Program extends Test                                               
           putByte(p+2, v >>> 16);
           putByte(p+3, v >>> 24);
          }
+        String v()
+         {final String i = I.vn(), j = J.vn();
+          return "m[0+"+i+"] <= "+j+"[ 7-:8];"+
+                 "m[1+"+i+"] <= "+j+"[15-:8];"+
+                 "m[2+"+i+"] <= "+j+"[23-:8];"+
+                 "m[3+"+i+"] <= "+j+"[31-:8];";
+         }
        };
       return this;
      }
@@ -980,6 +986,10 @@ public class Program extends Test                                               
           final int b = getByte(p);
           final int B = setBit(b, J.i(), K.b());
           putByte(p, B);
+         }
+        String v()
+         {final String i = I.vn(), j = J.vn(), k = K.vn();
+          return "m["+i+"]["+j+"] <= "+k+";";
          }
        };
       return this;
@@ -1146,9 +1156,8 @@ public class Program extends Test                                               
 
   <A, B> void ok(Supplier<A> a, B b)                                                                                    // Test a result of delayed execution against a known result while the program is still executing
    {new I()
-     {void a()
-       {if (!ok(a.get(), b)) say("====\n", traceBack);
-       }
+     {void   a() {if (!ok(a.get(), b)) say("====\n", traceBack);}
+      String v() {return "";}
      };
    }
 
@@ -1289,6 +1298,7 @@ traceVerilogVariable("traceInt",  "i", traceFile)));
      {s.append(f("        %4d: begin %s", i.instructionNumber, i.v()));
       if (i.jump == I.Jump.might) s.append(" else");
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
+      if (appendTraceComments) s.append(i.traceComment());
       s.append(" end\n");
      }
 
@@ -1594,7 +1604,7 @@ Procedure, Procedure, TraceFile, display);
        }
      };
     P.execute();
-    //P.testVerilog(Ex);
+    P.testVerilog(Ex);
    }
 
   static void test_copy()
@@ -1786,18 +1796,17 @@ Procedure, Procedure, TraceFile, display);
     test_mod();
     test_incremental();
     test_remote();
-//test_bits();
+    //test_bits();
     test_copy();
-    //test_byteMemory();
-    //test_byteMemoryNegative();
-    //test_byteMemoryRef();
-//test_invalidate();
+    test_byteMemory();
+    test_byteMemoryNegative();
+    test_byteMemoryRef();
+    //test_invalidate();
     //test_procedureCall();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_byteMemory(true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
