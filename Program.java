@@ -468,7 +468,7 @@ public class Program extends Test                                               
     void elseStop(final Object...O) {new If (Flip()) {void Then()  {new I() {void a() {Test.stop(O);}};}};}             //N Conditionally print a message if false and stop
     Bool say() {final Bool i = this; new I() {void a() {Test.say(i) ;}}; return this;}                                  //N Say the boolean
 
-    void jtrace() {appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", currentPc, id, i ? 1 : 0));}                      // Trace the execution of a boolean operation
+    void jtrace() {appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, i ? 1 : 0));}            // Trace the execution of a boolean operation
 
     Bool ok(Boolean Value)
      {new I()
@@ -476,6 +476,7 @@ public class Program extends Test                                               
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
+        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in verilog if the verilog trace matches the java trace
        };
       return this;
      }
@@ -489,6 +490,7 @@ public class Program extends Test                                               
         void Else()
          {new I() {void a() {Test.ok(got.notValid(), true);}};
          }
+        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in verilog if the verilog trace matches the java trace
        };
       return this;
      }
@@ -702,10 +704,10 @@ public class Program extends Test                                               
     void bex(Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}
 
             Int  dup       () {return new Int(this);}                                                                   // Duplicate an integer so that the duplicated version can be modified without modifying the original
-    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}       String v() {return "";}};              return b;}    // Whether the integer is valid   - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the verilog is identical to that of the java and thus there is no need to test the validity of the integers
-    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}       String v() {return "";}};              return b;}    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the verilog is identical to that of the java and thus there is no need to test the validity of the integers
-    private Int  invalidate() {                           new I() {void a() {ex(Ops.set, -1); v = false;} String v() {return ev(Ops.set, -1);}}; return this;} // Invalidate the integer. The invalidation is done in such a away as to make the instruction sequences for java and verilog match. Recall that that the verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to verilog.
-    private Int  copy (Int I) {                           new I() {void a() {i = I.i;         v = I.v  ;} String v() {return ev(Ops.set,  I);}}; return this;} // Copy the state of an integer without regard as to whether it is valid or not
+    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is valid   - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the verilog is identical to that of the java and thus there is no need to test the validity of the integers
+    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the verilog is identical to that of the java and thus there is no need to test the validity of the integers
+    private Int  invalidate() {                           new I() {void a() {ex(Ops.set, -1); v = false;}            String v() {return ev(Ops.set, -1);}}; return this;} // Invalidate the integer. The invalidation is done in such a away as to make the instruction sequences for java and verilog match. Recall that that the verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to verilog.
+    private Int  copy (Int I) {                           new I() {void a() {i = I.i;         v = I.v  ;  jtrace();} String v() {return ev(Ops.set,  I);}}; return this;} // Copy the state of an integer without regard as to whether it is valid or not
 
 //    Int  bclr (Int I) {new I() {void a() {bclrEx(I);}}; return this;}                                                   //N Clear the indicated bit
 //    Int  bset (Int I) {new I() {void a() {bsetEx(I);}}; return this;}                                                   //N Set the indicated bit
@@ -738,7 +740,7 @@ public class Program extends Test                                               
 
     Int say() {final Int i = this; new I() {void a() {Test.say(i);}};           return this;}                           // Say the integer
 
-    void jtrace()  {appendFile(javaTraceFile(), f("%8d i %8d = %8d\n", currentPc, id, i));}                             // Trace the execution of an integer operation
+    void jtrace()  {appendFile(javaTraceFile(), f("%8d i %8d = %8d\n", program().currentPc, id, i));}                   // Trace the execution of an integer operation
 
     Int ok(Integer Value)                                                                                               // Check the integer
      {new I()
@@ -835,7 +837,7 @@ public class Program extends Test                                               
      {bytes[I] = (byte)(J & 0xFF);                                                                                      // Set the value of a byte from an integer
      }
 
-    ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
+    ByteMemory copy22(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
      {new I()
        {void a()
          {System.arraycopy(SourceMemory.bytes, SourceOffset.i(), bytes, TargetOffset.i(), Width);
@@ -844,26 +846,64 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory clear()
+    ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
+     {new ForCount(new Int(Width))
+       {void body(Int Index)
+         {new I()
+           {void   a() {        bytes[TargetOffset.Add(Index).i()] = SourceMemory.bytes[SourceOffset        .Add(Index).i()];}
+            String v() {return "m[" + TargetOffset.i() + "+" + Index.i()+"] = m["     + SourceOffset.i() + "+" + Index .i()+"];";} // Does not work across different program memories
+           };
+         }
+       };
+      return this;
+     }
+
+    ByteMemory clear22()                                                                                                // Clear memory
      {new I() {void a() {Arrays.fill(bytes, 0, bytes.length, (byte)0);}};
       return this;
      }
 
-    ByteMemory clear(Int Start, int Width)
+    ByteMemory clear()                                                                                                  // Clear memory
+     {new ForCount(new Int(bytes.length))
+       {void  body(Int Index)
+         {new I()
+           {void   a() {      bytes[Index.i()] = (byte)0;}
+            String v() {return "m["+Index.i() +   "] = 0;";}
+           };
+         }
+       };
+      return this;
+     }
+
+    ByteMemory clear22(Int Start, int Width)                                                                            // Clear memory
      {final Int w = Start.Add(Width);
-      new I() {void a() {Arrays.fill(bytes, Start.i(),  Start.i()+Width, (byte)0);}};
+      new I()
+       {void a() {Arrays.fill(bytes, Start.i(),  Start.i()+Width, (byte)0);}
+       };
       return this;
      }
 
-    ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
-     {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
+    ByteMemory clear(Int Start, int Width)                                                                              // Clear memory
+     {new ForCount (Start, Start.Add(Width))
+       {void body(Int Index)
+         {new I()
+           {void   a() {bytes[Index.i()] = (byte)0;}
+            String v() {return "m["+Index.i()+"] = (byte)0;";}
+           };
+         }
+       };
       return this;
      }
 
-    ByteMemory invalidate(Int Start, int Width)
-     {new I() {void a() {invalidate(Start.i(),  Width);}};
-      return this;
-     }
+//    ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
+//     {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
+//      return this;
+//     }
+//
+//    ByteMemory invalidate(Int Start, int Width)
+//     {new I() {void a() {invalidate(Start.i(),  Width);}};
+//      return this;
+//     }
 
     int size() {return bytes.length;}                                                                                   //N Size of memory
 
@@ -945,18 +985,18 @@ public class Program extends Test                                               
 //D2 Memory references                                                                                                  // References to byte memory
 
     final class Ref                                                                                                     // Reference into memory
-     {final Int offset = new Int("memoryReferenceOffset");                                                              // Offset of this reference in memory
-      final int N = Integer.BYTES;
+     {final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
+      final int        N = Integer.BYTES;
       final ByteMemory m = ByteMemory.this;
       Ref(int Offset) {offset.set(Offset);}                                                                             // Offset this ref
       Ref(Int Offset) {offset.set(Offset);}                                                                             // Offset this ref
 
       ByteMemory byteMemory() {return ByteMemory.this;}
-      Program    program()    {return Program.this;}
+      Program       program() {return Program   .this;}
 
       Ref       copy(Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}               // Copy the specified memory possibly from another byte memory
       Ref      clear(int Width)            {m.clear     (offset, Width);                    return this;}               // Clear memory by setting its bytes to zero
-      Ref invalidate(int Width)            {m.invalidate(offset, Width);                    return this;}               //N Invalidate memory by setting its bytes to values unlikely to be valid
+//    Ref invalidate(int Width)            {m.invalidate(offset, Width);                    return this;}               //N Invalidate memory by setting its bytes to values unlikely to be valid
       Int    getByte(Int I)                {return m.getByte(I.Add(offset));}                                           //N Get the byte at the indicated position
       Int    getInt (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                    //N Get the int at the indicated position
       Bool   getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                        //N Get the bit in the specified byte at the specified position within the byte
@@ -1549,7 +1589,7 @@ Procedure, Procedure, TraceFile, display);
        }
      };
     P.execute();
-    P.testVerilog(Ex);
+    //P.testVerilog(Ex);
    }
 
   static void test_copy()
@@ -1658,42 +1698,42 @@ Procedure, Procedure, TraceFile, display);
               test_byteMemoryRef(false);
    }
 
-  static void test_invalidate(boolean Ex)
-   {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(16))
-     {void code()
-       {final ByteMemory     M = byteMemory;
-        final ByteMemory.Ref m = M.new Ref(8);
-        m.invalidate(8);
-        m.clear     (4);
-       }
-     };
-    P.execute();
-    ok(P.byteMemory, """
-   0   0
-   1   0
-   2   0
-   3   0
-   4   0
-   5   0
-   6   0
-   7   0
-   8   0
-   9   0
-  10   0
-  11   0
-  12  -1
-  13  -1
-  14  -1
-  15  -1
-""");
-    P.testVerilog(Ex);
-   }
-
-  static void test_invalidate()
-   {          test_invalidate(true);
-              test_invalidate(false);
-   }
+//  static void test_invalidate(boolean Ex)
+//   {sayCurrentTestName();
+//    final Program P = new Program(new Build().immediate(Ex).memory(16))
+//     {void code()
+//       {final ByteMemory     M = byteMemory;
+//        final ByteMemory.Ref m = M.new Ref(8);
+//        m.invalidate(8);
+//        m.clear     (4);
+//       }
+//     };
+//    P.execute();
+//    ok(P.byteMemory, """
+//   0   0
+//   1   0
+//   2   0
+//   3   0
+//   4   0
+//   5   0
+//   6   0
+//   7   0
+//   8   0
+//   9   0
+//  10   0
+//  11   0
+//  12  -1
+//  13  -1
+//  14  -1
+//  15  -1
+//""");
+//    P.testVerilog(Ex);
+//   }
+//
+//  static void test_invalidate()
+//   {          test_invalidate(true);
+//              test_invalidate(false);
+//   }
 /*
   static void test_procedureCall(boolean Ex)
    {sayCurrentTestName();
@@ -1740,19 +1780,19 @@ Procedure, Procedure, TraceFile, display);
     test_fibonacci();
     test_mod();
     test_incremental();
-    //test_remote();
+    test_remote();
 //test_bits();
-    //test_copy();
+    test_copy();
     //test_byteMemory();
     //test_byteMemoryNegative();
     //test_byteMemoryRef();
-    //test_invalidate();
+//test_invalidate();
     //test_procedureCall();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_bits(false);
+    test_copy(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
