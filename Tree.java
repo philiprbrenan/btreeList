@@ -123,7 +123,7 @@ class Tree extends Program                                                      
 
   void free(Locatable Free)                                                                                             // Free a leaf or a branch and invalidate its contents
    {final Bint a = Free.getLocation();
-    byteMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                              // Invalidate the memory
+    //byteMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                            // Invalidate the memory
     freeChain.set(a.i());
    }
 
