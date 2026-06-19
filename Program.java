@@ -895,15 +895,15 @@ public class Program extends Test                                               
       return this;
      }
 
-//    ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
-//     {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
-//      return this;
-//     }
+//  ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
+//   {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
+//    return this;
+//   }
 //
-//    ByteMemory invalidate(Int Start, int Width)
-//     {new I() {void a() {invalidate(Start.i(),  Width);}};
-//      return this;
-//     }
+//  ByteMemory invalidate(Int Start, int Width)
+//   {new I() {void a() {invalidate(Start.i(),  Width);}};
+//    return this;
+//   }
 
     int size() {return bytes.length;}                                                                                   //N Size of memory
 
@@ -1791,8 +1791,8 @@ Procedure, Procedure, TraceFile, display);
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    test_copy(!true);
+   {//oldTests();
+    test_byteMemory(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
