@@ -100,7 +100,7 @@ class Branch extends Program implements Program.Locatable                       
   void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
 
   void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
-  void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
+//void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
 
 //D1  Delete, find, insert                                                                                              // Delete, find, insert keys and data in a branch
 
