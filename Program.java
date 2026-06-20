@@ -34,7 +34,7 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
-  final boolean                               runVerilog = false;                                                       // Generate and execute verilog version of each program
+  final boolean                               runVerilog = true;                                                        // Generate and execute verilog version of each program
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
