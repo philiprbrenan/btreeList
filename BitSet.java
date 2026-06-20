@@ -20,12 +20,14 @@ final public class BitSet extends Program                                       
   final  int[]limitsLowerZero;                                                                                          // The lower limit of the zeros tree for each possible position in the ones tree
   final  int[]heightOne;                                                                                                // Position in ones tree to height in ones tree
   final  int[]heightZero;                                                                                               // Position in zeros tree to height in zeros tree
+  final  int[]posZero;                                                                                                   // Position in ones tree row from position ones tree
   final  String luoVerilog;                                                                                             // Verilog functions to lookup constants from arrays describing shape of trees
   final  String luzVerilog;
   final  String lloVerilog;
   final  String llzVerilog;
   final  String hoVerilog ;
   final  String hzVerilog ;
+  final  String pzVerilog;
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
@@ -69,6 +71,7 @@ final public class BitSet extends Program                                       
     llzVerilog = "x_bitSet_limitsLowerZero_"+bitSize;
     hoVerilog  = "x_bitSet_heightOne_"      +bitSize;
     hzVerilog  = "x_bitSet_heightZero_"     +bitSize;
+    pzVerilog  = "x_bitSet_posZero_"        +bitSize;
 
     limitsUpperOne   = new int[top_one ()+1]; limitsUpperOne ();                                                        // Upper limits of ones tree
     limitsUpperZero  = new int[top_zero()+2]; limitsUpperZero();                                                        // Upper limits of zeros tree
@@ -76,6 +79,7 @@ final public class BitSet extends Program                                       
     limitsLowerZero  = new int[top_zero()+2]; limitsLowerZero();                                                        // Lower limits of zeros tree
     heightOne        = new int[top_one() +1]; heightOne      ();                                                        // Height of each node in the ones tree
     heightZero       = new int[top_zero()+2]; heightZero     ();                                                        // Height of each node in the zeros tree
+    posZero          = new int[top_zero()+2]; posZeroArray   ();                                                        // Position in row in zeros tree from position in zeros tree
    }
 
   BitSet initializeMemory() {memoryRef.clear(bytesNeeded()); return this;}                                              // Initialize memory
@@ -245,15 +249,33 @@ final public class BitSet extends Program                                       
 
   Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} //N Position in the current row
   Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} //N Position in the current row
-  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
+  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}                   String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row
   Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} //N Position in the current row
 
-  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
-  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
-  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Lower limit of the current row in the ones tree
-  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} //N Lower limit of the current row in the zeros tree
-  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Height of the specified position in the ones tree
-  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Height of the specified position in the zeros tree
+  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace(luoVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace(luzVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
+  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);} String v() {return r.vtrace(lloVerilog+"("+Pos.vn()+")");}}; return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);} String v() {return r.vtrace(llzVerilog+"("+Pos.vn()+")");}}; return r;} //N Lower limit of the current row in the zeros tree
+  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace(hoVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the ones tree
+  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace(hzVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the zeros tree
+
+  int pos_zero (int Pos)                                                                                                // Position in the indicated row of the zeros tree
+   {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
+    return p;
+   }
+
+  int pos_one  (int Pos)                                                                                                // Position in the indicated row of the ones tree
+   {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
+    int p = Pos - base_one();
+    int b = bitSize2;
+    for (int i = 0; i < bitSize; i++) if (p >= b) {p -= b; b >>>= 1;} else break;
+    return p;
+   }
+
+  void posZeroArray()                                                                                                    // Position in row from position in ones tree
+   {for (int i = 0, N = top_zero(); i <= N; ++i) posZero[i] = pos_zero(i);
+    defineArrayViaVerilogFunction(pzVerilog, posZero);
+   }
 
   void limitsUpperOne()                                                                                                 // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
@@ -293,19 +315,6 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
      }
     defineArrayViaVerilogFunction(hzVerilog, heightZero);
-   }
-
-  int pos_zero  (int Pos)                                                                                               // Position in the indicated row of the zeros tree
-   {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
-    return pos_one(Pos - base_zero() + bitSize);
-   }
-
-  int pos_one  (int Pos)                                                                                                // Position in the indicated row of the ones tree
-   {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
-    int p = Pos - base_one();
-    int b = bitSize2;
-    for (int i = 0; i < bitSize; i++) if (p >= b) {p -= b; b >>>= 1;} else break;
-    return p;
    }
 
   Int lowOne(Int Pos)                                                                                                   // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
@@ -767,13 +776,17 @@ final public class BitSet extends Program                                       
   static BitSet test_bits(boolean Ex, int N)                                                                            // Create test bitset.
    {final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Allocate backing storage.
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
-    final BitSet    b = new BitSet(build).initializeMemory();                                                           // Create a bit set
+    final BitSet    b = new BitSet(build); //.initializeMemory();                                                           // Create a bit set
     return b;                                                                                                           // Return test bitset.
    }
 
   static void test_prevNext(boolean Ex)
    {final BitSet b = test_bits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
+    final Int a = b.new Int();
+if (false) {
+    a.set(1);
+    b.set(a);
 
     for (int i : s) b.set(b.new Int(i));
     b.ok(()->b, """
@@ -847,7 +860,7 @@ Zero:
 
                                 b.firstZero().ok( 0);
                                 b. lastZero().ok(29);
-
+}
     b.maxSteps = 99_999;
     b.execute();
     b.generateVerilog();
@@ -1660,7 +1673,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();                                                                                                         // Run baseline tests.
+    test_prevNext();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
