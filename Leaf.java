@@ -239,7 +239,7 @@ say("LLLLaaaa");
          {void body(Int Index, Bool Continue)
            {final Int i = f.i();
             final Int k = slots.getSlotToKeyValue(i), d = data(slots.getSlotToKeyIndex(i));
-            new I() {void a() {Iterator.process(k, d);} String v() {return "not set" + traceComment();}};
+            new I() {void a() {Iterator.process(k, d);} String v() {return "/*not set*/" + traceComment();}};
             f.copy(slots.usedSlotsToKeys.nextOne(i));
             Continue.set(f.valid());
            }
