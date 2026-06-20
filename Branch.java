@@ -329,7 +329,7 @@ class Branch extends Program implements Program.Locatable                       
        {new For(maxSize)
          {void body(Int Index, Bool Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
-            new I() {void a() {Iterator.process(k, d);} String v() {return "not set" + traceComment();}};
+            new I() {void a() {Iterator.process(k, d);} String v() {return "/*not set*/" + traceComment();}};
             f.copy(slots.usedSlotsToKeys.nextOne(f.i()));
             Continue.set(f.valid());
            }
