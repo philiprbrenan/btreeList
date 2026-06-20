@@ -76,7 +76,7 @@ class Leaf extends Program implements Program.Locatable                         
 
   Leaf initializeMemory()                                                                                               // Initialize slots and data associated with the leaf
    {clear();                                                                                                            // Clear backing memory
-    //slots.initializeMemory();                                                                                           // Initialize slots
+    slots.initializeMemory();                                                                                           // Initialize slots
     return this;
    }
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
