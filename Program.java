@@ -29,7 +29,7 @@ public class Program extends Test                                               
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
-  final Stack<String>                extraVerilogMethods = new Stack<>();                                               // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
+  final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
   final static class Build                                                                                              // Builder for this program
@@ -603,7 +603,7 @@ public class Program extends Test                                               
         case down -> {s.append(n+">>>1"     );}
         case sqrt -> {s.append("sqrt("+n+")");}
         case neg  -> {s.append("-"+n        );}
-        case abs  -> {s.append("abs("+n+")" );}
+        case abs  -> {s.append("(("+n+" < 0) ? -"+n+" : "+n+")");}
         default   -> stop("Op not implemented:", Op);
        }
       return vtrace(s);
@@ -843,8 +843,8 @@ public class Program extends Test                                               
     Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } String v() {return "";}}; return this;}      // Test the integer value of the boolean integer
     Bint ok(Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} String v() {return "";}}; return this;}      // Test the integer value of the boolean integer
 
-    void     stop(final Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);}};}};} // Conditionally print a message if false and stop
-    void elseStop(final Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);}};}};} // Conditionally print a message if true and stop
+    void     stop(final Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);} String v() {return "";} };}};} // Conditionally print a message if false and stop
+    void elseStop(final Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);} String v() {return "";} };}};} // Conditionally print a message if true and stop
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
@@ -1404,7 +1404,7 @@ Procedure, Procedure, TraceFile, display);
   end
 endfunction
 """, Name));
-    program().extraVerilogMethods.push(""+s);
+    program().extraVerilogMethods.add(""+s);
    }
 
 //D1 Testing                                                                                                            // Test expected output against got output
