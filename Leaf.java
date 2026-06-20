@@ -192,19 +192,32 @@ class Leaf extends Program implements Program.Locatable                         
 
   Bool mergeLeft(Leaf Left)                                                                                             // Merge the leaf into the right of this leaf
    {final Leaf right = this;
+say("LLLL1111");
     final Int  lc    = Left .count();
+say("LLLL2222");
     final Int  rc    = right.count();
+say("LLLL3333");
     final Bool r     = new Bool().clear();
+say("LLLL4444");
 
     new If (lc.Add(rc).le(maxSize()))
      {void Then()
        {r.set();
-        Left .compactLeft();    right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
+say("LLLL555a");
+        Left .compactLeft();
+say("LLLL555b");
+
+         right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
+say("LLLL6666");
         Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
+say("LLLL7777");
         right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
+say("LLLL8888");
 
         right.copyMergeData(Left, new Int(0), lc);                                                                      // Copy the data values associated with the slots
+say("LLLL9999");
         right.slots.mergeFromLeftEven(Left.slots);                                                                      // Merge the slots
+say("LLLLaaaa");
        }
      };
     return r;
