@@ -20,13 +20,15 @@ final public class BitSet extends Program                                       
   final  int[]limitsLowerZero;                                                                                          // The lower limit of the zeros tree for each possible position in the ones tree
   final  int[]heightOne;                                                                                                // Position in ones tree to height in ones tree
   final  int[]heightZero;                                                                                               // Position in zeros tree to height in zeros tree
-  final  int[]posZero;                                                                                                   // Position in ones tree row from position ones tree
+  final  int[]posZero;                                                                                                  // Position in zeros tree row from position ones tree
+  final  int[]posOne;                                                                                                   // Position in ones tree row from position ones tree
   final  String luoVerilog;                                                                                             // Verilog functions to lookup constants from arrays describing shape of trees
   final  String luzVerilog;
   final  String lloVerilog;
   final  String llzVerilog;
   final  String hoVerilog ;
   final  String hzVerilog ;
+  final  String poVerilog;
   final  String pzVerilog;
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
@@ -71,6 +73,7 @@ final public class BitSet extends Program                                       
     llzVerilog = "x_bitSet_limitsLowerZero_"+bitSize;
     hoVerilog  = "x_bitSet_heightOne_"      +bitSize;
     hzVerilog  = "x_bitSet_heightZero_"     +bitSize;
+    poVerilog  = "x_bitSet_posOne_"         +bitSize;
     pzVerilog  = "x_bitSet_posZero_"        +bitSize;
 
     limitsUpperOne   = new int[top_one ()+1]; limitsUpperOne ();                                                        // Upper limits of ones tree
@@ -79,6 +82,7 @@ final public class BitSet extends Program                                       
     limitsLowerZero  = new int[top_zero()+2]; limitsLowerZero();                                                        // Lower limits of zeros tree
     heightOne        = new int[top_one() +1]; heightOne      ();                                                        // Height of each node in the ones tree
     heightZero       = new int[top_zero()+2]; heightZero     ();                                                        // Height of each node in the zeros tree
+    posOne           = new int[top_one() +1]; posOneArray   ();                                                         // Position in row in ones tree from position in zeros tree
     posZero          = new int[top_zero()+2]; posZeroArray   ();                                                        // Position in row in zeros tree from position in zeros tree
    }
 
@@ -203,9 +207,7 @@ final public class BitSet extends Program                                       
    }
 
   void checkInActualOrOnes(Int Pos)                                                                                     // Check that we are in the actual bits or the ones tree
-   {if (immediate())
-     {if (Pos.i() < size()) checkInActual(Pos); else checkInOnesTree(Pos);
-     }
+   {if (immediate() && Pos.i() < size()) checkInActual(Pos); else checkInOnesTree(Pos);
    }
 
   void checkInZerosTree(Int Pos)                                                                                        // Check that we are in the zeros tree
@@ -217,9 +219,7 @@ final public class BitSet extends Program                                       
    }
 
   void checkInActualOrZeros(Int Pos)                                                                                    // Check that we are in the zeros tree or the actual bits
-   {if (immediate())
-     {if (Pos.i() < size()) checkInActual(Pos); else checkInZerosTree(Pos);
-     }
+   {if (immediate() && Pos.i() < size()) checkInActual(Pos); else checkInZerosTree(Pos);
    }
 
   int top_zero()     {return 2 * bitSize - 2 + bitSize1;}                                                               // Top of the zeros tree if it exists - zero based
@@ -229,9 +229,6 @@ final public class BitSet extends Program                                       
 
   int posOne (int P) {return 1 * bitSize + P;}                                                                          // Position in the ones  tree if it exists, argument is zero based as is the result
   int posZero(int P) {return 2 * bitSize + P - 1;}                                                                      // Position in the zeros tree if it exists, argument is zero based as is the result
-
-  Int posOne (Int P) {final Int r = new Int(); new I() {void a() {r.ex(Int.Ops.set, posOne (P.i()));}}; return r;}      //N Position in the ones  tree if it exists, argument is zero based as is the result
-  Int posZero(Int P) {final Int r = new Int(); new I() {void a() {r.ex(Int.Ops.set, posZero(P.i()));}}; return r;}      //N Position in the zeros tree if it exists, argument is zero based as is the result
 
   Int zeroToOne(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
   Int oneToZero(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
@@ -247,10 +244,10 @@ final public class BitSet extends Program                                       
   int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
   int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
 
-  Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   (0)      );} String v() {return r.vtrace(""+posZero(0));}}; return r;} //N Position in the current row
-  Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    (0)      );} String v() {return r.vtrace(""+posOne (0));}}; return r;} //N Position in the current row
-  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}                   String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row
-  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} //N Position in the current row
+  Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, base_zero ()       );} String v() {return r.vtrace(""+posZero(0));}}; return r;} //N Position in the current row
+  Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, base_one  ()       );} String v() {return r.vtrace(""+posOne (0));}}; return r;} //N Position in the current row
+  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));} String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row in the zeros tree
+  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));} String v() {return r.vtrace(poVerilog +"("+Pos.vn()+")");}}; return r;} //N Position in the current row in the ones tree
 
   Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace(luoVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
   Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace(luzVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
@@ -275,6 +272,11 @@ final public class BitSet extends Program                                       
   void posZeroArray()                                                                                                    // Position in row from position in ones tree
    {for (int i = 0, N = top_zero(); i <= N; ++i) posZero[i] = pos_zero(i);
     defineArrayViaVerilogFunction(pzVerilog, posZero);
+   }
+
+  void posOneArray()                                                                                                    // Position in row from position in ones tree
+   {for (int i = 0, N = top_one(); i <= N; ++i) posOne[i] = pos_one(i);
+    defineArrayViaVerilogFunction(poVerilog, posOne);
    }
 
   void limitsUpperOne()                                                                                                 // Upper limits of the ones tree
