@@ -886,8 +886,8 @@ public class Program extends Test                                               
      {new ForCount(new Int(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {        bytes[TargetOffset.i() +       Index.i()] = SourceMemory.bytes[SourceOffset.i() +       Index.i()];}
-            String v() {return "m[" + TargetOffset.i() + "+" + Index.i()+"] = m["            + SourceOffset.i() + "+" + Index.i()+"];";} // Does not work across different program memories
+           {void   a() {        bytes[TargetOffset.i() +        Index.i ()] = SourceMemory.bytes[SourceOffset.i () +       Index.i ()];}
+            String v() {return "m[" + TargetOffset.vn() + "+" + Index.vn()+"] = m["            + SourceOffset.vn() + "+" + Index.vn()+"];";} // Does not work across different program memories
            };
          }
        };
@@ -898,8 +898,8 @@ public class Program extends Test                                               
      {new ForCount(new Int(bytes.length))
        {void  body(Int Index)
          {new I()
-           {void   a() {      bytes[Index.i()] = (byte)0;}
-            String v() {return "m["+Index.i() +   "] = 0;";}
+           {void   a() {      bytes[Index.i ()] = (byte)0;}
+            String v() {return "m["+Index.vn() +   "] = 0;";}
            };
          }
        };
@@ -910,7 +910,7 @@ public class Program extends Test                                               
      {new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {bytes[Index.i()] = (byte)0;}
+           {void   a() {      bytes[Index.i ()] = (byte)0;}
             String v() {return "m["+Index.vn()+"] = 0;";}
            };
          }
@@ -966,7 +966,7 @@ public class Program extends Test                                               
      }
 
     Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
-     {Bool r = new Bool();
+     {Bool r = new Bool();                                                             perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --compile "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList" (in directory: /home/phil/btreeList)
       new I()
        {void   a() {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));}
         String v() {return r.vtrace(new StringBuilder("m["+I.vn()+"]["+J.vn()+"]"));}
