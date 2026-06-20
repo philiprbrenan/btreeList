@@ -78,7 +78,7 @@ class Branch extends Program implements Program.Locatable                       
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
    }
 
-  Branch initializeMemory()                                                                                             // Initialize slots and data associated with the branch
+  Branch initializeMemory2()                                                                                             // Initialize slots and data associated with the branch
    {clear();                                                                                                            // Clear backing memory
     slots.initializeMemory();                                                                                           // Initialize slots
     return this;
@@ -390,7 +390,7 @@ class Branch extends Program implements Program.Locatable                       
   static void test_branch(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    l.initializeMemory();
+    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -428,7 +428,7 @@ Branch         size:   7 count:   4 top:   0
   static void test_compactLeft(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    l.initializeMemory();
+    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -463,7 +463,7 @@ Branch         size:   7 count:   3 top:   0
   static void test_compactRight(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    l.initializeMemory();
+    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -499,7 +499,7 @@ Branch         size:   7 count:   4 top:   0
   static void test_splitRight(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    l.initializeMemory();
+    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -521,7 +521,7 @@ Branch         size:   7 count:   7 top:  99
    5     7    77
 """);
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
-    r.initializeMemory();
+    //r.initializeMemory();
     l.splitRight(r).ok(4);
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
@@ -551,7 +551,7 @@ Branch         size:   7 count:   3 top:  99
   static void test_splitLeft(boolean Ex)
    {sayCurrentTestName();
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
-    r.initializeMemory();
+    //r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -602,7 +602,7 @@ Branch         size:   7 count:   3 top:  99
   static void test_mergeRight(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    l.initializeMemory();
+    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -666,7 +666,7 @@ Branch         size:   7 count:   7 top:  99
   static void test_mergeLeft(boolean Ex)
    {sayCurrentTestName();
     final Branch r = new Branch(new Build().maxSize(7).immediate(Ex));
-    r.initializeMemory();
+    //r.initializeMemory();
     r.insert(r.new Int(2), r.new Int(22));
     r.insert(r.new Int(4), r.new Int(44));
     r.insert(r.new Int(3), r.new Int(33));
@@ -730,7 +730,7 @@ Branch         size:   7 count:   7 top:  99
   static void test_find(boolean Ex)
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
-    l.initializeMemory();
+    //l.initializeMemory();
     l.insert(l.new Int(2), l.new Int(22));
     l.insert(l.new Int(4), l.new Int(44));
     l.insert(l.new Int(3), l.new Int(33));
@@ -785,7 +785,7 @@ Branch         size:   7 count:   0 top:   0
    {sayCurrentTestName();
     new Branch(new Build().maxSize(7).immediate(Ex))
      {@Override void branchCode()
-       {initializeMemory();
+       {//initializeMemory();
         insert(new Int(2), new Int(22));
         insert(new Int(4), new Int(44));
         insert(new Int(3), new Int(33));
@@ -834,11 +834,11 @@ Branch         size:   7 count:   7 top:  88
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex))
      {void branchCode()
        {final Branch l = this;
-        l.initializeMemory();
+        //l.initializeMemory();
         l.data(new Int(1), new Int(A));
         l.data(new Int(1))  .ok(A);
         final Branch r = new Branch(new Build().maxSize(7).immediate(Ex).parent(l));
-        r.initializeMemory();
+        //r.initializeMemory();
         r.copy(l);
 
         l.clear();
@@ -859,7 +859,7 @@ Branch         size:   7 count:   7 top:  88
     final int    N = 4;
     final Branch a = new Branch(new Build().maxSize(N-1).immediate(Ex))
      {void branchCode()
-       {initializeMemory();
+       {//initializeMemory();
         insert(new Int(10), new Int(1));
         insert(new Int(20), new Int(2));
         insert(new Int(30), new Int(3));
@@ -883,7 +883,7 @@ Branch         size:   7 count:   7 top:  88
    {sayCurrentTestName();
     new Branch(new Build().maxSize(7).immediate(Ex))
      {@Override void branchCode()
-       {initializeMemory();
+       {//initializeMemory();
         insertEmpty(new Int(4), new Int(44));
         check(print(), """
 Branch         size:   7 count:   1 top:   0
