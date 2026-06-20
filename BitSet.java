@@ -246,8 +246,8 @@ final public class BitSet extends Program                                       
 
   Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, base_zero ()       );} String v() {return r.vtrace(""+posZero(0));}}; return r;} //N Position in the current row
   Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, base_one  ()       );} String v() {return r.vtrace(""+posOne (0));}}; return r;} //N Position in the current row
-  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));} String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row in the zeros tree
-  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));} String v() {return r.vtrace(poVerilog +"("+Pos.vn()+")");}}; return r;} //N Position in the current row in the ones tree
+  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   [Pos.i()]);} String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row in the zeros tree
+  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    [Pos.i()]);} String v() {return r.vtrace(poVerilog +"("+Pos.vn()+")");}}; return r;} //N Position in the current row in the ones tree
 
   Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace(luoVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
   Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace(luzVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
