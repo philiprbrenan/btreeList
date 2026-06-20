@@ -157,6 +157,12 @@ public class Test                                                               
      }
    }
 
+  static String substitute(String A, String...Pairs)                                                                    // Substitute pairs of key values into a string
+   {if (Pairs.length % 2 == 1) stop("Even number of key, values required");
+    for (int i = 0; i < Pairs.length; i += 2) A = A.replace("{" + Pairs[i] + "}", Pairs[i+1]);
+    return A;
+   }
+
   static String nws(Object S)                                                                                           // Normalize white space in a string describing an object
    {final String r = ""+S;                                                                                              // Get string description
     final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
