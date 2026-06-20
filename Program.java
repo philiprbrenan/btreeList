@@ -879,15 +879,6 @@ public class Program extends Test                                               
      {bytes[I] = (byte)(J & 0xFF);                                                                                      // Set the value of a byte from an integer
      }
 
-    ByteMemory copy22(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
-     {new I()
-       {void a()
-         {System.arraycopy(SourceMemory.bytes, SourceOffset.i(), bytes, TargetOffset.i(), Width);
-         }
-       };
-      return this;
-     }
-
     ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
      {new ForCount(new Int(Width))
        {void body(Int Index)
@@ -900,11 +891,6 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory clear22()                                                                                                // Clear memory
-     {new I() {void a() {Arrays.fill(bytes, 0, bytes.length, (byte)0);}};
-      return this;
-     }
-
     ByteMemory clear()                                                                                                  // Clear memory
      {new ForCount(new Int(bytes.length))
        {void  body(Int Index)
@@ -913,14 +899,6 @@ public class Program extends Test                                               
             String v() {return "m["+Index.i() +   "] = 0;";}
            };
          }
-       };
-      return this;
-     }
-
-    ByteMemory clear22(Int Start, int Width)                                                                            // Clear memory
-     {final Int w = Start.Add(Width);
-      new I()
-       {void a() {Arrays.fill(bytes, Start.i(),  Start.i()+Width, (byte)0);}
        };
       return this;
      }
@@ -1004,18 +982,19 @@ public class Program extends Test                                               
     ByteMemory putInt(Int I, Int J)                                                                                     // Set the int at the indicated position relative to the start to the specified value
      {new I()
        {void a()
-         {final int p = I.i(), v = J.i();
-          putByte(p+0, v >>>  0);
-          putByte(p+1, v >>>  8);
-          putByte(p+2, v >>> 16);
-          putByte(p+3, v >>> 24);
+         {final int i = I.i(), j = J.i();
+          putByte(i+0, j >>>  0);
+          putByte(i+1, j >>>  8);
+          putByte(i+2, j >>> 16);
+          putByte(i+3, j >>> 24);
          }
         String v()
          {final String i = I.vn(), j = J.vn();
-          return "m[0+"+i+"] <= "+j+"[ 7-:8];"+
-                 "m[1+"+i+"] <= "+j+"[15-:8];"+
-                 "m[2+"+i+"] <= "+j+"[23-:8];"+
-                 "m[3+"+i+"] <= "+j+"[31-:8];";
+
+          return "m[0+"+i+"] <= "+j+"[ 0+:8];"+
+                 "m[1+"+i+"] <= "+j+"[ 8+:8];"+
+                 "m[2+"+i+"] <= "+j+"[16+:8];"+
+                 "m[3+"+i+"] <= "+j+"[24+:8];";
          }
        };
       return this;
@@ -1265,9 +1244,9 @@ module %s;                                                                      
   reg        reset;                                                                                                     // Reset for chip
   integer    pc;                                                                                                        // Program counter for stepping through user code
   integer    index;
-  reg[7:0]   m[MEMORY-1:0];                                                                                             // Byte memory
-  integer    i[INT_VARS-1:0];                                                                                           // Integers
-  reg        b[BOOL_VARS-1:0];                                                                                          // Booleans
+  reg[7:0]   m[MEMORY:0];                                                                                               // Byte memory
+  integer    i[INT_VARS:0];                                                                                             // Integers
+  reg        b[BOOL_VARS:0];                                                                                            // Booleans
 
   typedef enum integer                                                                                                  // Possible states of machine
    {state_clearMemory = 0,
@@ -1334,8 +1313,10 @@ module %s;                                                                      
   %s
 """,
 name, sizeMemory, numberOfInts, numberOfBools,
-traceVerilogVariable("traceBool", "b", traceFile),
-traceVerilogVariable("traceInt",  "i", traceFile)));
+traceVerilogVariable("traceBool",  "b", traceFile),
+traceVerilogVariable("traceInt",   "i", traceFile),
+traceVerilogVariable("memoryBool", "b", traceFile),
+traceVerilogVariable("memoryInt",  "i", traceFile)));
 
   for(String m : extraVerilogMethods) s.append(m);                                                                      // Incorporate extra Verilog methods required to support generated instructions
 
