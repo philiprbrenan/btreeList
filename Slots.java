@@ -1807,14 +1807,14 @@ Zero:
        {final Slots s = this;
         final StringBuilder t = new StringBuilder();
         initializeMemory();
-        insert(new Int(14)); new I() {void a() {t.append(s);}};
-        insert(new Int(13)); new I() {void a() {t.append(s);}};
-        insert(new Int(16)); new I() {void a() {t.append(s);}};
-        insert(new Int(15)); new I() {void a() {t.append(s);}};
-        insert(new Int(18)); new I() {void a() {t.append(s);}};
-        insert(new Int(17)); new I() {void a() {t.append(s);}};
-        insert(new Int(12)); new I() {void a() {t.append(s);}};
-        insert(new Int(11)); new I() {void a() {t.append(s);}};
+        insert(new Int(14)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(13)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(16)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(15)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(18)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(17)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(12)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(11)); new I() {void a() {t.append(s);} String v() {return "";}};
         ok(()->t, """
 Slots    : size:  8, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
