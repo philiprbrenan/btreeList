@@ -1252,7 +1252,7 @@ keys     :    0   1   0   2
 """);
 
         final StringBuilder T = new StringBuilder();
-        compactKeysLeft((S, b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");}};});
+        compactKeysLeft((S, b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
         //new I() {void a() {testStop(T, s);}};
         ok(()->T, "3->0;");
         ok(()->s, """
@@ -1266,7 +1266,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder U = new StringBuilder();
-        compactKeysRight((S, b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");}};});
+        compactKeysRight((S, b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
         //new I() {void a() {testStop(U, s);}};
         ok(()->U, "0->3;1->2;");
         ok(()->s, """
@@ -1280,7 +1280,7 @@ keys     :    0   0   1   2
 """);
 
         final StringBuilder W = new StringBuilder();
-        compactKeysLeft ((S, b, a)->{new I() {void a() {W.append(a.i()+"->"+b.i()+";");}};});
+        compactKeysLeft ((S, b, a)->{new I() {void a() {W.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
         compactSlotsLeft();
         //new I() {void a() {testStop(W, s);}};
         ok(()->W, "3->0;2->1;");
@@ -1295,7 +1295,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder X = new StringBuilder();
-        compactKeysRight ((S, b, a)->{new I() {void a() {X.append(a.i()+"->"+b.i()+";");}};});
+        compactKeysRight ((S, b, a)->{new I() {void a() {X.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
         compactSlotsRight();
         //new I() {void a() {testStop(X, s);}};
         ok(()->X, "0->3;1->2;");
