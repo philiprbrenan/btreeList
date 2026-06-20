@@ -20,6 +20,12 @@ final public class BitSet extends Program                                       
   final  int[]limitsLowerZero;                                                                                          // The lower limit of the zeros tree for each possible position in the ones tree
   final  int[]heightOne;                                                                                                // Position in ones tree to height in ones tree
   final  int[]heightZero;                                                                                               // Position in zeros tree to height in zeros tree
+  final  String luoVerilog = "x_bitSet_limitsUpperOne";
+  final  String luzVerilog = "x_bitSet_limitsUpperZero";
+  final  String lloVerilog = "x_bitSet_limitsLowerOne";
+  final  String llzVerilog = "x_bitSet_limitsLowerZero";
+  final  String hoVerilog  = "x_bitSet_heightOne";
+  final  String hzVerilog  = "x_bitSet_heightZero";
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
@@ -234,52 +240,51 @@ final public class BitSet extends Program                                       
   Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}}; return r;} // Position in the current row
   Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} //N Position in the current row
 
-  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);}}; return r;} // Upper limit of the current row in the ones tree
-  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);}}; return r;} // Upper limit of the current row in the zeros tree
-  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);}}; return r;} // Lower limit of the current row in the ones tree
-  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);}}; return r;} //N Lower limit of the current row in the zeros tree
-  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);}}; return r;} // Height of the specified position in the ones tree
-  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);}}; return r;} // Height of the specified position in the zeros tree
+  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
+  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} //N Lower limit of the current row in the zeros tree
+  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Height of the specified position in the ones tree
+  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace("luoVerilog("+Pos.vn()+")");}}; return r;} // Height of the specified position in the zeros tree
 
   void limitsUpperOne()                                                                                                 // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
     final int N = top_one();
     for (int i = 0; i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
-
-    final StringJoiner j = new StringJoiner(",");                                                                       // Verilog to get a specified element of the array
-
-    for (int i = 0; i <= limitsUpperOne.length; ++i) j.add(""+limitsUpperOne[i]);                                       // Array elements
-    final StringBuilder s = new StringBuilder();                                                                        // Array definition
-    s.append(f("localparam integer xBitSet_%s [0:%d] = '{%s};\n", "limitsUpperOne", limitsUpperOne.length, ""+j));
-    program().extraVerilogMethods.push(""+s);
+    defineArrayViaVerilogFunction(luoVerilog, limitsUpperOne);
    }
 
   void limitsUpperZero()                                                                                                // Upper limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i]; else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
+    defineArrayViaVerilogFunction(luzVerilog, limitsUpperZero);
    }
 
   void limitsLowerOne()                                                                                                 // Lower limits of the ones tree
    {int l = 0, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
+    defineArrayViaVerilogFunction(lloVerilog, limitsLowerOne);
    }
 
   void limitsLowerZero()                                                                                                // Lower limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i]; else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
+    defineArrayViaVerilogFunction(llzVerilog, limitsLowerZero);
    }
 
   void heightOne()                                                                                                      // Height of each node in the ones tree
    {int l = 0, w = bitSize, h = 0;
     for (int i = 0, N = top_one(); i <= N; ++i) {heightOne[i] = h; if (i >= l+w-1) {l += w; w >>>= 1; ++h;}}
+    defineArrayViaVerilogFunction(hoVerilog, heightOne);
    }
 
   void heightZero()                                                                                                     // Height of each node in the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
      }
+    defineArrayViaVerilogFunction(hzVerilog, heightZero);
    }
 
   int pos_zero  (int Pos)                                                                                               // Position in the indicated row of the zeros tree
@@ -837,7 +842,7 @@ Zero:
 
     b.maxSteps = 99_999;
     b.execute();
-    b.generateAndRunVerilog();
+    b.generateVerilog();
    }
 
   static void test_prevNext()                                                                                           // Test tree of searchable one bits
@@ -1634,8 +1639,7 @@ Zero:
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
-   {test_prevNext01();
-    test_prevNext();
+   {test_prevNext();
     test_prevNext01();
     test_prevNext10();
     test_oneZero();
@@ -1653,7 +1657,8 @@ Zero:
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
    {try                                                                                                                 // Protected execution block.
-     {if (github_actions) oldTests(); else newTests();                                                                  // Select tests.
+     {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
+      if (github_actions) oldTests(); else newTests();                                                                  // Select tests.
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Optional coverage analysis.
       testSummary();                                                                                                    // Summarize test results.
       System.exit(testsFailed);                                                                                         // Exit with status.
