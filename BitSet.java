@@ -783,11 +783,6 @@ final public class BitSet extends Program                                       
   static void test_prevNext(boolean Ex)
    {final BitSet b = test_bits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
-    final Int a = b.new Int();
-if (false) {
-    a.set(1);
-    b.set(a);
-
     for (int i : s) b.set(b.new Int(i));
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
@@ -860,7 +855,6 @@ Zero:
 
                                 b.firstZero().ok( 0);
                                 b. lastZero().ok(29);
-}
     b.maxSteps = 99_999;
     b.execute();
     b.generateVerilog();
