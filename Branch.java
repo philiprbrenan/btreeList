@@ -329,7 +329,7 @@ class Branch extends Program implements Program.Locatable                       
        {new For(maxSize)
          {void body(Int Index, Bool Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
-            new I() {void a() {Iterator.process(k, d);}};
+            new I() {void a() {Iterator.process(k, d);} String v() {return "not set" + traceComment();}};
             f.copy(slots.usedSlotsToKeys.nextOne(f.i()));
             Continue.set(f.valid());
            }
@@ -342,7 +342,7 @@ class Branch extends Program implements Program.Locatable                       
 
   StringBuilder print()                                                                                                 // Print the branch
    {final StringBuilder s = new StringBuilder();
-    new I() {void a() {s.setLength(0); s.append(f("Branch"));}};
+    new I() {void a() {s.setLength(0); s.append(f("Branch"));} String v() {return "";}};
 
     final Bint l = getLocation();                                                                                       // Index in memory if present
     new If (l)
