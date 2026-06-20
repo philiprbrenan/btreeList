@@ -247,8 +247,8 @@ final public class BitSet extends Program                                       
   int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
   int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
 
-  Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   (0)      );}}; return r;} //N Position in the current row
-  Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    (0)      );}}; return r;} //N Position in the current row
+  Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   (0)      );} String v() {return r.vtrace(""+posZero(0));}}; return r;} //N Position in the current row
+  Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    (0)      );} String v() {return r.vtrace(""+posOne (0));}}; return r;} //N Position in the current row
   Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, pos_zero  (Pos.i()));}                   String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row
   Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, pos_one   (Pos.i()));}}; return r;} //N Position in the current row
 
@@ -674,7 +674,7 @@ final public class BitSet extends Program                                       
               void Else()                                                                                               // Low is zero
                {new If (getBitNC(h))
                  {void Then() {p.set(h); Continue.set();}                                                               // High is one so search sub tree
-                  void Else() {new I() {void a() {stop("Should not happen"); }};}                                       // Both high and low are zero but this should not happen
+                  void Else() {new I() {void a() {stop("Should not happen"); } String v() {return "";}};}               // Both high and low are zero but this should not happen
                  };
                }
              };
@@ -857,7 +857,6 @@ Zero:
                                 b. lastZero().ok(29);
     b.maxSteps = 99_999;
     b.execute();
-    b.generateVerilog();
    }
 
   static void test_prevNext()                                                                                           // Test tree of searchable one bits
@@ -913,6 +912,8 @@ Zero:
                                 b.firstZero()            .ok(  4);
                                 b.lastZero ()            .ok( 15);
 
+    b.maxSteps = 99_999;
+    b.execute();
    }
 
   static void test_prevNext01()
@@ -966,6 +967,8 @@ Zero:
     for (int i : range(13, 16)) b.prevOne(b.new Int( i)).ok(i-1);
                                 b.firstOne()            .ok(  4);
                                 b.lastOne ()            .ok( 15);
+    b.maxSteps = 99_999;
+    b.execute();
    }
 
   static void test_prevNext10()
@@ -978,15 +981,15 @@ Zero:
     final int N = 8;
     final BitSet b = test_bits(Ex, N);
     final StringBuilder s = new StringBuilder();
-    b.new I() {void a() {s.append("Start:\n"+b);}};
+    b.new I() {void a() {s.append("Start:\n"+b);}         String v() {return "";}};
 
     for (int i : range(N))
      {b.set(b.new Int(i), b.new Bool(true));
-      b.new I() {void a() {s.append("Set: "+i+"\n"+b);}};
+      b.new I() {void a() {s.append("Set: "+i+"\n"+b);}   String v() {return "";}};
      }
     for (int i : range(N))
      {b.set(b.new Int(i), b.new Bool(false));
-      b.new I() {void a() {s.append("Clear: "+i+"\n"+b);}};
+      b.new I() {void a() {s.append("Clear: "+i+"\n"+b);} String v() {return "";}};
      }
     b.execute();
     //testStop(s);
@@ -1202,7 +1205,7 @@ Zero:
      };
     b.full().ok(true);
 
-    b.maxSteps = 99999;
+    b.maxSteps = 99_999;
     b.execute();
    }
 
@@ -1230,7 +1233,7 @@ Zero:
     b.countAllOnes ().ok(4);
     b.countAllZeros().ok(N-4);
 
-    b.maxSteps = 99999;
+    b.maxSteps = 99_999;
     b.execute();
    }
 
@@ -1553,6 +1556,7 @@ Zero:
     b.limitLowerOne(b.new Int(29)).ok(b.new Int(28));  b.limitLowerZero(b.new Int(15+29)).ok(b.new Int(15+28));
     b.limitLowerOne(b.new Int(30)).ok(b.new Int(30));  b.limitLowerZero(b.new Int(15+30)).ok(b.new Int(15+30));
 
+    b.maxSteps = 99_999;
     b.execute();
    }
 
@@ -1619,6 +1623,9 @@ Zero:
     b.highZero(b.new Int(15+18)).ok( 4);
     b.highZero(b.new Int(15+17)).ok( 3);
     b.highZero(b.new Int(15+16)).ok( 1);
+
+    b.maxSteps = 99_999;
+    b.execute();
    }
 
   static void test_lowHighZero()
@@ -1667,8 +1674,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                         // Run baseline tests.
-    test_prevNext();
+   {oldTests();                                                                                                         // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
