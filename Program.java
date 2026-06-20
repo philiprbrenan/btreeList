@@ -966,7 +966,7 @@ public class Program extends Test                                               
      }
 
     Bool getBool(Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
-     {Bool r = new Bool();                                                             perl -M"MakeWithPerl" -e"MakeWithPerl::makeWithPerl" -I/home/phil/perl/cpan/MakeWithPerl/lib -- --compile "/home/phil/btreeList/Slots.java" --javaHome "/home/phil/btreeList" (in directory: /home/phil/btreeList)
+     {Bool r = new Bool();
       new I()
        {void   a() {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));}
         String v() {return r.vtrace(new StringBuilder("m["+I.vn()+"]["+J.vn()+"]"));}
@@ -1172,7 +1172,7 @@ public class Program extends Test                                               
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
 
       deleteFile(verilogTraceFile());                                                                                   // Clear Verilog trace file
-      final ExecCommand x =
+      final ExecCommand x =                                                                                             // Return code 124 shows that the program run was timed out
 //      new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
         new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  &&            ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
       say(""+x.out);
