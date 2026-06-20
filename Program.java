@@ -34,7 +34,8 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
-  final boolean                               runVerilog = true;                                                        // Generate and execute verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog = true;                                                        // Execute verilog version of each program
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -1168,16 +1169,18 @@ public class Program extends Test                                               
     if (c >= maxSteps) stop("Out of steps after step:", c);
     appendFile(javaTraceFile(), byteMemory.dumpHex());
 
-    if (runVerilog)                                                                                                     // Run verilog
+    if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
 
-      deleteFile(verilogTraceFile());                                                                                   // Clear Verilog trace file
-      final ExecCommand x =                                                                                             // Return code 124 shows that the program run was timed out
+      if (runVerilog)                                                                                                   // Run verilog
+       {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
+        final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
 //      new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
-        new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  &&            ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
-      say(""+x.out);
+          new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  &&            ./x", verilogTestFolder(), currentTestNameSuffix()));    // Execute Verilog code
+        say(""+x.out);
 
-      ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                      // Compare corresponding java and Verilog trace files
+        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files
+       }
      }
    }
 
