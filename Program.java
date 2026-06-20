@@ -28,6 +28,9 @@ public class Program extends Test                                               
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
+  final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
+  final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
+  final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
@@ -464,9 +467,9 @@ public class Program extends Test                                               
 
     String vn() {return pad("b["+ id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
 
-    void stop    (final Object...O) {new If (this)   {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};} // Conditionally print a message if true and stop
-    void elseStop(final Object...O) {new If (Flip()) {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};} //N Conditionally print a message if false and stop
-    Bool say() {final Bool i = this; new I() {void a() {Test.say(i) ;}}; return this;}                                  //N Say the boolean
+    void stop    (final Object...O) {new If (this)   {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};}  // Conditionally print a message if true and stop
+    void elseStop(final Object...O) {new If (Flip()) {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};}  //N Conditionally print a message if false and stop
+    Bool say() {final Bool i = this; new I()                                          {void a() {Test.say(i) ;} String v() {return "";}}; return this;} //N Say the boolean
 
     void jtrace() {appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, i ? 1 : 0));}            // Trace the execution of a boolean operation
 
@@ -485,10 +488,10 @@ public class Program extends Test                                               
      {final Bool got = this;
        new If (Value.valid())
        {void Then()
-         {new I() {void a()  {Test.ok(got.b(), Value.b()); }};
+         {new I() {void a()  {Test.ok(got.b(), Value.b()); } String v() {return "";}};
          }
         void Else()
-         {new I() {void a() {Test.ok(got.notValid(), true);}};
+         {new I() {void a() {Test.ok(got.notValid(), true);} String v() {return "";}};
          }
         String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
        };
@@ -775,7 +778,7 @@ public class Program extends Test                                               
 
     String vn() {return pad("i[" +id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
 
-    Int say() {final Int i = this; new I() {void a() {Test.say(i);}};           return this;}                           // Say the integer
+    Int say() {final Int i = this; new I() {void a() {Test.say(i);} String v() {return "";}}; return this;}             // Say the integer
 
     void jtrace()                                                                                                       // Trace the execution of an integer operation
      {final Program P = program();
@@ -849,9 +852,8 @@ public class Program extends Test                                               
     public String toString()
      {final StringBuilder s = new StringBuilder();
       new I()
-       {void a()
-         {if (b.b()) s.append("Bint("+i+")"); else s.append("Bint(invalid)");
-         }
+       {void a(){if (b.b()) s.append("Bint("+i+")"); else s.append("Bint(invalid)");}
+        String v() {return "";}
        };
       return ""+s;
      }
@@ -1064,7 +1066,7 @@ public class Program extends Test                                               
 
     String dumpHex()                                                                                                    // Dump memory in hexadecimal format
      {final StringBuilder s = new StringBuilder();
-      s.append(f("Memory for program %4d\n", programId));
+      s.append("Memory");
       s.append("         ");
       for (int i = 0; i < 16; i++) s.append(f("%02X ", i));
       s.append("\n");
@@ -1103,9 +1105,9 @@ public class Program extends Test                                               
   void Check(StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} String v() {return "";}};} // Test the supplied content against the specified string, print the actual output area contents and stop
 
   String verilogTestFolder() {return fp(verilogFolder,       currentTestNameSuffix());}                                 // Folder for this test using Verilog
-  String verilogTraceFile()  {return fe(verilogTestFolder(), "traceVerilog", "txt");}                                   // Verilog trace file
-  String    javaTraceFile()  {return fe(verilogTestFolder(), "traceJava",    "txt");}                                   // Java trace file
-  String VerilogCodeFile()   {return fe(verilogTestFolder(),  currentTestNameSuffix(), "v");}                           // Verilog code file
+  String verilogTraceFile()  {return fn(verilogTestFolder(), verilogTraceFile);}                                        // Verilog trace file
+  String    javaTraceFile()  {return fn(verilogTestFolder(), javaTraceFile);}                                           // Java trace file
+  String VerilogCodeFile()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                  // Verilog code file
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1131,7 +1133,7 @@ public class Program extends Test                                               
     I() {this(I.Jump.no);}                                                                                              // Add this instruction to the process's code assuming it will not jump
 
     abstract void     a();                                                                                              // The action to be performed by the instruction
-    String            v() {return "Not set" + traceComment();}                                                          // The action to be performed by the instruction written in Verilog
+    abstract String   v();                                                                                              // Generate equivalent verilog
     String traceComment() {return traceComment != null ? traceComment : "";}                                            // Trace comment if it exists
    }
 
@@ -1162,6 +1164,7 @@ public class Program extends Test                                               
        }
      }
     if (c >= maxSteps) stop("Out of steps after step:", c);
+    appendFile(javaTraceFile(), byteMemory.dumpHex());
 
     generateVerilog();                                                                                                  // Generate corresponding Verilog code and run it
 
@@ -1173,10 +1176,10 @@ public class Program extends Test                                               
     ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                        // Compare corresponding java and Verilog trace files
    }
 
-  void Goto(Label Target)                                           {new I() {void a() {parentProgram.pc = Target.offset;}};}       // Goto a label unconditionally
-  void Goto(Label Target, Bool If) {new If (If.b())    {void Then() {new I() {void a() {parentProgram.pc = Target.offset;}};}};}    // Goto a label if the condition is true
-  void Noto(Label Target, Bool If) {new If (If.Flip()) {void Then() {new I() {void a() {parentProgram.pc = Target.offset;}};}};}    // Goto a label if the condition is false
-  void Goto(Int   Target)                                           {new I() {void a() {parentProgram.pc = Target.i()   ;}};}       // Goto a saved address
+  void Goto(Label Target)                                           {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}       // Goto a label unconditionally
+  void Goto(Label Target, Bool If) {new If (If.b())    {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};}    // Goto a label if the condition is true
+  void Noto(Label Target, Bool If) {new If (If.Flip()) {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};}    // Goto a label if the condition is false
+  void Goto(Int   Target)                                           {new I() {void a() {parentProgram.pc = Target.i()   ;} String v() {return "goto";}};}       // Goto a saved address
 
   void variableNotSet(String Type, String Name)                                                                         // Variable not yet set message
    {final I i = parentProgram.executing;
@@ -1318,7 +1321,7 @@ module %s;                                                                      
 name, sizeMemory, numberOfInts, numberOfBools,
 traceVerilogVariable("traceBool",  "b", traceFile),
 traceVerilogVariable("traceInt",   "i", traceFile),
-dumpVerilogMemoryInHex()));
+dumpVerilogMemoryAsHex()));
 
   for(String m : extraVerilogMethods) s.append(m);                                                                      // Incorporate extra Verilog methods required to support generated instructions
 
@@ -1390,32 +1393,40 @@ endfunction
     program().extraVerilogMethods.add(""+s);
    }
 
-  String dumpVerilogMemoryInHex()
-   {return """
+  String dumpVerilogMemoryAsHex()
+   {return substitute("""
   task dumpHex;
     integer i;
     reg [7:0] b;
-    begin
-      $display("Verilog memory");
+    integer fd;
 
-      $write("         ");
-      for (i = 0; i < 16; i = i + 1) $write("%02d ", i);
-      $write("\\n");
+    begin
+      fd = $fopen("{traceFile}", "a");
+
+      $fdisplay(fd, "Memory");
+
+      $fwrite(fd, "         ");
+      for (i = 0; i < 16; i = i + 1) $fwrite(fd, "%02d ", i);
+      $fwrite(fd, "\\n");
 
       for (i = 0; i < MEMORY; i = i + 1)
       begin
-        if (i % 16 == 0) $write("%08d ", i);
+        if (i % 16 == 0) $fwrite(fd, "%08d ", i);
 
         b = m[i];
 
-        if (b != 0) $write("%02X ", b); else $write("   ");
-        if ((i + 1) % 16 == 0) $write("\\n");
+        if (b != 0) $fwrite(fd, "%02X ", b);
+        else        $fwrite(fd, "   ");
+
+        if ((i + 1) % 16 == 0) $fwrite(fd, "\\n");
       end
 
-      if (MEMORY % 16 != 0) $write("\\n");
+      if (MEMORY % 16 != 0) $fwrite(fd, "\\n");
+
+      $fclose(fd);
     end
   endtask
-""";
+""", "traceFile", verilogTraceFile);
   }
 
 //D1 Testing                                                                                                            // Test expected output against got output
@@ -1703,11 +1714,16 @@ endfunction
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(false);
+
+            m.putBool(new Int(5), new Int(1), new Bool(true));
+            m.getBool(new Int(5), new Int(1)).ok(true);
+
            }
          };
        }
      };
     P.execute();
+    say("AAAA", P.byteMemory.dumpHex());
 //  ok(P.byteMemory.getBool(32), false);
 //  ok(P.byteMemory.getBool(33), true);
    }
