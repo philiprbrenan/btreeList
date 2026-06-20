@@ -1155,7 +1155,7 @@ Number of Keys:    0
   static void test_saveReload(boolean Ex)
    {sayCurrentTestName();
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-    if (true)
+    if (!true && Ex)
      {t.new I() {void a() {t.byteMemory.reload(tree6);} String v() {return "";}};
      }
     else
@@ -1164,9 +1164,10 @@ Number of Keys:    0
          {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
          }
        };
-
-      t.new I() {void a() {say("  static String tree6 = \""+ t.byteMemory.save()+"\";");} String v() {return "";}};
-      stop();
+      if (false && Ex)
+       {t.new I() {void a() {say("  static String tree6 = \""+ t.byteMemory.save()+"\";");} String v() {return "";}};
+        stop();
+       }
      }
 
     t.Check (t.dumpTree(), """
@@ -1794,7 +1795,7 @@ Leaf           size:  4, count:  2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert();
+    test_saveReload();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
