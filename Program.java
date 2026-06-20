@@ -1356,7 +1356,7 @@ endmodule
     writeFile(codeFile, ""+s);                                                                                          // Write Verilog code to a file
     final Stack<String> v = readFile(codeFile);
     for(int i = 0, N = v.size(); i < N; ++i)
-     {say(f("%4d %s", i, v.elementAt(i)));
+     {if (i > 760_000 && i < 761_000) say(f("%4d %s", i, v.elementAt(i)));
      }
     return ""+s;
    }
