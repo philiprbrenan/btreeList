@@ -28,7 +28,7 @@ public class Program extends Test                                               
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
-  final boolean                      appendTraceComments = false;                                                        // Add trace comments to trace output
+  final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
   final Stack<String>                extraVerilogMethods = new Stack<>();                                               // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
 
@@ -800,10 +800,10 @@ public class Program extends Test                                               
      {final Int got = this;
        new If (Value.valid())
        {void Then()
-         {new I() {void a() {Test.ok(got.i(), Value.i());}};
+         {new I() {void a() {Test.ok(got.i(), Value.i());}   String v() {return "";}};
          }
         void Else()
-         {new I() {void a() {Test.ok(got.notValid(), true);}};
+         {new I() {void a() {Test.ok(got.notValid(), true);} String v() {return "";}};
          }
         String v() {return "";}                                                                                         // No need to test  under Verilog as long as all data accesses match
        };
@@ -1186,6 +1186,7 @@ public class Program extends Test                                               
 
     generateVerilog();                                                                                                  // Generate corresponding Verilog code and run it
 
+    deleteFile(verilogTraceFile());                                                                                     // Clear Verilog trace file
     new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
 
     ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                        // Compare corresponding java and Verilog trace files
