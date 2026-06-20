@@ -173,7 +173,7 @@ class Tree extends Program                                                      
 
   Leaf makeLeaf(Int Node)                                                                                               // Make a leaf from the specified node
    {final Leaf l = leaf(Node, false);
-    l.initializeMemory();
+    //l.initializeMemory();
     setType(Node, BranchOrLeaf.leaf);
     return l;
    }
@@ -189,7 +189,7 @@ class Tree extends Program                                                      
 
   Branch makeBranch(Int Node)                                                                                           // Make a branch from the specified node
    {final Branch b = branch(Node, false);
-    b.initializeMemory();
+    //b.initializeMemory();
     setType(Node, BranchOrLeaf.branch);
     return b;
    }
