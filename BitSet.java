@@ -20,12 +20,12 @@ final public class BitSet extends Program                                       
   final  int[]limitsLowerZero;                                                                                          // The lower limit of the zeros tree for each possible position in the ones tree
   final  int[]heightOne;                                                                                                // Position in ones tree to height in ones tree
   final  int[]heightZero;                                                                                               // Position in zeros tree to height in zeros tree
-  final  String luoVerilog = "x_bitSet_limitsUpperOne";
-  final  String luzVerilog = "x_bitSet_limitsUpperZero";
-  final  String lloVerilog = "x_bitSet_limitsLowerOne";
-  final  String llzVerilog = "x_bitSet_limitsLowerZero";
-  final  String hoVerilog  = "x_bitSet_heightOne";
-  final  String hzVerilog  = "x_bitSet_heightZero";
+  final  String luoVerilog;                                                                                             // Verilog functions to lookup constants from arrays describing shape of trees
+  final  String luzVerilog;
+  final  String lloVerilog;
+  final  String llzVerilog;
+  final  String hoVerilog ;
+  final  String hzVerilog ;
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
@@ -62,6 +62,14 @@ final public class BitSet extends Program                                       
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
     byteSize    = Build.byteSize();                                                                                     // Bytes needed for the bitset and its bit trees
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
+
+    luoVerilog = "x_bitSet_limitsUpperOne_" +bitSize;                                                                   // Verilog procedures to make references to constant arrays rather than holding them in memory
+    luzVerilog = "x_bitSet_limitsUpperZero_"+bitSize;
+    lloVerilog = "x_bitSet_limitsLowerOne_" +bitSize;
+    llzVerilog = "x_bitSet_limitsLowerZero_"+bitSize;
+    hoVerilog  = "x_bitSet_heightOne_"      +bitSize;
+    hzVerilog  = "x_bitSet_heightZero_"     +bitSize;
+
     limitsUpperOne   = new int[top_one ()+1]; limitsUpperOne ();                                                        // Upper limits of ones tree
     limitsUpperZero  = new int[top_zero()+2]; limitsUpperZero();                                                        // Upper limits of zeros tree
     limitsLowerOne   = new int[top_one ()+1]; limitsLowerOne ();                                                        // Lower limits of ones tree
