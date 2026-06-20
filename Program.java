@@ -1354,6 +1354,10 @@ endmodule
 """);
 
     writeFile(codeFile, ""+s);                                                                                          // Write Verilog code to a file
+    final Stack<String> v = readFile(codeFile);
+    for(int i = 0, N = v.size(); i < N; ++i)
+     {say(f("%4d $s\n", i, v.elementAt(i)));
+     }
     return ""+s;
    }
 
