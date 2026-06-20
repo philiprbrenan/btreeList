@@ -27,13 +27,14 @@ public class Program extends Test                                               
   private int       currentPc;                                                                                          // Current program counter
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
+//final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
+  final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
-  final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
-//final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
+  final boolean                               runVerilog = false;                                                       // Generate and execute verilog version of each program
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -1117,7 +1118,7 @@ public class Program extends Test                                               
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber;                                                                                        // The number of this instruction
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
-    final String traceComment = /*immediate() ? null : */Test.traceComment();                                               // Line at which this instruction was created as a comment
+    final String traceComment = immediate() ? null : Test.traceComment();                                               // Line at which this instruction was created as a comment
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
@@ -1167,14 +1168,16 @@ public class Program extends Test                                               
     if (c >= maxSteps) stop("Out of steps after step:", c);
     appendFile(javaTraceFile(), byteMemory.dumpHex());
 
-    generateVerilog();                                                                                                  // Generate corresponding Verilog code and run it
+    if (runVerilog)                                                                                                     // Run verilog
+     {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
 
-    deleteFile(verilogTraceFile());                                                                                     // Clear Verilog trace file
-    final ExecCommand x =
-      new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
-    say(""+x.out);
+      deleteFile(verilogTraceFile());                                                                                   // Clear Verilog trace file
+      final ExecCommand x =
+        new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
+      say(""+x.out);
 
-    ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                        // Compare corresponding java and Verilog trace files
+      ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                      // Compare corresponding java and Verilog trace files
+     }
    }
 
   void Goto(Label Target)                                           {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}       // Goto a label unconditionally
