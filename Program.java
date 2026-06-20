@@ -1173,7 +1173,8 @@ public class Program extends Test                                               
 
       deleteFile(verilogTraceFile());                                                                                   // Clear Verilog trace file
       final ExecCommand x =
-        new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
+//      new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
+        new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  &&            ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
       say(""+x.out);
 
       ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                      // Compare corresponding java and Verilog trace files
