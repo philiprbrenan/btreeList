@@ -1166,7 +1166,9 @@ public class Program extends Test                                               
     generateVerilog();                                                                                                  // Generate corresponding Verilog code and run it
 
     deleteFile(verilogTraceFile());                                                                                     // Clear Verilog trace file
-    new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
+    final ExecCommand x =
+      new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  && timeout 1m ./x", verilogTestFolder(), currentTestNameSuffix()));      // Execute Verilog code
+    say(""+x.out);
 
     ok(readFile(verilogTraceFile()), readFile(javaTraceFile()));                                                        // Compare corresponding java and Verilog trace files
    }
@@ -1309,14 +1311,14 @@ module %s;                                                                      
     end
   endtask
 
-  %s
-  %s
+%s
+%s
+%s
 """,
 name, sizeMemory, numberOfInts, numberOfBools,
 traceVerilogVariable("traceBool",  "b", traceFile),
 traceVerilogVariable("traceInt",   "i", traceFile),
-traceVerilogVariable("memoryBool", "b", traceFile),
-traceVerilogVariable("memoryInt",  "i", traceFile)));
+dumpVerilogMemoryInHex()));
 
   for(String m : extraVerilogMethods) s.append(m);                                                                      // Incorporate extra Verilog methods required to support generated instructions
 
@@ -1335,7 +1337,7 @@ traceVerilogVariable("memoryInt",  "i", traceFile)));
      }
 
     s.append("""
-        default: $finish;
+        default: begin dumpHex(); $finish; end
       endcase
       pc = pc + 1;
     end
@@ -1351,7 +1353,7 @@ endmodule
    {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, Id, Value);";                               // Trace line to be written out
 
     return f("""
-function automatic integer %s(input integer Id, input integer Value);                                                   // Trace variable
+  function automatic integer %s(input integer Id, input integer Value);                                                   // Trace variable
     integer file;
     begin
       %s = Value;                                                                                                       // Return value
@@ -1387,6 +1389,34 @@ endfunction
 """, Name));
     program().extraVerilogMethods.add(""+s);
    }
+
+  String dumpVerilogMemoryInHex()
+   {return """
+  task dumpHex;
+    integer i;
+    reg [7:0] b;
+    begin
+      $display("Verilog memory");
+
+      $write("         ");
+      for (i = 0; i < 16; i = i + 1) $write("%02d ", i);
+      $write("\\n");
+
+      for (i = 0; i < MEMORY; i = i + 1)
+      begin
+        if (i % 16 == 0) $write("%08d ", i);
+
+        b = m[i];
+
+        if (b != 0) $write("%02X ", b); else $write("   ");
+        if ((i + 1) % 16 == 0) $write("\\n");
+      end
+
+      if (MEMORY % 16 != 0) $write("\\n");
+    end
+  endtask
+""";
+  }
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
@@ -1858,7 +1888,7 @@ endfunction
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_defineArrayViaVerilogFunction();
+    test_byteMemory();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
