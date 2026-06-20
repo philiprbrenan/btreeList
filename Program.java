@@ -1341,7 +1341,7 @@ dumpVerilogMemoryAsHex()));
      }
 
     s.append("""
-        default: begin dumpHex(); $finish; end
+        default: begin dumpHex(); $finish(0); end
       endcase
       pc = pc + 1;
     end
