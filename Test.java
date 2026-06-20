@@ -744,10 +744,10 @@ public class Test                                                               
     return null;
    }
 
-  static void appendFile(String FilePath, StringBuilder string)                                                         // Append a string builder to a file
+  static void appendFile(String FilePath, StringBuilder String)                                                         // Append a string builder to a file
    {try
      {makePath(folderName(FilePath));
-      Files.write(Paths.get(FilePath), string.toString().getBytes(),
+      Files.write(Paths.get(FilePath), String.toString().getBytes(),
         StandardOpenOption.CREATE, StandardOpenOption.APPEND);
       filesWritten.add(FilePath);
      }
@@ -756,14 +756,14 @@ public class Test                                                               
      }
    }
 
-  static void appendFile(String FilePath, String string)                                                                // Append a string to a file
-   {appendFile(FilePath, new StringBuilder(string));
+  static void appendFile(String FilePath, String String)                                                                // Append a string to a file
+   {appendFile(FilePath, new StringBuilder(String));
    }
 
-  static void writeFile(String FilePath, StringBuilder string)                                                          // Write a string builder to a file
+  static void writeFile(String FilePath, StringBuilder String)                                                          // Write a string builder to a file
    {try
      {makePath(folderName(FilePath));
-      Files.write(Paths.get(FilePath), string.toString().getBytes());
+      Files.write(Paths.get(FilePath), String.toString().getBytes());
       filesWritten.add(FilePath);
      }
     catch (Exception e)
@@ -771,8 +771,8 @@ public class Test                                                               
      }
    }
 
-  static void writeFile(String FilePath, String string)                                                                 // Write a string to a file
-   {writeFile(FilePath, new StringBuilder(string));
+  static void writeFile(String FilePath, String String)                                                                 // Write a string to a file
+   {writeFile(FilePath, new StringBuilder(String));
    }
 
   static void deleteFile(String FilePath, boolean required)                                                             // Delete a file
