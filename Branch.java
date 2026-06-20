@@ -350,15 +350,15 @@ class Branch extends Program implements Program.Locatable                       
        {final Int i = new Int().set(l);
         new If (i.gt(0))
          {void Then()
-           {new I() {void a() {s.append(f(" at:"+formatKey, i.i())); }};
+           {new I() {void a() {s.append(f(" at:"+formatKey, i.i())); } String v() {return "";}};
            }
           void Else()
-           {new I() {void a() {s.append(" ".repeat(8)); }};
+           {new I() {void a() {s.append(" ".repeat(8));              } String v() {return "";}};
            }
          };
        }
       void Else()
-       {new I() {void a() {s.append(" ".repeat(8)); }};
+       {new I() {void a() {s.append(" ".repeat(8));                  } String v() {return "";}};
        }
      };
 
@@ -378,6 +378,7 @@ class Branch extends Program implements Program.Locatable                       
            }
          }
        }
+      String v() {return "";}
      };
     return s;
    }
