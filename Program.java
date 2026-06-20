@@ -642,7 +642,8 @@ public class Program extends Test                                               
       return vtrace(s);
      }
 
-    String vtrace(StringBuilder Value)  {return vn()+" <= traceInt("+id+", "+Value+");";}                               // Trace an integer operation
+    String vtrace(String        Value) {return vn()+" <= traceInt("+id+", "+Value+");";}                                // Trace a boolean operation
+    String vtrace(StringBuilder Value) {return vtrace(""+Value);}                                                       // Trace a boolean operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -1331,14 +1332,13 @@ name, sizeMemory, numberOfInts, numberOfBools,
 traceVerilogVariable("traceBool", "b", traceFile),
 traceVerilogVariable("traceInt",  "i", traceFile)));
 
+  for(String m : extraVerilogMethods) s.append(m);                                                                    // Incorporate extra Verilog methods required to support generated instructions
 
   s.append("""
   task automatic execute;                                                                                               // Execute actual code
     begin
       case(pc)
 """);
-
-    for(String m : extraVerilogMethods) s.append(m);                                                                    // Incorporate extra Verilog methods required to support generated instructions
 
     for(I i : code)                                                                                                     // Compile each instruction to Verilog
      {s.append(f("        %4d: begin %s", i.instructionNumber, i.v()));
@@ -1383,15 +1383,23 @@ function automatic integer %s(input integer Id, input integer Value);           
 Procedure, Procedure, TraceFile, display);
    }
 
-  String defineConstantVerilogArray(String Name, int[]Array)                                                            // Define an array of constant integers for use in the Verilog representation of instructions
-   {final StringJoiner j = new StringJoiner(",");                                                                       // Verilog to get a specified element of the array
-
-    for (int i = 0; i <= Array.length; ++i) j.add(""+Array[i]);                                                         // Array elements
-    final String a = "x_"+fnx(sourceFileName())+"_"+Name;                                                               // A unique name for the array
-    final StringBuilder s = new StringBuilder();                                                                        // Array definition
-    s.append(f("localparam integer %s [0:%d] = '{%s};\n", a, Array.length, ""+j));                                      // The name of the array
-    program().extraVerilogMethods.push(""+s);                                                                           // Array definition
-    return a;                                                                                                           // Add the array definition to the Verilog code
+  void defineArrayViaVerilogFunction(String Name, int[]Array)                                                           // Define a verilog function from an array
+   {final StringBuilder s = new StringBuilder("function automatic integer "+Name+"(input integer i);");
+    s.append("""
+  begin
+    case (i)
+""");
+    for (int i = 0; i < Array.length; ++i)
+     {final int v = Array[i];
+      if (v != 0) s.append(f("      %4d: %s = %4d;\n", i, Name, v));                                                    // The java proves the code works so we can collapse zeros into default
+     }
+    s.append(f("""
+      default: %s = 0;
+    endcase
+  end
+endfunction
+""", Name));
+    program().extraVerilogMethods.push(""+s);
    }
 
 //D1 Testing                                                                                                            // Test expected output against got output
@@ -1831,12 +1839,12 @@ Procedure, Procedure, TraceFile, display);
    }
 */
 
-  static void test_defineConstantVerilogArray()
+  static void test_defineArrayViaVerilogFunction()
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(false).memory(16))
      {void code()
-       {final int[]array = {2,4,6};
-        defineConstantVerilogArray("array", array);
+       {final int[]array = {0, 0, 0, 2, 4, 6};
+        defineArrayViaVerilogFunction("array", array);
         generateVerilog();
        }
      };
@@ -1859,10 +1867,12 @@ Procedure, Procedure, TraceFile, display);
     test_byteMemoryRef();
     //test_invalidate();
     //test_procedureCall();
+    test_defineArrayViaVerilogFunction();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_defineArrayViaVerilogFunction();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
