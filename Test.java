@@ -721,20 +721,20 @@ public class Test                                                               
      }
    }
 
-  static Stack<String> readFile(String filePath)                                                                        // Read a file into stack of strings
+  static Stack<String> readFile(String FilePath)                                                                        // Read a file into stack of strings
    {try
      {final Stack<String> S = new Stack<>();
-      for(String s:  Files.readAllLines(Paths.get(filePath))) S.push(s);
+      for(String s:  Files.readAllLines(Paths.get(FilePath))) S.push(s);
       return S;
      }
     catch (Exception e)
-     {stop("Cannot read file", filePath, e);
+     {stop("Cannot read file", FilePath, e);
      }
     return null;
    }
 
-  static String readFileAsString(String filePath)                                                                       // Read a file into a string
-   {final Stack<String> s = readFile(filePath);
+  static String readFileAsString(String FilePath)                                                                       // Read a file into a string
+   {final Stack<String> s = readFile(FilePath);
     return joinLines(s);
    }
 
@@ -744,46 +744,46 @@ public class Test                                                               
     return null;
    }
 
-  static void appendFile(String filePath, StringBuilder string)                                                         // Append a string builder to a file
+  static void appendFile(String FilePath, StringBuilder string)                                                         // Append a string builder to a file
    {try
-     {makePath(folderName(filePath));
-      Files.write(Paths.get(filePath), string.toString().getBytes(),
+     {makePath(folderName(FilePath));
+      Files.write(Paths.get(FilePath), string.toString().getBytes(),
         StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-      filesWritten.add(filePath);
+      filesWritten.add(FilePath);
      }
     catch (Exception e)
-     {stop("Cannot append to file", filePath, e);
+     {stop("Cannot append to file", FilePath, e);
      }
    }
 
-  static void appendFile(String filePath, String string)                                                                // Append a string to a file
-   {appendFile(filePath, new StringBuilder(string));
+  static void appendFile(String FilePath, String string)                                                                // Append a string to a file
+   {appendFile(FilePath, new StringBuilder(string));
    }
 
-  static void writeFile(String filePath, StringBuilder string)                                                          // Write a string builder to a file
+  static void writeFile(String FilePath, StringBuilder string)                                                          // Write a string builder to a file
    {try
-     {makePath(folderName(filePath));
-      Files.write(Paths.get(filePath), string.toString().getBytes());
-      filesWritten.add(filePath);
+     {makePath(folderName(FilePath));
+      Files.write(Paths.get(FilePath), string.toString().getBytes());
+      filesWritten.add(FilePath);
      }
     catch (Exception e)
-     {stop("Cannot write file", filePath, e);
+     {stop("Cannot write file", FilePath, e);
      }
    }
 
-  static void writeFile(String filePath, String string)                                                                 // Write a string to a file
-   {writeFile(filePath, new StringBuilder(string));
+  static void writeFile(String FilePath, String string)                                                                 // Write a string to a file
+   {writeFile(FilePath, new StringBuilder(string));
    }
 
-  static void deleteFile(String filePath, boolean required)                                                             // Delete a file
+  static void deleteFile(String FilePath, boolean required)                                                             // Delete a file
    {try
-     {Files.delete(Paths.get(filePath));
+     {Files.delete(Paths.get(FilePath));
      }
     catch (Exception e)
-     {if (required) stop("Cannot delete file", filePath, e);
+     {if (required) stop("Cannot delete file", FilePath, e);
      }
    }
-  static void deleteFile(String filePath) {deleteFile(filePath, false);}
+  static void deleteFile(String FilePath) {deleteFile(FilePath, false);}
 
   static void makePath(String folder)                                                                                   // Make a path
    {if (folder == null) return;
@@ -798,10 +798,10 @@ public class Test                                                               
      }
    }
 
-  static Stack<Path> findFiles(String filePath)                                                                         // Find all files in and below a folder
+  static Stack<Path> findFiles(String FilePath)                                                                         // Find all files in and below a folder
    {final Stack<Path> files = new Stack<>();
     try
-     {final Path dir = Paths.get(filePath);
+     {final Path dir = Paths.get(FilePath);
       Files.walk(dir).filter(Files::isRegularFile).forEach(files::push);
       final List<Path> f = new ArrayList<>(files);
       Collections.sort(f);
@@ -812,14 +812,14 @@ public class Test                                                               
     return files;
    }
 
-  static void deleteAllFiles(String filePath, int limit)                                                                // Delete files and folders in the specified folder and its sub folders if the number of such files is less than the limit specified
-   {final Path dir = Paths.get(filePath);                                                                               // Specify the directory path
-    final int[]limits = {limit};
-    final int N = findFiles(filePath).size();
-    if (N > limit)                                                                                                      // Check that the request would not result in the deletion of an unexpectedly large number of files
+  static void deleteAllFiles(String FilePath, int Limit)                                                                // Delete files and folders in the specified folder and its sub folders if the number of such files is less than the limit specified
+   {final Path dir = Paths.get(FilePath);                                                                               // Specify the directory path
+    final int[]limits = {Limit};
+    final int N = findFiles(FilePath).size();
+    if (N > Limit)                                                                                                      // Check that the request would not result in the deletion of an unexpectedly large number of files
      {stop("Delete request would delete "+N+
-       " files, which is more than the specified limit of: "+limit+
-       " files under folder:\n"+filePath);
+       " files, which is more than the specified limit of: "+Limit+
+       " files under folder:\n"+FilePath);
 
      }
     try
@@ -838,12 +838,12 @@ public class Test                                                               
      }
     catch (NoSuchFileException e) {}                                                                                    // No problem
     catch (Exception e)
-     {stop("Cannot find files under", filePath, e);
+     {stop("Cannot find files under", FilePath, e);
      }
    }
 
-  static boolean fileExists(String filePath)                                                                            // Check whether a file exists
-   {final Path p = Paths.get(filePath);
+  static boolean fileExists(String FilePath)                                                                            // Check whether a file exists
+   {final Path p = Paths.get(FilePath);
     return Files.exists(p) && Files.isRegularFile(p);
    }
 
@@ -852,20 +852,20 @@ public class Test                                                               
     return Files.exists(p) && Files.isDirectory(p);
    }
 
-  static String fileName(String filePath)                                                                               // Get the file name from a file path name
-   {return Paths.get(filePath).getFileName().toString();
+  static String fileName(String FilePath)                                                                               // Get the file name from a file path name
+   {return Paths.get(FilePath).getFileName().toString();
    }
 
-  static String folderName(String filePath)                                                                             // Get the folder name from a file path name
-   {final Path p = Paths.get(filePath).getParent();
+  static String folderName(String FilePath)                                                                             // Get the folder name from a file path name
+   {final Path p = Paths.get(FilePath).getParent();
     if (p == null) return null;
     return p.toString() + "/";
    }
 
-  static String fileExt(String filePath)                                                                                // Get the extension name from a file path name
-   {final int p = filePath.lastIndexOf(".");
-    return p > 0 && p < filePath.length() - 1 ?
-      filePath.substring(p + 1) : null;
+  static String fileExt(String FilePath)                                                                                // Get the extension name from a file path name
+   {final int p = FilePath.lastIndexOf(".");
+    return p > 0 && p < FilePath.length() - 1 ?
+      FilePath.substring(p + 1) : null;
    }
 
   static String fe(String...Names)                                                                                      // Join file name components to make a file name with an extension
