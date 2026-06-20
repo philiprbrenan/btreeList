@@ -1066,20 +1066,21 @@ public class Program extends Test                                               
 
     String dumpHex()                                                                                                    // Dump memory in hexadecimal format
      {final StringBuilder s = new StringBuilder();
-      s.append("Memory");
+      s.append("Memory\n");
       s.append("         ");
-      for (int i = 0; i < 16; i++) s.append(f("%02X ", i));
+      for (int i = 0; i < 16; i++) s.append(f("%02d ", i));
       s.append("\n");
 
       for (int i = 0; i < bytes.length; i++)
        {if (i % 16 == 0) s.append(f("%08d ", i));
 
         final byte b = bytes[i];
-        if (b != 0) s.append(f("%02X ", b)); else s.append("   ");
+        if (b != 0) s.append(f("%02x ", b)); else s.append("   ");
         if ((i + 1) % 16 == 0) s.append("\n");
        }
       if (bytes.length % 16 != 0) s.append("\n");
-      return (""+s).replaceAll("\\s*\n", "\n");
+      return ""+s;
+//    return (""+s).replaceAll("\\s*\n", "\n");
      }
 
     String save()
@@ -1415,7 +1416,7 @@ endfunction
 
         b = m[i];
 
-        if (b != 0) $fwrite(fd, "%02X ", b);
+        if (b != 0) $fwrite(fd, "%02x ", b);
         else        $fwrite(fd, "   ");
 
         if ((i + 1) % 16 == 0) $fwrite(fd, "\\n");
@@ -1723,7 +1724,6 @@ endfunction
        }
      };
     P.execute();
-    say("AAAA", P.byteMemory.dumpHex());
 //  ok(P.byteMemory.getBool(32), false);
 //  ok(P.byteMemory.getBool(33), true);
    }
