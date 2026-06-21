@@ -1184,7 +1184,7 @@ MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
 Number of Keys:    6
-Branch         size:   3 count:   1 top:   2
+Branch         size:   3, count:   1, top:   2
  Ref   Key  Data
    0     2     1
 Leaf   at:   1 size:   4, count:   2
@@ -1799,7 +1799,7 @@ Leaf           size:  4, count:  2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload(true);
+    test_saveReload(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
