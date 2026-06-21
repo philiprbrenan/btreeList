@@ -63,7 +63,7 @@ if (rand() < 0.1)                                                               
 
 
 if (@java)                                                                                                              # Write workflow to test java files
- {my @j = map {fn $_} @java;                                                                                            # Java files
+ {my @j = grep {!m($exclude)} map {fn $_} @java;                                                                                            # Java files
   my $d = dateTimeStamp;
   my $c = q(com/AppaApps/Silicon);                                                                                      # Package to classes folder
   my $j = join ', ', @j;                                                                                                # Java files without extension with separating commas
