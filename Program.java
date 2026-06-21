@@ -34,8 +34,8 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
-  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
-  final boolean                               runVerilog = !true;                                                        // Execute  verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -473,7 +473,7 @@ public class Program extends Test                                               
     void elseStop(final Object...O) {new If (Flip()) {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};}  //N Conditionally print a message if false and stop
     Bool say() {final Bool i = this; new I()                                          {void a() {Test.say(i) ;} String v() {return "";}}; return this;} //N Say the boolean
 
-    void jtrace() {appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, i ? 1 : 0));}            // Trace the execution of a boolean operation
+    void jtrace () {appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, i ? 1 : 0));}           // Trace the execution of a boolean operation
 
     Bool ok(Boolean Value)
      {new I()
@@ -782,7 +782,7 @@ public class Program extends Test                                               
 
     Int say() {final Int i = this; new I() {void a() {Test.say(i);} String v() {return "";}}; return this;}             // Say the integer
 
-    void jtrace()                                                                                                       // Trace the execution of an integer operation
+    void jtrace ()                                                                                                       // Trace the execution of an integer operation
      {final Program P = program();
       final I       I = P.executing;
       final String  t = I.traceComment();
@@ -874,32 +874,39 @@ public class Program extends Test                                               
 
     ByteMemory(int Length) {bytes = new byte[Length]; clear(new Int(0), Length);}                                       // Create and clear the memory
 
-    private byte getByte(int I)                                                                                         // Get the value of a byte
-     {return bytes[I];                                                                                                  // Get the value of a byte
+    private byte getByte (int I)                                                                                        // Get the value of a byte
+     {final byte b = bytes[I];
+      final int  B = b < 0 ? 256+(int)b : (int)b;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
+      appendFile(javaTraceFile(), f("%8d r %8d == %8d\n", program().currentPc, I, B));
+      return b;                                                                                                         // Get the value of a byte
      }
 
-    private void putByte(int I, int J)                                                                                  // Put a byte into memory
-     {bytes[I] = (byte)(J & 0xFF);                                                                                      // Set the value of a byte from an integer
+    private void putByte (int I, int J)                                                                                 // Put a byte into memory
+     {final byte b = (byte)(J & 0xFF), a = bytes[I];                                                                    // Byte value from integer, previous value
+      final int  A = a < 0 ? 256+(int)a : (int)a;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
+      final int  B = b < 0 ? 256+(int)b : (int)b;
+      bytes[I] = b;                                                                                                     // Set the value of a byte from an integer
+      appendFile(javaTraceFile(), f("%8d w %8d %8d <= %8d\n", program().currentPc, I, A, B));                           // Trace the update
      }
 
-    ByteMemory copy(ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                             // Copy the specified memory
+    ByteMemory copy (ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
      {new ForCount(new Int(Width))
        {void body(Int Index)
          {new I()
            {void   a() {        putByte(TargetOffset.i() +        Index.i (), SourceMemory.getByte(SourceOffset.i () +       Index.i ()));}
-            String v() {return "m["   + TargetOffset.vn() + "+" + Index.vn()+"] = m["            + SourceOffset.vn() + "+" + Index.vn()+"];";} // Does not work across different program memories
+            String v() {return "putMemory("   + TargetOffset.vn() + "+" + Index.vn()+", getMemory("            + SourceOffset.vn() + "+" + Index.vn()+"));";} // Does not work across different program memories
            };
          }
        };
       return this;
      }
 
-    ByteMemory clear()                                                                                                  // Clear memory
+    ByteMemory clear ()                                                                                                 // Clear memory
      {new ForCount(new Int(size()))
        {void  body(Int Index)
          {new I()
            {void   a() {      putByte(Index.i (), 0);}
-            String v() {return "m["+Index.vn() +   "] = 0;";}
+            String v() {return "putMemory("+Index.vn() +   ", 0);";}
            };
          }
        };
@@ -910,8 +917,8 @@ public class Program extends Test                                               
      {new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {      putByte(Index.i (), 0);}
-            String v() {return "m["+Index.vn()+"] = 0;";}
+           {void   a() {            putByte(Index.i (), 0);}
+            String v() {return "putMemory("+Index.vn()+", 0);";}
            };
          }
        };
@@ -941,16 +948,16 @@ public class Program extends Test                                               
       new I()
        {void a()
          {final int p = I.i();
-          final int a = Byte.toUnsignedInt(getByte(p+0)) <<  0;
-          final int b = Byte.toUnsignedInt(getByte(p+1)) <<  8;
-          final int c = Byte.toUnsignedInt(getByte(p+2)) << 16;
           final int d = Byte.toUnsignedInt(getByte(p+3)) << 24;
+          final int c = Byte.toUnsignedInt(getByte(p+2)) << 16;
+          final int b = Byte.toUnsignedInt(getByte(p+1)) <<  8;
+          final int a = Byte.toUnsignedInt(getByte(p+0)) <<  0;
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
          }
         String v()
          {final String n = I.vn();
-          final StringBuilder s = new StringBuilder("{ m["+n+"+3], m["+n+"+2], m["+n+"+1], m["+n+"]}");
+          final StringBuilder s = new StringBuilder("{getMemory("+n+"+3), getMemory("+n+"+2), getMemory("+n+"+1), getMemory("+n+")}");
           return r.vtrace(s);
          }
        };
@@ -969,7 +976,7 @@ public class Program extends Test                                               
      {Bool r = new Bool();
       new I()
        {void   a() {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));}
-        String v() {return r.vtrace(new StringBuilder("m["+I.vn()+"]["+J.vn()+"]"));}
+        String v() {return r.vtrace(new StringBuilder("getMemoryBool("+I.vn()+", "+J.vn()+")"));}
        };
       return r;
      }
@@ -994,10 +1001,10 @@ public class Program extends Test                                               
         String v()
          {final String i = I.vn(), j = J.vn();
 
-          return "m[0+"+i+"] <= "+j+"[ 0+:8];"+
-                 "m[1+"+i+"] <= "+j+"[ 8+:8];"+
-                 "m[2+"+i+"] <= "+j+"[16+:8];"+
-                 "m[3+"+i+"] <= "+j+"[24+:8];";
+          return "putMemory(0+"+i+", "+j+"[ 0+:8]);"+
+                 "putMemory(1+"+i+", "+j+"[ 8+:8]);"+
+                 "putMemory(2+"+i+", "+j+"[16+:8]);"+
+                 "putMemory(3+"+i+", "+j+"[24+:8]);";
          }
        };
       return this;
@@ -1013,7 +1020,7 @@ public class Program extends Test                                               
          }
         String v()
          {final String i = I.vn(), j = J.vn(), k = K.vn();
-          return "m["+i+"]["+j+"] <= "+k+";";
+          return "putMemoryBool("+i+", "+j+", "+k+");";
          }
        };
       return this;
@@ -1321,14 +1328,16 @@ module %s;                                                                      
     end
   endtask
 
-%s
-%s
-%s
 """,
-name, sizeMemory, numberOfInts, numberOfBools,
-traceVerilogVariable("traceBool",  "b", traceFile),
-traceVerilogVariable("traceInt",   "i", traceFile),
-dumpVerilogMemoryAsHex()));
+name, sizeMemory, numberOfInts, numberOfBools));
+
+  s.append(traceVerilogVariable("traceBool",  "b", traceFile));                                                         // Memory and variable tracinf
+  s.append(traceVerilogVariable("traceInt",   "i", traceFile));
+  s.append(traceVerilogMemoryPut());
+  s.append(traceVerilogMemoryGet());
+  s.append(traceVerilogMemoryPutBool());
+  s.append(traceVerilogMemoryGetBool());
+  s.append(dumpVerilogMemoryAsHex());
 
   for(String m : extraVerilogMethods) s.append(m);                                                                      // Incorporate extra Verilog methods required to support generated instructions
 
@@ -1410,37 +1419,108 @@ endfunction
     program().extraVerilogMethods.add(""+s);
    }
 
-  String dumpVerilogMemoryAsHex()
+  String dumpVerilogMemoryAsHex ()                                                                                      // Dump memory as hex
    {return substitute("""
   task dumpHex;
     integer i;
+    integer f;
     reg [7:0] b;
-    integer fd;
 
     begin
-      fd = $fopen("{traceFile}", "a");
+      f = $fopen("{traceFile}", "a");
 
-      $fdisplay(fd, "Memory");
+      $fdisplay(f, "Memory");
 
-      $fwrite(fd, "         ");
-      for (i = 0; i < 16; i = i + 1) $fwrite(fd, "%02d ", i);
-      $fwrite(fd, "\\n");
+      $fwrite(f, "         ");
+      for (i = 0; i < 16; i = i + 1) $fwrite(f, "%02d ", i);
+                                     $fwrite(f, "\\n");
 
       for (i = 0; i < MEMORY; i = i + 1)
       begin
-        if (i % 16 == 0) $fwrite(fd, "%08d ", i);
+        if (i % 16 == 0)             $fwrite(f, "%08d ", i);
 
         b = m[i];
 
-        if (b != 0) $fwrite(fd, "%02x ", b);
-        else        $fwrite(fd, "   ");
+        if (b != 0)                  $fwrite(f, "%02x ", b);
+        else                         $fwrite(f, "   ");
 
-        if ((i + 1) % 16 == 0) $fwrite(fd, "\\n");
+        if ((i + 1) % 16 == 0)       $fwrite(f, "\\n");
       end
 
-      if (MEMORY % 16 != 0) $fwrite(fd, "\\n");
+      if (MEMORY % 16 != 0)          $fwrite(f, "\\n");
 
-      $fclose(fd);
+      $fclose(f);
+    end
+  endtask
+""", "traceFile", verilogTraceFile);
+  }
+
+  String traceVerilogMemoryGet ()                                                                                       // Trace byte read from memory
+   {return substitute("""
+  function automatic reg[7:0] getMemory (input integer Addr);
+    integer f;
+    begin
+      f = $fopen("{traceFile}", "a");
+      getMemory = m[Addr];
+
+      $fdisplay(f, "%8d r %8d == %8d", pc, Addr, getMemory);
+
+      $fclose(f);
+    end
+  endfunction
+""", "traceFile", verilogTraceFile);
+  }
+
+  String traceVerilogMemoryGetBool ()                                                                                   // Trace bool read from memory
+   {return substitute("""
+  function automatic reg getMemoryBool (input integer Addr, input integer Bit);
+    integer f;
+    begin
+      f = $fopen("{traceFile}", "a");
+      getMemoryBool = m[Addr][Bit];
+
+      $fdisplay(f, "%8d r %8d == %8d", pc, Addr, m[Addr]);
+
+      $fclose(f);
+    end
+  endfunction
+""", "traceFile", verilogTraceFile);
+  }
+
+  String traceVerilogMemoryPut ()                                                                                       // Trace byte written to memory
+   {return substitute("""
+  task automatic putMemory (input integer Addr, input integer Value);
+    integer f;
+    integer a;
+    begin
+      f = $fopen("{traceFile}", "a");
+      a = m[Addr];
+          m[Addr] = Value[0+:8];
+
+      $fdisplay(f, "%8d w %8d %8d <= %8d", pc, Addr, a, Value);
+
+      $fclose(f);
+    end
+  endtask
+""", "traceFile", verilogTraceFile);
+  }
+
+  String traceVerilogMemoryPutBool ()                                                                                   // Trace bit written to memory
+   {return substitute("""
+  task automatic putMemoryBool(input integer Addr, input integer Bit, input integer Value);
+    integer f;
+    integer a;
+    integer b;
+    begin
+      f = $fopen("{traceFile}", "a");
+      a = m[Addr];
+          m[Addr][Bit] = Value[0];
+      b = m[Addr];
+
+      $fdisplay(f, "%8d r %8d == %8d",     pc, Addr, a);
+      $fdisplay(f, "%8d w %8d %8d <= %8d", pc, Addr, a, b);
+
+      $fclose(f);
     end
   endtask
 """, "traceFile", verilogTraceFile);
@@ -1760,8 +1840,6 @@ endfunction
             m.putInt(new Int(4), new Int(-3));
             m.getInt(new Int(0)).ok(-2);
             m.getInt(new Int(4)).ok(-3);
-            ok(()->m.getInt( 0), -2);
-            ok(()->m.getInt( 4), -3);
             execute();
            }
          };
