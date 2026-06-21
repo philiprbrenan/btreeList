@@ -340,33 +340,28 @@ class Branch extends Program implements Program.Locatable                       
 
 //D1 Print                                                                                                              // Print the branch
 
-  StringBuilder print()                                                                                                 // Print the branch
+  StringBuilder print ()                                                                                                // Print the branch
    {final StringBuilder s = new StringBuilder();
-    new I() {void a() {s.setLength(0); s.append(f("Branch"));} String v() {return "";}};
+    new I() {void a() {s.setLength(0); s.append(f("Branch")); }};
 
     final Bint l = getLocation();                                                                                       // Index in memory if present
     new If (l)
      {void Then()
        {final Int i = new Int().set(l);
         new If (i.gt(0))
-         {void Then()
-           {new I() {void a() {s.append(f(" at: %3d", i.i())); } String v() {return "";}};
-           }
-          void Else()
-           {new I() {void a() {s.append(" ".repeat(8));              } String v() {return "";}};
-           }
+         {void Then() {new I() {void a() {s.append(f(" at: %3d", i.i()));}};}
+          void Else() {new I() {void a() {s.append(" ".repeat(8));       }};}
          };
        }
-      void Else()
-       {    new I() {void a() {s.append(" ".repeat(8));              } String v() {return "";}};
-       }
+      void Else() {new I() {void a() {s.append(" ".repeat(8));           }};}
      };
 
     final Int c = count(), t = top();
 
     new I()
      {void a()
-       {s.append(f(" size: %3d",  maxSize()));
+       {program().javaTrace = false;
+        s.append(f(" size: %3d",  maxSize()));
         s.append(f(", count: %3d", c.i()));
         s.append(f(", top: %3d",   t.i()));
         s.append("\n Ref   Key  Data\n");
@@ -380,7 +375,6 @@ class Branch extends Program implements Program.Locatable                       
            }
          }
        }
-      String v() {return "";}
      };
     return s;
    }
@@ -964,7 +958,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_branch();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
