@@ -676,7 +676,7 @@ final public class BitSet extends Program                                       
               void Else()                                                                                               // Low is zero
                {new If (getBitNC(h))
                  {void Then() {p.set(h); Continue.set();}                                                               // High is one so search sub tree
-                  void Else() {new I() {void a() {stop("Should not happen"); } String v() {return "";}};}               // Both high and low are zero but this should not happen
+                  void Else() {new I() {void a() {stop("Should not happen"); } };}               // Both high and low are zero but this should not happen
                  };
                }
              };
@@ -983,15 +983,15 @@ Zero:
     final int N = 8;
     final BitSet b = test_bits(Ex, N);
     final StringBuilder s = new StringBuilder();
-    b.new I() {void a() {s.append("Start:\n"+b);}         String v() {return "";}};
+    b.new I() {void a() {s.append("Start:\n"+b);}         };
 
     for (int i : range(N))
      {b.set(b.new Int(i), b.new Bool(true));
-      b.new I() {void a() {s.append("Set: "+i+"\n"+b);}   String v() {return "";}};
+      b.new I() {void a() {s.append("Set: "+i+"\n"+b);}   };
      }
     for (int i : range(N))
      {b.set(b.new Int(i), b.new Bool(false));
-      b.new I() {void a() {s.append("Clear: "+i+"\n"+b);} String v() {return "";}};
+      b.new I() {void a() {s.append("Clear: "+i+"\n"+b);} };
      }
     b.execute();
     //testStop(s);
