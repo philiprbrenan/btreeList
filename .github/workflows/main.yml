@@ -1,4 +1,4 @@
-# Test 2026-06-21 at 19:21:17
+# Test 2026-06-21 at 19:25:12
 
 name: Test
 run-name: btreeList
@@ -52,11 +52,11 @@ jobs:
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet
 
     - name: Zip files
-      if: always()
+      if: ${{ always() && matrix.task == 'BitSet' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: ${{ always() && matrix.task == 'BitSet' }}
       uses: actions/upload-artifact@v4
       with:
         name: verilog-${{ matrix.task }}
@@ -68,11 +68,11 @@ jobs:
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch
 
     - name: Zip files
-      if: always()
+      if: ${{ always() && matrix.task == 'Branch' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: ${{ always() && matrix.task == 'Branch' }}
       uses: actions/upload-artifact@v4
       with:
         name: verilog-${{ matrix.task }}
@@ -84,11 +84,11 @@ jobs:
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf
 
     - name: Zip files
-      if: always()
+      if: ${{ always() && matrix.task == 'Leaf' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: ${{ always() && matrix.task == 'Leaf' }}
       uses: actions/upload-artifact@v4
       with:
         name: verilog-${{ matrix.task }}
@@ -100,11 +100,11 @@ jobs:
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program
 
     - name: Zip files
-      if: always()
+      if: ${{ always() && matrix.task == 'Program' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: ${{ always() && matrix.task == 'Program' }}
       uses: actions/upload-artifact@v4
       with:
         name: verilog-${{ matrix.task }}
@@ -116,11 +116,11 @@ jobs:
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots
 
     - name: Zip files
-      if: always()
+      if: ${{ always() && matrix.task == 'Slots' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: ${{ always() && matrix.task == 'Slots' }}
       uses: actions/upload-artifact@v4
       with:
         name: verilog-${{ matrix.task }}
@@ -132,11 +132,11 @@ jobs:
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test
 
     - name: Zip files
-      if: always()
+      if: ${{ always() && matrix.task == 'Test' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: ${{ always() && matrix.task == 'Test' }}
       uses: actions/upload-artifact@v4
       with:
         name: verilog-${{ matrix.task }}
@@ -148,11 +148,11 @@ jobs:
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree
 
     - name: Zip files
-      if: always()
+      if: ${{ always() && matrix.task == 'Tree' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: ${{ always() && matrix.task == 'Tree' }}
       uses: actions/upload-artifact@v4
       with:
         name: verilog-${{ matrix.task }}
