@@ -1179,7 +1179,7 @@ public class Program extends Test                                               
           new ExecCommand(f("cd %s; rm -f x; iverilog -g2012 -o x %s.v  &&            ./x", verilogTestFolder(), currentTestNameSuffix()));    // Execute Verilog code
         say(""+x.out);
 
-        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files
+        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
        }
      }
    }
@@ -1346,9 +1346,15 @@ dumpVerilogMemoryAsHex()));
       if (appendTraceComments) s.append(i.traceComment());
       s.append(" end\n");
      }
+                                                                                                                        // Dump memory if used
+    if (byteMemory != null) s.append("""
+        default: begin dumpHex(); $finish(0); end
+""");
+    else                    s.append("""
+        default: begin            $finish(0); end
+""");
 
     s.append("""
-        default: begin dumpHex(); $finish(0); end
       endcase
       pc = pc + 1;
     end
