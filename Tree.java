@@ -1074,11 +1074,11 @@ MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    3
 Number of Keys:    4
-Leaf           size:  2, count:  2
+Leaf           size:   2, count:   2
  Ref   Key  Data
    1     1    11
    0     2    22
-Leaf   at:   1 size:  2, count:  2
+Leaf   at:   1 size:   2, count:   2
  Ref   Key  Data
    1     3    33
    0     4    44
