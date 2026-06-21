@@ -1252,7 +1252,7 @@ keys     :    0   1   0   2
 """);
 
         final StringBuilder T = new StringBuilder();
-        compactKeysLeft((S, b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
+        compactKeysLeft((S, b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");} };});
         //new I() {void a() {testStop(T, s);}};
         ok(()->T, "3->0;");
         ok(()->s, """
@@ -1266,7 +1266,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder U = new StringBuilder();
-        compactKeysRight((S, b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
+        compactKeysRight((S, b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");} };});
         //new I() {void a() {testStop(U, s);}};
         ok(()->U, "0->3;1->2;");
         ok(()->s, """
@@ -1280,7 +1280,7 @@ keys     :    0   0   1   2
 """);
 
         final StringBuilder W = new StringBuilder();
-        compactKeysLeft ((S, b, a)->{new I() {void a() {W.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
+        compactKeysLeft ((S, b, a)->{new I() {void a() {W.append(a.i()+"->"+b.i()+";");} };});
         compactSlotsLeft();
         //new I() {void a() {testStop(W, s);}};
         ok(()->W, "3->0;2->1;");
@@ -1295,7 +1295,7 @@ keys     :    2   1   0   0
 """);
 
         final StringBuilder X = new StringBuilder();
-        compactKeysRight ((S, b, a)->{new I() {void a() {X.append(a.i()+"->"+b.i()+";");} String v() {return "";}};});
+        compactKeysRight ((S, b, a)->{new I() {void a() {X.append(a.i()+"->"+b.i()+";");} };});
         compactSlotsRight();
         //new I() {void a() {testStop(X, s);}};
         ok(()->X, "0->3;1->2;");
@@ -1807,14 +1807,14 @@ Zero:
        {final Slots s = this;
         final StringBuilder t = new StringBuilder();
         initializeMemory();
-        insert(new Int(14)); new I() {void a() {t.append(s);} String v() {return "";}};
-        insert(new Int(13)); new I() {void a() {t.append(s);} String v() {return "";}};
-        insert(new Int(16)); new I() {void a() {t.append(s);} String v() {return "";}};
-        insert(new Int(15)); new I() {void a() {t.append(s);} String v() {return "";}};
-        insert(new Int(18)); new I() {void a() {t.append(s);} String v() {return "";}};
-        insert(new Int(17)); new I() {void a() {t.append(s);} String v() {return "";}};
-        insert(new Int(12)); new I() {void a() {t.append(s);} String v() {return "";}};
-        insert(new Int(11)); new I() {void a() {t.append(s);} String v() {return "";}};
+        insert(new Int(14)); new I() {void a() {t.append(s);} };
+        insert(new Int(13)); new I() {void a() {t.append(s);} };
+        insert(new Int(16)); new I() {void a() {t.append(s);} };
+        insert(new Int(15)); new I() {void a() {t.append(s);} };
+        insert(new Int(18)); new I() {void a() {t.append(s);} };
+        insert(new Int(17)); new I() {void a() {t.append(s);} };
+        insert(new Int(12)); new I() {void a() {t.append(s);} };
+        insert(new Int(11)); new I() {void a() {t.append(s);} };
         ok(()->t, """
 Slots    : size:  8, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
