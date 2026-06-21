@@ -134,7 +134,7 @@ END
       if: \${{ always() && matrix.task == '$j' }}
       uses: actions/upload-artifact\@v4
       with:
-        name: verilog-\${{ matrix.task }}
+        name: verilog-$j
         path: verilog.zip
 END
   }
