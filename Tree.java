@@ -1799,7 +1799,7 @@ Leaf           size:  4, count:  2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_saveReload(!true);
+    test_saveReload(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
