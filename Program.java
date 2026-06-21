@@ -1130,7 +1130,7 @@ public class Program extends Test                                               
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber;                                                                                        // The number of this instruction
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
-    final String traceComment = immediate() ? null : Test.traceComment();                                               // Line at which this instruction was created as a comment
+    final String traceComment = subGetAsComment(); //immediate() ? null : Test.traceComment();                          // Line at which this instruction was created as a comment
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
@@ -1147,7 +1147,7 @@ public class Program extends Test                                               
     I () {this(I.Jump.no);}                                                                                             // Add this instruction to the process's code assuming it will not jump
 
     abstract void     a ();                                                                                             // The action to be performed by the instruction
-             String   v () {return subGetAsComment();};                                                                 // Generate equivalent verilog
+             String   v () {return traceComment();};                                                                    // Generate equivalent verilog
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
    }
 
@@ -1231,9 +1231,9 @@ public class Program extends Test                                               
      }
    }
 
-  static String subGetAsComment () {return subs.size() > 0 ? subs.lastElement() : "/* not in a sub */";}                 // Get the current subroutine name as a comment
+  static String subGetAsComment () {return subs.size() > 0 ? "/* "+subs.lastElement()+" */" : "/* not in a sub */";}    // Get the current subroutine name as a comment
 
-  static void subFinish ()                                                                                               // Finish a subroutine definition
+  static void subFinish ()                                                                                              // Finish a subroutine definition
    {if (subs.size() == 0) stop("No matching subStart()");
     subs.pop();
    }
