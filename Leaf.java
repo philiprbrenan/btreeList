@@ -192,32 +192,21 @@ class Leaf extends Program implements Program.Locatable                         
 
   Bool mergeLeft(Leaf Left)                                                                                             // Merge the leaf into the right of this leaf
    {final Leaf right = this;
-say("LLLL1111");
     final Int  lc    = Left .count();
-say("LLLL2222");
     final Int  rc    = right.count();
-say("LLLL3333");
     final Bool r     = new Bool().clear();
-say("LLLL4444");
 
     new If (lc.Add(rc).le(maxSize()))
      {void Then()
        {r.set();
-say("LLLL555a");
         Left .compactLeft();
-say("LLLL555b");
 
          right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
-say("LLLL6666");
         Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
-say("LLLL7777");
         right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
-say("LLLL8888");
 
         right.copyMergeData(Left, new Int(0), lc);                                                                      // Copy the data values associated with the slots
-say("LLLL9999");
         right.slots.mergeFromLeftEven(Left.slots);                                                                      // Merge the slots
-say("LLLLaaaa");
        }
      };
     return r;
@@ -276,7 +265,7 @@ say("LLLLaaaa");
 
     new I()                                                                                                             // Key/Data pairs in key order
      {void a()
-       {s.append(f(" size: %2d, count: %2d\n", maxSize(), c.i()));
+       {s.append(f(" size: %3d, count: %3d\n", maxSize(), c.i()));
         s.append(" Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
@@ -307,7 +296,7 @@ say("LLLLaaaa");
     l.insert(l.new Int(1), l.new Int(11));
     //testStop("AAAA", l.print());
     l.check(l.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -346,7 +335,7 @@ Leaf           size:  8, count:  4
     l.delete(l.new Int(2));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  3
+Leaf           size:   8, count:   3
  Ref   Key  Data
    3     1    11
    2     3    33
@@ -355,7 +344,7 @@ Leaf           size:  8, count:  3
     l.compactLeft();
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  3
+Leaf           size:   8, count:   3
  Ref   Key  Data
    0     1    11
    2     3    33
@@ -380,7 +369,7 @@ Leaf           size:  8, count:  3
     l.insert(l.new Int(1), l.new Int(11));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -390,7 +379,7 @@ Leaf           size:  8, count:  4
     l.compactRight();
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    4     1    11
    7     2    22
@@ -420,7 +409,7 @@ Leaf           size:  8, count:  4
     l.insert(l.new Int(8), l.new Int(88));
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -436,7 +425,7 @@ Leaf           size:  8, count:  8
     l.splitRight(r).ok(4);
     //l.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -445,7 +434,7 @@ Leaf           size:  8, count:  4
 """);
     //l.new I() {void a() {testStop(r);}};
     l.check(r.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -475,7 +464,7 @@ Leaf           size:  8, count:  4
     r.insert(r.new Int(8), r.new Int(88));
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -490,7 +479,7 @@ Leaf           size:  8, count:  8
     r.splitLeft(l).ok(4);
     //r.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -499,7 +488,7 @@ Leaf           size:  8, count:  4
 """);
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -528,7 +517,7 @@ Leaf           size:  8, count:  4
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
     l.check(l.print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -542,7 +531,7 @@ Leaf           size:  8, count:  8
     final Leaf r = new Leaf(new Build().maxSize(8).immediate(Ex).parent(l));
     l.splitRight(r).ok(4);
     l.check(l.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -551,7 +540,7 @@ Leaf           size:  8, count:  4
 """);
 
     r.check(r.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -561,7 +550,7 @@ Leaf           size:  8, count:  4
 
     l.mergeRight(r);
     l.check(l.print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -595,7 +584,7 @@ Leaf           size:  8, count:  8
     r.insert(r.new Int(8), r.new Int(88));
    // r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -610,7 +599,7 @@ Leaf           size:  8, count:  8
     r.splitLeft(l);
     //r.new I() {void a() {testStop(l);}};
     l.check(l.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -619,7 +608,7 @@ Leaf           size:  8, count:  4
 """);
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Leaf           size:  8, count:  4
+Leaf           size:   8, count:   4
  Ref   Key  Data
    6     5    55
    4     6    66
@@ -629,7 +618,7 @@ Leaf           size:  8, count:  4
     r.mergeLeft(l);
     //r.new I() {void a() {testStop(r);}};
     r.check(r.print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -662,7 +651,7 @@ Leaf           size:  8, count:  8
     l.insert(l.new Int(5), l.new Int(55));
     l.insert(l.new Int(8), l.new Int(88));
     l.check(l.print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
@@ -693,7 +682,7 @@ Leaf           size:  8, count:  8
     l.delete(l.new Int(7)).ok(77); l.find(l.new Int(7)).notValid().ok(true); l.count().ok(1);
     l.delete(l.new Int(5)).ok(55); l.find(l.new Int(5)).notValid().ok(true); l.count().ok(0);
     l.check(l.print(), """
-Leaf           size:  8, count:  0
+Leaf           size:   8, count:   0
  Ref   Key  Data
 """);
 
@@ -720,7 +709,7 @@ Leaf           size:  8, count:  0
         insert(new Int(5), new Int(55));
         insert(new Int(8), new Int(88));
         check(print(), """
-Leaf           size:  8, count:  8
+Leaf           size:   8, count:   8
  Ref   Key  Data
    3     1    11
    0     2    22
