@@ -204,36 +204,46 @@ class Branch extends Program implements Program.Locatable                       
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
-  Int insertEmpty(Int Key, Int Data)                                                                                    // Insert a key data pair into a branch known to be empty
-   {if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
+  Int insertEmpty (Int Key, Int Data)                                                                                   // Insert a key data pair into a branch known to be empty
+   {subStart("Branch.insertEmpty");
+    if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
     refData.putInt(new Int(0), Data);                                                                                   // Place data in first key slot
+    subFinish();
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
 //D1 Compact, Split, Merge                                                                                              // Compact, split or merge branches
 //D2 Compact                                                                                                            // Compact a branch to the left or right
 
-  void compactLeft()                                                                                                    // Compact a branch to the left
-   {slots.compactSlotsLeft();                                                                                           // Compact the slots to match
+  void compactLeft ()                                                                                                   // Compact a branch to the left
+   {subStart("Branch.compactLeft");
+    slots.compactSlotsLeft();                                                                                           // Compact the slots to match
     slots.compactKeysLeft((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                          // Compact the slots to match
+    subFinish();
    }
 
-  void compactRight()                                                                                                   // Compact a branch to the right
-   {slots.compactSlotsRight();                                                                                          // Compact the slots to match
+  void compactRight ()                                                                                                  // Compact a branch to the right
+   {subStart("Branch.compactRight");
+    slots.compactSlotsRight();                                                                                          // Compact the slots to match
     slots.compactKeysRight((S, t, s)->{refData.putInt(t, refData.getInt(s));});                                         // Compact the slots to match
+    subFinish();
    }
 
 //D2 Split                                                                                                              // Split a full branch into two branches
 
-  private Int splittingKey()                                                                                            // Splitting key for a branch assuming that the branch has been compacted to the right
-   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
-    return slots.getSlotToKeyValue(new Int(maxSize/2));
+  private Int splittingKey ()                                                                                           // Splitting key for a branch assuming that the branch has been compacted to the right
+   {subStart("Branch.splittingKey");
+    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+    final Int r = slots.getSlotToKeyValue(new Int(maxSize/2));
+    subFinish();
+    return r;
    }
 
-  Int splitRight(Branch Right)                                                                                          // Split a full branch rightwards into a supplied branch and return the splitting key
-   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+  Int splitRight (Branch Right)                                                                                          // Split a full branch rightwards into a supplied branch and return the splitting key
+   {subStart("Branch.splitRight");
+    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch left = this;
     Right.slots.clear();                                                                                                // Clear the target
     Right.refData.copy(left.refData, left.build.dataBytes());                                                           // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
@@ -243,28 +253,34 @@ class Branch extends Program implements Program.Locatable                       
     return left.slots.getKeyValue(sk);                                                                                  // Splitting key
    }
 
-  Int splitLeft(Branch Left)                                                                                            // Split a full branch leftwards into a supplied branch and return the splitting key
-   {if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
+  Int splitLeft (Branch Left)                                                                                           // Split a full branch leftwards into a supplied branch and return the splitting key
+   {subStart("Branch.mergeRight");
+    if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
     Left.slots.clear();                                                                                                 // Clear target
     Left.refData.copy(right.refData, right.build.dataBytes());                                                          // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = right.slots.splitLeftOdd(Left.slots);                                                                // Split the slots  and get the index of the splitting key
     Left .top(right.data(sk));                                                                                          // Left top is data from splitting key
-    return right.slots.getKeyValue(sk);                                                                                 // Splitting key
+    final Int r = right.slots.getKeyValue(sk);                                                                          // Splitting key
+    subFinish();
+    return r;                                                                                                           // Splitting key
    }
 
 //D2 Merge                                                                                                              // Merge two branches
 
   private void copyMergeData(Branch Source, Int Start, Int End)                                                         // Copy the data values directly in the specified key range from the specified source and place them in the exact same position in the target
-   {new ForCount (Start, End)
+   {subStart("Branch.copyMergeData");
+    new ForCount (Start, End)
      {void body(Int Index)
        {data(Index, Source.data(Index));                                                                                // The keys have been compacted left and right so we can copy them from the source position into the same position in the target without collisions
        }
      };
+    subFinish();
    }
 
-  Bool mergeRight(Branch Right, Int Sk)                                                                                 //N Merge the specified branch into the right of this branch separating the two by the specified splitting key
-   {final Branch left = this;
+  Bool mergeRight (Branch Right, Int Sk)                                                                                 //N Merge the specified branch into the right of this branch separating the two by the specified splitting key
+   {subStart("Branch.mergeRight");
+    final Branch left = this;
     final Int    lc   = left .count();
     final Int    rc   = Right.count();
     final Bool   r    = new Bool().clear();
@@ -286,11 +302,13 @@ class Branch extends Program implements Program.Locatable                       
         ls.mergeFromRightOdd(Rs, Sk);                                                                                   // Merge the slots
        }
      };
+    subFinish();
     return r;
    }
 
-  Bool mergeLeft(Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
-   {final Branch right = this;
+  Bool mergeLeft (Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
+   {subStart("Branch.mergeLeft");
+    final Branch right = this;
     final Int    lc    = Left .count();
     final Int    rc    = right.count();
     final Bool   r     = new Bool().clear();
@@ -311,10 +329,11 @@ class Branch extends Program implements Program.Locatable                       
         rs.mergeFromLeftOdd(Ls, Sk);                                                                                    // Merge the slots
        }
      };
+    subFinish();
     return r;
    }
 
-  int splitSize() {return maxSize()>>>1;}                                                                               // Size of a split branch
+  int splitSize () {return maxSize()>>>1;}                                                                               // Size of a split branch
 
 //D1 Iterate                                                                                                            // Iterate over a branch
 
@@ -322,26 +341,29 @@ class Branch extends Program implements Program.Locatable                       
    {void process(Int Key, Int Data);
    }
 
-  void iterate(Iterator Iterator)                                                                                       // Iterate over a leaf
-   {final Bint f = slots.usedSlotsToKeys.firstOne();
+  void iterate (Iterator Iterator)                                                                                       // Iterate over a leaf
+   {subStart("Branch.print");
+    final Bint f = slots.usedSlotsToKeys.firstOne();
     new If (f)
      {void Then()
        {new For(maxSize)
          {void body(Int Index, Bool Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
-            new I() {void a() {Iterator.process(k, d);} String v() {return "/*not set*/" + traceComment();}};
+            new I() {void a() {Iterator.process(k, d);}};
             f.copy(slots.usedSlotsToKeys.nextOne(f.i()));
             Continue.set(f.valid());
            }
          };
        }
      };
+    subFinish();
    }
 
 //D1 Print                                                                                                              // Print the branch
 
   StringBuilder print ()                                                                                                // Print the branch
-   {final StringBuilder s = new StringBuilder();
+   {subStart("Branch.print");
+    final StringBuilder s = new StringBuilder();
     new I() {void a() {s.setLength(0); s.append(f("Branch")); }};
 
     final Bint l = getLocation();                                                                                       // Index in memory if present
@@ -376,6 +398,7 @@ class Branch extends Program implements Program.Locatable                       
          }
        }
      };
+    subFinish();
     return s;
    }
 
