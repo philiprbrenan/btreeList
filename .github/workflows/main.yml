@@ -1,4 +1,4 @@
-# Test 2026-06-21 at 19:25:58
+# Test 2026-06-21 at 19:26:46
 
 name: Test
 run-name: btreeList
@@ -59,7 +59,7 @@ jobs:
       if: ${{ always() && matrix.task == 'BitSet' }}
       uses: actions/upload-artifact@v4
       with:
-        name: verilog-BitSet
+        name: BitSet-verilog
         path: verilog.zip
 
     - name: Test Branch
@@ -75,7 +75,7 @@ jobs:
       if: ${{ always() && matrix.task == 'Branch' }}
       uses: actions/upload-artifact@v4
       with:
-        name: verilog-Branch
+        name: Branch-verilog
         path: verilog.zip
 
     - name: Test Leaf
@@ -91,7 +91,7 @@ jobs:
       if: ${{ always() && matrix.task == 'Leaf' }}
       uses: actions/upload-artifact@v4
       with:
-        name: verilog-Leaf
+        name: Leaf-verilog
         path: verilog.zip
 
     - name: Test Program
@@ -107,7 +107,7 @@ jobs:
       if: ${{ always() && matrix.task == 'Program' }}
       uses: actions/upload-artifact@v4
       with:
-        name: verilog-Program
+        name: Program-verilog
         path: verilog.zip
 
     - name: Test Slots
@@ -123,7 +123,7 @@ jobs:
       if: ${{ always() && matrix.task == 'Slots' }}
       uses: actions/upload-artifact@v4
       with:
-        name: verilog-Slots
+        name: Slots-verilog
         path: verilog.zip
 
     - name: Test Test
@@ -139,7 +139,7 @@ jobs:
       if: ${{ always() && matrix.task == 'Test' }}
       uses: actions/upload-artifact@v4
       with:
-        name: verilog-Test
+        name: Test-verilog
         path: verilog.zip
 
     - name: Test Tree
@@ -155,5 +155,5 @@ jobs:
       if: ${{ always() && matrix.task == 'Tree' }}
       uses: actions/upload-artifact@v4
       with:
-        name: verilog-Tree
+        name: Tree-verilog
         path: verilog.zip
