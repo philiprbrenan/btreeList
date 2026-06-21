@@ -76,7 +76,7 @@ class Leaf extends Program implements Program.Locatable                         
 
   Leaf initializeMemory()                                                                                               // Initialize slots and data associated with the leaf
    {clear();                                                                                                            // Clear backing memory
-    slots.initializeMemory();                                                                                           // Initialize slots
+    //slots.initializeMemory();                                                                                           // Initialize slots
     return this;
    }
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
@@ -272,9 +272,11 @@ say("LLLLaaaa");
        }
      };
 
+    final Int c = count();
+
     new I()                                                                                                             // Key/Data pairs in key order
      {void a()
-       {s.append(f(" size: %2d, count: %2d\n", maxSize(), slots.refCount.getInt(0)));
+       {s.append(f(" size: %2d, count: %2d\n", maxSize(), c.i()));
         s.append(" Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
