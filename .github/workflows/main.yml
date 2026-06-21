@@ -1,4 +1,4 @@
-# Test 2026-06-21 at 15:33:10
+# Test 2026-06-21 at 15:46:14
 
 name: Test
 run-name: btreeList
@@ -85,3 +85,13 @@ jobs:
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree
 
+    - name: Zip files
+      if: always()
+      run: zip -r verilog.zip verilog/
+
+    - name: Upload artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: verilog
+        path: verilog.zip
