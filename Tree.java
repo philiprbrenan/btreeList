@@ -1162,9 +1162,7 @@ Number of Keys:    0
     else
      {t.new ForCount(t.new Int(1), t.new Int(7))
        {void body(Int Index)
-         {t.new I() {void a() {say("AAAA", Index); } String v() {return "";}};
-          t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
-          final StringBuilder d = t.dumpTree(); t.new I() {void a() {say("DDDD1111", d);}};
+         {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
          }
        };
 
@@ -1744,7 +1742,7 @@ MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
 Number of Keys:    2
-Leaf           size:  4, count:  2
+Leaf           size:   4, count:   2
  Ref   Key  Data
    0     0     1
    1     1     1
