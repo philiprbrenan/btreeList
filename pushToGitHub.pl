@@ -122,7 +122,7 @@ END
    {$y .= <<END;
 
     - name: Test $j
-      if: matrix.task == '$j'
+      if: \${{ always() && matrix.task == '$j' }}
       run: |
         java -XX:+UseZGC -cp Classes $c/$j
 
