@@ -36,6 +36,7 @@ public class Program extends Test                                               
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
+        boolean                                javaTrace = true;                                                        // Trace java execution if true - can be switched off during printing and other ancillary operations not replicated in the veriog code so that the java trace matches the verilog trace accurately
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -455,47 +456,50 @@ public class Program extends Test                                               
     Bool and(Bool b) {new I() {void a() {x(); b.x(); if (!b.i) i = false; jtrace();} String v() {return vtrace(vn()+" && "+b.vn());}}; return this;}  // "And" without short circuit. Modifies the target.
     Bool And(Bool b) {return dup().and(b);}                                                                             //N "And" without short circuit. Does not modify the target
 
-            Bool dup       ()       {return new Bool(this);}                                                            // Duplicate a boolean so that the duplicated version can be modified without modifying the original
-    private Bool valid     ()       {return new Bool( v);}                                                              //N Whether the boolean is valid
-    private Bool notValid  ()       {return new Bool(!v);}                                                              //N Whether the boolean is invalid
-    private Bool invalidate()       {new I() {void a() {ex(Ops.set, false);          } String v() {return ev(Ops.set, false);}}; return this;} // Invalidate the boolean
-    private Bool copy      (Bool I) {new I() {void a() {i = I.i; v = I.v  ; jtrace();} String v() {return ev(Ops.set, I    );}}; return this;} //N Copy the state of a boolean without regard as to whether it is valid or not
+            Bool dup ()             {return new Bool(this);}                                                            // Duplicate a boolean so that the duplicated version can be modified without modifying the original
+    private Bool valid ()           {return new Bool( v);}                                                              //N Whether the boolean is valid
+    private Bool notValid ()        {return new Bool(!v);}                                                              //N Whether the boolean is invalid
+    private Bool invalidate ()      {new I() {void a() {ex(Ops.set, false);          } String v() {return ev(Ops.set, false);}}; return this;} // Invalidate the boolean
+    private Bool copy (Bool I)      {new I() {void a() {i = I.i; v = I.v  ; jtrace();} String v() {return ev(Ops.set, I    );}}; return this;} //N Copy the state of a boolean without regard as to whether it is valid or not
 
-    public String toString()                                                                                            // Print the boolean
+    public String toString ()                                                                                           // Print the boolean
      {final String u = "undefined_Bool";
       if (name == null) return v ? ""+i       : u;
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String vn() {return pad("b["+ id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
+    String vn () {return pad("b["+ id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
 
-    void stop    (final Object...O) {new If (this)   {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};}  // Conditionally print a message if true and stop
-    void elseStop(final Object...O) {new If (Flip()) {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};}  //N Conditionally print a message if false and stop
-    Bool say() {final Bool i = this; new I()                                          {void a() {Test.say(i) ;} String v() {return "";}}; return this;} //N Say the boolean
+    void stop (    final Object...O) {new If (this)   {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};}  // Conditionally print a message if true and stop
+    void elseStop (final Object...O) {new If (Flip()) {void Then() {new I(I.Jump.will) {void a() {Test.stop(O);} String v() {return "pc <= -1;";}};}};}  //N Conditionally print a message if false and stop
+    Bool say ()                      {final Bool i = this;          new I()            {void a() {Test.say(i) ;} }; return this;} //N Say the boolean
 
-    void jtrace () {appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, i ? 1 : 0));}           // Trace the execution of a boolean operation
+    void jtrace ()                                                                                                      // Trace the execution of a boolean operation
+     {if (!javaTrace) return;                                                                                           // Tracing is being suppressed
+      appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, i ? 1 : 0));
+     }
 
-    Bool ok(Boolean Value)
+    Bool ok (Boolean Value)
      {new I()
        {void a()
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
-        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
+                                                                                                 // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
        };
       return this;
      }
 
-    Bool ok(Bool Value)
+    Bool ok (Bool Value)
      {final Bool got = this;
        new If (Value.valid())
        {void Then()
-         {new I() {void a()  {Test.ok(got.b(), Value.b()); } String v() {return "";}};
+         {new I() {void a()  {Test.ok(got.b(), Value.b()); } };
          }
         void Else()
-         {new I() {void a() {Test.ok(got.notValid(), true);} String v() {return "";}};
+         {new I() {void a() {Test.ok(got.notValid(), true);} };
          }
-        String v() {return "";}                                                                                         // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
+                                                                                                 // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
        };
       return this;
      }
@@ -746,8 +750,8 @@ public class Program extends Test                                               
      }
 
             Int  dup       () {return new Int(this);}                                                                   // Duplicate an integer so that the duplicated version can be modified without modifying the original
-    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is valid   - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
-    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}                  String v() {return "";}};              return b;}    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
+    private Bool valid     () {final Bool b = new Bool(); new I() {void a() {b.i =  v; b.v = true;}                  };              return b;}    // Whether the integer is valid   - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
+    private Bool notValid  () {final Bool b = new Bool(); new I() {void a() {b.i = !v; b.v = true;}                  };              return b;}    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
     private Int  invalidate() {                           new I() {void a() {ex(Ops.set, -1); v = false;}            String v() {return ev(Ops.set, -1);}}; return this;} // Invalidate the integer. The invalidation is done in such a away as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
     private Int  copy (Int I) {                           new I() {void a() {i = I.i;         v = I.v  ;  jtrace();} String v() {return ev(Ops.set,  I);}}; return this;} // Copy the state of an integer without regard as to whether it is valid or not
 
@@ -780,10 +784,11 @@ public class Program extends Test                                               
 
     String vn() {return pad("i[" +id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
 
-    Int say() {final Int i = this; new I() {void a() {Test.say(i);} String v() {return "";}}; return this;}             // Say the integer
+    Int say() {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}             // Say the integer
 
-    void jtrace ()                                                                                                       // Trace the execution of an integer operation
-     {final Program P = program();
+    void jtrace ()                                                                                                      // Trace the execution of an integer operation
+     {if (!javaTrace) return;                                                                                           // Tracing is being suppressed
+      final Program P = program();
       final I       I = P.executing;
       final String  t = I.traceComment();
       appendFile(javaTraceFile(), f("%8d i %8d = %8d\n", P.currentPc, id, i));
@@ -796,7 +801,7 @@ public class Program extends Test                                               
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
-        String v() {return "";}                                                                                         // No need to test  under Verilog as long as all data accesses match
+                                                                                                 // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
@@ -805,12 +810,12 @@ public class Program extends Test                                               
      {final Int got = this;
        new If (Value.valid())
        {void Then()
-         {new I() {void a() {Test.ok(got.i(), Value.i());}   String v() {return "";}};
+         {new I() {void a() {Test.ok(got.i(), Value.i());}   };
          }
         void Else()
-         {new I() {void a() {Test.ok(got.notValid(), true);} String v() {return "";}};
+         {new I() {void a() {Test.ok(got.notValid(), true);} };
          }
-        String v() {return "";}                                                                                         // No need to test  under Verilog as long as all data accesses match
+                                                                                                 // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
@@ -844,18 +849,18 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bint ok(boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    } String v() {return "";}}; return this;}      // Test the boolean value of the boolean integer
-    Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } String v() {return "";}}; return this;}      // Test the integer value of the boolean integer
-    Bint ok(Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} String v() {return "";}}; return this;}      // Test the integer value of the boolean integer
+    Bint ok(boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    } }; return this;}      // Test the boolean value of the boolean integer
+    Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } }; return this;}      // Test the integer value of the boolean integer
+    Bint ok(Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} }; return this;}      // Test the integer value of the boolean integer
 
-    void     stop(final Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);} String v() {return "";} };}};} // Conditionally print a message if false and stop
-    void elseStop(final Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);} String v() {return "";} };}};} // Conditionally print a message if true and stop
+    void     stop(final Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);}  };}};} // Conditionally print a message if false and stop
+    void elseStop(final Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);}  };}};} // Conditionally print a message if true and stop
 
     public String toString()
      {final StringBuilder s = new StringBuilder();
       new I()
        {void a(){if (b.b()) s.append("Bint("+i+")"); else s.append("Bint(invalid)");}
-        String v() {return "";}
+
        };
       return ""+s;
      }
@@ -877,7 +882,7 @@ public class Program extends Test                                               
     private byte getByte (int I)                                                                                        // Get the value of a byte
      {final byte b = bytes[I];
       final int  B = b < 0 ? 256+(int)b : (int)b;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
-      appendFile(javaTraceFile(), f("%8d r %8d == %8d\n", program().currentPc, I, B));
+      if (javaTrace) appendFile(javaTraceFile(), f("%8d r %8d == %8d\n", program().currentPc, I, B));                   // Trace the get
       return b;                                                                                                         // Get the value of a byte
      }
 
@@ -886,7 +891,7 @@ public class Program extends Test                                               
       final int  A = a < 0 ? 256+(int)a : (int)a;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
       final int  B = b < 0 ? 256+(int)b : (int)b;
       bytes[I] = b;                                                                                                     // Set the value of a byte from an integer
-      appendFile(javaTraceFile(), f("%8d w %8d %8d <= %8d\n", program().currentPc, I, A, B));                           // Trace the update
+      if (javaTrace) appendFile(javaTraceFile(), f("%8d w %8d %8d <= %8d\n", program().currentPc, I, A, B));            // Trace the write
      }
 
     ByteMemory copy (ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
@@ -1110,13 +1115,13 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  void check(StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} String v() {return "";}};} // Test the supplied content against the specified string, then clear the output area ready for the next report
-  void Check(StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} String v() {return "";}};} // Test the supplied content against the specified string, print the actual output area contents and stop
+  void check (StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} };} // Test the supplied content against the specified string, then clear the output area ready for the next report
+  void Check (StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} };} // Test the supplied content against the specified string, print the actual output area contents and stop
 
-  String verilogTestFolder() {return fp(verilogFolder,       currentTestNameSuffix());}                                 // Folder for this test using Verilog
-  String verilogTraceFile()  {return fn(verilogTestFolder(), verilogTraceFile);}                                        // Verilog trace file
-  String    javaTraceFile()  {return fn(verilogTestFolder(), javaTraceFile);}                                           // Java trace file
-  String VerilogCodeFile()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                  // Verilog code file
+  String verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                                // Folder for this test using Verilog
+  String verilogTraceFile ( ) {return fn(verilogTestFolder(), verilogTraceFile);}                                       // Verilog trace file
+  String    javaTraceFile ( ) {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
+  String VerilogCodeFile (  ) {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1139,20 +1144,20 @@ public class Program extends Test                                               
       //if (!immediate() && codeSize() % 100_000 == 1) say("CodeSize", codeSize());
      }
 
-    I() {this(I.Jump.no);}                                                                                              // Add this instruction to the process's code assuming it will not jump
+    I () {this(I.Jump.no);}                                                                                             // Add this instruction to the process's code assuming it will not jump
 
-    abstract void     a();                                                                                              // The action to be performed by the instruction
-             String   v() {return "Not set"+traceComment();};                                                           // Generate equivalent verilog
-    String traceComment() {return traceComment != null ? traceComment : "";}                                            // Trace comment if it exists
+    abstract void     a ();                                                                                             // The action to be performed by the instruction
+             String   v () {return subGetAsComment();};                                                                 // Generate equivalent verilog
+    String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
    }
 
   final class Label                                                                                                     // Label jump targets in the program
    {int offset;                                                                                                         // The instruction location to which this label applies
-    Label()    {set(); program().labels.push(this);}                                                                    // A label assigned to an instruction location
-    void set() {offset = program().code.size();}                                                                        // Reassign the label to an instruction
+    Label ()    {set(); program().labels.push(this);}                                                                   // A label assigned to an instruction location
+    void set () {offset = program().code.size();}                                                                       // Reassign the label to an instruction
    }
 
-  void execute()                                                                                                        // Execute the current code
+  void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
 
     if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,d", codeSize()));             // Code size check
@@ -1164,6 +1169,7 @@ public class Program extends Test                                               
       try
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         executing = i;
+        javaTrace = true;                                                                                               // Trace Java execution unless explicitly disabled by the instruction during execution
         i.a();
         executing = null;
        }
@@ -1190,47 +1196,49 @@ public class Program extends Test                                               
      }
    }
 
-  void Goto(Label Target)                                           {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}       // Goto a label unconditionally
-  void Goto(Label Target, Bool If) {new If (If.b())    {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};}    // Goto a label if the condition is true
-  void Noto(Label Target, Bool If) {new If (If.Flip()) {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};}    // Goto a label if the condition is false
-  void Goto(Int   Target)                                           {new I() {void a() {parentProgram.pc = Target.i()   ;} String v() {return "goto";}};}       // Goto a saved address
+  void Goto (Label Target)                                           {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}       // Goto a label unconditionally
+  void Goto (Label Target, Bool If) {new If (If.b())    {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};}    // Goto a label if the condition is true
+  void Noto (Label Target, Bool If) {new If (If.Flip()) {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};}    // Goto a label if the condition is false
+  void Goto (Int   Target)                                           {new I() {void a() {parentProgram.pc = Target.i()   ;} String v() {return "goto";}};}       // Goto a saved address
 
-  void variableNotSet(String Type, String Name)                                                                         // Variable not yet set message
+  void variableNotSet (String Type, String Name)                                                                        // Variable not yet set message
    {final I i = parentProgram.executing;
     final String m = (Name != null ? '"'+Name+'"'+" " : "") + "has not been set yet";
     if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
-  <A, B> void ok(Supplier<A> a, B b)                                                                                    // Test a result of delayed execution against a known result while the program is still executing
+  <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
    {new I()
      {void   a() {if (!ok(a.get(), b)) say("====\n", traceBack);}
-      String v() {return "";}
+
      };
    }
 
 //D2 Instruction counts                                                                                                 // Count the number of instructions in each subroutine minus the instructions supplied by called subroutines
 
-  int codeSize() {return program().code.size();}                                                                        // Number of instructions in current program
+  int codeSize () {return program().code.size();}                                                                        // Number of instructions in current program
 
-  static void subStart(String Name)
+  static void subStart (String Name)
    {subs.push(Name);
     if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, 0);                                           // Initialize instruction count for this subroutine
    }
 
-  static void subInc()                                                                                                  // Increment the number of instructions associated with a method
+  static void subInc ()                                                                                                  // Increment the number of instructions associated with a method
    {if (subs.size() > 0)
      {final String n = subs.lastElement();
       instructionCounts.put(n, instructionCounts.get(n) + 1);
      }
    }
 
-  static void subFinish()                                                                                               // Finish a subroutine definition
+  static String subGetAsComment () {return subs.size() > 0 ? subs.lastElement() : "/* not in a sub */";}                 // Get the current subroutine name as a comment
+
+  static void subFinish ()                                                                                               // Finish a subroutine definition
    {if (subs.size() == 0) stop("No matching subStart()");
     subs.pop();
    }
 
-  static String subPrint()                                                                                              // Print instruction counts
+  static String subPrint ()                                                                                              // Print instruction counts
    {final StringBuilder s = new StringBuilder();
     int N = 0;
     final List<Map.Entry<String, Integer>> sorted = instructionCounts.entrySet().stream()
@@ -1246,7 +1254,7 @@ public class Program extends Test                                               
 
 //D1 Verilog                                                                                                            // Generate Verilog
 
-  String generateVerilog()                                                                                              // Generate and execute the corresponding Verilog
+  String generateVerilog ()                                                                                             // Generate and execute the corresponding Verilog
    {final String          name = currentTestNameSuffix();                                                               // Name of program
     final String     traceFile = fnex(verilogTraceFile());                                                              // Trace file name relative to Verilog code
     final String      codeFile = VerilogCodeFile();                                                                     // Code file
@@ -1596,7 +1604,7 @@ endfunction
            {b.add(a.dup().inc());
             new I()
              {void   a() {s.append(f("%2d  %2d\n", a.i(), b.i()));}
-              String v() {return "";}
+
              };
             Continue.set();
            }
@@ -1638,7 +1646,7 @@ endfunction
             c.add(b);
             a.set(b);
             b.set(c);
-            new I() {void a() {s.append(""+c+" ");} String v() {return "";}};
+            new I() {void a() {s.append(""+c+" ");} };
             Continue.set();
            }
          };
@@ -1669,7 +1677,7 @@ endfunction
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
-            new I() {void a() {s.append(""+c+" ");} String v() {return "";}};
+            new I() {void a() {s.append(""+c+" ");} };
             Continue.set();
            }
          };
@@ -1690,9 +1698,9 @@ endfunction
      {void code()
        {final Int a = new Int(0);
         final StringBuilder s = new StringBuilder();
-              a.ok(0); new I() {void a() {s.append(a+" ");} String v() {return "";}};
-        a.inc().ok(1); new I() {void a() {s.append(a+" ");} String v() {return "";}};
-        a.inc().ok(2); new I() {void a() {s.append(a+" ");} String v() {return "";}};
+              a.ok(0); new I() {void a() {s.append(a+" ");} };
+        a.inc().ok(1); new I() {void a() {s.append(a+" ");} };
+        a.inc().ok(2); new I() {void a() {s.append(a+" ");} };
         Check(s, "0 1 2");
         execute();
        }
