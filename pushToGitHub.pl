@@ -126,11 +126,6 @@ END
       run: |
         java -XX:+UseZGC -cp Classes $c/$j
 
-END
-   }
-
-  if (1)
-   {$y .= <<END;
     - name: Zip files
       if: always()
       run: zip -r verilog.zip verilog/
@@ -139,7 +134,7 @@ END
       if: always()
       uses: actions/upload-artifact\@v4
       with:
-        name: verilog
+        name: verilog-\${{ matrix.task }}
         path: verilog.zip
 END
   }
