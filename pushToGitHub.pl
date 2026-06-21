@@ -104,6 +104,8 @@ jobs:
     - name: Verilog install
       run: |
         sudo apt install iverilog yosys tree
+        mkdir -p verilog
+
 
     - name: Position files in package
       run: |
