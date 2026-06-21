@@ -173,7 +173,7 @@ class Tree extends Program                                                      
 
   Leaf makeLeaf(Int Node)                                                                                               // Make a leaf from the specified node
    {final Leaf l = leaf(Node, false);
-    //l.initializeMemory();
+    l.initializeMemory();
     setType(Node, BranchOrLeaf.leaf);
     return l;
    }
@@ -189,7 +189,7 @@ class Tree extends Program                                                      
 
   Branch makeBranch(Int Node)                                                                                           // Make a branch from the specified node
    {final Branch b = branch(Node, false);
-    //b.initializeMemory();
+    b.initializeMemory();
     setType(Node, BranchOrLeaf.branch);
     return b;
    }
@@ -407,24 +407,16 @@ class Tree extends Program                                                      
 
     void mergeUp()                                                                                                      // Merge up from the leaf to the splitting point
      {subStart("Tree.mergeUp");
-say("BBBB1111");
 
       new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
        {void body(Int Index)
          {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
-say("BBBB2222");
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
-say("BBBB3333");
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
-say("BBBB4444");
           mergeLeftLeft  (p, d.slot);                                                                                   // Various merges possible on either side of the path
-say("BBBB5555");
           mergeRightRight(p, d.slot);
-say("BBBB6666");
           mergeLeft      (p, d.slot);
-say("BBBB7777");
           mergeRight     (p, d.slot);
-say("BBBB8888");
          }
        };
 
@@ -432,29 +424,17 @@ say("BBBB8888");
       new If (R.slots.empty())                                                                                          // Reduce the height of the tree if the body of the root is now empty
        {void Then()
          {final Int t = R.top();                                                                                        // Top
-say("BBBB9999");
           new If (isLeaf(t))                                                                                            // Root has leaves for children
            {void Then()
-             {
-say("BBBBaaaa");
-               final Leaf L = makeLeaf(R.getLocation().i());                                                             // Make the root into a leaf
-say("BBBBbbbb");
+             {final Leaf L = makeLeaf(R.getLocation().i());                                                             // Make the root into a leaf
               final Leaf l = leaf(t);                                                                                   // Top as a leaf
-say("BBBBcccc");
               L.copy(l);                                                                                                // Copy top into root decreasing height of tree
-say("BBBBdddd");
               free(l);                                                                                                  // Free top as no longer needed
-say("BBBBeeee");
              }
             void Else()                                                                                                 // Root has branches for children
-             {
-say("BBBBffff");
-               final Branch b = branch(t);                                                                               // Top as a branch
-say("BBBBgggg");
+             {final Branch b = branch(t);                                                                               // Top as a branch
               R.copy(b);                                                                                                // Copy top into root
-say("BBBBhhhh");
               free(b);                                                                                                  // Free top as no longer needed
-say("BBBBiiii");
              }
            };
          }
@@ -502,12 +482,9 @@ say("BBBBiiii");
                 l.copy(R);                                                                                              // Duplicate the root
                 final Int   sk = l.splitRight(r);                                                                       // Split the root leaf in two
                 final Branch b = makeBranch(root());                                                                    // Make the root into a branch
-final StringBuilder d1 = dumpTree(); new I() {void a() {say("IIII1111", d1);}};
-                b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.top(r.getLocation().i());                                                                             // The right leaf becomes top of the root branch
                 new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};            // Insert left or right leaf depending on key versus splitting key
-final StringBuilder d2 = dumpTree(); new I() {void a() {say("IIII2222", d2); stop();}};
                }
               void Else()                                                                                               // Root is a non full leaf that does not contain the key
                {R.insert(Key, Data);                                                                                    // Insert in non full leaf that does not contain the key
@@ -636,22 +613,14 @@ final StringBuilder d2 = dumpTree(); new I() {void a() {say("IIII2222", d2); sto
    {subStart("Tree.mergeLeftLeafIntoRightSibling");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
-say("DDDD1111");
     final Leaf   l = leaf(P.data(P.slots.getSlotToKeyIndex(Left)));                                                     // Left leaf of merge
-say("DDDD2222");
     new If (Right.mergeLeft(l))                                                                                         // Successfully merged
      {void Then()
-       {
-say("DDDD3333");
-        P.slots.delete(Left);                                                                                           // The left sibling can now be freed
-say("DDDD4444");
+       {P.slots.delete(Left);                                                                                           // The left sibling can now be freed
         free(l);
-say("DDDD5555");
         m.set();
-say("DDDD6666");
        }
      };
-say("DDDD7777");
     subFinish();
     return m;                                                                                                           // Whether the merge succeeded
    }
@@ -677,51 +646,30 @@ say("DDDD7777");
    {subStart("Tree.mergeLeftIntoRightSibling");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
-say("CCCC1111");
     new If (isLeaf(P.top()))                                                                                            // Root has leaves for children
      {void Then()
-       {
-say("CCCC2222");
-         final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
-say("CCCC3333");
+       {final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
         new If (R)                                                                                                      // Next slot exists and so references the right sibling
          {void Then()
-           {
-say("CCCC4444");
-             final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R.i())));                                              // Right leaf of merge
-say("CCCC5555");
+           {final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R.i())));                                              // Right leaf of merge
             m.set(mergeLeftLeafIntoRightSibling(P, Left, r));                                                           // Merge
-say("CCCC6666");
            }
           void Else()                                                                                                   // Next sibling is top
-           {
-say("CCCC7777");
-             final Leaf r = leaf(P.top());                                                                               // Right leaf of merge
-say("CCCC8888");
+           {final Leaf r = leaf(P.top());                                                                               // Right leaf of merge
             m.set(mergeLeftLeafIntoRightSibling(P, Left, r));                                                           // Merge
-say("CCCC9999");
            }
          };
        }
       void Else()                                                                                                       // Merge last two branches
        {final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
-say("CCCCaaaa");
         new If (R)                                                                                                      // Next slot exists and so references the right sibling
          {void Then()
-           {
-say("CCCCbbbb");
-             final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R.i())));                                          // Right branch of merge
-say("CCCCcccc");
+           {final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R.i())));                                          // Right branch of merge
             m.set(mergeLeftBranchIntoRightSibling(P, Left, r));                                                         // Merge
-say("CCCCdddd");
            }
           void Else()                                                                                                   // Next sibling is top
-           {
-say("CCCCeeee");
-             final Branch r = branch(P.top());                                                                           // Right leaf of merge
-say("CCCCffff");
+           {final Branch r = branch(P.top());                                                                           // Right leaf of merge
             m.set(mergeLeftBranchIntoRightSibling(P, Left, r));                                                         // Merge
-say("CCCCgggg");
            }
          };
        }
@@ -1215,13 +1163,11 @@ Number of Keys:    0
      {t.new ForCount(t.new Int(1), t.new Int(7))
        {void body(Int Index)
          {t.new I() {void a() {say("AAAA", Index); } String v() {return "";}};
-say("AAAA1111");
           t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
           final StringBuilder d = t.dumpTree(); t.new I() {void a() {say("DDDD1111", d);}};
-say("AAAA2222");
          }
        };
-      final StringBuilder d = t.dumpTree(); t.new I() {void a() {say("DDDD2222", d); stop();}};
+
       if (false && Ex)
        {t.new I() {void a() {say("  static String tree6 = \""+ t.byteMemory.save()+"\";");} String v() {return "";}};
         stop();
@@ -1241,11 +1187,11 @@ Number of Keys:    6
 Branch         size:   3 count:   1 top:   2
  Ref   Key  Data
    0     2     1
-Leaf   at:   1 size:  4, count:  2
+Leaf   at:   1 size:   4, count:   2
  Ref   Key  Data
    0     1    12
    1     2    24
-Leaf   at:   2 size:  4, count:  4
+Leaf   at:   2 size:   4, count:   4
  Ref   Key  Data
    2     3    36
    3     4    48
