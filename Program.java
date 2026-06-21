@@ -1136,7 +1136,7 @@ public class Program extends Test                                               
     I() {this(I.Jump.no);}                                                                                              // Add this instruction to the process's code assuming it will not jump
 
     abstract void     a();                                                                                              // The action to be performed by the instruction
-    abstract String   v();                                                                                              // Generate equivalent verilog
+             String   v() {return "Not set"+traceComment();};                                                           // Generate equivalent verilog
     String traceComment() {return traceComment != null ? traceComment : "";}                                            // Trace comment if it exists
    }
 
