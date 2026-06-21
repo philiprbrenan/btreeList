@@ -1,4 +1,4 @@
-# Test 2026-06-21 at 20:07:14
+# Test 2026-06-21 at 23:52:42
 
 name: Test
 run-name: btreeList
@@ -53,14 +53,16 @@ jobs:
 
     - name: Zip files
       if: ${{ always() && matrix.task == 'BitSet' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ BitSet-sverilog/
+        zip -r BitSet-sverilog.zip BitSet-sverilog/
 
     - name: Upload artifact
       if: ${{ always() && matrix.task == 'BitSet' }}
       uses: actions/upload-artifact@v4
       with:
-        name: BitSet-verilog
-        path: verilog.zip
+        name: BitSet-sverilog
+        path: BitSet-sverilog.zip
 
     - name: Test Branch
       if: ${{ always() && matrix.task == 'Branch' }}
@@ -69,14 +71,16 @@ jobs:
 
     - name: Zip files
       if: ${{ always() && matrix.task == 'Branch' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ Branch-sverilog/
+        zip -r Branch-sverilog.zip Branch-sverilog/
 
     - name: Upload artifact
       if: ${{ always() && matrix.task == 'Branch' }}
       uses: actions/upload-artifact@v4
       with:
-        name: Branch-verilog
-        path: verilog.zip
+        name: Branch-sverilog
+        path: Branch-sverilog.zip
 
     - name: Test Leaf
       if: ${{ always() && matrix.task == 'Leaf' }}
@@ -85,14 +89,16 @@ jobs:
 
     - name: Zip files
       if: ${{ always() && matrix.task == 'Leaf' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ Leaf-sverilog/
+        zip -r Leaf-sverilog.zip Leaf-sverilog/
 
     - name: Upload artifact
       if: ${{ always() && matrix.task == 'Leaf' }}
       uses: actions/upload-artifact@v4
       with:
-        name: Leaf-verilog
-        path: verilog.zip
+        name: Leaf-sverilog
+        path: Leaf-sverilog.zip
 
     - name: Test Program
       if: ${{ always() && matrix.task == 'Program' }}
@@ -101,14 +107,16 @@ jobs:
 
     - name: Zip files
       if: ${{ always() && matrix.task == 'Program' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ Program-sverilog/
+        zip -r Program-sverilog.zip Program-sverilog/
 
     - name: Upload artifact
       if: ${{ always() && matrix.task == 'Program' }}
       uses: actions/upload-artifact@v4
       with:
-        name: Program-verilog
-        path: verilog.zip
+        name: Program-sverilog
+        path: Program-sverilog.zip
 
     - name: Test Slots
       if: ${{ always() && matrix.task == 'Slots' }}
@@ -117,14 +125,16 @@ jobs:
 
     - name: Zip files
       if: ${{ always() && matrix.task == 'Slots' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ Slots-sverilog/
+        zip -r Slots-sverilog.zip Slots-sverilog/
 
     - name: Upload artifact
       if: ${{ always() && matrix.task == 'Slots' }}
       uses: actions/upload-artifact@v4
       with:
-        name: Slots-verilog
-        path: verilog.zip
+        name: Slots-sverilog
+        path: Slots-sverilog.zip
 
     - name: Test Test
       if: ${{ always() && matrix.task == 'Test' }}
@@ -133,14 +143,16 @@ jobs:
 
     - name: Zip files
       if: ${{ always() && matrix.task == 'Test' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ Test-sverilog/
+        zip -r Test-sverilog.zip Test-sverilog/
 
     - name: Upload artifact
       if: ${{ always() && matrix.task == 'Test' }}
       uses: actions/upload-artifact@v4
       with:
-        name: Test-verilog
-        path: verilog.zip
+        name: Test-sverilog
+        path: Test-sverilog.zip
 
     - name: Test Tree
       if: ${{ always() && matrix.task == 'Tree' }}
@@ -149,11 +161,13 @@ jobs:
 
     - name: Zip files
       if: ${{ always() && matrix.task == 'Tree' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ Tree-sverilog/
+        zip -r Tree-sverilog.zip Tree-sverilog/
 
     - name: Upload artifact
       if: ${{ always() && matrix.task == 'Tree' }}
       uses: actions/upload-artifact@v4
       with:
-        name: Tree-verilog
-        path: verilog.zip
+        name: Tree-sverilog
+        path: Tree-sverilog.zip
