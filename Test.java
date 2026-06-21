@@ -842,7 +842,8 @@ public class Test                                                               
          }
        });
      }
-    catch (NoSuchFileException e) {}                                                                                    // No problem
+    catch (NoSuchFileException e) {}                                                                                    // Folder does not exist
+    catch (DirectoryNotEmptyException e) {}                                                                             // Folder exists but is not empty
     catch (Exception e)
      {stop("Cannot find files under", FilePath, e);
      }
