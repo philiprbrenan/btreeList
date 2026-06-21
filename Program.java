@@ -34,8 +34,8 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
-  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
+  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog = !true;                                                        // Execute  verilog version of each program
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -870,10 +870,9 @@ public class Program extends Test                                               
   final class ByteMemory                                                                                                // Bytes being used as the main memory program
    {static int byteMemoryIds = 0;
     final  int byteMemoryId  = ++byteMemoryIds;
-    byte[]bytes;                                                                                                        // Bytes of main memory
+    private byte[]bytes;                                                                                                // Bytes of main memory
 
-    ByteMemory(int Length) {bytes = new byte[Length];                                                                   // Create the memory
-    clear(new Int(0), Length);}                                                                                         // Clear the memory
+    ByteMemory(int Length) {bytes = new byte[Length]; clear(new Int(0), Length);}                                       // Create and clear the memory
 
     private byte getByte(int I)                                                                                         // Get the value of a byte
      {return bytes[I];                                                                                                  // Get the value of a byte
@@ -887,8 +886,8 @@ public class Program extends Test                                               
      {new ForCount(new Int(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {        bytes[TargetOffset.i() +        Index.i ()] = SourceMemory.bytes[SourceOffset.i () +       Index.i ()];}
-            String v() {return "m[" + TargetOffset.vn() + "+" + Index.vn()+"] = m["            + SourceOffset.vn() + "+" + Index.vn()+"];";} // Does not work across different program memories
+           {void   a() {        putByte(TargetOffset.i() +        Index.i (), SourceMemory.getByte(SourceOffset.i () +       Index.i ()));}
+            String v() {return "m["   + TargetOffset.vn() + "+" + Index.vn()+"] = m["            + SourceOffset.vn() + "+" + Index.vn()+"];";} // Does not work across different program memories
            };
          }
        };
@@ -896,10 +895,10 @@ public class Program extends Test                                               
      }
 
     ByteMemory clear()                                                                                                  // Clear memory
-     {new ForCount(new Int(bytes.length))
+     {new ForCount(new Int(size()))
        {void  body(Int Index)
          {new I()
-           {void   a() {      bytes[Index.i ()] = (byte)0;}
+           {void   a() {      putByte(Index.i (), 0);}
             String v() {return "m["+Index.vn() +   "] = 0;";}
            };
          }
@@ -911,7 +910,7 @@ public class Program extends Test                                               
      {new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {      bytes[Index.i ()] = (byte)0;}
+           {void   a() {      putByte(Index.i (), 0);}
             String v() {return "m["+Index.vn()+"] = 0;";}
            };
          }
@@ -942,10 +941,10 @@ public class Program extends Test                                               
       new I()
        {void a()
          {final int p = I.i();
-          final int a = Byte.toUnsignedInt(bytes[p+0]) <<  0;
-          final int b = Byte.toUnsignedInt(bytes[p+1]) <<  8;
-          final int c = Byte.toUnsignedInt(bytes[p+2]) << 16;
-          final int d = Byte.toUnsignedInt(bytes[p+3]) << 24;
+          final int a = Byte.toUnsignedInt(getByte(p+0)) <<  0;
+          final int b = Byte.toUnsignedInt(getByte(p+1)) <<  8;
+          final int c = Byte.toUnsignedInt(getByte(p+2)) << 16;
+          final int d = Byte.toUnsignedInt(getByte(p+3)) << 24;
           final int R = d | c | b | a;
           r.ex(Int.Ops.set, R);
          }
@@ -959,10 +958,10 @@ public class Program extends Test                                               
      }
 
     int getInt(int I)                                                                                                   // Get the int at the indicated position
-     {final int a = Byte.toUnsignedInt(bytes[I+0]) <<  0;
-      final int b = Byte.toUnsignedInt(bytes[I+1]) <<  8;
-      final int c = Byte.toUnsignedInt(bytes[I+2]) << 16;
-      final int d = Byte.toUnsignedInt(bytes[I+3]) << 24;
+     {final int a = Byte.toUnsignedInt(getByte(I+0)) <<  0;
+      final int b = Byte.toUnsignedInt(getByte(I+1)) <<  8;
+      final int c = Byte.toUnsignedInt(getByte(I+2)) << 16;
+      final int d = Byte.toUnsignedInt(getByte(I+3)) << 24;
       return d | c | b | a;
      }
 
@@ -1363,10 +1362,10 @@ endmodule
 """);
 
     writeFile(codeFile, ""+s);                                                                                          // Write Verilog code to a file
-    final Stack<String> v = readFile(codeFile);
-    for(int i = 0, N = v.size(); i < N; ++i)
-     {if (i > 760_000 && i < 761_000) say(f("%4d %s", i, v.elementAt(i)));
-     }
+//    final Stack<String> v = readFile(codeFile);
+//    for(int i = 0, N = v.size(); i < N; ++i)
+//     {if (i > 760_000 && i < 761_000) say(f("%4d %s", i, v.elementAt(i)));
+//     }
     return ""+s;
    }
 
