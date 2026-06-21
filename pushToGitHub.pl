@@ -119,7 +119,8 @@ jobs:
 END
 
   for my $j(@j)                                                                                                         # Java files
-   {$y .= <<END;
+   {my $z = "$j-sverilog";
+    $y .= <<END;
 
     - name: Test $j
       if: \${{ always() && matrix.task == '$j' }}
@@ -128,14 +129,16 @@ END
 
     - name: Zip files
       if: \${{ always() && matrix.task == '$j' }}
-      run: zip -r verilog.zip verilog/
+      run: |
+        mv verilog/ $z/
+        zip -r $z.zip $z/
 
     - name: Upload artifact
       if: \${{ always() && matrix.task == '$j' }}
       uses: actions/upload-artifact\@v4
       with:
-        name: $j-verilog
-        path: verilog.zip
+        name: $z
+        path: $z.zip
 END
   }
 
