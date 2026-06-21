@@ -63,7 +63,7 @@ if (rand() < 0.1)                                                               
 
 
 if (@java)                                                                                                              # Write workflow to test java files
- {my @j = grep {!m($exclude)} map {fn $_} @java;                                                                                            # Java files
+ {my @j = map {fn $_} @java;                                                                                            # Java files
   my $d = dateTimeStamp;
   my $c = q(com/AppaApps/Silicon);                                                                                      # Package to classes folder
   my $j = join ', ', @j;                                                                                                # Java files without extension with separating commas
@@ -117,7 +117,8 @@ jobs:
 END
 
   for my $j(@j)                                                                                                         # Java files
-   {$y .= <<END;
+   {next if $j =~ m($exclude)is;
+    $y .= <<END;
 
     - name: Test $j
       if: matrix.task == '$j'
