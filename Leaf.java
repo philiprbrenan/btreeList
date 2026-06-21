@@ -241,7 +241,7 @@ class Leaf extends Program implements Program.Locatable                         
 
   StringBuilder print()                                                                                                 // Print a leaf
    {final StringBuilder s = new StringBuilder();
-    new I() {void a() {s.setLength(0); s.append(f("Leaf  "));}   String v() {return "";}};
+    new I() {void a() {s.setLength(0); s.append(f("Leaf  "));}   };
     final Bint l = getLocation();
 
     new If (l)
@@ -249,15 +249,15 @@ class Leaf extends Program implements Program.Locatable                         
        {final Int i = new Int().set(l);
         new If (i.gt(0))
          {void Then()                                                                                                   // Print the index if it is not the root
-           {new I() {void a() {s.append(f(" at: %3d", i.i())); } String v() {return "";}};
+           {new I() {void a() {s.append(f(" at: %3d", i.i())); } };
            }
           void Else()
-           {new I() {void a() {s.append(" ".repeat(8)); }        String v() {return "";}};
+           {new I() {void a() {s.append(" ".repeat(8)); }        };
            }
          };
        }
       void Else()
-       {new I() {void a() {s.append(" ".repeat(8)); }            String v() {return "";}};
+       {new I() {void a() {s.append(" ".repeat(8)); }            };
        }
      };
 
@@ -277,7 +277,7 @@ class Leaf extends Program implements Program.Locatable                         
            }
          };
        }
-      String v() {return "";}
+
      };
     return s;
    }
