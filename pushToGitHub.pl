@@ -19,13 +19,13 @@ my $shaFile = fpe $folder, q(sha);                                              
 my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu - compile and test
 my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
-my $exclude = q(Tree);                                                                                                      # Java files to exclude from testing as they are not yet ready
+my $exclude = q(Tree);                                                                                                  # Java files to exclude from testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
-my @java  = grep {fe($_) =~ m(java)is} @files;                                                                          # Java files
+my @java  = grep {!m($exclude)} grep {fe($_) =~ m(java)is} @files;                                                      # Java files minus excluded files
    @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
 if (!@files)                                                                                                            # No new files
  {say "Everything up to date";
@@ -117,8 +117,7 @@ jobs:
 END
 
   for my $j(@j)                                                                                                         # Java files
-   {next if $j =~ m($exclude)is;
-    $y .= <<END;
+   {$y .= <<END;
 
     - name: Test $j
       if: matrix.task == '$j'
