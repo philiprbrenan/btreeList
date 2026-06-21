@@ -1166,8 +1166,8 @@ public class Program extends Test                                               
         else stop("Exception:", e, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(e));
        }
      }
-    if (c >= maxSteps) stop("Out of steps after step:", c);
-    appendFile(javaTraceFile(), byteMemory.dumpHex());
+    if (c >= maxSteps) stop("Out of steps after step:", c);                                                             // Show abnormal termination reason
+    if (byteMemory != null) appendFile(javaTraceFile(), byteMemory.dumpHex());                                          // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
 
     if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
@@ -1914,8 +1914,8 @@ endfunction
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_byteMemory();
+   {oldTests();
+    //test_byteMemory();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
