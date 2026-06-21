@@ -127,11 +127,11 @@ END
         java -XX:+UseZGC -cp Classes $c/$j
 
     - name: Zip files
-      if: always()
+      if: \${{ always() && matrix.task == '$j' }}
       run: zip -r verilog.zip verilog/
 
     - name: Upload artifact
-      if: always()
+      if: \${{ always() && matrix.task == '$j' }}
       uses: actions/upload-artifact\@v4
       with:
         name: verilog-\${{ matrix.task }}
