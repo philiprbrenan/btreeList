@@ -1082,7 +1082,7 @@ Leaf   at:   1 size:   2, count:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at:   2 size:   3 count:   2 top:   0
+Branch at:   2 size:   3, count:   2, top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1100,11 +1100,11 @@ MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    2
 Number of Keys:    2
-Leaf   at:   1 size:  2, count:  2
+Leaf   at:   1 size:   2, count:   2
  Ref   Key  Data
    1     3    33
    0     4    44
-Branch at:   2 size:   3 count:   2 top:   0
+Branch at:   2 size:   3, count:   2, top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
@@ -1121,7 +1121,7 @@ MaxBranchSize :    3
 NumberOfNodes :    4
 Allocations   :    1
 Number of Keys:    0
-Branch at:   2 size:   3 count:   2 top:   0
+Branch at:   2 size:   3, count:   2, top:   0
  Ref   Key  Data
    0     5    55
    1     6    66
