@@ -501,10 +501,13 @@ say("BBBBiiii");
                {final Leaf l = leaf(), r = leaf();                                                                      // Child leaves of root branch
                 l.copy(R);                                                                                              // Duplicate the root
                 final Int   sk = l.splitRight(r);                                                                       // Split the root leaf in two
-                final Branch b = makeBranch(R.getLocation().i());                                                       // Make the root into a branch
+                final Branch b = makeBranch(root());                                                                    // Make the root into a branch
+final StringBuilder d1 = dumpTree(); new I() {void a() {say("IIII1111", d1);}};
+                b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.insert(sk, l.getLocation().i());                                                                      // Insert the left leaf
                 b.top(r.getLocation().i());                                                                             // The right leaf becomes top of the root branch
                 new If (Key.le(sk)) {void Then() {l.insert(Key, Data);} void Else() {r.insert(Key, Data);}};            // Insert left or right leaf depending on key versus splitting key
+final StringBuilder d2 = dumpTree(); new I() {void a() {say("IIII2222", d2); stop();}};
                }
               void Else()                                                                                               // Root is a non full leaf that does not contain the key
                {R.insert(Key, Data);                                                                                    // Insert in non full leaf that does not contain the key
@@ -1204,6 +1207,7 @@ Number of Keys:    0
   static void test_saveReload(boolean Ex)
    {sayCurrentTestName();
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
+
     if (!true && Ex)
      {t.new I() {void a() {t.byteMemory.reload(tree6);} String v() {return "";}};
      }
@@ -1213,9 +1217,11 @@ Number of Keys:    0
          {t.new I() {void a() {say("AAAA", Index); } String v() {return "";}};
 say("AAAA1111");
           t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
+          final StringBuilder d = t.dumpTree(); t.new I() {void a() {say("DDDD1111", d);}};
 say("AAAA2222");
          }
        };
+      final StringBuilder d = t.dumpTree(); t.new I() {void a() {say("DDDD2222", d); stop();}};
       if (false && Ex)
        {t.new I() {void a() {say("  static String tree6 = \""+ t.byteMemory.save()+"\";");} String v() {return "";}};
         stop();
