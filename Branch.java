@@ -80,7 +80,7 @@ class Branch extends Program implements Program.Locatable                       
 
   Branch initializeMemory()                                                                                             // Initialize slots and data associated with the branch
    {clear();                                                                                                            // Clear backing memory
-    slots.initializeMemory();                                                                                           // Initialize slots
+    //slots.initializeMemory();                                                                                           // Initialize slots
     return this;
    }
 
@@ -358,15 +358,17 @@ class Branch extends Program implements Program.Locatable                       
          };
        }
       void Else()
-       {new I() {void a() {s.append(" ".repeat(8));                  } String v() {return "";}};
+       {    new I() {void a() {s.append(" ".repeat(8));              } String v() {return "";}};
        }
      };
+
+    final Int c = count(), t = top();
 
     new I()
      {void a()
        {s.append(f(" size:"  + formatKey, maxSize()));
-        s.append(f(" count:" + formatKey, slots.refCount.getInt(0)));
-        s.append(f(" top:"   + formatKey, refTop.getInt(0)));
+        s.append(f(" count:" + formatKey, c.i()));
+        s.append(f(" top:"   + formatKey, t.i()));
         s.append("\n Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
@@ -391,10 +393,11 @@ class Branch extends Program implements Program.Locatable                       
    {sayCurrentTestName();
     final Branch l = new Branch(new Build().maxSize(7).immediate(Ex));
     //l.initializeMemory();
-    l.insert(l.new Int(2), l.new Int(22));
-    l.insert(l.new Int(4), l.new Int(44));
-    l.insert(l.new Int(3), l.new Int(33));
-    l.insert(l.new Int(1), l.new Int(11));
+                                           l.count().ok(0);
+    l.insert(l.new Int(2), l.new Int(22)); l.count().ok(1);
+    l.insert(l.new Int(4), l.new Int(44)); l.count().ok(2);
+    l.insert(l.new Int(3), l.new Int(33)); l.count().ok(3);
+    l.insert(l.new Int(1), l.new Int(11)); l.count().ok(4);
     //new I() {void a() {testStop("AAAA", l);}};
     l.check(l.print(), """
 Branch         size:   7 count:   4 top:   0
@@ -409,10 +412,10 @@ Branch         size:   7 count:   4 top:   0
     l.find  (l.new Int(3)).ok(33);
     l.find  (l.new Int(4)).ok(44);
 
-    l.delete(l.new Int(1)).ok(11);
-    l.delete(l.new Int(2)).ok(22);
-    l.delete(l.new Int(3)).ok(33);
-    l.delete(l.new Int(4)).ok(44);
+    l.delete(l.new Int(1)).ok(11); l.count().ok(3);
+    l.delete(l.new Int(2)).ok(22); l.count().ok(2);
+    l.delete(l.new Int(3)).ok(33); l.count().ok(1);
+    l.delete(l.new Int(4)).ok(44); l.count().ok(0);
 
     l.delete(l.new Int(1)).valid().ok(false);
 
