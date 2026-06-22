@@ -1115,13 +1115,15 @@ public class Program extends Test                                               
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  void check (StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} };} // Test the supplied content against the specified string, then clear the output area ready for the next report
-  void Check (StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} };} // Test the supplied content against the specified string, print the actual output area contents and stop
+  void check (StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} };}     // Test the supplied content against the specified string, then clear the output area ready for the next report
+  void Check (StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} };}     // Test the supplied content against the specified string, print the actual output area contents and stop
 
   String verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                                // Folder for this test using Verilog
   String verilogTraceFile ( ) {return fn(verilogTestFolder(), verilogTraceFile);}                                       // Verilog trace file
   String    javaTraceFile ( ) {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
   String VerilogCodeFile (  ) {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
+
+  void suppressJavaTracingForOneInstruction () {program().javaTrace = false;}                                           // Suppress java tracing for the rest of the current instruction
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
