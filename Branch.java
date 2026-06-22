@@ -982,7 +982,7 @@ keys     :    4   2   6   0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_branch();
+    test_splitRight(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
