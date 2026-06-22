@@ -772,16 +772,16 @@ Leaf           size:   8, count:   8
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {//test_leaf();
-    //test_compactLeft();
-    //test_compactRight();
-      test_splitRight();
-    //test_splitLeft();
-    //test_mergeRight();
-    //test_mergeLeft();
-    //test_find();
-    //test_iterate();
-    //test_fixedFields();
+   {test_leaf();
+    test_compactLeft();
+    test_compactRight();
+    test_splitRight();
+    test_splitLeft();
+    test_mergeRight();
+    test_mergeLeft();
+    test_find();
+    test_iterate();
+    test_fixedFields();
    }
 
   static void newTests()                                                                                                // Tests being worked on
