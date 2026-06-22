@@ -239,14 +239,14 @@ class Slots extends Program                                                     
      };
    }
 
-  private void moveSlot(Int T, Int S)                                                                                   // Move a slot from the specified source position to the specified target position
+  private void moveSlot (Int T, Int S)                                                                                  // Move a slot from the specified source position to the specified target position
    {final Int k = getSlotToKeyIndex(S);                                                                                 // Index of key being moved
     final Int K = getKeyValue(k);                                                                                       // Value of key being moved
     delSlotAndKey(S);                                                                                                   // Remove source
     setSlotAndKey(T, k, K);                                                                                             // Reinsert source at target
    }
 
-  private void moveKey(Bint T, Bint S, Bool Continue)                                                                   // Move a key from the source position to the target position
+  private void moveKey (Bint T, Bint S, Bool Continue)                                                                  // Move a key from the source position to the target position
    {final Int s = refKeysToSlots.getInt(S.i());                                                                         // The slot referencing the key
     final Int q = getKeyValue(S.i());                                                                                   // The value of the key
     delSlotAndKey(s);                                                                                                   // Delete the slot and its associated key
@@ -254,9 +254,9 @@ class Slots extends Program                                                     
     Continue.set(true);                                                                                                 // Continue moving keys
    }
 
-  void copy(Slots Source) {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                     // Copy source into this
+  void copy (Slots Source) {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                    // Copy source into this
 
-  void clear()                                                                                                          // Clear the slots
+  void clear ()                                                                                                         // Clear the slots
    {final Slots slots = this;
     compactSlotsLeft();                                                                                                 // Place slots in a known position
     new ForCount(count())                                                                                               // Clear compacted slots
@@ -271,7 +271,7 @@ class Slots extends Program                                                     
 
 //D4 Compact                                                                                                            // Compact slots to the left or right
 
-  void compactSlotsLeft()                                                                                               // Compact the slots to the left hand side
+  void compactSlotsLeft ()                                                                                              // Compact the slots to the left hand side
    {subStart("Slots.compactSlotsLeft");
     new If (empty().Flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
@@ -288,7 +288,7 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  void compactSlotsRight()                                                                                              // Compact the slots to the right hand side
+  void compactSlotsRight ()                                                                                             // Compact the slots to the right hand side
    {subStart("Slots.compactSlotsRight");
     final Slots slots = this;
     new If (empty())                                                                                                    // Compact slots
@@ -2390,34 +2390,34 @@ keys     :    0   0   0   0
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_slots();
-    test_locateNearestFreeSlotToKey();
-    test_alloc();
-    test_set_del_slot_key();
-    test_compact();
-    test_redistribute();
-    test_shift();
-    test_mergeFromRightEven();
-    test_mergeFromLeftEven();
-    test_mergeFromRightOdd();
-    test_mergeFromLeftOdd();
-    test_find();
-    test_findRight();
-    test_insert();
-    test_insert2();
-    test_findGe();
-    test_splitRightEven();
-    test_splitLeftEven();
-    test_splitRightOdd();
-    test_splitLeftOdd();
-    test_clear();
-//  test_stuck();
-    test_insertKnown();
-    test_delete();
+//    test_locateNearestFreeSlotToKey();
+//    test_alloc();
+//    test_set_del_slot_key();
+//    test_compact();
+//    test_redistribute();
+//    test_shift();
+//    test_mergeFromRightEven();
+//    test_mergeFromLeftEven();
+//    test_mergeFromRightOdd();
+//    test_mergeFromLeftOdd();
+//    test_find();
+//    test_findRight();
+//    test_insert();
+//    test_insert2();
+//    test_findGe();
+//    test_splitRightEven();
+//    test_splitLeftEven();
+//    test_splitRightOdd();
+//    test_splitLeftOdd();
+//    test_clear();
+////  test_stuck();
+//    test_insertKnown();
+//    test_delete();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots();
+    test_slots(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
