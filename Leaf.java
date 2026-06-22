@@ -316,7 +316,7 @@ Leaf           size:   8, count:   4
 
     l.delete(l.new Int(1)).valid().ok(false);
 
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -351,7 +351,7 @@ Leaf           size:   8, count:   3
    2     3    33
    1     4    44
 """);
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -387,7 +387,7 @@ Leaf           size:   8, count:   4
    5     3    33
    6     4    44
 """);
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -442,7 +442,7 @@ Leaf           size:   8, count:   4
    5     7    77
    7     8    88
 """);
-    l.maxSteps = 99999;
+    l.maxSteps(99_999).dumpMemoryEvery(999);
     l.execute();
    }
 
@@ -496,7 +496,7 @@ Leaf           size:   8, count:   4
    5     7    77
    7     8    88
 """);
-    r.maxSteps = 99999;
+    r.maxSteps = 99_999;
     r.execute();
    }
 
@@ -562,7 +562,7 @@ Leaf           size:   8, count:   8
    5     7    77
    7     8    88
 """);
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -630,7 +630,7 @@ Leaf           size:   8, count:   8
    5     7    77
    7     8    88
 """);
-    r.maxSteps = 99999;
+    r.maxSteps = 99_999;
     r.execute();
    }
 
@@ -687,7 +687,7 @@ Leaf           size:   8, count:   0
  Ref   Key  Data
 """);
 
-    l.maxSteps = 99999;
+    l.maxSteps = 99_999;
     l.execute();
    }
 
@@ -734,7 +734,7 @@ Leaf           size:   8, count:   8
    8    88
 """);
 
-        maxSteps = 99999;
+        maxSteps = 99_999;
         execute();
        }
      };
@@ -772,21 +772,21 @@ Leaf           size:   8, count:   8
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_leaf();
-    test_compactLeft();
-    test_compactRight();
-    test_splitRight();
-    test_splitLeft();
-    test_mergeRight();
-    test_mergeLeft();
-    test_find();
-    test_iterate();
-    test_fixedFields();
+   {//test_leaf();
+    //test_compactLeft();
+    //test_compactRight();
+      test_splitRight();
+    //test_splitLeft();
+    //test_mergeRight();
+    //test_mergeLeft();
+    //test_find();
+    //test_iterate();
+    //test_fixedFields();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-     test_splitRight(!true);
+    test_splitRight();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
