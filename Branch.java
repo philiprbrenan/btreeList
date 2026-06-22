@@ -382,7 +382,7 @@ class Branch extends Program implements Program.Locatable                       
 
     new I()
      {void a()
-       {program().javaTrace = false;
+       {suppressJavaTracingForOneInstruction();
         s.append(f(" size: %3d",  maxSize()));
         s.append(f(", count: %3d", c.i()));
         s.append(f(", top: %3d",   t.i()));
