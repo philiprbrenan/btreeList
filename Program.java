@@ -74,8 +74,8 @@ public class Program extends Test                                               
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
 
-  Program maxSteps       (int     MaxSteps)      {program().maxSteps        = MaxSteps;     return this;}               // Set number of steps
-  Program dumpMemoryEvery(Integer NumberOfSteps) {program().dumpMemoryEvery = NumberOfSteps; return this;}              // Set number of steps
+  Program maxSteps       (int     MaxSteps)      {program().maxSteps        = MaxSteps;      return this;}              // Set number of steps
+  Program dumpMemoryEvery(Integer NumberOfSteps) {program().dumpMemoryEvery = NumberOfSteps; return this;}              // Set number of steps between memory dumps
 
 //D1 Program                                                                                                            // Program execution structures
 
