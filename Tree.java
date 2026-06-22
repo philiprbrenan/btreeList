@@ -178,35 +178,36 @@ class Tree extends Program                                                      
     return l;
    }
 
-  Leaf   leaf()   {return makeLeaf(allocate());}                                                                        // Create and initialize a branch in memory and return its index
+  Leaf   leaf ()   {return makeLeaf(allocate());}                                                                       // Create and initialize a branch in memory and return its index
 
-  Branch branch(Int Node) {return branch(Node, true);}                                                                  // Index an existing branch in memory            confirming that it really is a branch
-  Branch branch(Int Node, boolean Check)                                                                                // Index an existing branch in memory optionally confirming that it really is a branch
+  Branch branch (Int Node) {return branch(Node, true);}                                                                 // Index an existing branch in memory            confirming that it really is a branch
+  Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
    {if (Check) isBranch(Node).Flip().stop("Not a branch:", Node);                                                       // Check the location actually holds a branch
     final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address branch
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
 
-  Branch makeBranch(Int Node)                                                                                           // Make a branch from the specified node
+  Branch makeBranch (Int Node)                                                                                          // Make a branch from the specified node
    {final Branch b = branch(Node, false);
     b.initializeMemory();
     setType(Node, BranchOrLeaf.branch);
     return b;
    }
 
-  Branch branch() {return makeBranch(allocate());}                                                                      // Create and initialize a branch in memory and return its index
+  Branch branch () {return makeBranch(allocate());}                                                                     // Create and initialize a branch in memory and return its index
 
-  Int  count()    {return refCount.getInt();}                                                                           // Number of keys in tree
-  void countInc() {refCount.putInt(count().inc());}                                                                     // Increment the key count
-  void countDec() {refCount.putInt(count().dec());}                                                                     // Increment the key count
+  Int  count ()    {return refCount.getInt();}                                                                          // Number of keys in tree
+  void countInc () {refCount.putInt(count().inc());}                                                                    // Increment the key count
+  void countDec () {refCount.putInt(count().dec());}                                                                    // Increment the key count
 
-  StringBuilder dumpTree()                                                                                              // Dump the tree
+  StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.countAllOnes());
     new I()                                                                                                             // Dump the tree statistics
      {void a()
-       {s.setLength(0);
+       {suppressJavaTracingForOneInstruction();
+        s.setLength(0);
         s.append(f("Tree memory dump\n"));
         s.append(f("Leaf   size   : %4d\n", build.leafSize));
         s.append(f("Branch size   : %4d\n", build.branchSize));
@@ -217,7 +218,6 @@ class Tree extends Program                                                      
         s.append(f("Allocations   : %4d\n", c.i()));
         s.append(f("Number of Keys: %4d\n", refCount.getInt(0)));
        }
-
      };
 
     new ForCount(new Int(min(numberOfNodes, 20)))                                                                       // Dump the leaves and branches
@@ -232,6 +232,7 @@ class Tree extends Program                                                      
          };
        }
      };
+
     subFinish();
     return s;
    }
@@ -450,7 +451,7 @@ class Tree extends Program                                                      
       new ForCount(step)
        {void body(Int Index)
          {final Int v = path.getInt(Index);
-          new I() {void a() {s.append(" "+v.i());           } };
+          new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(" "+v.i());}};
          }
        };
       new I() {void a() {s.append(" "+leaf+" "+split+"\n"); } };
@@ -926,17 +927,18 @@ class Tree extends Program                                                      
    {final Stack<StringBuilder> P = new Stack<>();
 
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
-     {new I() {void a() {P.clear();} };                                                          // Clear output area
+     {new I() {void a() {suppressJavaTracingForOneInstruction(); P.clear();} };                                         // Clear output area
 
       new Traverse()
        {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(LC.leaf);
-          final StringBuilder s = new  StringBuilder();
-          new I() {void a() {clearStringBuilder(s);} };                                          // Clear the print
+          final StringBuilder s = new StringBuilder();
+          new I() {void a() {suppressJavaTracingForOneInstruction(); clearStringBuilder(s);}};                          // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
            {void a()
-             {final int d = LC.depth.i() * linesToPrintABranch;                                                         // Line in output
+             {suppressJavaTracingForOneInstruction();
+              final int d = LC.depth.i() * linesToPrintABranch;                                                         // Line in output
               pad(d+1);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(s);                                                                                 // Write first line
@@ -1037,8 +1039,8 @@ class Tree extends Program                                                      
      }
    }
 
-  StringBuilder dump () {subStart("Tree.dump");  var s = new Print(true) .printCollapsed(); subFinish(); return s;}     // Dump the tree
-  StringBuilder print() {subStart("Tree.print"); var s = new Print(false).printCollapsed(); subFinish(); return s;}     // Print the tree
+  StringBuilder dump () {suppressJavaTracingForOneInstruction(); subStart("Tree.dump");  var s = new Print(true) .printCollapsed(); subFinish(); return s;} // Dump the tree
+  StringBuilder print() {suppressJavaTracingForOneInstruction(); subStart("Tree.print"); var s = new Print(false).printCollapsed(); subFinish(); return s;} // Print the tree
 
 //D1 Tests                                                                                                              // Tests
 
@@ -1064,7 +1066,7 @@ class Tree extends Program                                                      
     B.insert(t.new Int(3), t.new Int(33));  t.countInc();
     C.insert(t.new Int(6), t.new Int(66));
 
-    t.Check(t.dumpTree(), """
+    t.check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   83
 Branch size   :  125
@@ -1090,7 +1092,7 @@ Branch at:   2 size:   3, count:   2, top:   0
 
                t.isAllocated(a.at.i()).ok(true);
     t.free(A); t.isAllocated(a.at.i()).ok(false);  t.countDec(); t.countDec();
-    t.Check(t.dumpTree(), """
+    t.check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   83
 Branch size   :  125
@@ -1111,7 +1113,7 @@ Branch at:   2 size:   3, count:   2, top:   0
 """);
                t.isAllocated(b.at.i()).ok(true);
     t.free(b); t.isAllocated(b.at.i()).ok(false);   t.countDec(); t.countDec();
-    t.Check(t.dumpTree(), """
+    t.check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   83
 Branch size   :  125
@@ -1129,7 +1131,7 @@ Branch at:   2 size:   3, count:   2, top:   0
 
                t.isAllocated(c.at.i()).ok(true);
     t.free(c); t.isAllocated(c.at.i()).ok(false);
-    t.Check(t.dumpTree(), """
+    t.check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :   83
 Branch size   :  125
@@ -1172,7 +1174,7 @@ Number of Keys:    0
        }
      }
 
-    t.Check (t.dumpTree(), """
+    t.check (t.dumpTree(), """
 Tree memory dump
 Leaf   size   :  157
 Branch size   :  125
@@ -1197,7 +1199,7 @@ Leaf   at:   2 size:   4, count:   4
    1     6    72
 """);
 
-    t.Check(t.dump(), """
+    t.check(t.dump(), """
        2           |
        (0)         |
        [1,3]       |
@@ -1234,7 +1236,7 @@ Leaf   at:   2 size:   4, count:   4
 
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
-    if (N == 32) t.Check(t.dump(), """
+    if (N == 32) t.check(t.dump(), """
                                               8                                                            16                                                                                                         |
                                               (0)                                                          (0)                                                                                                        |
                                               [15,2]                                                       [23,4]                                                                                                     |
@@ -1732,7 +1734,7 @@ Leaf   at:   2 size:   4, count:   4
          };
        }
      };
-    t.Check(t.dumpTree(), """
+    t.check(t.dumpTree(), """
 Tree memory dump
 Leaf   size   :  157
 Branch size   :  125
@@ -1797,7 +1799,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload(!true);
+    test_tree(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
