@@ -878,7 +878,7 @@ public class Program extends Test                                               
    {final  String byteMemoryId = sourceFileName().replaceFirst("\\.java$", "");                                         // Name the memory
     private byte[]bytes;                                                                                                // Bytes of main memory
 
-    ByteMemory(int Length) {bytes = new byte[Length]; clear(new Int(0), Length);}                                       // Create and clear the memory
+    ByteMemory(int Length) {bytes = new byte[Length]; clear(new Int(0), Length); err("AAAA", hashCode());}                                       // Create and clear the memory
 
     private byte getByte (int I)                                                                                        // Get the value of a byte
      {final byte b = bytes[I];
