@@ -119,7 +119,7 @@ jobs:
 END
 
   for my $j(@j)                                                                                                         # Java files
-   {my $z = "$j-sverilog";
+   {my $z = "$j-verilog";
     $y .= <<END;
 
     - name: Test $j
