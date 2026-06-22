@@ -884,7 +884,7 @@ public class Program extends Test                                               
      {final byte b = bytes[I];
       final int  B = b < 0 ? 256+(int)b : (int)b;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
       if (javaTrace)                                                                                                    // Trace the get
-       {appendFile(javaTraceFile(), f("%s  %8d r %8d = %8d\n", byteMemoryId(), program().currentPc, I, B));
+       {appendFile(javaTraceFile(), f("%8d r %8d = %8d  %s\n", program().currentPc, I, B, byteMemoryId()));
        }
       return b;                                                                                                         // Get the value of a byte
      }
@@ -895,7 +895,7 @@ public class Program extends Test                                               
       final int  B = b < 0 ? 256+(int)b : (int)b;
       bytes[I] = b;                                                                                                     // Set the value of a byte from an integer
       if (javaTrace)                                                                                                    // Trace the write
-       {appendFile(javaTraceFile(), f("%s  %8d w %8d %8d < %8d\n", byteMemoryId(), program().currentPc, I, A, B));
+       {appendFile(javaTraceFile(), f("%8d w %8d %8d < %8d  %s\n", program().currentPc, I, A, B, byteMemoryId()));
        }
      }
 
@@ -1494,7 +1494,7 @@ endfunction
       f = $fopen("{traceFile}", "a");
       getMemory = m[Addr];
 
-      $fdisplay(f, "%s  %8d r %8d = %8d", "{memoryId}", pc, Addr, getMemory);
+      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, getMemory, "{memoryId}");
 
       $fclose(f);
     end
@@ -1510,7 +1510,7 @@ endfunction
       f = $fopen("{traceFile}", "a");
       getMemoryBool = m[Addr][Bit];
 
-      $fdisplay(f, "%s  %8d r %8d = %8d", "{memoryId}", pc, Addr, m[Addr]);
+      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, m[Addr], "{memoryId}");
 
       $fclose(f);
     end
@@ -1528,7 +1528,7 @@ endfunction
       a = m[Addr];
           m[Addr] = Value[0+:8];
 
-      $fdisplay(f, "%s  %8d w %8d %8d < %8d", "{memoryId}", pc, Addr, a, Value);
+      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryId}");
 
       $fclose(f);
     end
@@ -1548,8 +1548,8 @@ endfunction
           m[Addr][Bit] = Value[0];
       b = m[Addr];
 
-      $fdisplay(f, "%s  %8d r %8d = %8d",     "{memoryId}", pc, Addr, a);
-      $fdisplay(f, "%s  %8d w %8d %8d < %8d", "{memoryId}", pc, Addr, a, b);
+      $fdisplay(f, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryId}");
+      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryId}");
 
       $fclose(f);
     end
