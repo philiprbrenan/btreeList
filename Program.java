@@ -2,6 +2,7 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Make private:  maxSteps, dumpMemoryEvery
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -72,6 +73,9 @@ public class Program extends Test                                               
     final String m = immediate() ? "immediate" : "delayed";
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
+
+  Program maxSteps       (int     MaxSteps)      {program().maxSteps        = MaxSteps;     return this;}               // Set number of steps
+  Program dumpMemoryEvery(Integer NumberOfSteps) {program().dumpMemoryEvery = NumberOfSteps; return this;}              // Set number of steps
 
 //D1 Program                                                                                                            // Program execution structures
 
@@ -1923,7 +1927,7 @@ Memory
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000
 """);
-            dumpMemoryEvery = 10;
+            dumpMemoryEvery(10); maxSteps(999);
             execute();
            }
          };
