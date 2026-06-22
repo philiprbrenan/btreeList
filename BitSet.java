@@ -1605,10 +1605,10 @@ One:
    4   28    2 |  1  1
    5   30    1 |  1
 Zero:
-   1   31    8 |  1  1  1  0  1  1  1  1
-   2   39    4 |  1  1  1  1
-   3   43    2 |  1  1
-   4   45    1 |  1
+   1   31    8 |  0  0  0  1  0  0  0  0
+   2   39    4 |  0  0  0  0
+   3   43    2 |  0  0
+   4   45    1 |  0
 """);
 
     b.highZero(b.new Int(15+30)).ok(15);
@@ -1627,6 +1627,7 @@ Zero:
     b.highZero(b.new Int(15+16)).ok( 1);
 
     b.maxSteps = 99_999;
+    b.dumpMemoryEvery = 99;
     b.execute();
    }
 
@@ -1672,7 +1673,9 @@ Zero:
     test_powerPosOneZero();
     test_twoOrMoreOnes();
     test_limits();
+    test_lowHighZero();
     test_4();
+
    }
 
   static void newTests()                                                                                                // Tests under development.
