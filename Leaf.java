@@ -785,7 +785,8 @@ Leaf           size:   8, count:   8
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+     test_splitRight(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
