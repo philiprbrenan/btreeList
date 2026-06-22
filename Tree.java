@@ -273,10 +273,12 @@ class Tree extends Program                                                      
      }
 
     public String toString()                                                                                            // Print the find results
-     {final StringBuilder s = new StringBuilder();
+     {subStart("Tree.toString");
+      final StringBuilder s = new StringBuilder();
       new I() {void a() {s.append("Find : "+key+" "+valid+"\n");} };
       final StringBuilder l = leaf(leaf).print();
       new I() {void a() {s.append(l);}                             };
+      subFinish();
       return ""+s;
      }
    }
