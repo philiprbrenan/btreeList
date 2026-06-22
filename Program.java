@@ -37,6 +37,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
         boolean                                javaTrace = true;                                                        // Trace java execution if true - can be switched off during printing and other ancillary operations not replicated in the veriog code so that the java trace matches the verilog trace accurately
+        Integer                          dumpMemoryEvery = null;                                                        // Dump memory every this many steps if set
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -774,7 +775,7 @@ public class Program extends Test                                               
 //    void bsetEx(Int I, Bool    V) {x(); I.x(); V.x(); ex(Int .Ops.set, setBit(i(), I.i(), V.b()));}                     //N Get the indicated bit in the integer
 //    void bgetEx(Bool B, Int    I) {x(); I.x();      B.ex(Bool.Ops.set, getBit(i(), I.i()));}                            //N
 
-    public String toString()                                                                                            // Print the integer
+    public String toString ()                                                                                           // Print the integer
      {final String u = "undefined_Int";
       if (name == null) return v ? ""+i       : u;
       else              return v ? name+"="+i : u+": "+name;
@@ -782,7 +783,7 @@ public class Program extends Test                                               
 
     String vn() {return pad("i[" +id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                    // Verilog name of this variable
 
-    Int say() {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}             // Say the integer
+    Int say() {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                                    // Say the integer
 
     void jtrace ()                                                                                                      // Trace the execution of an integer operation
      {if (!javaTrace) return;                                                                                           // Tracing is being suppressed
@@ -791,18 +792,18 @@ public class Program extends Test                                               
       //appendFile(javaTraceFile(), f("%8d i %8d = %8d%s\n", P.currentPc, id, i, t));
      }
 
-    Int ok(Integer Value)                                                                                               // Check the integer
+    Int ok (Integer Value)                                                                                               // Check the integer
      {new I()
        {void a()
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
-                                                                                                 // No need to test  under Verilog as long as all data accesses match
+                                                                                                                        // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
 
-    Int ok(Int Value)
+    Int ok (Int Value)
      {final Int got = this;
        new If (Value.valid())
        {void Then()
@@ -811,7 +812,7 @@ public class Program extends Test                                               
         void Else()
          {new I() {void a() {Test.ok(got.notValid(), true);} };
          }
-                                                                                                 // No need to test  under Verilog as long as all data accesses match
+                                                                                                                        // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
@@ -829,9 +830,9 @@ public class Program extends Test                                               
       return new Int(i);
      }
 
-    Bool valid     () {return b;}                                                                                       // Whether the boolean integer is valid
-    Bool notValid  () {return b.Flip();}                                                                                // Whether the boolean integer is invalid
-    Bint invalidate() {b.clear(); return this;}                                                                         // Mark the integer as invalid after all
+    Bool valid ()      {return b;}                                                                                      // Whether the boolean integer is valid
+    Bool notValid ()   {return b.Flip();}                                                                               // Whether the boolean integer is invalid
+    Bint invalidate () {b.clear(); return this;}                                                                        // Mark the integer as invalid after all
 
     Bint copy(Bint Source)                                                                                              // Copy a boolean integer
      {new If (Source.b)
@@ -845,9 +846,9 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bint ok(boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    } }; return this;}      // Test the boolean value of the boolean integer
-    Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } }; return this;}      // Test the integer value of the boolean integer
-    Bint ok(Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} }; return this;}      // Test the integer value of the boolean integer
+    Bint ok(boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    } }; return this;}                             // Test the boolean value of the boolean integer
+    Bint ok(int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } }; return this;}                             // Test the integer value of the boolean integer
+    Bint ok(Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} }; return this;}                             // Test the integer value of the boolean integer
 
     void     stop(final Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);}  };}};} // Conditionally print a message if false and stop
     void elseStop(final Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);}  };}};} // Conditionally print a message if true and stop
@@ -891,7 +892,8 @@ public class Program extends Test                                               
      }
 
     ByteMemory copy (ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
-     {new ForCount(new Int(Width))
+     {subStart("Program.ByteMemory.copy");
+      new ForCount(new Int(Width))
        {void body(Int Index)
          {new I()
            {void   a() {        putByte(TargetOffset.i() +        Index.i (), SourceMemory.getByte(SourceOffset.i () +       Index.i ()));}
@@ -899,30 +901,35 @@ public class Program extends Test                                               
            };
          }
        };
+      subFinish();
       return this;
      }
 
     ByteMemory clear ()                                                                                                 // Clear memory
-     {new ForCount(new Int(size()))
+     {subStart("Program.ByteMemory.clear(I)");
+      new ForCount(new Int(size()))
        {void  body(Int Index)
          {new I()
-           {void   a() {      putByte(Index.i (), 0);}
+           {void   a() {      putByte(Index.i(),              0);}
             String v() {return "putMemory("+Index.vn() +   ", 0);";}
            };
          }
        };
+      subFinish();
       return this;
      }
 
     ByteMemory clear(Int Start, int Width)                                                                              // Clear memory
-     {new ForCount (Start, Start.Add(Width))
+     {subStart("Program.ByteMemory.clear(II)");
+      new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {            putByte(Index.i (), 0);}
+           {void   a() {            putByte(Index.i( ),   0);}
             String v() {return "putMemory("+Index.vn()+", 0);";}
            };
          }
        };
+      subFinish();
       return this;
      }
 
@@ -1035,45 +1042,45 @@ public class Program extends Test                                               
      {final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
       final int        N = Integer.BYTES;
       final ByteMemory m = ByteMemory.this;
-      Ref(int Offset) {offset.set(Offset);}                                                                             // Offset this ref
-      Ref(Int Offset) {offset.set(Offset);}                                                                             // Offset this ref
+      Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
+      Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
 
-      ByteMemory byteMemory() {return ByteMemory.this;}
-      Program       program() {return Program   .this;}
+      ByteMemory byteMemory () {return ByteMemory.this;}
+      Program       program () {return Program   .this;}
 
-      Ref       copy(Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}               // Copy the specified memory possibly from another byte memory
-      Ref      clear(int Width)            {m.clear     (offset, Width);                    return this;}               // Clear memory by setting its bytes to zero
-//    Ref invalidate(int Width)            {m.invalidate(offset, Width);                    return this;}               //N Invalidate memory by setting its bytes to values unlikely to be valid
-//    Int    getByte(Int I)                {return m.getByte(I.Add(offset));}                                           //N Get the byte at the indicated position
-      Int    getInt (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                    //N Get the int at the indicated position
-//    Bool   getBool(Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                        //N Get the bit in the specified byte at the specified position within the byte
-      Bool   getBool(Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                            // Get the bit at the bit indexed location
-//    Ref    putByte(Int I, Int J)         {m.putByte(I.Add(offset), J);                    return this;}               //N Set the byte at the indicated position relative to the start to the specified value
-      Ref    putInt (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);             return this;}               // Set the int at the indicated position relative to the start to the specified value
-//    Ref    putBool(Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}               //N Set the bit at the indicated position in the byte at the specified position to the specified value
-      Ref    putBool(Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}               // Set the bit at the bit indexed position
-      int     getInt(int I)                {return m.getInt (I*N+offset.i());}                                          // Get an int immediately when debugging
-      Int     getInt()                     {                                                return m.getInt (offset);}  // Get the referenced int
-      Ref     putInt(Int J)                {m.putInt (offset, J);                           return this;}               // Put the referenced int
+      Ref       copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
+      Ref      clear (int Width)            {m.clear     (offset, Width);                    return this;}              // Clear memory by setting its bytes to zero
+//    Ref invalidate (int Width)            {m.invalidate(offset, Width);                    return this;}              //N Invalidate memory by setting its bytes to values unlikely to be valid
+//    Int    getByte (Int I)                {return m.getByte(I.Add(offset));}                                          //N Get the byte at the indicated position
+      Int    getInt  (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                   //N Get the int at the indicated position
+//    Bool   getBool (Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       //N Get the bit in the specified byte at the specified position within the byte
+      Bool   getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                           // Get the bit at the bit indexed location
+//    Ref    putByte (Int I, Int J)         {m.putByte(I.Add(offset), J);                    return this;}              //N Set the byte at the indicated position relative to the start to the specified value
+      Ref    putInt  (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);             return this;}              // Set the int at the indicated position relative to the start to the specified value
+//    Ref    putBool (Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}              //N Set the bit at the indicated position in the byte at the specified position to the specified value
+      Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}              // Set the bit at the bit indexed position
+      int     getInt (int I)                {return m.getInt (I*N+offset.i());}                                         // Get an int immediately when debugging
+      Int     getInt ()                     {                                                return m.getInt (offset);} // Get the referenced int
+      Ref     putInt (Int J)                {m.putInt (offset, J);                           return this;}              // Put the referenced int
 
-      boolean getBool(int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}           // Get the bit at the bit indexed location - debugging
+      boolean getBool (int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}          // Get the bit at the bit indexed location - debugging
 
-      Ref step(int Width) {return new Ref(offset.Add(Width));}                                                          // Step up from an existing ref to make a new one - only while not executing
-//    Ref step(Int Width) {return new Ref(offset.Add(Width));}                                                          //N Step up from an existing ref to make a new one - only while not executing
+      Ref step (int Width) {return new Ref(offset.Add(Width));}                                                         // Step up from an existing ref to make a new one - only while not executing
+//    Ref step (Int Width) {return new Ref(offset.Add(Width));}                                                         //N Step up from an existing ref to make a new one - only while not executing
 
-      public String toString()                                                                                          // Print memory reference
+      public String toString ()                                                                                         // Print memory reference
        {final StringBuilder s = saySb("Ref: " , offset.i());
         return ""+s;
        }
      }
 
-    public String toString()                                                                                            // Print memory
+    public String toString ()                                                                                           // Print memory
      {final StringBuilder s = new StringBuilder();
       for (int i = 0, N = size(); i < N; i++) s.append(f("%4d %3d\n", i, bytes[i]));
       return ""+s;
      }
 
-    String dumpHex()                                                                                                    // Dump memory in hexadecimal format
+    String dumpHex ()                                                                                                   // Dump memory in hexadecimal format
      {final StringBuilder s = new StringBuilder();
       s.append("Memory\n");
       s.append("         ");
@@ -1160,9 +1167,10 @@ public class Program extends Test                                               
 
     if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,d", codeSize()));             // Code size check
     deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
-    currentPc = pc = 0;
-    int c, N;
-    for(c = 0, N = code.size(); c < maxSteps && pc >= 0 && pc < N; ++c)                                                 // Execute each instruction within a specified number of steps
+    currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
+    final int N = codeSize();                                                                                           // Number of instructions
+          int c = 0;                                                                                                    // Number of instructions executed
+    for(; c < maxSteps && pc >= 0 && pc < N; ++c)                                                                       // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
       try
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
@@ -1170,6 +1178,9 @@ public class Program extends Test                                               
         javaTrace = true;                                                                                               // Trace Java execution unless explicitly disabled by the instruction during execution
         i.a();
         executing = null;
+        if (dumpMemoryEvery != null && c > 0 && c % dumpMemoryEvery == 0)                                               // Dump memory periodically to check that there have not been any unexpected changes
+         {appendFile(javaTraceFile(), byteMemory.dumpHex());
+         }
        }
       catch(Exception e)
        {if (executing == null) stop("Exception:", e, "while executing:", traceBack(e));
@@ -1267,6 +1278,7 @@ module %s;                                                                      
   parameter  BOOL_VARS = %d;                                                                                            // Number of boolean variables
   reg        clock;                                                                                                     // Clock for chip
   reg        reset;                                                                                                     // Reset for chip
+  integer    c;                                                                                                         // Count of instructions executed
   integer    pc;                                                                                                        // Program counter for stepping through user code
   integer    index;
   reg[7:0]   m[MEMORY:0];                                                                                               // Byte memory
@@ -1286,7 +1298,8 @@ module %s;                                                                      
     if (reset) begin                                                                                                    // Reset
       state = state_clearMemory;
       index = 0;
-      pc = 0;
+      c     = 0;
+      pc    = 0;
     end
     else begin                                                                                                          // Initialize bit machine then execute user code
       case (state)
@@ -1358,6 +1371,10 @@ name, sizeMemory, numberOfInts, numberOfBools));
       if (i.jump == I.Jump.might) s.append(" else");
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
       if (appendTraceComments)    s.append(i.traceComment());
+      if (dumpMemoryEvery != null)
+       {s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex();");                                              // Dump memory periodically if requested
+        s.append("c = c + 1;");
+       }
       s.append(" end\n");
      }
                                                                                                                         // Dump memory if used
@@ -1388,7 +1405,7 @@ endmodule
    {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, Id, Value);";                               // Trace line to be written out
 
     return f("""
-  function automatic integer %s(input integer Id, input integer Value);                                                   // Trace variable
+  function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
     integer file;
     begin
       %s = Value;                                                                                                       // Return value
@@ -1863,31 +1880,55 @@ endfunction
     final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
        {final ByteMemory     M = byteMemory;
-        final ByteMemory.Ref m = M.new Ref(8);
+        final ByteMemory.Ref m = M.new Ref( 8);
+        final ByteMemory.Ref n = M.new Ref(12);
         new For(2)
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
             m.putInt(new Int(1), new Int(2));
-//          m.getInt(new Int(0)).ok(1);
-//          m.getInt(new Int(1)).ok(2);
-//
-//          m.getBool(new Int(4), new Int(0)).ok(false);
-//          m.getBool(new Int(4), new Int(1)).ok(true );
-//          m.getBool(new Int(4), new Int(2)).ok(false);
-//          m.putBool(new Int(4), new Int(0), new Bool(true));
-//          m.getInt (new Int(1)).            ok(3);
+            m.getInt(new Int(0)).ok(1);
+            m.getInt(new Int(1)).ok(2);
+
+            m.getBool(new Int(32)).ok(false);
+            m.getBool(new Int(33)).ok(true );
+            m.putBool(new Int(32), new Bool(true));
+            m.putBool(new Int(34), new Bool(true));
+            m.getInt (new Int( 1)).ok(7);
 
             m.putBool(new Int(32), new Bool(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
-            m.getBool(new Int(34)).ok(false);
+            m.getBool(new Int(34)).ok(true);
+            m.getInt (new Int( 1)).ok(6);
+            ok(()->nws(M.dumpHex()), """
+Memory
+         00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
+00000000                         01          06
+""");
+            m.clear(4);
+            ok(()->nws(M.dumpHex()), """
+Memory
+         00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
+00000000                                     06
+""");
+            m.copy(n, 4);
+            ok(()->nws(M.dumpHex()), """
+Memory
+         00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
+00000000                         06          06
+""");
+            M.clear();
+            ok(()->nws(M.dumpHex()), """
+Memory
+         00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
+00000000
+""");
+            dumpMemoryEvery = 10;
+            execute();
            }
          };
        }
      };
-    P.execute();
-//  ok(P.byteMemory.getBool(64+32), false);
-//  ok(P.byteMemory.getBool(64+33), true);
    }
 
   static void test_byteMemoryRef()
@@ -2003,8 +2044,8 @@ endfunction
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_byteMemory();
+   {//oldTests();
+    test_byteMemoryRef();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
