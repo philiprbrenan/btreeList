@@ -324,7 +324,6 @@ public class Program extends Test                                               
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = parentProgram.nextBoolId++;                                                                          // Unique id for Bool
-    private final String traceComment = immediate() ? null : traceComment();                                            // Location
     String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
@@ -448,8 +447,8 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String vtrace(String        Value) {return vn()+" <= traceBool("+id+", "+Value+");";}                               // Trace a boolean operation
-    String vtrace(StringBuilder Value) {return vtrace(""+Value);}                                                       // Trace a boolean operation
+    String vtrace (String        Value) {return vn()+" <= traceBool("+id+", "+Value+");";}                               // Trace a boolean operation
+    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                       // Trace a boolean operation
 
     Bool or (Bool b) {new I() {void a() {x(); b.x(); if ( b.i) i = true ; jtrace();} String v() {return vtrace(vn()+" || "+b.vn());}}; return this;}  // "Or" without short circuit. Modifies the target.
     Bool Or (Bool b) {return dup().or(b);}                                                                              //N "Or" without short circuit. Does not modify the target
@@ -476,7 +475,7 @@ public class Program extends Test                                               
 
     void jtrace ()                                                                                                      // Trace the execution of a boolean operation
      {if (!javaTrace) return;                                                                                           // Tracing is being suppressed
-      appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, i ? 1 : 0));
+      appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));
      }
 
     Bool ok (Boolean Value)
@@ -512,7 +511,6 @@ public class Program extends Test                                               
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
     private final int id = parentProgram.nextIntId++;                                                                   // Unique id for Int
-    private final String traceComment = immediate ? null : traceComment();                                              // Location
 
     int         i()  {x(); return i;}                                                                                   // Current value
     boolean     v()  {     return v;}                                                                                   //N Value has been set
@@ -650,8 +648,8 @@ public class Program extends Test                                               
       return vtrace(s);
      }
 
-    String vtrace(String        Value) {return vn()+" <= traceInt("+id+", "+Value+");";}                                // Trace a boolean operation
-    String vtrace(StringBuilder Value) {return vtrace(""+Value);}                                                       // Trace a boolean operation
+    String vtrace (String        Value) {return vn()+" <= traceInt("+id+", "+Value+");";}                                // Trace a boolean operation
+    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                       // Trace a boolean operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -789,8 +787,6 @@ public class Program extends Test                                               
     void jtrace ()                                                                                                      // Trace the execution of an integer operation
      {if (!javaTrace) return;                                                                                           // Tracing is being suppressed
       final Program P = program();
-      final I       I = P.executing;
-      final String  t = I.traceComment();
       appendFile(javaTraceFile(), f("%8d i %8d = %8d\n", P.currentPc, id, i));
       //appendFile(javaTraceFile(), f("%8d i %8d = %8d%s\n", P.currentPc, id, i, t));
      }
@@ -1149,7 +1145,7 @@ public class Program extends Test                                               
     I () {this(I.Jump.no);}                                                                                             // Add this instruction to the process's code assuming it will not jump
 
     abstract void     a ();                                                                                             // The action to be performed by the instruction
-             String   v () {return traceComment();};                                                                    // Generate equivalent verilog
+             String   v () {return appendTraceComments ? "" :  traceComment();};                                        // Generate equivalent verilog with a trace comment
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
    }
 
@@ -1361,7 +1357,7 @@ name, sizeMemory, numberOfInts, numberOfBools));
      {s.append(f("        %4d: begin %s", i.instructionNumber, i.v()));
       if (i.jump == I.Jump.might) s.append(" else");
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
-      if (appendTraceComments) s.append(i.traceComment());
+      if (appendTraceComments)    s.append(i.traceComment());
       s.append(" end\n");
      }
                                                                                                                         // Dump memory if used
