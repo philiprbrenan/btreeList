@@ -293,6 +293,11 @@ public class Test                                                               
    {return Integer.parseInt(dec.replaceAll("[^0-9]", ""));
    }
 
+  static int sqrt(int Value)                                                                                            // Integer square root as an integer
+   {if (Value < 0) stop("Sqrt of negative number:", Value);                                                             // Negative numbers rejected
+    return (int)Math.sqrt(Value);
+   }
+
 //D1 Bit routines                                                                                                       // Routines operating on bits
 
   static boolean getBit(int value, int index)              {return ((value >>> index) & 1) > 0;}                        // Extract a bit from an integer
