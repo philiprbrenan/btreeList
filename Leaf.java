@@ -442,7 +442,7 @@ Leaf           size:   8, count:   4
    5     7    77
    7     8    88
 """);
-    l.maxSteps(99_999).dumpMemoryEvery(999);
+    l.maxSteps(99_999).dumpMemoryEvery(18551);
     l.execute();
    }
 
