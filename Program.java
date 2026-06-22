@@ -1889,6 +1889,7 @@ endfunction
         new For(2)
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
+            m.putInt(new Int(1), new Int(-1));
             m.putInt(new Int(1), new Int(2));
             m.getInt(new Int(0)).ok(1);
             m.getInt(new Int(1)).ok(2);
@@ -1927,7 +1928,7 @@ Memory
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000
 """);
-            dumpMemoryEvery(10); maxSteps(999);
+            dumpMemoryEvery(1); maxSteps(999);
             execute();
            }
          };
