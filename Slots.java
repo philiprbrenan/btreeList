@@ -1002,7 +1002,8 @@ class Slots extends Program                                                     
 //D2 Print                                                                                                              // Print the slots
 
   public String toString ()                                                                                             // Dump the slots
-   {final StringBuilder s = new StringBuilder();
+   {javaTrace = false;                                                                                                  // Do not trace printing
+    final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlotsToKeys());
     final int[]R = range(numberOfKeys());
     s.append(f("Slots    : size: %2d, count: %2d\n", numberOfKeys, refCount.getInt(0)));                                // Title
@@ -2390,7 +2391,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots(!false);
+    test_slots(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
