@@ -913,7 +913,7 @@ public class Program extends Test                                               
        {void body(Int Index)
          {new I()
            {void   a() {putByte(TargetOffset.i() + Index.i(), SourceMemory.getByte(SourceOffset.i() + Index.i()));}
-            String v() {return "putMemory_"+i()+"("   + TargetOffset.vn() + "+" + Index.vn()+", getMemory_"+i()+"("  + SourceOffset.vn() + "+" + Index.vn()+"));";}
+            String v() {return "putMemory_"+i()+"("   + TargetOffset.vn() + "+" + Index.vn()+", getMemory_"+SourceMemory.i()+"("  + SourceOffset.vn() + "+" + Index.vn()+"));";}
            };
          }
        };
