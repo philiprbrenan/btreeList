@@ -1023,58 +1023,58 @@ class Slots extends Program                                                     
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {//putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
-        //putSlotToKeys(new Int(0), new Int(1));
+       {putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
+        putSlotToKeys(new Int(0), new Int(1));
 
-//        locateFirstUsedSlot().ok(0);
-//        locateLastUsedSlot ().ok(2);
+        locateFirstUsedSlot().ok(0);
+        locateLastUsedSlot ().ok(2);
 
-//        putKey (new Int(1), new Int(11)); countInc();
-//        putKey (new Int(3), new Int(22)); countInc();
+        putKey (new Int(1), new Int(11)); countInc();
+        putKey (new Int(3), new Int(22)); countInc();
 
         final Slots s = this;
         final Slots t = new Slots(s.build.parent(s).memory(null));                                                      // Create some more memory and copy the slots into it
-//        t.copy(s);
-//        //new I() {void a() {testStop(s);}};
-//        ok(()->s, """
-//Slots    : size:  8, count:  2
-//positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-//slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
-//keysSlots:    0   0   0   2   0   0   0   0   0   0   0   0   0   0   0   0
-//usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
-//usedKeys :    .   X   .   X   .   .   .   .
-//keys     :    0  11   0  22   0   0   0   0
-//""");
-//        delSlotToKeys(new Int(2));
-//        delKey       (new Int(3)); countDec();
-//        //new I() {void a() {testStop(s);}};
-//        ok(()->s, """
-//Slots    : size:  8, count:  1
-//positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-//slotsKeys:    1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-//keysSlots:    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-//usedSlots:    X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-//usedKeys :    .   X   .   .   .   .   .   .
-//keys     :    0  11   0   0   0   0   0   0
-//""");
-//        for (int i = 0, N = numberOfKeys(); i < N; i++) putKey (new Int(i), new Int(i+1));
-//        usedKeys.empty().ok(false);
-//        usedKeys.full ().ok(true);
-//
-//        delKey(new Int(3)); locateFirstUnusedKey().ok(3);
-//        delKey(new Int(4)); locateFirstUnusedKey().ok(3);
-//        delKey(new Int(2)); locateFirstUnusedKey().ok(2);
-//
-//        ok(()->t, """
-//Slots    : size:  8, count:  2
-//positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-//slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
-//keysSlots:    0   0   0   2   0   0   0   0   0   0   0   0   0   0   0   0
-//usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
-//usedKeys :    .   X   .   X   .   .   .   .
-//keys     :    0  11   0  22   0   0   0   0
-//""");
-//
+        t.copy(s);
+        //new I() {void a() {testStop(s);}};
+        ok(()->s, """
+Slots    : size:  8, count:  2
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   2   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   X   .   X   .   .   .   .
+keys     :    0  11   0  22   0   0   0   0
+""");
+        delSlotToKeys(new Int(2));
+        delKey       (new Int(3)); countDec();
+        //new I() {void a() {testStop(s);}};
+        ok(()->s, """
+Slots    : size:  8, count:  1
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   X   .   .   .   .   .   .
+keys     :    0  11   0   0   0   0   0   0
+""");
+        for (int i = 0, N = numberOfKeys(); i < N; i++) putKey (new Int(i), new Int(i+1));
+        usedKeys.empty().ok(false);
+        usedKeys.full ().ok(true);
+
+        delKey(new Int(3)); locateFirstUnusedKey().ok(3);
+        delKey(new Int(4)); locateFirstUnusedKey().ok(3);
+        delKey(new Int(2)); locateFirstUnusedKey().ok(2);
+
+        ok(()->t, """
+Slots    : size:  8, count:  2
+positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
+keysSlots:    0   0   0   2   0   0   0   0   0   0   0   0   0   0   0   0
+usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
+usedKeys :    .   X   .   X   .   .   .   .
+keys     :    0  11   0  22   0   0   0   0
+""");
+
         execute();
        }
      };
@@ -2390,7 +2390,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots(false);
+    test_slots(!false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
