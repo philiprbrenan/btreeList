@@ -1181,6 +1181,8 @@ public class Program extends Test                                               
     void set () {offset = program().code.size();}                                                                       // Reassign the label to an instruction
    }
 
+  void dumpMemories () {for(ByteMemory m : memories) appendFile(javaTraceFile(), m.dumpHex());}                         // Dump all the memories
+
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
 
@@ -1197,9 +1199,7 @@ public class Program extends Test                                               
         javaTrace = true;                                                                                               // Trace Java execution unless explicitly disabled by the instruction during execution
         i.a();
         executing = null;
-        if (dumpMemoryEvery != null && c > 0 && c % dumpMemoryEvery == 0)                                               // Dump memory periodically to check that there have not been any unexpected changes
-         {appendFile(javaTraceFile(), byteMemory.dumpHex());
-         }
+        if (dumpMemoryEvery != null && c > 0 && c % dumpMemoryEvery == 0) dumpMemories();                               // Dump memory periodically to check that there have not been any unexpected changes
        }
       catch(Exception e)
        {if (executing == null) stop("Exception:", e, "while executing:", traceBack(e));
@@ -1207,7 +1207,7 @@ public class Program extends Test                                               
        }
      }
     if (c >= maxSteps) stop("Out of steps after step:", c);                                                             // Show abnormal termination reason
-    if (byteMemory != null) appendFile(javaTraceFile(), byteMemory.dumpHex());                                          // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
+    dumpMemories();                                                                                                     // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
 
     if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
@@ -1397,12 +1397,12 @@ module {name};                                                                  
   /*traceInt*/ s.append(traceVerilogVariable("traceInt",   "i", traceFile));
 
   for(int i = 0; i < memories.size(); ++i)                                                                              // Actions for each memory
-   {final ByteMemory m = memories.elementAt(i);                                                                                           // Actions for each memory
+   {final ByteMemory m = memories.elementAt(i);                                                                         // Actions for each memory
     s.append(traceVerilogMemoryPut    (m));
     s.append(traceVerilogMemoryGet    (m));
     s.append(traceVerilogMemoryPutBool(m));
     s.append(traceVerilogMemoryGetBool(m));
-    s.append(              clearMemory(m, i < memories.size()-2 ? "state_clearMemory_"+memories.elementAt(i+1).n() : "state_clearInts"));
+    s.append(              clearMemory(m, i < memories.size()-1 ? "state_clearMemory_"+memories.elementAt(i+1).i() : "state_clearInts"));
     s.append(   dumpVerilogMemoryAsHex(m));
    }
 
