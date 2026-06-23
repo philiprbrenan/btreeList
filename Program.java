@@ -3,6 +3,7 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Make private:  maxSteps, dumpMemoryEvery
+// method () call()
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -26,6 +27,7 @@ public class Program extends Test                                               
   final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Program counter indicating the instruction to be executed after the current one
   private int       currentPc;                                                                                          // Current program counter
+  final        Stack<ByteMemory>                memories = new Stack<>();                                               // Memories used by this program and its dependent programs
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
@@ -76,7 +78,6 @@ public class Program extends Test                                               
 
   Program maxSteps (int     MaxSteps)      {program().maxSteps        = MaxSteps;      return this;}                    // Set number of steps
   Program dumpMemoryEvery (Integer NumberOfSteps) {program().dumpMemoryEvery = NumberOfSteps; return this;}             // Set number of steps between memory dumps
-  String  byteMemoryId () {final ByteMemory m = program().byteMemory; return m != null ? m.byteMemoryId : "no name set for memory";} // Get byte memory id for this program
 
 //D1 Program                                                                                                            // Program execution structures
 
@@ -875,16 +876,23 @@ public class Program extends Test                                               
   static Int ib(Int I) {return I.Mul(ib());}                                                                            // Number of bytes in a number of integers
 
   final class ByteMemory                                                                                                // Bytes being used as the main memory program
-   {final  String byteMemoryId = sourceFileName().replaceFirst("\\.java$", "");                                         // Name the memory
+   {private final int id;                                                                                               // Unique identifier for this memory
     private byte[]bytes;                                                                                                // Bytes of main memory
 
-    ByteMemory(int Length) {bytes = new byte[Length]; clear(new Int(0), Length); err("AAAA", hashCode());}                                       // Create and clear the memory
+    ByteMemory(int Length)                                                                                              // Create and clear some memory
+     {bytes = new byte[Length];
+      clear(new Int(0), Length);
+      final Stack<ByteMemory> m = program().memories; id = m.size(); m.push(this);                                      // Give the memory a unique identifier and save it in the main program
+     }
+
+    String i () {return ""+id;}                                                                                         // Number of memory a a string for use in writing verilog
+    String n () {return "m_"+id;}                                                                                       // Name of memory
 
     private byte getByte (int I)                                                                                        // Get the value of a byte
      {final byte b = bytes[I];
       final int  B = b < 0 ? 256+(int)b : (int)b;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
       if (javaTrace)                                                                                                    // Trace the get
-       {appendFile(javaTraceFile(), f("%8d r %8d = %8d  %s\n", program().currentPc, I, B, byteMemoryId()));
+       {appendFile(javaTraceFile(), f("%8d r %8d = %8d  %s\n", program().currentPc, I, B, n()));
        }
       return b;                                                                                                         // Get the value of a byte
      }
@@ -895,7 +903,7 @@ public class Program extends Test                                               
       final int  B = b < 0 ? 256+(int)b : (int)b;
       bytes[I] = b;                                                                                                     // Set the value of a byte from an integer
       if (javaTrace)                                                                                                    // Trace the write
-       {appendFile(javaTraceFile(), f("%8d w %8d %8d < %8d  %s\n", program().currentPc, I, A, B, byteMemoryId()));
+       {appendFile(javaTraceFile(), f("%8d w %8d %8d < %8d  %s\n", program().currentPc, I, A, B, n()));
        }
      }
 
@@ -904,8 +912,8 @@ public class Program extends Test                                               
       new ForCount(new Int(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {        putByte(TargetOffset.i() +        Index.i (), SourceMemory.getByte(SourceOffset.i () +       Index.i ()));}
-            String v() {return "putMemory("   + TargetOffset.vn() + "+" + Index.vn()+", getMemory("            + SourceOffset.vn() + "+" + Index.vn()+"));";} // Does not work across different program memories
+           {void   a() {putByte(TargetOffset.i() + Index.i(), SourceMemory.getByte(SourceOffset.i() + Index.i()));}
+            String v() {return "putMemory_"+i()+"("   + TargetOffset.vn() + "+" + Index.vn()+", getMemory_"+i()+"("  + SourceOffset.vn() + "+" + Index.vn()+"));";}
            };
          }
        };
@@ -919,7 +927,7 @@ public class Program extends Test                                               
        {void  body(Int Index)
          {new I()
            {void   a() {      putByte(Index.i(),              0);}
-            String v() {return "putMemory("+Index.vn() +   ", 0);";}
+            String v() {return "putMemory_"+i()+"("+Index.vn() +   ", 0);";}
            };
          }
        };
@@ -933,7 +941,7 @@ public class Program extends Test                                               
        {void body(Int Index)
          {new I()
            {void   a() {            putByte(Index.i( ),   0);}
-            String v() {return "putMemory("+Index.vn()+", 0);";}
+            String v() {return "putMemory_"+i()+"("+Index.vn()+", 0);";}
            };
          }
        };
@@ -973,7 +981,10 @@ public class Program extends Test                                               
          }
         String v()
          {final String n = I.vn();
-          final StringBuilder s = new StringBuilder("{getMemory("+n+"+3), getMemory("+n+"+2), getMemory("+n+"+1), getMemory("+n+")}");
+          final StringBuilder s = new StringBuilder("{getMemory_"+i()+"("+n+"+3), "+
+                                                     "getMemory_"+i()+"("+n+"+2), "+
+                                                     "getMemory_"+i()+"("+n+"+1), "+
+                                                     "getMemory_"+i()+"("+n+")}");
           return r.vtrace(s);
          }
        };
@@ -992,7 +1003,7 @@ public class Program extends Test                                               
      {Bool r = new Bool();
       new I()
        {void   a() {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));}
-        String v() {return r.vtrace(new StringBuilder("getMemoryBool("+I.vn()+", "+J.vn()+")"));}
+        String v() {return r.vtrace(new StringBuilder("getMemoryBool_"+i()+"("+I.vn()+", "+J.vn()+")"));}
        };
       return r;
      }
@@ -1017,10 +1028,10 @@ public class Program extends Test                                               
         String v()
          {final String i = I.vn(), j = J.vn();
 
-          return "putMemory(0+"+i+", "+j+"[ 0+:8]);"+
-                 "putMemory(1+"+i+", "+j+"[ 8+:8]);"+
-                 "putMemory(2+"+i+", "+j+"[16+:8]);"+
-                 "putMemory(3+"+i+", "+j+"[24+:8]);";
+          return "putMemory_"+i()+"(0+"+i+", "+j+"[ 0+:8]);"+
+                 "putMemory_"+i()+"(1+"+i+", "+j+"[ 8+:8]);"+
+                 "putMemory_"+i()+"(2+"+i+", "+j+"[16+:8]);"+
+                 "putMemory_"+i()+"(3+"+i+", "+j+"[24+:8]);";
          }
        };
       return this;
@@ -1036,7 +1047,7 @@ public class Program extends Test                                               
          }
         String v()
          {final String i = I.vn(), j = J.vn(), k = K.vn();
-          return "putMemoryBool("+i+", "+j+", "+k+");";
+          return "putMemoryBool_"+i()+"("+i+", "+j+", "+k+");";
          }
        };
       return this;
@@ -1090,7 +1101,7 @@ public class Program extends Test                                               
 
     String dumpHex ()                                                                                                   // Dump memory in hexadecimal format
      {final StringBuilder s = new StringBuilder();
-      s.append(f("Memory %s\n", byteMemoryId()));
+      s.append(f("Memory %d\n", id));
       s.append("         ");
       for (int i = 0; i < 16; i++) s.append(f("%02d ", i));
       s.append("\n");
@@ -1278,40 +1289,73 @@ public class Program extends Test                                               
     final int       sizeMemory = byteMemory != null ? byteMemory.size() : 0;                                            // Size of memory
     final int     numberOfInts = nextIntId;                                                                             // Size of memory
     final int    numberOfBools = nextBoolId;                                                                            // Size of memory
+
     final StringBuilder      s = new StringBuilder();                                                                   // Verilog
-    s.append(f("""
-module %s;                                                                                                              // Bit machine to support current test
-  parameter  MEMORY    = %d;                                                                                            // Amount of memory
-  parameter  INT_VARS  = %d;                                                                                            // Number of integer variables
-  parameter  BOOL_VARS = %d;                                                                                            // Number of boolean variables
+    /*Module*/s.append(substitute("""
+module {name};                                                                                                          // Bit machine to support current test
+""", "name", name));
+
+    for(ByteMemory m : memories)                                                                                        // Each memory attached to this program
+     {/*Memory*/s.append(substitute("""
+  parameter  MEMORY_{memoryId}    = {memory_size};                                                                      // Amount of memory
+  reg[7:0]   {memoryName}[MEMORY_{memoryId}:0];                                                                           // Declare byte memory
+""", "memoryId", m.i(), "memoryName", m.n(), "memory_size", ""+m.size()));
+     }
+
+    if (true)                                                                                                           // State machine to sequence the initialization of memories
+     {int state = 0;
+      s.append("  typedef enum integer {\n");                                                                           // State machine to initialize each memory and the variables used by the main program
+      for(ByteMemory m : memories)  s.append("    state_clearMemory_"+m.i()+" = "+(state++)+",\n");                     // State to clear each memory                                                    // Each memory attached to this program
+      s.append("    state_clearInts   = "+(state++)+",\n");                                                             // State for clearing integers
+      s.append("    state_clearBool   = "+(state++)+",\n");                                                             // States for clearing bools
+      s.append("    state_execute     = "+(state++)+"\n");                                                              // States for executing code
+      s.append("   } State;\n");
+     }
+
+    /*Execution State Variables*/s.append(substitute("""
+  parameter  INT_VARS  = {numberOfInts};                                                                                // Number of integer variables
+  parameter  BOOL_VARS = {numberOfBools};                                                                               // Number of boolean variables
   reg        clock;                                                                                                     // Clock for chip
   reg        reset;                                                                                                     // Reset for chip
   integer    c;                                                                                                         // Count of instructions executed
   integer    pc;                                                                                                        // Program counter for stepping through user code
-  integer    index;
-  reg[7:0]   m[MEMORY:0];                                                                                               // Byte memory
+  integer    index;                                                                                                     // Index for clearing memory
   integer    i[INT_VARS:0];                                                                                             // Integers
   reg        b[BOOL_VARS:0];                                                                                            // Booleans
 
-  typedef enum integer                                                                                                  // Possible states of machine
-   {state_clearMemory = 0,
-    state_clearInts   = 1,
-    state_clearBool   = 2,
-    state_execute     = 3
-   } State;
+""", "numberOfInts", ""+numberOfInts, "numberOfBools", ""+numberOfBools));
+
+   /*Reset*/s.append("""
 
   State state;                                                                                                          // Current state of machine
 
   always @(posedge clock) begin
     if (reset) begin                                                                                                    // Reset
-      state = state_clearMemory;
+""");
+      if (memories.size() > 0) /*Reset memory*/s.append(substitute("""
+      state = state_clearMemory_{start};
+""", "start", memories.firstElement().i()));
+
+      else /*No memory*/s.append("""
+      state = state_clearInts;
+""");
+
+    /*Initialize*/s.append("""
       index = 0;
       c     = 0;
       pc    = 0;
     end
     else begin                                                                                                          // Initialize bit machine then execute user code
       case (state)
-        state_clearMemory: clearMemory();
+""");
+
+    for(ByteMemory m : memories)                                                                                        // Clear each memory one after the other
+     {/*Memory Clear*/s.append(substitute("""
+        state_clearMemory_{memoryId}: clearMemory_{memoryId}();
+""", "memoryId", m.i()));
+     }
+
+    /*Execute*/s.append("""
         state_clearInts  : clearInts  ();
         state_clearBool  : clearBool  ();
         state_execute    : execute();
@@ -1331,14 +1375,6 @@ module %s;                                                                      
 //  #200 $finish;
   end
 
-  task automatic clearMemory;                                                                                           // Clear memory element by element
-    begin
-      m[index] = 0;
-      index = index + 1;
-      if (index >= MEMORY) state = state_clearInts;
-    end
-  endtask
-
   task automatic clearInts;                                                                                             // Clear integers
     begin
       i[index] = 0;
@@ -1355,20 +1391,24 @@ module %s;                                                                      
     end
   endtask
 
-""",
-name, sizeMemory, numberOfInts, numberOfBools));
+""");
 
-  s.append(traceVerilogVariable("traceBool",  "b", traceFile));                                                         // Memory and variable tracinf
-  s.append(traceVerilogVariable("traceInt",   "i", traceFile));
-  s.append(traceVerilogMemoryPut());
-  s.append(traceVerilogMemoryGet());
-  s.append(traceVerilogMemoryPutBool());
-  s.append(traceVerilogMemoryGetBool());
-  s.append(dumpVerilogMemoryAsHex());
+  /*traceBool*/s.append(traceVerilogVariable("traceBool",  "b", traceFile));                                            // Memory and variable tracinf
+  /*traceInt*/ s.append(traceVerilogVariable("traceInt",   "i", traceFile));
+
+  for(int i = 0; i < memories.size(); ++i)                                                                              // Actions for each memory
+   {final ByteMemory m = memories.elementAt(i);                                                                                           // Actions for each memory
+    s.append(traceVerilogMemoryPut    (m));
+    s.append(traceVerilogMemoryGet    (m));
+    s.append(traceVerilogMemoryPutBool(m));
+    s.append(traceVerilogMemoryGetBool(m));
+    s.append(              clearMemory(m, i < memories.size()-2 ? "state_clearMemory_"+memories.elementAt(i+1).n() : "state_clearInts"));
+    s.append(   dumpVerilogMemoryAsHex(m));
+   }
 
   for(String m : extraVerilogMethods) s.append(m);                                                                      // Incorporate extra Verilog methods required to support generated instructions
 
-  s.append("""
+  /*Execute*/s.append("""
   task automatic execute;                                                                                               // Execute actual code
     begin
       case(pc)
@@ -1380,20 +1420,22 @@ name, sizeMemory, numberOfInts, numberOfBools));
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
       if (appendTraceComments)    s.append(i.traceComment());
       if (dumpMemoryEvery != null)
-       {s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex();");                                              // Dump memory periodically if requested
-        s.append("c = c + 1;");
+       {for(ByteMemory m: memories)
+         {s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+m.i()+"();");                                  // Dump memory periodically if requested
+         }
        }
+      s.append("c = c + 1;");                                                                                           // Count instructions executed
       s.append(" end\n");
      }
-                                                                                                                        // Dump memory if used
-    if (byteMemory != null) s.append("""
-        default: begin dumpHex(); $finish(0); end
+                                                                                                                        // Dump memory at end if used
+    /* Execute default*/s.append("""
+        default: begin
 """);
-    else                    s.append("""
-        default: begin            $finish(0); end
-""");
+    for(ByteMemory m: memories) s.append("        dumpHex_"+m.i()+"();");
 
-    s.append("""
+    /*Execute end*/s.append("""
+          $finish(0);
+        end
       endcase
       pc = pc + 1;
     end
@@ -1407,6 +1449,17 @@ endmodule
 //     {if (i > 760_000 && i < 761_000) say(f("%4d %s", i, v.elementAt(i)));
 //     }
     return ""+s;
+   }
+
+  String clearMemory(ByteMemory M, String Next)                                                                         // Verilog procedure to clear a memory
+   {return substitute("""
+  task automatic clearMemory_{memoryId};                                                                                // Clear memory element by element
+    begin
+      for(index = 0; index < MEMORY_{memoryId}; index = index + 1) {memoryName}[index] = 0;
+      state = {Next};
+    end
+  endtask
+""", "memoryId", M.i(), "memoryName", M.n(), "Next", Next);
    }
 
   String traceVerilogVariable(String Procedure, String Type, String TraceFile)                                          // Verilog procedure to trace a variable
@@ -1450,9 +1503,9 @@ endfunction
     program().extraVerilogMethods.add(""+s);
    }
 
-  String dumpVerilogMemoryAsHex ()                                                                                      // Dump memory as hex
+  String dumpVerilogMemoryAsHex (ByteMemory M)                                                                          // Dump memory as hex
    {return substitute("""
-  task dumpHex;
+  task dumpHex_{memoryId};
     integer i;
     integer f;
     reg [7:0] b;
@@ -1463,98 +1516,98 @@ endfunction
       $fwrite(f, "Memory %s\\n", "{memoryId}");
 
       $fwrite(f, "         ");
-      for (i = 0; i < 16; i = i + 1) $fwrite(f, "%02d ", i);
-                                     $fwrite(f, "\\n");
+      for (i = 0; i < 16; i = i + 1)   $fwrite(f, "%02d ", i);
+                                       $fwrite(f, "\\n");
 
-      for (i = 0; i < MEMORY; i = i + 1)
+      for (i = 0; i < MEMORY_{memoryId}; i = i + 1)
       begin
-        if (i % 16 == 0)             $fwrite(f, "%08d ", i);
+        if (i % 16 == 0)               $fwrite(f, "%08d ", i);
 
-        b = m[i];
+        b = {memoryName}[i];
 
-        if (b != 0)                  $fwrite(f, "%02x ", b);
-        else                         $fwrite(f, "   ");
+        if (b != 0)                    $fwrite(f, "%02x ", b);
+        else                           $fwrite(f, "   ");
 
-        if ((i + 1) % 16 == 0)       $fwrite(f, "\\n");
+        if ((i + 1) % 16 == 0)         $fwrite(f, "\\n");
       end
 
-      if (MEMORY % 16 != 0)          $fwrite(f, "\\n");
+      if (MEMORY_{memoryId} % 16 != 0) $fwrite(f, "\\n");
 
       $fclose(f);
     end
   endtask
-""", "traceFile", verilogTraceFile, "memoryId", ""+byteMemoryId());
+""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryGet ()                                                                                       // Trace byte read from memory
+  String traceVerilogMemoryGet (ByteMemory M)                                                                           // Trace byte read from memory
    {return substitute("""
-  function automatic reg[7:0] getMemory (input integer Addr);
+  function automatic reg[7:0] getMemory_{memoryId} (input integer Addr);
     integer f;
     begin
       f = $fopen("{traceFile}", "a");
-      getMemory = m[Addr];
+      getMemory_{memoryId} = {memoryName}[Addr];
 
-      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, getMemory, "{memoryId}");
+      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, getMemory_{memoryId}, "{memoryName}");
 
       $fclose(f);
     end
   endfunction
-""", "traceFile", verilogTraceFile, "memoryId", ""+byteMemoryId());
+""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryGetBool ()                                                                                   // Trace bool read from memory
+  String traceVerilogMemoryGetBool (ByteMemory M)                                                                       // Trace bool read from memory
    {return substitute("""
-  function automatic reg getMemoryBool (input integer Addr, input integer Bit);
+  function automatic reg getMemoryBool_{memoryId} (input integer Addr, input integer Bit);
     integer f;
     begin
       f = $fopen("{traceFile}", "a");
-      getMemoryBool = m[Addr][Bit];
+      getMemoryBool_{memoryId} = {memoryName}[Addr][Bit];
 
-      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, m[Addr], "{memoryId}");
+      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
 
       $fclose(f);
     end
   endfunction
-""", "traceFile", verilogTraceFile, "memoryId", ""+byteMemoryId());
+""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryPut ()                                                                                       // Trace byte written to memory
+  String traceVerilogMemoryPut (ByteMemory M)                                                                           // Trace byte written to memory
    {return substitute("""
-  task automatic putMemory (input integer Addr, input integer Value);
+  task automatic putMemory_{memoryId} (input integer Addr, input integer Value);
     integer f;
     integer a;
     begin
       f = $fopen("{traceFile}", "a");
-      a = m[Addr];
-          m[Addr] = Value[0+:8];
+      a = {memoryName}[Addr];
+          {memoryName}[Addr] = Value[0+:8];
 
-      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryId}");
+      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryName}");
 
       $fclose(f);
     end
   endtask
-""", "traceFile", verilogTraceFile, "memoryId", ""+byteMemoryId());
+""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryPutBool ()                                                                                   // Trace bit written to memory
+  String traceVerilogMemoryPutBool (ByteMemory M)                                                                       // Trace bit written to memory
    {return substitute("""
-  task automatic putMemoryBool(input integer Addr, input integer Bit, input integer Value);
+  task automatic putMemoryBool_{memoryId} (input integer Addr, input integer Bit, input integer Value);
     integer f;
     integer a;
     integer b;
     begin
       f = $fopen("{traceFile}", "a");
-      a = m[Addr];
-          m[Addr][Bit] = Value[0];
-      b = m[Addr];
+      a = {memoryName}[Addr];
+          {memoryName}[Addr][Bit] = Value[0];
+      b = {memoryName}[Addr];
 
-      $fdisplay(f, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryId}");
-      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryId}");
+      $fdisplay(f, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryName}");
+      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryName}");
 
       $fclose(f);
     end
   endtask
-""", "traceFile", verilogTraceFile, "memoryId", ""+byteMemoryId());
+""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
 //D1 Testing                                                                                                            // Test expected output against got output
@@ -1897,7 +1950,7 @@ endfunction
             m.putInt(new Int(1), new Int(-1));
             m.putInt(new Int(1), new Int(2));
             ok(()->nws(M.dumpHex()), """
-Memory Program
+Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         01          02
 """);
@@ -1910,7 +1963,7 @@ Memory Program
             m.putBool(new Int(34), new Bool(true));
             m.getInt (new Int( 1)).ok(7);
             ok(()->nws(M.dumpHex()), """
-Memory Program
+Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         01          07
 """);
@@ -1921,25 +1974,25 @@ Memory Program
             m.getBool(new Int(34)).ok(true);
             m.getInt (new Int( 1)).ok(6);
             ok(()->nws(M.dumpHex()), """
-Memory Program
+Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         01          06
 """);
             m.clear(4);
             ok(()->nws(M.dumpHex()), """
-Memory Program
+Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                                     06
 """);
             m.copy(n, 4);
             ok(()->nws(M.dumpHex()), """
-Memory Program
+Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         06          06
 """);
             M.clear();
             ok(()->nws(M.dumpHex()), """
-Memory Program
+Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000
 """);
