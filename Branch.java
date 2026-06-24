@@ -966,18 +966,18 @@ keys     :    4   2   6   0   0   0   0
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_branch();
-    test_compactLeft();
-    test_compactRight();
-    test_splitRight();
-    test_splitLeft();
-    test_mergeRight();
-    test_mergeLeft();
-    test_find();
-    test_iterate();
-    test_fixedFields();
-    test_stepDown();
-    test_knownInsert();
+   {if (rtg( 1)) test_branch();
+    if (rtg( 2)) test_compactLeft();
+    if (rtg( 3)) test_compactRight();
+    if (rtg( 4)) test_splitRight();
+    if (rtg( 5)) test_splitLeft();
+    if (rtg( 6)) test_mergeRight();
+    if (rtg( 7)) test_mergeLeft();
+    if (rtg( 8)) test_find();
+    if (rtg( 9)) test_iterate();
+    if (rtg(10)) test_fixedFields();
+    if (rtg(11)) test_stepDown();
+    if (rtg(12)) test_knownInsert();
    }
 
   static void newTests()                                                                                                // Tests being worked on
@@ -986,7 +986,8 @@ keys     :    4   2   6   0   0   0   0
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
+   {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
+    try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
