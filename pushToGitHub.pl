@@ -149,6 +149,7 @@ END
         path: verilog/$F
 END
   }
+say STDERR "AAAA $T";
   my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
   lll "$f  Ubuntu work flow for $repo";
  }
