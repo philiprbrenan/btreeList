@@ -1,4 +1,4 @@
-# Test 2026-06-24 at 16:31:52
+# Test 2026-06-24 at 16:33:38
 
 name: Test
 run-name: btreeList
@@ -48,7 +48,7 @@ jobs:
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
 
     - name: BitSet
-      if: ${{ always() && matrix.task == 'BitSet' }}
+      if: ${{             matrix.task == 'BitSet' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 1
 
@@ -60,7 +60,7 @@ jobs:
         path: verilog/BitSet/
 
     - name: Branch
-      if: ${{ always() && matrix.task == 'Branch' }}
+      if: ${{             matrix.task == 'Branch' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 1
 
@@ -72,7 +72,7 @@ jobs:
         path: verilog/Branch/
 
     - name: Leaf
-      if: ${{ always() && matrix.task == 'Leaf' }}
+      if: ${{             matrix.task == 'Leaf' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 1
 
@@ -84,7 +84,7 @@ jobs:
         path: verilog/Leaf/
 
     - name: Program
-      if: ${{ always() && matrix.task == 'Program' }}
+      if: ${{             matrix.task == 'Program' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
 
@@ -96,7 +96,7 @@ jobs:
         path: verilog/Program/
 
     - name: Slots
-      if: ${{ always() && matrix.task == 'Slots' }}
+      if: ${{             matrix.task == 'Slots' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 1
 
@@ -108,7 +108,7 @@ jobs:
         path: verilog/Slots/
 
     - name: Test
-      if: ${{ always() && matrix.task == 'Test' }}
+      if: ${{             matrix.task == 'Test' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test 1
 
@@ -120,7 +120,7 @@ jobs:
         path: verilog/Test/
 
     - name: Tree_1
-      if: ${{ always() && matrix.task == 'Tree_1' }}
+      if: ${{             matrix.task == 'Tree_1' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 1
 
@@ -132,7 +132,7 @@ jobs:
         path: verilog/Tree/1/
 
     - name: Tree_2
-      if: ${{ always() && matrix.task == 'Tree_2' }}
+      if: ${{             matrix.task == 'Tree_2' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 2
 
@@ -144,7 +144,7 @@ jobs:
         path: verilog/Tree/2/
 
     - name: Tree_3
-      if: ${{ always() && matrix.task == 'Tree_3' }}
+      if: ${{             matrix.task == 'Tree_3' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 3
 
@@ -156,7 +156,7 @@ jobs:
         path: verilog/Tree/3/
 
     - name: Tree_4
-      if: ${{ always() && matrix.task == 'Tree_4' }}
+      if: ${{             matrix.task == 'Tree_4' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 4
 
@@ -168,7 +168,7 @@ jobs:
         path: verilog/Tree/4/
 
     - name: Tree_5
-      if: ${{ always() && matrix.task == 'Tree_5' }}
+      if: ${{             matrix.task == 'Tree_5' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 5
 
@@ -180,7 +180,7 @@ jobs:
         path: verilog/Tree/5/
 
     - name: Tree_6
-      if: ${{ always() && matrix.task == 'Tree_6' }}
+      if: ${{             matrix.task == 'Tree_6' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 6
 
@@ -192,7 +192,7 @@ jobs:
         path: verilog/Tree/6/
 
     - name: Tree_7
-      if: ${{ always() && matrix.task == 'Tree_7' }}
+      if: ${{             matrix.task == 'Tree_7' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 7
 
@@ -204,7 +204,7 @@ jobs:
         path: verilog/Tree/7/
 
     - name: Tree_8
-      if: ${{ always() && matrix.task == 'Tree_8' }}
+      if: ${{             matrix.task == 'Tree_8' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 8
 
@@ -216,7 +216,7 @@ jobs:
         path: verilog/Tree/8/
 
     - name: Tree_9
-      if: ${{ always() && matrix.task == 'Tree_9' }}
+      if: ${{             matrix.task == 'Tree_9' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 9
 
@@ -228,7 +228,7 @@ jobs:
         path: verilog/Tree/9/
 
     - name: Tree_10
-      if: ${{ always() && matrix.task == 'Tree_10' }}
+      if: ${{             matrix.task == 'Tree_10' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 10
 
@@ -240,7 +240,7 @@ jobs:
         path: verilog/Tree/10/
 
     - name: Tree_11
-      if: ${{ always() && matrix.task == 'Tree_11' }}
+      if: ${{             matrix.task == 'Tree_11' }}
       run: |
         java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 11
 
