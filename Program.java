@@ -8,7 +8,6 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 import java.util.function.*;
-import java.util.function.*;
 
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
@@ -1063,11 +1062,38 @@ public class Program extends Test                                               
       return r;
      }
 
+    Int getInt2(Int I)                                                                                                  // Get the int at the indicated position
+     {final Int r = new Int();
+      new I()
+       {void a()
+         {final int p = I.i();
+          final int d = Byte.toUnsignedInt(getByte(p+3)) << 24;
+          final int c = Byte.toUnsignedInt(getByte(p+2)) << 16;
+          final int b = Byte.toUnsignedInt(getByte(p+1)) <<  8;
+          final int a = Byte.toUnsignedInt(getByte(p+0)) <<  0;
+          final int R = d | c | b | a;
+Test.say("CCCC11", currentPc);
+if (currentPc >= 74220 && currentPc <= 74230) Test.say("CCCC22", codeSize());
+          r.ex(Int.Ops.set, R);
+         }
+        String v()
+         {final String n = I.vn();
+          final StringBuilder s = new StringBuilder("{getMemory_"+i()+"("+n+"+3), "+
+                                                     "getMemory_"+i()+"("+n+"+2), "+
+                                                     "getMemory_"+i()+"("+n+"+1), "+
+                                                     "getMemory_"+i()+"("+n+")}");
+          return r.vtrace(s);
+         }
+       };
+      return r;
+     }
+
     int getInt (int I)                                                                                                  // Get the int at the indicated position
      {final int a = Byte.toUnsignedInt(getByte(I+0)) <<  0;
       final int b = Byte.toUnsignedInt(getByte(I+1)) <<  8;
       final int c = Byte.toUnsignedInt(getByte(I+2)) << 16;
       final int d = Byte.toUnsignedInt(getByte(I+3)) << 24;
+if(codeSize() >= 74220 && codeSize() <= 74230) Test.say("EEEE", codeSize());
       return d | c | b | a;
      }
 
@@ -1151,7 +1177,11 @@ public class Program extends Test                                               
 //    Ref    putBool (Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}              //N Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}              // Set the bit at the bit indexed position
       int     getInt (int I)                {return m.getInt (I*N+offset.i());}                                         // Get an int immediately when debugging
-      Int     getInt ()                     {                                                return m.getInt (offset);} // Get the referenced int
+      Int     getInt ()
+       {final Int r = m.getInt2(offset); // Get the referenced int
+        if (codeSize() >= 74220 && codeSize() <= 74230) Test.say("DDDD", codeSize());
+        return r;
+       }
       Ref     putInt (Int J)                {m.putInt (offset, J);                           return this;}              // Put the referenced int
 
       boolean getBool (int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}          // Get the bit at the bit indexed location - debugging
@@ -1311,7 +1341,7 @@ public class Program extends Test                                               
 
   <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
    {new I()
-     {void   a() {if (!ok(a.get(), b)) say("====\n", traceBack);}
+     {void a() {if (!ok(a.get(), b)) say("====\n", traceBack);}
      };
    }
 
