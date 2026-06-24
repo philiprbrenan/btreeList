@@ -1,4 +1,4 @@
-# Test 2026-06-24 at 23:04:52
+# Test 2026-06-24 at 23:12:59
 
 name: Test
 run-name: btreeList
@@ -58,7 +58,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_1
-        path: verilog/BitSet/1/
+        path: verilog
 
     - name: BitSet_2
       if: ${{             matrix.task == 'BitSet_2' }}
@@ -71,7 +71,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_2
-        path: verilog/BitSet/2/
+        path: verilog
 
     - name: BitSet_3
       if: ${{             matrix.task == 'BitSet_3' }}
@@ -84,7 +84,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_3
-        path: verilog/BitSet/3/
+        path: verilog
 
     - name: BitSet_4
       if: ${{             matrix.task == 'BitSet_4' }}
@@ -97,7 +97,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_4
-        path: verilog/BitSet/4/
+        path: verilog
 
     - name: BitSet_5
       if: ${{             matrix.task == 'BitSet_5' }}
@@ -110,7 +110,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_5
-        path: verilog/BitSet/5/
+        path: verilog
 
     - name: BitSet_6
       if: ${{             matrix.task == 'BitSet_6' }}
@@ -123,7 +123,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_6
-        path: verilog/BitSet/6/
+        path: verilog
 
     - name: BitSet_7
       if: ${{             matrix.task == 'BitSet_7' }}
@@ -136,7 +136,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_7
-        path: verilog/BitSet/7/
+        path: verilog
 
     - name: BitSet_8
       if: ${{             matrix.task == 'BitSet_8' }}
@@ -149,7 +149,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_8
-        path: verilog/BitSet/8/
+        path: verilog
 
     - name: BitSet_9
       if: ${{             matrix.task == 'BitSet_9' }}
@@ -162,7 +162,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_9
-        path: verilog/BitSet/9/
+        path: verilog
 
     - name: BitSet_10
       if: ${{             matrix.task == 'BitSet_10' }}
@@ -175,7 +175,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_10
-        path: verilog/BitSet/10/
+        path: verilog
 
     - name: BitSet_11
       if: ${{             matrix.task == 'BitSet_11' }}
@@ -188,4 +188,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BitSet_11
-        path: verilog/BitSet/11/
+        path: verilog
