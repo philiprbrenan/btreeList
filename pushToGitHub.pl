@@ -74,8 +74,7 @@ if (@java)                                                                      
   for my $j(@j)                                                                                                         # Each java file
    {next unless $j =~ m($include)is;                                                                                    # Java files to include
     my $r = $tasks{$j} // 1;
-    my $s = $r == 1;                                                                                                    # Single group of tests
-    push @t, {class=>$j, group=>$_, name=>($s ? $j : "${j}_$_"), folder=>fpd($s ? ($j) : ($j, $_))} for 1..$r;          # Details of a task
+    push @t, {class=>$j, group=>$_, name=>qq(${j}_$_)} for 1..$r;                                                       # Details of a task
    }
   my $T = join ", ", map {$$_{name}} @t;                                                                                # Task names as a string
 
@@ -132,7 +131,6 @@ END
 
   for my $t(@t)                                                                                                         # Tasks
    {my $C  = $$t{class};
-    my $F  = $$t{folder};
     my $G  = $$t{group};
     my $N  = $$t{name};
 
@@ -149,7 +147,7 @@ END
       uses: actions/upload-artifact\@v4
       with:
         name: $N
-        path: verilog/$F
+        path: verilog
 END
   }
   my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
