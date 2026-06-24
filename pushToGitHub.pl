@@ -20,13 +20,13 @@ my $wf      = q(.github/workflows/main.yml);                                    
 my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
 my %tasks   = (BitSet=>11, Branch=>12, Leaf=>12, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
-my $exclude = q(xxx);                                                                                                   # Java files to exclude from testing as they are not yet ready
+my $include = q(BitSet);                                                                                                   # Java files to exclude from testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
-my @java  = grep {!m($exclude)} grep {fe($_) =~ m(java)is} @files;                                                      # Java files minus excluded files
+my @java  = grep {m($include)} grep {fe($_) =~ m(java)is} @files;                                                       # Java files minus excluded files
    @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
 
 if (!@files)                                                                                                            # No new files
@@ -141,6 +141,7 @@ END
       if: \${{             matrix.task == '$N' }}
       run: |
         java -XX:+UseZGC -cp Classes $c/$C $G
+        tree
 
     - name: Upload $N
       if: \${{ always() && matrix.task == '$N' }}
