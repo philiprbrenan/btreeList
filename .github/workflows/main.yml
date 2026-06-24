@@ -1,4 +1,4 @@
-# Test 2026-06-24 at 23:01:08
+# Test 2026-06-24 at 23:04:52
 
 name: Test
 run-name: btreeList
@@ -40,7 +40,7 @@ jobs:
     - name: Position files in package
       run: |
         mkdir -p com/AppaApps/Silicon
-        cp BitSet.java com/AppaApps/Silicon
+        cp BitSet.java Branch.java Leaf.java Program.java Slots.java Test.java Tree.java com/AppaApps/Silicon
         tree
 
     - name: Java
