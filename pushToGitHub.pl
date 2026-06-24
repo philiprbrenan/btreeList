@@ -26,7 +26,7 @@ my $copyAndPasteCheck = 0;                                                      
 say STDERR timeStamp,  " push to github $repo";
 
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
-my @java  = grep {m($include)} grep {fe($_) =~ m(java)is} @files;                                                       # Java files minus excluded files
+my @java  = grep {fe($_) =~ m(java)is} @files;                                                                          # Java files minus excluded files
    @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
 
 if (!@files)                                                                                                            # No new files
@@ -71,8 +71,9 @@ if (@java)                                                                      
   my $J = join ' ', map {"$_.java"} @j;                                                                                 # Java files with extension without separating commas
 
   my @t;                                                                                                                # Tasks
-  for my $j(@j)
-   {my $r = $tasks{$j} // 1;
+  for my $j(@j)                                                                                                         # Each java file
+   {next unless $j =~ m($include)is;                                                                                    # Java files to include
+    my $r = $tasks{$j} // 1;
     my $s = $r == 1;                                                                                                    # Single group of tests
     push @t, {class=>$j, group=>$_, name=>($s ? $j : "${j}_$_"), folder=>fpd($s ? ($j) : ($j, $_))} for 1..$r;          # Details of a task
    }
