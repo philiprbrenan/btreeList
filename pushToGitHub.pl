@@ -76,7 +76,7 @@ if (@java)                                                                      
     my $s = $r == 1;                                                                                                    # Single group of tests
     push @t, {class=>$j, group=>$_, name=>($s ? $j : "${j}_$_"), folder=>fpd($s ? ($j) : ($j, $_))} for 1..$r;          # Details of a task
    }
-  my $T = join " ", map {$$_{name}} @t;                                                                                 # Task names as a string
+  my $T = join ", ", map {$$_{name}} @t;                                                                                 # Task names as a string
 
   my $y = <<"END";
 # Test $d
