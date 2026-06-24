@@ -1231,10 +1231,7 @@ public class Program extends Test                                               
   void check (StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} };}     // Test the supplied content against the specified string, then clear the output area ready for the next report
   void Check (StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} };}     // Test the supplied content against the specified string, print the actual output area contents and stop
 
-  String verilogTestFolder ()                                                                                           // Folder for this test using Verilog
-   {final String   f =  fp(verilogFolder, currentTestNameSuffix());                                                     // Normal folder name
-    return testGroup == null ? f : fp(f, testGroup);                                                                    // Folder name with test group appended if testing in groups
-   }
+  String verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                                // Folder for this test using Verilog
   String verilogTraceFile ()  {return fn(verilogTestFolder(), verilogTraceFile);}                                       // Verilog trace file
   String    javaTraceFile ()  {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
   String VerilogCodeFile ()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
@@ -1242,7 +1239,7 @@ public class Program extends Test                                               
   void suppressJavaTracingForOneInstruction () {program().javaTrace = false;}                                           // Suppress java tracing for the rest of the current instruction
   boolean javaTrace () {return program().javaTrace;}                                                                    // Java tracing status
 
-  static boolean rtg(int i) {return testGroup == null || testGroup.equals(""+i);}                                              // Whether to run the indicated test group
+  static boolean rtg(int i) {return testGroup == null || testGroup.equals(""+i);}                                       // Whether to run the indicated test group
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
