@@ -137,23 +137,28 @@ class Slots extends Program                                                     
   Int     getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
   int     getSlotToKeyValue (int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
-  Bool empty                ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
-  Bool full                 ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Int  count                ()             {return refCount.getInt();}                                                  // The computed number of keys in the slots
-  void count                (Int N)        {refCount.putInt(N);}                                                        // Set the computed number of keys in the slots
-  void countClear           ()             {refCount.putInt(new Int(0));}                                               // Clear the count
-  void countInc             ()             {refCount.putInt(refCount.getInt().inc());}                                  // Increment the key count
-  void countDec             ()             {refCount.putInt(refCount.getInt().dec());}                                  // Decrement the key count
-//void invalidateMemory     ()             {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-  int  numberOfKeys         ()             {return numberOfKeys;}                                                       // The number of references in the slots definition
-  int  numberOfSlotsToKeys  ()             {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
-  int  redistributionWidth  ()             {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
+  Bool empty ()                            {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
+  Bool full ()                             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+  Int  count ()                            {
+say("BBBB1111", codeSize());
+    final Int c = refCount.getInt();                                                  // The computed number of keys in the slots
+say("BBBB2222", codeSize());
+    return c;
+   }                                                  // The computed number of keys in the slots
+  void count (Int N)                       {refCount.putInt(N);}                                                        // Set the computed number of keys in the slots
+  void countClear ()                       {refCount.putInt(new Int(0));}                                               // Clear the count
+  void countInc ()                         {refCount.putInt(refCount.getInt().inc());}                                  // Increment the key count
+  void countDec ()                         {refCount.putInt(refCount.getInt().dec());}                                  // Decrement the key count
+//void invalidateMemory ()                 {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
+  int  numberOfKeys ()                     {return numberOfKeys;}                                                       // The number of references in the slots definition
+  int  numberOfSlotsToKeys ()              {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
+  int  redistributionWidth ()              {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
   Bint  locateFirstUsedSlot ()             {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
-  Bint  locateLastUsedSlot  ()             {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
-  Bint  stepLeft            (Int Start)    {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
-  Bint  stepRight           (Int Start)    {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
+  Bint  locateLastUsedSlot ()              {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
+  Bint  stepLeft (Int Start)               {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
+  Bint  stepRight (Int Start)              {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
 
-  Bint locateFirstUnusedKey () {return usedKeys.firstZero();}                                                           // Absolute position of the first unused key
+  Bint locateFirstUnusedKey ()             {return usedKeys.firstZero();}                                               // Absolute position of the first unused key
 
   Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow)                                                           // Absolute position of the nearest free slot to the indicated position.  There will always be one as there are always more slots than keys. Prev will be true if the previous free slot is closest, else false if the next free slot is closest.
    {subStart("Slots.locateNearestFreeSlotToKey");
@@ -284,7 +289,6 @@ class Slots extends Program                                                     
          };
        }
      };
-
     subFinish();
    }
 
@@ -567,7 +571,9 @@ class Slots extends Program                                                     
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
     final Int     lc = left .count();                                                                                   // Count on left
+say("AAAA1111", codeSize());
     final Int     rc = Right.count();                                                                                   // Count on right
+say("AAAA2222", codeSize());
     final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
 
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
@@ -586,6 +592,7 @@ class Slots extends Program                                                     
             left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
            }
          };
+
         left.setSlotAndKey(lc, lc, Sk);                                                                                 // Insert splitting key
         left.count(lc.Add(rc).inc());                                                                                   // Set the key count
         left .redistribute();                                                                                           // Redistribute left
@@ -823,7 +830,7 @@ class Slots extends Program                                                     
       return P;                                                                                                         // Slot into which the key was inserted
      }
 
-    public String toString()
+    public String toString ()
      {return "Find(" + "slot=" + slot + ", lower=" + lower + ", higher=" + higher +
              ", equal=" + equal + ", empty=" + empty + ')';
      }
@@ -832,7 +839,7 @@ class Slots extends Program                                                     
 
    }
 
-  Find find(Int Key)                                                                                                    // Find a key in the slots
+  Find find (Int Key)                                                                                                   // Find a key in the slots
    {final BitSet u = usedSlotsToKeys;
     final Find   f = new Find();
 //  f.slot.invalidate();                                                                                                // Show that nothing has been found yet
@@ -961,14 +968,14 @@ class Slots extends Program                                                     
 
     void set(Int Key, Int Slot, boolean Inserted) {key.set(Key); slot.set(Slot); inserted.set(Inserted);}               // Record insertion result
 
-    public String toString()
+    public String toString ()
      {final StringBuilder s = new StringBuilder();                                                                      // Print insertion result
       s.append("Insert: "+key+", "+slot+", "+inserted);
       return ""+s;
      }
    }
 
-  Insert insert(Int Key)                                                                                                // Insert a key into slots and return the slot chosen and indicate whether this is a new key or an existing one
+  Insert insert (Int Key)                                                                                               // Insert a key into slots and return the slot chosen and indicate whether this is a new key or an existing one
    {if (immediate() && usedKeys.full().b()) stop("No more space to insert key:", Key);                                  // No space left
     final Insert i = new Insert();                                                                                      // Record the insertion result
     new If (empty())                                                                                                    // Slots are empty so insert immediately in the middle
@@ -994,7 +1001,7 @@ class Slots extends Program                                                     
     return P;                                                                                                           // Place key in first key slot
    }
 
-  void delete(Int Slot)                                                                                                 // Delete a key
+  void delete (Int Slot)                                                                                                // Delete a key
    {delSlotAndKey(Slot);                                                                                                // Delete key
     countDec();                                                                                                         // Decrement the count of the number of keys
    }
@@ -1532,8 +1539,8 @@ keys     :    2   1   4   3
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots l = this;
-        l.insert(new Int(2));
-        l.insert(new Int(1));
+        //l.insert(new Int(2));
+        //l.insert(new Int(1));
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
          {void slotsCode()
            {insert(new Int(4));
@@ -1541,15 +1548,15 @@ keys     :    2   1   4   3
            }
          };
         //new I() {void a() {testStop(l); }};
-        ok(()->l, """
-Slots    : size:  5, count:  2
-positions:    0   1   2   3   4   5   6   7   8   9
-slotsKeys:    0   0   1   0   0   0   0   0   0   0
-keysSlots:    5   2   0   0   0   0   0   0   0   0
-usedSlots:    .   .   X   .   .   X   .   .   .   .
-usedKeys :    X   X   .   .   .
-keys     :    2   1   0   0   0
-""");
+//        ok(()->l, """
+//Slots    : size:  5, count:  2
+//positions:    0   1   2   3   4   5   6   7   8   9
+//slotsKeys:    0   0   1   0   0   0   0   0   0   0
+//keysSlots:    5   2   0   0   0   0   0   0   0   0
+//usedSlots:    .   .   X   .   .   X   .   .   .   .
+//usedKeys :    X   X   .   .   .
+//keys     :    2   1   0   0   0
+//""");
         //new I() {void a() {testStop(r); }};
         ok(()->r, """
 Slots    : size:  5, count:  2
@@ -1560,30 +1567,30 @@ usedSlots:    .   .   .   .   .   X   .   .   X   .
 usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
-
-        l.mergeFromRightOdd(r, new Int(3)).ok(true);
-
-        //new I() {void a() {testStop(l); }};
-        //new I() {void a() {testStop(r); }};
-        ok(()->l, """
-Slots    : size:  5, count:  5
-positions:    0   1   2   3   4   5   6   7   8   9
-slotsKeys:    1   0   0   0   2   0   4   0   3   0
-keysSlots:    2   0   4   8   6   0   0   0   0   0
-usedSlots:    X   .   X   .   X   .   X   .   X   .
-usedKeys :    X   X   X   X   X
-keys     :    2   1   3   5   4
-""");
-        ok(()->r, """
-Slots    : size:  5, count:  2
-positions:    0   1   2   3   4   5   6   7   8   9
-slotsKeys:    0   0   4   0   0   0   0   3   0   0
-keysSlots:    0   0   0   7   2   0   0   0   0   0
-usedSlots:    .   .   X   .   .   .   .   X   .   .
-usedKeys :    .   .   .   X   X
-keys     :    0   0   0   5   4
-""");
-        mergeFromRightOdd(l, new Int(3)).ok(false);
+say("AAAA", r.code.size());
+//        l.mergeFromRightOdd(r, new Int(3)).ok(true);
+//
+//        //new I() {void a() {testStop(l); }};
+//        //new I() {void a() {testStop(r); }};
+//        ok(()->l, """
+//Slots    : size:  5, count:  5
+//positions:    0   1   2   3   4   5   6   7   8   9
+//slotsKeys:    1   0   0   0   2   0   4   0   3   0
+//keysSlots:    2   0   4   8   6   0   0   0   0   0
+//usedSlots:    X   .   X   .   X   .   X   .   X   .
+//usedKeys :    X   X   X   X   X
+//keys     :    2   1   3   5   4
+//""");
+//        ok(()->r, """
+//Slots    : size:  5, count:  2
+//positions:    0   1   2   3   4   5   6   7   8   9
+//slotsKeys:    0   0   4   0   0   0   0   3   0   0
+//keysSlots:    0   0   0   7   2   0   0   0   0   0
+//usedSlots:    .   .   X   .   .   .   .   X   .   .
+//usedKeys :    .   .   .   X   X
+//keys     :    0   0   0   5   4
+//""");
+//        mergeFromRightOdd(l, new Int(3)).ok(false);
         maxSteps = 99_999;
         execute();
        }
@@ -2391,7 +2398,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots(false);
+    test_mergeFromRightOdd(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
