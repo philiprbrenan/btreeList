@@ -527,8 +527,8 @@ public class Program extends Test                                               
     Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    //N Say the boolean
 
     void jtrace ()                                                                                                      // Trace the execution of a boolean operation
-     {if (!javaTrace) return;                                                                                           // Tracing is being suppressed
-      appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));
+     {//if (javaTrace)
+       appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));
      }
 
     Bool ok (Boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
@@ -860,10 +860,8 @@ public class Program extends Test                                               
     Int say ()  {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                                  // Say the integer
 
     void jtrace ()                                                                                                      // Trace the execution of an integer operation
-     {if (!javaTrace) return;                                                                                           // Tracing is being suppressed
-      final Program P = program();
-      appendFile(javaTraceFile(), f("%8d i %8d = %8d\n", P.currentPc, id, i));
-      //appendFile(javaTraceFile(), f("%8d i %8d = %8d%s\n", P.currentPc, id, i, t));
+     {//if (javaTrace)
+       appendFile(javaTraceFile(), f("%8d i %8d = %8d\n",  program().currentPc, id, i));
      }
 
     Int ok (Integer Value)                                                                                              // Check the integer
@@ -961,6 +959,10 @@ public class Program extends Test                                               
       final int  B = b < 0 ? 256+(int)b : (int)b;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
       if (javaTrace)                                                                                                    // Trace the get
        {appendFile(javaTraceFile(), f("%8d r %8d = %8d  %s\n", program().currentPc, I, B, n()));
+       }
+      else
+       {final int n = program().currentPc;
+        //if (n >= 37140 && n <= 37150) appendFile(javaTraceFile(), f("RR %8d r %8d = %8d  %s\n", n, I, B, n()));
        }
       return b;                                                                                                         // Get the value of a byte
      }
