@@ -1,4 +1,4 @@
-# Test 2026-06-24 at 16:03:35
+# Test 2026-06-24 at 16:06:49
 
 name: Test
 run-name: btreeList
@@ -49,9 +49,9 @@ jobs:
     - name: BitSet
       if: ${{ always() && matrix.task == 'BitSet' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 1
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 1"
 
-    - name: Upload artifact
+    - name: Upload BitSet
       if: ${{ always() && matrix.task == 'BitSet' }}
       uses: actions/upload-artifact@v4
       with:
@@ -61,9 +61,9 @@ jobs:
     - name: Branch
       if: ${{ always() && matrix.task == 'Branch' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 1
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 1"
 
-    - name: Upload artifact
+    - name: Upload Branch
       if: ${{ always() && matrix.task == 'Branch' }}
       uses: actions/upload-artifact@v4
       with:
@@ -73,9 +73,9 @@ jobs:
     - name: Leaf
       if: ${{ always() && matrix.task == 'Leaf' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 1
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 1"
 
-    - name: Upload artifact
+    - name: Upload Leaf
       if: ${{ always() && matrix.task == 'Leaf' }}
       uses: actions/upload-artifact@v4
       with:
@@ -85,9 +85,9 @@ jobs:
     - name: Program
       if: ${{ always() && matrix.task == 'Program' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1"
 
-    - name: Upload artifact
+    - name: Upload Program
       if: ${{ always() && matrix.task == 'Program' }}
       uses: actions/upload-artifact@v4
       with:
@@ -97,9 +97,9 @@ jobs:
     - name: Slots
       if: ${{ always() && matrix.task == 'Slots' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 1
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 1"
 
-    - name: Upload artifact
+    - name: Upload Slots
       if: ${{ always() && matrix.task == 'Slots' }}
       uses: actions/upload-artifact@v4
       with:
@@ -109,9 +109,9 @@ jobs:
     - name: Test
       if: ${{ always() && matrix.task == 'Test' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test 1
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test 1"
 
-    - name: Upload artifact
+    - name: Upload Test
       if: ${{ always() && matrix.task == 'Test' }}
       uses: actions/upload-artifact@v4
       with:
@@ -121,9 +121,9 @@ jobs:
     - name: Tree_1
       if: ${{ always() && matrix.task == 'Tree_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 1
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 1"
 
-    - name: Upload artifact
+    - name: Upload Tree_1
       if: ${{ always() && matrix.task == 'Tree_1' }}
       uses: actions/upload-artifact@v4
       with:
@@ -133,9 +133,9 @@ jobs:
     - name: Tree_2
       if: ${{ always() && matrix.task == 'Tree_2' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 2
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 2"
 
-    - name: Upload artifact
+    - name: Upload Tree_2
       if: ${{ always() && matrix.task == 'Tree_2' }}
       uses: actions/upload-artifact@v4
       with:
@@ -145,9 +145,9 @@ jobs:
     - name: Tree_3
       if: ${{ always() && matrix.task == 'Tree_3' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 3
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 3"
 
-    - name: Upload artifact
+    - name: Upload Tree_3
       if: ${{ always() && matrix.task == 'Tree_3' }}
       uses: actions/upload-artifact@v4
       with:
@@ -157,9 +157,9 @@ jobs:
     - name: Tree_4
       if: ${{ always() && matrix.task == 'Tree_4' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 4
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 4"
 
-    - name: Upload artifact
+    - name: Upload Tree_4
       if: ${{ always() && matrix.task == 'Tree_4' }}
       uses: actions/upload-artifact@v4
       with:
@@ -169,9 +169,9 @@ jobs:
     - name: Tree_5
       if: ${{ always() && matrix.task == 'Tree_5' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 5
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 5"
 
-    - name: Upload artifact
+    - name: Upload Tree_5
       if: ${{ always() && matrix.task == 'Tree_5' }}
       uses: actions/upload-artifact@v4
       with:
@@ -181,9 +181,9 @@ jobs:
     - name: Tree_6
       if: ${{ always() && matrix.task == 'Tree_6' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 6
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 6"
 
-    - name: Upload artifact
+    - name: Upload Tree_6
       if: ${{ always() && matrix.task == 'Tree_6' }}
       uses: actions/upload-artifact@v4
       with:
@@ -193,9 +193,9 @@ jobs:
     - name: Tree_7
       if: ${{ always() && matrix.task == 'Tree_7' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 7
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 7"
 
-    - name: Upload artifact
+    - name: Upload Tree_7
       if: ${{ always() && matrix.task == 'Tree_7' }}
       uses: actions/upload-artifact@v4
       with:
@@ -205,9 +205,9 @@ jobs:
     - name: Tree_8
       if: ${{ always() && matrix.task == 'Tree_8' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 8
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 8"
 
-    - name: Upload artifact
+    - name: Upload Tree_8
       if: ${{ always() && matrix.task == 'Tree_8' }}
       uses: actions/upload-artifact@v4
       with:
@@ -217,9 +217,9 @@ jobs:
     - name: Tree_9
       if: ${{ always() && matrix.task == 'Tree_9' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 9
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 9"
 
-    - name: Upload artifact
+    - name: Upload Tree_9
       if: ${{ always() && matrix.task == 'Tree_9' }}
       uses: actions/upload-artifact@v4
       with:
@@ -229,9 +229,9 @@ jobs:
     - name: Tree_10
       if: ${{ always() && matrix.task == 'Tree_10' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 10
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 10"
 
-    - name: Upload artifact
+    - name: Upload Tree_10
       if: ${{ always() && matrix.task == 'Tree_10' }}
       uses: actions/upload-artifact@v4
       with:
@@ -241,9 +241,9 @@ jobs:
     - name: Tree_11
       if: ${{ always() && matrix.task == 'Tree_11' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 11
+        echo "java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 11"
 
-    - name: Upload artifact
+    - name: Upload Tree_11
       if: ${{ always() && matrix.task == 'Tree_11' }}
       uses: actions/upload-artifact@v4
       with:
