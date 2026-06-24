@@ -1,4 +1,4 @@
-# Test 2026-06-24 at 16:17:24
+# Test 2026-06-24 at 16:31:52
 
 name: Test
 run-name: btreeList
@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         task: [BitSet, Branch, Leaf, Program, Slots, Test, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11]
 
