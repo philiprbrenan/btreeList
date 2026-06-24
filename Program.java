@@ -527,8 +527,7 @@ public class Program extends Test                                               
     Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    //N Say the boolean
 
     void jtrace ()                                                                                                      // Trace the execution of a boolean operation
-     {//if (javaTrace)
-       appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));
+     {if (javaTrace()) appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));
      }
 
     Bool ok (Boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
@@ -860,8 +859,7 @@ public class Program extends Test                                               
     Int say ()  {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                                  // Say the integer
 
     void jtrace ()                                                                                                      // Trace the execution of an integer operation
-     {//if (javaTrace)
-       appendFile(javaTraceFile(), f("%8d i %8d = %8d\n",  program().currentPc, id, i));
+     {if (javaTrace()) appendFile(javaTraceFile(), f("%8d i %8d = %8d\n",  program().currentPc, id, i));
      }
 
     Int ok (Integer Value)                                                                                              // Check the integer
@@ -957,13 +955,7 @@ public class Program extends Test                                               
     private byte getByte (int I)                                                                                        // Get the value of a byte
      {final byte b = bytes[I];
       final int  B = b < 0 ? 256+(int)b : (int)b;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
-      if (javaTrace)                                                                                                    // Trace the get
-       {appendFile(javaTraceFile(), f("%8d r %8d = %8d  %s\n", program().currentPc, I, B, n()));
-       }
-      else
-       {final int n = program().currentPc;
-        //if (n >= 37140 && n <= 37150) appendFile(javaTraceFile(), f("RR %8d r %8d = %8d  %s\n", n, I, B, n()));
-       }
+      if (javaTrace()) appendFile(javaTraceFile(), f("%8d r %8d = %8d  %s\n", program().currentPc, I, B, n()));         // Trace the get
       return b;                                                                                                         // Get the value of a byte
      }
 
@@ -972,9 +964,8 @@ public class Program extends Test                                               
       final int  A = a < 0 ? 256+(int)a : (int)a;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
       final int  B = b < 0 ? 256+(int)b : (int)b;
       bytes[I] = b;                                                                                                     // Set the value of a byte from an integer
-      if (javaTrace)                                                                                                    // Trace the write
-       {appendFile(javaTraceFile(), f("%8d w %8d %8d < %8d  %s\n", program().currentPc, I, A, B, n()));
-       }
+      if (javaTrace()) appendFile(javaTraceFile(), f("%8d w %8d %8d < %8d  %s\n", program().currentPc, I, A, B, n()));  // Trace the write
+
      }
 
     ByteMemory copy (ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
@@ -1074,8 +1065,6 @@ public class Program extends Test                                               
           final int b = Byte.toUnsignedInt(getByte(p+1)) <<  8;
           final int a = Byte.toUnsignedInt(getByte(p+0)) <<  0;
           final int R = d | c | b | a;
-Test.say("CCCC11", currentPc);
-if (currentPc >= 74220 && currentPc <= 74230) Test.say("CCCC22", codeSize());
           r.ex(Int.Ops.set, R);
          }
         String v()
@@ -1095,7 +1084,6 @@ if (currentPc >= 74220 && currentPc <= 74230) Test.say("CCCC22", codeSize());
       final int b = Byte.toUnsignedInt(getByte(I+1)) <<  8;
       final int c = Byte.toUnsignedInt(getByte(I+2)) << 16;
       final int d = Byte.toUnsignedInt(getByte(I+3)) << 24;
-if(codeSize() >= 74220 && codeSize() <= 74230) Test.say("EEEE", codeSize());
       return d | c | b | a;
      }
 
@@ -1243,11 +1231,12 @@ if(codeSize() >= 74220 && codeSize() <= 74230) Test.say("EEEE", codeSize());
   void Check (StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} };}     // Test the supplied content against the specified string, print the actual output area contents and stop
 
   String verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                                // Folder for this test using Verilog
-  String verilogTraceFile ( ) {return fn(verilogTestFolder(), verilogTraceFile);}                                       // Verilog trace file
-  String    javaTraceFile ( ) {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
-  String VerilogCodeFile (  ) {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
+  String verilogTraceFile ()  {return fn(verilogTestFolder(), verilogTraceFile);}                                       // Verilog trace file
+  String    javaTraceFile ()  {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
+  String VerilogCodeFile ()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
 
   void suppressJavaTracingForOneInstruction () {program().javaTrace = false;}                                           // Suppress java tracing for the rest of the current instruction
+  boolean javaTrace () {return program().javaTrace;}                                                                    // Java tracing status
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
@@ -1736,8 +1725,8 @@ endfunction
             Continue.set();
            }
          };
-        ok(()->i, 5);
-        ok(()->i.v, true);
+        i.ok(5);
+        i.valid().ok(true);
        }
      };
     P.execute();
