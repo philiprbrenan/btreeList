@@ -1242,6 +1242,8 @@ public class Program extends Test                                               
   void suppressJavaTracingForOneInstruction () {program().javaTrace = false;}                                           // Suppress java tracing for the rest of the current instruction
   boolean javaTrace () {return program().javaTrace;}                                                                    // Java tracing status
 
+  static boolean rtg(int i) {return testGroup == null || testGroup.equals(""+i);}                                              // Whether to run the indicated test group
+
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
 //D2 Instruction                                                                                                        // An instruction represents code to be executed by a process in a single clock cycle == process step
