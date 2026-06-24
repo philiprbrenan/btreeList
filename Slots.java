@@ -2362,30 +2362,30 @@ keys     :    0   0   0   0
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_slots();
-    test_locateNearestFreeSlotToKey();
-    test_alloc();
-    test_set_del_slot_key();
-    test_compact();
-    test_redistribute();
-    test_shift();
-    test_mergeFromRightEven();
-    test_mergeFromLeftEven();
-    test_mergeFromRightOdd();
-    test_mergeFromLeftOdd();
-    test_find();
-    test_findRight();
-    test_insert();
-    test_insert2();
-    test_findGe();
-    test_splitRightEven();
-    test_splitLeftEven();
-    test_splitRightOdd();
-    test_splitLeftOdd();
-    test_clear();
+   {if (rtg( 1)) test_slots();
+    if (rtg( 2)) test_locateNearestFreeSlotToKey();
+    if (rtg( 3)) test_alloc();
+    if (rtg( 4)) test_set_del_slot_key();
+    if (rtg( 5)) test_compact();
+    if (rtg( 6)) test_redistribute();
+    if (rtg( 7)) test_shift();
+    if (rtg( 8)) test_mergeFromRightEven();
+    if (rtg( 9)) test_mergeFromLeftEven();
+    if (rtg(10)) test_mergeFromRightOdd();
+    if (rtg(11)) test_mergeFromLeftOdd();
+    if (rtg(12)) test_find();
+    if (rtg(13)) test_findRight();
+    if (rtg(14)) test_insert();
+    if (rtg(15)) test_insert2();
+    if (rtg(16)) test_findGe();
+    if (rtg(17)) test_splitRightEven();
+    if (rtg(18)) test_splitLeftEven();
+    if (rtg(19)) test_splitRightOdd();
+    if (rtg(20)) test_splitLeftOdd();
+    if (rtg(21)) test_clear();
+    if (rtg(22)) test_insertKnown();
+    if (rtg(23)) test_delete();
 //  test_stuck();
-    test_insertKnown();
-    test_delete();
    }
 
   static void newTests()                                                                                                // Tests being worked on
@@ -2394,7 +2394,8 @@ keys     :    0   0   0   0
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
-   {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
+   {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
+    try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
