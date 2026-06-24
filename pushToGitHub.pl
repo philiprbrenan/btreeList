@@ -138,7 +138,7 @@ END
        $y .= <<END;
 
     - name: $N
-      if: \${{ always() && matrix.task == '$N' }}
+      if: \${{             matrix.task == '$N' }}
       run: |
         java -XX:+UseZGC -cp Classes $c/$C $G
 
