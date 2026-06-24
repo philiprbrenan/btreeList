@@ -139,12 +139,7 @@ class Slots extends Program                                                     
 
   Bool empty ()                            {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
   Bool full ()                             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Int  count ()                            {
-say("BBBB1111", codeSize());
-    final Int c = refCount.getInt();                                                  // The computed number of keys in the slots
-say("BBBB2222", codeSize());
-    return c;
-   }                                                  // The computed number of keys in the slots
+  Int  count ()                            {return refCount.getInt();}                                                  // The computed number of keys in the slots
   void count (Int N)                       {refCount.putInt(N);}                                                        // Set the computed number of keys in the slots
   void countClear ()                       {refCount.putInt(new Int(0));}                                               // Clear the count
   void countInc ()                         {refCount.putInt(refCount.getInt().inc());}                                  // Increment the key count
@@ -571,9 +566,7 @@ say("BBBB2222", codeSize());
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
     final Int     lc = left .count();                                                                                   // Count on left
-say("AAAA1111", codeSize());
     final Int     rc = Right.count();                                                                                   // Count on right
-say("AAAA2222", codeSize());
     final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
 
     new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
@@ -1009,7 +1002,7 @@ say("AAAA2222", codeSize());
 //D2 Print                                                                                                              // Print the slots
 
   public String toString ()                                                                                             // Dump the slots
-   {javaTrace = false;                                                                                                  // Do not trace printing
+   {suppressJavaTracingForOneInstruction();                                                                             // Do not trace printing
     final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlotsToKeys());
     final int[]R = range(numberOfKeys());
