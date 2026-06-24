@@ -139,9 +139,9 @@ END
     - name: $N
       if: \${{ always() && matrix.task == '$N' }}
       run: |
-        java -XX:+UseZGC -cp Classes $c/$C $G
+        echo "java -XX:+UseZGC -cp Classes $c/$C $G"
 
-    - name: Upload artifact
+    - name: Upload $N
       if: \${{ always() && matrix.task == '$N' }}
       uses: actions/upload-artifact\@v4
       with:
