@@ -139,7 +139,7 @@ END
     - name: $N
       if: \${{ always() && matrix.task == '$N' }}
       run: |
-        echo "java -XX:+UseZGC -cp Classes $c/$C $G"
+        java -XX:+UseZGC -cp Classes $c/$C $G
 
     - name: Upload $N
       if: \${{ always() && matrix.task == '$N' }}
@@ -149,7 +149,6 @@ END
         path: verilog/$F
 END
   }
-say STDERR "AAAA $T";
   my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
   lll "$f  Ubuntu work flow for $repo";
  }
