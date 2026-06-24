@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Machine level programming in  Java
+// Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Make private:  maxSteps, dumpMemoryEvery
