@@ -1786,22 +1786,22 @@ Leaf           size:   4, count:   2
 
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {if (testGroup == null || testGroup.equals("1"))  test_tree();
-    if (testGroup == null || testGroup.equals("2"))  test_saveReload();
-    if (testGroup == null || testGroup.equals("3"))  test_insert();
-    if (testGroup == null || testGroup.equals("4"))  test_insertMerged();
-    if (testGroup == null || testGroup.equals("5"))  test_insertReverse();
-    if (testGroup == null || testGroup.equals("6"))  test_insertRandom32();
-    if (testGroup == null || testGroup.equals("7"))  test_deleteAscending();
-    if (testGroup == null || testGroup.equals("8"))  test_deleteDescending();
-    if (testGroup == null || testGroup.equals("9"))  test_deleteRandom32();
-    if (testGroup == null || testGroup.equals("10")) test_update();
-    if (testGroup == null || testGroup.equals("11")) test_find();
+   {if (rtg( 1)) test_tree();
+    if (rtg( 2)) test_saveReload();
+    if (rtg( 3)) test_insert();
+    if (rtg( 4)) test_insertMerged();
+    if (rtg( 5)) test_insertReverse();
+    if (rtg( 6)) test_insertRandom32();
+    if (rtg( 7)) test_deleteAscending();
+    if (rtg( 8)) test_deleteDescending();
+    if (rtg( 9)) test_deleteRandom32();
+    if (rtg(10)) test_update();
+    if (rtg(11)) test_find();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_tree(!true);
+    test_find(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
