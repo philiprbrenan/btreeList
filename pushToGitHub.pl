@@ -19,6 +19,7 @@ my $shaFile = fpe $folder, q(sha);                                              
 my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu - compile and test
 my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
+my %tasks   = (Tree=>11);                                                                                               # Number of tasks for each component - default is one
 my $exclude = q(xxx);                                                                                                   # Java files to exclude from testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
@@ -27,13 +28,13 @@ say STDERR timeStamp,  " push to github $repo";
 my @files = searchDirectoryTreesForMatchingFiles($folder, @ext);                                                        # Files to upload
 my @java  = grep {!m($exclude)} grep {fe($_) =~ m(java)is} @files;                                                      # Java files minus excluded files
    @files = changedFiles $shaFile, @files;                                                                              # Filter out files that have not changed
+
 if (!@files)                                                                                                            # No new files
  {say "Everything up to date";
   exit;
  }
 
-
-if  (1)                                                                                                                 # Upload via github crud
+if (1)                                                                                                                  # Upload via github crud
  {for my $s(@files)                                                                                                     # Upload each selected file
    {my $c = $s =~ m(\.(java|perl)\Z) ? readFile($s) : readBinaryFile $s;                                                # Source files might have unicode utf8, other files are binary
 
@@ -63,11 +64,20 @@ if (rand() < 0.1)                                                               
 
 
 if (@java)                                                                                                              # Write workflow to test java files
- {my @j = map {fn $_} @java;                                                                                            # Java files
+ {my @j = map {fn $_} @java;                                                                                            # Java class names from files
   my $d = dateTimeStamp;
   my $c = q(com/AppaApps/Silicon);                                                                                      # Package to classes folder
   my $j = join ', ', @j;                                                                                                # Java files without extension with separating commas
   my $J = join ' ', map {"$_.java"} @j;                                                                                 # Java files with extension without separating commas
+
+  my @t;                                                                                                                # Tasks
+  for my $j(@j)
+   {my $r = $tasks{$j} // 1;
+    my $s = $r == 1;                                                                                                    # Single group of tests
+    push @t, {class=>$j, group=>$_, name=>($s ? $j : "${j}_$_"), folder=>fpd($s ? ($j) : ($j, $_))} for 1..$r;          # Details of a task
+   }
+  my $T = join " ", map {$$_{name}} @t;                                                                                 # Task names as a string
+
   my $y = <<"END";
 # Test $d
 
@@ -91,7 +101,7 @@ jobs:
 
     strategy:
       matrix:
-        task: [$j]
+        task: [$T]
 
     steps:
     - uses: actions/checkout\@v4
@@ -118,30 +128,27 @@ jobs:
         javac -g -d Classes -cp Classes $c/*.java
 END
 
-  for my $j(@j)                                                                                                         # Java files
-   {my $z = "$j-verilog";
-    $y .= <<END;
+  for my $t(@t)                                                                                                         # Tasks
+   {my $C  = $$t{class};
+    my $F  = $$t{folder};
+    my $G  = $$t{group};
+    my $N  = $$t{name};
 
-    - name: Test $j
-      if: \${{ always() && matrix.task == '$j' }}
-      run: |
-        java -XX:+UseZGC -cp Classes $c/$j
+       $y .= <<END;
 
-    - name: Zip files
-      if: \${{ always() && matrix.task == '$j' }}
+    - name: $N
+      if: \${{ always() && matrix.task == '$N' }}
       run: |
-        mv verilog/ $z/
-        zip -r $z.zip $z/
+        java -XX:+UseZGC -cp Classes $c/$C $G
 
     - name: Upload artifact
-      if: \${{ always() && matrix.task == '$j' }}
+      if: \${{ always() && matrix.task == '$N' }}
       uses: actions/upload-artifact\@v4
       with:
-        name: $z
-        path: $z.zip
+        name: $N
+        path: verilog/$F
 END
   }
-
   my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
   lll "$f  Ubuntu work flow for $repo";
  }
