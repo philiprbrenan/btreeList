@@ -1664,18 +1664,17 @@ Zero:
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
-   {test_prevNext();
-    test_prevNext01();
-    test_prevNext10();
-    test_oneZero();
-    test_fullEmpty();
-    test_count();
-    test_powerPosOneZero();
-    test_twoOrMoreOnes();
-    test_limits();
-    test_lowHighZero();
-    test_4();
-
+   {if (rtg( 1)) test_prevNext();
+    if (rtg( 2)) test_prevNext01();
+    if (rtg( 3)) test_prevNext10();
+    if (rtg( 4)) test_oneZero();
+    if (rtg( 5)) test_fullEmpty();
+    if (rtg( 6)) test_count();
+    if (rtg( 7)) test_powerPosOneZero();
+    if (rtg( 8)) test_twoOrMoreOnes();
+    if (rtg( 9)) test_limits();
+    if (rtg(10)) test_lowHighZero();
+    if (rtg(11)) test_4();
    }
 
   static void newTests()                                                                                                // Tests under development.
@@ -1683,7 +1682,8 @@ Zero:
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
-   {try                                                                                                                 // Protected execution block.
+   {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
+    try                                                                                                                 // Protected execution block.
      {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Select tests.
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Optional coverage analysis.
