@@ -31,6 +31,7 @@ public class Program extends Test                                               
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
+  static String                                testGroup = null;                                                        // Tests can be split into groups so that they can be run in parallel
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
@@ -1230,7 +1231,10 @@ public class Program extends Test                                               
   void check (StringBuilder G, String E) {new I() {void a() {     Test.ok(nws(G), nws(E))                    ;} };}     // Test the supplied content against the specified string, then clear the output area ready for the next report
   void Check (StringBuilder G, String E) {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} };}     // Test the supplied content against the specified string, print the actual output area contents and stop
 
-  String verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                                // Folder for this test using Verilog
+  String verilogTestFolder ()                                                                                           // Folder for this test using Verilog
+   {final String   f =  fp(verilogFolder, currentTestNameSuffix());                                                     // Normal folder name
+    return testGroup == null ? f : fp(f, testGroup);                                                                    // Folder name with test group appended if testing in groups
+   }
   String verilogTraceFile ()  {return fn(verilogTestFolder(), verilogTraceFile);}                                       // Verilog trace file
   String    javaTraceFile ()  {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
   String VerilogCodeFile ()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
