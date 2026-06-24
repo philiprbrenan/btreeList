@@ -1567,8 +1567,7 @@ usedSlots:    .   .   .   .   .   X   .   .   X   .
 usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
-say("AAAA", r.code.size());
-//        l.mergeFromRightOdd(r, new Int(3)).ok(true);
+        l.mergeFromRightOdd(r, new Int(3)).ok(true);
 //
 //        //new I() {void a() {testStop(l); }};
 //        //new I() {void a() {testStop(r); }};
