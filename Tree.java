@@ -225,8 +225,8 @@ class Tree extends Program                                                      
        {new If(isAllocated(Index))
          {void Then()
            {new If (isLeaf(Index))
-             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {s.append(t);} };}
-              void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {s.append(t);} };}
+             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(t);}};}
+              void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(t);}};}
              };
            }
          };
@@ -275,9 +275,9 @@ class Tree extends Program                                                      
     public String toString()                                                                                            // Print the find results
      {subStart("Tree.toString");
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {s.append("Find : "+key+" "+valid+"\n");} };
+      new I() {void a() {suppressJavaTracingForOneInstruction(); s.append("Find : "+key+" "+valid+"\n");} };
       final StringBuilder l = leaf(leaf).print();
-      new I() {void a() {s.append(l);}                             };
+      new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(l);}                             };
       subFinish();
       return ""+s;
      }
@@ -448,15 +448,15 @@ class Tree extends Program                                                      
     StringBuilder print()                                                                                               // Print the path
      {subStart("Tree.print");
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {s.setLength(0);                    } };
-      new I() {void a() {s.append("Path: "+step+" steps: ");} };
+      new I() {void a() {suppressJavaTracingForOneInstruction(); s.setLength(0);                    } };
+      new I() {void a() {suppressJavaTracingForOneInstruction(); s.append("Path: "+step+" steps: ");} };
       new ForCount(step)
        {void body(Int Index)
          {final Int v = path.getInt(Index);
           new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(" "+v.i());}};
          }
        };
-      new I() {void a() {s.append(" "+leaf+" "+split+"\n"); } };
+      new I()     {void a() {suppressJavaTracingForOneInstruction(); s.append(" "+leaf+" "+split+"\n"); } };
       subFinish();
       return s;
      }
@@ -961,7 +961,8 @@ class Tree extends Program                                                      
 
           new I()                                                                                                       // Place in output area
            {void a()
-             {final int d = BC.Depth.i() * linesToPrintABranch;
+             {suppressJavaTracingForOneInstruction();
+              final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
               P.elementAt(d).append(""+K.i());                                                                          // Write key into output area
 
@@ -993,7 +994,8 @@ class Tree extends Program                                                      
 
           new I()                                                                                                       // Place in output area
            {void a()
-             {final int d = BC.Depth.i() * linesToPrintABranch;
+             {suppressJavaTracingForOneInstruction();
+              final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
 
               if (Context)                                                                                              // Context requested
@@ -1028,7 +1030,8 @@ class Tree extends Program                                                      
      {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
       new I()
        {void a()
-         {clearStringBuilder(t);
+         {suppressJavaTracingForOneInstruction();
+          clearStringBuilder(t);
           pad(0);
           for  (StringBuilder s : P)
            {final String l = ""+s;
@@ -1340,7 +1343,10 @@ Leaf   at:   2 size:   4, count:   4
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int k = t.new Int();
-        t.new I() {void a() {k.ex(Int.Ops.set, random_32[Index.i()]);} };
+        t.new I()
+         {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
+          String v() {return k.ev(Int.Ops.set, random_32[Index.i()]);}
+         };
         t.insert(k, Index);
        }
      };
