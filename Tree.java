@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Set all fields private that can be set private  etc.
 // Fix comments
+// Continue with subStart to eliminate all "not in a sub" messages and then locate any for loops that are being unrolled to create excessive amounts of code
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -242,7 +243,7 @@ class Tree extends Program                                                      
 
 //D1 Find, Insert, Delete                                                                                               // Find, insert and delete
 
-  Bint find(Int Key)                                                                                                    // Find the data associated with the specified key in the tree
+  Bint find (Int Key)                                                                                                   // Find the data associated with the specified key in the tree
    {subStart("Tree.find");
     final FindLeaf l = findLeaf(Key);                                                                                   // Find leaf that should contain the key
     final Bint  data = new Bint();
