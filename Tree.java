@@ -417,17 +417,31 @@ class Tree extends Program                                                      
 
       new ForCount(step)                                                                                                // Start at branch immediately above the leaf and work upwards
        {void body(Int Index)
-         {final Int    i = step.Sub(Index).dec();                                                                       // Index of parent branch that contains the split siblings
-          final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
+         {final Int             i = step.Sub(Index).dec();                                                              // Index of parent branch that contains the split siblings
+          final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
-          mergeLeftLeft(  p, d.slot);                                                                                   // Various merges possible on either side of the path
-say("DDDD2222", codeSize());
-          mergeRightRight(p, d.slot);
-say("DDDD3333", codeSize());
-          mergeLeft(      p, d.slot);
-say("DDDD4444", codeSize());
-          mergeRight(     p, d.slot);
-say("DDDD5555", codeSize());
+          final Bint            L = new Bint();
+          new ForCount(new Int(4))
+           {void body(Int Index)
+             {new If (Index.eq(0))
+               {void Then()                                 {L.copy(mergeLeftLeft(  p, d.slot));}
+                void Else()
+                 {new If (Index.eq(1))
+                   {void Then()                             {L.copy(mergeRightRight(p, d.slot));}
+                    void Else()
+                     {new If (Index.eq(2))
+                       {void Then()                         {L.copy(mergeLeft(      p, d.slot));}
+                        void Else()
+                         {new If (Index.eq(3)) {void Then() {L.copy(mergeLeft(      p, d.slot));}};
+                         }
+                       };
+                     }
+                   };
+                 }
+               };
+             }
+           };
+          new If (L) {void Then() {mergeLeftIntoRightSibling(p, L.i());}};
          }
        };
 
@@ -652,7 +666,7 @@ say("DDDD5555", codeSize());
     subFinish();
     return m;                                                                                                           // Whether the merge succeeded
    }
-// Before 500K instructions in total  254K
+
   Bool mergeLeftIntoRightSibling (Branch Parent, Int Left)                                                              // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
    {subStart("Tree.mergeLeftIntoRightSibling");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
@@ -681,25 +695,23 @@ say("DDDD5555", codeSize());
     return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bool mergeLeft (Branch Parent, Bint Pos)                                                                              // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+  Bint mergeLeft (Branch Parent, Bint Pos)                                                                              // Merge into the specified sibling, referenced as a slot, from its left hand sibling and remove the left hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
    {subStart("Tree.mergeLeft");
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
-    final Bint   L  = new Bint();                                                                                       // Left child
+    final Bint   L = new Bint();                                                                                        // Left child
     new If (Pos)                                                                                                        // Merging relative to top
      {void Then() {L.copy(P.slots.usedSlotsToKeys.prevOne(Pos.i()));}                                                   // Merge entirely within body of parent
       void Else() {L.copy(P.slots.usedSlotsToKeys.lastOne());}                                                          // Last child in body of parent to be merged into top
      };
-    new If (L) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L.i()));}};                                        // Left of left of position is valid so we can merge
     subFinish();
-    return m;                                                                                                           // Whether the merge was performed or not
+    return L;                                                                                                           // Whether the merge was performed or not
    }
 
-  Bool mergeLeftLeft (Branch Parent, Bint Pos)                                                                          // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
+  Bint mergeLeftLeft (Branch Parent, Bint Pos)                                                                          // Merge into the left hand sibling of the specified sibling from the left hand sibling of the left hand sibling of the specified sibling if this is possible. The specified position is the slot number of the key relative to which to merge. If the specified position is invalid top is assumed
    {subStart("mergeLeftLeft");
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
     final Bint   R = new Bint();                                                                                        // Right child of merge
+    final Bint   L = new Bint();                                                                                        // Left child
 
     new If (Pos)                                                                                                        // Merging relative to top
      {void Then() {R.copy(P.slots.usedSlotsToKeys.prevOne(Pos.i()));}                                                   // Merge entirely within body of parent
@@ -708,38 +720,28 @@ say("DDDD5555", codeSize());
 
     new If (R.valid())                                                                                                  // There is a left position
      {void Then()
-       {final Bint L = P.slots.usedSlotsToKeys.prevOne(R.i());                                                          // Left of left of position
-        new If (L) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L.i()));}};                                    // Left of left of position is valid so we can merge
+       {L.copy(P.slots.usedSlotsToKeys.prevOne(R.i()));                                                                 // Left of left of position
        }
      };
     subFinish();
-    return m;                                                                                                           // Whether the merge was performed or not
+    return L;                                                                                                           // Whether the merge was performed or not
    }
 
 //D3 Merge Right                                                                                                        // Merge single and double right
 
-  Bool mergeRight (Branch Parent, Bint Pos)                                                                             // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
-   {subStart("Tree.mergeRight");
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
-    final Branch P = Parent;                                                                                            // Parent containing siblings
-    new If (Pos) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, Pos.i()));}};                                    // If not on the top element merge right sibling into right of right sibling
-    subFinish();
-    return m;                                                                                                           // Whether the merge was performed or not
-   }
+  Bint mergeRight (Branch Parent, Bint Pos) {return Pos;}                                                               // Merge the specified sibling into its right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
 
-  Bool mergeRightRight (Branch Parent, Bint Pos)                                                                        // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
+  Bint mergeRightRight (Branch Parent, Bint Pos)                                                                        // Merge the right hand sibling of the specified sibling with the right hand sibling of the right hand sibling if this is possible. The specified position is the slot number of the key relative to which to merge.
    {subStart("Tree.mergeRightRight");
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
-    final Branch P = Parent;                                                                                            // Parent containing siblings
+    final Bint L = new Bint();                                                                                          // Left child
 
     new If (Pos.valid())                                                                                                // Not on top
      {void Then()
-       {final Bint L = P.slots.usedSlotsToKeys.nextOne(Pos.i());                                                        // Right once
-        new If (L) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L.i()));}};                                    // There is a right sibling
+       {L.copy(Parent.slots.usedSlotsToKeys.nextOne(Pos.i()));                                                          // Right once
        }
      };
     subFinish();
-    return m;                                                                                                           // Whether the merge was performed or not
+    return L;                                                                                                           // Whether the merge was performed or not
    }
 
 //D2 Traverse the tree                                                                                                  // Traverse the tree in order
