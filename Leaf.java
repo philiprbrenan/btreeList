@@ -240,7 +240,9 @@ class Leaf extends Program implements Program.Locatable                         
 //D1 Print                                                                                                              // Print the leaf
 
   StringBuilder print ()                                                                                                // Print a leaf
-   {final StringBuilder s = new StringBuilder();
+   {subStart("Leaf.print");
+    suppressJavaTracingStart();                                                                                         // Do not trace printing
+    final StringBuilder s = new StringBuilder();
     new I() {void a() {s.setLength(0); s.append(f("Leaf  "));}   };
     final Bint l = getLocation();
 
@@ -265,8 +267,7 @@ class Leaf extends Program implements Program.Locatable                         
 
     new I()                                                                                                             // Key/Data pairs in key order
      {void a()
-       {suppressJavaTracingForOneInstruction();
-        s.append(f(" size: %3d, count: %3d\n", maxSize(), c.i()));
+       {s.append(f(" size: %3d, count: %3d\n", maxSize(), c.i()));
         s.append(" Ref   Key  Data\n");
 
         for (int i : range(slots.numberOfSlotsToKeys()))
@@ -280,6 +281,8 @@ class Leaf extends Program implements Program.Locatable                         
        }
 
      };
+    suppressJavaTracingFinish();                                                                                        // Resume tracing
+    subFinish();
     return s;
    }
 
