@@ -224,7 +224,7 @@ class Leaf extends Program implements Program.Locatable                         
    {final Bint f = slots.usedSlotsToKeys.firstOne();
     new If (f.valid())
      {void Then()
-       {new For(maxSize)
+       {new For(new Int(maxSize))
          {void body(Int Index, Bool Continue)
            {final Int i = f.i();
             final Int k = slots.getSlotToKeyValue(i), d = data(slots.getSlotToKeyIndex(i));
