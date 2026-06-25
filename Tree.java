@@ -421,9 +421,13 @@ class Tree extends Program                                                      
           final Branch p = branch(path.getInt(i));                                                                      // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
           mergeLeftLeft  (p, d.slot);                                                                                   // Various merges possible on either side of the path
+say("DDDD2222", codeSize());
           mergeRightRight(p, d.slot);
+say("DDDD3333", codeSize());
           mergeLeft      (p, d.slot);
+say("DDDD4444", codeSize());
           mergeRight     (p, d.slot);
+say("DDDD5555", codeSize());
          }
        };
 
@@ -560,7 +564,7 @@ class Tree extends Program                                                      
     subFinish();
    }
 
-  public Int delete(Int Key)                                                                                            // Delete a key from the tree and return the associated data if the key was present in the tree
+  public Int delete (Int Key)                                                                                           // Delete a key from the tree and return the associated data if the key was present in the tree
    {subStart("Tree.delete");
     final Int data = new Int();                                                                                         // Data associated with key if the key is present in the tree
     new If (isRootLeaf())
@@ -581,9 +585,14 @@ class Tree extends Program                                                      
         final Slots.Find f = l.slots.find(Key);                                                                         // Search for key in root
         new If (f.equal)
          {void Then()                                                                                                   // Key exists in leaf
-           {data.set(l.data(l.slots.getSlotToKeyValue(f.slot.i())));                                                    // Data associated with key
+           {
+say("BBBB1111", codeSize());
+            data.set(l.data(l.slots.getSlotToKeyValue(f.slot.i())));                                                    // Data associated with key
+say("BBBB2222", codeSize());
             l.slots.delete(f.slot.i());                                                                                 // Remove key from leaf in tree tree
+say("BBBB3333", codeSize());
             p.mergeUp();                                                                                                // Merge leaf and nodes above
+say("BBBB4444", codeSize());
             countDec();                                                                                                 // Count deleted key
            }
          };
@@ -648,37 +657,29 @@ class Tree extends Program                                                      
     subFinish();
     return m;                                                                                                           // Whether the merge succeeded
    }
-
+// Before 500K instructions in total  254K
   Bool mergeLeftIntoRightSibling(Branch Parent, Int Left)                                                               // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
    {subStart("Tree.mergeLeftIntoRightSibling");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
+    final Int    l = new Int();                                                                                         // Next sibling location
+    final Bint   R = P.slots.usedSlotsToKeys.nextOne(Left);                                                             // Right sibling via next valid slot
     new If (isLeaf(P.top()))                                                                                            // Root has leaves for children
      {void Then()
-       {final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
-        new If (R)                                                                                                      // Next slot exists and so references the right sibling
-         {void Then()
-           {final Leaf r = leaf(P.data(P.slots.getSlotToKeyIndex(R.i())));                                              // Right leaf of merge
-            m.set(mergeLeftLeafIntoRightSibling(P, Left, r));                                                           // Merge
-           }
-          void Else()                                                                                                   // Next sibling is top
-           {final Leaf r = leaf(P.top());                                                                               // Right leaf of merge
-            m.set(mergeLeftLeafIntoRightSibling(P, Left, r));                                                           // Merge
-           }
+       {new If (R)                                                                                                      // Next slot exists and so references the right sibling
+         {void Then() {l.set(P.data(P.slots.getSlotToKeyIndex(R.i())));}
+          void Else() {l.set(P.top());}
          };
+        m.set(mergeLeftLeafIntoRightSibling(P, Left, leaf(l)));                                                         // Merge sibling leaves
        }
       void Else()                                                                                                       // Merge last two branches
        {final Bint R = P.slots.usedSlotsToKeys.nextOne(Left);                                                           // Right sibling via next valid slot
+
         new If (R)                                                                                                      // Next slot exists and so references the right sibling
-         {void Then()
-           {final Branch r = branch(P.data(P.slots.getSlotToKeyIndex(R.i())));                                          // Right branch of merge
-            m.set(mergeLeftBranchIntoRightSibling(P, Left, r));                                                         // Merge
-           }
-          void Else()                                                                                                   // Next sibling is top
-           {final Branch r = branch(P.top());                                                                           // Right leaf of merge
-            m.set(mergeLeftBranchIntoRightSibling(P, Left, r));                                                         // Merge
-           }
+         {void Then() {l.set(P.data(P.slots.getSlotToKeyIndex(R.i())));}                                                // Next sibling is in the body of the parent
+          void Else() {l.set(P.top());}                                                                                 // Next sibling is top
          };
+        m.set(mergeLeftBranchIntoRightSibling(P, Left, branch(l)));                                                     // Merge sibling branches
        }
      };
     subFinish();
@@ -713,11 +714,7 @@ class Tree extends Program                                                      
     new If (R.valid())                                                                                                  // There is a left position
      {void Then()
        {final Bint L = P.slots.usedSlotsToKeys.prevOne(R.i());                                                          // Left of left of position
-        new If (L)                                                                                                      // Left of left of position is valid so we can merge
-         {void Then()
-           {m.set(mergeLeftIntoRightSibling(Parent, L.i()));                                                            // Merge left of left of top into left of top
-           }
-         };
+        new If (L) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L.i()));}};                                    // Left of left of position is valid so we can merge
        }
      };
     subFinish();
@@ -730,11 +727,7 @@ class Tree extends Program                                                      
    {subStart("Tree.mergeRight");
     final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it was not until we discover otherwise
     final Branch P = Parent;                                                                                            // Parent containing siblings
-    new If (Pos)                                                                                                        // Not on top
-     {void Then()
-       {m.set(mergeLeftIntoRightSibling(Parent, Pos.i()));                                                              // Merge right sibling into right of right sibling
-       }
-     };
+    new If (Pos) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, Pos.i()));}};                                    // If not on the top element merge right sibling into right of right sibling
     subFinish();
     return m;                                                                                                           // Whether the merge was performed or not
    }
@@ -747,11 +740,7 @@ class Tree extends Program                                                      
     new If (Pos.valid())                                                                                                // Not on top
      {void Then()
        {final Bint L = P.slots.usedSlotsToKeys.nextOne(Pos.i());                                                        // Right once
-        new If (L)                                                                                                      // There is a right sibling
-         {void Then()
-           {m.set(mergeLeftIntoRightSibling(Parent, L.i()));                                                            // Merge right into right of right
-           }
-         };
+        new If (L) {void Then() {m.set(mergeLeftIntoRightSibling(Parent, L.i()));}};                                    // There is a right sibling
        }
      };
     subFinish();
@@ -1489,6 +1478,7 @@ Leaf   at:   2 size:   4, count:   4
 """);
 
     t.maxSteps = 9_999_999;
+stop("AAAA", t.codeSize());
     t.execute();
    }
 
@@ -1737,17 +1727,18 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_update(boolean Ex)
    {sayCurrentTestName();
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
-    t.new ForCount(t.new Int(2))
-     {void body(Int I)
-       {t.new ForCount(t.new Int(2))
-         {void body(Int J)
-           {t.insert(J, I);
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex))
+     {void treeBody()
+       {new ForCount(new Int(2))
+         {void body(Int I)
+           {new ForCount(new Int(2))
+             {void body(Int J)
+               {insert(J, I);
+               }
+             };
            }
          };
-       }
-     };
-    t.check(t.dumpTree(), """
+        check(dumpTree(), """
 Tree memory dump
 Leaf   size   :  157
 Branch size   :  125
@@ -1762,9 +1753,10 @@ Leaf           size:   4, count:   2
    0     0     1
    1     1     1
 """);
-
-    t.maxSteps = 9_999_999;
-    t.execute();
+        maxSteps = 9_999_999;
+        execute();
+       }
+     };
    }
 
   static void test_update()
@@ -1812,7 +1804,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload(false);
+    test_deleteAscending(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
