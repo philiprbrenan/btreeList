@@ -39,7 +39,8 @@ public class Program extends Test                                               
   final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
-        boolean                                javaTrace = true;                                                        // Trace java execution if true - can be switched off during printing and other ancillary operations not replicated in the veriog code so that the java trace matches the verilog trace accurately
+  final Stack<Boolean>                 suppressJavaTrace = new Stack<>();                                               // Suppress java tracing if the top most entry exists and is true
+        boolean                                javaTrace = true;                                                        // Whether the execution of the java code should be traced for the current instruction
         Integer                          dumpMemoryEvery = null;                                                        // Dump memory every this many steps if set
 
   final static class Build                                                                                              // Builder for this program
@@ -1243,8 +1244,9 @@ public class Program extends Test                                               
   String    javaTraceFile ()  {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
   String VerilogCodeFile ()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
 
-  void suppressJavaTracingForOneInstruction () {program().javaTrace = false;}                                           // Suppress java tracing for the rest of the current instruction
-  boolean javaTrace () {return program().javaTrace;}                                                                    // Java tracing status
+  boolean javaTrace ()              {return program().javaTrace;}                                                       // Java tracing status for instruction
+  void suppressJavaTracingStart ()  {program().suppressJavaTrace.push(true);}                                           // Suppress java tracing
+  void suppressJavaTracingFinish () {program().suppressJavaTrace.pop();}                                                // Resume tracing if the tracing stack has been emptied
 
   static boolean rtg(int i) {return testGroup == null || testGroup.equals(""+i);}                                       // Whether to run the indicated test group
 
@@ -1255,15 +1257,17 @@ public class Program extends Test                                               
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber;                                                                                        // The number of this instruction
     final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
-    final String traceComment = subGetAsComment(); //immediate() ? null : Test.traceComment();                          // Line at which this instruction was created as a comment
+    final String traceComment = subGetAsComment();                                                                      // Sub during which this instruction was created
+    final boolean javaTrace;                                                                                            // Trace java execution of this instruction if true
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
-    I(Jump Jump)                                                                                                        // Add this instruction to the code for the process
+    I (Jump Jump)                                                                                                       // Add this instruction to the code for the process
      {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
       instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sens in delayed execution mode
       subInc();                                                                                                         // Count the number of instructions associated with each method
       jump = Jump;                                                                                                      // Ability to jump
+      javaTrace = parentProgram.suppressJavaTrace.size() == 0;                                                          // Trace the java execution of the instruction unless explicitly suppressed
       if (immediate()) {parentProgram.executing = this; a(); parentProgram.executing = null;}                           // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
       //if (!immediate() && codeSize() % 100_000 == 1) say("CodeSize", codeSize());
@@ -1272,7 +1276,7 @@ public class Program extends Test                                               
     I () {this(I.Jump.no);}                                                                                             // Add this instruction to the process's code assuming it will not jump
 
     abstract void     a ();                                                                                             // The action to be performed by the instruction
-             String   v () {return appendTraceComments ? "" :  traceComment();};                                        // Generate equivalent verilog with a trace comment
+             String   v () {return appendTraceComments  ? "" :  traceComment();};                                       // Generate equivalent verilog with a trace comment
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
    }
 
@@ -1296,10 +1300,10 @@ public class Program extends Test                                               
      {final I i = code.elementAt(pc);
       try
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
-        executing = i;
-        javaTrace = true;                                                                                               // Trace Java execution unless explicitly disabled by the instruction during execution
-        i.a();
-        executing = null;
+        executing = i;                                                                                                  // Currently executing instruction
+        javaTrace = i.javaTrace;                                                                                        // Trace the execution of the java code implementing this instruction
+        i.a();                                                                                                          // Execute instruction
+        executing = null;                                                                                               // Show no instruction currently being executed
         if (dumpMemoryEvery != null && c > 0 && c % dumpMemoryEvery == 0) dumpMemories();                               // Dump memory periodically to check that there have not been any unexpected changes
        }
       catch(Exception e)
