@@ -432,16 +432,16 @@ class Tree extends Program                                                      
                      {new If (Index.eq(2))
                        {void Then()                         {L.copy(mergeLeft(      p, d.slot));}
                         void Else()
-                         {new If (Index.eq(3)) {void Then() {L.copy(mergeLeft(      p, d.slot));}};
+                         {new If (Index.eq(3)) {void Then() {L.copy(mergeRight(     p, d.slot));}};
                          }
                        };
                      }
                    };
                  }
                };
+              new If (L) {void Then() {mergeLeftIntoRightSibling(p, L.i());}};
              }
            };
-          new If (L) {void Then() {mergeLeftIntoRightSibling(p, L.i());}};
          }
        };
 
@@ -530,12 +530,8 @@ class Tree extends Program                                                      
            }
           void Else()                                                                                                   // Key is not present in the leaf
            {new If (l.full())                                                                                           // The target leaf is full
-             {void Then()
-               {insertFullLeaf(Key, Data);                                                                              // Insert into a tree known to have a branch at the root and a full target leaf for the key
-               }
-              void Else()                                                                                               // Insert a new key into a non full leaf
-               {l.insert(Key, Data);                                                                                    // Insert into non full leaf
-               }
+             {void Then() {insertFullLeaf(Key, Data);}                                                                  // Insert into a tree known to have a branch at the root and a full target leaf for the key
+              void Else() {l.insert(Key, Data);}                                                                        // Insert a new key into a non full leaf
              };
             countInc();                                                                                                 // Count inserted key
            }
@@ -1800,7 +1796,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending(false);
+    test_insertMerged(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
