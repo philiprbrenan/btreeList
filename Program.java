@@ -1426,6 +1426,7 @@ module {name};                                                                  
   reg        reset;                                                                                                     // Reset for chip
   integer    c;                                                                                                         // Count of instructions executed
   integer    pc;                                                                                                        // Program counter for stepping through user code
+  integer    t;                                                                                                         // Trace execution
   integer    index;                                                                                                     // Index for clearing memory
   integer    i[INT_VARS:0];                                                                                             // Integers
   reg        b[BOOL_VARS:0];                                                                                            // Booleans
@@ -1523,7 +1524,7 @@ module {name};                                                                  
 """);
 
     for(I i : code)                                                                                                     // Compile each instruction to Verilog
-     {s.append(f("        %4d: begin %s", i.instructionNumber, i.v()));
+     {s.append(f("        %4d: begin t = %d; %s", i.instructionNumber, i.javaTrace ? 1 : 0, i.v()));                    // Program counter == instruction number, tracing status, instruction code
       if (i.jump == I.Jump.might) s.append(" else");
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
       if (appendTraceComments)    s.append(i.traceComment());
@@ -1578,11 +1579,8 @@ endmodule
     integer file;
     begin
       %s = Value;                                                                                                       // Return value
-      file = $fopen("%s", "a");                                                                                         // Open named trace file
-      if (file == 0) begin
-        $display("ERROR: Cannot open trace file");
-      end
-      else begin
+      if (t) begin
+        file = $fopen("%s", "a");                                                                                         // Open named trace file
         %s
         $fclose(file);
       end
@@ -1652,12 +1650,13 @@ endfunction
   function automatic reg[7:0] getMemory_{memoryId} (input integer Addr);
     integer f;
     begin
-      f = $fopen("{traceFile}", "a");
       getMemory_{memoryId} = {memoryName}[Addr];
 
-      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, getMemory_{memoryId}, "{memoryName}");
-
-      $fclose(f);
+      if (t) begin
+        f = $fopen("{traceFile}", "a");
+        $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, getMemory_{memoryId}, "{memoryName}");
+        $fclose(f);
+      end
     end
   endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -1668,12 +1667,13 @@ endfunction
   function automatic reg getMemoryBool_{memoryId} (input integer Addr, input integer Bit);
     integer f;
     begin
-      f = $fopen("{traceFile}", "a");
       getMemoryBool_{memoryId} = {memoryName}[Addr][Bit];
 
-      $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
-
-      $fclose(f);
+      if (t) begin
+        f = $fopen("{traceFile}", "a");
+        $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
+        $fclose(f);
+      end
     end
   endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -1685,13 +1685,14 @@ endfunction
     integer f;
     integer a;
     begin
-      f = $fopen("{traceFile}", "a");
       a = {memoryName}[Addr];
           {memoryName}[Addr] = Value[0+:8];
 
-      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryName}");
-
-      $fclose(f);
+      if (t) begin
+        f = $fopen("{traceFile}", "a");
+        $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryName}");
+        $fclose(f);
+      end
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -1704,15 +1705,16 @@ endfunction
     integer a;
     integer b;
     begin
-      f = $fopen("{traceFile}", "a");
       a = {memoryName}[Addr];
           {memoryName}[Addr][Bit] = Value[0];
       b = {memoryName}[Addr];
 
-      $fdisplay(f, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryName}");
-      $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryName}");
-
-      $fclose(f);
+      if (t) begin
+        f = $fopen("{traceFile}", "a");
+        $fdisplay(f, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryName}");
+        $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryName}");
+        $fclose(f);
+      end
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -2225,8 +2227,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_byteMemoryRef();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
