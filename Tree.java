@@ -1165,22 +1165,20 @@ Number of Keys:    0
 
   static void test_saveReload(boolean Ex)
    {sayCurrentTestName();
+    final boolean createNew = false;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
 
-    if (!true && Ex)
-     {t.new I() {void a() {t.byteMemory.reload(tree6);} };
-     }
-    else
+    if (createNew)
      {t.new ForCount(t.new Int(1), t.new Int(7))
        {void body(Int Index)
          {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
          }
        };
-
-      if (false && Ex)
-       {t.new I() {void a() {say("  static String tree6 = \""+ t.byteMemory.save()+"\";");} };
-        stop();
-       }
+      stop("  static String tree6 = \""+ t.byteMemory.save()+"\";");
+     }
+    else
+     {t.byteMemory.reload(tree6);
+say("AAAA", t.codeSize());
      }
 
     t.check (t.dumpTree(), """
@@ -1217,6 +1215,7 @@ Leaf   at:   2 size:   4, count:   4
 """);
 
     t.maxSteps = 99_999;
+    t.dumpMemoryEvery = 10;
     t.execute();
    }
 
@@ -1271,8 +1270,7 @@ Leaf   at:   2 size:   4, count:   4
   static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
    {final int N = 32 ;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-     {t.new I() {void a() {t.byteMemory.reload(tree32);} };
-     }
+    t.byteMemory.reload(tree32);
     return t;
    }
 
@@ -1814,7 +1812,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_update(!true);
+    test_saveReload(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
