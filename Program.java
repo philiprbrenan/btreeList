@@ -37,7 +37,7 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
         boolean                                javaTrace = true;                                                        // Trace java execution if true - can be switched off during printing and other ancillary operations not replicated in the veriog code so that the java trace matches the verilog trace accurately
         Integer                          dumpMemoryEvery = null;                                                        // Dump memory every this many steps if set
