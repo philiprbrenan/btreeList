@@ -37,7 +37,7 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output
-  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
         boolean                                javaTrace = true;                                                        // Trace java execution if true - can be switched off during printing and other ancillary operations not replicated in the veriog code so that the java trace matches the verilog trace accurately
         Integer                          dumpMemoryEvery = null;                                                        // Dump memory every this many steps if set
@@ -1216,7 +1216,14 @@ public class Program extends Test                                               
     void reload (String Dump)
      {final byte[]decoded = Base64.getDecoder().decode(Dump);
       if (decoded.length != bytes.length) stop("Mismatched reloaded memory length:", decoded.length, bytes.length);
-      System.arraycopy(decoded, 0, bytes, 0, bytes.length);
+      new I()
+       {void   a() {System.arraycopy(decoded, 0, bytes, 0, bytes.length);}
+        String v()
+         {final StringBuilder s = new StringBuilder();                                                                  // Verilog to reload saved memory. Reloading only the non zero entries assumes that all entries in memory are already zero which might not be the case
+          for(int i = 0; i < decoded.length; ++i) s.append(n() + "["+i+"] <= "+bytes[i]+";\n");
+          return ""+s;
+         }
+       };
      }
    }
 
