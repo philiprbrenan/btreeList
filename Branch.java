@@ -363,6 +363,7 @@ class Branch extends Program implements Program.Locatable                       
 
   StringBuilder print ()                                                                                                // Print the branch
    {subStart("Branch.print");
+    suppressJavaTracingStart();                                                                                         // Do not trace printing
     final StringBuilder s = new StringBuilder();
     new I() {void a() {s.setLength(0); s.append(f("Branch")); }};
 
@@ -382,8 +383,7 @@ class Branch extends Program implements Program.Locatable                       
 
     new I()
      {void a()
-       {suppressJavaTracingForOneInstruction();
-        s.append(f(" size: %3d",  maxSize()));
+       {s.append(f(" size: %3d",  maxSize()));
         s.append(f(", count: %3d", c.i()));
         s.append(f(", top: %3d",   t.i()));
         s.append("\n Ref   Key  Data\n");
@@ -398,6 +398,7 @@ class Branch extends Program implements Program.Locatable                       
          }
        }
      };
+    suppressJavaTracingFinish();                                                                                        // Resume tracing of tracing stack is empty
     subFinish();
     return s;
    }
