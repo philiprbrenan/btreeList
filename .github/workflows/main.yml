@@ -1,4 +1,4 @@
-# Test 2026-06-25 at 18:35:52
+# Test 2026-06-25 at 18:54:11
 
 name: Test
 run-name: btreeList
@@ -55,7 +55,7 @@ jobs:
 
     - name: Upload Tree_1
       if: ${{ always() && matrix.task == 'Tree_1' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_1
         path: verilog
@@ -68,7 +68,7 @@ jobs:
 
     - name: Upload Tree_2
       if: ${{ always() && matrix.task == 'Tree_2' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_2
         path: verilog
@@ -81,7 +81,7 @@ jobs:
 
     - name: Upload Tree_3
       if: ${{ always() && matrix.task == 'Tree_3' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_3
         path: verilog
@@ -94,7 +94,7 @@ jobs:
 
     - name: Upload Tree_4
       if: ${{ always() && matrix.task == 'Tree_4' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_4
         path: verilog
@@ -107,7 +107,7 @@ jobs:
 
     - name: Upload Tree_5
       if: ${{ always() && matrix.task == 'Tree_5' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_5
         path: verilog
@@ -120,7 +120,7 @@ jobs:
 
     - name: Upload Tree_6
       if: ${{ always() && matrix.task == 'Tree_6' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_6
         path: verilog
@@ -133,7 +133,7 @@ jobs:
 
     - name: Upload Tree_7
       if: ${{ always() && matrix.task == 'Tree_7' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_7
         path: verilog
@@ -146,7 +146,7 @@ jobs:
 
     - name: Upload Tree_8
       if: ${{ always() && matrix.task == 'Tree_8' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_8
         path: verilog
@@ -159,7 +159,7 @@ jobs:
 
     - name: Upload Tree_9
       if: ${{ always() && matrix.task == 'Tree_9' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_9
         path: verilog
@@ -172,7 +172,7 @@ jobs:
 
     - name: Upload Tree_10
       if: ${{ always() && matrix.task == 'Tree_10' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_10
         path: verilog
@@ -185,7 +185,7 @@ jobs:
 
     - name: Upload Tree_11
       if: ${{ always() && matrix.task == 'Tree_11' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Tree_11
         path: verilog
