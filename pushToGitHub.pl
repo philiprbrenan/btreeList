@@ -144,7 +144,7 @@ END
 
     - name: Upload $N
       if: \${{ always() && matrix.task == '$N' }}
-      uses: actions/upload-artifact\@v4
+      uses: actions/upload-artifact\@v7
       with:
         name: $N
         path: verilog
