@@ -1165,7 +1165,6 @@ Number of Keys:    0
      }
     else
      {t.byteMemory.reload(tree6);
-say("AAAA", t.codeSize());
      }
 
     t.check (t.dumpTree(), """
@@ -1803,7 +1802,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_deleteAscending(!true);
+    test_saveReload(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
