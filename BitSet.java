@@ -89,6 +89,7 @@ final public class BitSet extends Program                                       
   BitSet initializeMemory() {memoryRef.clear(bytesNeeded()); return this;}                                              // Initialize memory
   int bytesNeeded() {return build.byteSize();}                                                                          // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int size()        {return build.bitSize;}                                                                             // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
+  Int logBitSize()  {return new Int(logBitSize);}                                                                       // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
 
 //D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
 
@@ -116,7 +117,7 @@ final public class BitSet extends Program                                       
   void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the ones tree
    {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
 
-    new For(logBitSize)                                                                                                 // Set bits along the path to the root of the ones tree
+    new For(logBitSize())                                                                                                 // Set bits along the path to the root of the ones tree
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p).Flip())                                                                                     // Is the bit not already set
          {void Then() {setBitNC(p); p.set(parentOne(p)); Continue.set(); }                                              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
@@ -127,7 +128,7 @@ final public class BitSet extends Program                                       
 
   void clearOnePath(Int Index)                                                                                          // Clear bits along the path to the root of the ones tree if both children are zero
    {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
-    new For(logBitSize)
+    new For(logBitSize())
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p))                                                                                            // Bit might need to be cleared
          {void Then()
@@ -155,7 +156,7 @@ final public class BitSet extends Program                                       
            {setBitNC(p);                                                                                                // Show parent has no zeros
             p.set(parentZero(p));                                                                                       // Move up
 
-            new For(logBitSize-1)                                                                                       // Remaining possible parents
+            new For(new Int(logBitSize-1))                                                                              // Remaining possible parents
              {void body(Int Index, Bool Continue)
                {final Int q = childLowZero(p);                                                                          // Children of parent
                 new If (getBitNC(q))                                                                                    // Both children are zero so the parent must be zero also
@@ -179,7 +180,7 @@ final public class BitSet extends Program                                       
 
   private void clearZeroPath(Int Index)                                                                                 // There is a zero in the actual bits under this position in the zeros tree
    {final Int p = parentZero(Index);                                                                                    // Position in zeros tree
-    new For(logBitSize)
+    new For(logBitSize())
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p))                                                                                            // The bit is not already set
          {void Then() {clearBitNC(p); p.set(parentZero(p)); Continue.set();}                                            // Stop creating the path once we have arrived at a zeros tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
@@ -464,7 +465,7 @@ final public class BitSet extends Program                                       
     final Bint Next = new Bint();                                                                                       // Next one if any
     final Int  p    = new Int(Start);                                                                                   // Start position
 
-    new For(logBitSize)                                                                                                 // Traverse down through the tree to the root
+    new For(logBitSize())                                                                                                 // Traverse down through the tree to the root
      {void body(Int I, Bool C)
        {final Int q = p.Inc();                                                                                          // Next bit over
 
@@ -505,7 +506,7 @@ final public class BitSet extends Program                                       
     final Bint Prev = new Bint();                                                                                       // Invalid indicates not found
     final Int p     = new Int(Start);                                                                                   // Start position
 
-    new For(logBitSize)                                                                                                 // Traverse down through the tree to the root
+    new For(logBitSize())                                                                                                 // Traverse down through the tree to the root
      {void body(Int I, Bool C)
        {new If (p.gt(limitLowerOne(p)))                                                                                 // Found adjacent bit set to one to the left of the path up from the start bit
          {void Then()                                                                                                   // Found the adjacent bit to the left
@@ -565,7 +566,7 @@ final public class BitSet extends Program                                       
        {new If (getBitNC(Q))                                                                                            // Adjacent bit amongst the actual bits exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move int zeros tree
-            new For(logBitSize)                                                                                         // Traverse down through the tree to the root
+            new For(logBitSize())                                                                                         // Traverse down through the tree to the root
              {void body(Int I, Bool C)
                {final Int q = p.Inc();                                                                                  // Next bit over
 
@@ -623,7 +624,7 @@ final public class BitSet extends Program                                       
            {Prev.set(q);
            }
           void Else()                                                                                                   // Go down through zeros tree looking for a one
-           {new For(logBitSize)
+           {new For(logBitSize())
              {void body(Int Up, Bool ContinueUp)
                {p.set(parentZero(p));                                                                                   // Every bit has a parent except the topmost bit in the tree but the loop will terminated on count before then
                 new If (pos_zero(p).gt(0))                                                                              // At start of row
