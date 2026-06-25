@@ -503,10 +503,10 @@ class Slots extends Program                                                     
      {void Then()
        {r.set(true);                                                                                                    // Able to merge
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
-         {left .compactSlotsLeft ();
+         {left .compactSlotsLeft( );
           Right.compactSlotsRight();
-          left .compactKeysLeft  (CompactKey);
-          Right.compactKeysRight (CompactKey);
+          left .compactKeysLeft(CompactKey);
+          Right.compactKeysRight(CompactKey);
          }
         new ForCount (N.Sub(rc), N)                                                                                     // Merge right into left
          {void body(Int Index)
@@ -1002,7 +1002,7 @@ class Slots extends Program                                                     
 //D2 Print                                                                                                              // Print the slots
 
   public String toString ()                                                                                             // Dump the slots
-   {suppressJavaTracingForOneInstruction();                                                                             // Do not trace printing
+   {suppressJavaTracingStart();                                                                                         // Do not trace printing during java execution as the verilog code does not print the slots
     final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlotsToKeys());
     final int[]R = range(numberOfKeys);
@@ -1013,6 +1013,7 @@ class Slots extends Program                                                     
     s.append("\nusedSlots: "); for (int i : N) s.append(             usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
     s.append("\nusedKeys : "); for (int i : R) s.append(             usedKeys       .getBitNC(i) ? "   X" : "   .");
     s.append("\nkeys     : "); for (int i : R) s.append(f(formatKey, getKeyValue(i)));
+    suppressJavaTracingFinish();                                                                                        // Resume java tracing status
     return ""+s+"\n";
    }
 
