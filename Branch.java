@@ -346,7 +346,7 @@ class Branch extends Program implements Program.Locatable                       
     final Bint f = slots.usedSlotsToKeys.firstOne();
     new If (f)
      {void Then()
-       {new For(maxSize)
+       {new For(new Int(maxSize))
          {void body(Int Index, Bool Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
             new I() {void a() {Iterator.process(k, d);}};
