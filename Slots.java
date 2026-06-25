@@ -49,8 +49,8 @@ class Slots extends Program                                                     
       return p;
      }
 
-    int numberOfKeys       () {return numberOfKeys;}                                                                    // The number of references in the slots definition
-    int numberOfSlotsToKeys() {return numberOfKeys() << 1;}                                                             // Number of slots from number of refs
+    int numberOfKeys ()        {return numberOfKeys;}                                                                   // The number of references in the slots definition
+    int numberOfSlotsToKeys () {return numberOfKeys() << 1;}                                                            // Number of slots from number of refs
 
     final class MemoryPositions                                                                                         // Positions of fields in memory
      {final int N = numberOfSlotsToKeys();
@@ -145,9 +145,9 @@ class Slots extends Program                                                     
   void countInc ()                         {refCount.putInt(refCount.getInt().inc());}                                  // Increment the key count
   void countDec ()                         {refCount.putInt(refCount.getInt().dec());}                                  // Decrement the key count
 //void invalidateMemory ()                 {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-  int  numberOfKeys ()                     {return numberOfKeys;}                                                       // The number of references in the slots definition
-  int  numberOfSlotsToKeys ()              {return numberOfKeys()<<1;}                                                  // Number of slots from number of refs
-  int  redistributionWidth ()              {return (int)java.lang.Math.sqrt(numberOfKeys());}                           // Redistribute if the next slot is further than this
+  Int  numberOfKeys ()                     {return new Int(numberOfKeys);}                                              // The number of references in the slots definition
+  int  numberOfSlotsToKeys ()              {return numberOfKeys<<1;}                                                    // Number of slots from number of refs
+  int  redistributionWidth ()              {return (int)java.lang.Math.sqrt(numberOfKeys);}                             // Redistribute if the next slot is further than this
   Bint  locateFirstUsedSlot ()             {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
   Bint  locateLastUsedSlot ()              {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
   Bint  stepLeft (Int Start)               {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
@@ -394,7 +394,7 @@ class Slots extends Program                                                     
 
   Int splitRightEven(Slots Right)                                                                                       // Split a full set of slots that contains an even number of entries then redistribute the slots. Return the splitting key
    {subStart("Slots.splitRightEven");
-    final int N = numberOfKeys();
+    final int N = numberOfKeys;
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
@@ -415,7 +415,7 @@ class Slots extends Program                                                     
 
   Int splitLeftEven(Slots Left)                                                                                         // Split a full set of slots that contains an even number of entries, redistribute the slots. Return the splitting key
    {subStart("Slots.splitLeftEven");
-    final int N = numberOfKeys();
+    final int N = numberOfKeys;
     if (N % 2 == 1) stop("Slot set must have an even number of entries");
     if (immediate() && full().flip().b()) stop("Slots are not full so cannot be split");
 
@@ -438,7 +438,7 @@ class Slots extends Program                                                     
 
   Int splitRightOdd(Slots Right)                                                                                        // Split a full set of slots that contains an odd number of entries redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitRightOdd");
-    final int N = numberOfKeys();
+    final int N = numberOfKeys;
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
     if (N % 2 == 0) stop("Slot set must have an odd number of entries");
@@ -464,7 +464,7 @@ class Slots extends Program                                                     
 
   Int splitLeftOdd(Slots Left)                                                                                          // Split a full set of slots that contains an odd number of entries optionally redistributing the slots in the source and target slots. Return the index of the splitting key
    {subStart("Slots.splitLeftOdd");
-    final int N = numberOfKeys();
+    final int N = numberOfKeys;
     final Int M = new Int(N/2);                                                                                         // Mid point
     final Int R = new Int(N/2+1);                                                                                       // Start of right range
     if (N % 2 == 0) stop("Slot set must have an odd number of entries");
@@ -1005,7 +1005,7 @@ class Slots extends Program                                                     
    {suppressJavaTracingForOneInstruction();                                                                             // Do not trace printing
     final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlotsToKeys());
-    final int[]R = range(numberOfKeys());
+    final int[]R = range(numberOfKeys);
     s.append(f("Slots    : size: %2d, count: %2d\n", numberOfKeys, refCount.getInt(0)));                                // Title
     s.append("positions: ");   for (int i : N) s.append(f(formatKey, i));
     s.append("\nslotsKeys: "); for (int i : N) s.append(f(formatKey, getSlotToKeyIndex(i)));
@@ -1058,7 +1058,7 @@ usedSlots:    X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   .   .   .   .   .
 keys     :    0  11   0   0   0   0   0   0
 """);
-        for (int i = 0, N = numberOfKeys(); i < N; i++) putKey (new Int(i), new Int(i+1));
+        for (int i = 0, N = numberOfKeys; i < N; i++) putKey (new Int(i), new Int(i+1));
         usedKeys.empty().ok(false);
         usedKeys.full ().ok(true);
 
