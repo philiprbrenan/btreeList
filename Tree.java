@@ -106,12 +106,15 @@ class Tree extends Program                                                      
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
     leaf();                                                                                                             // Initialize the root as a leaf
+    treeBody();
    }
 
-  int maxLeafSize  () {return maxLeafSize;}                                                                             // Maximum size of a leaf
-  int maxBranchSize() {return maxBranchSize;}                                                                           // Maximum size of a branch
-  int numberOfNodes() {return numberOfNodes;}                                                                           // Maximum number of nodes in tree
-  int           mnl() {return maximumNumberOfLevels;}                                                                   // Maximum number of levels
+  void treeBody () {}                                                                                                   // Override to apply code to the tree
+
+  int maxLeafSize ()   {return maxLeafSize;}                                                                            // Maximum size of a leaf
+  int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
+  int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
+  int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
 
   Int allocate()                                                                                                        // Allocate a leaf or a branch using the first free node on the free chain
    {final Bint A = freeChain.firstOne();                                                                                // First element on free chain
@@ -1338,23 +1341,24 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insertRandom32(boolean Ex)
    {sayCurrentTestName();
+
     final int  N = random_32.length;
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-    t.new ForCount(t.new Int(N))
-     {void body(Int Index)
-       {final Int k = t.new Int();
-        t.new I()
-         {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
-          String v() {return k.ev(Int.Ops.set, random_32[Index.i()]);}
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
+     {void treeBody()
+       {if (!Ex) defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                            // Create an array of the random keys to be inserted from Verilog
+
+        new ForCount(new Int(N))
+         {void body(Int Index)
+           {final Int k = new Int();
+            new I()
+             {void   a() {suppressJavaTracingForOneInstruction(); k.ex(Int.Ops.set, random_32[Index.i()]);}
+              String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
+             };
+            insert(k, Index);
+           }
          };
-        t.insert(k, Index);
-       }
-     };
 
-    //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
-    //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
-
-    if (N == 32) t.check(t.dump(), """
+        if (N == 32) check(dump(), """
                                                         15                                                            26                          |
                                                         (0)                                                           (0)                         |
                                                         [5,1]                                                         [11,4]                      |
@@ -1365,8 +1369,10 @@ Leaf   at:   2 size:   4, count:   4
 (14,5,0)       (1,5,2)       (9,5,4)         (4,5)           (12,11,1)          (3,11,4)        (8,11,5)        (7,11)      (10,6,2)         (2,6)|
 """);
 
-    t.maxSteps = 9_999_999;
-    t.execute();
+        maxSteps = 9_999_999;
+        execute();
+       }
+     };
    }
 
   static void test_insertRandom32()
