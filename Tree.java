@@ -206,12 +206,12 @@ class Tree extends Program                                                      
 
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
+    suppressJavaTracingStart();                                                                                         // Do not trace printing
     final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.countAllOnes());
     new I()                                                                                                             // Dump the tree statistics
      {void a()
-       {suppressJavaTracingForOneInstruction();
-        s.setLength(0);
+       {s.setLength(0);
         s.append(f("Tree memory dump\n"));
         s.append(f("Leaf   size   : %4d\n", build.leafSize));
         s.append(f("Branch size   : %4d\n", build.branchSize));
@@ -229,14 +229,14 @@ class Tree extends Program                                                      
        {new If(isAllocated(Index))
          {void Then()
            {new If (isLeaf(Index))
-             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(t);}};}
-              void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(t);}};}
+             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {s.append(t);}};}
+              void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {s.append(t);}};}
              };
            }
          };
        }
      };
-
+    suppressJavaTracingFinish();                                                                                        // Resume tracing if tracing stack is empty
     subFinish();
     return s;
    }
@@ -278,10 +278,12 @@ class Tree extends Program                                                      
 
     public String toString()                                                                                            // Print the find results
      {subStart("Tree.toString");
+      suppressJavaTracingStart();                                                                                       // Do not trace printing
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {suppressJavaTracingForOneInstruction(); s.append("Find : "+key+" "+valid+"\n");} };
+      new I() {void a() {s.append("Find : "+key+" "+valid+"\n");} };
       final StringBuilder l = leaf(leaf).print();
-      new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(l);}                             };
+      new I() {void a() {s.append(l);}                             };
+      suppressJavaTracingFinish();                                                                                      // Resume tracing if tracing stack is empty
       subFinish();
       return ""+s;
      }
@@ -421,9 +423,9 @@ class Tree extends Program                                                      
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
           final Bint            L = new Bint();
-          new ForCount(new Int(4))
+          new ForCount(new Int(4))                                                                                      // Locate the left sibling
            {void body(Int Index)
-             {new If (Index.eq(0))
+             {new If (Index.eq(0))                                                                                      // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
                {void Then()                                 {L.copy(mergeLeftLeft(  p, d.slot));}
                 void Else()
                  {new If (Index.eq(1))
@@ -439,7 +441,7 @@ class Tree extends Program                                                      
                    };
                  }
                };
-              new If (L) {void Then() {mergeLeftIntoRightSibling(p, L.i());}};
+              new If (L) {void Then() {mergeLeftIntoRightSibling(p, L.i());}};                                          // Merge the left sibling into its right sibling
              }
            };
          }
@@ -468,17 +470,19 @@ class Tree extends Program                                                      
      }
 
     StringBuilder print()                                                                                               // Print the path
-     {subStart("Tree.print");
+     {subStart("Tree.print.path");
+      suppressJavaTracingStart();                                                                                       // Do not trace printing
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {suppressJavaTracingForOneInstruction(); s.setLength(0);                    } };
-      new I() {void a() {suppressJavaTracingForOneInstruction(); s.append("Path: "+step+" steps: ");} };
+      new I() {void a() {s.setLength(0);                    } };
+      new I() {void a() {s.append("Path: "+step+" steps: ");} };
       new ForCount(step)
        {void body(Int Index)
          {final Int v = path.getInt(Index);
-          new I() {void a() {suppressJavaTracingForOneInstruction(); s.append(" "+v.i());}};
+          new I() {void a() {s.append(" "+v.i());}};
          }
        };
-      new I()     {void a() {suppressJavaTracingForOneInstruction(); s.append(" "+leaf+" "+split+"\n"); } };
+      new I()     {void a() {s.append(" "+leaf+" "+split+"\n"); } };
+      suppressJavaTracingFinish();                                                                                      // Resume tracing if tracing stack is empty
       subFinish();
       return s;
      }
@@ -915,18 +919,20 @@ class Tree extends Program                                                      
    {final Stack<StringBuilder> P = new Stack<>();
 
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
-     {new I() {void a() {suppressJavaTracingForOneInstruction(); P.clear();} };                                         // Clear output area
+     {subStart("Tree.Print");
+      suppressJavaTracingStart();                                                                                       // Do not trace printing
+
+      new I() {void a() {P.clear();} };                                                                                 // Clear output area
 
       new Traverse()
        {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(LC.leaf);
           final StringBuilder s = new StringBuilder();
-          new I() {void a() {suppressJavaTracingForOneInstruction(); clearStringBuilder(s);}};                          // Clear the print
+          new I() {void a() {clearStringBuilder(s);}};                                                                  // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
            {void a()
-             {suppressJavaTracingForOneInstruction();
-              final int d = LC.depth.i() * linesToPrintABranch;                                                         // Line in output
+             {final int d = LC.depth.i() * linesToPrintABranch;                                                         // Line in output
               pad(d+1);                                                                                                 // Pad the output area so that all the lines have the same length
               chompStringBuilder(s);                                                                                    // Remove trailing comma
               P.elementAt(d).append(s);                                                                                 // Write first line
@@ -947,8 +953,7 @@ class Tree extends Program                                                      
 
           new I()                                                                                                       // Place in output area
            {void a()
-             {suppressJavaTracingForOneInstruction();
-              final int d = BC.Depth.i() * linesToPrintABranch;
+             {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
               P.elementAt(d).append(""+K.i());                                                                          // Write key into output area
 
@@ -980,8 +985,7 @@ class Tree extends Program                                                      
 
           new I()                                                                                                       // Place in output area
            {void a()
-             {suppressJavaTracingForOneInstruction();
-              final int d = BC.Depth.i() * linesToPrintABranch;
+             {final int d = BC.Depth.i() * linesToPrintABranch;
               pad(d+2);                                                                                                 // Pad the output area so that all the lines have the same length
 
               if (Context)                                                                                              // Context requested
@@ -1003,6 +1007,8 @@ class Tree extends Program                                                      
            };
          }
        };
+      suppressJavaTracingFinish();                                                                                      // Resume tracing if tracing stack is empty
+      subFinish();
      }
 
     void pad(int level)                                                                                                 // Pad the strings at each level of the tree so we have a vertical face to continue with - a bit like Marc Brunel's tunneling shield
@@ -1016,8 +1022,7 @@ class Tree extends Program                                                      
      {final StringBuilder t = new StringBuilder();                                                                      // Print the lines of the tree that are not blank
       new I()
        {void a()
-         {suppressJavaTracingForOneInstruction();
-          clearStringBuilder(t);
+         {clearStringBuilder(t);
           pad(0);
           for  (StringBuilder s : P)
            {final String l = ""+s;
@@ -1030,8 +1035,8 @@ class Tree extends Program                                                      
      }
    }
 
-  StringBuilder dump () {suppressJavaTracingForOneInstruction(); subStart("Tree.dump");  var s = new Print(true) .printCollapsed(); subFinish(); return s;} // Dump the tree
-  StringBuilder print() {suppressJavaTracingForOneInstruction(); subStart("Tree.print"); var s = new Print(false).printCollapsed(); subFinish(); return s;} // Print the tree
+  StringBuilder dump () {subStart("Tree.dump" ); suppressJavaTracingStart(); var s = new Print(true) .printCollapsed(); suppressJavaTracingFinish(); subFinish(); return s;} // Dump the tree
+  StringBuilder print() {subStart("Tree.print"); suppressJavaTracingStart(); var s = new Print(false).printCollapsed(); suppressJavaTracingFinish(); subFinish(); return s;} // Print the tree
 
 //D1 Tests                                                                                                              // Tests
 
@@ -1331,10 +1336,12 @@ Leaf   at:   2 size:   4, count:   4
         new ForCount(new Int(N))
          {void body(Int Index)
            {final Int k = new Int();
+            suppressJavaTracingStart();                                                                                 // Suppress tracing while loading key to be inserted do that java which would otherwise trace does not to match verilog
             new I()
-             {void   a() {suppressJavaTracingForOneInstruction(); k.ex(Int.Ops.set, random_32[Index.i()]);}
+             {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
               String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
              };
+            suppressJavaTracingFinish();                                                                                // Resume tracing if tracing stack is empty
             insert(k, Index);
            }
          };
@@ -1796,7 +1803,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertMerged(true);
+    test_deleteAscending(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
