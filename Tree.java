@@ -1372,31 +1372,32 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = 32;
 
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-    t.new ForCount(t.new Int(1), t.new Int(N+1))
-     {void body(Int Index)
-       {t.insert(Index, Index);
-       }
-     };
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
+     {void treeBody()
+       {new ForCount(new Int(1), new Int(N+1))
+         {void body(Int Index)
+           {insert(Index, Index);
+           }
+         };
 
-    t.suppressJavaTracingStart();
-    final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);} };
-    t.suppressJavaTracingFinish();
+        suppressJavaTracingStart();
+        final StringBuilder s = new StringBuilder();
+        final StringBuilder S = print();
+        new I() {void a() {s.append(S);} };
+        suppressJavaTracingFinish();
 
-    t.new ForCount(t.new Int(N))
-     {void body(Int Index)
-       {t.delete(Index.Inc());
-        t.suppressJavaTracingStart();
-        final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T); } };
-        t.suppressJavaTracingFinish();
-       }
-     };
+        new ForCount(new Int(N))
+         {void body(Int Index)
+           {delete(Index.Inc());
+            suppressJavaTracingStart();
+            final StringBuilder T = print();
+            new I() {void a() {s.append(T); } };
+            suppressJavaTracingFinish();
+           }
+         };
 
-    //t.new I() {void a() {stop(s);}};
-    t.check(s, """
+        //t.new I() {void a() {stop(s);}};
+        check(s, """
                                        16                                                  |
        4       8          12                        20           24           28           |
 1,2,3,4 5,6,7,8 9,10,11,12  13,14,15,16  17,18,19,20  21,22,23,24  25,26,27,28  29,30,31,32|
@@ -1478,8 +1479,10 @@ Leaf   at:   2 size:   4, count:   4
 31,32|
 32|
 """);
-    t.maxSteps = 9_999_999;
-    t.execute();
+        maxSteps = 9_999_999;
+        execute();
+       }
+     };
    }
 
   static void test_deleteAscending()
@@ -1491,31 +1494,32 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = 32;
 
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-    t.new ForCount(t.new Int(1), t.new Int(N+1))
-     {void body(Int Index)
-       {t.insert(Index, Index);
-       }
-     };
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
+     {void treeBody()
+       {new ForCount(new Int(1), new Int(N+1))
+         {void body(Int Index)
+           {insert(Index, Index);
+           }
+         };
 
-    t.suppressJavaTracingStart();
-    final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);} };
-    t.suppressJavaTracingFinish();
+        suppressJavaTracingStart();
+        final StringBuilder s = new StringBuilder();
+        final StringBuilder S = print();
+        new I() {void a() {s.append(S);}};
+        suppressJavaTracingFinish();
 
-    t.new ForCount(t.new Int(N))
-     {void body(Int Index)
-       {t.delete(t.new Int(N).sub(Index));
-        t.suppressJavaTracingStart();
-        final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T); } };
-        t.suppressJavaTracingFinish();
-       }
-     };
+        new ForCount(new Int(N))
+         {void body(Int Index)
+           {delete(new Int(N).sub(Index));
+            suppressJavaTracingStart();
+            final StringBuilder T = print();
+            new I() {void a() {s.append(T); } };
+            suppressJavaTracingFinish();
+           }
+         };
 
-    //t.new I() {void a() {stop(s);}};
-    t.check(s, """
+        //new I() {void a() {stop(s);}};
+        check(s, """
                                        16                                                  |
        4       8          12                        20           24           28           |
 1,2,3,4 5,6,7,8 9,10,11,12  13,14,15,16  17,18,19,20  21,22,23,24  25,26,27,28  29,30,31,32|
@@ -1598,8 +1602,10 @@ Leaf   at:   2 size:   4, count:   4
 1|
 """);
 
-    t.maxSteps = 9_999_999;
-    t.execute();
+        maxSteps = 9_999_999;
+        execute();
+       }
+     };
    }
 
   static void test_deleteDescending()
@@ -1611,37 +1617,42 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = random_32.length;
 
-    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
-    t.new ForCount(t.new Int(1), t.new Int(N+1))
-     {void body(Int Index)
-       {t.insert(Index, Index);
-       }
-     };
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
+     {void treeBody()
+       {new ForCount(new Int(1), new Int(N+1))
+         {void body(Int Index)
+           {insert(Index, Index);
+           }
+         };
 
-    t.suppressJavaTracingStart();
-    final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);} };
-    t.suppressJavaTracingFinish();
+        suppressJavaTracingStart();
+        final StringBuilder s = new StringBuilder();
+        final StringBuilder S = print();
+        new I() {void a() {s.append(S);}};
+        suppressJavaTracingFinish();
+        if (!Ex) defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                            // Create an array of the random keys to be deleted accessible from Verilog
 
-    t.new ForCount(t.new Int(N))
-     {void body(Int Index)
-       {final Int i = t.new Int();
-        t.suppressJavaTracingStart();
-        t.new I() {void a() {i.ex(Int.Ops.set, random_32[Index.i()]);} };
-        t.suppressJavaTracingFinish();
+        new ForCount(new Int(N))
+         {void body(Int Index)
+           {final Int k = new Int();
+            suppressJavaTracingStart();                                                                                 // Suppress tracing while loading key to be inserted do that java which would otherwise trace does not to match verilog
+            new I()
+             {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
+              String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
+             };
+            suppressJavaTracingFinish();                                                                                // Resume tracing if tracing stack is empty
 
-        t.delete(i);
+            delete(k);
 
-        t.suppressJavaTracingStart();
-        final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T);} };
-        t.suppressJavaTracingFinish();
-       }
-     };
+            suppressJavaTracingStart();
+            final StringBuilder T = print();
+            new I() {void a() {s.append(T);} };
+            suppressJavaTracingFinish();
+           }
+         };
 
-    //t.new I() {void a() {stop(s);}};
-    t.check(s, """
+        //new I() {void a() {stop(s);}};
+        check(s, """
                                        16                                                  |
        4       8          12                        20           24           28           |
 1,2,3,4 5,6,7,8 9,10,11,12  13,14,15,16  17,18,19,20  21,22,23,24  25,26,27,28  29,30,31,32|
@@ -1720,8 +1731,10 @@ Leaf   at:   2 size:   4, count:   4
 22|
 """);
 
-    t.maxSteps = 9_999_999;
-    t.execute();
+        maxSteps = 9_999_999;
+        execute();
+       }
+     };
    }
 
   static void test_deleteRandom32()
