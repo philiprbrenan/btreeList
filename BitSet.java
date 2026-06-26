@@ -658,7 +658,8 @@ final public class BitSet extends Program                                       
   public Bool empty() {return new Bool(firstOne ().notValid());}                                                        // Whether the bitset is empty
 
   public Bool twoOrMoreOnes()                                                                                           //N Whether there two or more ones in the bitset
-   {final Bool r = new Bool(false);                                                                                     // Assume contrary
+   {subStart("Bitset.twoOrMoreOnes");
+    final Bool r = new Bool(false);                                                                                     // Assume contrary
     final Int  p = new Int(topOne());                                                                                   // Start at top of ones tree
 
     new If (getBitNC(p))                                                                                                // The root has a one so the bit set is not empty
@@ -685,13 +686,15 @@ final public class BitSet extends Program                                       
          };
        }
      };
+    subFinish();
     return r;                                                                                                           // Whether the bitset has two or more ones
    }
 
 //D2 Counts                                                                                                             // The number of bits set to zero or one in the bitset. Superceded by Slots.count as it is believed that the extra cost of maintaining the count is offset by faster access to the current count. However, the count is not being maintained at the bitset level to avoid duplicating effort.  It might be better to transfer the counting logic to Bitset from Slots with the possibility of making it optional when a count is not required
 
   public Int countAllOnes()                                                                                             // Count ones in bitset
-   {final Int  c = new Int(0);                                                                                          // Count
+   {subStart("Bitset.countAllOnes");
+    final Int  c = new Int(0);                                                                                          // Count
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
     new For(new Int(size()))                                                                                            // Step from one to one
      {void body(Int Index, Bool Continue)
@@ -709,11 +712,13 @@ final public class BitSet extends Program                                       
          };
        }
      };
+    subFinish();
     return c;                                                                                                           // Return count
    };
 
   public Int countAllZeros()                                                                                            // Count zeros in bitset
-   {final Int  c = new Int(0);                                                                                          // Count
+   {subStart("Bitset.countAllZeros");
+    final Int  c = new Int(0);                                                                                          // Count
     final Bint p = firstZero();
     new For(new Int(size()))
      {void body(Int Index, Bool Continue)
@@ -731,13 +736,15 @@ final public class BitSet extends Program                                       
          };
        }
      };
+    subFinish();
     return c;                                                                                                           // Return count
    };
 
 //D1 Print                                                                                                              // Print the bit set
 
   public String toString()                                                                                              // Print bit set so we can visualize it. This will not be available on the chip so we use normal Java
-   {final StringBuilder s = new StringBuilder();
+   {subStart("Bitset.toString");
+    final StringBuilder s = new StringBuilder();
     int p = 0, r = bitSize;
 
     s.append("BitSet          ");                                                                                       // Title
@@ -771,15 +778,18 @@ final public class BitSet extends Program                                       
       if (r == 0) break;                                                                                                // Reached the leaves
      }
 
+    subFinish();
     return ""+s;
    }
 
 //D1 Tests                                                                                                              // Tests
 
   static BitSet test_bits(boolean Ex, int N)                                                                            // Create test bitset.
-   {final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Allocate backing storage.
+   {subStart("BitSet.test_bits");
+    final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Allocate backing storage.
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
     final BitSet    b = new BitSet(build); //.initializeMemory();                                                           // Create a bit set
+    subFinish();
     return b;                                                                                                           // Return test bitset.
    }
 
