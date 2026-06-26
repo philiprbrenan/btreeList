@@ -133,7 +133,7 @@ END
    {my $C  = $$t{class};
     my $G  = $$t{group};
     my $N  = $$t{name};
-    next unless $G == 7;
+    next unless $G == 7 || $G == 8 || $G == 9;
 
        $y .= <<END;
 
