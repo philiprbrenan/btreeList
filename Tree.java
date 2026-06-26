@@ -1371,9 +1371,13 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = 32;
     final Tree t = test_reloadTree(Ex);
+    t.suppressJavaTracingStart();
+
+    t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
     t.new I() {void a() {s.append(S);} };
+    t.suppressJavaTracingFinish();
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
@@ -1477,7 +1481,7 @@ Leaf   at:   2 size:   4, count:   4
 31,32|
 32|
 """);
-
+    t.suppressJavaTracingFinish();
     t.maxSteps = 9_999_999;
     t.execute();
    }
