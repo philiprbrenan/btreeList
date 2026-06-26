@@ -40,12 +40,14 @@ class Slots extends Program                                                     
     Build trace        (boolean     Trace)  {trace         = Trace;        return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
-     {final Program.Build   p = new Program.Build();                                                                    // Description of containing program
+     {subStart("Slots.build()");
+      final Program.Build   p = new Program.Build();                                                                    // Description of containing program
       final MemoryPositions s = memoryPositions = new MemoryPositions();                                                // Now we know the size of the slots
       if (byteMemoryRef == null) p.memory(s.size);
       if (parent        != null) p.parent(parent);
       p.immediate(immediate);
       p.trace(trace);
+      subFinish();
       return p;
      }
 
@@ -74,6 +76,7 @@ class Slots extends Program                                                     
 
   Slots(Build Build)                                                                                                    // Create the slots
    {super(Build.build());
+    subStart("Slots");
     build                = Build;                                                                                       // Save build details
     numberOfKeys         = Build.numberOfKeys;                                                                          // Maximum number of keys
     size                 = Build.size();                                                                                // Size of memory used to hold a leaf
@@ -88,6 +91,7 @@ class Slots extends Program                                                     
     usedSlotsToKeys      = new BitSet(m.us.memory(refUsedSlotsToKeys).parent(parentProgram));                           // Create bitsets to reference the program and memory used by this program
     usedKeys             = new BitSet(m.ur.memory(refUsedKeys)       .parent(parentProgram));
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
+    subFinish();
    }
 
   Slots initializeMemory()                                                                                              // Initialize memory
@@ -99,27 +103,35 @@ class Slots extends Program                                                     
 
 //D2 Internal                                                                                                           // Low level internal operations on slots
 
-  void putSlotToKeys(Int Index, Int Key)                                                                                // Set a slot to key reference and the corresponding back reference
-   {refSlotsToKeys.putInt(Index, Key);                                                                                  // Set forward  reference
+  void putSlotToKeys (Int Index, Int Key)                                                                                // Set a slot to key reference and the corresponding back reference
+   {subStart("Slots.putSlotToKeys");
+    refSlotsToKeys.putInt(Index, Key);                                                                                  // Set forward  reference
     refKeysToSlots.putInt(Key, Index);                                                                                  // Set backward reference
     usedSlotsToKeys.set(Index, new Bool(true));                                                                         // Set bit showing this slot reference is active
+    subFinish();
    }
 
-  void delSlotToKeys(Int Index)                                                                                         // Delete a slot
-   {final Int K = refSlotsToKeys.getInt(Index);                                                                         // Slot to key index
+  void delSlotToKeys (Int Index)                                                                                         // Delete a slot
+   {subStart("Slots.delSlotToKeys");
+    final Int K = refSlotsToKeys.getInt(Index);                                                                         // Slot to key index
                   refSlotsToKeys.putInt(Index, new Int(0));                                                             // Zero forward reference
     refKeysToSlots.putInt(K,                   new Int(0));                                                             // Zero backward reference
     usedSlotsToKeys.set  (Index,               new Bool(false));                                                        // Make this slot reference inactive
+    subFinish();
    }
 
   void putKey(Int Index, Int Key)                                                                                       // Set a key
-   {refKeys .putInt(Index, Key);
+   {subStart("Slots.putKey");
+    refKeys .putInt(Index, Key);
     usedKeys.set   (Index, new Bool(true));
+    subFinish();
    }
 
   void delKey(Int Index)                                                                                                // Clear a key
-   {refKeys.putInt(Index, new Int(0));                                                                                  // Clear the key by zeroing it - this is not strictly necessary - it does make tests neater
+   {subStart("Slots.delKey");
+    refKeys.putInt(Index, new Int(0));                                                                                  // Clear the key by zeroing it - this is not strictly necessary - it does make tests neater
     usedKeys.set  (Index, new Bool(false));
+    subFinish();
    }
 
   Bool    getSlotToKeysInUse(Int Index)    {return usedSlotsToKeys.getBit(Index);}                                      // Check whether a slot is in use
@@ -148,10 +160,10 @@ class Slots extends Program                                                     
   Int  numberOfKeys ()                     {return new Int(numberOfKeys);}                                              // The number of references in the slots definition
   int  numberOfSlotsToKeys ()              {return numberOfKeys<<1;}                                                    // Number of slots from number of refs
   int  redistributionWidth ()              {return (int)java.lang.Math.sqrt(numberOfKeys);}                             // Redistribute if the next slot is further than this
-  Bint  locateFirstUsedSlot ()             {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
-  Bint  locateLastUsedSlot ()              {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
-  Bint  stepLeft (Int Start)               {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
-  Bint  stepRight (Int Start)              {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
+  Bint locateFirstUsedSlot ()              {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
+  Bint locateLastUsedSlot ()               {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
+  Bint stepLeft (Int Start)                {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
+  Bint stepRight (Int Start)               {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
 
   Bint locateFirstUnusedKey ()             {return usedKeys.firstZero();}                                               // Absolute position of the first unused key
 
@@ -211,9 +223,11 @@ class Slots extends Program                                                     
    }
 
   Int allocKey()                                                                                                        // Allocate a key
-   {final Bint I = locateFirstUnusedKey();
+   {subStart("Slots.allocKey");
+    final Bint I = locateFirstUnusedKey();
     I.elseStop("No room for key");                                                                                      // No more keys slots available
     new If (I) {void Then() {usedKeys.set(I.i());}};                                                                    // Show that the key as having been allocated
+    subFinish();
     return I.i();
    }
 
@@ -229,7 +243,8 @@ class Slots extends Program                                                     
    }
 
   private void moveSlot(Bint T, Bint S, Bool Continue)                                                                  // Move a slot from source to target
-   {new If (S)
+   {subStart("Slots.moveSlot(BBb");
+    new If (S)
      {void Then()
        {final Int q = getSlotToKeyIndex(S.i());
         delSlotToKeys(S.i());
@@ -237,27 +252,33 @@ class Slots extends Program                                                     
         Continue.set(true);                                                                                             // Continue moving slots
        }
      };
+    subFinish();
    }
 
   private void moveSlot (Int T, Int S)                                                                                  // Move a slot from the specified source position to the specified target position
-   {final Int k = getSlotToKeyIndex(S);                                                                                 // Index of key being moved
+   {subStart("Slots.moveSlot(II)");
+    final Int k = getSlotToKeyIndex(S);                                                                                 // Index of key being moved
     final Int K = getKeyValue(k);                                                                                       // Value of key being moved
     delSlotAndKey(S);                                                                                                   // Remove source
     setSlotAndKey(T, k, K);                                                                                             // Reinsert source at target
+    subFinish();
    }
 
   private void moveKey (Bint T, Bint S, Bool Continue)                                                                  // Move a key from the source position to the target position
-   {final Int s = refKeysToSlots.getInt(S.i());                                                                         // The slot referencing the key
+   {subStart("Slots.moveKey");
+    final Int s = refKeysToSlots.getInt(S.i());                                                                         // The slot referencing the key
     final Int q = getKeyValue(S.i());                                                                                   // The value of the key
     delSlotAndKey(s);                                                                                                   // Delete the slot and its associated key
     setSlotAndKey(s, T.i(), q);                                                                                         // Reinsert the key
     Continue.set(true);                                                                                                 // Continue moving keys
+    subFinish();
    }
 
   void copy (Slots Source) {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                    // Copy source into this
 
   void clear ()                                                                                                         // Clear the slots
-   {final Slots slots = this;
+   {subStart("Slots.clear");
+    final Slots slots = this;
     compactSlotsLeft();                                                                                                 // Place slots in a known position
     new ForCount(count())                                                                                               // Clear compacted slots
      {void body(Int Index)
@@ -265,6 +286,7 @@ class Slots extends Program                                                     
        }
      };
     countClear();                                                                                                       // Clear the count
+    subFinish();
    }
 
 //D3 Compact, Split and Merge                                                                                           // Compact to the left or right, redistribute and merge slots
@@ -635,17 +657,20 @@ class Slots extends Program                                                     
 //D4 Shift                                                                                                              // Shift the slots to the left/down one position or up/right one position
 
   void shiftUpOne(Int Position, Int Width)                                                                              // Shift up the specified slots by one position to create a free space at the specified position
-   {new ForCount(Width)                                                                                                 // Move the indicated slots up one position
+   {subStart("Slots.shiftUpOne");
+    new ForCount(Width)                                                                                                 // Move the indicated slots up one position
      {void body(Int Index)
        {final Int t = Position.Add(Width).sub(Index);                                                                   // Index of source element to be moved
         final Int s = t.Dec();                                                                                          // Index in slots of target element to be set
         moveSlot(t, s);
        }
      };
+    subFinish();
    }
 
   void shiftDownOne(Int Position, Int Width)                                                                            // Shift down the specified slots by one position to create a free space at the specified position
    {final Slots slots = this;
+    subStart("Slots.shiftDownOne");
     new ForCount(Width)                                                                                                 // Move the indicated slots up one position
      {void body(Int Index)
        {final Int t = Position.Sub(Width).add(Index);                                                                   // Index of source element to be moved
@@ -653,6 +678,7 @@ class Slots extends Program                                                     
         moveSlot(t, s);
        }
      };
+    subFinish();
    }
 
 //D4 Stuck                                                                                                              // The bitset can be made to operate like a fixed size stack - a stuck - as long as only stuck operations are used on it
@@ -1025,18 +1051,43 @@ class Slots extends Program                                                     
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
+       {subStart("AAAA1111");
+        putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
+        subFinish();
+        subStart("AAAA2222");
         putSlotToKeys(new Int(0), new Int(1));
+        subFinish();
+        subStart("AAAA3333");
 
         locateFirstUsedSlot().ok(0);
+        subFinish();
+        subStart("AAAA44444");
         locateLastUsedSlot ().ok(2);
+        subFinish();
+        subStart("AAAA5555");
 
+        subFinish();
+        subStart("AAAA6666");
         putKey (new Int(1), new Int(11)); countInc();
-        putKey (new Int(3), new Int(22)); countInc();
+        subFinish();
+        subStart("AAAA7777");
+        putKey (new Int(3), new Int(22));
+        subFinish();
+        subStart("AAAA7777aaaa");
+        countInc();
+        subFinish();
+        subStart("AAAA8888");
 
         final Slots s = this;
+        subFinish();
+        subStart("AAAA9999");
         final Slots t = new Slots(s.build.parent(s).memory(null));                                                      // Create some more memory and copy the slots into it
+        subFinish();
+        subStart("AAAAaaaa");
+        subFinish();
+        subStart("AAAAbbbb");
         t.copy(s);
+        subFinish();
         //new I() {void a() {testStop(s);}};
         ok(()->s, """
 Slots    : size:  8, count:  2
@@ -2391,7 +2442,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_mergeFromRightOdd(false);
+    test_slots();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
