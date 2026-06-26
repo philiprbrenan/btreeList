@@ -1814,16 +1814,30 @@ Zero:
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {final Slots s = this;
+       {final Slots         s = this;
         final StringBuilder t = new StringBuilder();
-        insert(new Int(14)); new I() {void a() {t.append(s);} };
-        insert(new Int(13)); new I() {void a() {t.append(s);} };
-        insert(new Int(16)); new I() {void a() {t.append(s);} };
-        insert(new Int(15)); new I() {void a() {t.append(s);} };
-        insert(new Int(18)); new I() {void a() {t.append(s);} };
-        insert(new Int(17)); new I() {void a() {t.append(s);} };
-        insert(new Int(12)); new I() {void a() {t.append(s);} };
-        insert(new Int(11)); new I() {void a() {t.append(s);} };
+
+        new ForCount(new Int(8))                                                                                        // Using this rather complex for loop reduces the amount of code generated
+         {void body(Int Index)
+           {suppressJavaTracingStart();
+            final Int  k = new Int();
+            final int[]i = new int[] {14, 13, 16, 15, 18, 17, 12, 11};
+
+            new I()
+             {void   a() {k.ex(Int.Ops.set, i[Index.i()]);}
+              String v()
+               {final StringBuilder s = new StringBuilder("case("+Index.vn()+") ");
+                for(int j = 0; j < i.length; ++j) s.append(""+j+":"+k.vn() + " <= "+i[j]+"; ");
+                s.append(" endcase");
+                return ""+s;
+               }
+             };
+            suppressJavaTracingFinish();
+
+            insert(k); suppressJavaTracingStart(); new I() {void a() {t.append(s);}}; suppressJavaTracingFinish();
+           }
+         };
+
         ok(()->t, """
 Slots    : size:  8, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2417,7 +2431,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots();
+    test_insert();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
