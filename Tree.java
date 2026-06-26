@@ -4,7 +4,6 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Set all fields private that can be set private  etc.
 // Fix comments
-// Continue with subStart to eliminate all "not in a sub" messages and then locate any for loops that are being unrolled to create excessive amounts of code
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -42,12 +41,12 @@ class Tree extends Program                                                      
     int bytesNeededForFree;                                                                                             // Bytes needed for free chain
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
 
-    Build immediate    (boolean Immediate    ) {immediate     = Immediate;     return this;}
-    Build trace        (boolean Trace        ) {trace         = Trace;         return this;}
-    Build maxLeafSize  (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
-    Build maxBranchSize(int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
-    Build numberOfNodes(int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
-    Build execute      (boolean Execute      ) {execute       = Execute;       return this;}
+    Build     immediate (boolean Immediate    ) {immediate     = Immediate;     return this;}
+    Build         trace (boolean Trace        ) {trace         = Trace;         return this;}
+    Build   maxLeafSize (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
+    Build maxBranchSize (int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
+    Build numberOfNodes (int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
+    Build       execute (boolean Execute      ) {execute       = Execute;       return this;}
 
     Program.Build build()                                                                                               // Describe the program used to execute the tree algorithm
      {final Program.Build p = new Program.Build();                                                                      // Description of containing program
@@ -61,9 +60,9 @@ class Tree extends Program                                                      
       bytesNeededForFree    = freeChain.byteSize();
       memoryPositions       = new MemoryPositions();
 
-      p.memory   (size());
+      p.memory(   size());
       p.immediate(immediate);
-      p.trace    (trace);
+      p.trace(    trace);
       return p;
      }
 
@@ -74,7 +73,7 @@ class Tree extends Program                                                      
       final int size         = posCount     + ib();
      }
 
-    int size()      {return memoryPositions.size;}                                                                      // Bytes needed for the slots
+    int size () {return memoryPositions.size;}                                                                          // Bytes needed for the slots
    }
 
   Tree(Build Build)                                                                                                     // Create the tree
@@ -93,7 +92,7 @@ class Tree extends Program                                                      
     final boolean b2 = maxBranchSize     <  3;
     final boolean b3 = maxBranchSize % 2 == 0;
 
-    if (b1 && !b2 && !b3) stop(m1); else if (b1) say(m1);
+    if (b1 && !b2 && !b3) stop(m1); else if (b1) say(m1);                                                               // Check parameters and describe any errors
     if (b2        && !b3) stop(m2); else if (b2) say(m2);
     if (b3              ) stop(m3);
     build      = Build;
@@ -112,7 +111,7 @@ class Tree extends Program                                                      
 
   void treeBody () {}                                                                                                   // Override to apply code to the tree
 
-  int maxLeafSize ()   {return maxLeafSize;}                                                                            // Maximum size of a leaf
+  in  t maxLeafSize () {return maxLeafSize;}                                                                            // Maximum size of a leaf
   int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
   int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
   int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
@@ -1483,9 +1482,7 @@ Leaf   at:   2 size:   4, count:   4
         execute();
        }
      };
-   }
-
-  static void test_deleteAscending()
+   }                                                                                           static void test_deleteAscending()
    {          test_deleteAscending(true);
               test_deleteAscending(false);
    }
