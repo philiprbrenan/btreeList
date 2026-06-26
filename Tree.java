@@ -1378,8 +1378,10 @@ Leaf   at:   2 size:   4, count:   4
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(Index.Inc());
+        t.suppressJavaTracingStart();
         final StringBuilder T = t.print();
         t.new I() {void a() {s.append(T); } };
+        t.suppressJavaTracingFinish();
        }
      };
 
@@ -1489,15 +1491,20 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = 32;
     final Tree t = test_reloadTree(Ex);
+
+    t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
     t.new I() {void a() {s.append(S);} };
+    t.suppressJavaTracingFinish();
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(t.new Int(N).sub(Index));
+        t.suppressJavaTracingStart();
         final StringBuilder T = t.print();
         t.new I() {void a() {s.append(T); } };
+        t.suppressJavaTracingFinish();
        }
      };
 
@@ -1617,17 +1624,26 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = random_32.length;
     final Tree t = test_reloadTree(Ex);
+
+    t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
     t.new I() {void a() {s.append(S);} };
+    t.suppressJavaTracingFinish();
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int i = t.new Int();
+        t.suppressJavaTracingStart();
         t.new I() {void a() {i.ex(Int.Ops.set, random_32[Index.i()]);} };
+        t.suppressJavaTracingFinish();
+
         t.delete(i);
+
+        t.suppressJavaTracingStart();
         final StringBuilder T = t.print();
         t.new I() {void a() {s.append(T);} };
+        t.suppressJavaTracingFinish();
        }
      };
 
