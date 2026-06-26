@@ -495,6 +495,7 @@ class Tree extends Program                                                      
 
   public void insert(Int Key, Int Data)                                                                                 // Insert a key, data pair into the tree
    {subStart("Tree.insert");
+
     new If (isRootLeaf())
      {void Then()                                                                                                       // New right hand leaf
        {final Leaf R = leaf(root());
@@ -557,14 +558,14 @@ class Tree extends Program                                                      
     final Int   sk = r.splitLeft(l);                                                                                    // Split the full leaf into the new leaf
 
     final Branch.StepDown d = P.stepDown(Key);
-    new If (d.slot.notValid())                                                                                          // If the leaf was reached by stepping through top then insert the new left leaf high
+
+    final Bint s = new Bint();
+    new If (d.slot.valid())                                                                                             // If the leaf was reached by stepping through top then insert the new left leaf high
      {void Then()
-       {P.insert(sk, l.getLocation().i(), new Bint());                                                                  // Insert new left leaf high
-       }
-      void Else()
-       {P.insert(sk, l.getLocation().i(), d.slot);                                                                      // Insert new left leaf below the key in the indicated slot
+       {s.copy(d.slot);                                                                                                 // Insert new left leaf below the key in the indicated slot
        }
      };
+    P.insert(sk, l.getLocation().i(), s);                                                                               // Insert new left leaf below the key in the indicated slot
 
     new If (Key.le(sk))                                                                                                 // Insert the key in the left leaf if it less than the splitting key
      {void Then()
@@ -1370,8 +1371,13 @@ Leaf   at:   2 size:   4, count:   4
   static void test_deleteAscending(boolean Ex)
    {sayCurrentTestName();
     final int  N = 32;
-    final Tree t = test_reloadTree(Ex);
-    t.suppressJavaTracingStart();
+
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index);
+       }
+     };
 
     t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
@@ -1494,7 +1500,13 @@ Leaf   at:   2 size:   4, count:   4
   static void test_deleteDescending(boolean Ex)
    {sayCurrentTestName();
     final int  N = 32;
-    final Tree t = test_reloadTree(Ex);
+
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index);
+       }
+     };
 
     t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
@@ -1627,7 +1639,13 @@ Leaf   at:   2 size:   4, count:   4
   static void test_deleteRandom32(boolean Ex)
    {sayCurrentTestName();
     final int  N = random_32.length;
-    final Tree t = test_reloadTree(Ex);
+
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index);
+       }
+     };
 
     t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
@@ -1822,7 +1840,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload(!true);
+    test_deleteAscending(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
