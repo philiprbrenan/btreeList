@@ -28,6 +28,7 @@ public class Program extends Test                                               
   private int       currentPc;                                                                                          // Current program counter
   final        Stack<ByteMemory>                memories = new Stack<>();                                               // Memories used by this program and its dependent programs
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
+        static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
@@ -1278,6 +1279,7 @@ public class Program extends Test                                               
     abstract void     a ();                                                                                             // The action to be performed by the instruction
              String   v () {return appendTraceComments  ? "" :  traceComment();};                                       // Generate equivalent verilog with a trace comment
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
+    String traceBackAsComment() {return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";}                               // Trace back as a comment that can be placed into verilog code
    }
 
   final class Label                                                                                                     // Label jump targets in the program
@@ -1339,15 +1341,17 @@ public class Program extends Test                                               
 
   void variableNotSet (String Type, String Name)                                                                        // Variable not yet set message
    {final I i = parentProgram.executing;
-    final String m = (Name != null ? '"'+Name+'"'+" " : "") + "has not been set yet";
+    final String m = (Name != null ? '"'+Name+'"'+", " : "") + "has not been set yet";
     if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
   <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
-   {new I()
+   {suppressJavaTracingStart();
+     new I()
      {void a() {if (!ok(a.get(), b)) say("====\n", traceBack);}
      };
+    suppressJavaTracingFinish();
    }
 
 //D2 Instruction counts                                                                                                 // Count the number of instructions in each subroutine minus the instructions supplied by called subroutines
@@ -1356,19 +1360,20 @@ public class Program extends Test                                               
 
   static void subStart (String Name)
    {subs.push(Name);
+    subsTrace = joinStrings(subs, " ");                                                                                 // Trace of active subs
     if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, 0);                                           // Initialize instruction count for this subroutine
    }
 
-  static void subInc ()                                                                                                 // Increment the number of instructions associated with a method
+  static void subInc ()                                                                                                        // Increment the number of instructions associated with a method
    {if (subs.size() > 0)
      {final String n = subs.lastElement();
       instructionCounts.put(n, instructionCounts.get(n) + 1);
      }
    }
 
-  static String subGetAsComment () {return subs.size() > 0 ? "/* "+subs.lastElement()+" */" : "/* not in a sub */";}    // Get the current subroutine name as a comment
+  static String subGetAsComment () {return subs.size() > 0 ? "/* "+subsTrace+" */" : "/* not in a sub */";}                    // Get the current subroutine name as a comment
 
-  static void subFinish ()                                                                                              // Finish a subroutine definition
+  static void subFinish ()                                                                                                     // Finish a subroutine definition
    {if (subs.size() == 0) stop("No matching subStart()");
     subs.pop();
    }
@@ -1505,7 +1510,7 @@ module {name};                                                                  
   /*traceInt*/ s.append(traceVerilogVariable("traceInt",   "i", traceFile));
 
   for(int i = 0; i < memories.size(); ++i)                                                                              // Actions for each memory
-   {final ByteMemory m = memories.elementAt(i);                                                                         // Actions for each memory
+   {final ByteMemory m = memories.elementAt(i);
     s.append(traceVerilogMemoryPut    (m));
     s.append(traceVerilogMemoryGet    (m));
     s.append(traceVerilogMemoryPutBool(m));
@@ -1534,6 +1539,7 @@ module {name};                                                                  
          }
        }
       s.append("c = c + 1;");                                                                                           // Count instructions executed
+      s.append(i.traceBackAsComment());
       s.append(" end\n");
      }
                                                                                                                         // Dump memory at end if used
