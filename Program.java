@@ -37,7 +37,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output
+  final boolean                      appendTraceComments = false;                                                       // Add trace comments to trace output
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final Stack<Boolean>                 suppressJavaTrace = new Stack<>();                                               // Suppress java tracing if the top most entry exists and is true
@@ -1257,7 +1257,7 @@ public class Program extends Test                                               
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber;                                                                                        // The number of this instruction
-    final String    traceBack = traceBack();                                                                            // Line at which this instruction was created
+    final String    traceBack = appendTraceComments ?  traceBack() : null;                                              // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String traceComment = subGetAsComment();                                                                      // Sub during which this instruction was created
     final boolean javaTrace;                                                                                            // Trace java execution of this instruction if true
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
@@ -1279,7 +1279,7 @@ public class Program extends Test                                               
     abstract void     a ();                                                                                             // The action to be performed by the instruction
              String   v () {return appendTraceComments  ? "" :  traceComment();};                                       // Generate equivalent verilog with a trace comment
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
-    String traceBackAsComment() {return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";}                               // Trace back as a comment that can be placed into verilog code
+    String traceBackAsComment() {return traceBack != null ? "/*" + traceBack.replaceAll("\\n", ", ") + "*/" : "";}      // Trace back as a comment that can be placed into verilog code
    }
 
   final class Label                                                                                                     // Label jump targets in the program
@@ -1364,16 +1364,16 @@ public class Program extends Test                                               
     if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, 0);                                           // Initialize instruction count for this subroutine
    }
 
-  static void subInc ()                                                                                                        // Increment the number of instructions associated with a method
+  static void subInc ()                                                                                                 // Increment the number of instructions associated with a method
    {if (subs.size() > 0)
      {final String n = subs.lastElement();
       instructionCounts.put(n, instructionCounts.get(n) + 1);
      }
    }
 
-  static String subGetAsComment () {return subs.size() > 0 ? "/* "+subsTrace+" */" : "/* not in a sub */";}                    // Get the current subroutine name as a comment
+  static String subGetAsComment () {return subs.size() > 0 ? "/* "+subsTrace+" */" : "/* not in a sub */";}             // Get the current subroutine name as a comment
 
-  static void subFinish ()                                                                                                     // Finish a subroutine definition
+  static void subFinish ()                                                                                              // Finish a subroutine definition
    {if (subs.size() == 0) stop("No matching subStart()");
     subs.pop();
    }
@@ -1530,17 +1530,18 @@ module {name};                                                                  
 
     for(I i : code)                                                                                                     // Compile each instruction to Verilog
      {s.append(f("        %4d: begin t = %d; %s", i.instructionNumber, i.javaTrace ? 1 : 0, i.v()));                    // Program counter == instruction number, tracing status, instruction code
-      if (i.jump == I.Jump.might) s.append(" else");
+      if (i.jump == I.Jump.might) s.append(" else");                                                                    // Conditionally increment program counter to allow jumps to occur
       if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
       if (appendTraceComments)    s.append(i.traceComment());
-      if (dumpMemoryEvery != null)
+      if (dumpMemoryEvery != null)                                                                                      // Dump memory periodically if requested
        {for(ByteMemory m: memories)
-         {s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+m.i()+"();");                                  // Dump memory periodically if requested
+         {s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+m.i()+"();");
          }
        }
       s.append("c = c + 1;");                                                                                           // Count instructions executed
+      s.append(" end");
       s.append(i.traceBackAsComment());
-      s.append(" end\n");
+      s.append("\n");
      }
                                                                                                                         // Dump memory at end if used
     /* Execute default*/s.append("""
