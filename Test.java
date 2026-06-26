@@ -501,7 +501,7 @@ public class Test                                                               
 
     for(StackTraceElement s : t)
      {final String m = s.getMethodName();
-      if (m.equals("<init>") || m.equals("traceComment") || m.equals("getStackTrace")) continue;
+      if (m.equals("traceComment") || m.equals("getStackTrace")) continue;
       final String f = s.getFileName();
       final int    l = s.getLineNumber();
       S.append(f("%s:%04d:%s; ", f, l, m));
