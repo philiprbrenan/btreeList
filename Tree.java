@@ -1395,7 +1395,7 @@ Leaf   at:   2 size:   4, count:   4
        }
      };
 
-    //t.new I() {void a() {stop(s);}};
+    t.new I() {void a() {stop(s);}};
     t.check(s, """
                8                         16                                                     |
        4                   12                          20            24                         |
