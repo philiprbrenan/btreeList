@@ -1,4 +1,4 @@
-# Test 2026-06-26 at 04:04:48
+# Test 2026-06-26 at 04:14:19
 
 name: Test
 run-name: btreeList
@@ -58,4 +58,30 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Tree_7
+        path: verilog
+
+    - name: Tree_8
+      if: ${{             matrix.task == 'Tree_8' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 8
+        tree
+
+    - name: Upload Tree_8
+      if: ${{ always() && matrix.task == 'Tree_8' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Tree_8
+        path: verilog
+
+    - name: Tree_9
+      if: ${{             matrix.task == 'Tree_9' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 9
+        tree
+
+    - name: Upload Tree_9
+      if: ${{ always() && matrix.task == 'Tree_9' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Tree_9
         path: verilog
