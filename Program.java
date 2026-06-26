@@ -2,9 +2,7 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Make private:  maxSteps, dumpMemoryEvery
 // method () call()
-// c = c + 1 to c <= c + 1
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -38,7 +36,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = !true;                                                        // Add trace comments to trace output
+  final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final Stack<Boolean>                 suppressJavaTrace = new Stack<>();                                               // Suppress java tracing if the top most entry exists and is true
@@ -203,7 +201,7 @@ public class Program extends Test                                               
      };
    }
 
-  <T extends Int> T If(Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                          //N Choose between two alternatives
+  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives
    {new If (Choice)
      {void Then() {Set.set(Then.get());}
       void Else() {Set.set(Else.get());}
@@ -1059,30 +1057,6 @@ public class Program extends Test                                               
       return r;
      }
 
-    Int getInt2(Int I)                                                                                                  // Get the int at the indicated position
-     {final Int r = new Int();
-      new I()
-       {void a()
-         {final int p = I.i();
-          final int d = Byte.toUnsignedInt(getByte(p+3)) << 24;
-          final int c = Byte.toUnsignedInt(getByte(p+2)) << 16;
-          final int b = Byte.toUnsignedInt(getByte(p+1)) <<  8;
-          final int a = Byte.toUnsignedInt(getByte(p+0)) <<  0;
-          final int R = d | c | b | a;
-          r.ex(Int.Ops.set, R);
-         }
-        String v()
-         {final String n = I.vn();
-          final StringBuilder s = new StringBuilder("{getMemory_"+i()+"("+n+"+3), "+
-                                                     "getMemory_"+i()+"("+n+"+2), "+
-                                                     "getMemory_"+i()+"("+n+"+1), "+
-                                                     "getMemory_"+i()+"("+n+")}");
-          return r.vtrace(s);
-         }
-       };
-      return r;
-     }
-
     int getInt (int I)                                                                                                  // Get the int at the indicated position
      {final int a = Byte.toUnsignedInt(getByte(I+0)) <<  0;
       final int b = Byte.toUnsignedInt(getByte(I+1)) <<  8;
@@ -1100,13 +1074,7 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool    getBool (Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                       // Get the bit at the bit indexed location
-//  boolean getBool (int I) {return getBit(getByte(I / Byte.SIZE), I % Byte.SIZE);}                                     //N Get the bit at the bit indexed location - debugging
-
-//  ByteMemory putByte (Int I, Int J)                                                                                   //N Set the byte at the indicated position relative to the start to the specified value
-//   {new I() {void a() {putByte(I.i(), J.i());}};
-//    return this;
-//   }
+    Bool getBool (Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                          // Get the bit at the bit indexed location
 
     ByteMemory putInt (Int I, Int J)                                                                                    // Set the int at the indicated position relative to the start to the specified value
      {new I()
@@ -1172,8 +1140,7 @@ public class Program extends Test                                               
       Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}              // Set the bit at the bit indexed position
       int     getInt (int I)                {return m.getInt (I*N+offset.i());}                                         // Get an int immediately when debugging
       Int     getInt ()
-       {final Int r = m.getInt2(offset); // Get the referenced int
-        if (codeSize() >= 74220 && codeSize() <= 74230) Test.say("DDDD", codeSize());
+       {final Int r = m.getInt(offset);                                                                                 // Get the referenced int
         return r;
        }
       Ref     putInt (Int J)                {m.putInt (offset, J);                           return this;}              // Put the referenced int
@@ -1181,7 +1148,6 @@ public class Program extends Test                                               
       boolean getBool (int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}          // Get the bit at the bit indexed location - debugging
 
       Ref step (int Width) {return new Ref(offset.Add(Width));}                                                         // Step up from an existing ref to make a new one - only while not executing
-//    Ref step (Int Width) {return new Ref(offset.Add(Width));}                                                         //N Step up from an existing ref to make a new one - only while not executing
 
       public String toString ()                                                                                         // Print memory reference
        {final StringBuilder s = saySb("Ref: " , offset.i());
@@ -1587,7 +1553,7 @@ endmodule
     begin
       %s = Value;                                                                                                       // Return value
       if (t) begin
-        file = $fopen("%s", "a");                                                                                         // Open named trace file
+        file = $fopen("%s", "a");                                                                                       // Open named trace file
         %s
         $fclose(file);
       end
