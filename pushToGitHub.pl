@@ -105,7 +105,7 @@ jobs:
         task: [$T]
 
     steps:
-    - uses: actions/checkout\@v4
+    - uses: actions/checkout\@v6
       with:
         ref: 'main'
 
