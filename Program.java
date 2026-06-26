@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Make private:  maxSteps, dumpMemoryEvery
 // method () call()
+// c = c + 1 to c <= c + 1
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -37,7 +38,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output
+  final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final Stack<Boolean>                 suppressJavaTrace = new Stack<>();                                               // Suppress java tracing if the top most entry exists and is true
@@ -1318,7 +1319,6 @@ public class Program extends Test                                               
 
     if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
-
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
         final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
