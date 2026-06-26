@@ -37,7 +37,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = !true;                                                        // Add trace comments to trace output
+  final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final Stack<Boolean>                 suppressJavaTrace = new Stack<>();                                               // Suppress java tracing if the top most entry exists and is true
@@ -264,7 +264,7 @@ public class Program extends Test                                               
      {Goto(end);                                                                                                        // Jump over the code of the subroutine when it is being defined
       start.set();                                                                                                      // Start of subroutine code
       body();                                                                                                           // Code of subroutine
-      Goto(returnAddress);                                                                                              // Address at at which to resume execution after the subroutine call
+      Goto(returnAddress);                                                                                              // Address at which to resume execution after the subroutine call
       end.set();                                                                                                        // End of the procedure
      }
 
@@ -329,7 +329,7 @@ public class Program extends Test                                               
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  final class Bool                                                                                                      // An integer that can be passed as a parameter to a method and modified there-in
+  final class Bool                                                                                                      // An integer that can be passed as a parameter to a method and modified therein
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = parentProgram.nextBoolId++;                                                                          // Unique id for Bool
@@ -814,7 +814,7 @@ public class Program extends Test                                               
       return b;
      }
 
-    Int invalidate ()                                                                                                   // Invalidate the integer. The invalidation is done in such a away as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+    Int invalidate ()                                                                                                   // Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
      {new I()
        {void   a() {ex(Ops.set, -1); v = false;}
         String v() {return ev(Ops.set, -1);}
@@ -952,7 +952,7 @@ public class Program extends Test                                               
       final Stack<ByteMemory> m = program().memories; id = m.size(); m.push(this);                                      // Give the memory a unique identifier and save it in the main program
      }
 
-    String i () {return ""+id;}                                                                                         // Number of memory a a string for use in writing verilog
+    String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
 
     private byte getByte (int I)                                                                                        // Get the value of a byte
@@ -1016,7 +1016,7 @@ public class Program extends Test                                               
       return this;
      }
 
-//  ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it values unlikely to be valid
+//  ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it to values unlikely to be valid
 //   {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
 //    return this;
 //   }
