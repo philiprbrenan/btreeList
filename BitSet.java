@@ -8,45 +8,49 @@ import java.util.*;                                                             
 
 final public class BitSet extends Program                                                                               // Fixed-size bit set using byte-level storage.
  {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
-  final int             byteSize;                                                                                       // Number of bytes in the bit set.
-  final boolean       powerOfTwo;                                                                                       // Some operations can be optimized if the bitset has a number of elements that is a power of two
-  final Build              build;                                                                                       // Memory to use
-  final ByteMemory.Ref memoryRef;                                                                                       // Build used to create bitset
-  static int bitsetNumbers = 0;                                                                                         // Bitsets created
-  final  int bitsetNumber  = ++bitsetNumbers;                                                                           // Number of this bitset
-  final  int[]limitsUpperOne;                                                                                           // The upper limit of the ones  tree for each possible position in the ones tree
-  final  int[]limitsUpperZero;                                                                                          // The upper limit of the zeros tree for each possible position in the ones tree
-  final  int[]limitsLowerOne;                                                                                           // The lower limit of the ones  tree for each possible position in the ones tree
-  final  int[]limitsLowerZero;                                                                                          // The lower limit of the zeros tree for each possible position in the ones tree
-  final  int[]heightOne;                                                                                                // Position in ones tree to height in ones tree
-  final  int[]heightZero;                                                                                               // Position in zeros tree to height in zeros tree
-  final  int[]posZero;                                                                                                  // Position in zeros tree row from position ones tree
-  final  int[]posOne;                                                                                                   // Position in ones tree row from position ones tree
-  final  String luoVerilog;                                                                                             // Verilog functions to lookup constants from arrays describing shape of trees
-  final  String luzVerilog;
-  final  String lloVerilog;
-  final  String llzVerilog;
-  final  String hoVerilog ;
-  final  String hzVerilog ;
-  final  String poVerilog;
-  final  String pzVerilog;
+  final int              byteSize;                                                                                      // Number of bytes in the bit set.
+  final boolean        powerOfTwo;                                                                                      // Some operations can be optimized if the bitset has a number of elements that is a power of two
+  final boolean        trackCount;                                                                                      // Track the count of number of bits set to one
+  final Build               build;                                                                                      // Memory to use
+  final ByteMemory.Ref  memoryRef;                                                                                      // Build used to create bitset
+  final ByteMemory.Ref memoryCount;                                                                                     // Memory for count field of present
+  static int         bitsetNumbers = 0;                                                                                 // Bitsets created
+  final  int          bitsetNumber = ++bitsetNumbers;                                                                   // Number of this bitset
+  final  int[]     limitsUpperOne;                                                                                      // The upper limit of the ones  tree for each possible position in the ones tree
+  final  int[]    limitsUpperZero;                                                                                      // The upper limit of the zeros tree for each possible position in the ones tree
+  final  int[]     limitsLowerOne;                                                                                      // The lower limit of the ones  tree for each possible position in the ones tree
+  final  int[]    limitsLowerZero;                                                                                      // The lower limit of the zeros tree for each possible position in the ones tree
+  final  int[]          heightOne;                                                                                      // Position in ones tree to height in ones tree
+  final  int[]         heightZero;                                                                                      // Position in zeros tree to height in zeros tree
+  final  int[]            posZero;                                                                                      // Position in zeros tree row from position ones tree
+  final  int[]             posOne;                                                                                      // Position in ones tree row from position ones tree
+  final  String        luoVerilog;                                                                                      // Verilog functions to lookup constants from arrays describing shape of trees
+  final  String        luzVerilog;
+  final  String        lloVerilog;
+  final  String        llzVerilog;
+  final  String         hoVerilog;
+  final  String         hzVerilog;
+  final  String         poVerilog;
+  final  String         pzVerilog;
 
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
   final static class Build                                                                                              // Specification of a bitset
-   {int              bitSize = 1;                                                                                       // Number of bits in the bit set.
-    boolean        immediate = true;                                                                                    // Immediate mode execution by default
-    Program           parent = null;                                                                                    // Parent program whose code is to be written into.
-    ByteMemory.Ref memoryRef = null;                                                                                    // Program memory to be used
+   {int                bitSize = 1;                                                                                     // Number of bits in the bit set.
+    boolean          immediate = true;                                                                                  // Immediate mode execution by default
+    boolean         trackCount = true;                                                                                  // Track the count of number of bits set to one
+    Program             parent = null;                                                                                  // Parent program whose code is to be written into.
+    ByteMemory.Ref   memoryRef = null;                                                                                  // Program memory to be used
 
-    Build bitSize  (int     BitSize  ) {bitSize   = BitSize  ;    return this;}
-    Build immediate(boolean Immediate) {immediate = Immediate;    return this;}
-    Build memory   (Program.ByteMemory.Ref Ref) {memoryRef = Ref; return this;}
-    Build parent   (Program Parent)    {parent    = Parent   ;    return this;}
+    Build   bitSize (int     BitSize  )          {   bitSize = BitSize;   return this;}                                 // Requested size of bitset
+    Build immediate (boolean Immediate)          { immediate = Immediate; return this;}                                 // Execute instructions immediately instead of accumulating them
+    Build     count (boolean Count)              {trackCount = Count;     return this;}                                 // Maintain a count field to make retrieval of the count an O(1) operation
+    Build    memory (Program.ByteMemory.Ref Ref) { memoryRef = Ref;       return this;}                                 // Memory for bitset
+    Build    parent (Program Parent)             {    parent = Parent;    return this;}                                 // Parent program for code
 
-    int byteSize() {return (Byte.SIZE - 1 + 3 * nextPowerOfTwo(bitSize)) / Byte.SIZE;}                                  // Bytes needed for the bitset and its bit trees
+    int byteSize() {return (Byte.SIZE - 1 + 3 * nextPowerOfTwo(bitSize)) / Byte.SIZE + (trackCount ? ib() : 0);}        // Bytes needed for the bitset and its bit trees
 
-    Program.Build build()                                                                                               // Description of containing program
+    Program.Build build ()                                                                                              // Description of containing program
      {final Program.Build p = new Program.Build();
       if (memoryRef == null) p.memory(byteSize());
       p.immediate(immediate);
@@ -57,67 +61,87 @@ final public class BitSet extends Program                                       
 
   public BitSet(Build Build)                                                                                            // Constructor
    {super(Build.build());
-    build       = Build;
-    bitSize     = nextPowerOfTwo(size());                                                                               // Record size
-    bitSize1    = bitSize - 1;
-    bitSize2    = bitSize >>> 1;
-    powerOfTwo  = bitSize == size();
-    logBitSize  = logTwo(bitSize);
+    build            = Build;
+    bitSize          = nextPowerOfTwo(size());                                                                          // Record size
+    bitSize1         = bitSize - 1;
+    bitSize2         = bitSize >>> 1;
+    powerOfTwo       = bitSize == size();
+    logBitSize       = logTwo(bitSize);
+    trackCount       = build.trackCount;
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
-    byteSize    = Build.byteSize();                                                                                     // Bytes needed for the bitset and its bit trees
+    byteSize         = Build.byteSize();                                                                                // Bytes needed for the bitset and its bit trees
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
+    memoryCount      = trackCount ? byteMemory.new Ref(bytesNeeded() - ib()) : null;                                    // Maintain a count field to determine the number of bits set to one in O(1) time
 
-    luoVerilog = "x_bitSet_limitsUpperOne_" +bitSize;                                                                   // Verilog procedures to make references to constant arrays rather than holding them in memory
-    luzVerilog = "x_bitSet_limitsUpperZero_"+bitSize;
-    lloVerilog = "x_bitSet_limitsLowerOne_" +bitSize;
-    llzVerilog = "x_bitSet_limitsLowerZero_"+bitSize;
-    hoVerilog  = "x_bitSet_heightOne_"      +bitSize;
-    hzVerilog  = "x_bitSet_heightZero_"     +bitSize;
-    poVerilog  = "x_bitSet_posOne_"         +bitSize;
-    pzVerilog  = "x_bitSet_posZero_"        +bitSize;
+    luoVerilog       = "x_bitSet_limitsUpperOne_" +bitSize;                                                             // Verilog procedures to make references to constant arrays rather than holding them in memory
+    luzVerilog       = "x_bitSet_limitsUpperZero_"+bitSize;
+    lloVerilog       = "x_bitSet_limitsLowerOne_" +bitSize;
+    llzVerilog       = "x_bitSet_limitsLowerZero_"+bitSize;
+     hoVerilog       = "x_bitSet_heightOne_"      +bitSize;
+     hzVerilog       = "x_bitSet_heightZero_"     +bitSize;
+     poVerilog       = "x_bitSet_posOne_"         +bitSize;
+     pzVerilog       = "x_bitSet_posZero_"        +bitSize;
 
-    limitsUpperOne   = new int[top_one ()+1]; limitsUpperOne ();                                                        // Upper limits of ones tree
+    limitsUpperOne   = new int[top_one ()+1];  limitsUpperOne();                                                        // Upper limits of ones tree
     limitsUpperZero  = new int[top_zero()+2]; limitsUpperZero();                                                        // Upper limits of zeros tree
-    limitsLowerOne   = new int[top_one ()+1]; limitsLowerOne ();                                                        // Lower limits of ones tree
+    limitsLowerOne   = new int[top_one ()+1];  limitsLowerOne();                                                        // Lower limits of ones tree
     limitsLowerZero  = new int[top_zero()+2]; limitsLowerZero();                                                        // Lower limits of zeros tree
-    heightOne        = new int[top_one() +1]; heightOne      ();                                                        // Height of each node in the ones tree
-    heightZero       = new int[top_zero()+2]; heightZero     ();                                                        // Height of each node in the zeros tree
-    posOne           = new int[top_one() +1]; posOneArray   ();                                                         // Position in row in ones tree from position in zeros tree
-    posZero          = new int[top_zero()+2]; posZeroArray   ();                                                        // Position in row in zeros tree from position in zeros tree
+    heightOne        = new int[top_one() +1];       heightOne();                                                        // Height of each node in the ones tree
+    heightZero       = new int[top_zero()+2];      heightZero();                                                        // Height of each node in the zeros tree
+    posOne           = new int[top_one() +1];     posOneArray();                                                        // Position in row in ones tree from position in zeros tree
+    posZero          = new int[top_zero()+2];    posZeroArray();                                                        // Position in row in zeros tree from position in zeros tree
    }
 
-  BitSet initializeMemory() {memoryRef.clear(bytesNeeded()); return this;}                                              // Initialize memory
-  int bytesNeeded() {return build.byteSize();}                                                                          // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
-  int size()        {return build.bitSize;}                                                                             // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
-  Int logBitSize()  {return new Int(logBitSize);}                                                                       // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+  BitSet initializeMemory () {memoryRef.clear(bytesNeeded()); return this;}                                             // Initialize memory
+  int         bytesNeeded () {return build.byteSize();}                                                                 // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
+  int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
+  Int          logBitSize () {return new Int(logBitSize);}                                                              // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+  Int               count () {return trackCount ? memoryCount.getInt() : countAllOnes();}                               // Count number of set bits in bitset - the performasnc will nbe order (1) if the count is being tracked else N log(N)
 
 //D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
 
-  public void clear(Int Index) {set(Index, new Bool(false));}                                                           // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void set  (Int Index) {set(Index, new Bool(true ));}                                                           // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void set  (Int Index, Bool Value)                                                                              // Set or clear a bit in the bitset
-   {new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value in actual bits
+  public void clear (Int Index) {set(Index, new Bool(false));}                                                          // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void   set (Int Index) {set(Index, new Bool(true ));}                                                          // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void   set (Int Index, Bool Value)                                                                             // Set or clear a bit in the bitset
+   {if (immediate())                                                                                                    // Check index is in range
+     {if (Index.i() <        0) stop("Index less than zero: ", Index);
+      if (Index.i() >= bitSize) stop("Index larger than bitset size:", Index, bitSize);
+     }
+    new If (getBit(Index).ne(Value))                                                                                    // Bit not already set to the correct value in actual bits
      {void Then()
-       {setBitNC(Index, Value);                                                                                         // Set the bit
+       {if (trackCount)
+         {final Int c = memoryCount.getInt();                                                                           // Current count
+          new If (Value)                                                                                                // Change the count if the bit is being changed
+           {void Then() {memoryCount.putInt(new Int(c.Inc()));}
+            void Else() {memoryCount.putInt(new Int(c.Dec()));}
+           };
+
+          if (immediate())
+           {final int C = memoryCount.getInt().i();                                                                     // Check new count is in range
+            if (C <       0) stop("Count has gone negative:", C);
+            if (C > bitSize) stop("Count has gone too high:", C, bitSize);
+           }
+         }
+        setBitNC(Index, Value);                                                                                         // Set the bit
         new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the ones  tree
         new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the zeros tree
        }
      };
    }
 
-  Bool    getBit  (Int Index)             {if (immediate()) checkInActual(Index); return getBitNC(Index);}              // Get a bit from the bit set
-  Bool    getBitNC(Int Index)             {return memoryRef.getBool(Index);}                                            // Get bit value at an index without checking that the index is valid
-  boolean getBitNC(int Index)             {return memoryRef.getBool(Index);}                                            // Get bit value at an index without checking that the index is valid
+  Bool      getBit (Int Index)             {if (immediate()) checkInActual(Index); return getBitNC(Index);}             // Get a bit from the bit set
+  Bool    getBitNC (Int Index)             {return memoryRef.getBool(Index);}                                           // Get bit value at an index without checking that the index is valid
+  boolean getBitNC (int Index)             {return memoryRef.getBool(Index);}                                           // Get bit value at an index without checking that the index is valid
 
-  void setBit     (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                            // Set bit value.
-  void setBitNC   (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                            // Set bit value without checking index
-  void setBitNC   (Int Index)             {memoryRef.putBool(Index, new Bool(true));}                                   // Set bit value without checking index
-  void clearBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(false));}                                  // Clear a bit value without checking index
+  void      setBit (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                           // Set bit value.
+  void    setBitNC (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                           // Set bit value without checking index
+  void    setBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(true));}                                  // Set bit value without checking index
+  void  clearBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(false));}                                 // Clear a bit value without checking index
 
-  void setOnePath(Int Index)                                                                                            // Set bits along the path from the indexed bit to the root of the ones tree
+  void setOnePath (Int Index)                                                                                           // Set bits along the path from the indexed bit to the root of the ones tree
    {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
 
-    new For(logBitSize())                                                                                                 // Set bits along the path to the root of the ones tree
+    new For(logBitSize())                                                                                               // Set bits along the path to the root of the ones tree
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p).Flip())                                                                                     // Is the bit not already set
          {void Then() {setBitNC(p); p.set(parentOne(p)); Continue.set(); }                                              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
@@ -126,7 +150,7 @@ final public class BitSet extends Program                                       
      };
    }
 
-  void clearOnePath(Int Index)                                                                                          // Clear bits along the path to the root of the ones tree if both children are zero
+  void clearOnePath (Int Index)                                                                                         // Clear bits along the path to the root of the ones tree if both children are zero
    {final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
     new For(logBitSize())
      {void body(Int Index, Bool Continue)
@@ -146,7 +170,7 @@ final public class BitSet extends Program                                       
      };
    }
 
-  private void setZeroPath(Int Index)                                                                                   // There is a one in the actual bits below this position in the zeros tree
+  private void setZeroPath (Int Index)                                                                                  // There is a one in the actual bits below this position in the zeros tree
    {final Int p = parentZero(Index);                                                                                    // Parent position in zeros tree
     final Int q = childLowZero(p);                                                                                      // Children in actual bits
     new If (getBitNC(q))                                                                                                // Both actual bits are one so the parent must be zero indicating no zeros
@@ -178,7 +202,7 @@ final public class BitSet extends Program                                       
      };
    }
 
-  private void clearZeroPath(Int Index)                                                                                 // There is a zero in the actual bits under this position in the zeros tree
+  private void clearZeroPath (Int Index)                                                                                // There is a zero in the actual bits under this position in the zeros tree
    {final Int p = parentZero(Index);                                                                                    // Position in zeros tree
     new For(logBitSize())
      {void body(Int Index, Bool Continue)
@@ -191,7 +215,7 @@ final public class BitSet extends Program                                       
 
 //D1 Powers and Positions                                                                                               // Positions of each bit in each layer in the ones and zeros trees
 
-  void checkInActual(Int Pos)                                                                                           // Check that we are in the actual bits
+  void checkInActual (Int Pos)                                                                                          // Check that we are in the actual bits
    {if (immediate())
      {final int a = 0, b = size(), P = Pos.i();
       if (P < a) stop("Position is below actual bits:", P, a);
@@ -199,7 +223,7 @@ final public class BitSet extends Program                                       
      }
    }
 
-  void checkInOnesTree(Int Pos)                                                                                         // Check that we are in the ones tree
+  void checkInOnesTree (Int Pos)                                                                                        // Check that we are in the ones tree
    {if (immediate())
      {final int a = base_one(), b = a + bitSize, P = Pos.i();
       if (P < a) stop("Position is below ones tree:", P, a);
@@ -207,7 +231,7 @@ final public class BitSet extends Program                                       
      }
    }
 
-  void checkInActualOrOnes(Int Pos)                                                                                     // Check that we are in the actual bits or the ones tree
+  void checkInActualOrOnes (Int Pos)                                                                                    // Check that we are in the actual bits or the ones tree
    {if (immediate() && Pos.i() < size()) checkInActual(Pos); else checkInOnesTree(Pos);
    }
 
@@ -219,50 +243,50 @@ final public class BitSet extends Program                                       
      }
    }
 
-  void checkInActualOrZeros(Int Pos)                                                                                    // Check that we are in the zeros tree or the actual bits
+  void checkInActualOrZeros (Int Pos)                                                                                   // Check that we are in the zeros tree or the actual bits
    {if (immediate() && Pos.i() < size()) checkInActual(Pos); else checkInZerosTree(Pos);
    }
 
-  int top_zero()     {return 2 * bitSize - 2 + bitSize1;}                                                               // Top of the zeros tree if it exists - zero based
-  Int topZero()      {return new Int(top_zero());}                                                                      //N Top of the zeros tree if it exists - zero based
-  int top_one ()     {return 2 * bitSize - 2;}                                                                          // Top of the ones  tree if it exists - zero based
-  Int topOne ()      {return new Int(top_one());}                                                                       // Top of the ones  tree if it exists - zero based
+  int       top_zero ()        {return 2 * bitSize - 2 + bitSize1;}                                                     // Top of the zeros tree if it exists - zero based
+  Int        topZero ()        {return new Int(top_zero());}                                                            //N Top of the zeros tree if it exists - zero based
+  int        top_one ()        {return 2 * bitSize - 2;}                                                                // Top of the ones  tree if it exists - zero based
+  Int         topOne ()        {return new Int(top_one());}                                                             // Top of the ones  tree if it exists - zero based
 
-  int posOne (int P) {return 1 * bitSize + P;}                                                                          // Position in the ones  tree if it exists, argument is zero based as is the result
-  int posZero(int P) {return 2 * bitSize + P - 1;}                                                                      // Position in the zeros tree if it exists, argument is zero based as is the result
+  int         posOne (int P)   {return 1 * bitSize + P;}                                                                // Position in the ones  tree if it exists, argument is zero based as is the result
+  int        posZero (int P)   {return 2 * bitSize + P - 1;}                                                            // Position in the zeros tree if it exists, argument is zero based as is the result
 
-  Int zeroToOne(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
-  Int oneToZero(Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
+  Int      zeroToOne (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
+  Int      oneToZero (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
 
-  Int childHighOne (Int Pos) {return childLowOne(Pos).Inc();}                                                           // Step to the corresponding child high bit index from this parent bit index
-  Int childLowOne  (Int Pos) {return Pos.Dec().mul(2).sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
-  Int parentOne    (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                  // Step to the corresponding parent bit index for this child bit index
+  Int   childHighOne (Int Pos) {return childLowOne(Pos).Inc();}                                                         // Step to the corresponding child high bit index from this parent bit index
+  Int    childLowOne (Int Pos) {return Pos.Dec().mul(2).sub(topOne());}                                                 // Step to the corresponding child low  bit index from this parent bit index
+  Int      parentOne (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                // Step to the corresponding parent bit index for this child bit index
 
-  Int childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                          // Step to low child in zeros tree
-  Int childHighZero(Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                          // Step to high child in zeros tree
-  Int parentZero   (Int Pos) {return oneToZero(parentOne   (zeroToOne(Pos)));}                                          // Step to the corresponding parent bit index for this child bit index
+  Int   childLowZero (Int Pos) {return oneToZero(childLowOne (zeroToOne(Pos)));}                                        // Step to low child in zeros tree
+  Int  childHighZero (Int Pos) {return oneToZero(childHighOne(zeroToOne(Pos)));}                                        // Step to high child in zeros tree
+  Int     parentZero (Int Pos) {return oneToZero(parentOne   (zeroToOne(Pos)));}                                        // Step to the corresponding parent bit index for this child bit index
 
-  int base_zero()  {return posZero(0);}                                                                                 // Start of the zeros tree
-  int base_one ()  {return posOne (0);}                                                                                 // Start of the ones tree
+  int      base_zero ()        {return posZero(0);}                                                                     // Start of the zeros tree
+  int       base_one ()        {return posOne (0);}                                                                     // Start of the ones tree
 
-  Int baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, base_zero ()       );} String v() {return r.vtrace(""+posZero(0));}}; return r;} //N Position in the current row
-  Int baseOne  ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, base_one  ()       );} String v() {return r.vtrace(""+posOne (0));}}; return r;} //N Position in the current row
-  Int pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   [Pos.i()]);} String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row in the zeros tree
-  Int pos_one  (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    [Pos.i()]);} String v() {return r.vtrace(poVerilog +"("+Pos.vn()+")");}}; return r;} //N Position in the current row in the ones tree
+  Int       baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, base_zero ()       );} String v() {return r.vtrace(""+posZero(0));}}; return r;} //N Position in the current row
+  Int        baseOne ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, base_one  ()       );} String v() {return r.vtrace(""+posOne (0));}}; return r;} //N Position in the current row
+  Int       pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   [Pos.i()]);} String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row in the zeros tree
+  Int        pos_one (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    [Pos.i()]);} String v() {return r.vtrace(poVerilog +"("+Pos.vn()+")");}}; return r;} //N Position in the current row in the ones tree
 
-  Int limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace(luoVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
-  Int limitUpperZero(Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace(luzVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
-  Int limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);} String v() {return r.vtrace(lloVerilog+"("+Pos.vn()+")");}}; return r;} // Lower limit of the current row in the ones tree
-  Int limitLowerZero(Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);} String v() {return r.vtrace(llzVerilog+"("+Pos.vn()+")");}}; return r;} //N Lower limit of the current row in the zeros tree
-  Int heightOne     (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace(hoVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the ones tree
-  Int heightZero    (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace(hzVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the zeros tree
+  Int  limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace(luoVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero (Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace(luzVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
+  Int  limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);} String v() {return r.vtrace(lloVerilog+"("+Pos.vn()+")");}}; return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero (Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);} String v() {return r.vtrace(llzVerilog+"("+Pos.vn()+")");}}; return r;} //N Lower limit of the current row in the zeros tree
+  Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace(hoVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the ones tree
+  Int     heightZero (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace(hzVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the zeros tree
 
-  int pos_zero (int Pos)                                                                                                // Position in the indicated row of the zeros tree
+  int       pos_zero (int Pos)                                                                                                // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
     return p;
    }
 
-  int pos_one  (int Pos)                                                                                                // Position in the indicated row of the ones tree
+  int        pos_one (int Pos)                                                                                                 // Position in the indicated row of the ones tree
    {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
     int p = Pos - base_one();
     int b = bitSize2;
@@ -270,57 +294,57 @@ final public class BitSet extends Program                                       
     return p;
    }
 
-  void posZeroArray()                                                                                                    // Position in row from position in ones tree
+  void  posZeroArray ()                                                                                                  // Position in row from position in ones tree
    {for (int i = 0, N = top_zero(); i <= N; ++i) posZero[i] = pos_zero(i);
     defineArrayViaVerilogFunction(pzVerilog, posZero);
    }
 
-  void posOneArray()                                                                                                    // Position in row from position in ones tree
+  void   posOneArray ()                                                                                                   // Position in row from position in ones tree
    {for (int i = 0, N = top_one(); i <= N; ++i) posOne[i] = pos_one(i);
     defineArrayViaVerilogFunction(poVerilog, posOne);
    }
 
-  void limitsUpperOne()                                                                                                 // Upper limits of the ones tree
+  void limitsUpperOne ()                                                                                                // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
     final int N = top_one();
     for (int i = 0; i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
     defineArrayViaVerilogFunction(luoVerilog, limitsUpperOne);
    }
 
-  void limitsUpperZero()                                                                                                // Upper limits of the zeros tree
+  void limitsUpperZero ()                                                                                               // Upper limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i]; else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
     defineArrayViaVerilogFunction(luzVerilog, limitsUpperZero);
    }
 
-  void limitsLowerOne()                                                                                                 // Lower limits of the ones tree
+  void limitsLowerOne ()                                                                                                // Lower limits of the ones tree
    {int l = 0, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
     defineArrayViaVerilogFunction(lloVerilog, limitsLowerOne);
    }
 
-  void limitsLowerZero()                                                                                                // Lower limits of the zeros tree
+  void limitsLowerZero ()                                                                                               // Lower limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i]; else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
     defineArrayViaVerilogFunction(llzVerilog, limitsLowerZero);
    }
 
-  void heightOne()                                                                                                      // Height of each node in the ones tree
+  void heightOne ()                                                                                                     // Height of each node in the ones tree
    {int l = 0, w = bitSize, h = 0;
     for (int i = 0, N = top_one(); i <= N; ++i) {heightOne[i] = h; if (i >= l+w-1) {l += w; w >>>= 1; ++h;}}
     defineArrayViaVerilogFunction(hoVerilog, heightOne);
    }
 
-  void heightZero()                                                                                                     // Height of each node in the zeros tree
+  void heightZero ()                                                                                                    // Height of each node in the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
      }
     defineArrayViaVerilogFunction(hzVerilog, heightZero);
    }
 
-  Int lowOne(Int Pos)                                                                                                   // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
+  Int lowOne (Int Pos)                                                                                                  // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
    {subStart("Bitset.lowOne");
     checkInActualOrOnes(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
@@ -338,7 +362,7 @@ final public class BitSet extends Program                                       
     return p;
    }
 
-  Int highOne(Int Pos)                                                                                                  // Find the highest bit position with a one in it below the indicated subtree in the ones tree
+  Int highOne (Int Pos)                                                                                                 // Find the highest bit position with a one in it below the indicated subtree in the ones tree
    {subStart("Bitset.highOne");
     checkInActualOrOnes(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
@@ -356,7 +380,7 @@ final public class BitSet extends Program                                       
     return p;
    }
 
-  Int lowZero(Int Pos)                                                                                                  // Find the lowest bit position with a zero in it below the indicated subtree in the zeros tree
+  Int lowZero (Int Pos)                                                                                                 // Find the lowest bit position with a zero in it below the indicated subtree in the zeros tree
    {subStart("Bitset.lowZero");
     checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go low from Pos:", Pos, this);                                   // We can only step down from a zero in the zeros tree
@@ -374,7 +398,7 @@ final public class BitSet extends Program                                       
     return p;
    }
 
-  Int highZero(Int Pos)                                                                                                 // Find the highest bit position with a zero in it below the indicated subtree in the zeros tree
+  Int highZero (Int Pos)                                                                                                // Find the highest bit position with a zero in it below the indicated subtree in the zeros tree
    {subStart("Bitset.highZero");
     checkInActualOrZeros(Pos);
     if (immediate() && getBitNC(Pos).b()) stop("Cannot go high from Pos:", Pos, this);                                  // We can only step down from a zero in the zeros tree
@@ -392,7 +416,7 @@ final public class BitSet extends Program                                       
     return p;
    }
 
-  Bool canGoLeftToOne(Int Pos)                                                                                          // Whether we can go left from the current position
+  Bool canGoLeftToOne (Int Pos)                                                                                         // Whether we can go left from the current position
    {subStart("Bitset.canGoLeft");
     checkInOnesTree(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
@@ -401,7 +425,7 @@ final public class BitSet extends Program                                       
     return r;
    }
 
-  Bool canGoRightToOne(Int Pos)                                                                                         // Whether we can go right from the current position
+  Bool canGoRightToOne (Int Pos)                                                                                        // Whether we can go right from the current position
    {subStart("Bitset.canGoRight");
     checkInOnesTree(Pos);
     if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:",  Pos, this);                           // We can only step down from a one in the ones tree
@@ -784,11 +808,12 @@ final public class BitSet extends Program                                       
 
 //D1 Tests                                                                                                              // Tests
 
-  static BitSet test_bits(boolean Ex, int N)                                                                            // Create test bitset.
+  static BitSet test_bits(boolean Ex, int N)                {return test_bits(Ex, N, false);}                           // Create test bitset.
+  static BitSet test_bits(boolean Ex, int N, boolean Count)                                                             // Create test bitset.
    {subStart("BitSet.test_bits");
     final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Allocate backing storage.
     final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
-    final BitSet    b = new BitSet(build); //.initializeMemory();                                                           // Create a bit set
+    final BitSet    b = new BitSet(build);                                                                              // Create a bit set
     subFinish();
     return b;                                                                                                           // Return test bitset.
    }
@@ -992,18 +1017,21 @@ Zero:
   static void test_oneZero(boolean Ex)
    {sayCurrentTestName();
     final int N = 8;
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = test_bits(Ex, N, true);
     final StringBuilder s = new StringBuilder();
     b.new I() {void a() {s.append("Start:\n"+b);}         };
 
     for (int i : range(N))
-     {b.set(b.new Int(i), b.new Bool(true));
+     {b.count().ok(i);
+      b.set(b.new Int(i));
       b.new I() {void a() {s.append("Set: "+i+"\n"+b);}   };
      }
     for (int i : range(N))
-     {b.set(b.new Int(i), b.new Bool(false));
+     {b.count().ok(N-i);
+      b.clear(b.new Int(i));
       b.new I() {void a() {s.append("Clear: "+i+"\n"+b);} };
      }
+    b.count().ok(0);
     b.execute();
     //testStop(s);
     ok(""+s, """
