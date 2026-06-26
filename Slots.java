@@ -59,7 +59,7 @@ class Slots extends Program                                                     
       final int R = numberOfKeys();
 
       final BitSet.Build us = new BitSet.Build().bitSize(N);                                                            // Specification of bit set for used slots
-      final BitSet.Build ur = new BitSet.Build().bitSize(R);                                                            // Specification of bit set for references
+      final BitSet.Build ur = new BitSet.Build().bitSize(R).count(true);                                                // Specification of bit set for references
 
       final int posSlotsToKeys     = 0;                                                                                 // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
       final int posKeysToSlots     = posSlotsToKeys     + ib(N);                                                        // Used keys to slot referencing the key
