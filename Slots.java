@@ -1051,43 +1051,18 @@ class Slots extends Program                                                     
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {subStart("AAAA1111");
-        putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
-        subFinish();
-        subStart("AAAA2222");
+       {putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
         putSlotToKeys(new Int(0), new Int(1));
-        subFinish();
-        subStart("AAAA3333");
 
         locateFirstUsedSlot().ok(0);
-        subFinish();
-        subStart("AAAA44444");
         locateLastUsedSlot ().ok(2);
-        subFinish();
-        subStart("AAAA5555");
 
-        subFinish();
-        subStart("AAAA6666");
         putKey (new Int(1), new Int(11)); countInc();
-        subFinish();
-        subStart("AAAA7777");
-        putKey (new Int(3), new Int(22));
-        subFinish();
-        subStart("AAAA7777aaaa");
-        countInc();
-        subFinish();
-        subStart("AAAA8888");
+        putKey (new Int(3), new Int(22)); countInc();
 
         final Slots s = this;
-        subFinish();
-        subStart("AAAA9999");
         final Slots t = new Slots(s.build.parent(s).memory(null));                                                      // Create some more memory and copy the slots into it
-        subFinish();
-        subStart("AAAAaaaa");
-        subFinish();
-        subStart("AAAAbbbb");
         t.copy(s);
-        subFinish();
         //new I() {void a() {testStop(s);}};
         ok(()->s, """
 Slots    : size:  8, count:  2
