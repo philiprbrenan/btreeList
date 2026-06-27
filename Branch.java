@@ -200,7 +200,6 @@ class Branch extends Program implements Program.Locatable                       
          };
        }
      };
-    slots.countInc();                                                                                                   // Update key count for branch
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
 
@@ -241,11 +240,11 @@ class Branch extends Program implements Program.Locatable                       
     return r;
    }
 
-  Int splitRight (Branch Right)                                                                                          // Split a full branch rightwards into a supplied branch and return the splitting key
+  Int splitRight (Branch Right)                                                                                         // Split a full branch rightwards into a supplied branch and return the splitting key
    {subStart("Branch.splitRight");
     if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch left = this;
-    Right.slots.clear();                                                                                                // Clear the target
+    Right.slots.initializeMemory();                                                                                     // Clear the target
     Right.refData.copy(left.refData, left.build.dataBytes());                                                           // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = left.slots.splitRightOdd(Right.slots);                                                               // Split the slots  and get the index of the splitting key
     Right.top(left.top());                                                                                              // Right top becomes left top
@@ -257,7 +256,7 @@ class Branch extends Program implements Program.Locatable                       
    {subStart("Branch.mergeRight");
     if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
-    Left.slots.clear();                                                                                                 // Clear target
+    Left.slots.initializeMemory();                                                                                      // Clear target
     Left.refData.copy(right.refData, right.build.dataBytes());                                                          // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = right.slots.splitLeftOdd(Left.slots);                                                                // Split the slots  and get the index of the splitting key
     Left .top(right.data(sk));                                                                                          // Left top is data from splitting key
