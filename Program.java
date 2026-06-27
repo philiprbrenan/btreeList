@@ -2,6 +2,7 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// change calls to program() with parentProgram
 // method () call()
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -37,7 +38,7 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final Stack<Boolean>                 suppressJavaTrace = new Stack<>();                                               // Suppress java tracing if the top most entry exists and is true
         boolean                                javaTrace = true;                                                        // Whether the execution of the java code should be traced for the current instruction
@@ -103,15 +104,17 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         new I(I.Jump.might)                                                                                             // Will jump
-         {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
-          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= "+ end.offset + ";";}                           // Index out of range
+         {void   a() {if (index.i() >=  End.i()) parentProgram.pc = end.offset;}                                        // Index out of range
+          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+ (end.offset - instructionNumber) + ";";}// Index out of range
          };
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
         new I(I.Jump.will)
-         {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
-          String v() {return "if ("+ cont.vn()+") pc <= "+start.offset+"; else pc <= "+end.offset+";";}                 // Continue execution of the loop as long as requested
+         {void   a() {parentProgram.pc = cont.b() ? start.offset : end.offset;}                                         // Continue execution of the loop as long as requested
+          String v()
+           {return "if ("+ cont.vn()+") pc <= pc + "+ (start.offset - instructionNumber) + "; "+
+                                  "else pc <= pc + "+ (end  .offset - instructionNumber) + ";";}                        // Continue execution of the loop as long as requested
          };
         end.set();                                                                                                      // End of the loop
        }
@@ -139,14 +142,14 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
-         {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
-          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= "+end.offset+";";}                              // Index out of range
+         {void   a() {if (index.i() >=  End.i()) parentProgram.pc = end.offset;}                                        // Index out of range
+          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+(end.offset-instructionNumber)+";";}     // Index out of range
          };
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
         new I(I.Jump.will)                                                                                              // Will jump
-         {void   a() {program().pc = start.offset;}                                                                     // Restart loop
-          String v() {return "pc <= "+start.offset+";";}                                                                // Index out of range
+         {void   a() {parentProgram.pc = start.offset;}                                                                 // Restart loop
+          String v() {return "pc <= pc + "+(start.offset - instructionNumber)+";";}                                     // Index out of range
          };
         end.set();                                                                                                      // End of the loop
        }
@@ -174,13 +177,13 @@ public class Program extends Test                                               
        {final Label lse = new Label();                                                                                  // Start of else
         final Label end = new Label();                                                                                  // End of if
         new I(I.Jump.might)                                                                                             // Jump to else if condition is false
-         {void   a() {          if (!Condition.b()) program().pc  =   lse.offset;}
-          String v() {return "if (!"+Condition.vn() +      ") pc <= "+lse.offset+";";}
+         {void   a() {          if (!Condition.b()) parentProgram.pc = lse.offset;}
+          String v() {return "if (!"+Condition.vn() + ") pc <= pc + "+(lse.offset-instructionNumber)+";";}
          };
         Then();                                                                                                         // Then body
         new I(I.Jump.will)                                                                                              // Jump over else to end
-         {void   a() {program().pc  = end.offset;}
-          String v() {return "pc <= "+end.offset+";";}
+         {void   a() {parentProgram.pc  = end.offset;}
+          String v() {return "pc <= pc + "+(end.offset-instructionNumber)+";";}
          };
         lse.set();                                                                                                      // Start of else
         Else();                                                                                                         // Else body
@@ -1245,8 +1248,23 @@ public class Program extends Test                                               
 
     abstract void     a ();                                                                                             // The action to be performed by the instruction
              String   v () {return appendTraceComments  ? "" :  traceComment();};                                       // Generate equivalent verilog with a trace comment
+
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
     String traceBackAsComment() {return traceBack != null ? "/*" + traceBack.replaceAll("\\n", ", ") + "*/" : "";}      // Trace back as a comment that can be placed into verilog code
+
+    void generateVerilog(StringBuilder S)                                                                               // Generate verilog code for an instruction
+     {S.append(f("        %4d: begin t = %d; %s", instructionNumber, javaTrace ? 1 : 0, v()));                          // Program counter == instruction number, tracing status, instruction code
+      if (jump == I.Jump.might) S.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
+      if (jump != I.Jump.will)  S.append(" pc <= pc + 1;");
+      if (appendTraceComments)  S.append(traceComment());
+      if (dumpMemoryEvery != null)                                                                                      // Dump memory periodically if requested
+       {for(ByteMemory m: memories) S.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+m.i()+"();");
+       }
+      S.append("c <= c + 1;");                                                                                          // Count instructions executed
+      S.append(" end");
+      S.append(traceBackAsComment());                                                                                   // Trace java program location that generated the instruction so that the verilog code can be tied back to the java docde
+      S.append("\n");
+     }
    }
 
   final class Label                                                                                                     // Label jump targets in the program
@@ -1299,11 +1317,6 @@ public class Program extends Test                                               
        }
      }
    }
-
-  void Goto (Label Target)                                           {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}    // Goto a label unconditionally
-  void Goto (Label Target, Bool If) {new If (If.b())    {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};} // Goto a label if the condition is true
-  void Noto (Label Target, Bool If) {new If (If.Flip()) {void Then() {new I() {void a() {parentProgram.pc = Target.offset;} String v() {return "goto";}};}};} // Goto a label if the condition is false
-  void Goto (Int   Target)                                           {new I() {void a() {parentProgram.pc = Target.i()   ;} String v() {return "goto";}};}    // Goto a saved address
 
   void variableNotSet (String Type, String Name)                                                                        // Variable not yet set message
    {final I i = parentProgram.executing;
@@ -1494,21 +1507,7 @@ module {name};                                                                  
       case(pc)
 """);
 
-    for(I i : code)                                                                                                     // Compile each instruction to Verilog
-     {s.append(f("        %4d: begin t = %d; %s", i.instructionNumber, i.javaTrace ? 1 : 0, i.v()));                    // Program counter == instruction number, tracing status, instruction code
-      if (i.jump == I.Jump.might) s.append(" else");                                                                    // Conditionally increment program counter to allow jumps to occur
-      if (i.jump != I.Jump.will)  s.append(" pc <= pc + 1;");
-      if (appendTraceComments)    s.append(i.traceComment());
-      if (dumpMemoryEvery != null)                                                                                      // Dump memory periodically if requested
-       {for(ByteMemory m: memories)
-         {s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+m.i()+"();");
-         }
-       }
-      s.append("c <= c + 1;");                                                                                           // Count instructions executed
-      s.append(" end");
-      s.append(i.traceBackAsComment());
-      s.append("\n");
-     }
+    for(I i : code) i.generateVerilog(s);                                                                               // Compile each instruction to Verilog
                                                                                                                         // Dump memory at end if used
     /* Execute default*/s.append("""
         default: begin
