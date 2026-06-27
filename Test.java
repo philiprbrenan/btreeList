@@ -1132,7 +1132,7 @@ public class Test                                                               
   static boolean ok(boolean b)                                                                                          // Check test results match expected results.
    {if (b) {++testsPassed; return true;}
     testsFailed++;
-    err(currentTestName(), "failed\n");
+    err(currentTestName(), "failed");
     return false;
    }
 
