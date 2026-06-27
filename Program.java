@@ -4,6 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // change calls to program() with parentProgram
 // method () call()
+//https://github.com/philiprbrenan/btreeList/compare/oldSha...newsSha
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -30,6 +31,7 @@ public class Program extends Test                                               
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
+  final static TreeMap<String,Stack<I>> matchingInstructions = new TreeMap<>();                                         // Combine instruction with identical verilog text
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
   static String                                testGroup = null;                                                        // Tests can be split into groups so that they can be run in parallel
@@ -703,8 +705,8 @@ public class Program extends Test                                               
       return vtrace(s);
      }
 
-    String vtrace (String        Value) {return vn()+" <= traceInt("+id+", "+Value+");";}                               // Trace a boolean operation
-    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace a boolean operation
+    String vtrace (String        Value) {return vn()+" <= traceInt ("+id+", "+Value+");";}                              // Trace an integer operation
+    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace an integer operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -1252,18 +1254,41 @@ public class Program extends Test                                               
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
     String traceBackAsComment() {return traceBack != null ? "/*" + traceBack.replaceAll("\\n", ", ") + "*/" : "";}      // Trace back as a comment that can be placed into verilog code
 
-    void generateVerilog(StringBuilder S)                                                                               // Generate verilog code for an instruction
-     {S.append(f("        %4d: begin t = %d; %s", instructionNumber, javaTrace ? 1 : 0, v()));                          // Program counter == instruction number, tracing status, instruction code
-      if (jump == I.Jump.might) S.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
-      if (jump != I.Jump.will)  S.append(" pc <= pc + 1;");
-      if (appendTraceComments)  S.append(traceComment());
-      if (dumpMemoryEvery != null)                                                                                      // Dump memory periodically if requested
-       {for(ByteMemory m: memories) S.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+m.i()+"();");
+    String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
+     {final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
+      if (jump == I.Jump.might) s.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
+      if (jump != I.Jump.will)  s.append(" pc <= pc + 1;");
+      return ""+s;                                                                                                      // Generated code
+     }
+
+    StringBuilder generateVerilog ()                                                                                    // Generate verilog code for an instruction
+     {final String        v = interiorVerilog();                                                                        // Interior verilog used as key for base instructions
+      final Stack<I>      m = matchingInstructions.get(v);                                                              // Matching instructions
+      final StringJoiner  l = new StringJoiner(", ");                                                                   // Labels
+      final StringBuilder s = new StringBuilder();                                                                      // Generated code
+
+      if (this == m.firstElement())                                                                                     // Generate code for first instance of this instruction
+       {for(I i : m) l.add(f("%4d", i.instructionNumber));                                                              // Collect labels for matching instructions
+
+        s.append(f("        %s : begin t = %d; %s", pad(""+l, 20), (javaTrace ? 1 : 0), pad(v, 20)));                   // Program counter == instruction number, tracing status, instruction code
+        if (appendTraceComments)  s.append(traceComment());                                                             // Append tracing comments
+        if (dumpMemoryEvery != null)                                                                                    // Dump memory periodically if requested
+         {for(ByteMemory b: memories) s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+b.i()+"();");
+         }
+        s.append(" c <= c + 1;");                                                                                       // Count instructions executed
+        s.append(" end");
+        s.append(traceBackAsComment());                                                                                 // Trace java program location that generated the first instance of the instruction so that the verilog code can be tied back to the java code
+        s.append("\n");
        }
-      S.append("c <= c + 1;");                                                                                          // Count instructions executed
-      S.append(" end");
-      S.append(traceBackAsComment());                                                                                   // Trace java program location that generated the instruction so that the verilog code can be tied back to the java docde
-      S.append("\n");
+      return s;                                                                                                         // Generated code
+     }
+
+    void baseInstruction ()                                                                                             // Find base instructions
+     {final String                   s = interiorVerilog();                                                             // Generated code for the instruction which used as the definition of the instruction
+      final TreeMap<String,Stack<I>> b = matchingInstructions;                                                          // Shorten the name
+      final Stack<I>                 m = b.containsKey(s) ? b.get(s) : new Stack<>();                                   // Matching instructions
+      m.push(this);                                                                                                     // Add current instruction to matching instructions
+      b.put(s, m);                                                                                                      // Record this set of matching instructions
      }
    }
 
@@ -1278,7 +1303,7 @@ public class Program extends Test                                               
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
 
-    if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,d", codeSize()));             // Code size check
+    if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,7d", codeSize()));            // Code size check
     deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
     currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
@@ -1507,12 +1532,19 @@ module {name};                                                                  
       case(pc)
 """);
 
-    for(I i : code) i.generateVerilog(s);                                                                               // Compile each instruction to Verilog
-                                                                                                                        // Dump memory at end if used
+    matchingInstructions.clear();                                                                                       // New base instructions
+    for(I i : code) i.baseInstruction();                                                                                // Find the base instructions
+    for(I i : code) s.append(i.generateVerilog());                                                                      // Compile each instruction to Verilog
+    if (true)                                                                                                           // Instruction reduction statistics
+     {final int m = matchingInstructions.size(), c = code.size(), p = 100*m/c;
+      say(f("Instruction reduction to: %4d, percent: %4d", m, p));
+     }
+    matchingInstructions.clear();                                                                                       // Release storage occupied by base instructions
+
     /* Execute default*/s.append("""
         default: begin
 """);
-    for(ByteMemory m: memories) s.append("        dumpHex_"+m.i()+"();");
+    for(ByteMemory m: memories) s.append("        dumpHex_"+m.i()+"();");                                               // Dump memory at end if used
 
     /*Execute end*/s.append("""
           $finish(0);
