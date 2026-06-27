@@ -201,13 +201,13 @@ public class Program extends Test                                               
      };
    }
 
-  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives
-   {new If (Choice)
-     {void Then() {Set.set(Then.get());}
-      void Else() {Set.set(Else.get());}
-     };
-    return Set;
-   }
+//  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives
+//   {new If (Choice)
+//     {void Then() {Set.set(Then.get());}
+//      void Else() {Set.set(Else.get());}
+//     };
+//    return Set;
+//   }
 
 //D2 Procedure                                                                                                          // Procedure with parameters and return value.  Only works for static classes because unable to emulate "this".
 /*
