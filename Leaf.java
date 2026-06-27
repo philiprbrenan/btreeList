@@ -147,7 +147,7 @@ class Leaf extends Program implements Program.Locatable                         
   Int splitRight(Leaf Right)                                                                                            // Split a full leaf rightwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf left = this;                                                                                             // Current leaf is on the left
-    Right.slots.clear();                                                                                                // Clear target
+    Right.slots.initializeMemory();                                                                                     // Clear target
     Right.refData.copy(left.refData, build.dataBytes());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return left.slots.splitRightEven(Right.slots);                                                                      // Split the slots
    }
@@ -155,7 +155,7 @@ class Leaf extends Program implements Program.Locatable                         
   Int splitLeft(Leaf Left)                                                                                              // Split a full leaf leftwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf right = this;                                                                                            // Current leaf is on the right
-    Left.slots.clear();                                                                                                 // Clear target
+    Left.slots.initializeMemory();                                                                                      // Clear target
     Left.refData.copy(right.refData, build.dataBytes());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return right.slots.splitLeftEven(Left.slots);                                                                       // Split the slots
    }
