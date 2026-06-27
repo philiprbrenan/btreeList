@@ -4,7 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // change calls to program() with parentProgram
 // method () call()
-//https://github.com/philiprbrenan/btreeList/compare/oldSha...newsSha
+//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -19,10 +19,13 @@ public class Program extends Test                                               
   final Program parentProgram;                                                                                          // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
   final ByteMemory byteMemory;                                                                                          // Optional memory associated with the program
   final boolean     immediate;                                                                                          // Execute immediately if true else generate machine code and execute later
-  public  I         executing = null;                                                                                   // Instruction being currently executed
+  public  I         executing = null;                                                                                   // Instruction currently being executed
+  public  I         compiling = null;                                                                                   // Instruction currently being compiled
   public  int        maxSteps = 9999;                                                                                   // Number of steps permitted in code execution
   private int       nextIntId = 0;                                                                                      // Unique id for each Int
+  private int       lastIntId = 0;                                                                                      // The base for integers in this flow of control block
   private int      nextBoolId = 0;                                                                                      // Unique id for each Bool
+  private int      lastBoolId = 0;                                                                                      // The base for booleans in this flow of control block
   private static int programs = 0;                                                                                      // Unique id for each program
   final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Program counter indicating the instruction to be executed after the current one
@@ -85,6 +88,13 @@ public class Program extends Test                                               
 
 //D1 Program                                                                                                            // Program execution structures
 
+  void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
+   {lastIntId = nextIntId; lastBoolId = nextBoolId;
+    new I()
+     {void a() {} String v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
+     };
+   }
+
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
   abstract class For                                                                                                    // For loop
@@ -105,6 +115,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
+        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
         new I(I.Jump.might)                                                                                             // Will jump
          {void   a() {if (index.i() >=  End.i()) parentProgram.pc = end.offset;}                                        // Index out of range
           String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+ (end.offset - instructionNumber) + ";";}// Index out of range
@@ -119,6 +130,7 @@ public class Program extends Test                                               
                                   "else pc <= pc + "+ (end  .offset - instructionNumber) + ";";}                        // Continue execution of the loop as long as requested
          };
         end.set();                                                                                                      // End of the loop
+        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
        }
      }
 
@@ -143,6 +155,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
+        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
         new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
          {void   a() {if (index.i() >=  End.i()) parentProgram.pc = end.offset;}                                        // Index out of range
           String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+(end.offset-instructionNumber)+";";}     // Index out of range
@@ -154,6 +167,7 @@ public class Program extends Test                                               
           String v() {return "pc <= pc + "+(start.offset - instructionNumber)+";";}                                     // Index out of range
          };
         end.set();                                                                                                      // End of the loop
+        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
        }
      }
 
@@ -188,8 +202,10 @@ public class Program extends Test                                               
           String v() {return "pc <= pc + "+(end.offset-instructionNumber)+";";}
          };
         lse.set();                                                                                                      // Start of else
+        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
         Else();                                                                                                         // Else body
         end.set();                                                                                                      // End of the loop
+        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
        }
      }
 
@@ -199,12 +215,12 @@ public class Program extends Test                                               
              void Else () {}                                                                                            // Else clause
    }
 
-  void If(Bool Choice, Runnable Then, Runnable Else)                                                                    // If then/else with lambdas
-   {new If (Choice)
-     {void Then() {Then.run();}
-      void Else() {Else.run();}
-     };
-   }
+//  void If (Bool Choice, Runnable Then, Runnable Else)                                                                   // If then/else with lambdas
+//   {new If (Choice)
+//     {void Then() {Then.run();}
+//      void Else() {Else.run();}
+//     };
+//   }
 
 //  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives
 //   {new If (Choice)
@@ -460,7 +476,7 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String vtrace (String        Value) {return vn()+" <= traceBool("+id+", "+Value+");";}                              // Trace a boolean operation
+    String vtrace (String        Value) {return vn()+" <= traceBool("+(id - compiling.lastBoolId)+", "+Value+");";}     // Trace a boolean operation
     String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace a boolean operation
 
     Bool or (Bool b)                                                                                                    // "Or" without short circuit. Modifies the target.
@@ -508,7 +524,7 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String vn () {return pad("b["+ id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                   // Verilog name of this variable
+    String vn () {return pad("b[lastBoolId+"+ (id-compiling.lastBoolId)+"]"+(name != null ? "/*"+name+"*/" : ""), 12);} // Verilog name of this variable
 
     void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
      {new If (this)
@@ -705,7 +721,7 @@ public class Program extends Test                                               
       return vtrace(s);
      }
 
-    String vtrace (String        Value) {return vn()+" <= traceInt ("+id+", "+Value+");";}                              // Trace an integer operation
+    String vtrace (String        Value) {return vn()+" <= traceInt ("+(id-compiling.lastIntId)+", "+Value+");";}        // Trace an integer operation
     String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace an integer operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
@@ -861,7 +877,7 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String vn () {return pad("i[" +id+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}                                   // Verilog name of this variable
+    String vn () {return pad("i[lastIntId+"+(id-compiling.lastIntId)+"]"+(name != null ? "/*"+name+"*/" : ""), 12);}    // Verilog name of this variable
 
     Int say ()  {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                                  // Say the integer
 
@@ -1231,6 +1247,7 @@ public class Program extends Test                                               
    {final int instructionNumber;                                                                                        // The number of this instruction
     final String    traceBack = appendTraceComments ?  traceBack() : null;                                              // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String traceComment = subGetAsComment();                                                                      // Sub during which this instruction was created
+    final int lastBoolId, lastIntId;                                                                                    // Base for booleans and integers in this flow of control block
     final boolean javaTrace;                                                                                            // Trace java execution of this instruction if true
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
@@ -1243,6 +1260,8 @@ public class Program extends Test                                               
       javaTrace = parentProgram.suppressJavaTrace.size() == 0;                                                          // Trace the java execution of the instruction unless explicitly suppressed
       if (immediate()) {parentProgram.executing = this; a(); parentProgram.executing = null;}                           // Execute instruction immediately via interpretation if in immediate execution mode
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
+      lastBoolId = Program.this.lastBoolId;                                                                             // Base for booleans in this flow of control block
+      lastIntId  = Program.this.lastIntId;                                                                              // Base for integers in this flow of control block
       //if (!immediate() && codeSize() % 100_000 == 1) say("CodeSize", codeSize());
      }
 
@@ -1255,7 +1274,8 @@ public class Program extends Test                                               
     String traceBackAsComment() {return traceBack != null ? "/*" + traceBack.replaceAll("\\n", ", ") + "*/" : "";}      // Trace back as a comment that can be placed into verilog code
 
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
-     {final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
+     {compiling = this;                                                                                                 // This is the instruction currently being compiled
+      final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
       if (jump == I.Jump.might) s.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
       if (jump != I.Jump.will)  s.append(" pc <= pc + 1;");
       return ""+s;                                                                                                      // Generated code
@@ -1429,16 +1449,19 @@ module {name};                                                                  
      }
 
     /*Execution State Variables*/s.append(substitute("""
-  parameter  INT_VARS  = {numberOfInts};                                                                                // Number of integer variables
-  parameter  BOOL_VARS = {numberOfBools};                                                                               // Number of boolean variables
-  reg        clock;                                                                                                     // Clock for chip
-  reg        reset;                                                                                                     // Reset for chip
-  integer    c;                                                                                                         // Count of instructions executed
-  integer    pc;                                                                                                        // Program counter for stepping through user code
-  integer    t;                                                                                                         // Trace execution
-  integer    index;                                                                                                     // Index for clearing memory
-  integer    i[INT_VARS:0];                                                                                             // Integers
-  reg        b[BOOL_VARS:0];                                                                                            // Booleans
+  parameter    INT_VARS  = {numberOfInts};                                                                              // Number of integer variables
+  parameter    BOOL_VARS = {numberOfBools};                                                                             // Number of boolean variables
+  reg          clock;                                                                                                   // Clock for chip
+  reg          reset;                                                                                                   // Reset for chip
+  integer          c;                                                                                                   // Count of instructions executed
+  integer         pc;                                                                                                   // Program counter for stepping through user code
+  integer     lastPc;                                                                                                   // The instruction which started the latest flow of control block
+  integer          t;                                                                                                   // Trace execution
+  integer      index;                                                                                                   // Index for clearing memory
+  integer  lastIntId;                                                                                                   // Base for integer references
+  integer lastBoolId;                                                                                                   // Base for boolean references
+  integer          i[INT_VARS:0];                                                                                       // Integers
+  reg              b[BOOL_VARS:0];                                                                                      // Booleans
 
 """, "numberOfInts", ""+numberOfInts, "numberOfBools", ""+numberOfBools));
 
@@ -1461,6 +1484,8 @@ module {name};                                                                  
       index = 0;
       c     = 0;
       pc    = 0;
+      lastBoolId = 0;
+      lastIntId  = 0;
     end
     else begin                                                                                                          // Initialize bit machine then execute user code
       case (state)
@@ -1510,8 +1535,8 @@ module {name};                                                                  
 
 """);
 
-  /*traceBool*/s.append(traceVerilogVariable("traceBool",  "b", traceFile));                                            // Memory and variable tracinf
-  /*traceInt*/ s.append(traceVerilogVariable("traceInt",   "i", traceFile));
+  /*traceBool*/s.append(traceVerilogVariable("traceBool",  "lastBoolId", "b", traceFile));                              // Memory and variable tracind
+  /*traceInt*/ s.append(traceVerilogVariable("traceInt",   "lastIntId",  "i", traceFile));
 
   for(int i = 0; i < memories.size(); ++i)                                                                              // Actions for each memory
    {final ByteMemory m = memories.elementAt(i);
@@ -1536,7 +1561,7 @@ module {name};                                                                  
     for(I i : code) i.baseInstruction();                                                                                // Find the base instructions
     for(I i : code) s.append(i.generateVerilog());                                                                      // Compile each instruction to Verilog
     if (true)                                                                                                           // Instruction reduction statistics
-     {final int m = matchingInstructions.size(), c = code.size(), p = 100*m/c;
+     {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
       say(f("Instruction reduction to: %4d, percent: %4d", m, p));
      }
     matchingInstructions.clear();                                                                                       // Release storage occupied by base instructions
@@ -1575,8 +1600,8 @@ endmodule
 """, "memoryId", M.i(), "memoryName", M.n(), "Next", Next);
    }
 
-  String traceVerilogVariable(String Procedure, String Type, String TraceFile)                                          // Verilog procedure to trace a variable
-   {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, Id, Value);";                               // Trace line to be written out
+  String traceVerilogVariable(String Procedure, String Last, String Type, String TraceFile)                             // Verilog procedure to trace a variable
+   {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, ("+Last+"+Id), Value);";                    // Trace line to be written out
 
     return f("""
   function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
@@ -2232,6 +2257,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_byteMemoryRef();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
