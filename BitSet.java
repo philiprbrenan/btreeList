@@ -71,7 +71,7 @@ final public class BitSet extends Program                                       
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
     byteSize         = Build.byteSize();                                                                                // Bytes needed for the bitset and its bit trees
     if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
-    memoryCount      = trackCount ? byteMemory.new Ref(bytesNeeded() - ib()) : null;                                    // Maintain a count field to determine the number of bits set to one in O(1) time
+    memoryCount      = trackCount ? memoryRef.step(bytesNeeded() - ib()) : null;                                        // Maintain a count field to determine the number of bits set to one in O(1) time
 
     luoVerilog       = "x_bitSet_limitsUpperOne_" +bitSize;                                                             // Verilog procedures to make references to constant arrays rather than holding them in memory
     luzVerilog       = "x_bitSet_limitsUpperZero_"+bitSize;
@@ -96,7 +96,10 @@ final public class BitSet extends Program                                       
   int         bytesNeeded () {return build.byteSize();}                                                                 // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
   Int          logBitSize () {return new Int(logBitSize);}                                                              // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
-  Int               count () {return trackCount ? memoryCount.getInt() : countAllOnes();}                               // Count number of set bits in bitset - the performasnc will nbe order (1) if the count is being tracked else N log(N)
+  Int               count ()                                                                                            // Count number of set bits in bitset - the performasnc will nbe order (1) if the count is being tracked else N log(N)
+   {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
+    return memoryCount.getInt();
+   }
 
 //D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
 
