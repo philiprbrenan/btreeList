@@ -1315,7 +1315,7 @@ public class Program extends Test                                               
   <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
    {suppressJavaTracingStart();
      new I()
-     {void a() {if (!ok(a.get(), b)) say("====\n", traceBack);}
+     {void a() {if (!ok(a.get(), b)) if (traceBack!= null) say("====\n", traceBack);}
      };
     suppressJavaTracingFinish();
    }
@@ -1504,7 +1504,7 @@ module {name};                                                                  
          {s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+m.i()+"();");
          }
        }
-      s.append("c = c + 1;");                                                                                           // Count instructions executed
+      s.append("c <= c + 1;");                                                                                           // Count instructions executed
       s.append(" end");
       s.append(i.traceBackAsComment());
       s.append("\n");
