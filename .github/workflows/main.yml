@@ -1,4 +1,4 @@
-# Test 2026-06-26 at 21:55:49
+# Test 2026-06-27 at 01:32:41
 
 name: Test
 run-name: btreeList
@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Leaf_11, Leaf_12, Program_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11]
+        task: [Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23]
 
     steps:
     - uses: actions/checkout@v6
@@ -46,123 +46,6 @@ jobs:
     - name: Java
       run: |
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
-
-    - name: BitSet_7
-      if: ${{             matrix.task == 'BitSet_7' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 7
-        tree
-
-    - name: Upload BitSet_7
-      if: ${{ always() && matrix.task == 'BitSet_7' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: BitSet_7
-        path: verilog
-
-    - name: BitSet_8
-      if: ${{             matrix.task == 'BitSet_8' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 8
-        tree
-
-    - name: Upload BitSet_8
-      if: ${{ always() && matrix.task == 'BitSet_8' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: BitSet_8
-        path: verilog
-
-    - name: BitSet_9
-      if: ${{             matrix.task == 'BitSet_9' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 9
-        tree
-
-    - name: Upload BitSet_9
-      if: ${{ always() && matrix.task == 'BitSet_9' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: BitSet_9
-        path: verilog
-
-    - name: Branch_7
-      if: ${{             matrix.task == 'Branch_7' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 7
-        tree
-
-    - name: Upload Branch_7
-      if: ${{ always() && matrix.task == 'Branch_7' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Branch_7
-        path: verilog
-
-    - name: Branch_8
-      if: ${{             matrix.task == 'Branch_8' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 8
-        tree
-
-    - name: Upload Branch_8
-      if: ${{ always() && matrix.task == 'Branch_8' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Branch_8
-        path: verilog
-
-    - name: Branch_9
-      if: ${{             matrix.task == 'Branch_9' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 9
-        tree
-
-    - name: Upload Branch_9
-      if: ${{ always() && matrix.task == 'Branch_9' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Branch_9
-        path: verilog
-
-    - name: Leaf_7
-      if: ${{             matrix.task == 'Leaf_7' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 7
-        tree
-
-    - name: Upload Leaf_7
-      if: ${{ always() && matrix.task == 'Leaf_7' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Leaf_7
-        path: verilog
-
-    - name: Leaf_8
-      if: ${{             matrix.task == 'Leaf_8' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 8
-        tree
-
-    - name: Upload Leaf_8
-      if: ${{ always() && matrix.task == 'Leaf_8' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Leaf_8
-        path: verilog
-
-    - name: Leaf_9
-      if: ${{             matrix.task == 'Leaf_9' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 9
-        tree
-
-    - name: Upload Leaf_9
-      if: ${{ always() && matrix.task == 'Leaf_9' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Leaf_9
-        path: verilog
 
     - name: Slots_7
       if: ${{             matrix.task == 'Slots_7' }}
@@ -201,43 +84,4 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: Slots_9
-        path: verilog
-
-    - name: Tree_7
-      if: ${{             matrix.task == 'Tree_7' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 7
-        tree
-
-    - name: Upload Tree_7
-      if: ${{ always() && matrix.task == 'Tree_7' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_7
-        path: verilog
-
-    - name: Tree_8
-      if: ${{             matrix.task == 'Tree_8' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 8
-        tree
-
-    - name: Upload Tree_8
-      if: ${{ always() && matrix.task == 'Tree_8' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_8
-        path: verilog
-
-    - name: Tree_9
-      if: ${{             matrix.task == 'Tree_9' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 9
-        tree
-
-    - name: Upload Tree_9
-      if: ${{ always() && matrix.task == 'Tree_9' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_9
         path: verilog
