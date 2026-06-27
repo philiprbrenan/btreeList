@@ -109,14 +109,14 @@ class Tree extends Program                                                      
     treeBody();
    }
 
-  void treeBody () {}                                                                                                   // Override to apply code to the tree
+  void     treeBody () {}                                                                                               // Override to apply code to the tree
 
-  in  t maxLeafSize () {return maxLeafSize;}                                                                            // Maximum size of a leaf
+  int   maxLeafSize () {return maxLeafSize;}                                                                            // Maximum size of a leaf
   int maxBranchSize () {return maxBranchSize;}                                                                          // Maximum size of a branch
   int numberOfNodes () {return numberOfNodes;}                                                                          // Maximum number of nodes in tree
   int           mnl () {return maximumNumberOfLevels;}                                                                  // Maximum number of levels
 
-  Int allocate()                                                                                                        // Allocate a leaf or a branch using the first free node on the free chain
+  Int      allocate ()                                                                                                  // Allocate a leaf or a branch using the first free node on the free chain
    {final Bint A = freeChain.firstOne();                                                                                // First element on free chain
     A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
     final Int a = new Int("index") .set(A);                                                                             // First element on free chain
@@ -124,15 +124,15 @@ class Tree extends Program                                                      
     return a;
    }
 
-  void free(Locatable Free)                                                                                             // Free a leaf or a branch and invalidate its contents
+  void free (Locatable Free)                                                                                            // Free a leaf or a branch and invalidate its contents
    {final Bint a = Free.getLocation();
     //byteMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                            // Invalidate the memory
     freeChain.set(a.i());
    }
 
-  Bool isAllocated(Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
+  Bool isAllocated (Int Node) {return freeChain.getBit(Node).Flip();}                                                   // Check whether a node is allocated
 
-  Int nodeAddress(Int Node)                                                                                             // Convert an index to a byte address of node in memory
+  Int nodeAddress (Int Node)                                                                                            // Convert an index to a byte address of node in memory
    {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
     Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
     final Bool f = freeChain.getBit(Node);                                                                              // Check not freed
