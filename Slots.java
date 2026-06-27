@@ -19,9 +19,7 @@ class Slots extends Program                                                     
   final ByteMemory.Ref refUsedSlotsToKeys;                                                                              // Bitset showing which slots are being used to map to keys
   final ByteMemory.Ref        refUsedKeys;                                                                              // Bitset showing which keys are in use
   final ByteMemory.Ref            refKeys;                                                                              // The keys are held unordered in this array but ordered by the slot references to them
-  final ByteMemory.Ref           refCount;                                                                              // The number of occupied slots and hence the number of keys in the slots
   final Build                       build;                                                                              // Build details
-  final static String           formatKey =  " %3d";                                                                    // Format a key for dumping during testing
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
@@ -67,8 +65,7 @@ class Slots extends Program                                                     
       final int posUsedKeysToSlots = posUsedSlotsToKeys + ib(N);                                                        // Slots in use
       final int posusedKeys        = posUsedKeysToSlots + us.byteSize();                                                // References in use.  There are fewer references than slots to make insertions faster
       final int posKeys            = posusedKeys        + ur.byteSize();                                                // Keys used in btree held unordered in this array but ordered by the slot references to them
-      final int posCount           = posKeys            + ib(N);                                                        // Size of slots
-      final int size               = posCount           + ib();                                                         // Count of used slots
+      final int size               = posKeys            + ib(N);                                                        // Count of used slots
      }
 
     int size() {return memoryPositions.size;}                                                                           // Bytes needed for the slots
@@ -87,7 +84,6 @@ class Slots extends Program                                                     
     refUsedSlotsToKeys   = byteMemoryRef.step(m.posUsedSlotsToKeys);                                                    // Slots in use
     refUsedKeys          = byteMemoryRef.step(m.posusedKeys);                                                           // References in use.  There are fewer references than slots to make insertions faster
     refKeys              = byteMemoryRef.step(m.posKeys);                                                               // Keys used in btree held unordered in this array but ordered by the slot references to them
-    refCount             = byteMemoryRef.step(m.posCount);                                                              // Number of slots in use and hence the number of keys in the slots
     usedSlotsToKeys      = new BitSet(m.us.memory(refUsedSlotsToKeys).parent(parentProgram));                           // Create bitsets to reference the program and memory used by this program
     usedKeys             = new BitSet(m.ur.memory(refUsedKeys)       .parent(parentProgram));
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
@@ -149,21 +145,17 @@ class Slots extends Program                                                     
   Int     getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
   int     getSlotToKeyValue (int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
-  Bool empty ()                            {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
-  Bool full ()                             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
-  Int  count ()                            {return refCount.getInt();}                                                  // The computed number of keys in the slots
-  void count (Int N)                       {refCount.putInt(N);}                                                        // Set the computed number of keys in the slots
-  void countClear ()                       {refCount.putInt(new Int(0));}                                               // Clear the count
-  void countInc ()                         {refCount.putInt(refCount.getInt().inc());}                                  // Increment the key count
-  void countDec ()                         {refCount.putInt(refCount.getInt().dec());}                                  // Decrement the key count
-//void invalidateMemory ()                 {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
-  Int  numberOfKeys ()                     {return new Int(numberOfKeys);}                                              // The number of references in the slots definition
-  int  numberOfSlotsToKeys ()              {return numberOfKeys<<1;}                                                    // Number of slots from number of refs
-  int  redistributionWidth ()              {return (int)java.lang.Math.sqrt(numberOfKeys);}                             // Redistribute if the next slot is further than this
-  Bint locateFirstUsedSlot ()              {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
-  Bint locateLastUsedSlot ()               {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
-  Bint stepLeft (Int Start)                {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
-  Bint stepRight (Int Start)               {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
+  Bool                empty ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
+  Bool                 full ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+  Int                 count ()             {return usedKeys.count();}                                                   // The computed number of keys in the slots
+//void  invalidateMemory ()                {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
+  Int          numberOfKeys ()             {return new Int(numberOfKeys);}                                              // The number of references in the slots definition
+  int   numberOfSlotsToKeys ()             {return numberOfKeys<<1;}                                                    // Number of slots from number of refs
+  int   redistributionWidth ()             {return (int)java.lang.Math.sqrt(numberOfKeys);}                             // Redistribute if the next slot is further than this
+  Bint  locateFirstUsedSlot ()             {return usedSlotsToKeys.firstOne();}                                         // Index of first used slot
+  Bint   locateLastUsedSlot ()             {return usedSlotsToKeys.lastOne();}                                          // Index of last used slot
+  Bint             stepLeft (Int Start)    {return usedSlotsToKeys.prevOne(Start);}                                     // Step left to prior occupied slot assuming that such a step is possible
+  Bint            stepRight (Int Start)    {return usedSlotsToKeys.nextOne(Start);}                                     // Step right to the next occupied slot assuming that such a step is possible
 
   Bint locateFirstUnusedKey ()             {return usedKeys.firstZero();}                                               // Absolute position of the first unused key
 
@@ -275,19 +267,6 @@ class Slots extends Program                                                     
    }
 
   void copy (Slots Source) {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                    // Copy source into this
-
-  void clear ()                                                                                                         // Clear the slots
-   {subStart("Slots.clear");
-    final Slots slots = this;
-    compactSlotsLeft();                                                                                                 // Place slots in a known position
-    new ForCount(count())                                                                                               // Clear compacted slots
-     {void body(Int Index)
-       {delSlotAndKey(Index);
-       }
-     };
-    countClear();                                                                                                       // Clear the count
-    subFinish();
-   }
 
 //D3 Compact, Split and Merge                                                                                           // Compact to the left or right, redistribute and merge slots
 
@@ -537,7 +516,6 @@ class Slots extends Program                                                     
             left.setSlotAndKey(Index, k, K);                                                                            // Reinsert right key into left in same position
            }
          };
-        left.count(lc.Add(rc));                                                                                         // Reset count
         left .redistribute();                                                                                           // Redistribute left
         Right.redistribute();                                                                                           // Redistribute right
        }
@@ -571,7 +549,6 @@ class Slots extends Program                                                     
             right.setSlotAndKey(Index, k, K);                                                                           // Reinsert left key in right target
            }
          };
-        right.count(lc.Add(rc));                                                                                        // Reset count
         Left .redistribute();                                                                                           // Redistribute left
         right.redistribute();                                                                                           // Redistribute right
        }
@@ -609,7 +586,6 @@ class Slots extends Program                                                     
          };
 
         left.setSlotAndKey(lc, lc, Sk);                                                                                 // Insert splitting key
-        left.count(lc.Add(rc).inc());                                                                                   // Set the key count
         left .redistribute();                                                                                           // Redistribute left
         Right.redistribute();                                                                                           // Redistribute right
        }
@@ -645,7 +621,6 @@ class Slots extends Program                                                     
          };
 
         setSlotAndKey(lc, lc, Sk);                                                                                      // Insert splitting key
-        right.count(lc.Add(rc).inc());                                                                                  // Set the key count
         Left .redistribute();                                                                                           // Redistribute left
         right.redistribute();                                                                                           // Redistribute right
        }
@@ -1005,7 +980,7 @@ class Slots extends Program                                                     
        {final Find f = find(Key);                                                                                       // Find nearest existing key in slots
         new If (f.equal)
          {void Then() {i.set(Key, f.slot.i(),    false);}                                                               // Existing key
-          void Else() {i.set(Key, f.insert(Key), true); countInc(); }                                                   // New key in non empty slots per find results
+          void Else() {i.set(Key, f.insert(Key), true);}                                                                // New key in non empty slots per find results
          };
        }
      };
@@ -1016,32 +991,40 @@ class Slots extends Program                                                     
    {if (immediate() && !usedKeys.empty().b()) stop("Slots must be empty");                                              // Slots must be empty
     final Int P = new Int();                                                                                            // Slot into which the key was inserted
     setSlotAndKey(P.set(new Int(numberOfKeys)), new Int(0), Key);                                                       // Insert immediately in the center
-    countInc();                                                                                                         // Increment the count of the number of keys
     return P;                                                                                                           // Place key in first key slot
    }
 
   void delete (Int Slot)                                                                                                // Delete a key
    {delSlotAndKey(Slot);                                                                                                // Delete key
-    countDec();                                                                                                         // Decrement the count of the number of keys
    }
 
 //D2 Print                                                                                                              // Print the slots
 
-  public String toString ()                                                                                             // Dump the slots
-   {suppressJavaTracingStart();                                                                                         // Do not trace printing during java execution as the verilog code does not print the slots
-    final StringBuilder s = new StringBuilder();
+  StringBuilder print ()                                                                                                // Print the slots
+   {final StringBuilder s = new StringBuilder();
     final int[]N = range(numberOfSlotsToKeys());
     final int[]R = range(numberOfKeys);
-    s.append(f("Slots    : size: %2d, count: %2d\n", numberOfKeys, refCount.getInt(0)));                                // Title
-    s.append("positions: ");   for (int i : N) s.append(f(formatKey, i));
-    s.append("\nslotsKeys: "); for (int i : N) s.append(f(formatKey, getSlotToKeyIndex(i)));
-    s.append("\nkeysSlots: "); for (int i : N) s.append(f(formatKey, getKeyToSlotIndex(i)));
-    s.append("\nusedSlots: "); for (int i : N) s.append(             usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
-    s.append("\nusedKeys : "); for (int i : R) s.append(             usedKeys       .getBitNC(i) ? "   X" : "   .");
-    s.append("\nkeys     : "); for (int i : R) s.append(f(formatKey, getKeyValue(i)));
+    final Int c = count();
+    suppressJavaTracingStart();                                                                                         // Do not trace printing during java execution as the verilog code does not print the slots
+    new I()
+     {void a()
+       {clearStringBuilder(s);
+        s.append(f("Slots    : size: %2d, count: %2d\n", numberOfKeys, c.i()));                                         // Title line
+        s.append("positions: ");   for (int i : N) s.append(f(" %3d", i));
+        s.append("\nslotsKeys: "); for (int i : N) s.append(f(" %3d", getSlotToKeyIndex(i)));
+        s.append("\nkeysSlots: "); for (int i : N) s.append(f(" %3d", getKeyToSlotIndex(i)));
+        s.append("\nusedSlots: "); for (int i : N) s.append(          usedSlotsToKeys.getBitNC(i) ? "   X" : "   .");
+        s.append("\nusedKeys : "); for (int i : R) s.append(          usedKeys       .getBitNC(i) ? "   X" : "   .");
+        s.append("\nkeys     : "); for (int i : R) s.append(f(" %3d", getKeyValue(i)));
+        s.append("\n");
+       }
+     };
     suppressJavaTracingFinish();                                                                                        // Resume java tracing status
-    return ""+s+"\n";
+
+    return s;
    }
+
+  public String toString() {return ""+print();}                                                                         // Print the slots as a string
 
 //D1 Tests                                                                                                              // Tests
 
@@ -1057,14 +1040,13 @@ class Slots extends Program                                                     
         locateFirstUsedSlot().ok(0);
         locateLastUsedSlot ().ok(2);
 
-        putKey (new Int(1), new Int(11)); countInc();
-        putKey (new Int(3), new Int(22)); countInc();
+        putKey (new Int(1), new Int(11));
+        putKey (new Int(3), new Int(22));
 
         final Slots s = this;
         final Slots t = new Slots(s.build.parent(s).memory(null));                                                      // Create some more memory and copy the slots into it
         t.copy(s);
-        //new I() {void a() {testStop(s);}};
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  8, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1074,9 +1056,9 @@ usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
         delSlotToKeys(new Int(2));
-        delKey       (new Int(3)); countDec();
+        delKey       (new Int(3));
         //new I() {void a() {testStop(s);}};
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  8, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1093,7 +1075,7 @@ keys     :    0  11   0   0   0   0   0   0
         delKey(new Int(4)); locateFirstUnusedKey().ok(3);
         delKey(new Int(2)); locateFirstUnusedKey().ok(2);
 
-        ok(()->t, """
+        s.check(t.print(), """
 Slots    : size:  8, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1120,7 +1102,7 @@ keys     :    0  11   0  22   0   0   0   0
        {setSlots(2, 4, 5, 6, 9, 10, 12);
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size: 16, count:  0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
 slotsKeys:    0   0   1   0   2   3   4   0   0   5   6   0   7   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1155,10 +1137,10 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
      {void slotsCode()
-       {putKey(new Int(2),  new Int(1)); countInc();
+       {putKey(new Int(2),  new Int(1));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  4, count:  1
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   0   0
@@ -1168,11 +1150,11 @@ usedKeys :    .   .   X   .
 keys     :    0   0   1   0
 """);
 
-        final Int k0 = allocKey(); putKey(k0,  new Int(2)); countInc();
-        final Int k1 = allocKey(); putKey(k1,  new Int(3)); countInc();
-        final Int k4 = allocKey(); putKey(k4,  new Int(4)); countInc();
+        final Int k0 = allocKey(); putKey(k0,  new Int(2));
+        final Int k1 = allocKey(); putKey(k1,  new Int(3));
+        final Int k4 = allocKey(); putKey(k4,  new Int(4));
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  4, count:  4
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   0   0
@@ -1196,11 +1178,11 @@ keys     :    2   3   1   4
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
      {void slotsCode()
-       {setSlotAndKey(new Int(3),  new Int(2),  new Int(1)); countInc();
-        setSlotAndKey(new Int(4),  new Int(3),  new Int(2)); countInc();
+       {setSlotAndKey(new Int(3),  new Int(2),  new Int(1));
+        setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   2   3   0   0   0
@@ -1212,7 +1194,7 @@ keys     :    0   0   1   2
 
         delete(new Int(3));
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  4, count:  1
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   3   0   0   0
@@ -1236,11 +1218,11 @@ keys     :    0   0   0   2
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(4).immediate(Ex))
      {void slotsCode()
-       {setSlotAndKey(new Int(2),  new Int(1),  new Int(1)); countInc();
-        setSlotAndKey(new Int(4),  new Int(3),  new Int(2)); countInc();
+       {setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
+        setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   1   0   3   0   0   0
@@ -1252,7 +1234,7 @@ keys     :    0   1   0   2
 
         compactSlotsLeft();
         //new I() {void a() {testStop(s);}};
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    1   3   0   0   0   0   0   0
@@ -1264,7 +1246,7 @@ keys     :    0   1   0   2
 
         compactSlotsRight();
         //new I() {void a() {testStop(s);}};
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   1   3
@@ -1278,7 +1260,7 @@ keys     :    0   1   0   2
         compactKeysLeft((S, b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");} };});
         //new I() {void a() {testStop(T, s);}};
         ok(()->T, "3->0;");
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   1   0
@@ -1292,7 +1274,7 @@ keys     :    2   1   0   0
         compactKeysRight((S, b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");} };});
         //new I() {void a() {testStop(U, s);}};
         ok(()->U, "0->3;1->2;");
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   2   3
@@ -1307,7 +1289,7 @@ keys     :    0   0   1   2
         compactSlotsLeft();
         //new I() {void a() {testStop(W, s);}};
         ok(()->W, "3->0;2->1;");
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    1   0   0   0   0   0   0   0
@@ -1322,7 +1304,7 @@ keys     :    2   1   0   0
         compactSlotsRight();
         //new I() {void a() {testStop(X, s);}};
         ok(()->X, "0->3;1->2;");
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   2   3
@@ -1347,16 +1329,16 @@ keys     :    0   0   1   2
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {maxSteps = 99_999;
-        setSlotAndKey(new Int(2),   new Int(1),  new Int(1)); countInc();
-        setSlotAndKey(new Int(4),   new Int(3),  new Int(2)); countInc();
-        setSlotAndKey(new Int(7),   new Int(2),  new Int(3)); countInc();
-        setSlotAndKey(new Int(8),   new Int(4),  new Int(4)); countInc();
-        setSlotAndKey(new Int(12),  new Int(5),  new Int(5)); countInc();
-        setSlotAndKey(new Int(13),  new Int(6),  new Int(6)); countInc();
-        setSlotAndKey(new Int(14),  new Int(0),  new Int(7)); countInc();
+        setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
+        setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
+        setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
+        setSlotAndKey(new Int(8),   new Int(4),  new Int(4));
+        setSlotAndKey(new Int(12),  new Int(5),  new Int(5));
+        setSlotAndKey(new Int(13),  new Int(6),  new Int(6));
+        setSlotAndKey(new Int(14),  new Int(0),  new Int(7));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   1   0   3   0   0   2   4   0   0   0   5   6   0   0
@@ -1368,7 +1350,7 @@ keys     :    7   1   3   2   4   5   6   0
 
         redistribute();
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   1   0   3   0   2   0   4   0   5   0   6   0   0   0   0
@@ -1392,16 +1374,16 @@ keys     :    7   1   3   2   4   5   6   0
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {maxSteps = 99_999;
-        setSlotAndKey(new Int(2),   new Int(1),  new Int(1));  countInc();
-        setSlotAndKey(new Int(4),   new Int(3),  new Int(2));  countInc();
-        setSlotAndKey(new Int(7),   new Int(2),  new Int(3));  countInc();
-        setSlotAndKey(new Int(8),   new Int(4),  new Int(4));  countInc();
-        setSlotAndKey(new Int(12),  new Int(5),  new Int(5));  countInc();
-        setSlotAndKey(new Int(13),  new Int(6),  new Int(6));  countInc();
-        setSlotAndKey(new Int(14),  new Int(0),  new Int(7));  countInc();
+        setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
+        setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
+        setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
+        setSlotAndKey(new Int(8),   new Int(4),  new Int(4));
+        setSlotAndKey(new Int(12),  new Int(5),  new Int(5));
+        setSlotAndKey(new Int(13),  new Int(6),  new Int(6));
+        setSlotAndKey(new Int(14),  new Int(0),  new Int(7));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   1   0   3   0   0   2   4   0   0   0   5   6   0   0
@@ -1414,7 +1396,7 @@ keys     :    7   1   3   2   4   5   6   0
 
         shiftUpOne(new Int(2), new Int(1));
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   1   3   0   0   2   4   0   0   0   5   6   0   0
@@ -1427,7 +1409,7 @@ keys     :    7   1   3   2   4   5   6   0
         shiftUpOne(new Int(3), new Int(2));
         shiftUpOne(new Int(4), new Int(2));
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   0   1   3   2   4   0   0   0   5   6   0   0
@@ -1441,7 +1423,7 @@ keys     :    7   1   3   2   4   5   6   0
         shiftDownOne(new Int(13), new Int(3));
         shiftDownOne(new Int(12), new Int(3));
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   0   1   3   2   4   5   6   0   0   0   0   0
@@ -1478,7 +1460,7 @@ keys     :    7   1   3   2   4   5   6   0
            }
          };
         mergeFromRightEven(r).ok(true);
-        ok(()->l, """
+        l.check(l.print(), """
 Slots    : size:  4, count:  4
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    1   0   0   0   3   0   2   0
@@ -1487,7 +1469,7 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X
 keys     :    2   1   4   3
 """);
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   3   0   0   0   2   0   0
@@ -1523,7 +1505,7 @@ keys     :    0   0   4   3
          };
         mergeFromLeftEven(l).ok(true);
         //new I() {void a() {testStop(l);}};
-        ok(()->l, """
+        l.check(l.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   1   0   0   0   0   0   0
@@ -1533,7 +1515,7 @@ usedKeys :    X   X   .   .
 keys     :    2   1   0   0
 """);
         //new I() {void a() {testStop(r);}};
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  4, count:  4
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    1   0   0   0   3   0   2   0
@@ -1568,7 +1550,7 @@ keys     :    2   1   4   3
            }
          };
         //new I() {void a() {testStop(l); }};
-//        ok(()->l, """
+//        l.check(l.print(), """
 //Slots    : size:  5, count:  2
 //positions:    0   1   2   3   4   5   6   7   8   9
 //slotsKeys:    0   0   1   0   0   0   0   0   0   0
@@ -1578,7 +1560,7 @@ keys     :    2   1   4   3
 //keys     :    2   1   0   0   0
 //""");
         //new I() {void a() {testStop(r); }};
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  5, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9
 slotsKeys:    0   0   0   0   0   0   0   0   1   0
@@ -1591,7 +1573,7 @@ keys     :    4   5   0   0   0
 //
 //        //new I() {void a() {testStop(l); }};
 //        //new I() {void a() {testStop(r); }};
-//        ok(()->l, """
+//        l.check(l.print(), """
 //Slots    : size:  5, count:  5
 //positions:    0   1   2   3   4   5   6   7   8   9
 //slotsKeys:    1   0   0   0   2   0   4   0   3   0
@@ -1600,7 +1582,7 @@ keys     :    4   5   0   0   0
 //usedKeys :    X   X   X   X   X
 //keys     :    2   1   3   5   4
 //""");
-//        ok(()->r, """
+//        r.check(r.print(), """
 //Slots    : size:  5, count:  2
 //positions:    0   1   2   3   4   5   6   7   8   9
 //slotsKeys:    0   0   4   0   0   0   0   3   0   0
@@ -1636,7 +1618,7 @@ keys     :    4   5   0   0   0
            }
          };
         //new I() {void a() {testStop(r);}};
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  5, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9
 slotsKeys:    0   0   0   0   0   0   0   0   1   0
@@ -1646,7 +1628,7 @@ usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
         //new I() {void a() {testStop(l);}};
-        ok(()->l, """
+        l.check(l.print(), """
 Slots    : size:  5, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9
 slotsKeys:    0   0   0   0   0   0   0   0   1   0
@@ -1659,7 +1641,7 @@ keys     :    1   2   0   0   0
         r.mergeFromLeftOdd(l, new Int(3)).ok(true);
 
         //new I() {void a() {testStop(r);}};
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  5, count:  5
 positions:    0   1   2   3   4   5   6   7   8   9
 slotsKeys:    0   0   1   0   2   0   4   0   3   0
@@ -1687,15 +1669,15 @@ keys     :    1   2   3   5   4
         putSlotToKeys(new Int( 2), new Int(3));
         putSlotToKeys(new Int( 4), new Int(5));
         putSlotToKeys(new Int(15), new Int(0));
-                                                             count().ok(0);
-        putKey       (new Int( 1), new Int(11)); countInc(); count().ok(1);
-        putKey       (new Int( 3), new Int(22)); countInc(); count().ok(2);
-        putKey       (new Int( 5), new Int(33)); countInc(); count().ok(3);
-        putKey       (new Int( 0), new Int(44)); countInc(); count().ok(4);
+                                                 count().ok(0);
+        putKey       (new Int( 1), new Int(11)); count().ok(1);
+        putKey       (new Int( 3), new Int(22)); count().ok(2);
+        putKey       (new Int( 5), new Int(33)); count().ok(3);
+        putKey       (new Int( 0), new Int(44)); count().ok(4);
 
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    1   0   3   0   5   0   0   0   0   0   0   0   0   0   0   0
@@ -1753,14 +1735,14 @@ Zero:
         putSlotToKeys(new Int(11), new Int(3));
         putSlotToKeys(new Int(13), new Int(5));
         putSlotToKeys(new Int(15), new Int(0));
-        putKey       (new Int( 1), new Int(11)); countInc();
-        putKey       (new Int( 3), new Int(22)); countInc();
-        putKey       (new Int( 5), new Int(33)); countInc();
-        putKey       (new Int( 0), new Int(44)); countInc();
+        putKey       (new Int( 1), new Int(11));
+        putKey       (new Int( 3), new Int(22));
+        putKey       (new Int( 5), new Int(33));
+        putKey       (new Int( 0), new Int(44));
 
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   0   0   0   0   0   1   0   3   0   5   0   0
@@ -1822,8 +1804,7 @@ Zero:
            {suppressJavaTracingStart();
             final Int  k = new Int();
             final int[]i = new int[] {14, 13, 16, 15, 18, 17, 12, 11};
-
-            new I()
+            new I()                                                                                                     // Set the key to insert
              {void   a() {k.ex(Int.Ops.set, i[Index.i()]);}
               String v()
                {final StringBuilder s = new StringBuilder("case("+Index.vn()+") ");
@@ -1834,11 +1815,15 @@ Zero:
              };
             suppressJavaTracingFinish();
 
-            insert(k); suppressJavaTracingStart(); new I() {void a() {t.append(s);}}; suppressJavaTracingFinish();
+            insert(k);
+            suppressJavaTracingStart();
+            final StringBuilder p = s.print();
+            new I() {void a() {t.append(p);}};
+            suppressJavaTracingFinish();
            }
          };
 
-        ok(()->t, """
+        check(t, """
 Slots    : size:  8, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1921,7 +1906,7 @@ keys     :   14  13  16  15  18  17  12  11
         insert(new Int(14));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   1   0   2   7   3   0   4   0   5   0   6   0
@@ -1956,7 +1941,7 @@ keys     :   11  12  13  15  16  17  18  14
 
         redistribute();
         //testStop(this, usedSlotsToKeys);
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   1   0   2   0   3   0   4   0   5   0   6   0   7   0
@@ -2026,7 +2011,7 @@ Zero:
         insert(new Int(14));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   1   0   2   7   3   0   4   0   5   0   6   0
@@ -2039,7 +2024,7 @@ keys     :   11  12  13  15  16  17  18  14
         t.insert(new Int(11));
         s.splitRightEven(t).ok(14);
         //new I() {void a() {testStop(s);}};
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   0   1   0   0   0   2   0   0   0   7   0   0
@@ -2049,7 +2034,7 @@ usedKeys :    X   X   X   .   .   .   .   X
 keys     :   11  12  13   0   0   0   0  14
 """);
         //new I() {void a() {testStop(t);}};
-        ok(()->t, """
+        t.check(t.print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   3   0   0   0   4   0   0   0   5   0   0   0   6   0   0
@@ -2084,7 +2069,7 @@ keys     :    0   0   0  15  16  17  18   0
         insert(new Int(14));
         final Slots r = this;
         //new I() {void a() {testStop(r);}};
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   1   0   2   7   3   0   4   0   5   0   6   0
@@ -2098,7 +2083,7 @@ keys     :   11  12  13  15  16  17  18  14
         r.splitLeftEven(l).ok(14);
         //new I() {void a() {testStop(l);}};
         //new I() {void a() {testStop(r);}};
-        ok(()->l, """
+        l.check(l.print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   0   0   0   0   1   0   0   0   2   0   0   0   7   0   0
@@ -2107,7 +2092,7 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    X   X   X   .   .   .   .   X
 keys     :   11  12  13   0   0   0   0  14
 """);
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    0   3   0   0   0   4   0   0   0   5   0   0   0   6   0   0
@@ -2141,7 +2126,7 @@ keys     :    0   0   0  15  16  17  18   0
         insert(new Int(14));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  7, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   1   0   0   2   6   0   3   4   5
@@ -2154,7 +2139,7 @@ keys     :   11  12  13  15  16  17  14
         t.insert(new Int(11));
         s.splitRightOdd(t).ok(6);
         //new I() {void a() {testStop(s);}};
-        ok(()->s, """
+        s.check(s.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   0   1   0   0   0   2   0   0   0
@@ -2164,7 +2149,7 @@ usedKeys :    X   X   X   .   .   .   .
 keys     :   11  12  13   0   0   0  14
 """);
         //new I() {void a() {testStop(t);}};
-        ok(()->t, """
+        t.check(t.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   3   0   0   0   4   0   0   0   5   0   0   0
@@ -2198,7 +2183,7 @@ keys     :    0   0   0  15  16  17   0
         insert(new Int(14));
         final Slots r = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  7, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   1   0   0   2   6   0   3   4   5
@@ -2212,7 +2197,7 @@ keys     :   11  12  13  15  16  17  14
         r.splitLeftOdd(l).ok(6);
         //new I() {void a() {testStop(t);}};
         //new I() {void a() {testStop(s);}};
-        ok(()->l, """
+        l.check(l.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   0   1   0   0   0   2   0   0   0
@@ -2221,7 +2206,7 @@ usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
 usedKeys :    X   X   X   .   .   .   .
 keys     :   11  12  13   0   0   0   0
 """);
-        ok(()->r, """
+        r.check(r.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   3   0   0   0   4   0   0   0   5   0   0   0
@@ -2255,7 +2240,7 @@ keys     :    0   0   0  15  16  17  14
         insert(new Int(14));
         final Slots s = this;
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  7, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   1   0   0   2   6   0   3   4   5
@@ -2264,9 +2249,9 @@ usedSlots:    .   .   X   .   .   X   .   .   X   X   .   X   X   X
 usedKeys :    X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  14
 """);
-        clear();
+        initializeMemory();
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  7, count:  0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -2324,7 +2309,7 @@ keys     :    0   0   0   0   0   0   0
        {final Slots s = this;
         insertEmpty(new Int(4)).ok(7);
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  7, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -2333,10 +2318,10 @@ usedSlots:    .   .   .   .   .   .   .   X   .   .   .   .   .   .
 usedKeys :    X   .   .   .   .   .   .
 keys     :    4   0   0   0   0   0   0
 """);
-        final Find f = new Find().set(new Int(7), true);  f.insert(new Int(2)); countInc();
-        final Find F = new Find().set(new Int(7), false); F.insert(new Int(6)); countInc();
+        final Find f = new Find().set(new Int(7), true);  f.insert(new Int(2));
+        final Find F = new Find().set(new Int(7), false); F.insert(new Int(6));
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   1   0   0   0   0   0   0   0   2   0   0
@@ -2368,7 +2353,7 @@ keys     :    4   2   6   0   0   0   0
         insert(new Int(3)); count().ok(3);
         insert(new Int(1)); count().ok(4);
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  4, count:  4
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    3   1   2   0   0   0   0   0
@@ -2382,7 +2367,7 @@ keys     :    4   2   3   1
         delete(new Int(0)); count().ok(1);
         delete(new Int(4)); count().ok(0);
         //new I() {void a() {testStop(s);}};
-        ok(()->this, """
+        check(print(), """
 Slots    : size:  4, count:  0
 positions:    0   1   2   3   4   5   6   7
 slotsKeys:    0   0   0   0   0   0   0   0
@@ -2430,8 +2415,7 @@ keys     :    0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_insert();
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
