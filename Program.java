@@ -1346,6 +1346,13 @@ public class Program extends Test                                               
         executing = i;                                                                                                  // Currently executing instruction
         javaTrace = i.javaTrace;                                                                                        // Trace the execution of the java code implementing this instruction
         i.a();                                                                                                          // Execute instruction
+
+if (byteMemory != null)
+ {if (byteMemory.bytes.length > 5152)
+   {final byte bm = byteMemory.bytes[5152];
+    if (bm != 0) say("AAAA", c, currentPc, bm);
+   }
+ }
         executing = null;                                                                                               // Show no instruction currently being executed
         if (dumpMemoryEvery != null && c > 0 && c % dumpMemoryEvery == 0) dumpMemories();                               // Dump memory periodically to check that there have not been any unexpected changes
        }
