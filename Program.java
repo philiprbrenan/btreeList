@@ -988,7 +988,6 @@ public class Program extends Test                                               
       final int  B = b < 0 ? 256+(int)b : (int)b;
       bytes[I] = b;                                                                                                     // Set the value of a byte from an integer
       if (javaTrace()) appendFile(javaTraceFile(), f("%8d w %8d %8d < %8d  %s\n", program().currentPc, I, A, B, n()));  // Trace the write
-
      }
 
     ByteMemory copy (ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
@@ -1203,7 +1202,7 @@ public class Program extends Test                                               
 
     String save () {return Base64.getEncoder().encodeToString(bytes);}                                                  // Save memory
 
-    void reload (String Dump)
+    void reload (String Dump)                                                                                           // Reload saved memory
      {final byte[]decoded = Base64.getDecoder().decode(Dump);
       if (decoded.length != bytes.length) stop("Mismatched reloaded memory length:", decoded.length, bytes.length);
       new I()
@@ -1222,6 +1221,18 @@ public class Program extends Test                                               
    }
 
   String dumpMemory () {return program().byteMemory.dumpHex();}                                                         // Dump memory in hexadecimal format
+
+  String saveMemories ()                                                                                                // Save all the memories to an array of strings
+   {final StringJoiner j = new StringJoiner("\", \"");
+    for (ByteMemory m : memories) j.add(m.save());
+    return "{\""+j+"\"}";
+   }
+  void reloadMemories (String[]Dump)                                                                                    // Reload saved memories
+   {if (Dump.length != memories.size())                                                                                 // Check number of memories match
+     {stop("Number of memories supplied and present differ:", Dump.length, memories.size());
+     }
+    for (int i = 0; i < Dump.length; ++i) memories.elementAt(i).reload(Dump[i]);                                        // Reload each memory
+   }
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
@@ -2256,8 +2267,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_byteMemoryRef();
+   {oldTests();
+    //test_byteMemoryRef();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
