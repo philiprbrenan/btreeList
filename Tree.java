@@ -1201,7 +1201,7 @@ Leaf   at:   2 size:   4, count:   4
 """);
 
     t.maxSteps = 99_999;
-    t.dumpMemoryEvery = 10;
+    //t.dumpMemoryEvery = 10;
     t.execute();
    }
 
@@ -1820,7 +1820,7 @@ Leaf           size:   4, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_insert(true);
-    test_find(true);
+    test_saveReload(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
