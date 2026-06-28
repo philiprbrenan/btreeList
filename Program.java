@@ -89,10 +89,10 @@ public class Program extends Test                                               
 //D1 Program                                                                                                            // Program execution structures
 
   void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
-   {lastIntId = nextIntId; lastBoolId = nextBoolId;
-    new I()
-     {void a() {} String v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
-     };
+   {//lastIntId = nextIntId; lastBoolId = nextBoolId;
+    //new I()
+    // {void a() {} String v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
+    // };
    }
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
