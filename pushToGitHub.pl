@@ -19,7 +19,7 @@ my $shaFile = fpe $folder, q(sha);                                              
 my $wf      = q(.github/workflows/main.yml);                                                                            # Work flow on Ubuntu - compile and test
 my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
-my %tasks   = (BitSet=>11, Branch=>12, Leaf=>12, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
+my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
 my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
@@ -148,6 +148,7 @@ END
       with:
         name: $N
         path: verilog
+        if-no-files-found: ignore
 END
   }
   my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
