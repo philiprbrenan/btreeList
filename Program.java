@@ -89,10 +89,10 @@ public class Program extends Test                                               
 //D1 Program                                                                                                            // Program execution structures
 
   void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
-   {//lastIntId = nextIntId; lastBoolId = nextBoolId;
-    //new I()
-    // {void a() {} String v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
-    // };
+   {/////////////////lastIntId = nextIntId; lastBoolId = nextBoolId;
+    /////////////////new I()
+    ///////////////// {void a() {} String v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
+    ///////////////// };
    }
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
@@ -476,7 +476,7 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String vtrace (String        Value) {return vn()+" <= traceBool("+(id - compiling.lastBoolId)+", "+Value+");";}     // Trace a boolean operation
+    String vtrace (String        Value) {return vn()+" <= traceBool("+(id - lastBoolId)+", "+Value+");";}               // Trace a boolean operation
     String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace a boolean operation
 
     Bool or (Bool b)                                                                                                    // "Or" without short circuit. Modifies the target.
@@ -1273,6 +1273,14 @@ public class Program extends Test                                               
     String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
     String traceBackAsComment() {return traceBack != null ? "/*" + traceBack.replaceAll("\\n", ", ") + "*/" : "";}      // Trace back as a comment that can be placed into verilog code
 
+    void matchInstructions ()                                                                                           // Find base instructions
+     {final String                   s = interiorVerilog();                                                             // Generated code for the instruction which used as the definition of the instruction
+      final TreeMap<String,Stack<I>> b = matchingInstructions;                                                          // Shorten the name
+      final Stack<I>                 m = b.containsKey(s) ? b.get(s) : new Stack<>();                                   // Matching instructions
+      m.push(this);                                                                                                     // Add current instruction to matching instructions
+      b.put(s, m);                                                                                                      // Record this set of matching instructions
+     }
+
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
      {compiling = this;                                                                                                 // This is the instruction currently being compiled
       final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
@@ -1301,14 +1309,6 @@ public class Program extends Test                                               
         s.append("\n");
        }
       return s;                                                                                                         // Generated code
-     }
-
-    void baseInstruction ()                                                                                             // Find base instructions
-     {final String                   s = interiorVerilog();                                                             // Generated code for the instruction which used as the definition of the instruction
-      final TreeMap<String,Stack<I>> b = matchingInstructions;                                                          // Shorten the name
-      final Stack<I>                 m = b.containsKey(s) ? b.get(s) : new Stack<>();                                   // Matching instructions
-      m.push(this);                                                                                                     // Add current instruction to matching instructions
-      b.put(s, m);                                                                                                      // Record this set of matching instructions
      }
    }
 
@@ -1558,7 +1558,7 @@ module {name};                                                                  
 """);
 
     matchingInstructions.clear();                                                                                       // New base instructions
-    for(I i : code) i.baseInstruction();                                                                                // Find the base instructions
+    for(I i : code) i.matchInstructions();                                                                                // Find the base instructions
     for(I i : code) s.append(i.generateVerilog());                                                                      // Compile each instruction to Verilog
     if (true)                                                                                                           // Instruction reduction statistics
      {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
@@ -1601,7 +1601,7 @@ endmodule
    }
 
   String traceVerilogVariable(String Procedure, String Last, String Type, String TraceFile)                             // Verilog procedure to trace a variable
-   {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, ("+Last+"+Id), Value);";                    // Trace line to be written out
+   {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, ("+Last+"+Id), Value);";                    // Trace line to be written out. Id and Value are parameters of the generated function
 
     return f("""
   function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
@@ -2135,7 +2135,7 @@ Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000
 """);
-            dumpMemoryEvery(1); maxSteps(999);
+            maxSteps(999);
             execute();
            }
          };
@@ -2256,8 +2256,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_byteMemoryRef();
+   {//oldTests();
+    test_byteMemoryRef();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
