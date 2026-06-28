@@ -910,7 +910,7 @@ Branch         size:   7, count:   1, top:   0
  Ref   Key  Data
    0     4    44
 """);
-        ok(()->slots, """
+        check(slots.print(), """
 Slots    : size:  7, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -927,7 +927,7 @@ Branch         size:   7, count:   2, top:   0
    1     2    22
    0     4    44
 """);
-        ok(()->slots, """
+        check(slots.print(), """
 Slots    : size:  7, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   1   0   0   0   0   0   0   0   0   0   0
@@ -945,7 +945,7 @@ Branch         size:   7, count:   3, top:   0
    0     4    44
    2     6    66
 """);
-        ok(()->slots, """
+        check(slots.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
 slotsKeys:    0   0   0   1   0   0   0   0   0   0   0   2   0   0
@@ -982,7 +982,7 @@ keys     :    4   2   6   0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitRight(false);
+    test_knownInsert(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
