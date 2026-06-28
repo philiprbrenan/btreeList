@@ -1619,17 +1619,17 @@ Leaf   at:   2 size:   4, count:   4
     final StringBuilder S = t.print();
     t.new I() {void a() {s.append(S);}};
     t.suppressJavaTracingFinish();
-    if (!Ex) t.defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                            // Create an array of the random keys to be deleted accessible from Verilog
+    if (!Ex) t.defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                              // Create an array of the random keys to be deleted accessible from Verilog
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int k = t.new Int();
-        t.suppressJavaTracingStart();                                                                                 // Suppress tracing while loading key to be inserted do that java which would otherwise trace does not to match verilog
+        t.suppressJavaTracingStart();                                                                                   // Suppress tracing while loading key to be inserted do that java which would otherwise trace does not to match verilog
         t.new I()
          {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
           String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
          };
-        t.suppressJavaTracingFinish();                                                                                // Resume tracing if tracing stack is empty
+        t.suppressJavaTracingFinish();                                                                                  // Resume tracing if tracing stack is empty
 
         t.delete(k);
 
@@ -1809,7 +1809,7 @@ Leaf           size:   4, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     //test_saveReload();
-    test_insert();
+    test_deleteAscending(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
