@@ -445,7 +445,7 @@ Leaf           size:   8, count:   4
    5     7    77
    7     8    88
 """);
-    l.maxSteps(99_999).dumpMemoryEvery(20);
+    l.maxSteps(99_999);
     l.execute();
    }
 
@@ -789,7 +789,7 @@ Leaf           size:   8, count:   8
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitRight(true);
+    test_splitRight(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
