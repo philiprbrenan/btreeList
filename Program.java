@@ -9,6 +9,7 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 import java.util.function.*;
+import java.nio.ByteBuffer;
 
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
@@ -17,7 +18,7 @@ public class Program extends Test                                               
   final Stack<Label>   labels = new Stack<>();                                                                          // Labels for instructions in this process
 
   final Program parentProgram;                                                                                          // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
-  final ByteMemory byteMemory;                                                                                          // Optional memory associated with the program
+  final UnitMemory unitMemory;                                                                                          // Optional memory associated with the program
   final boolean     immediate;                                                                                          // Execute immediately if true else generate machine code and execute later
   public  I         executing = null;                                                                                   // Instruction currently being executed
   public  I         compiling = null;                                                                                   // Instruction currently being compiled
@@ -30,7 +31,7 @@ public class Program extends Test                                               
   final   int       programId = ++programs;                                                                             // Unique id for this program
   private int              pc;                                                                                          // Program counter indicating the instruction to be executed after the current one
   private int       currentPc;                                                                                          // Current program counter
-  final        Stack<ByteMemory>                memories = new Stack<>();                                               // Memories used by this program and its dependent programs
+  final        Stack<UnitMemory>                memories = new Stack<>();                                               // Memories used by this program and its dependent programs
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
@@ -42,12 +43,11 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output
+  final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
-  final Stack<Boolean>                 suppressJavaTrace = new Stack<>();                                               // Suppress java tracing if the top most entry exists and is true
-        boolean                                javaTrace = true;                                                        // Whether the execution of the java code should be traced for the current instruction
-        Integer                          dumpMemoryEvery = null;                                                        // Dump memory every this many steps if set
+        int                                       jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
+        int                                       vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -63,7 +63,7 @@ public class Program extends Test                                               
   Program (Build Build)                                                                                                 // Construct
    {immediate     = Build.immediate;                                                                                    // Immediate or delayed execution
     parentProgram = Build.parent == null ? this : Build.parent;                                                         // Parent program that will contain the code
-    byteMemory    = Build.size   != null ? new ByteMemory(Build.size) : null;                                           // Memory associated with program if any
+    unitMemory    = Build.size   != null ? new UnitMemory(Build.size) : null;                                           // Memory associated with program if any
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
     deleteAllFiles(verilogTestFolder(), 9);                                                                             // Delete generated Verilog files created by a prior run of the current test
     code();                                                                                                             // Load or execute the code associated with this program
@@ -84,7 +84,8 @@ public class Program extends Test                                               
    }
 
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
-  Program dumpMemoryEvery (Integer NumberOfSteps) {program().dumpMemoryEvery = NumberOfSteps; return this;}             // Set number of steps between memory dumps
+  void jtraceInc() {++parentProgram.jtrace;}
+  void vtraceInc() {++parentProgram.vtrace;}
 
 //D1 Program                                                                                                            // Program execution structures
 
@@ -94,6 +95,8 @@ public class Program extends Test                                               
     ///////////////// {void a() {} String v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
     ///////////////// };
    }
+
+
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
@@ -155,10 +158,11 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
+        insertLastBaseInstruction();                                                                                    // Start of flow of control block,
         new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
-         {void   a() {if (index.i() >=  End.i()) parentProgram.pc = end.offset;}                                        // Index out of range
-          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+(end.offset-instructionNumber)+";";}     // Index out of range
+         {void   a()   {if (index.i() >=  End.i()) parentProgram.pc = end.offset;}                                      // Index out of range
+          String v()   {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+(end.offset-instructionNumber)+";";}   // Index out of range
+          int traces() {return 0;}
          };
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
@@ -167,7 +171,7 @@ public class Program extends Test                                               
           String v() {return "pc <= pc + "+(start.offset - instructionNumber)+";";}                                     // Index out of range
          };
         end.set();                                                                                                      // End of the loop
-        insertLastBaseInstruction();                                                                                      // Start of flow of control block,
+        insertLastBaseInstruction();                                                                                    // Start of flow of control block,
        }
      }
 
@@ -476,7 +480,7 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String vtrace (String        Value) {return vn()+" <= traceBool("+(id - lastBoolId)+", "+Value+");";}               // Trace a boolean operation
+    String vtrace (String        Value) {vtraceInc(); return vn()+" <= traceBool("+(id - compiling.lastBoolId)+", "+Value+");";}  // Trace a boolean operation
     String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace a boolean operation
 
     Bool or (Bool b)                                                                                                    // "Or" without short circuit. Modifies the target.
@@ -549,9 +553,7 @@ public class Program extends Test                                               
 
     Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    //N Say the boolean
 
-    void jtrace ()                                                                                                      // Trace the execution of a boolean operation
-     {if (javaTrace()) appendFile(javaTraceFile(), f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));
-     }
+    void jtrace () {jTrace(f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));}                              // Trace the boolean  operation by appending an entry to the java trace file
 
     Bool ok (Boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
      {new I()
@@ -559,6 +561,7 @@ public class Program extends Test                                               
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
+        int traces() {return 0;}
        };
       return this;
      }
@@ -721,7 +724,7 @@ public class Program extends Test                                               
       return vtrace(s);
      }
 
-    String vtrace (String        Value) {return vn()+" <= traceInt ("+(id-compiling.lastIntId)+", "+Value+");";}        // Trace an integer operation
+    String vtrace (String        Value) {vtraceInc(); return vn()+" <= traceInt ("+(id-compiling.lastIntId)+", "+Value+");";}  // Trace an integer operation
     String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace an integer operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
@@ -844,7 +847,7 @@ public class Program extends Test                                               
 
     Int copy (Int I)                                                                                                    // Copy the state of an integer without regard as to whether it is valid or not
      {new I()
-       {void   a() {i = I.i; v = I.v; jtrace();}
+       {void   a() {ex(Ops.set, I.i); v = I.v;}
         String v() {return ev(Ops.set, I);}
        };
       return this;
@@ -881,9 +884,7 @@ public class Program extends Test                                               
 
     Int say ()  {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                                  // Say the integer
 
-    void jtrace ()                                                                                                      // Trace the execution of an integer operation
-     {if (javaTrace()) appendFile(javaTraceFile(), f("%8d i %8d = %8d\n",  program().currentPc, id, i));
-     }
+    void jtrace () {jTrace(f("%8d i %8d = %8d\n",  program().currentPc, id, i));}                                       // Trace the integer operation
 
     Int ok (Integer Value)                                                                                              // Check the integer
      {new I()
@@ -891,7 +892,7 @@ public class Program extends Test                                               
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
-                                                                                                                        // No need to test  under Verilog as long as all data accesses match
+        int traces() {return 0;}                                                                                                                          // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
@@ -956,46 +957,49 @@ public class Program extends Test                                               
      }
    }
 
-//D1 Byte Memory                                                                                                        // Operations on memory backed by bytes
+//D1 Memory                                                                                                             // Operations on memory divided into units
 
   static int ib ()      {return Integer.BYTES;}                                                                         // Number of bytes in an integer
   static int ib (int I) {return I * ib();}                                                                              // Number of bytes in a number of integers
   static Int ib (Int I) {return I.Mul(ib());}                                                                           // Number of bytes in a number of integers
 
-  final class ByteMemory                                                                                                // Bytes being used as the main memory program
+  final class UnitMemory                                                                                                // Memory made of units
    {private final int id;                                                                                               // Unique identifier for this memory
-    private byte[]bytes;                                                                                                // Bytes of main memory
+    private int[]units;                                                                                                 // Bytes of main memory
 
-    ByteMemory (int Length)                                                                                             // Create and clear some memory
-     {bytes = new byte[Length];
+    UnitMemory (int Length)                                                                                             // Create and clear some memory
+     {units = new int[Length];
       clear(new Int(0), Length);
-      final Stack<ByteMemory> m = program().memories; id = m.size(); m.push(this);                                      // Give the memory a unique identifier and save it in the main program
+      final Stack<UnitMemory> m = parentProgram.memories; id = m.size(); m.push(this);                                  // Give the memory a unique identifier and save it in the main program
      }
 
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
 
-    private byte getByte (int I)                                                                                        // Get the value of a byte
-     {final byte b = bytes[I];
-      final int  B = b < 0 ? 256+(int)b : (int)b;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
-      if (javaTrace()) appendFile(javaTraceFile(), f("%8d r %8d = %8d  %s\n", program().currentPc, I, B, n()));         // Trace the get
+    private int getUnit (int I, char Type)                                                                              // Get the value of a byte
+     {final int b = units[I];
+      jTrace(f("%8d %c %8d = %8d  %s\n", parentProgram.currentPc, Type, I, b, n()));
       return b;                                                                                                         // Get the value of a byte
      }
 
-    private void putByte (int I, int J)                                                                                 // Put a byte into memory
-     {final byte b = (byte)(J & 0xFF), a = bytes[I];                                                                    // Byte value from integer, previous value
-      final int  A = a < 0 ? 256+(int)a : (int)a;                                                                       // Convert a signed byte value to unsigned for consistency with verilog
-      final int  B = b < 0 ? 256+(int)b : (int)b;
-      bytes[I] = b;                                                                                                     // Set the value of a byte from an integer
-      if (javaTrace()) appendFile(javaTraceFile(), f("%8d w %8d %8d < %8d  %s\n", program().currentPc, I, A, B, n()));  // Trace the write
+    private int getUnit    (int I) {return getUnit(I, 'R');}                                                            // Get the value of a byte
+    private int getBitUnit (int I) {return getUnit(I, 'r');}                                                            // Get the value of a byte from which to read a bit
+
+    private void putUnit (int I, int J, char Type)                                                                      // Put a byte into memory
+     {final int A = units[I];                                                                                           // Previous value
+                    units[I] = J;                                                                                       // Set the value of a byte from an integer
+      jTrace(f("%8d %c %8d %8d < %8d  %s\n", parentProgram.currentPc, Type, I, A, J, n()));
      }
 
-    ByteMemory copy (ByteMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
-     {subStart("Program.ByteMemory.copy");
+    private void putUnit    (int I, int J) {putUnit(I, J, 'W');}                                                        // Put a byte into memory
+    private void putBitUnit (int I, int J) {putUnit(I, J, 'w');}                                                        // Put a byte into memory after modifying a bit
+
+    UnitMemory copy (UnitMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
+     {subStart("Program.UnitMemory.copy");
       new ForCount(new Int(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {putByte(TargetOffset.i() + Index.i(), SourceMemory.getByte(SourceOffset.i() + Index.i()));}
+           {void   a() {putUnit(TargetOffset.i() + Index.i(), SourceMemory.getUnit(SourceOffset.i() + Index.i()));}
             String v()
              {return "putMemory_"+i()+"("   + TargetOffset.vn() + "+" + Index.vn()+
                    ", getMemory_"+SourceMemory.i()+"("  + SourceOffset.vn() + "+" + Index.vn()+"));";
@@ -1007,12 +1011,12 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory clear ()                                                                                                 // Clear memory
-     {subStart("Program.ByteMemory.clear(I)");
+    UnitMemory clear ()                                                                                                 // Clear memory
+     {subStart("Program.UnitMemory.clear(I)");
       new ForCount(new Int(size()))
        {void  body(Int Index)
          {new I()
-           {void   a() {      putByte(Index.i(),              0);}
+           {void   a() {      putUnit(Index.i(),                      0);}
             String v() {return "putMemory_"+i()+"("+Index.vn() +   ", 0);";}
            };
          }
@@ -1021,13 +1025,14 @@ public class Program extends Test                                               
       return this;
      }
 
-    ByteMemory clear (Int Start, int Width)                                                                             // Clear memory
-     {subStart("Program.ByteMemory.clear(II)");
+    UnitMemory clear (Int Start, int Width)                                                                             // Clear memory
+     {subStart("Program.UnitMemory.clear(II)");
       new ForCount (Start, Start.Add(Width))
        {void body(Int Index)
          {new I()
-           {void   a() {            putByte(Index.i( ),   0);}
+           {void   a() {            putUnit(Index.i( ),           0);}
             String v() {return "putMemory_"+i()+"("+Index.vn()+", 0);";}
+            int traces() {return 1;}
            };
          }
        };
@@ -1035,137 +1040,104 @@ public class Program extends Test                                               
       return this;
      }
 
-//  ByteMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it to values unlikely to be valid
+//  UnitMemory invalidate(int Start, int Width)                                                                         // Invalidate memory by setting it to values unlikely to be valid
 //   {Arrays.fill(bytes, Start,  Start+Width, (byte)-1);
 //    return this;
 //   }
 //
-//  ByteMemory invalidate(Int Start, int Width)
+//  UnitMemory invalidate(Int Start, int Width)
 //   {new I() {void a() {invalidate(Start.i(),  Width);}};
 //    return this;
 //   }
 
-    int size() {return bytes.length;}                                                                                   //N Size of memory
+    int size() {return units.length;}                                                                                   //N Size of memory
 
-//  Int getByte(Int I)                                                                                                  //N Get the byte at the indicated position
+//  Int getUnit(Int I)                                                                                                  //N Get the byte at the indicated position
 //   {final Int r = new Int();
-//    new I() {void a() {r.set(getByte(I.i()));}};
+//    new I() {void a() {r.set(getUnit(I.i()));}};
 //    return r;
 //   }
 
     Int getInt (Int I)                                                                                                  // Get the int at the indicated position
      {final Int r = new Int();
       new I()
-       {void a()
-         {final int p = I.i();
-          final int d = Byte.toUnsignedInt(getByte(p+3)) << 24;
-          final int c = Byte.toUnsignedInt(getByte(p+2)) << 16;
-          final int b = Byte.toUnsignedInt(getByte(p+1)) <<  8;
-          final int a = Byte.toUnsignedInt(getByte(p+0)) <<  0;
-          final int R = d | c | b | a;
-          r.ex(Int.Ops.set, R);
-         }
-        String v()
-         {final String n = I.vn();
-          final StringBuilder s = new StringBuilder("{getMemory_"+i()+"("+n+"+3), "+
-                                                     "getMemory_"+i()+"("+n+"+2), "+
-                                                     "getMemory_"+i()+"("+n+"+1), "+
-                                                     "getMemory_"+i()+"("+n+")}");
-          return r.vtrace(s);
-         }
+       {void   a() {r.ex(Int.Ops.set, units[I.i()]);}
+        String v() {return r.vtrace(new StringBuilder("getMemory_"+i()+"("+I.vn()+")"));}
        };
       return r;
      }
 
-    int getInt (int I)                                                                                                  // Get the int at the indicated position
-     {final int a = Byte.toUnsignedInt(getByte(I+0)) <<  0;
-      final int b = Byte.toUnsignedInt(getByte(I+1)) <<  8;
-      final int c = Byte.toUnsignedInt(getByte(I+2)) << 16;
-      final int d = Byte.toUnsignedInt(getByte(I+3)) << 24;
-      return d | c | b | a;
-     }
+    int getInt (int I) {return units[I];}                                                                               // Get the int at the indicated position
 
     Bool getBool (Int I, Int J)                                                                                         // Get the bit in the specified byte at the specified position within the byte
      {Bool r = new Bool();
       new I()
-       {void   a() {r.ex(Bool.Ops.set, getBit(getByte(I.i()), J.i()));}
+       {void   a() {r.ex(Bool.Ops.set, getBit(getBitUnit(I.i()), J.i()));}
         String v() {return r.vtrace(new StringBuilder("getMemoryBool_"+i()+"("+I.vn()+", "+J.vn()+")"));}
+        int traces() {return 2;}
        };
       return r;
      }
 
-    Bool getBool (Int I) {return getBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE));}                                          // Get the bit at the bit indexed location
+    Bool getBool (Int I) {return getBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                  // Get the bit at the bit indexed location
 
-    ByteMemory putInt (Int I, Int J)                                                                                    // Set the int at the indicated position relative to the start to the specified value
+    UnitMemory putInt (Int I, Int J)                                                                                    // Set the int at the indicated position relative to the start to the specified value
      {new I()
-       {void a()
-         {final int i = I.i(), j = J.i();
-          putByte(i+0, j >>>  0);
-          putByte(i+1, j >>>  8);
-          putByte(i+2, j >>> 16);
-          putByte(i+3, j >>> 24);
-         }
-        String v()
-         {final String i = I.vn(), j = J.vn();
-
-          return "putMemory_"+i()+"(0+"+i+", "+j+"[ 0+:8]);"+
-                 "putMemory_"+i()+"(1+"+i+", "+j+"[ 8+:8]);"+
-                 "putMemory_"+i()+"(2+"+i+", "+j+"[16+:8]);"+
-                 "putMemory_"+i()+"(3+"+i+", "+j+"[24+:8]);";
-         }
+       {void   a() {putUnit(I.i(), J.i());}
+        String v() {return "putMemory_"+i()+"("+I.vn()+", "+J.vn()+");";}
        };
       return this;
      }
 
-    ByteMemory putBool (Int I, Int J, Bool K)                                                                           // Set the bit at the indicated position in the byte at the specified position to the specified value
+    UnitMemory putBool (Int I, Int J, Bool K)                                                                           // Set the bit at the indicated position in the byte at the specified position to the specified value
      {new I()
        {void a()
          {final int p = I.i();
-          final int b = getByte(p);
+          final int b = getBitUnit(p);
           final int B = setBit(b, J.i(), K.b());
-          putByte(p, B);
+          putBitUnit(p, B);
          }
         String v()
          {final String i = I.vn(), j = J.vn(), k = K.vn();
           return "putMemoryBool_"+i()+"("+i+", "+j+", "+k+");";
          }
+        int traces() {return 2;}
        };
       return this;
      }
 
-    ByteMemory putBool (Int I, Bool K) {putBool(I.Div(Byte.SIZE), I.Mod(Byte.SIZE), K); return this;}                   // Set the bit at the bit indexed position
+    UnitMemory putBool (Int I, Bool K) {putBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE), K); return this;}             // Set the bit at the bit indexed position
 
 //D2 Memory references                                                                                                  // References to byte memory
 
     final class Ref                                                                                                     // Reference into memory
      {final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
-      final int        N = Integer.BYTES;
-      final ByteMemory m = ByteMemory.this;
+      final UnitMemory m = UnitMemory.this;
       Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
       Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
 
-      ByteMemory byteMemory () {return ByteMemory.this;}
+      UnitMemory byteMemory () {return UnitMemory.this;}
       Program       program () {return Program   .this;}
 
       Ref       copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
       Ref      clear (int Width)            {m.clear     (offset, Width);                    return this;}              // Clear memory by setting its bytes to zero
 //    Ref invalidate (int Width)            {m.invalidate(offset, Width);                    return this;}              //N Invalidate memory by setting its bytes to values unlikely to be valid
-//    Int    getByte (Int I)                {return m.getByte(I.Add(offset));}                                          //N Get the byte at the indicated position
-      Int    getInt  (Int I)                {return m.getInt (I.Mul(N).add(offset));}                                   //N Get the int at the indicated position
+//    Int    getUnit (Int I)                {return m.getUnit(I.Add(offset));}                                          //N Get the byte at the indicated position
+      Int    getInt  (Int I)                {return m.getInt (I.add(offset));}                                          //N Get the int at the indicated position
 //    Bool   getBool (Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       //N Get the bit in the specified byte at the specified position within the byte
-      Bool   getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Byte.SIZE)));}                           // Get the bit at the bit indexed location
-//    Ref    putByte (Int I, Int J)         {m.putByte(I.Add(offset), J);                    return this;}              //N Set the byte at the indicated position relative to the start to the specified value
-      Ref    putInt  (Int I, Int J)         {m.putInt (I.Mul(N).add(offset), J);             return this;}              // Set the int at the indicated position relative to the start to the specified value
+      Bool   getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
+//    Ref    putUnit (Int I, Int J)         {m.putUnit(I.Add(offset), J);                    return this;}              //N Set the byte at the indicated position relative to the start to the specified value
+      Ref    putInt  (Int I, Int J)         {m.putInt (I.add(offset), J);                    return this;}              // Set the int at the indicated position relative to the start to the specified value
 //    Ref    putBool (Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}              //N Set the bit at the indicated position in the byte at the specified position to the specified value
-      Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Byte.SIZE)), K);     return this;}              // Set the bit at the bit indexed position
-      int     getInt (int I)                {return m.getInt (I*N+offset.i());}                                         // Get an int immediately when debugging
+      Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Integer.SIZE)), K); return this;}              // Set the bit at the bit indexed position
+      int     getInt (int I)                {return m.getInt (I+offset.i());}                                           // Get an int immediately when debugging
       Int     getInt ()
        {final Int r = m.getInt(offset);                                                                                 // Get the referenced int
         return r;
        }
       Ref     putInt (Int J)                {m.putInt (offset, J);                           return this;}              // Put the referenced int
 
-      boolean getBool (int I) {return getBit((int)byteMemory.bytes[I / Byte.SIZE+offset.i()], I % Byte.SIZE);}          // Get the bit at the bit indexed location - debugging
+      boolean getBool (int I) {return getBit(unitMemory.units[I / Integer.SIZE+offset.i()], I % Integer.SIZE);}       // Get the bit at the bit indexed location - debugging
 
       Ref step (int Width) {return new Ref(offset.Add(Width));}                                                         // Step up from an existing ref to make a new one - only while not executing
 
@@ -1177,42 +1149,41 @@ public class Program extends Test                                               
 
     public String toString ()                                                                                           // Print memory
      {final StringBuilder s = new StringBuilder();
-      for (int i = 0, N = size(); i < N; i++) s.append(f("%4d %3d\n", i, bytes[i]));
+      for (int i = 0, N = size(); i < N; i++) s.append(f("%4d %3d\n", i, units[i]));
       return ""+s;
      }
 
-    String dumpHex ()                                                                                                   // Dump memory in hexadecimal format
-     {final StringBuilder s = new StringBuilder();
+    String dumpAsDecimal()                                                                                              // Dump memory in decimal format
+     {final int N = 10;
+      final StringBuilder s = new StringBuilder();
       s.append(f("Memory %d\n", id));
       s.append("         ");
-      for (int i = 0; i < 16; i++) s.append(f("%02d ", i));
+      for (int i = 0; i < N; i++)                s.append(f("%4d ", i));
       s.append("\n");
 
-      for (int i = 0; i < bytes.length; i++)
-       {if (i % 16 == 0) s.append(f("%08d ", i));
+      for (int i = 0; i < size(); i++)
+       {if (i % N == 0)                          s.append(f("%08d ", i));
 
-        final byte b = bytes[i];
-        if (b != 0) s.append(f("%02x ", b)); else s.append("   ");
-        if ((i + 1) % 16 == 0) s.append("\n");
+        final int b = units[i];
+        if (b != 0) s.append(f("%4d ", b)); else s.append("   ");
+        if ((i + 1) % N == 0)                    s.append("\n");
        }
-      if (bytes.length % 16 != 0) s.append("\n");
+      if (size() % N != 0)                       s.append("\n");
       return ""+s;
 //    return (""+s).replaceAll("\\s*\n", "\n");
      }
 
-    String save () {return Base64.getEncoder().encodeToString(bytes);}                                                  // Save memory
+    String save()
+     {final ByteBuffer b = ByteBuffer.allocate(size() * Integer.BYTES);
+      for (int i : units) b.putInt(i);
+      return Base64.getEncoder().encodeToString(b.array());
+     }
 
-    void reload (String Dump)                                                                                           // Reload saved memory
-     {final byte[]decoded = Base64.getDecoder().decode(Dump);
-      if (decoded.length != bytes.length) stop("Mismatched reloaded memory length:", decoded.length, bytes.length);
-      new I()
-       {void   a() {System.arraycopy(decoded, 0, bytes, 0, bytes.length);}
-        String v()
-         {final StringBuilder s = new StringBuilder();                                                                  // Verilog to reload saved memory. Reloading only the non zero entries assumes that all entries in memory are already zero which might not be the case
-          for(int i = 0; i < decoded.length; ++i) s.append(n() + "["+i+"] <= "+bytes[i]+";\n");
-          return ""+s;
-         }
-       };
+    void reload(String s)
+     {final byte[]b = Base64.getDecoder().decode(s);
+      if (b.length != ib(size())) stop("Mismatched reloaded memory length:", b.length, ib(size()));
+      final ByteBuffer B = ByteBuffer.wrap(b);
+      for (int i = 0; i < size(); i++) units[i] = B.getInt();
      }
    }
 
@@ -1220,11 +1191,11 @@ public class Program extends Test                                               
    {Bint getLocation();
    }
 
-  String dumpMemory () {return program().byteMemory.dumpHex();}                                                         // Dump memory in hexadecimal format
+  String dumpMemory () {return program().unitMemory.dumpAsDecimal();}                                                   // Dump memory in decimal format
 
   String saveMemories ()                                                                                                // Save all the memories to an array of strings
    {final StringJoiner j = new StringJoiner("\", \"");
-    for (ByteMemory m : memories) j.add(m.save());
+    for (UnitMemory m : memories) j.add(m.save());
     return "{\""+j+"\"}";
    }
   void reloadMemories (String[]Dump)                                                                                    // Reload saved memories
@@ -1244,10 +1215,6 @@ public class Program extends Test                                               
   String    javaTraceFile ()  {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
   String VerilogCodeFile ()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
 
-  boolean javaTrace ()              {return program().javaTrace;}                                                       // Java tracing status for instruction
-  void suppressJavaTracingStart ()  {program().suppressJavaTrace.push(true);}                                           // Suppress java tracing
-  void suppressJavaTracingFinish () {program().suppressJavaTrace.pop();}                                                // Resume tracing if the tracing stack has been emptied
-
   static boolean rtg(int i) {return testGroup == null || testGroup.equals(""+i);}                                       // Whether to run the indicated test group
 
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
@@ -1256,33 +1223,42 @@ public class Program extends Test                                               
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber;                                                                                        // The number of this instruction
-    final String    traceBack = appendTraceComments ?  traceBack() : null;                                              // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
-    final String traceComment = subGetAsComment();                                                                      // Sub during which this instruction was created
+    final String traceBack = appendTraceComments ?  traceBack() : null;                                                 // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String  traceSub = subsTrace;                                                                                 // Sub during which this instruction was created
     final int lastBoolId, lastIntId;                                                                                    // Base for booleans and integers in this flow of control block
-    final boolean javaTrace;                                                                                            // Trace java execution of this instruction if true
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
     I (Jump Jump)                                                                                                       // Add this instruction to the code for the process
      {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
-      instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sens in delayed execution mode
+      instructionNumber = parentProgram.code.size();                                                                    // Number each instruction - however this only make sense in delayed execution mode
       subInc();                                                                                                         // Count the number of instructions associated with each method
       jump = Jump;                                                                                                      // Ability to jump
-      javaTrace = parentProgram.suppressJavaTrace.size() == 0;                                                          // Trace the java execution of the instruction unless explicitly suppressed
-      if (immediate()) {parentProgram.executing = this; a(); parentProgram.executing = null;}                           // Execute instruction immediately via interpretation if in immediate execution mode
-      else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
-      lastBoolId = Program.this.lastBoolId;                                                                             // Base for booleans in this flow of control block
-      lastIntId  = Program.this.lastIntId;                                                                              // Base for integers in this flow of control block
+      if (immediate())                                                                                                  // Execute instruction immediately via interpretation if in immediate execution mode
+       {parentProgram.executing = this;                                                                                 // Show that we are executing an instruction
+        parentProgram.jtrace = 0;
+        a();
+        if (parentProgram.jtrace != traces()) stop("Wrong number of java traces generated, got: ", parentProgram.jtrace, "expected:", traces(), "at:", instructionLocation());
+        parentProgram.executing = null;                                                                                 // Show that we are no longer executing an instruction
+       }
+      else  {parentProgram.code.push(this);}                                                                            // Save instruction in program for later execution if in delayed == non immediate execution mode
+      lastBoolId = parentProgram.lastBoolId;                                                                            // Base for booleans in this flow of control block
+      lastIntId  = parentProgram.lastIntId;                                                                             // Base for integers in this flow of control block
       //if (!immediate() && codeSize() % 100_000 == 1) say("CodeSize", codeSize());
      }
 
     I () {this(I.Jump.no);}                                                                                             // Add this instruction to the process's code assuming it will not jump
 
-    abstract void     a ();                                                                                             // The action to be performed by the instruction
-             String   v () {return appendTraceComments  ? "" :  traceComment();};                                       // Generate equivalent verilog with a trace comment
+    abstract void a ();                                                                                                 // The action to be performed by the instruction
+    String        v () {return instructionLocationAsComment();};                                                        // Location of missing verilog instruction
+    int      traces () {return 1;}                                                                                      // Number of trace records expected
 
-    String traceComment () {return traceComment != null ? traceComment : "";}                                           // Trace comment if it exists
-    String traceBackAsComment() {return traceBack != null ? "/*" + traceBack.replaceAll("\\n", ", ") + "*/" : "";}      // Trace back as a comment that can be placed into verilog code
+    String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
+    String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
+     {if (traceBack != null) return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";
+      if (traceSub  != null) return "/*" + traceSub .replaceAll("\\n", ", ") + "*/";
+      return "";
+     }
 
     void matchInstructions ()                                                                                           // Find base instructions
      {final String                   s = interiorVerilog();                                                             // Generated code for the instruction which used as the definition of the instruction
@@ -1294,9 +1270,13 @@ public class Program extends Test                                               
 
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
      {compiling = this;                                                                                                 // This is the instruction currently being compiled
+      parentProgram.vtrace = 0;                                                                                         // Count number of trace calls made in instruction
       final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
       if (jump == I.Jump.might) s.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
       if (jump != I.Jump.will)  s.append(" pc <= pc + 1;");
+
+      if (parentProgram.vtrace != traces()) stop("Too many calls to vtrace:", parentProgram.vtrace, "at:", instructionLocation()); // Complain if the wrong number of vtrace calls were generated
+      if (parentProgram.vtrace == 0) s.append(vTrace("%8d Location: %s", "pc", "\""+instructionLocationAsComment()+"\"")); // Write current location to verilog trace log if no trace was supplied
       return ""+s;                                                                                                      // Generated code
      }
 
@@ -1309,14 +1289,13 @@ public class Program extends Test                                               
       if (this == m.firstElement())                                                                                     // Generate code for first instance of this instruction
        {for(I i : m) l.add(f("%4d", i.instructionNumber));                                                              // Collect labels for matching instructions
 
-        s.append(f("        %s : begin t = %d; %s", pad(""+l, 20), (javaTrace ? 1 : 0), pad(v, 20)));                   // Program counter == instruction number, tracing status, instruction code
-        if (appendTraceComments)  s.append(traceComment());                                                             // Append tracing comments
-        if (dumpMemoryEvery != null)                                                                                    // Dump memory periodically if requested
-         {for(ByteMemory b: memories) s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpHex_"+b.i()+"();");
-         }
+        s.append(f("        %s : begin %s", pad(""+l, 20), pad(v, 20)));                                                // Program counter == instruction number, instruction code
+        //if (dumpMemoryEvery != null)                                                                                    // Dump memory periodically if requested
+        // {for(UnitMemory b: memories) s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpDecimal_"+b.i()+"();");
+        // }
         s.append(" c <= c + 1;");                                                                                       // Count instructions executed
         s.append(" end");
-        s.append(traceBackAsComment());                                                                                 // Trace java program location that generated the first instance of the instruction so that the verilog code can be tied back to the java code
+        s.append(instructionLocationAsComment());                                                                       // Trace java program location that generated the first instance of the instruction so that the verilog code can be tied back to the java code
         s.append("\n");
        }
       return s;                                                                                                         // Generated code
@@ -1329,7 +1308,19 @@ public class Program extends Test                                               
     void set () {offset = program().code.size();}                                                                       // Reassign the label to an instruction
    }
 
-  void dumpMemories () {for(ByteMemory m : memories) appendFile(javaTraceFile(), m.dumpHex());}                         // Dump all the memories
+  void   jTrace (String Message) {jtraceInc(); appendFile(javaTraceFile(), Message);}                                      // Trace a java instruction by writing a message to the java trace file
+
+  String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
+   {vtraceInc();
+    final StringBuilder s = new StringBuilder();
+    s.append(" traceFile = $fopen(\""+verilogTraceFile+"\", \"a\"); ");
+    s.append("$fwrite(traceFile, \""+Format+"\"");
+    for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
+    s.append("); $fwrite(traceFile, \"\\n\"); $fclose(traceFile);");
+    return ""+s;
+   }
+
+  void dumpMemories () {for(UnitMemory m : memories) appendFile(javaTraceFile(), m.dumpAsDecimal());}                   // Dump all the memories
 
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
@@ -1344,23 +1335,20 @@ public class Program extends Test                                               
       try
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
         executing = i;                                                                                                  // Currently executing instruction
-        javaTrace = i.javaTrace;                                                                                        // Trace the execution of the java code implementing this instruction
-        i.a();                                                                                                          // Execute instruction
+        jtrace = 0;
+        i.a();
 
-if (byteMemory != null)
- {if (byteMemory.bytes.length > 5152)
-   {final byte bm = byteMemory.bytes[5152];
-    if (bm != 0) say("AAAA", c, currentPc, bm);
-   }
- }
+        if (jtrace != i.traces()) stop("Wrong number of java traces generated, got:", jtrace, "expected:", i.traces(), "at:", i.instructionLocation());   // Wrong number of trace calls
+        if (jtrace == 0) jTrace(f("%8d Location: %s\n", currentPc, i.instructionLocationAsComment()));                  // Append location to java trace log as no tracing was performed
+
         executing = null;                                                                                               // Show no instruction currently being executed
-        if (dumpMemoryEvery != null && c > 0 && c % dumpMemoryEvery == 0) dumpMemories();                               // Dump memory periodically to check that there have not been any unexpected changes
        }
       catch(Exception e)
        {if (executing == null) stop("Exception:", e, "while executing:", traceBack(e));
         else stop("Exception:", e, "\nin instruction:", executing.traceBack, "\nwhile executing:", traceBack(e));
        }
      }
+
     if (c >= maxSteps) stop("Out of steps after step:", c);                                                             // Show abnormal termination reason
     dumpMemories();                                                                                                     // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
 
@@ -1389,11 +1377,9 @@ if (byteMemory != null)
    }
 
   <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
-   {suppressJavaTracingStart();
-     new I()
+   {new I()
      {void a() {if (!ok(a.get(), b)) if (traceBack!= null) say("====\n", traceBack);}
      };
-    suppressJavaTracingFinish();
    }
 
 //D2 Instruction counts                                                                                                 // Count the number of instructions in each subroutine minus the instructions supplied by called subroutines
@@ -1402,7 +1388,7 @@ if (byteMemory != null)
 
   static void subStart (String Name)
    {subs.push(Name);
-    subsTrace = joinStrings(subs, " ");                                                                                 // Trace of active subs
+    subsTrace = joinStrings(subs, "\n");                                                                                // Trace of active subs
     if (!instructionCounts.containsKey(Name)) instructionCounts.put(Name, 0);                                           // Initialize instruction count for this subroutine
    }
 
@@ -1412,8 +1398,6 @@ if (byteMemory != null)
       instructionCounts.put(n, instructionCounts.get(n) + 1);
      }
    }
-
-  static String subGetAsComment () {return subs.size() > 0 ? "/* "+subsTrace+" */" : "/* not in a sub */";}             // Get the current subroutine name as a comment
 
   static void subFinish ()                                                                                              // Finish a subroutine definition
    {if (subs.size() == 0) stop("No matching subStart()");
@@ -1437,29 +1421,29 @@ if (byteMemory != null)
 //D1 Verilog                                                                                                            // Generate Verilog
 
   String generateVerilog ()                                                                                             // Generate and execute the corresponding Verilog
-   {final String          name = currentTestNameSuffix();                                                               // Name of program
-    final String     traceFile = fnex(verilogTraceFile());                                                              // Trace file name relative to Verilog code
-    final String      codeFile = VerilogCodeFile();                                                                     // Code file
-    final int       sizeMemory = byteMemory != null ? byteMemory.size() : 0;                                            // Size of memory
-    final int     numberOfInts = nextIntId;                                                                             // Size of memory
-    final int    numberOfBools = nextBoolId;                                                                            // Size of memory
+   {final String       name = currentTestNameSuffix();                                                                  // Name of program
+    final String  traceFile = verilogTraceFile;                                                                         // Trace file name relative to Verilog code
+    final String   codeFile = VerilogCodeFile();                                                                        // Code file
+    final int    sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                               // Size of memory
+    final int  numberOfInts = nextIntId;                                                                                // Size of memory
+    final int numberOfBools = nextBoolId;                                                                               // Size of memory
 
     final StringBuilder      s = new StringBuilder();                                                                   // Verilog
     /*Module*/s.append(substitute("""
 module {name};                                                                                                          // Bit machine to support current test
 """, "name", name));
 
-    for(ByteMemory m : memories)                                                                                        // Each memory attached to this program
+    for(UnitMemory m : memories)                                                                                        // Each memory attached to this program
      {/*Memory*/s.append(substitute("""
   parameter  MEMORY_{memoryId}    = {memory_size};                                                                      // Amount of memory
-  reg[7:0]   {memoryName}[MEMORY_{memoryId}:0];                                                                         // Declare byte memory
+  integer   {memoryName}[MEMORY_{memoryId}:0];                                                                          // Declare byte memory
 """, "memoryId", m.i(), "memoryName", m.n(), "memory_size", ""+m.size()));
      }
 
     if (true)                                                                                                           // State machine to sequence the initialization of memories
      {int state = 0;
       s.append("  typedef enum integer {\n");                                                                           // State machine to initialize each memory and the variables used by the main program
-      for(ByteMemory m : memories)  s.append("    state_clearMemory_"+m.i()+" = "+(state++)+",\n");                     // State to clear each memory                                                    // Each memory attached to this program
+      for(UnitMemory m : memories)  s.append("    state_clearMemory_"+m.i()+" = "+(state++)+",\n");                     // State to clear each memory                                                    // Each memory attached to this program
       s.append("    state_clearInts   = "+(state++)+",\n");                                                             // State for clearing integers
       s.append("    state_clearBool   = "+(state++)+",\n");                                                             // States for clearing bools
       s.append("    state_execute     = "+(state++)+"\n");                                                              // States for executing code
@@ -1474,10 +1458,10 @@ module {name};                                                                  
   integer          c;                                                                                                   // Count of instructions executed
   integer         pc;                                                                                                   // Program counter for stepping through user code
   integer     lastPc;                                                                                                   // The instruction which started the latest flow of control block
-  integer          t;                                                                                                   // Trace execution
   integer      index;                                                                                                   // Index for clearing memory
   integer  lastIntId;                                                                                                   // Base for integer references
   integer lastBoolId;                                                                                                   // Base for boolean references
+  integer  traceFile;                                                                                                   // File to which trace messages will be written
   integer          i[INT_VARS:0];                                                                                       // Integers
   reg              b[BOOL_VARS:0];                                                                                      // Booleans
 
@@ -1498,18 +1482,24 @@ module {name};                                                                  
       state = state_clearInts;
 """);
 
-    /*Initialize*/s.append("""
+    /*Initialize*/s.append(substitute("""
       index = 0;
       c     = 0;
       pc    = 0;
       lastBoolId = 0;
       lastIntId  = 0;
+
+      traceFile = $fopen("{traceFile}", "w");
+      if (traceFile == 0) begin
+        $display("ERROR: Could not open file '{traceFile}' for writing.");
+        $finish;
+      end
     end
     else begin                                                                                                          // Initialize bit machine then execute user code
       case (state)
-""");
+""", "traceFile", traceFile));
 
-    for(ByteMemory m : memories)                                                                                        // Clear each memory one after the other
+    for(UnitMemory m : memories)                                                                                        // Clear each memory one after the other
      {/*Memory Clear*/s.append(substitute("""
         state_clearMemory_{memoryId}: clearMemory_{memoryId}();
 """, "memoryId", m.i()));
@@ -1557,14 +1547,14 @@ module {name};                                                                  
   /*traceInt*/ s.append(traceVerilogVariable("traceInt",   "lastIntId",  "i", traceFile));
 
   for(int i = 0; i < memories.size(); ++i)                                                                              // Actions for each memory
-   {final ByteMemory m = memories.elementAt(i);
+   {final UnitMemory m = memories.elementAt(i);
     s.append(traceVerilogMemoryPut    (m));
     s.append(traceVerilogMemoryGet    (m));
     s.append(traceVerilogMemoryPutBool(m));
     s.append(traceVerilogMemoryGetBool(m));
     s.append(              clearMemory(m, i < memories.size()-1 ? "state_clearMemory_"+memories.elementAt(i+1).i() :
                                                                   "state_clearInts"));
-    s.append(   dumpVerilogMemoryAsHex(m));
+    s.append(   dumpVerilogMemoryInDecimal(m));
    }
 
   for(String m : extraVerilogMethods) s.append(m);                                                                      // Incorporate extra Verilog methods required to support generated instructions
@@ -1587,7 +1577,7 @@ module {name};                                                                  
     /* Execute default*/s.append("""
         default: begin
 """);
-    for(ByteMemory m: memories) s.append("        dumpHex_"+m.i()+"();");                                               // Dump memory at end if used
+    for(UnitMemory m: memories) s.append("        dumpDecimal_"+m.i()+"();");                                               // Dump memory at end if used
 
     /*Execute end*/s.append("""
           $finish(0);
@@ -1607,7 +1597,7 @@ endmodule
     return ""+s;
    }
 
-  String clearMemory(ByteMemory M, String Next)                                                                         // Verilog procedure to clear a memory
+  String clearMemory(UnitMemory M, String Next)                                                                         // Verilog procedure to clear a memory
    {return substitute("""
   task automatic clearMemory_{memoryId};                                                                                // Clear memory element by element
     begin
@@ -1619,18 +1609,15 @@ endmodule
    }
 
   String traceVerilogVariable(String Procedure, String Last, String Type, String TraceFile)                             // Verilog procedure to trace a variable
-   {final String display = "$fdisplay(file, \"%8d "+Type+" %8d = %8d\", pc, ("+Last+"+Id), Value);";                    // Trace line to be written out. Id and Value are parameters of the generated function
+   {final String display = "$fdisplay(traceFile, \"%8d "+Type+" %8d = %8d\", pc, ("+Last+"+Id), Value);";               // Trace line to be written out. Id and Value are parameters of the generated function
 
     return f("""
   function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
-    integer file;
     begin
       %s = Value;                                                                                                       // Return value
-      if (t) begin
-        file = $fopen("%s", "a");                                                                                       // Open named trace file
-        %s
-        $fclose(file);
-      end
+      traceFile = $fopen("%s", "a");                                                                                    // Open named trace file
+      %s
+      $fclose(traceFile);
     end
   endfunction
 """,
@@ -1656,78 +1643,75 @@ endfunction
     program().extraVerilogMethods.add(""+s);
    }
 
-  String dumpVerilogMemoryAsHex (ByteMemory M)                                                                          // Dump memory as hex
+  String dumpVerilogMemoryInDecimal (UnitMemory M)                                                                      // Dump memory in decimal
    {return substitute("""
-  task dumpHex_{memoryId};
+  task dumpDecimal_{memoryId};
     integer i;
-    integer f;
-    reg [7:0] b;
-
+    integer I;
+    parameter integer N = 10;
     begin
-      f = $fopen("{traceFile}", "a");
+      traceFile = $fopen("{traceFile}", "a");
 
-      $fwrite(f, "Memory %s\\n", "{memoryId}");
+      $fwrite(traceFile, "Memory %s\\n", "{memoryId}");
 
       $fwrite(f, "         ");
-      for (i = 0; i < 16; i = i + 1)   $fwrite(f, "%02d ", i);
-                                       $fwrite(f, "\\n");
+      for (i = 0; i < N; i = i + 1)   $fwrite(traceFile, "%4d ", i);
+                                      $fwrite(traceFile, "\\n");
 
       for (i = 0; i < MEMORY_{memoryId}; i = i + 1)
       begin
-        if (i % 16 == 0)               $fwrite(f, "%08d ", i);
+        if (i % N == 0)               $fwrite(traceFile, "%08d ", i);
 
-        b = {memoryName}[i];
+        I = {memoryName}[i];
 
-        if (b != 0)                    $fwrite(f, "%02x ", b);
-        else                           $fwrite(f, "   ");
+        if (I != 0)                   $fwrite(traceFile, "%04d ", I);
+        else                          $fwrite(traceFile, "     ");
 
-        if ((i + 1) % 16 == 0)         $fwrite(f, "\\n");
+        if ((i + 1) % N == 0)         $fwrite(traceFile, "\\n");
       end
 
-      if (MEMORY_{memoryId} % 16 != 0) $fwrite(f, "\\n");
+      if (MEMORY_{memoryId} % N != 0) $fwrite(traceFile, "\\n");
 
-      $fclose(f);
+      $fclose(traceFile);
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryGet (ByteMemory M)                                                                           // Trace byte read from memory
-   {return substitute("""
+  String traceVerilogMemoryGet (UnitMemory M)                                                                           // Trace byte read from memory
+   {vtraceInc();
+    return substitute("""
   function automatic reg[7:0] getMemory_{memoryId} (input integer Addr);
-    integer f;
     begin
       getMemory_{memoryId} = {memoryName}[Addr];
 
-      if (t) begin
-        f = $fopen("{traceFile}", "a");
-        $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, getMemory_{memoryId}, "{memoryName}");
-        $fclose(f);
-      end
+      traceFile = $fopen("{traceFile}", "a");
+      $fdisplay(traceFile, "%8d R %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
+      $fclose(traceFile);
     end
   endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryGetBool (ByteMemory M)                                                                       // Trace bool read from memory
-   {return substitute("""
+  String traceVerilogMemoryGetBool (UnitMemory M)                                                                       // Trace bool read from memory
+   {vtraceInc();
+    return substitute("""
   function automatic reg getMemoryBool_{memoryId} (input integer Addr, input integer Bit);
     integer f;
     begin
       getMemoryBool_{memoryId} = {memoryName}[Addr][Bit];
 
-      if (t) begin
-        f = $fopen("{traceFile}", "a");
-        $fdisplay(f, "%8d r %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
-        $fclose(f);
-      end
+      traceFile = $fopen("{traceFile}", "a");
+      $fdisplay(traceFile, "%8d r %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
+      $fclose(traceFile);
     end
   endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryPut (ByteMemory M)                                                                           // Trace byte written to memory
-   {return substitute("""
+  String traceVerilogMemoryPut (UnitMemory M)                                                                           // Trace byte written to memory
+   {vtraceInc();
+    return substitute("""
   task automatic putMemory_{memoryId} (input integer Addr, input integer Value);
     integer f;
     integer a;
@@ -1735,18 +1719,17 @@ endfunction
       a = {memoryName}[Addr];
           {memoryName}[Addr] = Value[0+:8];
 
-      if (t) begin
-        f = $fopen("{traceFile}", "a");
-        $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryName}");
-        $fclose(f);
-      end
+      traceFile = $fopen("{traceFile}", "a");
+      $fdisplay(traceFile, "%8d W %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryName}");
+      $fclose(traceFile);
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryPutBool (ByteMemory M)                                                                       // Trace bit written to memory
-   {return substitute("""
+  String traceVerilogMemoryPutBool (UnitMemory M)                                                                       // Trace bit written to memory
+   {vtraceInc();
+    return substitute("""
   task automatic putMemoryBool_{memoryId} (input integer Addr, input integer Bit, input integer Value);
     integer f;
     integer a;
@@ -1756,12 +1739,10 @@ endfunction
           {memoryName}[Addr][Bit] = Value[0];
       b = {memoryName}[Addr];
 
-      if (t) begin
-        f = $fopen("{traceFile}", "a");
-        $fdisplay(f, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryName}");
-        $fdisplay(f, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryName}");
-        $fclose(f);
-      end
+      traceFile = $fopen("{traceFile}", "a");
+      $fdisplay(traceFile, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryName}");
+      $fdisplay(traceFile, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryName}");
+      $fclose(traceFile);
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -2032,37 +2013,36 @@ endfunction
 
   static void test_byteMemory(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).memory(16))
+    final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
-       {final ByteMemory m = byteMemory;
+       {final UnitMemory m = unitMemory;
         new For(2)
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
-            m.putInt(new Int(4), new Int(2));
+            m.putInt(new Int(1), new Int(2));
             m.getInt(new Int(0)).ok(1);
-            m.getInt(new Int(4)).ok(2);
+            m.getInt(new Int(1)).ok(2);
 
-            m.getBool(new Int(4), new Int(0)).ok(false);
-            m.getBool(new Int(4), new Int(1)).ok(true );
-            m.getBool(new Int(4), new Int(2)).ok(false);
-            m.putBool(new Int(4), new Int(0), new Bool(true));
-            m.getInt (new Int(4)).            ok(3);
+            m.getBool(new Int(1), new Int(0)).ok(false);
+            m.getBool(new Int(1), new Int(1)).ok(true );
+            m.getBool(new Int(1), new Int(2)).ok(false);
+            m.putBool(new Int(1), new Int(0), new Bool(true));
+            m.getInt (new Int(1)).            ok(3);
 
             m.putBool(new Int(32), new Bool(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(false);
 
-            m.putBool(new Int(5), new Int(1), new Bool(true));
-            m.getBool(new Int(5), new Int(1)).ok(true);
-
+            m.putBool(new Int(1), new Int(9), new Bool(true));
+            m.getBool(new Int(1), new Int(9)).ok(true);
            }
          };
        }
      };
     P.execute();
-//  ok(P.byteMemory.getBool(32), false);
-//  ok(P.byteMemory.getBool(33), true);
+//  ok(P.unitMemory.getBool(32), false);
+//  ok(P.unitMemory.getBool(33), true);
    }
 
   static void test_byteMemory()
@@ -2074,7 +2054,7 @@ endfunction
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(8))
      {void code()
-       {final ByteMemory m = byteMemory;
+       {final UnitMemory m = unitMemory;
         new For(2)
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(-2));
@@ -2097,16 +2077,16 @@ endfunction
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(16))
      {void code()
-       {final ByteMemory     M = byteMemory;
-        final ByteMemory.Ref m = M.new Ref( 8);
-        final ByteMemory.Ref n = M.new Ref(12);
+       {final UnitMemory     M = unitMemory;
+        final UnitMemory.Ref m = M.new Ref( 8);
+        final UnitMemory.Ref n = M.new Ref(12);
         new For(2)
          {void body(Int Index, Bool Continue)
            {m.putInt(new Int(0), new Int(1));
 
             m.putInt(new Int(1), new Int(-1));
             m.putInt(new Int(1), new Int(2));
-            ok(()->nws(M.dumpHex()), """
+            ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         01          02
@@ -2119,7 +2099,7 @@ Memory 0
             m.putBool(new Int(32), new Bool(true));
             m.putBool(new Int(34), new Bool(true));
             m.getInt (new Int( 1)).ok(7);
-            ok(()->nws(M.dumpHex()), """
+            ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         01          07
@@ -2130,25 +2110,25 @@ Memory 0
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(true);
             m.getInt (new Int( 1)).ok(6);
-            ok(()->nws(M.dumpHex()), """
+            ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         01          06
 """);
             m.clear(4);
-            ok(()->nws(M.dumpHex()), """
+            ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                                     06
 """);
             m.copy(n, 4);
-            ok(()->nws(M.dumpHex()), """
+            ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000                         06          06
 """);
             M.clear();
-            ok(()->nws(M.dumpHex()), """
+            ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
          00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
 00000000
@@ -2170,8 +2150,8 @@ Memory 0
 //   {sayCurrentTestName();
 //    final Program P = new Program(new Build().immediate(Ex).memory(16))
 //     {void code()
-//       {final ByteMemory     M = byteMemory;
-//        final ByteMemory.Ref m = M.new Ref(8);
+//       {final UnitMemory     M = byteMemory;
+//        final UnitMemory.Ref m = M.new Ref(8);
 //        m.invalidate(8);
 //        m.clear     (4);
 //       }
@@ -2252,8 +2232,8 @@ Memory 0
        }
      };
     P.execute();
-//  ok(P.byteMemory.getBool(64+32), false);
-//  ok(P.byteMemory.getBool(64+33), true);
+//  ok(P.unitMemory.getBool(64+32), false);
+//  ok(P.unitMemory.getBool(64+33), true);
    }
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
@@ -2274,8 +2254,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_byteMemoryRef();
+   {//oldTests();
+    test_byteMemory();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
