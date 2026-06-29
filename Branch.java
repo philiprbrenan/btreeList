@@ -10,11 +10,11 @@ class Branch extends Program implements Program.Locatable                       
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
   final Bint           at            = new Bint();                                                                      // A representation of the location of the branch sufficient to be able to free it
-  ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
-  final ByteMemory.Ref refMark;                                                                                         // Mark this node as a branch
-  final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
-  final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
-  final ByteMemory.Ref refTop;                                                                                          // Target for keys greater than all the keys in the branch bitset
+  UnitMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
+  final UnitMemory.Ref refMark;                                                                                         // Mark this node as a branch
+  final UnitMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
+  final UnitMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
+  final UnitMemory.Ref refTop;                                                                                          // Target for keys greater than all the keys in the branch bitset
   final Build          build;                                                                                           // Build used to construct this branch
   final static String  formatKey = " %3d";                                                                              // Format a key for dumping during testing
 
@@ -26,13 +26,13 @@ class Branch extends Program implements Program.Locatable                       
     boolean         immediate = true;                                                                                   // Immediate execution mode
     boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
-    ByteMemory.Ref  byteMemoryRef;                                                                                      // Program memory to be used
+    UnitMemory.Ref  byteMemoryRef;                                                                                      // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build     slots;                                                                                              // Bytes needed for slots
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (ByteMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
+    Build memory   (UnitMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
