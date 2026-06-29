@@ -15,15 +15,15 @@ class Tree extends Program                                                      
   final int           numberOfNodes;                                                                                    // Maximum number of leaves plus branches in this tree
   final int   maximumNumberOfLevels;                                                                                    // Maximum number of levels in tree to prevent runaways while debugging
   final int              sizeOfNode;                                                                                    // The size of each node in the tree: a node must be able to hold a branch or a leaf
-  final ByteMemory.Ref     refNodes;                                                                                    // The nodes associated with this tree
-  final ByteMemory.Ref refFreeChain;                                                                                    // The free chain for this tree
-  final ByteMemory.Ref     refCount;                                                                                    // The number of keys in this tree
+  final UnitMemory.Ref     refNodes;                                                                                    // The nodes associated with this tree
+  final UnitMemory.Ref refFreeChain;                                                                                    // The free chain for this tree
+  final UnitMemory.Ref     refCount;                                                                                    // The number of keys in this tree
   final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
   final int     linesToPrintABranch = 4;                                                                                // The number of lines required to print a branch
   boolean           suppressMergeUp = false;                                                                            // Suppress merge up during development
-  final ByteMemory        mergePath;                                                                                    // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-  final ByteMemory     traverseNode;                                                                                    // Memory to hold outstanding branches and leaves during a traverse
-  final ByteMemory   traverseAction;                                                                                    // Memory to hold requested action against each branch during a traverse
+  final UnitMemory        mergePath;                                                                                    // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+  final UnitMemory     traverseNode;                                                                                    // Memory to hold outstanding branches and leaves during a traverse
+  final UnitMemory   traverseAction;                                                                                    // Memory to hold requested action against each branch during a traverse
 
 //D1 Construction                                                                                                       // Construct and layout a tree
 
@@ -101,14 +101,14 @@ class Tree extends Program                                                      
     build         = Build;                                                                                              // Keep the build for future reference
     sizeOfNode    = build.nodeSize;                                                                                     // Size of a node in the tree
 
-    final ByteMemory.Ref byteMemoryRef = byteMemory.new Ref(0);                                                         // Memory used by tree
+    final UnitMemory.Ref byteMemoryRef = byteMemory.new Ref(0);                                                         // Memory used by tree
     refNodes       = byteMemoryRef.step(build.memoryPositions.posNodes);                                                 // Memory for nodes
     refFreeChain   = byteMemoryRef.step(build.memoryPositions.posFreeChain);                                             // Memory for free chain
     refCount       = byteMemoryRef.step(build.memoryPositions.posCount);                                                 // Memory for key count
 
-    mergePath      = new ByteMemory(ib(mnl()));                                                                          // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-    traverseNode   = new ByteMemory(ib(2*mnl()));                                                                        // Memory to hold outstanding branches and leaves in a traverse
-    traverseAction = new ByteMemory(ib(2*mnl()));                                                                        // Memory to hold requested action against each branch in a traverse
+    mergePath      = new UnitMemory(ib(mnl()));                                                                          // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    traverseNode   = new UnitMemory(ib(2*mnl()));                                                                        // Memory to hold outstanding branches and leaves in a traverse
+    traverseAction = new UnitMemory(ib(2*mnl()));                                                                        // Memory to hold requested action against each branch in a traverse
 
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
@@ -139,11 +139,13 @@ class Tree extends Program                                                      
 
   Bool isAllocated (Int Node) {return freeChain.getBit(Node).Flip();}                                                   // Check whether a node is allocated
 
-  Int nodeAddress (Int Node)                                                                                            // Convert an index to a byte address of node in memory
-   {Node.lt(0)            .stop("Node less than zero:", Node);                                                          // Check not less than zero
-    Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                          // Check in range
-    final Bool f = freeChain.getBit(Node);                                                                              // Check not freed
-    f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                         // Complain if the node has been freed and not reallocated
+  Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
+   {if (immediate())
+     {Node.lt(0)            .stop("Node less than zero:", Node);                                                        // Check not less than zero
+      Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                        // Check in range
+      final Bool f = freeChain.getBit(Node);                                                                            // Check not freed
+      f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                       // Complain if the node has been freed and not reallocated
+     }
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
 
@@ -177,7 +179,7 @@ class Tree extends Program                                                      
   Leaf leaf(Int Node) {return leaf(Node, true);}                                                                        // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
    {if (Check) isLeaf(Node).Flip().stop("Not a leaf:", Node);                                                           // Check the location actually holds a leaf
-    final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
+    final UnitMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                   // Base leaf at the indexed address
    }
 
@@ -193,7 +195,7 @@ class Tree extends Program                                                      
   Branch branch (Int Node) {return branch(Node, true);}                                                                 // Index an existing branch in memory            confirming that it really is a branch
   Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
    {if (Check) isBranch(Node).Flip().stop("Not a branch:", Node);                                                       // Check the location actually holds a branch
-    final ByteMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address branch
+    final UnitMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address branch
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
 
@@ -324,7 +326,7 @@ class Tree extends Program                                                      
     final Int        leaf     = new Int("leaf");                                                                        // Leaf that should contain the key
     final Int        step     = new Int("step");                                                                        // Current step in the path
     final Bint       split    = new Bint();                                                                             // The splitting branch is the uppermost branch directly connected to the leaf by intervening full branches which will all have to be split from the top down to permit the splitting of a full leaf
-    final ByteMemory.Ref path = mergePath.new Ref(0);                                                                   // Branches along path
+    final UnitMemory.Ref path = mergePath.new Ref(0);                                                                   // Branches along path
 
     Path(Int Key)
      {subStart("Tree.Path");
@@ -753,8 +755,8 @@ class Tree extends Program                                                      
 //D2 Traverse the tree                                                                                                  // Traverse the tree in order
 
   class Traverse                                                                                                        // Traverse the tree in order by maintaining a stack of outstanding actions
-   {final ByteMemory node   = traverseNode;                                                                             // Memory to hold outstanding branches and leaves
-    final ByteMemory action = traverseAction;                                                                           // Memory to hold requested action against each branch
+   {final UnitMemory node   = traverseNode;                                                                             // Memory to hold outstanding branches and leaves
+    final UnitMemory action = traverseAction;                                                                           // Memory to hold requested action against each branch
     final int action_first  = -1,                                                                                       // Add first child branch and update to slot of the first child. Process through the children indicated by positive values then go to top when there are no more children to process
               action_top    = -2,                                                                                       // Add top goto remove
               action_remove = -3;                                                                                       // Remove this branch from stack
