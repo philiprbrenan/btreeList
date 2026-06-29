@@ -9,11 +9,11 @@ import java.util.*;
 class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in leaf
-  ByteMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
+  UnitMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final Bint           at            = new Bint();                                                                      // An optional representation of the location of the leaf sufficient to be able to free it
-  final ByteMemory.Ref refMark;                                                                                         // Mark this node as a leaf
-  final ByteMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
-  final ByteMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
+  final UnitMemory.Ref refMark;                                                                                         // Mark this node as a leaf
+  final UnitMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
+  final UnitMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
   final Build          build;                                                                                           // Build used to construct this leaf
 
 //D1 Construction                                                                                                       // Construct and layout a leaf
@@ -24,13 +24,13 @@ class Leaf extends Program implements Program.Locatable                         
     boolean         immediate = true;                                                                                   // Immediate execution mode
     boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
-    ByteMemory.Ref  byteMemoryRef;                                                                                      // Program memory to be used
+    UnitMemory.Ref  byteMemoryRef;                                                                                      // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build     slots;                                                                                              // Bytes needed for slots
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (ByteMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
+    Build memory   (UnitMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
