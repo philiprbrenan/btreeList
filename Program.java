@@ -91,8 +91,8 @@ public class Program extends Test                                               
   void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
    {lastIntId = nextIntId; lastBoolId = nextBoolId;
     new I()
-     {void     a() {jTrace("InsertLastBaseInstruction\n");}
-      String   v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";"+vTrace("InsertLastBaseInstruction");}
+     {void     a() {jTrace(f("%8d InsertLastBaseInstruction: %s\n", currentPc, instructionLocationAsComment()));}
+      String   v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";"+vTrace("%8d InsertLastBaseInstruction: "+instructionLocationAsComment(), "pc");}
       int traces() {return 1;}
      };
    }
@@ -560,29 +560,55 @@ public class Program extends Test                                               
 
     void jtrace () {jTrace(f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));}                              // Trace the boolean  operation by appending an entry to the java trace file
 
-    Bool ok (Boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
-     {new I()
+    Bool ok (boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
+     {final  Bool got = this;
+      new I()
        {void a()
-         {if (Value != null) {x(); Test.ok(i, Value);}
-          else               {     Test.ok(v, false);}
+         {if (!got.v) stop("Invalid Bool being tested at:", parentProgram.executing.instructionLocation());
+          Test.ok(i, Value);
+         }
+        int traces() {return 0;         }
+       };
+      return this;
+     }
+
+//    Bool ok (Boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
+//     {new I()
+//       {void a()
+//         {if (Value != null) {x(); Test.ok(i, Value);}
+//          else               {     Test.ok(v, false);}
+//         }
+//        int traces() {return 0;}
+//       };
+//      return this;
+//     }
+
+    Bool ok (Bool Value)                                                                                                // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
+     {final Bool got = this;
+      if (immediate() && !Value.v) stop("Invalid expected Bool has been supplied for testing");
+      new I()
+       {void a()
+         {if (!got.v) stop("Invalid Bool being tested at:", parentProgram.executing.instructionLocation());
+          Test.ok(got.b(), Value.b());
          }
         int traces() {return 0;}
        };
       return this;
      }
 
-    Bool ok (Bool Value)                                                                                                // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
-     {final Bool got = this;
-       new If (Value.valid())
-       {void Then()
-         {new I() {void a()  {Test.ok(got.b(), Value.b()); } };
-         }
-        void Else()
-         {new I() {void a() {Test.ok(got.notValid(), true);} };
-         }
-       };
-      return this;
-     }
+//    Bool ok (Bool Value)                                                                                                // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
+//     {final Bool got = this;
+//      Value.notValid()
+//      new If (Value.valid())
+//       {void Then()
+//         {new I() {void a()  {Test.ok(got.b(), Value.b()); } };
+//         }
+//        void Else()
+//         {new I() {void a() {Test.ok(got.notValid(), true);} };
+//         }
+//       };
+//      return this;
+//     }
    }
 
 //D2 Integer values                                                                                                     // Operations on integer values
@@ -891,25 +917,50 @@ public class Program extends Test                                               
 
     void jtrace () {jTrace(f("%8d i %8d = %8d\n",  program().currentPc, id, i));}                                       // Trace the integer operation
 
-    Int ok (Integer Value)                                                                                              // Check the integer
-     {new I()
-       {void a()
-         {if (Value != null) {x(); Test.ok(i, Value);}
-          else               {     Test.ok(v, false);}
+    Int ok (int Value)                                                                                                  // Check the integer
+     {final Int got = this;
+      new I()
+       {void        a()
+         {if (!got.v) stop("Invalid Int being tested at:", parentProgram.executing.instructionLocation());
+          Test.ok(i, Value);
          }
-        boolean trace() {return false;}                                                                                                                         // No need to test  under Verilog as long as all data accesses match
+        boolean trace() {return false;}                                                                                 // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
 
-    Int ok (Int Value)
+//    Int ok (Integer Value)                                                                                              // Check the integer
+//     {new I()
+//       {void a()
+//         {if (Value != null) {x(); Test.ok(i, Value);}
+//          else               {     Test.ok(v, false);}
+//         }
+//        boolean trace() {return false;}                                                                               // No need to test  under Verilog as long as all data accesses match
+//       };
+//      return this;
+//     }
+
+    Int ok (Int Value)                                                                                                  // Test an Integer. The value expected and the value got must be valid during the java execution because the verilog execution deliberately removes this information on the basis that the java code is definitive and so if the verilog race matches the java trace the verilog code is working correctly. The purpose of the validity bit is to internally track whether the integer was ever set during program execution, it is not to convey application information. If an integer with an attached validity bit is required in application logic then Bint should be used.
      {final Int got = this;
-       new If (Value.valid())
-       {void Then()  {new I() {void a() {Test.ok(got.i(), Value.i());}    boolean trace() {return false;}};}
-        void Else()  {new I() {void a() {Test.ok(got.notValid(), true);}  boolean trace() {return false;}};}
+      if (immediate() && !Value.v) stop("Invalid expected Int has been supplied for testing");
+      new I()
+       {void    a    ()
+         {if (!got.v) stop("Invalid Int being tested at:", parentProgram.executing.instructionLocation());
+           Test.ok(got.i(), Value.i());
+         }
+        boolean trace() {return false;}
        };
       return this;
      }
+
+//    Int ok (Int Value)
+//     {final Int got = this;
+//      new If (Value.valid())
+//       {void Then()  {new I() {void a() {Test.ok(got.i(), Value.i());}    boolean trace() {return false;}};}
+//        void Else()  {new I() {void a() {Test.ok(got.notValid(), true);}  boolean trace() {return false;}};}
+//       };
+//      return this;
+//     }
    }
 
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
@@ -942,6 +993,7 @@ public class Program extends Test                                               
 
     Bint ok (boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    } boolean trace() {return false;}}; return this;} // Test the boolean value of the boolean integer
     Bint ok (int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } boolean trace() {return false;}}; return this;} // Test the integer value of the boolean integer
+
     Bint ok (Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} boolean trace() {return false;}}; return this;} // Test the integer value of the boolean integer
 
     void     stop (Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);}};}};}      // Conditionally print a message if false and stop
@@ -1800,7 +1852,8 @@ endfunction
    }
 
   static void test_programming()
-   {test_programming(true); test_programming(false);
+   {          test_programming(true);
+              test_programming(false);
    }
 
   static void test_andOr(boolean Ex)
@@ -2256,6 +2309,33 @@ Memory 0
        }
      };
    }
+
+  static void test_lastInstructionBase(boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).memory(8))
+     {void code()
+       {final Int a = new Int(2);
+        final Int b = new Int();
+        a.ok(2);
+        new If (a.eq(1))
+         {void Then()
+           {b.set(1);
+           }
+          void Else()
+           {b.set(2);
+           }
+         };
+        b.ok(2);
+        execute();
+       }
+     };
+   }
+
+  static void test_lastInstructionBase()
+   {test_lastInstructionBase(true);
+    test_lastInstructionBase(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_andOr();
@@ -2272,10 +2352,12 @@ Memory 0
     //test_invalidate();
     //test_procedureCall();
     test_defineArrayViaVerilogFunction();
+    test_lastInstructionBase();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_lastInstructionBase(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
