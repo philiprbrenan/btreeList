@@ -8,7 +8,7 @@ import java.util.*;                                                             
 
 final public class BitSet extends Program                                                                               // Fixed-size bit set using byte-level storage.
  {final int bitSize, bitSize1, bitSize2, logBitSize;                                                                    // Number of bits in the bit set.
-  final int              byteSize;                                                                                      // Number of bytes in the bit set.
+  final int              unitsSize;                                                                                     // Number of bytes in the bit set.
   final boolean        powerOfTwo;                                                                                      // Some operations can be optimized if the bitset has a number of elements that is a power of two
   final boolean        trackCount;                                                                                      // Track the count of number of bits set to one
   final Build               build;                                                                                      // Memory to use
@@ -48,11 +48,14 @@ final public class BitSet extends Program                                       
     Build    memory (Program.UnitMemory.Ref Ref) { memoryRef = Ref;       return this;}                                 // Memory for bitset
     Build    parent (Program Parent)             {    parent = Parent;    return this;}                                 // Parent program for code
 
-    int byteSize() {return (Byte.SIZE - 1 + 3 * nextPowerOfTwo(bitSize)) / Byte.SIZE + (trackCount ? ib() : 0);}        // Bytes needed for the bitset and its bit trees
+    int units()                                                                                                         // Units needed for the bitset, the bitset trees and the count field
+     {final int s = UnitMemory.bitsPerUnit();
+      return (s - 1 + 3 * nextPowerOfTwo(bitSize)) / s + (trackCount ? 1 : 0);
+     }
 
     Program.Build build ()                                                                                              // Description of containing program
      {final Program.Build p = new Program.Build();
-      if (memoryRef == null) p.memory(byteSize());
+      if (memoryRef == null) p.memory(units());
       p.immediate(immediate);
       if (parent != null) p.parent(parent);                                                                             // Place code from this program into this parent program
       return p;
@@ -69,9 +72,9 @@ final public class BitSet extends Program                                       
     logBitSize       = logTwo(bitSize);
     trackCount       = build.trackCount;
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
-    byteSize         = Build.byteSize();                                                                                // Bytes needed for the bitset and its bit trees
-    if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = byteMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
-    memoryCount      = trackCount ? memoryRef.step(bytesNeeded() - ib()) : null;                                        // Maintain a count field to determine the number of bits set to one in O(1) time
+    unitsSize        = Build.units();                                                                                   // Memory units needed for the bitset and its bit trees
+    if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = unitMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
+    memoryCount      = trackCount ? memoryRef.step(unitsNeeded() - 1) : null;                                           // Maintain a count field at the end to determine the number of bits set to one in O(1) time
 
     luoVerilog       = "x_bitSet_limitsUpperOne_" +bitSize;                                                             // Verilog procedures to make references to constant arrays rather than holding them in memory
     luzVerilog       = "x_bitSet_limitsUpperZero_"+bitSize;
@@ -92,8 +95,8 @@ final public class BitSet extends Program                                       
     posZero          = new int[top_zero()+2];    posZeroArray();                                                        // Position in row in zeros tree from position in zeros tree
    }
 
-  BitSet initializeMemory () {memoryRef.clear(bytesNeeded()); return this;}                                             // Initialize memory
-  int         bytesNeeded () {return build.byteSize();}                                                                 // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
+  BitSet initializeMemory () {memoryRef.clear(unitsNeeded()); return this;}                                             // Initialize memory
+  int         unitsNeeded () {return build.units();}                                                                    // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
   Int          logBitSize () {return new Int(logBitSize);}                                                              // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
   Int               count ()                                                                                            // Count number of set bits in bitset - the performasnc will nbe order (1) if the count is being tracked else N log(N)
@@ -769,7 +772,7 @@ final public class BitSet extends Program                                       
 
 //D1 Print                                                                                                              // Print the bit set
 
-  public String toString()                                                                                              // Print bit set so we can visualize it. This will not be available on the chip so we use normal Java
+  public String toString ()                                                                                             // Print bit set so we can visualize it. This will not be available on the chip so we use normal Java
    {subStart("Bitset.toString");
     final StringBuilder s = new StringBuilder();
     int p = 0, r = bitSize;
@@ -814,9 +817,8 @@ final public class BitSet extends Program                                       
   static BitSet test_bits(boolean Ex, int N)                {return test_bits(Ex, N, false);}                           // Create test bitset.
   static BitSet test_bits(boolean Ex, int N, boolean Count)                                                             // Create test bitset.
    {subStart("BitSet.test_bits");
-    final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Allocate backing storage.
-    final byte[]bytes = new byte[build.byteSize()];                                                                     // Allocate backing storage.
-    final BitSet    b = new BitSet(build);                                                                              // Create a bit set
+    final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Describe bitset
+    final BitSet    b = new BitSet(build  );                                                                              // Create a bit set
     subFinish();
     return b;                                                                                                           // Return test bitset.
    }
@@ -1669,7 +1671,6 @@ Zero:
     b.highZero(b.new Int(15+16)).ok( 1);
 
     b.maxSteps = 99_999;
-    b.dumpMemoryEvery = 99;
     b.execute();
    }
 
