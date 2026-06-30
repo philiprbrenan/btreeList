@@ -91,9 +91,9 @@ public class Program extends Test                                               
   void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
    {lastIntId = nextIntId; lastBoolId = nextBoolId;
     new I()
-     {void     a() {}
-      String   v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
-      int traces() {return 0;}
+     {void     a() {jTrace("InsertLastBaseInstruction\n");}
+      String   v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";"+vTrace("InsertLastBaseInstruction");}
+      int traces() {return 1;}
      };
    }
 
