@@ -9,7 +9,7 @@ import java.util.*;
 class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a btree that translates keys into values to be implemented as an application specific integrated circuit
  {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in leaf
-  UnitMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
+  UnitMemory.Ref       unitMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final Bint           at            = new Bint();                                                                      // An optional representation of the location of the leaf sufficient to be able to free it
   final UnitMemory.Ref refMark;                                                                                         // Mark this node as a leaf
   final UnitMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
@@ -24,13 +24,13 @@ class Leaf extends Program implements Program.Locatable                         
     boolean         immediate = true;                                                                                   // Immediate execution mode
     boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
-    UnitMemory.Ref  byteMemoryRef;                                                                                      // Program memory to be used
+    UnitMemory.Ref  unitMemoryRef;                                                                                      // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build     slots;                                                                                              // Bytes needed for slots
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (UnitMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
+    Build memory   (UnitMemory.Ref Ref) {unitMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
@@ -40,7 +40,7 @@ class Leaf extends Program implements Program.Locatable                         
       final Slots.Build   s = slots = new Slots.Build().numberOfKeys(maxSize);
       final Program.Build S = s.build();                                                                                // Has the side effect of computing the size of the slots
       memoryPositions       = new MemoryPositions();
-      if (byteMemoryRef == null) p.memory(size());
+      if (unitMemoryRef == null) p.memory(size());
       if (parent        != null) p.parent(parent);
       p.immediate(immediate);
       p.trace    (trace);
@@ -65,10 +65,10 @@ class Leaf extends Program implements Program.Locatable                         
     if (maxSize % 2 == 1) stop("MaxSize should be even not odd:", maxSize);                                             // Not strictly true but slightly easier to cope with
     if (maxSize < 2)      stop("MaxSize must be at least 2:",     maxSize);
     final Build.MemoryPositions m = build.memoryPositions;
-    byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
-    refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-    refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
+    unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : unitMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
+    refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a leaf or a branch
+    refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
     if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for leaf
     leafCode();                                                                                                         // Generate machine code if any assembler code has been supplied
@@ -92,10 +92,10 @@ class Leaf extends Program implements Program.Locatable                         
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // Set the data at the specified index
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a leaf
-  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
+  void      clear() {unitMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
-  void copy (Leaf Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
-//void invalidate()       {byteMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
+  void copy (Leaf Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
+//void invalidate()       {unitMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
@@ -241,9 +241,9 @@ class Leaf extends Program implements Program.Locatable                         
 
   StringBuilder print ()                                                                                                // Print a leaf
    {subStart("Leaf.print");
-    suppressJavaTracingStart();                                                                                         // Do not trace printing
+
     final StringBuilder s = new StringBuilder();
-    new I() {void a() {s.setLength(0); s.append(f("Leaf  "));}   };
+    new I() {void a() {s.setLength(0); s.append(f("Leaf  "));}  boolean trace() {return false;}};
     final Bint l = getLocation();
 
     new If (l)
@@ -251,15 +251,15 @@ class Leaf extends Program implements Program.Locatable                         
        {final Int i = new Int().set(l);
         new If (i.gt(0))
          {void Then()                                                                                                   // Print the index if it is not the root
-           {new I() {void a() {s.append(f(" at: %3d", i.i())); } };
+           {new I() {void a() {s.append(f(" at: %3d", i.i()));} boolean trace() {return false;}};
            }
           void Else()
-           {new I() {void a() {s.append(" ".repeat(8)); }        };
+           {new I() {void a() {s.append(" ".repeat(8)); }       boolean trace() {return false;}};
            }
          };
        }
       void Else()
-       {new I() {void a() {s.append(" ".repeat(8)); }            };
+       {new I()     {void a() {s.append(" ".repeat(8)); }       boolean trace() {return false;}};
        }
      };
 
@@ -281,7 +281,7 @@ class Leaf extends Program implements Program.Locatable                         
        }
 
      };
-    suppressJavaTracingFinish();                                                                                        // Resume tracing
+
     subFinish();
     return s;
    }
