@@ -540,6 +540,7 @@ public class Program extends Test                                               
          {new I(I.Jump.will)
            {void   a() {Test.stop(O);}
             String v() {return "pc <= -1;";}
+            boolean trace() {return false;}
            };
          }
        };
@@ -896,7 +897,7 @@ public class Program extends Test                                               
          {if (Value != null) {x(); Test.ok(i, Value);}
           else               {     Test.ok(v, false);}
          }
-        int traces() {return 0;}                                                                                                                          // No need to test  under Verilog as long as all data accesses match
+        boolean trace() {return false;}                                                                                                                         // No need to test  under Verilog as long as all data accesses match
        };
       return this;
      }
@@ -904,13 +905,8 @@ public class Program extends Test                                               
     Int ok (Int Value)
      {final Int got = this;
        new If (Value.valid())
-       {void Then()
-         {new I() {void a() {Test.ok(got.i(), Value.i());}   };
-         }
-        void Else()
-         {new I() {void a() {Test.ok(got.notValid(), true);} };
-         }
-                                                                                                                        // No need to test  under Verilog as long as all data accesses match
+       {void Then()  {new I() {void a() {Test.ok(got.i(), Value.i());}    boolean trace() {return false;}};}
+        void Else()  {new I() {void a() {Test.ok(got.notValid(), true);}  boolean trace() {return false;}};}
        };
       return this;
      }
@@ -944,9 +940,9 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bint ok (boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    } }; return this;}                            // Test the boolean value of the boolean integer
-    Bint ok (int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } }; return this;}                            // Test the integer value of the boolean integer
-    Bint ok (Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} }; return this;}                            // Test the integer value of the boolean integer
+    Bint ok (boolean Value) {new I() {void a() {Test.ok(b.b(), Value);    } boolean trace() {return false;}}; return this;} // Test the boolean value of the boolean integer
+    Bint ok (int     Value) {new I() {void a() {Test.ok(i.i(), Value);    } boolean trace() {return false;}}; return this;} // Test the integer value of the boolean integer
+    Bint ok (Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} boolean trace() {return false;}}; return this;} // Test the integer value of the boolean integer
 
     void     stop (Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);}};}};}      // Conditionally print a message if false and stop
     void elseStop (Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);}};}};}      // Conditionally print a message if true and stop
