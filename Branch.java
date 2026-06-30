@@ -10,7 +10,7 @@ class Branch extends Program implements Program.Locatable                       
  {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
   final Slots          slots;                                                                                           // Slots used to order keys in branch
   final Bint           at            = new Bint();                                                                      // A representation of the location of the branch sufficient to be able to free it
-  UnitMemory.Ref       byteMemoryRef = null;                                                                            // Byte memory reference containing the tree
+  UnitMemory.Ref       unitMemoryRef = null;                                                                            // Byte memory reference containing the tree
   final UnitMemory.Ref refMark;                                                                                         // Mark this node as a branch
   final UnitMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
   final UnitMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
@@ -26,13 +26,13 @@ class Branch extends Program implements Program.Locatable                       
     boolean         immediate = true;                                                                                   // Immediate execution mode
     boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
-    UnitMemory.Ref  byteMemoryRef;                                                                                      // Program memory to be used
+    UnitMemory.Ref  unitMemoryRef;                                                                                      // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
     Slots.Build     slots;                                                                                              // Bytes needed for slots
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (UnitMemory.Ref Ref) {byteMemoryRef = Ref;       return this;}
+    Build memory   (UnitMemory.Ref Ref) {unitMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
@@ -42,7 +42,7 @@ class Branch extends Program implements Program.Locatable                       
       final Slots.Build   s = slots = new Slots.Build().numberOfKeys(maxSize);
       final Program.Build S = s.build();                                                                                // Has the side effect of computing the size of the slots
       memoryPositions       = new MemoryPositions();
-      if (byteMemoryRef == null) p.memory(size());
+      if (unitMemoryRef == null) p.memory(size());
       if (parent        != null) p.parent(parent);
       p.immediate(immediate);
       p.trace    (trace);
@@ -68,11 +68,11 @@ class Branch extends Program implements Program.Locatable                       
     if (maxSize % 2 == 0) stop("MaxSize should be odd not even:", maxSize);                                             // Not strictly true but slightly easier to cope with
     if (maxSize < 3)      stop("MaxSize must be at least 3:",     maxSize);
     final Build.MemoryPositions m = build.memoryPositions;
-    byteMemoryRef = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refMark       = byteMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
-    refSlots      = byteMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-    refTop        = byteMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
-    refData       = byteMemoryRef.step(m.posData);                                                                      // Slots in use
+    unitMemoryRef = Build.unitMemoryRef != null ? Build.unitMemoryRef : unitMemory.new Ref(0);                          // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
+    refMark       = unitMemoryRef.step(m.posMark);                                                                      // Mark this node as a branch or a leaf
+    refSlots      = unitMemoryRef.step(m.posSlots);                                                                     // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refTop        = unitMemoryRef.step(m.posTop);                                                                       // Top - target when the key is larger than all the keys in the branch
+    refData       = unitMemoryRef.step(m.posData);                                                                      // Slots in use
     if (build.at != null) at.set(build.at);                                                                             // The location of the leaf if supplied
     slots         = new Slots(new Slots.Build().numberOfKeys(maxSize).memory(refSlots).parent(program()));              // Slots for branch
     branchCode();                                                                                                       // Generate machine code if any assembler code has been supplied
@@ -97,10 +97,10 @@ class Branch extends Program implements Program.Locatable                       
   void data(Int Index, Int Value) {refData.putInt(Index, Value);}                                                       // Set data at the specified index
 
   int bytesNeeded() {return build.size();}                                                                              // Number of bytes needed to contain a branch
-  void      clear() {byteMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
+  void      clear() {unitMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the branch and mark as a branch to create a new branch in a known state ready for use
 
-  void copy (Branch Source) {byteMemoryRef.copy(Source.byteMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
-//void invalidate()         {byteMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
+  void copy (Branch Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                                  // Copy one branch into another branch
+//void invalidate()         {unitMemoryRef.invalidate(bytesNeeded());}                                                  // Invalidate a branch so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
 
 //D1  Delete, find, insert                                                                                              // Delete, find, insert keys and data in a branch
 
@@ -362,7 +362,7 @@ class Branch extends Program implements Program.Locatable                       
 
   StringBuilder print ()                                                                                                // Print the branch
    {subStart("Branch.print");
-    suppressJavaTracingStart();                                                                                         // Do not trace printing
+
     final StringBuilder s = new StringBuilder();
     new I() {void a() {s.setLength(0); s.append(f("Branch")); }};
 
@@ -371,11 +371,11 @@ class Branch extends Program implements Program.Locatable                       
      {void Then()
        {final Int i = new Int().set(l);
         new If (i.gt(0))
-         {void Then() {new I() {void a() {s.append(f(" at: %3d", i.i()));}};}
-          void Else() {new I() {void a() {s.append(" ".repeat(8));       }};}
+         {void Then() {new I() {void a() {s.append(f(" at: %3d", i.i()));} boolean trace() {return false;}};}
+          void Else() {new I() {void a() {s.append(" ".repeat(8));       } boolean trace() {return false;}};}
          };
        }
-      void Else() {new I() {void a() {s.append(" ".repeat(8));           }};}
+      void Else() {new I() {void a() {s.append(" ".repeat(8));           } boolean trace() {return false;}};}
      };
 
     final Int c = count(), t = top();
@@ -397,7 +397,6 @@ class Branch extends Program implements Program.Locatable                       
          }
        }
      };
-    suppressJavaTracingFinish();                                                                                        // Resume tracing of tracing stack is empty
     subFinish();
     return s;
    }
