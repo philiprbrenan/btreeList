@@ -13,7 +13,7 @@ class Slots extends Program                                                     
   final int                         size;                                                                               // Number of bytes needed to hold slots
   final BitSet            usedSlotsToKeys;                                                                              // The slots in use.  There are more slots than references so that they can be distributed with intervening empty slots to make insertions faster
   final BitSet                   usedKeys;                                                                              // The references in use.
-  UnitMemory.Ref            byteMemoryRef = null;                                                                       // Byte memory reference containing the slots
+  UnitMemory.Ref            unitMemoryRef = null;                                                                       // Byte memory reference containing the slots
   final UnitMemory.Ref     refSlotsToKeys;                                                                              // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
   final UnitMemory.Ref     refKeysToSlots;                                                                              // The slot associated with each in use key
   final UnitMemory.Ref refUsedSlotsToKeys;                                                                              // Bitset showing which slots are being used to map to keys
@@ -27,13 +27,13 @@ class Slots extends Program                                                     
    {boolean            immediate = true;                                                                                // Immediate mode
     boolean                trace = false;                                                                               // Trace execution
     int             numberOfKeys = 2;                                                                                   // Number of references in the slots
-    UnitMemory.Ref byteMemoryRef;                                                                                       // Program memory to be used
+    UnitMemory.Ref unitMemoryRef;                                                                                       // Program memory to be used
     Program               parent;                                                                                       // Parent program if any
     Build.MemoryPositions memoryPositions;                                                                              // Offsets of fields describing this leaf in memory
 
     Build immediate    (boolean  Immediate) {immediate     = Immediate;    return this;}
     Build numberOfKeys (int   NumberOfKeys) {numberOfKeys  = NumberOfKeys; return this;}
-    Build memory       (UnitMemory.Ref Ref) {byteMemoryRef = Ref;          return this;}
+    Build memory       (UnitMemory.Ref Ref) {unitMemoryRef = Ref;          return this;}
     Build parent       (Program    Parent)  {parent        = Parent;       return this;}
     Build trace        (boolean     Trace)  {trace         = Trace;        return this;}
 
@@ -41,7 +41,7 @@ class Slots extends Program                                                     
      {subStart("Slots.build()");
       final Program.Build   p = new Program.Build();                                                                    // Description of containing program
       final MemoryPositions s = memoryPositions = new MemoryPositions();                                                // Now we know the size of the slots
-      if (byteMemoryRef == null) p.memory(s.size);
+      if (unitMemoryRef == null) p.memory(s.size);
       if (parent        != null) p.parent(parent);
       p.immediate(immediate);
       p.trace(trace);
@@ -63,8 +63,8 @@ class Slots extends Program                                                     
       final int posKeysToSlots     = posSlotsToKeys     + ib(N);                                                        // Used keys to slot referencing the key
       final int posUsedSlotsToKeys = posKeysToSlots     + ib(N);                                                        // Slots in use
       final int posUsedKeysToSlots = posUsedSlotsToKeys + ib(N);                                                        // Slots in use
-      final int posusedKeys        = posUsedKeysToSlots + us.byteSize();                                                // References in use.  There are fewer references than slots to make insertions faster
-      final int posKeys            = posusedKeys        + ur.byteSize();                                                // Keys used in btree held unordered in this array but ordered by the slot references to them
+      final int posusedKeys        = posUsedKeysToSlots + us.units();                                                   // References in use.  There are fewer references than slots to make insertions faster
+      final int posKeys            = posusedKeys        + ur.units();                                                   // Keys used in btree held unordered in this array but ordered by the slot references to them
       final int size               = posKeys            + ib(N);                                                        // Count of used slots
      }
 
@@ -78,12 +78,12 @@ class Slots extends Program                                                     
     numberOfKeys         = Build.numberOfKeys;                                                                          // Maximum number of keys
     size                 = Build.size();                                                                                // Size of memory used to hold a leaf
     final Build.MemoryPositions m = build.memoryPositions;
-    byteMemoryRef        = Build.byteMemoryRef != null ? Build.byteMemoryRef : byteMemory.new Ref(0);                   // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
-    refSlotsToKeys       = byteMemoryRef;                                                                               // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-    refKeysToSlots       = byteMemoryRef.step(m.posKeysToSlots);                                                        // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-    refUsedSlotsToKeys   = byteMemoryRef.step(m.posUsedSlotsToKeys);                                                    // Slots in use
-    refUsedKeys          = byteMemoryRef.step(m.posusedKeys);                                                           // References in use.  There are fewer references than slots to make insertions faster
-    refKeys              = byteMemoryRef.step(m.posKeys);                                                               // Keys used in btree held unordered in this array but ordered by the slot references to them
+    unitMemoryRef        = Build.unitMemoryRef != null ? Build.unitMemoryRef : unitMemory.new Ref(0);                   // Either a reference to some memory has been supplied or create a reference to some locally allocated memory to contain the bitset
+    refSlotsToKeys       = unitMemoryRef;                                                                               // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refKeysToSlots       = unitMemoryRef.step(m.posKeysToSlots);                                                        // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+    refUsedSlotsToKeys   = unitMemoryRef.step(m.posUsedSlotsToKeys);                                                    // Slots in use
+    refUsedKeys          = unitMemoryRef.step(m.posusedKeys);                                                           // References in use.  There are fewer references than slots to make insertions faster
+    refKeys              = unitMemoryRef.step(m.posKeys);                                                               // Keys used in btree held unordered in this array but ordered by the slot references to them
     usedSlotsToKeys      = new BitSet(m.us.memory(refUsedSlotsToKeys).parent(parentProgram));                           // Create bitsets to reference the program and memory used by this program
     usedKeys             = new BitSet(m.ur.memory(refUsedKeys)       .parent(parentProgram));
     slotsCode();                                                                                                        // Generate machine code if any assembler code has been supplied
@@ -91,7 +91,7 @@ class Slots extends Program                                                     
    }
 
   Slots initializeMemory()                                                                                              // Initialize memory
-   {byteMemoryRef.clear(build.size());
+   {unitMemoryRef.clear(build.size());
     return this;
    }
 
@@ -148,7 +148,7 @@ class Slots extends Program                                                     
   Bool                empty ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
   Bool                 full ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
   Int                 count ()             {return usedKeys.count();}                                                   // The computed number of keys in the slots
-//void  invalidateMemory ()                {byteMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
+//void  invalidateMemory ()                {unitMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   Int          numberOfKeys ()             {return new Int(numberOfKeys);}                                              // The number of references in the slots definition
   int   numberOfSlotsToKeys ()             {return numberOfKeys<<1;}                                                    // Number of slots from number of refs
   int   redistributionWidth ()             {return (int)java.lang.Math.sqrt(numberOfKeys);}                             // Redistribute if the next slot is further than this
@@ -266,7 +266,7 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  void copy (Slots Source) {byteMemoryRef.copy(Source.byteMemoryRef, build.size());}                                    // Copy source into this
+  void copy (Slots Source) {unitMemoryRef.copy(Source.unitMemoryRef, build.size());}                                    // Copy source into this
 
 //D3 Compact, Split and Merge                                                                                           // Compact to the left or right, redistribute and merge slots
 
@@ -1005,7 +1005,6 @@ class Slots extends Program                                                     
     final int[]N = range(numberOfSlotsToKeys());
     final int[]R = range(numberOfKeys);
     final Int c = count();
-    suppressJavaTracingStart();                                                                                         // Do not trace printing during java execution as the verilog code does not print the slots
     new I()
      {void a()
        {clearStringBuilder(s);
@@ -1018,8 +1017,8 @@ class Slots extends Program                                                     
         s.append("\nkeys     : "); for (int i : R) s.append(f(" %3d", getKeyValue(i)));
         s.append("\n");
        }
+      boolean trace() {return false;}
      };
-    suppressJavaTracingFinish();                                                                                        // Resume java tracing status
 
     return s;
    }
@@ -1801,8 +1800,7 @@ Zero:
 
         new ForCount(new Int(8))                                                                                        // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
-           {suppressJavaTracingStart();
-            final Int  k = new Int();
+           {final Int  k = new Int();
             final int[]i = new int[] {14, 13, 16, 15, 18, 17, 12, 11};
             new I()                                                                                                     // Set the key to insert
              {void   a() {k.ex(Int.Ops.set, i[Index.i()]);}
@@ -1812,14 +1810,12 @@ Zero:
                 s.append(" endcase");
                 return ""+s;
                }
+              boolean trace() {return false;}
              };
-            suppressJavaTracingFinish();
 
             insert(k);
-            suppressJavaTracingStart();
             final StringBuilder p = s.print();
-            new I() {void a() {t.append(p);}};
-            suppressJavaTracingFinish();
+            new I() {void a() {t.append(p);}  boolean trace() {return false;}};
            }
          };
 
