@@ -40,8 +40,8 @@ class Tree extends Program                                                      
     BitSet.Build  freeChain;
     Branch.Build     branch;
     Leaf  .Build       leaf;
-    int bytesNeededForNodes;                                                                                            // Bytes needed for all the nodes
-    int bytesNeededForFree;                                                                                             // Bytes needed for free chain
+    int unitsNeededForNodes;                                                                                            // Bytes needed for all the nodes
+    int unitsNeededForFree;                                                                                             // Bytes needed for free chain
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
 
     Build     immediate (boolean Immediate    ) {immediate     = Immediate;     return this;}
@@ -59,8 +59,8 @@ class Tree extends Program                                                      
       leafSize              = leaf.size();
       branchSize            = branch.size();
       nodeSize              = max(branchSize, leafSize);
-      bytesNeededForNodes   = numberOfNodes * nodeSize;
-      bytesNeededForFree    = freeChain.byteSize();
+      unitsNeededForNodes   = numberOfNodes * nodeSize;
+      unitsNeededForFree    = freeChain.units();
       memoryPositions       = new MemoryPositions();
 
       p.memory(   size());
@@ -71,8 +71,8 @@ class Tree extends Program                                                      
 
     class MemoryPositions                                                                                               // Layout of memory
      {final int posNodes     = 0;                                                                                       // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posFreeChain = posNodes     + bytesNeededForNodes;
-      final int posCount     = posFreeChain + bytesNeededForFree;
+      final int posFreeChain = posNodes     + unitsNeededForNodes;
+      final int posCount     = posFreeChain + unitsNeededForFree;
       final int size         = posCount     + ib();
      }
 
@@ -101,10 +101,10 @@ class Tree extends Program                                                      
     build         = Build;                                                                                              // Keep the build for future reference
     sizeOfNode    = build.nodeSize;                                                                                     // Size of a node in the tree
 
-    final UnitMemory.Ref byteMemoryRef = byteMemory.new Ref(0);                                                         // Memory used by tree
-    refNodes       = byteMemoryRef.step(build.memoryPositions.posNodes);                                                 // Memory for nodes
-    refFreeChain   = byteMemoryRef.step(build.memoryPositions.posFreeChain);                                             // Memory for free chain
-    refCount       = byteMemoryRef.step(build.memoryPositions.posCount);                                                 // Memory for key count
+    final UnitMemory.Ref unitMemoryRef = unitMemory.new Ref(0);                                                         // Memory used by tree
+    refNodes       = unitMemoryRef.step(build.memoryPositions.posNodes);                                                 // Memory for nodes
+    refFreeChain   = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                             // Memory for free chain
+    refCount       = unitMemoryRef.step(build.memoryPositions.posCount);                                                 // Memory for key count
 
     mergePath      = new UnitMemory(ib(mnl()));                                                                          // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
     traverseNode   = new UnitMemory(ib(2*mnl()));                                                                        // Memory to hold outstanding branches and leaves in a traverse
@@ -133,7 +133,7 @@ class Tree extends Program                                                      
 
   void free (Locatable Free)                                                                                            // Free a leaf or a branch and invalidate its contents
    {final Bint a = Free.getLocation();
-    //byteMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                            // Invalidate the memory
+    //unitMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                            // Invalidate the memory
     freeChain.set(a.i());
    }
 
@@ -162,7 +162,7 @@ class Tree extends Program                                                      
 
   Bool checkType(Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
    {final Int  a = nodeAddress(Node);
-    final Int  t = byteMemory.getInt(a);
+    final Int  t = unitMemory.getInt(a);
     final Bool r = new Bool(false);
     new If (t.eq(Type.value())) {void Then() {r.set(true);}};
     return r;
@@ -170,7 +170,7 @@ class Tree extends Program                                                      
 
   void setType(Int Node, BranchOrLeaf Type)                                                                             // Set the type of a node
    {final Int a = nodeAddress(Node);
-    byteMemory.putInt(a, new Int(Type.value()));
+    unitMemory.putInt(a, new Int(Type.value()));
    }
 
   Bool isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Whether the indexed node a branch
@@ -179,7 +179,7 @@ class Tree extends Program                                                      
   Leaf leaf(Int Node) {return leaf(Node, true);}                                                                        // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
    {if (Check) isLeaf(Node).Flip().stop("Not a leaf:", Node);                                                           // Check the location actually holds a leaf
-    final UnitMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
+    final UnitMemory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                   // Base leaf at the indexed address
    }
 
@@ -195,7 +195,7 @@ class Tree extends Program                                                      
   Branch branch (Int Node) {return branch(Node, true);}                                                                 // Index an existing branch in memory            confirming that it really is a branch
   Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
    {if (Check) isBranch(Node).Flip().stop("Not a branch:", Node);                                                       // Check the location actually holds a branch
-    final UnitMemory.Ref r = byteMemory.new Ref(nodeAddress(Node));                                                     // Address branch
+    final UnitMemory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                     // Address branch
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
 
@@ -214,7 +214,6 @@ class Tree extends Program                                                      
 
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
-    suppressJavaTracingStart();                                                                                         // Do not trace printing
     final StringBuilder s = new StringBuilder();
     final Int           c = new Int(numberOfNodes).sub(freeChain.countAllOnes());
     new I()                                                                                                             // Dump the tree statistics
@@ -230,6 +229,7 @@ class Tree extends Program                                                      
         s.append(f("Allocations   : %4d\n", c.i()));
         s.append(f("Number of Keys: %4d\n", refCount.getInt(0)));
        }
+      boolean trace() {return false;}
      };
 
     new ForCount(new Int(min(numberOfNodes, 20)))                                                                       // Dump the leaves and branches
@@ -237,14 +237,13 @@ class Tree extends Program                                                      
        {new If(isAllocated(Index))
          {void Then()
            {new If (isLeaf(Index))
-             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {s.append(t);}};}
-              void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {s.append(t);}};}
+             {void Then() {final StringBuilder t = leaf  (Index).print(); new I() {void a() {s.append(t);} boolean trace() {return false;}};}
+              void Else() {final StringBuilder t = branch(Index).print(); new I() {void a() {s.append(t);} boolean trace() {return false;}};}
              };
            }
          };
        }
      };
-    suppressJavaTracingFinish();                                                                                        // Resume tracing if tracing stack is empty
     subFinish();
     return s;
    }
@@ -286,12 +285,10 @@ class Tree extends Program                                                      
 
     public String toString()                                                                                            // Print the find results
      {subStart("Tree.toString");
-      suppressJavaTracingStart();                                                                                       // Do not trace printing
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {s.append("Find : "+key+" "+valid+"\n");} };
+      new I() {void a() {s.append("Find : "+key+" "+valid+"\n");} boolean trace() {return false;}};
       final StringBuilder l = leaf(leaf).print();
-      new I() {void a() {s.append(l);}                             };
-      suppressJavaTracingFinish();                                                                                      // Resume tracing if tracing stack is empty
+      new I() {void a() {s.append(l);}                            boolean trace() {return false;}};
       subFinish();
       return ""+s;
      }
@@ -478,18 +475,16 @@ class Tree extends Program                                                      
 
     StringBuilder print()                                                                                               // Print the path
      {subStart("Tree.print.path");
-      suppressJavaTracingStart();                                                                                       // Do not trace printing
       final StringBuilder s = new StringBuilder();
-      new I() {void a() {s.setLength(0);                    } };
-      new I() {void a() {s.append("Path: "+step+" steps: ");} };
+      new I() {void a() {s.setLength(0);                    } boolean trace() {return false;}};
+      new I() {void a() {s.append("Path: "+step+" steps: ");} boolean trace() {return false;}};
       new ForCount(step)
        {void body(Int Index)
          {final Int v = path.getInt(Index);
           new I() {void a() {s.append(" "+v.i());}};
          }
        };
-      new I()     {void a() {s.append(" "+leaf+" "+split+"\n"); } };
-      suppressJavaTracingFinish();                                                                                      // Resume tracing if tracing stack is empty
+      new I()     {void a() {s.append(" "+leaf+" "+split+"\n");} boolean trace() {return false;}};
       subFinish();
       return s;
      }
@@ -928,15 +923,14 @@ class Tree extends Program                                                      
 
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
      {subStart("Tree.Print");
-      suppressJavaTracingStart();                                                                                       // Do not trace printing
 
-      new I() {void a() {P.clear();} };                                                                                 // Clear output area
+      new I() {void a() {P.clear();} boolean trace() {return false;}};                                                                                 // Clear output area
 
       new Traverse()
        {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(LC.leaf);
           final StringBuilder s = new StringBuilder();
-          new I() {void a() {clearStringBuilder(s);}};                                                                  // Clear the print
+          new I() {void a() {clearStringBuilder(s);} boolean trace() {return false;}};                                                                 // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
            {void a()
@@ -951,7 +945,7 @@ class Tree extends Program                                                      
                 P.elementAt(d+1).append(t);                                                                             // Write second line
                }
              }
-
+            boolean trace() {return false;}
            };
          }
 
@@ -981,7 +975,7 @@ class Tree extends Program                                                      
                  }
                }
              }
-
+            boolean trace() {return false;}
            };
          }
 
@@ -1011,11 +1005,10 @@ class Tree extends Program                                                      
                  }
                }
              }
-
+            boolean trace() {return false;}
            };
          }
        };
-      suppressJavaTracingFinish();                                                                                      // Resume tracing if tracing stack is empty
       subFinish();
      }
 
@@ -1037,14 +1030,14 @@ class Tree extends Program                                                      
             if (!l.isBlank()) t.append(l+"|\n");
            }
          }
-
+        boolean trace() {return false;}
        };
       return t;
      }
    }
 
-  StringBuilder dump () {subStart("Tree.dump" ); suppressJavaTracingStart(); var s = new Print(true) .printCollapsed(); suppressJavaTracingFinish(); subFinish(); return s;} // Dump the tree
-  StringBuilder print() {subStart("Tree.print"); suppressJavaTracingStart(); var s = new Print(false).printCollapsed(); suppressJavaTracingFinish(); subFinish(); return s;} // Print the tree
+  StringBuilder dump () {subStart("Tree.dump" ); var s = new Print(true) .printCollapsed(); subFinish(); return s;}     // Dump the tree
+  StringBuilder print() {subStart("Tree.print"); var s = new Print(false).printCollapsed(); subFinish(); return s;}     // Print the tree
 
 //D1 Tests                                                                                                              // Tests
 
@@ -1156,7 +1149,7 @@ Number of Keys:    0
     test_tree(false);
    }
 
-  static String[]tree6 = {"AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhSAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABRAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACJ1AAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANMAAgAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAQAAAAYAAAAHAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAA4n0EBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wMEAAAABQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoAAEAAAAGAAAA", "AAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAA=="};
+  static String[]tree6 = {"AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUggAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUQAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAQAAAAYAAAAHAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAABQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoAAAAAQAAAAYAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
 
   static void test_saveReload(boolean Ex)
    {sayCurrentTestName();
@@ -1179,9 +1172,9 @@ Number of Keys:    0
 
     t.check (t.dumpTree(), """
 Tree memory dump
-Leaf   size   :  161
-Branch size   :  129
-Node   size   :  161
+Leaf   size   :   41
+Branch size   :   33
+Node   size   :   41
 MaxLeafSize   :    4
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1220,7 +1213,7 @@ Leaf   at:   2 size:   4, count:   4
               test_saveReload(false);
    }
 
-  final static String[]tree32 = {"AgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAARSAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSAAEAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAALAAAACQAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACJ1AAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANMAAgAAABkAAAAaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEwEAAB4BAAApAQAANAEAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAACAAAAAwAAAAEAAAAFAAAABgAAAAcAAAAAAAAAAAAAAAAAAAAAAAAA4n0EBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wMEAAAAHQAAAB4AAAAfAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAA/AQAASgEAAFUBAABgAQAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAABVfwAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/AwQAAAABAAAAAgAAAAMAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAFV/AAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8DBAAAAAUAAAAGAAAABwAAAAgAAAAAAAAAAAAAAAAAAAAAAAAANwAAAEIAAABNAAAAWAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAVX8ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wMEAAAAFQAAABYAAAAXAAAAGAAAAAAAAAAAAAAAAAAAAAAAAADnAAAA8gAAAP0AAAAIAQAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAABV3AAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD3AAMAAAAUAAAAGAAAABwAAAAAAAAAAAAAAAAAAAAKAAAABQAAAAwAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAFV/AAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8DBAAAAAkAAAAKAAAACwAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAYwAAAG4AAAB5AAAAhAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAVX8ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wMEAAAADQAAAA4AAAAPAAAAEAAAAAAAAAAAAAAAAAAAAAAAAACPAAAAmgAAAKUAAACwAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAABV3AAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD3AAMAAAAEAAAACAAAAAwAAAAAAAAAAAAAAAAAAAADAAAABAAAAAcAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAFV/AAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8DBAAAABEAAAASAAAAEwAAABQAAAAAAAAAAAAAAAAAAAAAAAAAuwAAAMYAAADRAAAA3AAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEUgABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUQABAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAoAAAAFAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAABVfwAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/AwQAAAAZAAAAGgAAABsAAAAcAAAAAAAAAAAAAAAAAAAAAAAAABMBAAAeAQAAKQEAADQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALo///h//1/wH94FhUAAAAgAAAA", "AAAAAAYAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
+  final static String[]tree32 = {"AAAAAgAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAUgQAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUgAAAAEAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAALAAAACQAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAABkAAAAaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEwAAAR4AAAEpAAABNAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAACAAAAAwAAAAEAAAAFAAAABgAAAAcAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAAHQAAAB4AAAAfAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAE/AAABSgAAAVUAAAFgAAAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAH9VAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/wAAAAQAAAABAAAAAgAAAAMAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAsAAAAWAAAAIQAAACwAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAAAUAAAAGAAAABwAAAAgAAAAAAAAAAAAAAAAAAAAAAAAANwAAAEIAAABNAAAAWAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAB/VQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAAFQAAABYAAAAXAAAAGAAAAAAAAAAAAAAAAAAAAAAAAADnAAAA8gAAAP0AAAEIAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAdxUAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9wAAAAMAAAAUAAAAGAAAABwAAAAAAAAAAAAAAAAAAAAKAAAABQAAAAwAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAAAkAAAAKAAAACwAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAYwAAAG4AAAB5AAAAhAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAAAAACAAAABAAAAAYAAAAAAAAAAAAAAAAAAAAAAAB/VQAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAADQAAAA4AAAAPAAAAEAAAAAAAAAAAAAAAAAAAAAAAAACPAAAAmgAAAKUAAACwAAAAAgAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAAAAdxUAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9wAAAAMAAAAEAAAACAAAAAwAAAAAAAAAAAAAAAAAAAADAAAABAAAAAcAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAAAAAAAgAAAAQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAf1UAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAABAAAABEAAAASAAAAEwAAABQAAAAAAAAAAAAAAAAAAAAAAAAAuwAAAMYAAADRAAAA3AAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFIEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFEAAAABAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAoAAAAFAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAMAAAAAAAAAAAAAAAIAAAAEAAAABgAAAAAAAAAAAAAAAAAAAAAAAH9VAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/wAAAAQAAAAZAAAAGgAAABsAAAAcAAAAAAAAAAAAAAAAAAAAAAAAARMAAAEeAAABKQAAATQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//6AJ//f/hFnh/wAAAABUAAAAgAAAAAAAAAAAAAAAA", "AAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
 
   static void test_insert(boolean Ex)
    {sayCurrentTestName();
@@ -1349,12 +1342,11 @@ Leaf   at:   2 size:   4, count:   4
         new ForCount(new Int(N))
          {void body(Int Index)
            {final Int k = new Int();
-            suppressJavaTracingStart();                                                                                 // Suppress tracing while loading key to be inserted do that java which would otherwise trace does not to match verilog
             new I()
              {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
               String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
+              boolean trace() {return false;}
              };
-            suppressJavaTracingFinish();                                                                                // Resume tracing if tracing stack is empty
             insert(k, Index);
            }
          };
@@ -1387,19 +1379,15 @@ Leaf   at:   2 size:   4, count:   4
 
     final Tree          t = test_reloadTree(Ex);
 
-    t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);} };
-    t.suppressJavaTracingFinish();
+    t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(Index.Inc());
-        t.suppressJavaTracingStart();
         final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T); } };
-        t.suppressJavaTracingFinish();
+        t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
        }
      };
         //t.new I() {void a() {stop(s);}};
@@ -1500,19 +1488,15 @@ Leaf   at:   2 size:   4, count:   4
 
     final Tree t = test_reloadTree(Ex);
     t.reloadMemories(tree32);
-    t.suppressJavaTracingStart();
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);}};
-    t.suppressJavaTracingFinish();
+    t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.delete(t.new Int(N).sub(Index));
-        t.suppressJavaTracingStart();
         final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T); } };
-        t.suppressJavaTracingFinish();
+        t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
        }
      };
 
@@ -1616,29 +1600,22 @@ Leaf   at:   2 size:   4, count:   4
     final Tree t = test_reloadTree(Ex);
     t.reloadMemories(tree32);
 
-    t.suppressJavaTracingStart();
-    final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);}};
-    t.suppressJavaTracingFinish();
-    if (!Ex) t.defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                              // Create an array of the random keys to be deleted accessible from Verilog
+    final StringBuilder s = t.print();
+    if (!Ex) t.defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                              // Create an array of the random keys to be deleted so that the array is accessible from Verilog
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int k = t.new Int();
-        t.suppressJavaTracingStart();                                                                                   // Suppress tracing while loading key to be inserted do that java which would otherwise trace does not to match verilog
         t.new I()
          {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
           String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
+           boolean trace() {return false;}
          };
-        t.suppressJavaTracingFinish();                                                                                  // Resume tracing if tracing stack is empty
 
         t.delete(k);
 
-        t.suppressJavaTracingStart();
         final StringBuilder T = t.print();
-        t.new I() {void a() {s.append(T);} };
-        t.suppressJavaTracingFinish();
+        t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
        }
      };
 
@@ -1810,8 +1787,8 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    //test_saveReload();
-    test_deleteAscending(!true);
+    test_insert(true);
+    //test_deleteAscending(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
