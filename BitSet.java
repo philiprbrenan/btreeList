@@ -708,7 +708,7 @@ final public class BitSet extends Program                                       
               void Else()                                                                                               // Low is zero
                {new If (getBitNC(h))
                  {void Then() {p.set(h); Continue.set();}                                                               // High is one so search sub tree
-                  void Else() {new I() {void a() {stop("Should not happen"); } };}               // Both high and low are zero but this should not happen
+                  void Else() {new I() {void a() {stop("Should not happen");} boolean trace() {return false;}};}        // Both high and low are zero but this should not happen
                  };
                }
              };
@@ -1024,17 +1024,17 @@ Zero:
     final int N = 8;
     final BitSet b = test_bits(Ex, N, true);
     final StringBuilder s = new StringBuilder();
-    b.new I() {void a() {s.append("Start:\n"+b);}         };
+    b.new I() {void a() {s.append("Start:\n"+b);}         boolean trace() {return false;}};
 
     for (int i : range(N))
      {b.count().ok(i);
       b.set(b.new Int(i));
-      b.new I() {void a() {s.append("Set: "+i+"\n"+b);}   };
+      b.new I() {void a() {s.append("Set: "+i+"\n"+b);}   boolean trace() {return false;}};
      }
     for (int i : range(N))
      {b.count().ok(N-i);
       b.clear(b.new Int(i));
-      b.new I() {void a() {s.append("Clear: "+i+"\n"+b);} };
+      b.new I() {void a() {s.append("Clear: "+i+"\n"+b);} boolean trace() {return false;}};
      }
     b.count().ok(0);
     b.execute();
@@ -1711,7 +1711,7 @@ Zero:
     if (rtg( 2)) test_prevNext01();
     if (rtg( 3)) test_prevNext10();
     if (rtg( 4)) test_oneZero();
-    if (rtg( 5)) test_fullEmpty();
+    if (rtg( 5)) test_fullEmpty(); //
     if (rtg( 6)) test_count();
     if (rtg( 7)) test_powerPosOneZero();
     if (rtg( 8)) test_twoOrMoreOnes();
@@ -1721,7 +1721,9 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();                                                                                                         // Run baseline tests.
+    //test_fullEmpty(9, !true);
+    test_limits();
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
