@@ -1003,7 +1003,7 @@ public class Program extends Test                                               
      {final StringBuilder s = new StringBuilder();
       new I()
        {void a(){if (b.b()) s.append("Bint("+i+")"); else s.append("Bint(invalid)");}
-
+        boolean trace() {return false;}
        };
       return ""+s;
      }
