@@ -51,14 +51,14 @@ class Branch extends Program implements Program.Locatable                       
 
     class MemoryPositions                                                                                               // Layout of memory
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posSlots = posMark  + ib();
+      final int posSlots = posMark  + 1;
       final int posData  = posSlots + slots.size();
-      final int posTop   = posData  + dataBytes();
-      final int size     = posTop   + ib();
+      final int posTop   = posData  + dataUnits();
+      final int size     = posTop   + 1;
      }
 
     int size()      {return memoryPositions.size;}                                                                      // Bytes needed for the slots
-    int dataBytes() {return ib(maxSize);}                                                                               // Bytes needed for the data
+    int dataUnits() {return maxSize;}                                                                                   // Bytes needed for the data
    }
 
   Branch(Build Build)                                                                                                   // Create a description of a branch
@@ -245,7 +245,7 @@ class Branch extends Program implements Program.Locatable                       
     if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch left = this;
     Right.slots.initializeMemory();                                                                                     // Clear the target
-    Right.refData.copy(left.refData, left.build.dataBytes());                                                           // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    Right.refData.copy(left.refData, left.build.dataUnits());                                                           // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = left.slots.splitRightOdd(Right.slots);                                                               // Split the slots  and get the index of the splitting key
     Right.top(left.top());                                                                                              // Right top becomes left top
     left .top(left.data(sk));                                                                                           // Left top is data from splitting key
@@ -257,7 +257,7 @@ class Branch extends Program implements Program.Locatable                       
     if (immediate() && count().i() != maxSize()) stop("Branch not full");                                               // The branch must be full
     final Branch right = this;
     Left.slots.initializeMemory();                                                                                      // Clear target
-    Left.refData.copy(right.refData, right.build.dataBytes());                                                          // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    Left.refData.copy(right.refData, right.build.dataUnits());                                                          // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     final Int sk = right.slots.splitLeftOdd(Left.slots);                                                                // Split the slots  and get the index of the splitting key
     Left .top(right.data(sk));                                                                                          // Left top is data from splitting key
     final Int r = right.slots.getKeyValue(sk);                                                                          // Splitting key
@@ -364,7 +364,7 @@ class Branch extends Program implements Program.Locatable                       
    {subStart("Branch.print");
 
     final StringBuilder s = new StringBuilder();
-    new I() {void a() {s.setLength(0); s.append(f("Branch")); }};
+    new I() {void a() {s.setLength(0); s.append(f("Branch")); } boolean trace() {return false;}};
 
     final Bint l = getLocation();                                                                                       // Index in memory if present
     new If (l)
@@ -396,6 +396,7 @@ class Branch extends Program implements Program.Locatable                       
            }
          }
        }
+      boolean trace() {return false;}
      };
     subFinish();
     return s;
