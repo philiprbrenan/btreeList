@@ -2411,7 +2411,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_compact(false);
+    test_delete(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
