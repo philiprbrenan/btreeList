@@ -55,17 +55,16 @@ class Slots extends Program                                                     
     final class MemoryPositions                                                                                         // Positions of fields in memory
      {final int N = numberOfSlotsToKeys();
       final int R = numberOfKeys();
-
       final BitSet.Build us = new BitSet.Build().bitSize(N);                                                            // Specification of bit set for used slots
       final BitSet.Build ur = new BitSet.Build().bitSize(R).count(true);                                                // Specification of bit set for references
 
       final int posSlotsToKeys     = 0;                                                                                 // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-      final int posKeysToSlots     = posSlotsToKeys     + ib(N);                                                        // Used keys to slot referencing the key
-      final int posUsedSlotsToKeys = posKeysToSlots     + ib(N);                                                        // Slots in use
-      final int posUsedKeysToSlots = posUsedSlotsToKeys + ib(N);                                                        // Slots in use
+      final int posKeysToSlots     = posSlotsToKeys     + N;                                                            // Used keys to slot referencing the key
+      final int posUsedSlotsToKeys = posKeysToSlots     + N;                                                            // Slots in use
+      final int posUsedKeysToSlots = posUsedSlotsToKeys + N;                                                            // Slots in use
       final int posusedKeys        = posUsedKeysToSlots + us.units();                                                   // References in use.  There are fewer references than slots to make insertions faster
       final int posKeys            = posusedKeys        + ur.units();                                                   // Keys used in btree held unordered in this array but ordered by the slot references to them
-      final int size               = posKeys            + ib(N);                                                        // Count of used slots
+      final int size               = posKeys            + N;                                                            // Count of used slots
      }
 
     int size() {return memoryPositions.size;}                                                                           // Bytes needed for the slots
@@ -214,7 +213,7 @@ class Slots extends Program                                                     
    {return locateNearestFreeSlotToKey(Position, new Bool(false));
    }
 
-  Int allocKey()                                                                                                        // Allocate a key
+  Int allocKey ()                                                                                                       // Allocate a key
    {subStart("Slots.allocKey");
     final Bint I = locateFirstUnusedKey();
     I.elseStop("No room for key");                                                                                      // No more keys slots available
@@ -223,18 +222,18 @@ class Slots extends Program                                                     
     return I.i();
    }
 
-  void setSlots(int...Slots)                                                                                            // Set slots for testing
+  void setSlots (int...Slots)                                                                                           // Set slots for testing
    {for (int i : range(Slots.length)) putSlotToKeys(new Int(Slots[i]), new Int(i+1));
    }
 
-  void setSlotAndKey(Int P, Int Q, Int K) {putSlotToKeys(P, Q); putKey (Q, K);}                                         // Set a key and a slot to point to the key
+  void setSlotAndKey (Int P, Int Q, Int K) {putSlotToKeys(P, Q); putKey (Q, K);}                                        // Set a key and a slot to point to the key
 
-  void delSlotAndKey(Int P)                                                                                             // Delete an occupied slot and its corresponding key
+  void delSlotAndKey (Int P)                                                                                            // Delete an occupied slot and its corresponding key
    {if (immediate() && !getSlotToKeysInUse(P).b()) stop("Slot not in use:", P);                                         // Slot not occupied
     delKey(getSlotToKeyIndex(P)); delSlotToKeys(P);                                                                     // Free key assumed to exist and slots referring to it
    }
 
-  private void moveSlot(Bint T, Bint S, Bool Continue)                                                                  // Move a slot from source to target
+  private void moveSlot (Bint T, Bint S, Bool Continue)                                                                  // Move a slot from source to target
    {subStart("Slots.moveSlot(BBb");
     new If (S)
      {void Then()
