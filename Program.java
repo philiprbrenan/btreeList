@@ -1180,11 +1180,11 @@ public class Program extends Test                                               
       Ref      clear (int Width)            {m.clear     (offset, Width);                    return this;}              // Clear memory by setting its bytes to zero
 //    Ref invalidate (int Width)            {m.invalidate(offset, Width);                    return this;}              //N Invalidate memory by setting its bytes to values unlikely to be valid
 //    Int    getUnit (Int I)                {return m.getUnit(I.Add(offset));}                                          //N Get the byte at the indicated position
-      Int    getInt  (Int I)                {return m.getInt (I.add(offset));}                                          //N Get the int at the indicated position
+      Int    getInt  (Int I)                {return m.getInt (I.Add(offset));}                                          //N Get the int at the indicated position
 //    Bool   getBool (Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       //N Get the bit in the specified byte at the specified position within the byte
       Bool   getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                        // Get the bit at the bit indexed location
 //    Ref    putUnit (Int I, Int J)         {m.putUnit(I.Add(offset), J);                    return this;}              //N Set the byte at the indicated position relative to the start to the specified value
-      Ref    putInt  (Int I, Int J)         {m.putInt (I.add(offset), J);                    return this;}              // Set the int at the indicated position relative to the start to the specified value
+      Ref    putInt  (Int I, Int J)         {m.putInt (I.Add(offset), J);                    return this;}              // Set the int at the indicated position relative to the start to the specified value
 //    Ref    putBool (Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}              //N Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Integer.SIZE)), K); return this;}               // Set the bit at the bit indexed position
       int     getInt (int I)                {return m.getInt (I+offset.i());}                                           // Get an int immediately when debugging
@@ -1231,14 +1231,14 @@ public class Program extends Test                                               
      }
 
     String save()
-     {final ByteBuffer b = ByteBuffer.allocate(size() * Integer.BYTES);
+     {final ByteBuffer b = ByteBuffer.allocate(ib(size()));
       for (int i : units) b.putInt(i);
       return Base64.getEncoder().encodeToString(b.array());
      }
 
     void reload(String s)
      {final byte[]b = Base64.getDecoder().decode(s);
-      if (b.length != ib(size())) stop("Mismatched reloaded memory length:", b.length, ib(size()));
+      if (b.length != ib(size())) stop("Mismatched reloaded memory length in bytes for memory:", id, "expected:", b.length, "got:", ib(size()));
       final ByteBuffer B = ByteBuffer.wrap(b);
       for (int i = 0; i < size(); i++) units[i] = B.getInt();
      }
