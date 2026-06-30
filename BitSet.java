@@ -1239,17 +1239,18 @@ Zero:
    {sayCurrentTestName();
     final BitSet b = test_bits(Ex, N);
 
-//  b.empty().ok(true);
+    b.empty().ok(true);
     b.new ForCount(b.new Int(N))
      {void body(Int Index)
-       {//b.full ().ok(false);
-        b.countAllOnes ().ok(Index);
-//      b.set(b.new Int(Index));
-//      b.empty().ok(false);
-//      b.countAllZeros().ok(b.new Int(N).Dec().sub(Index));
+       {b.full ().ok(false);
+        final Int c = b.countAllOnes();
+        c.ok(Index);
+        b.set(b.new Int(Index));
+        b.empty().ok(false);
+        b.countAllZeros().ok(b.new Int(N).Dec().sub(Index));
        }
      };
-//    b.full().ok(true);
+    b.full().ok(true);
 
     b.maxSteps = 99_999;
     b.execute();
@@ -1721,8 +1722,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                         // Run baseline tests.
-    test_fullEmpty(9, !true);
+   {oldTests();                                                                                                         // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
