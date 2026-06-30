@@ -996,8 +996,8 @@ public class Program extends Test                                               
 
     Bint ok (Int     Value) {new I() {void a() {Test.ok(i.i(), Value.i());} boolean trace() {return false;}}; return this;} // Test the integer value of the boolean integer
 
-    void     stop (Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);}};}};}      // Conditionally print a message if false and stop
-    void elseStop (Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);}};}};}      // Conditionally print a message if true and stop
+    void     stop (Object...O) {new If (this) {void Then() {               new I() {void a() {Test.stop(O);} boolean trace() {return false;}};}};}      // Conditionally print a message if false and stop
+    void elseStop (Object...O) {new If (this) {void Then() {} void Else() {new I() {void a() {Test.stop(O);} boolean trace() {return false;}};}};}      // Conditionally print a message if true and stop
 
     public String toString ()                                                                                           // Print the boolean integer
      {final StringBuilder s = new StringBuilder();
