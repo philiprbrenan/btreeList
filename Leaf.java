@@ -49,13 +49,13 @@ class Leaf extends Program implements Program.Locatable                         
 
     final class MemoryPositions                                                                                         // Layout of memory
      {final int posMark  = 0;                                                                                           // A tree consists of nodes: leaves and branches. This field tells us which one we have
-      final int posSlots = posMark  + ib();
+      final int posSlots = posMark  + 1;
       final int posData  = posSlots + slots.size();
-      final int size     = posData  + dataBytes();
+      final int size     = posData  + dataUnits();
      }
 
-    int size()      {return memoryPositions.size;}                                                                      // Bytes needed for the slots
-    int dataBytes() {return ib(maxSize);}                                                                               // Bytes needed for the data
+    int size()      {return memoryPositions.size;}                                                                      // Units needed for the slots
+    int dataUnits() {return maxSize;}                                                                                   // Units needed for the data
    }
 
   Leaf(Build Build)                                                                                                     // Create a description of a leaf
@@ -148,7 +148,7 @@ class Leaf extends Program implements Program.Locatable                         
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf left = this;                                                                                             // Current leaf is on the left
     Right.slots.initializeMemory();                                                                                     // Clear target
-    Right.refData.copy(left.refData, build.dataBytes());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    Right.refData.copy(left.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return left.slots.splitRightEven(Right.slots);                                                                      // Split the slots
    }
 
@@ -156,7 +156,7 @@ class Leaf extends Program implements Program.Locatable                         
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf right = this;                                                                                            // Current leaf is on the right
     Left.slots.initializeMemory();                                                                                      // Clear target
-    Left.refData.copy(right.refData, build.dataBytes());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
+    Left.refData.copy(right.refData, build.dataUnits());                                                                // Copy data - the positions of the keys is not changed by a split so the original key,data positions are still in effect after the copy
     return right.slots.splitLeftEven(Left.slots);                                                                       // Split the slots
    }
 
@@ -228,7 +228,7 @@ class Leaf extends Program implements Program.Locatable                         
          {void body(Int Index, Bool Continue)
            {final Int i = f.i();
             final Int k = slots.getSlotToKeyValue(i), d = data(slots.getSlotToKeyIndex(i));
-            new I() {void a() {Iterator.process(k, d);} String v() {return "/*not set*/" + traceComment();}};
+            new I() {void a() {Iterator.process(k, d);} String v() {return "/*not set*/" + traceComment();} boolean trace() {return false;}};
             f.copy(slots.usedSlotsToKeys.nextOne(i));
             Continue.set(f.valid());
            }
@@ -279,7 +279,7 @@ class Leaf extends Program implements Program.Locatable                         
            }
          };
        }
-
+      boolean trace() {return false;}
      };
 
     subFinish();
