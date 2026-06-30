@@ -1247,7 +1247,10 @@ public class Program extends Test                                               
        {parentProgram.executing = this;                                                                                 // Show that we are executing an instruction
         parentProgram.jtrace = 0;
         a();
-        if (parentProgram.jtrace != traces()) stop("Wrong number of java traces generated, got: ", parentProgram.jtrace, "expected:", traces(), "at:", instructionLocation());
+        if (trace() && parentProgram.jtrace != traces())                                                                // Check traces written if tracing
+         {stop("Wrong number of java traces generated, got: ", parentProgram.jtrace,
+               "expected:", traces(), "at:", instructionLocation());
+         }
         parentProgram.executing = null;                                                                                 // Show that we are no longer executing an instruction
        }
       else  {parentProgram.code.push(this);}                                                                            // Save instruction in program for later execution if in delayed == non immediate execution mode
@@ -1261,6 +1264,7 @@ public class Program extends Test                                               
     abstract void a ();                                                                                                 // The action to be performed by the instruction
     String        v () {return instructionLocationAsComment();};                                                        // Location of missing verilog instruction
     int      traces () {return 1;}                                                                                      // Number of trace records expected
+    boolean   trace () {return true;}                                                                                   // Enable tracing
 
     String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
     String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
@@ -1284,8 +1288,15 @@ public class Program extends Test                                               
       if (jump == I.Jump.might) s.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
       if (jump != I.Jump.will)  s.append(" pc <= pc + 1;");
 
-      if (parentProgram.vtrace != traces()) stop("Wrong number of calls to vtrace, got:", parentProgram.vtrace, "expected:", traces(), "at:", instructionLocation()); // Complain if the wrong number of vtrace calls were generated
-      if (parentProgram.vtrace == 0) s.append(vTrace("%8d Location: %s", "pc", "\""+instructionLocationAsComment()+"\"")); // Write current location to verilog trace log if no trace was supplied
+      if (trace())
+       {if (parentProgram.vtrace != traces())                                                                           // Complain if the wrong number of vtrace calls were generated
+         {stop("Wrong number of calls to vtrace, got:", parentProgram.vtrace,
+               "expected:", traces(), "at:", instructionLocation());
+         }
+        if (parentProgram.vtrace == 0)                                                                                  // Write current location to verilog trace log if no trace was supplied
+         {s.append(vTrace("%8d Location: %s", "pc", "\""+instructionLocationAsComment()+"\""));
+         }
+       }
       return ""+s;                                                                                                      // Generated code
      }
 
@@ -1317,10 +1328,11 @@ public class Program extends Test                                               
     void set () {offset = program().code.size();}                                                                       // Reassign the label to an instruction
    }
 
-  void   jTrace (String Message) {jtraceInc(); appendFile(javaTraceFile(), Message);}                                      // Trace a java instruction by writing a message to the java trace file
+  void jTrace (String Message) {if (parentProgram.executing.trace()) {jtraceInc(); appendFile(javaTraceFile(), Message);}} // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
-   {vtraceInc();
+   {if (!parentProgram.compiling.trace()) return "";                                                                    // Suppress tracing for this instruction
+    vtraceInc();
     final StringBuilder s = new StringBuilder();
     s.append(" traceFile = $fopen(\""+verilogTraceFile+"\", \"a\"); ");
     s.append("$fwrite(traceFile, \""+Format+"\"");
@@ -1347,8 +1359,13 @@ public class Program extends Test                                               
         jtrace = 0;
         i.a();
 
-        if (jtrace != i.traces()) stop("Wrong number of java traces generated, got:", jtrace, "expected:", i.traces(), "at:", i.instructionLocation());   // Wrong number of trace calls
-        if (jtrace == 0) jTrace(f("%8d Location: %s\n", currentPc, i.instructionLocationAsComment()));                  // Append location to java trace log as no tracing was performed
+        if (i.trace())                                                                                                  // Check tracing
+         {if (jtrace != i.traces())                                                                                     // Wrong number of trace calls
+           {stop("Wrong number of java traces generated, got:", jtrace, "expected:", i.traces(),
+                 "at:", i.instructionLocation());
+           }
+          if (jtrace == 0) jTrace(f("%8d Location: %s\n", currentPc, i.instructionLocationAsComment()));                  // Append location to java trace log as no tracing was performed
+         }
 
         executing = null;                                                                                               // Show no instruction currently being executed
        }
@@ -1387,8 +1404,8 @@ public class Program extends Test                                               
 
   <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
    {new I()
-     {void a() {if (!ok(a.get(), b)) if (traceBack!= null) say("====\n", traceBack);}
-      int traces() {return 0;}
+     {void a() {if (!ok(a.get(), b)) if (traceBack != null) say("====\n", traceBack);}
+      boolean trace() {return false;}
      };
    }
 
