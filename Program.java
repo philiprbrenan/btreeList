@@ -1,10 +1,9 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Machine level programming in Java
-// Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
+// Machine level programming in Java // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// change calls to program() with parentProgram
-// method () call()
-//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
+// change calls to program() with parentProgram // method () call()
+//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha package com.AppaApps.Silicon;
+// Btree in a block on the surface of a silicon chip.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -84,19 +83,19 @@ public class Program extends Test                                               
    }
 
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
-  void jtraceInc() {++parentProgram.jtrace;}
+  void jtraceInc() {++parentProgram.jtrace;}                                                                            // Count trace records written
   void vtraceInc() {++parentProgram.vtrace;}
 
 //D1 Program                                                                                                            // Program execution structures
 
   void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
-   {/////////////////lastIntId = nextIntId; lastBoolId = nextBoolId;
-    /////////////////new I()
-    ///////////////// {void a() {} String v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
-    ///////////////// };
+   {lastIntId = nextIntId; lastBoolId = nextBoolId;
+    new I()
+     {void     a() {}
+      String   v() {return "lastIntId <= "+lastIntId+"; lastBoolId <= "+lastBoolId+";";}
+      int traces() {return 0;}
+     };
    }
-
-
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
@@ -971,6 +970,7 @@ public class Program extends Test                                               
   final class UnitMemory                                                                                                // Memory made of units
    {private final int id;                                                                                               // Unique identifier for this memory
     private int[]units;                                                                                                 // Bytes of main memory
+    static int bitsPerUnit() {return Integer.SIZE;}                                                                     // Bits per memory unit
 
     UnitMemory (int Length)                                                                                             // Create and clear some memory
      {units = new int[Length];
