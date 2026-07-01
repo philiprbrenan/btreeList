@@ -369,7 +369,7 @@ class Slots extends Program                                                     
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
         compactSlotsLeft();                                                                                             // Compact slots to the left so it is in a known position
-        final Int         c = usedSlotsToKeys.firstZero().i();                                                          // Number of slots in use
+        final Int         c = usedSlotsToKeys.firstZero().i(); c.name = "c";                                           // Number of slots in use
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
@@ -379,8 +379,8 @@ class Slots extends Program                                                     
            {final Int s = c.Dec().sub(Index);                                                                           // Index of source element to be moved
             final Int t = p.Add(s.Mul(space)).add(s);                                                                   // Index in slots of target element to be set
             final Int k = getSlotToKeyIndex(s);                                                                         // Index of key being moved
-             delSlotToKeys(s);                                                                                          // Delete the slot to key refence while retaining the key
-             putSlotToKeys(t, k);                                                                                       // New position for slot to key
+            delSlotToKeys(s);                                                                                           // Delete the slot to key reference while retaining the key
+            putSlotToKeys(t, k);                                                                                        // New position for slot to key
            }
          };
        }
@@ -2411,7 +2411,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_delete(true);
+    test_redistribute(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
