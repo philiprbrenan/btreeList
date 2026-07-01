@@ -128,6 +128,8 @@ class Tree extends Program                                                      
     A.elseStop("No more leaves or branches available for allocation");                                                  // Out of memory check
     final Int a = new Int("index") .set(A);                                                                             // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
+    final Int c = freeChain.count();
+new I() {void a() {say("AAAAx", a, c);}};
     return a;
    }
 
@@ -215,7 +217,7 @@ class Tree extends Program                                                      
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
-    final Int           c = new Int(numberOfNodes).sub(freeChain.countAllOnes());
+    final Int           c = new Int(numberOfNodes).sub(freeChain.count());
     new I()                                                                                                             // Dump the tree statistics
      {void a()
        {s.setLength(0);
@@ -1065,9 +1067,9 @@ class Tree extends Program                                                      
 
     t.check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   87
-Branch size   :  129
-Node   size   :  129
+Leaf   size   :   23
+Branch size   :   33
+Node   size   :   33
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1091,9 +1093,9 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.free(A); t.isAllocated(a.at.i()).ok(false);  t.countDec(); t.countDec();
     t.check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   87
-Branch size   :  129
-Node   size   :  129
+Leaf   size   :   23
+Branch size   :   33
+Node   size   :   33
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1112,9 +1114,9 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.free(b); t.isAllocated(b.at.i()).ok(false);   t.countDec(); t.countDec();
     t.check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   87
-Branch size   :  129
-Node   size   :  129
+Leaf   size   :   23
+Branch size   :   33
+Node   size   :   33
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1130,9 +1132,9 @@ Branch at:   2 size:   3, count:   2, top:   0
     t.free(c); t.isAllocated(c.at.i()).ok(false);
     t.check(t.dumpTree(), """
 Tree memory dump
-Leaf   size   :   87
-Branch size   :  129
-Node   size   :  129
+Leaf   size   :   23
+Branch size   :   33
+Node   size   :   33
 MaxLeafSize   :    2
 MaxBranchSize :    3
 NumberOfNodes :    4
@@ -1787,8 +1789,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(true);
-    //test_deleteAscending(!true);
+    test_saveReload(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
