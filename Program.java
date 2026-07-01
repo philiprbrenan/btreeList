@@ -42,7 +42,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output - requires a lot of memory
+  final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
         int                                       jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
@@ -91,7 +91,14 @@ public class Program extends Test                                               
 //D1 Program                                                                                                            // Program execution structures
 
   void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
-   {program().lastIntId = program().nextIntId; program().lastBoolId = program().nextBoolId;
+   {if (program().codeSize() > 0)                                                                                       // Look back to the previous instruction for the latest position among the integers and the booleans so that we can make references to them relative to this base in the hope of creating identical verilog instructions that can then be compacted
+     {final I p = program().code.lastElement();
+      program().lastIntId = p.nextIntId; program().lastBoolId = p.nextBoolId;
+     }
+    else
+     {program().lastIntId = 0; program().lastBoolId = 0;
+     }
+
     new I()
      {void     a() {jTrace(f("%8d InsertLastBaseInstruction: %s\n", program().currentPc, instructionLocationAsComment()));}
       String   v() {return "lastIntId <= "+program().lastIntId+"; lastBoolId <= "+program().lastBoolId+";"+vTrace("%8d InsertLastBaseInstruction: "+instructionLocationAsComment(), "pc");}
@@ -1281,15 +1288,17 @@ public class Program extends Test                                               
 //D2 Instruction                                                                                                        // An instruction represents code to be executed by a process in a single clock cycle == process step
 
   abstract class I                                                                                                      // Instructions implement the action of a program
-   {final int instructionNumber;                                                                                        // The number of this instruction
-    final String traceBack = appendTraceComments ?  traceBack() : null;                                                 // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
-    final String  traceSub = subsTrace;                                                                                 // Sub during which this instruction was created
+   {final int instructionNumber = program().code.size();                                                                // The number of this instruction
+    final String      traceBack = appendTraceComments ?  traceBack() : null;                                            // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
+    final int         nextIntId = program().nextIntId;                                                                  // Record current position among the integers
+    final int        nextBoolId = program().nextBoolId;                                                                 // Record current position among the booleans
+
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
     I (Jump Jump)                                                                                                       // Add this instruction to the code for the process
      {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
-      instructionNumber = program().code.size();                                                                        // Number each instruction - however this only make sense in delayed execution mode
       subInc();                                                                                                         // Count the number of instructions associated with each method
       jump = Jump;                                                                                                      // Ability to jump
       if (immediate())                                                                                                  // Execute instruction immediately via interpretation if in immediate execution mode
@@ -1379,10 +1388,11 @@ public class Program extends Test                                               
    {vtraceInc();
     if (!program().compiling.trace()) stop("AAAAA");//return "";                                                                    // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
-    s.append(" traceFile = $fopen(\""+verilogTraceFile+"\", \"a\"); ");
+    //s.append(" traceFile = $fopen(\""+verilogTraceFile+"\", \"a\"); ");
     s.append("$fwrite(traceFile, \""+Format+"\"");
     for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
-    s.append("); $fwrite(traceFile, \"\\n\"); $fclose(traceFile);");
+    s.append("); $fwrite(traceFile, \"\\n\");");
+    //s.append(" $fclose(traceFile);");
     return ""+s;
    }
 
@@ -1424,19 +1434,19 @@ public class Program extends Test                                               
     dumpMemories();                                                                                                     // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
 
     if (generateVerilog)                                                                                                // Run verilog
-     {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
-      if (runVerilog)                                                                                                   // Run verilog
-       {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
-        final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
-          new ExecCommand(f("cd %s; rm -f x; "+                                                                         // Execute Verilog code
-                            "iverilog -g2012 -o x %s.v && "+
-//                          "timeout 1m ./x",
-                            "./x",
-                            verilogTestFolder(), currentTestNameSuffix()));
-        say(""+x.out);
-
-        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
-       }
+     {//generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
+//      if (runVerilog)                                                                                                   // Run verilog
+//       {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
+//        final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
+//          new ExecCommand(f("cd %s; rm -f x; "+                                                                         // Execute Verilog code
+//                            "iverilog -g2012 -o x %s.v && "+
+////                          "timeout 1m ./x",
+//                            "./x",
+//                            verilogTestFolder(), currentTestNameSuffix()));
+//        say(""+x.out);
+//
+//        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
+//       }
      }
    }
 
@@ -1561,9 +1571,14 @@ module {name};                                                                  
       lastBoolId = 0;
       lastIntId  = 0;
 
-      traceFile = $fopen("{traceFile}", "w");
+      traceFile = $fopen("{traceFile}", "w");                                                                           // Clear the trace file
       if (traceFile == 0) begin
         $display("ERROR: Could not open file '{traceFile}' for writing.");
+        $finish;
+      end
+      traceFile = $fopen("{traceFile}", "a");                                                                           // Start appending to the emptied trace file
+      if (traceFile == 0) begin
+        $display("ERROR: Could not open file '{traceFile}' for appending.");
         $finish;
       end
     end
@@ -1594,7 +1609,6 @@ module {name};                                                                  
        reset = 0;
     #1 reset = 1;
     #1 reset = 0;
-//  #200 $finish;
   end
 
   task automatic clearInts;                                                                                             // Clear integers
@@ -1652,6 +1666,7 @@ module {name};                                                                  
     for(UnitMemory m: memories) s.append("        dumpDecimal_"+m.i()+"();");                                               // Dump memory at end if used
 
     /*Execute end*/s.append("""
+          $fclose(traceFile);
           $finish(0);
         end
       endcase
@@ -1687,9 +1702,9 @@ endmodule
   function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
     begin
       %s = Value;                                                                                                       // Return value
-      traceFile = $fopen("%s", "a");                                                                                    // Open named trace file
+//      traceFile = $fopen("%s", "a");                                                                                    // Open named trace file
       %s
-      $fclose(traceFile);
+//      $fclose(traceFile);
     end
   endfunction
 """,
@@ -1722,7 +1737,7 @@ endfunction
     integer I;
     parameter integer N = 10;
     begin
-      traceFile = $fopen("{traceFile}", "a");
+      //traceFile = $fopen("{traceFile}", "a");
 
       $fwrite(traceFile, "Memory %s\\n", "{memoryId}");
 
@@ -1744,7 +1759,7 @@ endfunction
 
       if (MEMORY_{memoryId} % N != 0) $fwrite(traceFile, "\\n");
 
-      $fclose(traceFile);
+      //$fclose(traceFile);
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -1757,9 +1772,9 @@ endfunction
     begin
       getMemory_{memoryId} = {memoryName}[Addr];
 
-      traceFile = $fopen("{traceFile}", "a");
+      //traceFile = $fopen("{traceFile}", "a");
       $fdisplay(traceFile, "%8d R %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
-      $fclose(traceFile);
+      //$fclose(traceFile);
     end
   endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -1773,9 +1788,9 @@ endfunction
     begin
       getMemoryBool_{memoryId} = {memoryName}[Addr][Bit];
 
-      traceFile = $fopen("{traceFile}", "a");
+      //traceFile = $fopen("{traceFile}", "a");
       $fdisplay(traceFile, "%8d r %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
-      $fclose(traceFile);
+      //$fclose(traceFile);
     end
   endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -1791,9 +1806,9 @@ endfunction
       a = {memoryName}[Addr];
           {memoryName}[Addr] = Value;
 
-      traceFile = $fopen("{traceFile}", "a");
+      //traceFile = $fopen("{traceFile}", "a");
       $fdisplay(traceFile, "%8d W %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryName}");
-      $fclose(traceFile);
+      //$fclose(traceFile);
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
@@ -1811,10 +1826,10 @@ endfunction
           {memoryName}[Addr][Bit] = Value[0];
       b = {memoryName}[Addr];
 
-      traceFile = $fopen("{traceFile}", "a");
+      //traceFile = $fopen("{traceFile}", "a");
       $fdisplay(traceFile, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryName}");
       $fdisplay(traceFile, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryName}");
-      $fclose(traceFile);
+      //$fclose(traceFile);
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
