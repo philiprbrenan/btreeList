@@ -129,7 +129,6 @@ class Tree extends Program                                                      
     final Int a = new Int("index") .set(A);                                                                             // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
     final Int c = freeChain.count();
-new I() {void a() {say("AAAAx", a, c);} boolean trace() {return false;}};
     return a;
    }
 
@@ -1156,7 +1155,7 @@ Number of Keys:    0
   static void test_saveReload(boolean Ex)
    {sayCurrentTestName();
 
-    final boolean createNew = !true;
+    final boolean createNew = true;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
 
@@ -1166,7 +1165,7 @@ Number of Keys:    0
          {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
          }
        };
-      stop("  static String[]tree6 = "+ t.saveMemories()+";");
+      t.new I() {void a() {say("  static String[]tree6 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
      }
     else
      {t.reloadMemories(tree6);
@@ -1220,7 +1219,7 @@ Leaf   at:   2 size:   4, count:   4
   static void test_insert(boolean Ex)
    {sayCurrentTestName();
 
-    final boolean createNew = !true;
+    final boolean createNew = true;
 
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
@@ -1231,7 +1230,7 @@ Leaf   at:   2 size:   4, count:   4
          {t.insert(Index, Index.Mul(11));
          }
        };
-      stop("final static String[]tree32 = "+ t.saveMemories()+";");
+      t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
      }
     else
      {t.reloadMemories(tree32);
@@ -1789,7 +1788,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_tree(!true);
+    test_saveReload(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
