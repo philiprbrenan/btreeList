@@ -1284,25 +1284,26 @@ public class Program extends Test                                               
    {final int instructionNumber;                                                                                        // The number of this instruction
     final String traceBack = appendTraceComments ?  traceBack() : null;                                                 // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String  traceSub = subsTrace;                                                                                 // Sub during which this instruction was created
+    String verilog;                                                                                                     // The verilog for an instruction
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
     I (Jump Jump)                                                                                                       // Add this instruction to the code for the process
      {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
-      instructionNumber = program().code.size();                                                                    // Number each instruction - however this only make sense in delayed execution mode
+      instructionNumber = program().code.size();                                                                        // Number each instruction - however this only make sense in delayed execution mode
       subInc();                                                                                                         // Count the number of instructions associated with each method
       jump = Jump;                                                                                                      // Ability to jump
       if (immediate())                                                                                                  // Execute instruction immediately via interpretation if in immediate execution mode
-       {program().executing = this;                                                                                 // Show that we are executing an instruction
+       {program().executing = this;                                                                                     // Show that we are executing an instruction
         program().jtrace = 0;
         a();
-        if (trace() && program().jtrace != traces())                                                                // Check traces written if tracing
+        if (trace() && program().jtrace != traces())                                                                    // Check traces written if tracing
          {stop("Wrong number of java traces generated, got: ", program().jtrace,
                "expected:", traces(), "at:", instructionLocation());
          }
-        program().executing = null;                                                                                 // Show that we are no longer executing an instruction
+        program().executing = null;                                                                                     // Show that we are no longer executing an instruction
        }
-      else  {program().code.push(this);}                                                                            // Save instruction in program for later execution if in delayed == non immediate execution mode
+      else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
      }
 
     I () {this(I.Jump.no);}                                                                                             // Add this instruction to the process's code assuming it will not jump
@@ -1319,44 +1320,42 @@ public class Program extends Test                                               
       return "";
      }
 
-    void matchInstructions ()                                                                                           // Find base instructions
-     {final String                   s = interiorVerilog();                                                             // Generated code for the instruction which used as the definition of the instruction
-      final TreeMap<String,Stack<I>> b = matchingInstructions;                                                          // Shorten the name
-      final Stack<I>                 m = b.containsKey(s) ? b.get(s) : new Stack<>();                                   // Matching instructions
-      m.push(this);                                                                                                     // Add current instruction to matching instructions
-      b.put(s, m);                                                                                                      // Record this set of matching instructions
-     }
-
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
-     {program().compiling = this;                                                                                   // This is the instruction currently being compiled
-      program().vtrace = 0;                                                                                         // Count number of trace calls made in instruction
+     {program().compiling = this;                                                                                       // This is the instruction currently being compiled
+      program().vtrace = 0;                                                                                             // Count number of trace calls made in instruction
       final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
       if (jump == I.Jump.might) s.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
       if (jump != I.Jump.will)  s.append(" pc <= pc + 1;");
 
       if (trace())
-       {if (program().vtrace != traces())                                                                           // Complain if the wrong number of vtrace calls were generated
+       {if (program().vtrace != traces())                                                                               // Complain if the wrong number of vtrace calls were generated
          {stop("Wrong number of calls to vtrace, got:", program().vtrace,
                "expected:", traces(), "at:", instructionLocation());
          }
-        if (program().vtrace == 0)                                                                                  // Write current location to verilog trace log if no trace was supplied
+        if (program().vtrace == 0)                                                                                      // Write current location to verilog trace log if no trace was supplied
          {s.append(vTrace("%8d Location: %s", "pc", "\""+instructionLocationAsComment()+"\""));
          }
        }
       return ""+s;                                                                                                      // Generated code
      }
 
+    void matchInstructions ()                                                                                           // Find base instructions
+     {final TreeMap<String,Stack<I>> b = matchingInstructions;                                                          // Shorten the name
+      final Stack<I>                 m = b.containsKey(verilog) ? b.get(verilog) : new Stack<>();                       // Matching instructions
+      m.push(this);                                                                                                     // Add current instruction to matching instructions
+      b.put(verilog, m);                                                                                                // Record this set of matching instructions
+     }
+
     StringBuilder generateVerilog ()                                                                                    // Generate verilog code for an instruction
-     {final String        v = interiorVerilog();                                                                        // Interior verilog used as key for base instructions
-      final Stack<I>      m = matchingInstructions.get(v);                                                              // Matching instructions
+     {final Stack<I>      m = matchingInstructions.get(verilog);                                                        // Matching instructions
       final StringJoiner  l = new StringJoiner(", ");                                                                   // Labels
       final StringBuilder s = new StringBuilder();                                                                      // Generated code
 
       if (this == m.firstElement())                                                                                     // Generate code for first instance of this instruction
        {for(I i : m) l.add(f("%4d", i.instructionNumber));                                                              // Collect labels for matching instructions
 
-        s.append(f("        %s : begin %s", pad(""+l, 20), pad(v, 20)));                                                // Program counter == instruction number, instruction code
-        //if (dumpMemoryEvery != null)                                                                                    // Dump memory periodically if requested
+        s.append(f("        %s : begin %s", pad(""+l, 20), pad(verilog, 20)));                                          // Program counter == instruction number, instruction code
+        //if (dumpMemoryEvery != null)                                                                                  // Dump memory periodically if requested
         // {for(UnitMemory b: memories) s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpDecimal_"+b.i()+"();");
         // }
         s.append(" c <= c + 1;");                                                                                       // Count instructions executed
@@ -1641,7 +1640,8 @@ module {name};                                                                  
 """);
 
     matchingInstructions.clear();                                                                                       // New base instructions
-    for(I i : code) i.matchInstructions();                                                                                // Find the base instructions
+    for(I i : code) i.verilog = i.interiorVerilog();                                                                    // Create interior verilog code
+    for(I i : code) i.matchInstructions();                                                                              // Find the base instructions
     for(I i : code) s.append(i.generateVerilog());                                                                      // Compile each instruction to Verilog
     if (true)                                                                                                           // Instruction reduction statistics
      {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
