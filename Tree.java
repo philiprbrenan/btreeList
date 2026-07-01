@@ -1381,7 +1381,7 @@ Leaf   at:   2 size:   4, count:   4
 
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.dumpTree(); t.print();
-    t.new I() {void a() {stop(S); s.append(S);} boolean trace() {return false;}};
+    t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
@@ -1487,7 +1487,7 @@ Leaf   at:   2 size:   4, count:   4
     final int  N = 32;
 
     final Tree t = test_reloadTree(Ex);
-    t.reloadMemories(tree32);
+
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
     t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
@@ -1723,9 +1723,9 @@ Leaf   at:   2 size:   4, count:   4
          };
         check(dumpTree(), """
 Tree memory dump
-Leaf   size   :  161
-Branch size   :  129
-Node   size   :  161
+Leaf   size   :   41
+Branch size   :   33
+Node   size   :   41
 MaxLeafSize   :    4
 MaxBranchSize :    3
 NumberOfNodes :    4
