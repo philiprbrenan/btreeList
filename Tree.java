@@ -216,7 +216,7 @@ class Tree extends Program                                                      
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
     final StringBuilder s = new StringBuilder();
-    final Int           c = new Int(numberOfNodes).sub(freeChain.count());
+    final Int           f = new Int(numberOfNodes()).sub(freeChain.count());
     new I()                                                                                                             // Dump the tree statistics
      {void a()
        {s.setLength(0);
@@ -227,7 +227,7 @@ class Tree extends Program                                                      
         s.append(f("MaxLeafSize   : %4d\n", maxLeafSize));
         s.append(f("MaxBranchSize : %4d\n", maxBranchSize));
         s.append(f("NumberOfNodes : %4d\n", numberOfNodes));
-        s.append(f("Allocations   : %4d\n", c.i()));
+        s.append(f("Allocations   : %4d\n", f.i()));
         s.append(f("Number of Keys: %4d\n", refCount.getInt(0)));
        }
       boolean trace() {return false;}
@@ -1168,7 +1168,7 @@ Number of Keys:    0
       t.new I() {void a() {say("  static String[]tree6 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
      }
     else
-     {t.reloadMemories(tree6);
+     {t.new I() {void a() {t.reloadMemories(tree6);} boolean trace() {return false;}};
      }
 
     t.check (t.dumpTree(), """
@@ -1233,7 +1233,7 @@ Leaf   at:   2 size:   4, count:   4
       t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
      }
     else
-     {t.reloadMemories(tree32);
+     {t.new I() {void a() {t.reloadMemories(tree32);} boolean trace() {return false;}};
      }
 
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
@@ -1262,7 +1262,7 @@ Leaf   at:   2 size:   4, count:   4
    {final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeBody()
-       {reloadMemories(tree32);
+       {new I() {void a() {reloadMemories(tree32);} boolean trace() {return false;}};
        }
      };
     return t;
