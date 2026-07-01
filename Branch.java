@@ -348,7 +348,7 @@ class Branch extends Program implements Program.Locatable                       
        {new For(new Int(maxSize))
          {void body(Int Index, Bool Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
-            new I() {void a() {Iterator.process(k, d);}};
+            new I() {void a() {Iterator.process(k, d);} boolean trace() {return false;}};
             f.copy(slots.usedSlotsToKeys.nextOne(f.i()));
             Continue.set(f.valid());
            }
@@ -982,7 +982,7 @@ keys     :    4   2   6   0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_splitLeft(!true);
+    test_iterate(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
