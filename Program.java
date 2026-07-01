@@ -42,7 +42,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
+  final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output - requires a lot of memory
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
         int                                       jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
@@ -1284,7 +1284,6 @@ public class Program extends Test                                               
    {final int instructionNumber;                                                                                        // The number of this instruction
     final String traceBack = appendTraceComments ?  traceBack() : null;                                                 // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String  traceSub = subsTrace;                                                                                 // Sub during which this instruction was created
-    String verilog;                                                                                                     // The verilog for an instruction
     enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
     final Jump jump;                                                                                                    // The instruction might cause a jump
 
@@ -1341,20 +1340,21 @@ public class Program extends Test                                               
 
     void matchInstructions ()                                                                                           // Find base instructions
      {final TreeMap<String,Stack<I>> b = matchingInstructions;                                                          // Shorten the name
-      final Stack<I>                 m = b.containsKey(verilog) ? b.get(verilog) : new Stack<>();                       // Matching instructions
+      final String                   v = interiorVerilog();                                                             // Generate verilog code as key
+      final Stack<I>                 m = b.containsKey(v) ? b.get(v) : new Stack<>();                                   // Matching instructions
       m.push(this);                                                                                                     // Add current instruction to matching instructions
-      b.put(verilog, m);                                                                                                // Record this set of matching instructions
+      b.put(v, m);                                                                                                      // Record this set of matching instructions
      }
 
     StringBuilder generateVerilog ()                                                                                    // Generate verilog code for an instruction
-     {final Stack<I>      m = matchingInstructions.get(verilog);                                                        // Matching instructions
+     {final String        v = interiorVerilog();                                                                        // Generate verilog code as key
+      final Stack<I>      m = matchingInstructions.get(v);                                                              // Matching instructions
       final StringJoiner  l = new StringJoiner(", ");                                                                   // Labels
       final StringBuilder s = new StringBuilder();                                                                      // Generated code
-
       if (this == m.firstElement())                                                                                     // Generate code for first instance of this instruction
        {for(I i : m) l.add(f("%4d", i.instructionNumber));                                                              // Collect labels for matching instructions
 
-        s.append(f("        %s : begin %s", pad(""+l, 20), pad(verilog, 20)));                                          // Program counter == instruction number, instruction code
+        s.append(f("        %s : begin %s", pad(""+l, 20), pad(v, 20)));                                                // Program counter == instruction number, instruction code
         //if (dumpMemoryEvery != null)                                                                                  // Dump memory periodically if requested
         // {for(UnitMemory b: memories) s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpDecimal_"+b.i()+"();");
         // }
@@ -1500,9 +1500,7 @@ public class Program extends Test                                               
     final int  numberOfInts = nextIntId;                                                                                // Number of integers needed
     final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
 
-    reinitializeIntsAndBools();                                                                                         // Reinitialize the bases for integers and Bools
-
-    final StringBuilder      s = new StringBuilder();                                                                   // Verilog
+    final StringBuilder   s = new StringBuilder();                                                                      // Verilog
     /*Module*/s.append(substitute("""
 module {name};                                                                                                          // Bit machine to support current test
 """, "name", name));
@@ -1640,9 +1638,8 @@ module {name};                                                                  
 """);
 
     matchingInstructions.clear();                                                                                       // New base instructions
-    for(I i : code) i.verilog = i.interiorVerilog();                                                                    // Create interior verilog code
-    for(I i : code) i.matchInstructions();                                                                              // Find the base instructions
-    for(I i : code) s.append(i.generateVerilog());                                                                      // Compile each instruction to Verilog
+    reinitializeIntsAndBools(); for(I i : code) i.matchInstructions();                                                                              // Find the base instructions
+    reinitializeIntsAndBools(); for(I i : code) s.append(i.generateVerilog());                                                                      // Compile each instruction to Verilog
     if (true)                                                                                                           // Instruction reduction statistics
      {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
       say(f("Instruction reduction to: %4d, percent: %4d", m, p));
@@ -1669,7 +1666,7 @@ endmodule
 //    for(int i = 0, N = v.size(); i < N; ++i)
 //     {if (i > 760_000 && i < 761_000) say(f("%4d %s", i, v.elementAt(i)));
 //     }
-    return ""+s;
+    return ""; //+s;
    }
 
   String clearMemory(UnitMemory M, String Next)                                                                         // Verilog procedure to clear a memory
@@ -2304,7 +2301,7 @@ Memory 0
      {void code()
        {final int[]array = {0, 0, 0, 2, 4, 6};
         defineArrayViaVerilogFunction("array", array);
-        generateVerilog();
+//      generateVerilog();
         execute();
        }
      };
