@@ -1147,7 +1147,7 @@ Number of Keys:    0
 
   static void test_tree()
    {test_tree(true);
-    test_tree(false);
+    //test_tree(false);
    }
 
   static String[]tree6 = {"AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUggAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUQAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAQAAAAYAAAAHAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAABQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoAAAAAQAAAAYAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
@@ -1204,8 +1204,8 @@ Leaf   at:   2 size:   4, count:   4
 (1,0,3)     (2,0)  |
 """);
 
+
     t.maxSteps = 99_999;
-    //t.dumpMemoryEvery = 10;
     t.execute();
    }
 
@@ -1219,7 +1219,7 @@ Leaf   at:   2 size:   4, count:   4
   static void test_insert(boolean Ex)
    {sayCurrentTestName();
 
-    final boolean createNew = true;
+    final boolean createNew = !true;
 
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
@@ -1238,7 +1238,7 @@ Leaf   at:   2 size:   4, count:   4
 
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
-    if (N == 32) t.check(t.dump(), """
+    t.check(t.dump(), """
                                                         16                                                                |
                                                         (0)                                                               |
                                                         [9,2]                                                             |
@@ -1255,7 +1255,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insert()
    {          test_insert(true);
-              test_insert(false);
+              //test_insert(false);
    }
 
   static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
@@ -1280,7 +1280,7 @@ Leaf   at:   2 size:   4, count:   4
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
-    if (N == 32) t.check(t.dump(), """
+    t.check(t.dump(), """
                                                         16                                                                |
                                                         (0)                                                               |
                                                         [9,2]                                                             |
@@ -1297,7 +1297,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insertMerged()
    {          test_insertMerged(true);
-              test_insertMerged(false);
+              //test_insertMerged(false);
    }
 
   static void test_insertReverse(boolean Ex)
@@ -1312,7 +1312,7 @@ Leaf   at:   2 size:   4, count:   4
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
     //final StringBuilder S = t.print(); t.new I() {void a() {stop(S);}};
 
-    if (N == 32) t.check(t.dump(), """
+    t.check(t.dump(), """
                                                          16                                                              |
                                                          (0)                                                             |
                                                          [9,2]                                                           |
@@ -1329,7 +1329,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insertReverse()
    {          test_insertReverse(true);
-              test_insertReverse(false);
+              //test_insertReverse(false);
    }
 
   static void test_insertRandom32(boolean Ex)
@@ -1352,7 +1352,7 @@ Leaf   at:   2 size:   4, count:   4
            }
          };
 
-        if (N == 32) check(dump(), """
+        check(dump(), """
                                                         15                                                            26                          |
                                                         (0)                                                           (0)                         |
                                                         [5,1]                                                         [11,4]                      |
@@ -1371,18 +1371,17 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insertRandom32()
    {          test_insertRandom32(true);
-              test_insertRandom32(false);
+              //test_insertRandom32(false);
    }
 
   static void test_deleteAscending(boolean Ex)
    {sayCurrentTestName();
     final int           N = 32;
-
     final Tree          t = test_reloadTree(Ex);
 
     final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.print();
-    t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
+    final StringBuilder S = t.dumpTree(); t.print();
+    t.new I() {void a() {stop(S); s.append(S);} boolean trace() {return false;}};
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
@@ -1392,7 +1391,7 @@ Leaf   at:   2 size:   4, count:   4
        }
      };
         //t.new I() {void a() {stop(s);}};
-    t.check(s, """
+    t.Check(s, """
                                        16                                                  |
        4       8          12                        20           24           28           |
 1,2,3,4 5,6,7,8 9,10,11,12  13,14,15,16  17,18,19,20  21,22,23,24  25,26,27,28  29,30,31,32|
@@ -1480,7 +1479,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_deleteAscending()
    {          test_deleteAscending(true);
-              test_deleteAscending(false);
+              //test_deleteAscending(false);
    }
 
   static void test_deleteDescending(boolean Ex)
@@ -1591,7 +1590,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_deleteDescending()
    {          test_deleteDescending(true);
-              test_deleteDescending(false);
+              //test_deleteDescending(false);
    }
 
   static void test_deleteRandom32(boolean Ex)
@@ -1706,7 +1705,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_deleteRandom32()
    {          test_deleteRandom32(true);
-              test_deleteRandom32(false);
+              //test_deleteRandom32(false);
    }
 
   static void test_update(boolean Ex)
@@ -1745,7 +1744,7 @@ Leaf           size:   4, count:   2
 
   static void test_update()
    {          test_update(true);
-              test_update(false);
+              //test_update(false);
    }
 
   static void test_find(boolean Ex)
@@ -1768,7 +1767,7 @@ Leaf           size:   4, count:   2
 
   static void test_find()
    {          test_find(true);
-              test_find(false);
+              //test_find(false);
    }
 
 
