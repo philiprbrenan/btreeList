@@ -129,7 +129,7 @@ class Tree extends Program                                                      
     final Int a = new Int("index") .set(A);                                                                             // First element on free chain
     freeChain.clear(a);                                                                                                 // Remove indexed node from free chain
     final Int c = freeChain.count();
-new I() {void a() {say("AAAAx", a, c);}};
+new I() {void a() {say("AAAAx", a, c);} boolean trace() {return false;}};
     return a;
    }
 
@@ -1789,7 +1789,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload(!true);
+    test_tree(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
