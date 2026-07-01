@@ -1147,7 +1147,7 @@ Number of Keys:    0
 
   static void test_tree()
    {test_tree(true);
-    //test_tree(false);
+    test_tree(false);
    }
 
   static String[]tree6 = {"AAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUggAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUQAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAYAAAAJAAAADAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdSIAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTAAAAAgAAAAEAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAABgAAAAkAAAAMAAAAAEAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAQAAAAYAAAAHAAAAAQAAAAUAAAAAAAAAAAAAAAAAAAAAAAR94gAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/8AAAAEAAAABQAAAAYAAAADAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA8AAAASAAAACQAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABoAAAAAQAAAAYAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="};
@@ -1155,7 +1155,7 @@ Number of Keys:    0
   static void test_saveReload(boolean Ex)
    {sayCurrentTestName();
 
-    final boolean createNew = true;
+    final boolean createNew = !true;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
 
@@ -1255,7 +1255,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insert()
    {          test_insert(true);
-              //test_insert(false);
+              test_insert(false);
    }
 
   static Tree test_reloadTree(boolean Ex)                                                                               // Reload a tree from memory as faster than reconstructing it
@@ -1297,7 +1297,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insertMerged()
    {          test_insertMerged(true);
-              //test_insertMerged(false);
+              test_insertMerged(false);
    }
 
   static void test_insertReverse(boolean Ex)
@@ -1329,7 +1329,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insertReverse()
    {          test_insertReverse(true);
-              //test_insertReverse(false);
+              test_insertReverse(false);
    }
 
   static void test_insertRandom32(boolean Ex)
@@ -1371,7 +1371,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_insertRandom32()
    {          test_insertRandom32(true);
-              //test_insertRandom32(false);
+              test_insertRandom32(false);
    }
 
   static void test_deleteAscending(boolean Ex)
@@ -1479,7 +1479,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_deleteAscending()
    {          test_deleteAscending(true);
-              //test_deleteAscending(false);
+              test_deleteAscending(false);
    }
 
   static void test_deleteDescending(boolean Ex)
@@ -1590,7 +1590,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_deleteDescending()
    {          test_deleteDescending(true);
-              //test_deleteDescending(false);
+              test_deleteDescending(false);
    }
 
   static void test_deleteRandom32(boolean Ex)
@@ -1705,7 +1705,7 @@ Leaf   at:   2 size:   4, count:   4
 
   static void test_deleteRandom32()
    {          test_deleteRandom32(true);
-              //test_deleteRandom32(false);
+              test_deleteRandom32(false);
    }
 
   static void test_update(boolean Ex)
@@ -1744,7 +1744,7 @@ Leaf           size:   4, count:   2
 
   static void test_update()
    {          test_update(true);
-              //test_update(false);
+              test_update(false);
    }
 
   static void test_find(boolean Ex)
@@ -1767,7 +1767,7 @@ Leaf           size:   4, count:   2
 
   static void test_find()
    {          test_find(true);
-              //test_find(false);
+              test_find(false);
    }
 
 
