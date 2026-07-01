@@ -1380,7 +1380,7 @@ Leaf   at:   2 size:   4, count:   4
     final Tree          t = test_reloadTree(Ex);
 
     final StringBuilder s = new StringBuilder();
-    final StringBuilder S = t.dumpTree(); t.print();
+    final StringBuilder S = t.print();
     t.new I() {void a() {s.append(S);} boolean trace() {return false;}};
 
     t.new ForCount(t.new Int(N))
