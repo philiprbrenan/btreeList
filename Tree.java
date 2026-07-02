@@ -1155,7 +1155,7 @@ Number of Keys:    0
   static void test_saveReload(boolean Ex)
    {sayCurrentTestName();
 
-    final boolean createNew = !true;
+    final boolean createNew = true;
 
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex));
 
@@ -1165,10 +1165,10 @@ Number of Keys:    0
          {t.insert(t.new Int(Index), t.new Int(Index.Mul(11).add(Index)));
          }
        };
-      t.new I() {void a() {say("  static String[]tree6 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
+      //t.new I() {void a() {say("  static String[]tree6 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
      }
     else
-     {t.new I() {void a() {t.reloadMemories(tree6);} boolean trace() {return false;}};
+     {t.new I() {void a() {t.reloadMemories(tree6);} String v() {return "";} boolean trace() {return false;}};
      }
 
     t.check (t.dumpTree(), """
@@ -1230,7 +1230,7 @@ Leaf   at:   2 size:   4, count:   4
          {t.insert(Index, Index.Mul(11));
          }
        };
-      t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
+      //t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
      }
     else
      {t.new I() {void a() {t.reloadMemories(tree32);} boolean trace() {return false;}};
@@ -1377,7 +1377,14 @@ Leaf   at:   2 size:   4, count:   4
   static void test_deleteAscending(boolean Ex)
    {sayCurrentTestName();
     final int           N = 32;
-    final Tree          t = test_reloadTree(Ex);
+//  final Tree          t = test_reloadTree(Ex);
+
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index.Mul(11));
+       }
+     };
 
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
@@ -1486,7 +1493,13 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = 32;
 
-    final Tree t = test_reloadTree(Ex);
+    //final Tree t = test_reloadTree(Ex);
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index.Mul(11));
+       }
+     };
 
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
@@ -1597,8 +1610,14 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final int  N = random_32.length;
 
-    final Tree t = test_reloadTree(Ex);
-    t.reloadMemories(tree32);
+    //final Tree t = test_reloadTree(Ex);
+    //t.reloadMemories(tree32);
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index.Mul(11));
+       }
+     };
 
     final StringBuilder s = t.print();
     if (!Ex) t.defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                              // Create an array of the random keys to be deleted so that the array is accessible from Verilog
@@ -1750,7 +1769,13 @@ Leaf           size:   4, count:   2
   static void test_find(boolean Ex)
    {sayCurrentTestName();
     final int  N = 32;
-    final Tree t = test_reloadTree(Ex);
+    //final Tree t = test_reloadTree(Ex);
+    final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
+    t.new ForCount(t.new Int(1), t.new Int(N+1))
+     {void body(Int Index)
+       {t.insert(Index, Index.Mul(11));
+       }
+     };
     t.new ForCount(t.new Int(N+2))
      {void body(Int Index)
        {final Bint d = t.find(Index);
