@@ -1219,7 +1219,7 @@ Leaf   at:   2 size:   4, count:   4
   static void test_insert(boolean Ex)
    {sayCurrentTestName();
 
-    final boolean createNew = !true;
+    final boolean createNew = true;
 
     final int  N = 32;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
@@ -1812,7 +1812,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_saveReload(!true);
+    test_insert(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
