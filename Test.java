@@ -374,7 +374,7 @@ public class Test                                                               
    }
 
   static String traceBack(Exception e)                                                                                  // Get an abbrieviated stack trace that we can use in Geany
-   {final int Skip = 2;
+   {final int Skip = 1;
     final StackTraceElement[]  t = e.getStackTrace();
     final StringBuilder        b = new StringBuilder();
     if (e.getMessage() != null)b.append(e.getMessage()+'\n');
