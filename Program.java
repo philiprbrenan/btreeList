@@ -8,7 +8,9 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 import java.util.function.*;
-import java.nio.ByteBuffer;
+import java.io.*;
+import java.nio.*;
+import java.nio.file.*;
 
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
@@ -42,9 +44,10 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final boolean                      appendTraceComments = !true;                                                       // Add trace comments to trace output - requires a lot of memory
+  final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
+  final boolean                     compressInstructions = !true;                                                       // Compress out identical instructions
         int                                       jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
         int                                       vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
 
@@ -91,7 +94,7 @@ public class Program extends Test                                               
 //D1 Program                                                                                                            // Program execution structures
 
   void insertLastBaseInstruction()                                                                                      // The integer and boolean base at the entry to a flow of control block
-   {if (program().codeSize() > 0)                                                                                       // Look back to the previous instruction for the latest position among the integers and the booleans so that we can make references to them relative to this base in the hope of creating identical verilog instructions that can then be compacted
+   {if (program().codeSize() > 0)   // Does not work!!!!                                                                                    // Look back to the previous instruction for the latest position among the integers and the booleans so that we can make references to them relative to this base in the hope of creating identical verilog instructions that can then be compacted
      {final I p = program().code.lastElement();
       program().lastIntId = p.nextIntId; program().lastBoolId = p.nextBoolId;
      }
@@ -1355,24 +1358,36 @@ public class Program extends Test                                               
       b.put(v, m);                                                                                                      // Record this set of matching instructions
      }
 
-    StringBuilder generateVerilog ()                                                                                    // Generate verilog code for an instruction
+    String generateVerilog ()                                                                                           // Generate verilog code for an instruction
      {final String        v = interiorVerilog();                                                                        // Generate verilog code as key
       final Stack<I>      m = matchingInstructions.get(v);                                                              // Matching instructions
       final StringJoiner  l = new StringJoiner(", ");                                                                   // Labels
       final StringBuilder s = new StringBuilder();                                                                      // Generated code
-      if (this == m.firstElement())                                                                                     // Generate code for first instance of this instruction
-       {for(I i : m) l.add(f("%4d", i.instructionNumber));                                                              // Collect labels for matching instructions
+
+      if (program().compressInstructions)                                                                               // Compress out identical instructions
+       {if (this == m.firstElement())                                                                                   // Generate code for first instance of this instruction
+         {for(I i : m) l.add(f("%4d", i.instructionNumber));                                                            // Collect labels for matching instructions
+
+          s.append(f("        %s : begin %s", pad(""+l, 20), pad(v, 20)));                                              // Program counter == instruction number, instruction code
+          //if (dumpMemoryEvery != null)                                                                                // Dump memory periodically if requested
+          // {for(UnitMemory b: memories) s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpDecimal_"+b.i()+"();");
+          // }
+          s.append(" c <= c + 1;");                                                                                     // Count instructions executed
+          s.append(" end");
+          s.append(instructionLocationAsComment());                                                                     // Trace java program location that generated the first instance of the instruction so that the verilog code can be tied back to the java code
+          s.append("\n");
+         }
+       }
+      else
+       {l.add(f("%4d", instructionNumber));                                                                             // Instruction number
 
         s.append(f("        %s : begin %s", pad(""+l, 20), pad(v, 20)));                                                // Program counter == instruction number, instruction code
-        //if (dumpMemoryEvery != null)                                                                                  // Dump memory periodically if requested
-        // {for(UnitMemory b: memories) s.append("if (c > 0 && c % "+dumpMemoryEvery+" == 0) dumpDecimal_"+b.i()+"();");
-        // }
         s.append(" c <= c + 1;");                                                                                       // Count instructions executed
         s.append(" end");
         s.append(instructionLocationAsComment());                                                                       // Trace java program location that generated the first instance of the instruction so that the verilog code can be tied back to the java code
         s.append("\n");
        }
-      return s;                                                                                                         // Generated code
+      return ""+s;                                                                                                         // Generated code
      }
    }
 
@@ -1434,19 +1449,19 @@ public class Program extends Test                                               
     dumpMemories();                                                                                                     // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
 
     if (generateVerilog)                                                                                                // Run verilog
-     {//generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
-//      if (runVerilog)                                                                                                   // Run verilog
-//       {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
-//        final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
-//          new ExecCommand(f("cd %s; rm -f x; "+                                                                         // Execute Verilog code
-//                            "iverilog -g2012 -o x %s.v && "+
-////                          "timeout 1m ./x",
-//                            "./x",
-//                            verilogTestFolder(), currentTestNameSuffix()));
-//        say(""+x.out);
-//
-//        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
-//       }
+     {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
+      if (runVerilog)                                                                                                   // Run verilog
+       {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
+        final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
+          new ExecCommand(f("cd %s; rm -f x; "+                                                                         // Execute Verilog code
+                            "iverilog -g2012 -o x %s.v && "+
+//                          "timeout 1m ./x",
+                            "./x",
+                            verilogTestFolder(), currentTestNameSuffix()));
+        say(""+x.out);
+
+        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
+       }
      }
    }
 
@@ -1510,29 +1525,33 @@ public class Program extends Test                                               
     final int  numberOfInts = nextIntId;                                                                                // Number of integers needed
     final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
 
-    final StringBuilder   s = new StringBuilder();                                                                      // Verilog
-    /*Module*/s.append(substitute("""
+    try
+     (final PrintWriter out = new PrintWriter(Files.newBufferedWriter(Path.of(codeFile),
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING)))
+     {//final StringBuilder   s = new StringBuilder();                                                                  // Verilog
+    /*Module*/out.write(substitute("""
 module {name};                                                                                                          // Bit machine to support current test
 """, "name", name));
 
-    for(UnitMemory m : memories)                                                                                        // Each memory attached to this program
-     {/*Memory*/s.append(substitute("""
+      for(UnitMemory m : memories)                                                                                      // Each memory attached to this program
+       {/*Memory*/out.write(substitute("""
   parameter  MEMORY_{memoryId}    = {memory_size};                                                                      // Amount of memory
   integer   {memoryName}[MEMORY_{memoryId}:0];                                                                          // Declare byte memory
 """, "memoryId", m.i(), "memoryName", m.n(), "memory_size", ""+m.size()));
-     }
+       }
 
-    if (true)                                                                                                           // State machine to sequence the initialization of memories
-     {int state = 0;
-      s.append("  typedef enum integer {\n");                                                                           // State machine to initialize each memory and the variables used by the main program
-      for(UnitMemory m : memories)  s.append("    state_clearMemory_"+m.i()+" = "+(state++)+",\n");                     // State to clear each memory                                                    // Each memory attached to this program
-      s.append("    state_clearInts   = "+(state++)+",\n");                                                             // State for clearing integers
-      s.append("    state_clearBool   = "+(state++)+",\n");                                                             // States for clearing bools
-      s.append("    state_execute     = "+(state++)+"\n");                                                              // States for executing code
-      s.append("   } State;\n");
-     }
+      if (true)                                                                                                         // State machine to sequence the initialization of memories
+       {int state = 0;
+        out.write("  typedef enum integer {\n");                                                                        // State machine to initialize each memory and the variables used by the main program
+        for(UnitMemory m : memories)  out.write("    state_clearMemory_"+m.i()+" = "+(state++)+",\n");                  // State to clear each memory                                                    // Each memory attached to this program
+        out.write("    state_clearInts   = "+(state++)+",\n");                                                          // State for clearing integers
+        out.write("    state_clearBool   = "+(state++)+",\n");                                                          // States for clearing bools
+        out.write("    state_execute     = "+(state++)+"\n");                                                           // States for executing code
+        out.write("   } State;\n");
+       }
 
-    /*Execution State Variables*/s.append(substitute("""
+      /*Execution State Variables*/out.write(substitute("""
   parameter    INT_VARS  = {numberOfInts};                                                                              // Number of integer variables
   parameter    BOOL_VARS = {numberOfBools};                                                                             // Number of boolean variables
   reg          clock;                                                                                                   // Clock for chip
@@ -1549,22 +1568,22 @@ module {name};                                                                  
 
 """, "numberOfInts", ""+numberOfInts, "numberOfBools", ""+numberOfBools));
 
-   /*Reset*/s.append("""
+      /*Reset*/out.write("""
 
   State state;                                                                                                          // Current state of machine
 
   always @(posedge clock) begin
     if (reset) begin                                                                                                    // Reset
 """);
-      if (memories.size() > 0) /*Reset memory*/s.append(substitute("""
+      if (memories.size() > 0) /*Reset memory*/out.write(substitute("""
       state = state_clearMemory_{start};
 """, "start", memories.firstElement().i()));
 
-      else /*No memory*/s.append("""
+      else /*No memory*/out.write("""
       state = state_clearInts;
 """);
 
-    /*Initialize*/s.append(substitute("""
+        /*Initialize*/out.write(substitute("""
       index = 0;
       c     = 0;
       pc    = 0;
@@ -1586,13 +1605,13 @@ module {name};                                                                  
       case (state)
 """, "traceFile", traceFile));
 
-    for(UnitMemory m : memories)                                                                                        // Clear each memory one after the other
-     {/*Memory Clear*/s.append(substitute("""
+        for(UnitMemory m : memories)                                                                                    // Clear each memory one after the other
+         {/*Memory Clear*/out.write(substitute("""
         state_clearMemory_{memoryId}: clearMemory_{memoryId}();
 """, "memoryId", m.i()));
-     }
+         }
 
-    /*Execute*/s.append("""
+        /*Execute*/out.write("""
         state_clearInts  : clearInts  ();
         state_clearBool  : clearBool  ();
         state_execute    : execute();
@@ -1629,43 +1648,43 @@ module {name};                                                                  
 
 """);
 
-  /*traceBool*/s.append(traceVerilogVariable("traceBool",  "lastBoolId", "b", traceFile));                              // Memory and variable tracind
-  /*traceInt*/ s.append(traceVerilogVariable("traceInt",   "lastIntId",  "i", traceFile));
+      /*traceBool*/out.write(traceVerilogVariable("traceBool",  "lastBoolId", "b", traceFile));                         // Memory and variable tracind
+      /*traceInt*/ out.write(traceVerilogVariable("traceInt",   "lastIntId",  "i", traceFile));
 
-  for(int i = 0; i < memories.size(); ++i)                                                                              // Actions for each memory
-   {final UnitMemory m = memories.elementAt(i);
-    s.append(traceVerilogMemoryPut    (m));
-    s.append(traceVerilogMemoryGet    (m));
-    s.append(traceVerilogMemoryPutBool(m));
-    s.append(traceVerilogMemoryGetBool(m));
-    s.append(              clearMemory(m, i < memories.size()-1 ? "state_clearMemory_"+memories.elementAt(i+1).i() :
-                                                                  "state_clearInts"));
-    s.append(   dumpVerilogMemoryInDecimal(m));
-   }
+      for(int i = 0; i < memories.size(); ++i)                                                                          // Actions for each memory
+       {final UnitMemory m = memories.elementAt(i);
+        out.write(traceVerilogMemoryPut    (m));
+        out.write(traceVerilogMemoryGet    (m));
+        out.write(traceVerilogMemoryPutBool(m));
+        out.write(traceVerilogMemoryGetBool(m));
+        out.write(              clearMemory(m, i < memories.size()-1 ? "state_clearMemory_"+memories.elementAt(i+1).i() :
+                                                                      "state_clearInts"));
+        out.write(   dumpVerilogMemoryInDecimal(m));
+       }
 
-  for(String m : extraVerilogMethods) s.append(m);                                                                      // Incorporate extra Verilog methods required to support generated instructions
+      for(String m : extraVerilogMethods) out.write(m);                                                                 // Incorporate extra Verilog methods required to support generated instructions
 
-  /*Execute*/s.append("""
+      /*Execute*/out.write("""
   task automatic execute;                                                                                               // Execute actual code
     begin
       case(pc)
 """);
 
-    matchingInstructions.clear();                                                                                       // New base instructions
-    reinitializeIntsAndBools(); for(I i : code) i.matchInstructions();                                                                              // Find the base instructions
-    reinitializeIntsAndBools(); for(I i : code) s.append(i.generateVerilog());                                                                      // Compile each instruction to Verilog
-    if (true)                                                                                                           // Instruction reduction statistics
-     {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
-      say(f("Instruction reduction to: %4d, percent: %4d", m, p));
-     }
-    matchingInstructions.clear();                                                                                       // Release storage occupied by base instructions
+      matchingInstructions.clear();                                                                                     // New base instructions
+      reinitializeIntsAndBools(); for(I i : code) i.matchInstructions();                                                // Find the base instructions
+      reinitializeIntsAndBools(); for(I i : code) out.write(i.generateVerilog());                                       // Compile each instruction to Verilog
+      if (true)                                                                                                         // Instruction reduction statistics
+       {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
+        say(f("Instruction reduction to: %4d, percent: %4d", m, p));
+       }
+      matchingInstructions.clear();                                                                                     // Release storage occupied by base instructions
 
-    /* Execute default*/s.append("""
+      /* Execute default*/out.write("""
         default: begin
 """);
-    for(UnitMemory m: memories) s.append("        dumpDecimal_"+m.i()+"();");                                               // Dump memory at end if used
+      for(UnitMemory m: memories) out.write("        dumpDecimal_"+m.i()+"();");                                        // Dump memory at end if used
 
-    /*Execute end*/s.append("""
+    /*Execute end*/out.write("""
           $fclose(traceFile);
           $finish(0);
         end
@@ -1676,11 +1695,13 @@ module {name};                                                                  
 endmodule
 """);
 
-    writeFile(codeFile, ""+s);                                                                                          // Write Verilog code to a file
+      //writeFile(codeFile, ""+s);                                                                                      // Write Verilog code to a file
 //    final Stack<String> v = readFile(codeFile);
 //    for(int i = 0, N = v.size(); i < N; ++i)
 //     {if (i > 760_000 && i < 761_000) say(f("%4d %s", i, v.elementAt(i)));
 //     }
+     }
+    catch(Exception e) {throw new RuntimeException(e);}
     return ""; //+s;
    }
 
@@ -1702,7 +1723,7 @@ endmodule
   function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
     begin
       %s = Value;                                                                                                       // Return value
-//      traceFile = $fopen("%s", "a");                                                                                    // Open named trace file
+//      traceFile = $fopen("%s", "a");                                                                                  // Open named trace file
       %s
 //      $fclose(traceFile);
     end
