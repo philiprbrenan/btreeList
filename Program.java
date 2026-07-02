@@ -47,7 +47,7 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
-  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean                     compressInstructions = !true;                                                       // Compress out identical instructions
         int                                       jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
@@ -1037,11 +1037,13 @@ public class Program extends Test                                               
     UnitMemory (int Length)                                                                                             // Create and clear some memory
      {units = new int[Length];
       clear(new Int(0), Length);
-      final Stack<UnitMemory> m = program().memories; id = m.size(); m.push(this);                                  // Give the memory a unique identifier and save it in the main program
+      final Stack<UnitMemory> m = program().memories; id = m.size(); m.push(this);                                      // Give the memory a unique identifier and save it in the main program
      }
 
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
+
+    String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                          // Name of the verilog routine to dump this memeory in decimal
 
     private int getUnit (int I, char Type)                                                                              // Get the value of a byte
      {final int b = units[I];
@@ -1420,12 +1422,12 @@ public class Program extends Test                                               
    {dumpMemories();
     final StringBuilder s = new StringBuilder();
     for (Int  i  : ints)
-     {s.append(f("Int  %8d == %8d ", i.id, i.v ? i.i() : 0));
+     {s.append(f("Int  %8d == %8d", i.id, i.v ? i.i() : 0));
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
     for (Bool  b : bools)
-     {s.append(f("Bool %8d == %8d ", b.id, b.v ?     1 : 0));
+     {s.append(f("Bool %8d == %8d", b.id, b.v ?     1 : 0));
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
      }
@@ -1677,11 +1679,12 @@ module {name};                                                                  
 
       /*traceBool*/out.write(traceVerilogVariable("traceBool",  "lastBoolId", "b", traceFile));                         // Memory and variable tracind
       /*traceInt*/ out.write(traceVerilogVariable("traceInt",   "lastIntId",  "i", traceFile));
+      /*dumpVars*/ out.write(dumpVerilogVariables());
 
       for(int i = 0; i < memories.size(); ++i)                                                                          // Actions for each memory
        {final UnitMemory m = memories.elementAt(i);
-        out.write(traceVerilogMemoryPut    (m));
-        out.write(traceVerilogMemoryGet    (m));
+        out.write(traceVerilogMemoryPutInt    (m));
+        out.write(traceVerilogMemoryGetInt    (m));
         out.write(traceVerilogMemoryPutBool(m));
         out.write(traceVerilogMemoryGetBool(m));
         out.write(              clearMemory(m, i < memories.size()-1 ? "state_clearMemory_"+memories.elementAt(i+1).i() :
@@ -1709,7 +1712,7 @@ module {name};                                                                  
       /* Execute default*/out.write("""
         default: begin
 """);
-      for(UnitMemory m: memories) out.write("        dumpDecimal_"+m.i()+"();");                                        // Dump memory at end if used
+      for(UnitMemory m: memories) out.write("        "+m.dumpVerilogMemoryInDecimalName()+"();");                       // Dump memory at end if used
 
     /*Execute end*/out.write("""
           $fclose(traceFile);
@@ -1780,7 +1783,7 @@ endfunction
 
   String dumpVerilogMemoryInDecimal (UnitMemory M)                                                                      // Dump memory in decimal
    {return substitute("""
-  task dumpDecimal_{memoryId};
+  task {dumpVerilogMemoryInDecimalName};
     integer i;
     integer I;
     parameter integer N = 10;
@@ -1810,10 +1813,44 @@ endfunction
       //$fclose(traceFile);
     end
   endtask
-""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
+""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n(),
+"dumpVerilogMemoryInDecimalName", M.dumpVerilogMemoryInDecimalName());
   }
 
-  String traceVerilogMemoryGet (UnitMemory M)                                                                           // Trace byte read from memory
+  String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the verilog method to dump all the vars to the trace file
+  String dumpVerilogVariables ()                                                                                        // Dump the value of an integer to the verilog trace file
+   {final StringBuilder s = new StringBuilder();
+    s.append(substitute("""
+  task automatic {name} ();
+    begin
+""", "name", dumpVerilogVariablesName()));
+
+    for(Int i : ints)
+     {if (i.name != null) s.append(substitute("""
+      $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
+""", "name", i.name, "id", ""+i.id));
+      else s.append(substitute("""
+      $fdisplay(traceFile, "Int  %8d == %8d", {id}, i[{id}]);
+""", "id", ""+i.id));
+     }
+
+    for(Bool b : bools)
+     {if (b.name != null) s.append(substitute("""
+      $fdisplay(traceFile, "Bool %8d == %8d {name}", {id}, b[{id}]);
+""", "name", b.name, "id", ""+b.id));
+      else s.append(substitute("""
+      $fdisplay(traceFile, "Bool %8d == %8d", {id}, b[{id}]);
+""", "id", ""+b.id));
+     }
+
+    s.append("""
+    end
+  endtask
+""");
+    return ""+s;
+   }
+
+  String traceVerilogMemoryGetInt (UnitMemory M)                                                                           // Trace byte read from memory
    {vtraceInc();
     return substitute("""
   function automatic integer getMemory_{memoryId} (input integer Addr);
@@ -1844,7 +1881,7 @@ endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
-  String traceVerilogMemoryPut (UnitMemory M)                                                                           // Trace byte written to memory
+  String traceVerilogMemoryPutInt (UnitMemory M)                                                                           // Trace byte written to memory
    {vtraceInc();
     return substitute("""
   task automatic putMemory_{memoryId} (input integer Addr, input integer Value);
@@ -1885,11 +1922,8 @@ endfunction
 
   String dumpVerilog ()
    {final StringBuilder s = new StringBuilder();
-    for(UnitMemory m : memories)
-     {s.append(dumpVerilogMemoryInDecimal(m));
-     }
-    for(Int  i : ints ) s.append("$fwrite(traceFile, \"Int  %8d == %8d\n\", "+i.id+", "+i.vn()+");");
-    for(Bool b : bools) s.append("$fwrite(traceFile, \"Bool %8d == %8d\n\", "+b.id+", "+b.vn()+");");
+    for(UnitMemory m : memories) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
+    s.append(dumpVerilogVariablesName()+"();");
     return ""+s;
    }
 
