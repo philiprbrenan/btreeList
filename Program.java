@@ -33,6 +33,8 @@ public class Program extends Test                                               
   private int              pc;                                                                                          // Program counter indicating the instruction to be executed after the current one
   private int       currentPc;                                                                                          // Current program counter
   final        Stack<UnitMemory>                memories = new Stack<>();                                               // Memories used by this program and its dependent programs
+  final        Stack<Int>                           ints = new Stack<>();                                               // Int variables
+  final        Stack<Bool>                         bools = new Stack<>();                                               // Bool variables
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
@@ -45,7 +47,7 @@ public class Program extends Test                                               
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final boolean                      appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean                     compressInstructions = !true;                                                       // Compress out identical instructions
         int                                       jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
@@ -372,7 +374,7 @@ public class Program extends Test                                               
   final class Bool                                                                                                      // An integer that can be passed as a parameter to a method and modified therein
    {boolean    i = false;                                                                                               // Value of the integer
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
-    final int id = program().nextBoolId++;                                                                          // Unique id for Bool
+    final int id = program().nextBoolId++;                                                                              // Unique id for Bool
     String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
@@ -381,9 +383,9 @@ public class Program extends Test                                               
     Bool (String Name, boolean  I) {this(I); name = Name;}                                                              //N
     Bool (String Name, Bool     I) {this(I); name = Name;}                                                              //N
 
-    Bool ()                        {ai(); invalidate();}                                                                // Constructors
-    Bool (boolean I)               {ai(); ie(Ops.set, I);}
-    Bool (Bool    I)               {ai(); ie(Ops.set, I);}
+    Bool ()                        {ai(); invalidate();   bools.push(this);}                                            // Constructors
+    Bool (boolean I)               {ai(); ie(Ops.set, I); bools.push(this);}
+    Bool (Bool    I)               {ai(); ie(Ops.set, I); bools.push(this);}
     boolean       b ()             {x(); return i;}
     boolean       v ()             {     return v;}                                                                     //N
     void          x ()             {if (!v) variableNotSet("Bool", name);}                                              // Check a value has been set for the boolean
@@ -524,7 +526,7 @@ public class Program extends Test                                               
 
     private Bool invalidate ()                                                                                          // Invalidate the boolean
      {new I()
-       {void   a() {ex(Ops.set, false);          }
+       {void   a() {       ex(Ops.set, false);}
         String v() {return ev(Ops.set, false);}
        };
      return this;
@@ -639,9 +641,9 @@ public class Program extends Test                                               
     Int (String Name, int I) {this(I); name = Name;}
     Int (String Name, Int I) {this(I); name = Name;}
 
-    Int ()           {ai(); invalidate();}                                                                              // Constructors
-    Int (int I)      {ai(); ie(Ops.set, I);}
-    Int (Int I)      {ai(); ie(Ops.set, I);}
+    Int ()           {ai(); invalidate();   ints.push(this);}                                                                              // Constructors
+    Int (int I)      {ai(); ie(Ops.set, I); ints.push(this);}
+    Int (Int I)      {ai(); ie(Ops.set, I); ints.push(this);}
 
     Int  max (int I) {x(); return i < I ? new Int(I) : this;}                                                           //N
     Int  min (int I) {x(); return i > I ? new Int(I) : this;}                                                           //N
@@ -1185,7 +1187,7 @@ public class Program extends Test                                               
       Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
       Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
 
-      UnitMemory byteMemory () {return UnitMemory.this;}
+      UnitMemory memory () {return UnitMemory.this;}
       Program       program () {return Program   .this;}
 
       Ref       copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
@@ -1397,11 +1399,12 @@ public class Program extends Test                                               
     void set () {offset = program().code.size();}                                                                       // Reassign the label to an instruction
    }
 
-  void jTrace (String Message) {jtraceInc(); if (program().executing.trace()) {appendFile(javaTraceFile(), Message);}} // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
+  void appendJavaTrace(String Message) {appendFile(javaTraceFile(), Message);}                                          // Append to the java trace file
+  void jTrace (String Message) {jtraceInc(); if (program().executing.trace()) appendJavaTrace(Message);}                // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
    {vtraceInc();
-    if (!program().compiling.trace()) stop("AAAAA");//return "";                                                                    // Suppress tracing for this instruction
+    if (!program().compiling.trace()) stop("AAAAA");//return "";                                                        // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
     //s.append(" traceFile = $fopen(\""+verilogTraceFile+"\", \"a\"); ");
     s.append("$fwrite(traceFile, \""+Format+"\"");
@@ -1411,7 +1414,23 @@ public class Program extends Test                                               
     return ""+s;
    }
 
-  void dumpMemories () {for(UnitMemory m : memories) appendFile(javaTraceFile(), m.dumpAsDecimal());}                   // Dump all the memories
+  void dumpMemories () {for(UnitMemory m : memories) appendJavaTrace(m.dumpAsDecimal());}                               // Dump all the memories
+
+  void dumpJava ()                                                                                                      // Dump all memories and variables to the java trace file
+   {dumpMemories();
+    final StringBuilder s = new StringBuilder();
+    for (Int  i  : ints)
+     {s.append(f("Int  %8d == %8d ", i.id, i.v ? i.i() : 0));
+      if (i.name != null) s.append(" "+i.name);
+      s.append('\n');
+     }
+    for (Bool  b : bools)
+     {s.append(f("Bool %8d == %8d ", b.id, b.v ?     1 : 0));
+      if (b.name != null) s.append(" "+b.name);
+      s.append('\n');
+     }
+    appendJavaTrace(""+s);
+   }
 
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
@@ -1470,6 +1489,14 @@ public class Program extends Test                                               
     final String m = (Name != null ? '"'+Name+'"'+", " : "") + "has not been set yet";
     if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
     else           stop(Type, m);                                                                                       // No traceback available
+   }
+
+  void dumpProgramState ()                                                                                                           // Dump memory
+   {new I()
+     {void    a()     {dumpJava();}
+      String  v()     {return dumpVerilog();}
+      boolean trace() {return false;}
+     };
    }
 
   <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
@@ -1856,6 +1883,16 @@ endfunction
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
   }
 
+  String dumpVerilog ()
+   {final StringBuilder s = new StringBuilder();
+    for(UnitMemory m : memories)
+     {s.append(dumpVerilogMemoryInDecimal(m));
+     }
+    for(Int  i : ints ) s.append("$fwrite(traceFile, \"Int  %8d == %8d\n\", "+i.id+", "+i.vn()+");");
+    for(Bool b : bools) s.append("$fwrite(traceFile, \"Bool %8d == %8d\n\", "+b.id+", "+b.vn()+");");
+    return ""+s;
+   }
+
 //D1 Testing                                                                                                            // Test expected output against got output
 
   static void test_programming(boolean Ex)
@@ -2120,7 +2157,7 @@ endfunction
               test_copy(false);
    }
 
-  static void test_byteMemory(boolean Ex)
+  static void test_memory(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
@@ -2131,18 +2168,18 @@ endfunction
             m.putInt(new Int(1), new Int(2));
             m.getInt(new Int(0)).ok(1);
             m.getInt(new Int(1)).ok(2);
-
+            dumpProgramState();
             m.getBool(new Int(1), new Int(0)).ok(false);
             m.getBool(new Int(1), new Int(1)).ok(true );
             m.getBool(new Int(1), new Int(2)).ok(false);
             m.putBool(new Int(1), new Int(0), new Bool(true));
             m.getInt (new Int(1)).            ok(3);
-
+            dumpProgramState();
             m.putBool(new Int(32), new Bool(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(false);
-
+            dumpProgramState();
             m.putBool(new Int(1), new Int(9), new Bool(true));
             m.getBool(new Int(1), new Int(9)).ok(true);
            }
@@ -2154,12 +2191,12 @@ endfunction
 //  ok(P.unitMemory.getBool(33), true);
    }
 
-  static void test_byteMemory()
-   {test_byteMemory(true);
-    test_byteMemory(false);
+  static void test_memory()
+   {test_memory(true);
+    test_memory(false);
    }
 
-  static void test_byteMemoryNegative(boolean Ex)
+  static void test_memoryNegative(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(8))
      {void code()
@@ -2177,12 +2214,12 @@ endfunction
      };
    }
 
-  static void test_byteMemoryNegative()
-   {test_byteMemoryNegative(true);
-    test_byteMemoryNegative(false);
+  static void test_memoryNegative()
+   {test_memoryNegative(true);
+    test_memoryNegative(false);
    }
 
-  static void test_byteMemoryRef(boolean Ex)
+  static void test_memoryRef(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(10))
      {void code()
@@ -2250,23 +2287,23 @@ Memory 0
      };
    }
 
-  static void test_byteMemoryRef()
-   {          test_byteMemoryRef(true);
-              test_byteMemoryRef(false);
+  static void test_memoryRef()
+   {          test_memoryRef(true);
+              test_memoryRef(false);
    }
 
 //  static void test_invalidate(boolean Ex)
 //   {sayCurrentTestName();
 //    final Program P = new Program(new Build().immediate(Ex).memory(16))
 //     {void code()
-//       {final UnitMemory     M = byteMemory;
+//       {final UnitMemory     M = memory;
 //        final UnitMemory.Ref m = M.new Ref(8);
 //        m.invalidate(8);
 //        m.clear     (4);
 //       }
 //     };
 //    P.execute();
-//    ok(P.byteMemory, """
+//    ok(P.memory, """
 //   0   0
 //   1   0
 //   2   0
@@ -2379,9 +2416,9 @@ Memory 0
     test_remote();
     //test_bits();
     test_copy();
-    test_byteMemory();
-    test_byteMemoryNegative();
-    test_byteMemoryRef();
+    test_memory();
+    test_memoryNegative();
+    test_memoryRef();
     //test_invalidate();
     //test_procedureCall();
     test_defineArrayViaVerilogFunction();
@@ -2389,7 +2426,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_memory(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
