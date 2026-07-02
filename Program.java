@@ -631,17 +631,17 @@ public class Program extends Test                                               
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
-    final int id = program().nextIntId++;                                                                   // Unique id for Int
+    final int id = program().nextIntId++;                                                                               // Unique id for Int
 
-    int         i ()  {x(); return i;}                                                                                   // Current value
-    boolean     v ()  {     return v;}                                                                                   //N Value has been set
-    void        x ()  {if (!v) variableNotSet("Int", name);}                                                             // Check a value has been set for the integer
+    int         i ()  {x(); return i;}                                                                                  // Current value
+    boolean     v ()  {     return v;}                                                                                  //N Value has been set
+    void        x ()  {if (!v) variableNotSet("Int", name);}                                                            // Check a value has been set for the integer
 
     Int (String Name)        {this();  name = Name;}                                                                    // Constructors with name supplied
     Int (String Name, int I) {this(I); name = Name;}
     Int (String Name, Int I) {this(I); name = Name;}
 
-    Int ()           {ai(); invalidate();   ints.push(this);}                                                                              // Constructors
+    Int ()           {ai(); invalidate();   ints.push(this);}                                                           // Constructors without names
     Int (int I)      {ai(); ie(Ops.set, I); ints.push(this);}
     Int (Int I)      {ai(); ie(Ops.set, I); ints.push(this);}
 
@@ -885,7 +885,7 @@ public class Program extends Test                                               
     Int invalidate ()                                                                                                   // Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
      {new I()
        {void   a() {ex(Ops.set, -1); v = false;}
-        String v() {return ev(Ops.set, -1);}
+        String v() {return ev(Ops.set, -222);}
        };
       return this;
      }
@@ -1416,22 +1416,35 @@ public class Program extends Test                                               
     return ""+s;
    }
 
+  void initializeMemory()                                                                                               // Initialize memory
+   {for(UnitMemory m : memories) for (int i = 0, N = m.size(); i < N; ++i) m.units[i] = 0;                                // Clear all of memeory to zero
+   }
+
+  void initializeVars()                                                                                                 // Initialize variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
+   {for (Int  i : ints)  {i.i = 99;say("AAAA", i.id, i.name, i.v, i.i); }
+    for (Bool b : bools) b.i = false;
+   }
+
   void dumpMemories () {for(UnitMemory m : memories) appendJavaTrace(m.dumpAsDecimal());}                               // Dump all the memories
 
-  void dumpJava ()                                                                                                      // Dump all memories and variables to the java trace file
-   {dumpMemories();
-    final StringBuilder s = new StringBuilder();
+  void dumpVars ()                                                                                                      // Dump all memories and variables to the java trace file
+   {final StringBuilder s = new StringBuilder();
     for (Int  i  : ints)
-     {s.append(f("Int  %8d == %8d", i.id, i.v ? i.i() : 0));
+     {s.append(f("Int  %8d == %8d", i.id, i.v ? i.i : 0));
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
     for (Bool  b : bools)
-     {s.append(f("Bool %8d == %8d", b.id, b.v ?     1 : 0));
+     {s.append(f("Bool %8d == %8d", b.id, b.v ?   1 : 0));
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
      }
     appendJavaTrace(""+s);
+   }
+
+  void dumpJava ()                                                                                                      // Dump all memories and variables to the java trace file
+   {dumpMemories();
+    dumpVars();
    }
 
   void execute ()                                                                                                       // Execute the current code
@@ -1442,6 +1455,10 @@ public class Program extends Test                                               
     currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
           int c = 0;                                                                                                    // Number of instructions executed
+
+    initializeMemory();                                                                                                 // Initialize memory
+    initializeVars();                                                                                                   // Initialize variables
+
     for(; c < maxSteps && pc >= 0 && pc < N; ++c)                                                                       // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
       try
@@ -1449,7 +1466,6 @@ public class Program extends Test                                               
         executing = i;                                                                                                  // Currently executing instruction
         jtrace = 0;
         i.a();
-
         if (i.trace())                                                                                                  // Check tracing
          {if (jtrace != i.traces())                                                                                     // Wrong number of trace calls
            {stop("Wrong number of java traces generated, got:", jtrace, "expected:", i.traces(),
@@ -1663,7 +1679,7 @@ module {name};                                                                  
     begin
       i[index] = 0;
       index = index + 1;
-      if (index >= INT_VARS) state = state_clearBool;
+      if (index >= INT_VARS) begin state = state_clearBool; index = 0; end
     end
   endtask
 
@@ -2191,6 +2207,30 @@ endfunction
               test_copy(false);
    }
 
+  static void test_variables(boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex).memory(3))
+     {void code()
+       {dumpProgramState();
+        final Int  i = new Int ("i");
+//      final Bool b = new Bool("b");
+        dumpProgramState();
+        i.set(1);
+        //b.set(true);
+         dumpProgramState();
+        i.set(2);
+        //b.set(false);
+        dumpProgramState();
+        execute();
+       }
+     };
+   }
+
+  static void test_variables()
+   {test_variables(true);
+    test_variables(false);
+   }
+
   static void test_memory(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(2))
@@ -2457,11 +2497,13 @@ Memory 0
     //test_procedureCall();
     test_defineArrayViaVerilogFunction();
     test_lastInstructionBase();
+    test_variables();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_memory(!true);
+    test_variables(!true);
+    //test_memory(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
