@@ -1416,11 +1416,11 @@ public class Program extends Test                                               
     return ""+s;
    }
 
-  void initializeMemory()                                                                                               // Initialize memory
+  void initializeJavaMemory()                                                                                           // Initialize java memory
    {for(UnitMemory m : memories) for (int i = 0, N = m.size(); i < N; ++i) m.units[i] = 0;                              // Clear all of memeory to zero
    }
 
-  void initializeVars()                                                                                                 // Initialize variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
+  void initializeJavaVars()                                                                                             // Initialize java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
    {for (Int  i : ints)  {i.i = 0;     i.v = false;}
     for (Bool b : bools) {b.i = false; b.v = false;}
    }
@@ -1456,8 +1456,8 @@ public class Program extends Test                                               
     final int N = codeSize();                                                                                           // Number of instructions
           int c = 0;                                                                                                    // Number of instructions executed
 
-    initializeMemory();                                                                                                 // Initialize memory
-    initializeVars();                                                                                                   // Initialize variables
+    initializeJavaMemory();                                                                                             // Initialize memory
+    initializeJavaVars();                                                                                               // Initialize variables
 
     for(; c < maxSteps && pc >= 0 && pc < N; ++c)                                                                       // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
