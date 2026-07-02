@@ -885,7 +885,7 @@ public class Program extends Test                                               
     Int invalidate ()                                                                                                   // Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
      {new I()
        {void   a() {ex(Ops.set, -1); v = false;}
-        String v() {return ev(Ops.set, -222);}
+        String v() {return ev(Ops.set, -1);}
        };
       return this;
      }
@@ -1417,25 +1417,25 @@ public class Program extends Test                                               
    }
 
   void initializeMemory()                                                                                               // Initialize memory
-   {for(UnitMemory m : memories) for (int i = 0, N = m.size(); i < N; ++i) m.units[i] = 0;                                // Clear all of memeory to zero
+   {for(UnitMemory m : memories) for (int i = 0, N = m.size(); i < N; ++i) m.units[i] = 0;                              // Clear all of memeory to zero
    }
 
   void initializeVars()                                                                                                 // Initialize variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
-   {for (Int  i : ints)  {i.i = 99;say("AAAA", i.id, i.name, i.v, i.i); }
-    for (Bool b : bools) b.i = false;
+   {for (Int  i : ints)  {i.i = 0;     i.v = false;}
+    for (Bool b : bools) {b.i = false; b.v = false;}
    }
 
-  void dumpMemories () {for(UnitMemory m : memories) appendJavaTrace(m.dumpAsDecimal());}                               // Dump all the memories
+  void dumpJavaMemories () {for(UnitMemory m : memories) appendJavaTrace(m.dumpAsDecimal());}                           // Dump all the memories
 
-  void dumpVars ()                                                                                                      // Dump all memories and variables to the java trace file
+  void dumpJavaVars ()                                                                                                  // Dump all memories and variables to the java trace file
    {final StringBuilder s = new StringBuilder();
     for (Int  i  : ints)
-     {s.append(f("Int  %8d == %8d", i.id, i.v ? i.i : 0));
+     {s.append(f("Int  %8d == %8d", i.id, i.i));
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
     for (Bool  b : bools)
-     {s.append(f("Bool %8d == %8d", b.id, b.v ?   1 : 0));
+     {s.append(f("Bool %8d == %8d", b.id, b.i ? 1 : 0));
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
      }
@@ -1443,8 +1443,8 @@ public class Program extends Test                                               
    }
 
   void dumpJava ()                                                                                                      // Dump all memories and variables to the java trace file
-   {dumpMemories();
-    dumpVars();
+   {dumpJavaMemories();
+    dumpJavaVars();
    }
 
   void execute ()                                                                                                       // Execute the current code
@@ -1483,7 +1483,7 @@ public class Program extends Test                                               
      }
 
     if (c >= maxSteps) stop("Out of steps after step:", c);                                                             // Show abnormal termination reason
-    dumpMemories();                                                                                                     // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
+    dumpJavaMemories();                                                                                                     // Dump memory at the end of the run so it can be compared the corresponding verilog memeory
 
     if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
@@ -2213,13 +2213,13 @@ endfunction
      {void code()
        {dumpProgramState();
         final Int  i = new Int ("i");
-//      final Bool b = new Bool("b");
+        final Bool b = new Bool("b");
         dumpProgramState();
         i.set(1);
-        //b.set(true);
+        b.set(true);
          dumpProgramState();
         i.set(2);
-        //b.set(false);
+        b.set(false);
         dumpProgramState();
         execute();
        }
