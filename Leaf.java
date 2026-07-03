@@ -135,13 +135,6 @@ class Leaf extends Program implements Program.Locatable                         
 
 //D2 Split                                                                                                              // Split a full leaf into two leaves
 
-  private Int splittingKey()                                                                                            //N Splitting key for a leaf assuming that the leaf has been compacted to the right
-   {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
-    final Int l = slots.getSlotToKeyValue(new Int(maxSize/2-1));
-    final Int r = slots.getSlotToKeyValue(new Int(maxSize/2  ));
-    return l.add(r).down();                                                                                             // Splitting key
-   }
-
   Int splitRight(Leaf Right)                                                                                            // Split a full leaf rightwards into a supplied leaf and return the splitting key value
    {if (immediate() && count().i() != maxSize()) stop("Leaf not full");                                                 // The leaf must be full
     final Leaf left = this;                                                                                             // Current leaf is on the left
@@ -168,7 +161,7 @@ class Leaf extends Program implements Program.Locatable                         
      };
    }
 
-  Bool mergeRight(Leaf Right)                                                                                           //N Merge the specified leaf into the right of this leaf
+  Bool mergeRight(Leaf Right)                                                                                           // Merge the specified leaf into the right of this leaf
    {final Leaf left = this;
     final Int  lc   = left .count();
     final Int  rc   = Right.count();
