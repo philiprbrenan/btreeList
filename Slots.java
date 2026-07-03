@@ -98,7 +98,7 @@ class Slots extends Program                                                     
 
 //D2 Internal                                                                                                           // Low level internal operations on slots
 
-  void putSlotToKeys (Int Index, Int Key)                                                                                // Set a slot to key reference and the corresponding back reference
+  void putSlotToKeys (Int Index, Int Key)                                                                               // Set a slot to key reference and the corresponding back reference
    {subStart("Slots.putSlotToKeys");
     refSlotsToKeys.putInt(Index, Key);                                                                                  // Set forward  reference
     refKeysToSlots.putInt(Key, Index);                                                                                  // Set backward reference
@@ -106,7 +106,7 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  void delSlotToKeys (Int Index)                                                                                         // Delete a slot
+  void delSlotToKeys (Int Index)                                                                                        // Delete a slot
    {subStart("Slots.delSlotToKeys");
     final Int K = refSlotsToKeys.getInt(Index);                                                                         // Slot to key index
                   refSlotsToKeys.putInt(Index, new Int(0));                                                             // Zero forward reference
@@ -233,7 +233,7 @@ class Slots extends Program                                                     
     delKey(getSlotToKeyIndex(P)); delSlotToKeys(P);                                                                     // Free key assumed to exist and slots referring to it
    }
 
-  private void moveSlot (Bint T, Bint S, Bool Continue)                                                                  // Move a slot from source to target
+  private void moveSlot (Bint T, Bint S, Bool Continue)                                                                 // Move a slot from source to target
    {subStart("Slots.moveSlot(BBb");
     new If (S)
      {void Then()
@@ -369,7 +369,7 @@ class Slots extends Program                                                     
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
         compactSlotsLeft();                                                                                             // Compact slots to the left so it is in a known position
-        final Int         c = usedSlotsToKeys.firstZero().i(); c.name = "c";                                           // Number of slots in use
+        final Int         c = usedSlotsToKeys.firstZero().i(); c.name = "c";                                            // Number of slots in use
         final Int     space = N.Sub(c).div(c);                                                                          // Space between used slots
         final Int     cover = space.Inc().mul(c.Dec()).inc();                                                           // Covered space from first used slot to last used slot,
         final Int remainder = N.Sub(cover);                                                                             // Uncovered remainder
