@@ -118,8 +118,8 @@ public class Program extends Test                                               
     final int  intId;                                                                                                   // Base of integer variables
     FlowControl()
      {final Program p = program();
-      boolId = p.nextBoolId;                                                                                            // Base of boolean variables
-      intId  = p.nextIntId ;                                                                                            // Base of integer variables
+      boolId = 0; //p.nextBoolId;                                                                                            // Base of boolean variables
+      intId  = 0; //p.nextIntId ;                                                                                            // Base of integer variables
       flowControl.put(p.codeSize(), this);                                                                              // Map location of flow control instruction to position in integer and boolean variables
      }
    }
@@ -574,7 +574,7 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this variable
      {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      return pad("i[lastBoolId+"+(id - f.boolId)+"]"+(name != null ? "/*"+name+"*/" : ""), 12);
+      return pad("b[lastBoolId+"+(id - f.boolId)+"]"+(name != null ? "/*"+name+"*/" : ""), 12);
      }
 
     void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
@@ -776,7 +776,7 @@ public class Program extends Test                                               
 
     String vtrace (String Value)                                                                                        // Trace an integer operation
      {vtraceInc();
-      final FlowControl f = getFlowControlForInstructionBeingCompiled();
+      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
       final int         i = f.intId;
       return vn()+" <= traceInt ("+(id - i)+", "+Value+");";
      }
@@ -1473,10 +1473,10 @@ public class Program extends Test                                               
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
-  void dumpProgramState ()                                                                                              // Dump memory
+  void dumpProgramState (String Location)                                                                                              // Dump memory
    {new I()
-     {void    a()     {dumpJava();}
-      String  v()     {return dumpVerilog();}
+     {void    a()     {appendJavaTrace(Location); dumpJava();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\");"+dumpVerilog();}
       boolean trace() {return false;}
      };
    }
@@ -2034,10 +2034,10 @@ endfunction
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int  a = new Int ();
-        final Bool b = new Bool();
-        final Int  c = new Int (0);
-        final Int  N = new Int (4);
+       {final Int  a = new Int ("a");
+        final Bool b = new Bool("b");
+        final Int  c = new Int ("c").set(0);
+        final Int  N = new Int ("N").set(4);
         final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bool Continue)
@@ -2050,7 +2050,7 @@ endfunction
             Continue.set();
            }
          };
-        Check(s, "2 1 3 2");
+        check(s, "c=2 c=1 c=3 c=2");
         execute();
        }
      };
@@ -2170,16 +2170,16 @@ endfunction
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(3))
      {void code()
-       {dumpProgramState();
+       {dumpProgramState("AAAA");
         final Int  i = new Int ("i");
         final Bool b = new Bool("b");
-        dumpProgramState();
+        dumpProgramState("BBBB");
         i.set(1);
         b.set(true);
-         dumpProgramState();
+         dumpProgramState("CCCC");
         i.set(2);
         b.set(false);
-        dumpProgramState();
+        dumpProgramState("DDDD");
         execute();
        }
      };
@@ -2201,18 +2201,18 @@ endfunction
             m.putInt(new Int(1), new Int(2));
             m.getInt(new Int(0)).ok(1);
             m.getInt(new Int(1)).ok(2);
-            dumpProgramState();
+            dumpProgramState("AAAA");
             m.getBool(new Int(1), new Int(0)).ok(false);
             m.getBool(new Int(1), new Int(1)).ok(true );
             m.getBool(new Int(1), new Int(2)).ok(false);
             m.putBool(new Int(1), new Int(0), new Bool(true));
             m.getInt (new Int(1)).            ok(3);
-            dumpProgramState();
+            dumpProgramState("BBBB");
             m.putBool(new Int(32), new Bool(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(false);
-            dumpProgramState();
+            dumpProgramState("CCCC");
             m.putBool(new Int(1), new Int(9), new Bool(true));
             m.getBool(new Int(1), new Int(9)).ok(true);
            }
@@ -2460,8 +2460,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_mod(!true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
