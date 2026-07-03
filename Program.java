@@ -118,8 +118,8 @@ public class Program extends Test                                               
     final int  intId;                                                                                                   // Base of integer variables
     FlowControl()
      {final Program p = program();
-      boolId = 0; //p.nextBoolId;                                                                                            // Base of boolean variables
-      intId  = 0; //p.nextIntId ;                                                                                            // Base of integer variables
+      boolId = p.nextBoolId;                                                                                            // Base of boolean variables
+      intId  = p.nextIntId ;                                                                                            // Base of integer variables
       flowControl.put(p.codeSize(), this);                                                                              // Map location of flow control instruction to position in integer and boolean variables
      }
    }
@@ -127,7 +127,8 @@ public class Program extends Test                                               
   FlowControl getFlowControlForInstructionBeingCompiled()                                                               // Get flow control for instruction being compiled
    {final Integer k = program().flowControl.floorKey(program().compiling.instructionNumber);
     if (k == null) stop("Unable to get flow control details while compiling");
-    final FlowControl f = flowControl.get(k);
+    final FlowControl f = program().flowControl.get(k);
+    if (f == null) stop("Unable to get flow control details for key:", k, "in:", program().flowControl);
     return f;
    }
 
