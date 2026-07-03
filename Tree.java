@@ -102,13 +102,13 @@ class Tree extends Program                                                      
     sizeOfNode    = build.nodeSize;                                                                                     // Size of a node in the tree
 
     final UnitMemory.Ref unitMemoryRef = unitMemory.new Ref(0);                                                         // Memory used by tree
-    refNodes       = unitMemoryRef.step(build.memoryPositions.posNodes);                                                 // Memory for nodes
-    refFreeChain   = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                             // Memory for free chain
-    refCount       = unitMemoryRef.step(build.memoryPositions.posCount);                                                 // Memory for key count
+    refNodes       = unitMemoryRef.step(build.memoryPositions.posNodes);                                                // Memory for nodes
+    refFreeChain   = unitMemoryRef.step(build.memoryPositions.posFreeChain);                                            // Memory for free chain
+    refCount       = unitMemoryRef.step(build.memoryPositions.posCount);                                                // Memory for key count
 
-    mergePath      = new UnitMemory(ib(mnl()));                                                                          // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
-    traverseNode   = new UnitMemory(ib(2*mnl()));                                                                        // Memory to hold outstanding branches and leaves in a traverse
-    traverseAction = new UnitMemory(ib(2*mnl()));                                                                        // Memory to hold requested action against each branch in a traverse
+    mergePath      = new UnitMemory(ib(mnl()));                                                                         // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
+    traverseNode   = new UnitMemory(ib(2*mnl()));                                                                       // Memory to hold outstanding branches and leaves in a traverse
+    traverseAction = new UnitMemory(ib(2*mnl()));                                                                       // Memory to hold requested action against each branch in a traverse
 
     freeChain  = new BitSet(build.freeChain.memory(refFreeChain).parent(this));                                         // Memory for free chain
     for (int i = 0, N = numberOfNodes; i < N; ++i) freeChain.set(new Int(i));                                           // Initial free chain with root as an allocated leaf. Each active leaf or branch resides in a node of the tree allocated from the free chain. Using a single node size greatly simplifies memory management which is crucial in long running processes like database systems.
@@ -925,13 +925,13 @@ class Tree extends Program                                                      
     Print(boolean Context)                                                                                              // Print the tree optionally supplying the context of each branch and leaf
      {subStart("Tree.Print");
 
-      new I() {void a() {P.clear();} boolean trace() {return false;}};                                                                                 // Clear output area
+      new I() {void a() {P.clear();} boolean trace() {return false;}};                                                  // Clear output area
 
       new Traverse()
        {@Override void leafBody(LeafContext LC)                                                                         // Print keys of leaf and optionally the details of the parent
          {final Leaf          l = leaf(LC.leaf);
           final StringBuilder s = new StringBuilder();
-          new I() {void a() {clearStringBuilder(s);} boolean trace() {return false;}};                                                                 // Clear the print
+          new I() {void a() {clearStringBuilder(s);} boolean trace() {return false;}};                                  // Clear the print
           l.iterate((k,d)->s.append(k+","));                                                                            // Format keys
           new I()                                                                                                       // Print leaf keys
            {void a()
