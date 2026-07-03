@@ -287,12 +287,12 @@ final public class BitSet extends Program                                       
   Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace(hoVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the ones tree
   Int     heightZero (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace(hzVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the zeros tree
 
-  int       pos_zero (int Pos)                                                                                                // Position in the indicated row of the zeros tree
+  int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
     return p;
    }
 
-  int        pos_one (int Pos)                                                                                                 // Position in the indicated row of the ones tree
+  int        pos_one (int Pos)                                                                                          // Position in the indicated row of the ones tree
    {if (Pos < bitSize) return Pos;                                                                                      // In bitset body
     int p = Pos - base_one();
     int b = bitSize2;
@@ -319,7 +319,8 @@ final public class BitSet extends Program                                       
 
   void limitsUpperZero ()                                                                                               // Upper limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
-     {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i]; else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
+     {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i];
+      else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
     defineArrayViaVerilogFunction(luzVerilog, limitsUpperZero);
    }
@@ -332,7 +333,8 @@ final public class BitSet extends Program                                       
 
   void limitsLowerZero ()                                                                                               // Lower limits of the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
-     {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i]; else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
+     {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i];
+      else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
     defineArrayViaVerilogFunction(llzVerilog, limitsLowerZero);
    }
@@ -495,7 +497,7 @@ final public class BitSet extends Program                                       
     final Bint Next = new Bint();                                                                                       // Next one if any
     final Int  p    = new Int(Start);                                                                                   // Start position
 
-    new For(logBitSize())                                                                                                 // Traverse down through the tree to the root
+    new For(logBitSize())                                                                                               // Traverse down through the tree to the root
      {void body(Int I, Bool C)
        {final Int q = p.Inc();                                                                                          // Next bit over
 
@@ -536,7 +538,7 @@ final public class BitSet extends Program                                       
     final Bint Prev = new Bint();                                                                                       // Invalid indicates not found
     final Int p     = new Int(Start);                                                                                   // Start position
 
-    new For(logBitSize())                                                                                                 // Traverse down through the tree to the root
+    new For(logBitSize())                                                                                               // Traverse down through the tree to the root
      {void body(Int I, Bool C)
        {new If (p.gt(limitLowerOne(p)))                                                                                 // Found adjacent bit set to one to the left of the path up from the start bit
          {void Then()                                                                                                   // Found the adjacent bit to the left
@@ -596,7 +598,7 @@ final public class BitSet extends Program                                       
        {new If (getBitNC(Q))                                                                                            // Adjacent bit amongst the actual bits exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move int zeros tree
-            new For(logBitSize())                                                                                         // Traverse down through the tree to the root
+            new For(logBitSize())                                                                                       // Traverse down through the tree to the root
              {void body(Int I, Bool C)
                {final Int q = p.Inc();                                                                                  // Next bit over
 
@@ -818,7 +820,7 @@ final public class BitSet extends Program                                       
   static BitSet test_bits(boolean Ex, int N, boolean Count)                                                             // Create test bitset.
    {subStart("BitSet.test_bits");
     final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Describe bitset
-    final BitSet    b = new BitSet(build  );                                                                              // Create a bit set
+    final BitSet    b = new BitSet(build  );                                                                            // Create a bit set
     subFinish();
     return b;                                                                                                           // Return test bitset.
    }
