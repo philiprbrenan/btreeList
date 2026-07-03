@@ -277,7 +277,7 @@ class Branch extends Program implements Program.Locatable                       
     subFinish();
    }
 
-  Bool mergeRight (Branch Right, Int Sk)                                                                                 //N Merge the specified branch into the right of this branch separating the two by the specified splitting key
+  Bool mergeRight (Branch Right, Int Sk)                                                                                //N Merge the specified branch into the right of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeRight");
     final Branch left = this;
     final Int    lc   = left .count();
@@ -305,7 +305,7 @@ class Branch extends Program implements Program.Locatable                       
     return r;
    }
 
-  Bool mergeLeft (Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
+  Bool mergeLeft (Branch Left, Int Sk)                                                                                  // Merge the specified branch into the left of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeLeft");
     final Branch right = this;
     final Int    lc    = Left .count();
@@ -332,7 +332,7 @@ class Branch extends Program implements Program.Locatable                       
     return r;
    }
 
-  int splitSize () {return maxSize()>>>1;}                                                                               // Size of a split branch
+  int splitSize () {return maxSize()>>>1;}                                                                              // Size of a split branch
 
 //D1 Iterate                                                                                                            // Iterate over a branch
 
