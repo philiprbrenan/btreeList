@@ -107,7 +107,7 @@ class Branch extends Program implements Program.Locatable                       
   Bint find  (Int Key) {return getDataFromKey(Key, false);}                                                             // Get the data associated with a key
   Bint delete(Int Key) {return getDataFromKey(Key, true);}                                                              // Get the data associated with a key and delete the key if it exists.  At this point we do not clean up the value corresponding to the key because the determination of whether the value is valid or not is done solely in the slots and, as there is no preffered value to set into the values array to mark it as not in use, it is sufficient to leave the existing value there.
 
-  Bint getDataFromKey(Int Key, boolean Delete)                                                                          //N Get the data associated with a key with the option of deleting the key if found
+  Bint getDataFromKey(Int Key, boolean Delete)                                                                          // Get the data associated with a key with the option of deleting the key if found
    {final Slots.Find f = slots.find(Key);                                                                               // Find the key
     final Bint       r = new Bint();                                                                                    // Result
     new If (f.equal)                                                                                                    // Found the key
@@ -277,7 +277,7 @@ class Branch extends Program implements Program.Locatable                       
     subFinish();
    }
 
-  Bool mergeRight (Branch Right, Int Sk)                                                                                //N Merge the specified branch into the right of this branch separating the two by the specified splitting key
+  Bool mergeRight (Branch Right, Int Sk)                                                                                // Merge the specified branch into the right of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeRight");
     final Branch left = this;
     final Int    lc   = left .count();
