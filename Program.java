@@ -266,7 +266,7 @@ public class Program extends Test                                               
 //     };
 //   }
 
-//  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives. //N marks a routine that is not needed to run the finished product but that might be needed during testing
+//  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives.
 //   {new If (Choice)
 //     {void Then() {Set.set(Then.get());}
 //      void Else() {Set.set(Else.get());}
@@ -402,41 +402,26 @@ public class Program extends Test                                               
     enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
 
     Bool (String Name)             {this();  name = Name;}                                                              // Constructors with name supplied
-    Bool (String Name, boolean  I) {this(I); name = Name;}                                                              //N
-    Bool (String Name, Bool     I) {this(I); name = Name;}                                                              //N
 
     Bool ()                        {ai(); invalidate();   bools.push(this);}                                            // Constructors
     Bool (boolean I)               {ai(); ie(Ops.set, I); bools.push(this);}
     Bool (Bool    I)               {ai(); ie(Ops.set, I); bools.push(this);}
     boolean       b ()             {x(); return i;}
-    boolean       v ()             {     return v;}                                                                     //N
     void          x ()             {if (!v) variableNotSet("Bool", name);}                                              // Check a value has been set for the boolean
-    Bool          X ()             {v = true; return this;}                                                             //N
 
     Bool        set ()             {return ie(Ops.set,  true); }                                                        // Boolean operations which modify the target
     Bool        set (boolean I)    {return ie(Ops.set,  I);    }
     Bool        set (Bool    I)    {return ie(Ops.set,  I);    }
-    Bool        set (Int     I)    {return ie(Ops.set,  I);    }                                                        //N
     Bool        set (Bint    I)    {return ie(Ops.set,  I.i());}
     Bool      clear ()             {return ie(Ops.set,  false);}
     Bool       flip ()             {return ie(Ops.flip);       }
-
-    Bool        Set ()             {return dup().set();}                                                                //N Boolean operations that modify a copy of the target
-    Bool        Set (boolean I)    {return dup().set(I);}                                                               //N
-    Bool        Set (Bool    I)    {return dup().set(I);}                                                               //N
-    Bool      Clear ()             {return dup().clear();}                                                              //N
     Bool       Flip ()             {return dup().flip();}
-
-    Bool         eq (boolean I)    {return ie(Ops.eq,  I);}                                                             //N
-    Bool         ne (boolean I)    {return ie(Ops.ne,  I);}                                                             //N
-
-    Bool         eq (Bool    I)    {return ie(Ops.eq,  I);}                                                             //N
     Bool         ne (Bool    I)    {return ie(Ops.ne,  I);}
 
     Bool ie (Ops Op)            {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}          // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
     Bool ie (Ops Op, boolean I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
     Bool ie (Ops Op, Bool    I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
-    Bool ie (Ops Op, Int     I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}          //N
+    Bool ie (Ops Op, Int     I) {zz(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}          //N
 
     Bool ex (Ops Op)                                                                                                    // Execute a zeradic boolean operation
      {executingCheck();
@@ -545,12 +530,9 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool Or ( Bool b) {return dup().or(b);}                                                                             //N "Or" without short circuit. Does not modify the target
-    Bool And (Bool b) {return dup().and(b);}                                                                            //N "And" without short circuit. Does not modify the target
-
-            Bool dup ()        {return new Bool(this);}                                                                 // Duplicate a boolean so that the duplicated version can be modified without modifying the original
-    private Bool valid ()      {return new Bool( v);}                                                                   //N Whether the boolean is valid
-    private Bool notValid ()   {return new Bool(!v);}                                                                   //N Whether the boolean is invalid
+    Bool Or ( Bool b) {return dup().or(b);}                                                                             // "Or" without short circuit. Does not modify the target
+    Bool And (Bool b) {return dup().and(b);}                                                                            // "And" without short circuit. Does not modify the target
+    Bool dup ()       {return new Bool(this);}                                                                          // Duplicate a boolean so that the duplicated version can be modified without modifying the original
 
     private Bool invalidate ()                                                                                          // Invalidate the boolean
      {new I()
@@ -558,14 +540,6 @@ public class Program extends Test                                               
         String v() {return ev(Ops.set, false);}
        };
      return this;
-     }
-
-    private Bool copy (Bool I)                                                                                          //N Copy the state of a boolean without regard as to whether it is valid or not
-     {new I()
-       {void   a() {i = I.i; v = I.v; jtrace();}
-        String v() {return ev(Ops.set, I    );}
-       };
-      return this;
      }
 
     public String toString ()                                                                                           // Print the boolean
@@ -592,18 +566,7 @@ public class Program extends Test                                               
        };
      }
 
-    void elseStop (final Object...O)                                                                                    //N Conditionally print a message if false and stop
-     {new If (Flip())
-       {void Then()
-         {new I(I.Jump.will)
-           {void   a() {Test.stop(O);}
-            String v() {return "pc <= -1;";}
-           };
-         }
-       };
-     }
-
-    Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    //N Say the boolean
+    Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    // Say the boolean
 
     void jtrace () {jTrace(f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));}                              // Trace the boolean  operation by appending an entry to the java trace file
 
@@ -642,7 +605,6 @@ public class Program extends Test                                               
     final int id = program().nextIntId++;                                                                               // Unique id for Int
 
     int         i ()  {x(); return i;}                                                                                  // Current value
-    boolean     v ()  {     return v;}                                                                                  //N Value has been set
     void        x ()  {if (!v) variableNotSet("Int", name);}                                                            // Check a value has been set for the integer
 
     Int (String Name)        {this();  name = Name;}                                                                    // Constructors with name supplied
@@ -652,22 +614,16 @@ public class Program extends Test                                               
     Int ()           {ai(); invalidate();   ints.push(this);}                                                           // Constructors without names
     Int (int I)      {ai(); ie(Ops.set, I); ints.push(this);}
     Int (Int I)      {ai(); ie(Ops.set, I); ints.push(this);}
-
-    Int  max (int I) {x(); return i < I ? new Int(I) : this;}                                                           //N
-    Int  min (int I) {x(); return i > I ? new Int(I) : this;}                                                           //N
-    Int  max (Int I) {final Int r = this; new If (lt(I)) {void Then() {r.set(I);}}; return r;}                          //N
-    Int  min (Int I) {final Int r = this; new If (gt(I)) {void Then() {r.set(I);}}; return r;}                          //N
                                                                                                                         // Possible integer operations
-    enum Ops {X, abs, add, add2, bclr, bget, bset, dec, div, down, eq, ge, gt, inc, le, lt,
-       max, min, mod, mul, neg, ne, set, sqrt, sub, up};
+    enum Ops {abs, add, add2, dec, div, down, eq, ge, gt, inc, le, lt,
+       mod, mul, neg, ne, set, sqrt, sub, up};
 
-    Int  X   ()       {return ie(Ops.X      );}                                                                         //N Integer operations
     Int  set (int  I) {return ie(Ops.set , I);}
     Int  set (Int  I) {return ie(Ops.set , I);}
     Int  set (Bint I) {return ie(Ops.set , I.i());}
     Int  add (int  I) {return ie(Ops.add , I);}
     Int  add (Int  I) {return ie(Ops.add , I);}
-    Int  add2(Int  I) {return ie(Ops.add2, I);}                                                                         //N
+    Int  add2(Int  I) {zz(); return ie(Ops.add2, I);}                                                                         //N
     Int  sub (int  I) {return ie(Ops.sub , I);}
     Int  sub (Int  I) {return ie(Ops.sub , I);}
     Int  mul (int  I) {return ie(Ops.mul , I);}
@@ -675,13 +631,13 @@ public class Program extends Test                                               
     Int  div (int  I) {return ie(Ops.div , I);}
     Int  div (Int  I) {return ie(Ops.div , I);}
     Int  mod (int  I) {return ie(Ops.mod , I);}
-    Int  mod (Int  I) {return ie(Ops.mod , I);}                                                                         //N
+    Int  mod (Int  I) {zz(); return ie(Ops.mod , I);}                                                                         //N
     Int  inc ()       {return ie(Ops.inc    );}
     Int  dec ()       {return ie(Ops.dec    );}
-    Int  up  ()       {return ie(Ops.up     );}                                                                         //N
+    Int  up  ()       {zz(); return ie(Ops.up     );}                                                                         //N
     Int  down()       {return ie(Ops.down   );}
-    Int  sqrt()       {return ie(Ops.sqrt   );}                                                                         //N
-    Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
+    Int  sqrt()       {zz(); return ie(Ops.sqrt   );}                                                                         //N
+    Int  neg ()       {zz(); return ie(Ops.neg    );}                                                                         //N
     Int  abs ()       {return ie(Ops.abs    );}
 
     Int ie (Ops Op)        {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}               // Execute immediately or create an instruction for machine code to execute later
@@ -788,35 +744,35 @@ public class Program extends Test                                               
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
-    Int  Add2(Int I) {return dup().add2(I);}                                                                            //N
+    Int  Add2(Int I) {zz(); return dup().add2(I);}                                                                            //N
     Int  Sub (int I) {return dup().sub(I) ;}
     Int  Sub (Int I) {return dup().sub(I) ;}
     Int  Mul (int I) {return dup().mul(I) ;}
     Int  Mul (Int I) {return dup().mul(I) ;}
     Int  Div (int I) {return dup().div(I) ;}
-    Int  Div (Int I) {return dup().div(I) ;}                                                                            //N
+    Int  Div (Int I) {zz(); return dup().div(I) ;}                                                                            //N
     Int  Mod (int I) {return dup().mod(I) ;}
-    Int  Mod (Int I) {return dup().mod(I) ;}                                                                            //N
+    Int  Mod (Int I) {zz(); return dup().mod(I) ;}                                                                            //N
     Int  Inc ()      {return dup().add(1) ;}
     Int  Dec ()      {return dup().sub(1) ;}
-    Int  Up  ()      {return dup().up()   ;}                                                                            //N
+    Int  Up  ()      {zz(); return dup().up()   ;}                                                                            //N
     Int  Down()      {return dup().down() ;}
-    Int  Sqrt()      {return dup().sqrt() ;}                                                                            //N
-    Int  Neg ()      {return dup().neg()  ;}                                                                            //N
-    Int  Abs ()      {return dup().abs()  ;}                                                                            //N
+    Int  Sqrt()      {zz(); return dup().sqrt() ;}                                                                            //N
+    Int  Neg ()      {zz(); return dup().neg()  ;}                                                                            //N
+    Int  Abs ()      {zz(); return dup().abs()  ;}                                                                            //N
 
     Bool eq ( int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a constant integer
-    Bool ne ( int I) {return bie(Ops.ne, I);}                                                                           //N
+    Bool ne ( int I) {zz(); return bie(Ops.ne, I);}                                                                           //N
     Bool le ( int I) {return bie(Ops.le, I);}
     Bool lt ( int I) {return bie(Ops.lt, I);}
     Bool ge ( int I) {return bie(Ops.ge, I);}
     Bool gt ( int I) {return bie(Ops.gt, I);}
 
     Bool eq ( Int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a variable integer
-    Bool ne ( Int I) {return bie(Ops.ne, I);}                                                                           //N
+    Bool ne ( Int I) {zz(); return bie(Ops.ne, I);}                                                                           //N
     Bool le ( Int I) {return bie(Ops.le, I);}
     Bool lt ( Int I) {return bie(Ops.lt, I);}
-    Bool ge ( Int I) {return bie(Ops.ge, I);}                                                                           //N
+    Bool ge ( Int I) {zz(); return bie(Ops.ge, I);}                                                                           //N
     Bool gt ( Int I) {return bie(Ops.gt, I);}
 
     Bool bie (Ops Op, int I)                                                                                            // Instruction to perform a boolean comparison between an integer variable and an integer constant
@@ -1157,14 +1113,9 @@ public class Program extends Test                                               
 
       Ref       copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
       Ref      clear (int Width)            {m.clear     (offset, Width);                    return this;}              // Clear memory by setting its bytes to zero
-//    Ref invalidate (int Width)            {m.invalidate(offset, Width);                    return this;}              //N Invalidate memory by setting its bytes to values unlikely to be valid
-//    Int    getUnit (Int I)                {return m.getUnit(I.Add(offset));}                                          //N Get the byte at the indicated position
-      Int    getInt  (Int I)                {return m.getInt (I.Add(offset));}                                          //N Get the int at the indicated position
-//    Bool   getBool (Int I, Int J)         {return m.getBool(I.Add(offset), J);}                                       //N Get the bit in the specified byte at the specified position within the byte
+      Int    getInt  (Int I)                {return m.getInt (I.Add(offset));}                                          // Get the int at the indicated position
       Bool   getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                        // Get the bit at the bit indexed location
-//    Ref    putUnit (Int I, Int J)         {m.putUnit(I.Add(offset), J);                    return this;}              //N Set the byte at the indicated position relative to the start to the specified value
       Ref    putInt  (Int I, Int J)         {m.putInt (I.Add(offset), J);                    return this;}              // Set the int at the indicated position relative to the start to the specified value
-//    Ref    putBool (Int I, Int J, Bool K) {m.putBool(I.Add(offset), J, K);                 return this;}              //N Set the bit at the indicated position in the byte at the specified position to the specified value
       Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Integer.SIZE)), K);  return this;}              // Set the bit at the bit indexed position
       int     getInt (int I)                {return m.getInt (I+offset.i());}                                           // Get an int immediately when debugging
       Int     getInt ()
@@ -1479,7 +1430,7 @@ public class Program extends Test                                               
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
-  void dumpProgramState (String Location)                                                                                              // Dump memory
+  void dumpProgramState (String Location)                                                                               // Dump memory
    {new I()
      {void    a()     {appendJavaTrace(Location); dumpJava();}
       String  v()     {return "$fwrite(traceFile, \""+Location+"\");"+dumpVerilog();}
@@ -2048,7 +1999,7 @@ endfunction
         new For(N)
          {void body(Int Index, Bool Continue)
            {a.set(Index.Inc()).mod(2);
-            new If (b.set(a).flip())
+            new If (b.set(a.ne(0)).flip())
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
@@ -2484,6 +2435,7 @@ Memory 0
      {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       testSummary();                                                                                                    // Summarize test results
+      coverageAnalysis(12);
       System.exit(testsFailed);
      }
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
