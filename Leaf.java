@@ -76,7 +76,6 @@ class Leaf extends Program implements Program.Locatable                         
 
   Leaf initializeMemory()                                                                                               // Initialize slots and data associated with the leaf
    {clear();                                                                                                            // Clear backing memory
-    //slots.initializeMemory();                                                                                           // Initialize slots
     return this;
    }
   void leafCode() {}                                                                                                    // Override this method to provide code for testing the leaf
@@ -95,7 +94,6 @@ class Leaf extends Program implements Program.Locatable                         
   void      clear() {unitMemoryRef.clear(bytesNeeded());}                                                               // Clear memory associated with the leaf and mark as a leaf to create a new leaf in a known state ready for use
 
   void copy (Leaf Source) {unitMemoryRef.copy(Source.unitMemoryRef, bytesNeeded());}                                    // Copy one leaf into another leaf
-//void invalidate()       {unitMemoryRef.invalidate(bytesNeeded());}                                                    // Invalidate a leaf so that it will probably cause errors if an attempt is made to reuse it with it initializing it first
 
 //D1 Delete, find, insert                                                                                               // Delete, find, insert keys and data in a leaf
 
@@ -200,8 +198,7 @@ class Leaf extends Program implements Program.Locatable                         
      {void Then()
        {r.set();
         Left .compactLeft();
-
-         right.compactRight();                                                                   // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
+        right.compactRight();                                                                                           // Compact so both the slots and keys are in opposing extremal positions to avoid collisions when we merge
         Left .slots.compactKeysLeft ((S, t, s)->{Left .data(t, Left .data(s));});
         right.slots.compactKeysRight((S, t, s)->{right.data(t, right.data(s));});
 
