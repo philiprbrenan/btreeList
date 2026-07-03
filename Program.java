@@ -13,7 +13,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                     appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
+ {final  boolean                     appendTraceComments = !true;                                                        // Add trace comments to trace output - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
@@ -918,7 +918,7 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this variable
      {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      return pad("i[lastIntId+"+(id - f.intId)+"/*"+id+"*/"+"]"+(name != null ? "/*"+name+"*/" : ""), 12);
+      return pad("i[lastIntId+"+(id - f.intId)+"]"+(name != null ? "/*"+name+"*/" : ""), 12);
      }
 
     Int     say () {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                               // Say the integer
@@ -1297,8 +1297,10 @@ public class Program extends Test                                               
 
     String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
     String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
-     {if (traceBack != null) return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";
-      if (traceSub  != null) return "/*" + traceSub .replaceAll("\\n", ", ") + "*/";
+     {if (appendTraceComments)
+       {if (traceBack != null) return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";                                  // Appending trace comments makes the code easier to debug but inhibits code compression
+        if (traceSub  != null) return "/*" + traceSub .replaceAll("\\n", ", ") + "*/";
+       }
       return "";
      }
 
@@ -2430,6 +2432,15 @@ Memory 0
            }
          };
         b.ok(2);
+        new If (a.eq(2))
+         {void Then()
+           {b.set(1);
+           }
+          void Else()
+           {b.set(2);
+           }
+         };
+        b.ok(1);
         execute();
        }
      };
@@ -2462,6 +2473,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    test_lastInstructionBase();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
