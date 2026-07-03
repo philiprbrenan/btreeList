@@ -16,7 +16,7 @@ public class Program extends Test                                               
  {final  boolean                     appendTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
-  final  boolean                    compressInstructions = !true;                                                        // Compress out identical instructions
+  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
   public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
 
   static String                                testGroup = null;                                                        // Tests can be split into groups so that they can be run in parallel
@@ -92,9 +92,9 @@ public class Program extends Test                                               
   void jtraceInc() {++program().jtrace;}                                                                                // Count trace records written
   void vtraceInc() {++program().vtrace;}
 
-//D1 Program                                                                                                            // Program execution structures
+//D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
-//D2 Flow control                                                                                                       // Flow  control identifies each section of code that could be jumped into so that references trto varaiable as can be coded as a small constant offset from a variable base to increase the probability that instructions will have the same verilog allowing identical such instructions to be compressed out
+//D2 Flow control                                                                                                       // Flow  control identifies each section of code that could be jumped into so that references to a variable can be coded as a small constant offset from a variable base to increase the probability that instructions will have the same verilog allowing identical such instructions to be compressed out
 
   void insertFlowControl()                                                                                              // The integer and boolean base at the entry to a flow of control block
    {new FlowControl();                                                                                                  // Record the current position in the integer and boolean variables
@@ -145,7 +145,7 @@ public class Program extends Test                                               
          {cont.clear();                                                                                                 // Terminate unless told otherwise
           body(index, cont);                                                                                            // Execute the loop
           index.inc();                                                                                                  // Set the index to each element of the specified range
-          if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation requested
+          if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
          }
        }
       else                                                                                                              // Machine code
@@ -169,14 +169,14 @@ public class Program extends Test                                               
           int traces() {return 0;}
          };
         end.set();                                                                                                      // End of the loop
-        insertFlowControl();                                                                                    // Start of flow of control block,
+        insertFlowControl();                                                                                            // Start of flow of control block
        }
      }
 
     For (int End) {this(new Int("Start", 0), new Int("End", End));}                                                     // Execute the loop the specified number of times as long as it returns true
     For (Int End) {this(new Int("Start", 0),                End);}                                                      // Execute the loop the specified number of times as long as it returns true
 
-    abstract void body (Int Index, Bool Continue);                                                                      // Body of the for loop - execute while in range and continuation requested
+    abstract void body (Int Index, Bool Continue);                                                                      // Body of the for loop - execute while in range and continuation has been requested
    }
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
@@ -194,7 +194,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        insertFlowControl();                                                                                            // Start of flow of control block,
+        insertFlowControl();                                                                                            // Start of flow of control block
         new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
           String v()   {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+(end.offset-instructionNumber)+";";}   // Index out of range
@@ -208,7 +208,7 @@ public class Program extends Test                                               
           int traces() {return 0;}
          };
         end.set();                                                                                                      // End of the loop
-        insertFlowControl();                                                                                            // Start of flow of control block,
+        insertFlowControl();                                                                                            // Start of flow of control block
        }
      }
 
@@ -245,10 +245,10 @@ public class Program extends Test                                               
           int traces() {return 0;}
          };
         lse.set();                                                                                                      // Start of else
-        insertFlowControl();                                                                                            // Start of flow of control block,
+        insertFlowControl();                                                                                            // Start of flow of control block
         Else();                                                                                                         // Else body
-        end.set();                                                                                                      // End of the loop
-        insertFlowControl();                                                                                            // Start of flow of control block,
+        end.set();                                                                                                      // End of the if statement
+        insertFlowControl();                                                                                            // Start of flow of control block
        }
      }
 
@@ -265,7 +265,7 @@ public class Program extends Test                                               
 //     };
 //   }
 
-//  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives
+//  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives. //N marks a routine that is not needed to run the finished product but that might be needed during testing
 //   {new If (Choice)
 //     {void Then() {Set.set(Then.get());}
 //      void Else() {Set.set(Else.get());}
@@ -273,10 +273,10 @@ public class Program extends Test                                               
 //    return Set;
 //   }
 
-//D2 Procedure                                                                                                          // Procedure with parameters and return value.  Only works for static classes because unable to emulate "this".
+//D2 Procedure                                                                                                          // Procedure with parameters and return value.  Only works for static classes because it is unable to emulate "this" so commented out for the moment
 /*
   abstract class Procedure                                                                                              // Procedure
-   {final String      name;                                                                                             // The name of the procedure so it be cataloged and reused later by name which allows the just in time generation of procedures
+   {final String      name;                                                                                             // The name of the procedure so it can be cataloged and reused later by name which allows the just in time generation of procedures
     final Label       start = new Label(), end = new Label();                                                           // The location of the start and end of the procedure
     final Int returnAddress = new Int();                                                                                // the address to be returned to after the subroutine has been called
     final TreeSet<String>       parameters = new TreeSet<>();                                                           // Parameter names  must be unique over input or output, integer or boolean
@@ -381,8 +381,8 @@ public class Program extends Test                                               
     Bool      getBool(String Name)        {cbi(Name); final Bool a = new Bool(); new I() {void a() {                   a.ex(Bool.Ops.set, inputBool.get(Name));}}; return a;   } // Get an input  boolean parameter inside the procedure
     Procedure putBool(String Name, Int B) {cbo(Name);                            new I() {void a() {outputBool.get(Name).ex(Bool.Ops.set, B);}};                   return this;} // Put an output boolean parameter inside the procedure
 
-    Procedure in(String Name, boolean B) {cbi(Name); inputBool.get(Name).set(B); return this;}                          // Set an input  boolean parameter by name to an boolean constant before calling the procedure
-    Procedure in(String Name, Bool    B) {cbi(Name); inputBool.get(Name).set(B); return this;}                          // Set an input  boolean parameter by name to an boolean variable before calling the procedure
+    Procedure in(String Name, boolean B) {cbi(Name); inputBool.get(Name).set(B); return this;}                          // Set an input  boolean parameter by name to a boolean constant before calling the procedure
+    Procedure in(String Name, Bool    B) {cbi(Name); inputBool.get(Name).set(B); return this;}                          // Set an input  boolean parameter by name to a boolean variable before calling the procedure
     Bool      ob(String Name)            {cbo(Name); return outputBool.get(Name);}                                      // Get an output boolean parameter after calling a procedure
    }
 */
@@ -392,8 +392,8 @@ public class Program extends Test                                               
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  final class Bool                                                                                                      // An integer that can be passed as a parameter to a method and modified therein
-   {boolean    i = false;                                                                                               // Value of the integer
+  final class Bool                                                                                                      // A boolean value
+   {boolean    i = false;                                                                                               // Value of the boolean
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     final int id = program().nextBoolId++;                                                                              // Unique id for Bool
     String  name = null;                                                                                                // The name of the variable
@@ -633,7 +633,7 @@ public class Program extends Test                                               
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
-  final class Int                                                                                                       // An integer that can be passed as a parameter to a method and modified there-in
+  final class Int                                                                                                       // An integer value
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
