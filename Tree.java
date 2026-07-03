@@ -1823,6 +1823,7 @@ Leaf           size:   4, count:   2
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
       say(subPrint());
       testSummary();                                                                                                    // Summarize test results
+      coverageAnalysis(12);
       System.exit(testsFailed);
      }
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
