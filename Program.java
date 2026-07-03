@@ -13,10 +13,11 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                     appendTraceComments = !true;                                                        // Add trace comments to trace output - requires a lot of memory
-  final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
-  final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
-  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
+ {final  boolean                     appendTraceComments = !true;                                                       // Add trace comments to trace output - requires a lot of memory
+  final  boolean                         generateVerilog =  true;                                                       // Generate verilog version of each program
+  final  boolean                              runVerilog =  true;                                                       // Execute  verilog version of each program
+  final  boolean              includeNamesInInstructions = !true;                                                       // Include names in instructions
+  final  boolean                    compressInstructions =  true;                                                       // Compress out identical instructions
   public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
 
   static String                                testGroup = null;                                                        // Tests can be split into groups so that they can be run in parallel
@@ -575,7 +576,8 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this variable
      {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      return pad("b[lastBoolId+"+(id - f.boolId)+"]"+(name != null ? "/*"+name+"*/" : ""), 12);
+      final String n = includeNamesInInstructions ? (name != null ? "/*"+name+"*/" : "") : "";
+      return pad("b[lastBoolId+"+(id - f.boolId)+"]"+n, 12);
      }
 
     void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
@@ -918,7 +920,8 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this variable
      {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      return pad("i[lastIntId+"+(id - f.intId)+"]"+(name != null ? "/*"+name+"*/" : ""), 12);
+      final String n = includeNamesInInstructions ? (name != null ? "/*"+name+"*/" : "") : "";
+      return pad("i[lastIntId+"+(id - f.intId)+"]"+n, 12);
      }
 
     Int     say () {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                               // Say the integer
