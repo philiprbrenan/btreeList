@@ -254,7 +254,6 @@ final public class BitSet extends Program                                       
    }
 
   int       top_zero ()        {return 2 * bitSize - 2 + bitSize1;}                                                     // Top of the zeros tree if it exists - zero based
-  Int        topZero ()        {return new Int(top_zero());}                                                            //N Top of the zeros tree if it exists - zero based
   int        top_one ()        {return 2 * bitSize - 2;}                                                                // Top of the ones  tree if it exists - zero based
   Int         topOne ()        {return new Int(top_one());}                                                             // Top of the ones  tree if it exists - zero based
 
@@ -300,12 +299,12 @@ final public class BitSet extends Program                                       
     return p;
    }
 
-  void  posZeroArray ()                                                                                                  // Position in row from position in ones tree
+  void  posZeroArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_zero(); i <= N; ++i) posZero[i] = pos_zero(i);
     defineArrayViaVerilogFunction(pzVerilog, posZero);
    }
 
-  void   posOneArray ()                                                                                                   // Position in row from position in ones tree
+  void   posOneArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_one(); i <= N; ++i) posOne[i] = pos_one(i);
     defineArrayViaVerilogFunction(poVerilog, posOne);
    }
@@ -1324,7 +1323,7 @@ Zero:
 
     for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), b.new Bool(true));
 
-    b.topOne().ok(30); b.topZero().ok(45); b.baseOne() .ok(16); b.baseZero().ok(31);
+    b.topOne().ok(30); /*b.topZero().ok(45);*/ b.baseOne() .ok(16); b.baseZero().ok(31);
 
     b.childHighZero(b.new Int(45)).ok(44);
     b.childLowZero (b.new Int(45)).ok(43);
