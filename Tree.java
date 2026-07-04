@@ -2,8 +2,6 @@
 // Btree with stucks implemented as distributed slots
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Set all fields private that can be set private  etc.
-// Fix comments
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -20,7 +18,6 @@ class Tree extends Program                                                      
   final UnitMemory.Ref     refCount;                                                                                    // The number of keys in this tree
   final Build                 build;                                                                                    // Memory containing the tree base followed by the leaves and branches of the tree
   final int     linesToPrintABranch = 4;                                                                                // The number of lines required to print a branch
-  boolean           suppressMergeUp = false;                                                                            // Suppress merge up during development
   final UnitMemory        mergePath;                                                                                    // Memory for the steps taken along the merge path - each integer corresponds to the location of a branch in the path from the root to the leaf that should contain the key
   final UnitMemory     traverseNode;                                                                                    // Memory to hold outstanding branches and leaves during a traverse
   final UnitMemory   traverseAction;                                                                                    // Memory to hold requested action against each branch during a traverse
@@ -134,7 +131,6 @@ class Tree extends Program                                                      
 
   void free (Locatable Free)                                                                                            // Free a leaf or a branch and invalidate its contents
    {final Bint a = Free.getLocation();
-    //unitMemory.invalidate(nodeAddress(a.i()), sizeOfNode);                                                            // Invalidate the memory
     freeChain.set(a.i());
    }
 
@@ -211,7 +207,7 @@ class Tree extends Program                                                      
 
   Int  count ()    {return refCount.getInt();}                                                                          // Number of keys in tree
   void countInc () {refCount.putInt(count().inc());}                                                                    // Increment the key count
-  void countDec () {refCount.putInt(count().dec());}                                                                    // Increment the key count
+  void countDec () {refCount.putInt(count().dec());}                                                                    // Decrement the key count
 
   StringBuilder dumpTree ()                                                                                             // Dump the tree
    {subStart("Tree.dumpTree");
@@ -578,7 +574,7 @@ class Tree extends Program                                                      
        {r.insert(Key, Data);                                                                                            // Insert key in the right leaf
        }
      };
-    if (!suppressMergeUp) p.mergeUp();                                                                                  // Merge nodes on either side of the path going up from the leaf to towards the root
+    p.mergeUp();                                                                                                        // Merge nodes on either side of the path going up from the leaf to towards the root
     subFinish();
    }
 
