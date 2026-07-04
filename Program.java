@@ -2427,7 +2427,6 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    test_lastInstructionBase();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
