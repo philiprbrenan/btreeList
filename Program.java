@@ -13,11 +13,11 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                     appendTraceComments = !true;                                                       // Add trace comments to trace output - requires a lot of memory
-  final  boolean                         generateVerilog =  true;                                                       // Generate verilog version of each program
-  final  boolean                              runVerilog =  true;                                                       // Execute  verilog version of each program
-  final  boolean              includeNamesInInstructions = !true;                                                       // Include names in instructions
-  final  boolean                    compressInstructions =  true;                                                       // Compress out identical instructions
+ {final  boolean                    supressTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
+  final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
+  final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
+  final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
+  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
   public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
 
   static String                                testGroup = null;                                                        // Tests can be split into groups so that they can be run in parallel
@@ -550,7 +550,7 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this variable
      {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      final String n = includeNamesInInstructions ? (name != null ? "/*"+name+"*/" : "") : "";
+      final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
       return pad("b[lastBoolId+"+(id - f.boolId)+"]"+n, 12);
      }
 
@@ -876,7 +876,7 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this variable
      {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      final String n = includeNamesInInstructions ? (name != null ? "/*"+name+"*/" : "") : "";
+      final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
       return pad("i[lastIntId+"+(id - f.intId)+"]"+n, 12);
      }
 
@@ -1215,7 +1215,7 @@ public class Program extends Test                                               
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String      traceBack = appendTraceComments ?  traceBack() : null;                                            // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String      traceBack = supressTraceComments ?  null : traceBack();                                           // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
     final int         nextIntId = program().nextIntId;                                                                  // Record current position among the integers
     final int        nextBoolId = program().nextBoolId;                                                                 // Record current position among the booleans
@@ -1251,7 +1251,7 @@ public class Program extends Test                                               
 
     String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
     String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
-     {if (appendTraceComments)
+     {if (!supressTraceComments)
        {if (traceBack != null) return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";                                  // Appending trace comments makes the code easier to debug but inhibits code compression
         if (traceSub  != null) return "/*" + traceSub .replaceAll("\\n", ", ") + "*/";
        }
@@ -1412,7 +1412,7 @@ public class Program extends Test                                               
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
         final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
           new ExecCommand(f("cd %s; rm -f x; "+                                                                         // Execute Verilog code
-                            "iverilog -g2012 -o x %s.v && "+
+                            "iverilog -O2 -g2012 -o x %s.v && "+
 //                          "timeout 1m ./x",
                             "./x",
                             verilogTestFolder(), currentTestNameSuffix()));
