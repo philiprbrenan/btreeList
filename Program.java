@@ -1108,25 +1108,19 @@ public class Program extends Test                                               
       Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
       Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
 
-      UnitMemory memory () {return UnitMemory.this;}
-      Program       program () {return Program   .this;}
-
-      Ref       copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width); return this;}              // Copy the specified memory possibly from another byte memory
-      Ref      clear (int Width)            {m.clear     (offset, Width);                    return this;}              // Clear memory by setting its bytes to zero
-      Int    getInt  (Int I)                {return m.getInt (I.Add(offset));}                                          // Get the int at the indicated position
-      Bool   getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                        // Get the bit at the bit indexed location
-      Ref    putInt  (Int I, Int J)         {m.putInt (I.Add(offset), J);                    return this;}              // Set the int at the indicated position relative to the start to the specified value
-      Ref    putBool (Int I,        Bool K) {m.putBool(I.Add(offset.Mul(Integer.SIZE)), K);  return this;}              // Set the bit at the bit indexed position
-      int     getInt (int I)                {return m.getInt (I+offset.i());}                                           // Get an int immediately when debugging
-      Int     getInt ()
-       {final Int r = m.getInt(offset);                                                                                 // Get the referenced int
-        return r;
-       }
-      Ref     putInt (Int J)                {m.putInt (offset, J);                           return this;}              // Put the referenced int
-
+//      UnitMemory memory ()                                                              {return UnitMemory.this;}       // Memory that owns this memory ref
+//      Program program ()                                                                   {return Program.this;}       // Program that owns this memory
+      Ref        copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width);       return this;}       // Copy the specified memory possibly from another byte memory
+      Ref       clear (int Width)            {m.clear(offset, Width);                               return this;}       // Clear memory by setting its bytes to zero
+      Int      getInt (Int I)                {return m.getInt( I.Add(offset));}                                         // Get the int at the indicated position
+      Bool    getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
+      Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
+      Ref     putBool (Int I, Bool K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
+      int      getInt (int I)                {return m.getInt( I+offset.i());}                                          // Get an int immediately when debugging
+      Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
+      Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int
       boolean getBool (int I) {return getBit(unitMemory.getBitUnit(I / Integer.SIZE+offset.i()), I % Integer.SIZE);}    // Get the bit at the bit indexed location - debugging
-
-      Ref step (int Width) {return new Ref(offset.Add(Width));}                                                         // Step up from an existing ref to make a new one - only while not executing
+      Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
 
       public String toString ()                                                                                         // Print memory reference
        {final StringBuilder s = saySb("Ref: " , offset.i());
@@ -1412,7 +1406,7 @@ public class Program extends Test                                               
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
         final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
           new ExecCommand(f("cd %s; rm -f x; "+                                                                         // Execute Verilog code
-                            "iverilog -O2 -g2012 -o x %s.v && "+
+                            "iverilog -g2012 -o x %s.v && "+
 //                          "timeout 1m ./x",
                             "./x",
                             verilogTestFolder(), currentTestNameSuffix()));
@@ -2426,7 +2420,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_andOr();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
