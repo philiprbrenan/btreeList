@@ -124,12 +124,22 @@ public class Program extends Test                                               
    }
 
   FlowControl getFlowControlForInstructionBeingCompiled()                                                               // Get flow control for instruction being compiled
-   {final Integer k = program().flowControl.floorKey(program().compiling.instructionNumber);
+   {final TreeMap<Integer,FlowControl> F = program().flowControl;
+    final Integer k = F.floorKey(program().compiling.instructionNumber);
     if (k == null) stop("Unable to get flow control details while compiling");
-    final FlowControl f = program().flowControl.get(k);
-    if (f == null) stop("Unable to get flow control details for key:", k, "in:", program().flowControl);
+    final FlowControl f = F.get(k);
+    if (f == null) stop("Unable to get flow control details for key:", k, "in:", F);
     return f;
    }
+
+  FlowControl getFlowControlForLastInstruction()                                                                        // Get flow control for the last instruction compiled so far
+   {final TreeMap<Integer,FlowControl> F = program().flowControl;
+    final Integer k = F.lastKey();
+    if (k == null) stop("Unable to get flow control details of previous instruction");
+    final FlowControl f = F.get(k);
+    if (f == null) stop("Unable to get flow control details for key:", k, "in:", F);
+    return f;
+    }
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
@@ -421,7 +431,7 @@ public class Program extends Test                                               
 
     void S ()                                                                                                           // Load source delta
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final FlowControl f = program().getFlowControlForLastInstruction();
       final int i = f.boolId;
       final int d = id - i;                                                                                             // Delta from last set base for booleans
       new I()
@@ -432,7 +442,7 @@ public class Program extends Test                                               
 
     void T ()                                                                                                           // Load target delta
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final FlowControl f = program().getFlowControlForLastInstruction();
       final int i = f.intId;
       final int d = id - i;                                                                                             // Delta from last set base for booleans
       new I()
@@ -664,9 +674,9 @@ public class Program extends Test                                               
 
     void S ()                                                                                                           // Load source delta
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final FlowControl f = program().getFlowControlForLastInstruction();
       final int i = f.intId;
-      final int d = id - i;
+      final int d = nextIntId() - i;
       new I()
        {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
         String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "sourceDeltaIntId <= "+d+";";}
@@ -675,9 +685,9 @@ public class Program extends Test                                               
 
     void T ()                                                                                                           // Load target delta
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final FlowControl f = program().getFlowControlForLastInstruction();
       final int i = f.intId;
-      final int d = id - i;
+      final int d = nextIntId() - i;
       new I()
        {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
         String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "targetDeltaIntId <= "+d+";";}
