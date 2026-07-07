@@ -34,9 +34,7 @@ public class Program extends Test                                               
   public  I                                    executing = null;                                                        // Instruction currently being executed
   public  I                                    compiling = null;                                                        // Instruction currently being compiled
   private int                                  nextIntId = 0;                                                           // Unique id for each Int
-  private int                                  lastIntId = 0;                                                           // The base for integers in this flow of control block
   private int                                 nextBoolId = 0;                                                           // Unique id for each Bool
-  private int                                 lastBoolId = 0;                                                           // The base for booleans in this flow of control block
   private static int                            programs = 0;                                                           // Unique id for each program
   final   int                                  programId = ++programs;                                                  // Unique id for this program
   private int                                         pc;                                                               // Program counter indicating the instruction to be executed after the current one
@@ -412,16 +410,36 @@ public class Program extends Test                                               
     Bool        set ()             {return ie(Ops.set,  true); }                                                        // Boolean operations which modify the target
     Bool        set (boolean I)    {return ie(Ops.set,  I);    }
     Bool        set (Bool    I)    {return ie(Ops.set,  I);    }
-    Bool        set (Bint    I)    {return ie(Ops.set,  I.i());}
     Bool      clear ()             {return ie(Ops.set,  false);}
     Bool       flip ()             {return ie(Ops.flip);       }
     Bool       Flip ()             {return dup().flip();}
     Bool         ne (Bool    I)    {return ie(Ops.ne,  I);}
+                                                                                                                        // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
+    Bool ie (Ops Op)            {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}
+    Bool ie (Ops Op, boolean I) {T();        new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Bool ie (Ops Op, Bool    I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
 
-    Bool ie (Ops Op)            {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}          // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
-    Bool ie (Ops Op, boolean I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
-    Bool ie (Ops Op, Bool    I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
-    Bool ie (Ops Op, Int     I) {zz(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}          //N
+    void S ()                                                                                                           // Load source delta
+     {if (immediate()) return;
+      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final int i = f.boolId;
+      final int d = id - i;                                                                                             // Delta from last set base for booleans
+      new I()
+       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
+        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "sourceDeltaBoolId <= "+d+";";}
+       };
+     }
+
+    void T ()                                                                                                           // Load target delta
+     {if (immediate()) return;
+      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final int i = f.intId;
+      final int d = id - i;                                                                                             // Delta from last set base for booleans
+      new I()
+       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
+        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "targetDeltaBoolId <= "+d+";";}
+       };
+     }
 
     Bool ex (Ops Op)                                                                                                    // Execute a zeradic boolean operation
      {executingCheck();
@@ -623,7 +641,7 @@ public class Program extends Test                                               
     Int  set (Bint I) {return ie(Ops.set , I.i());}
     Int  add (int  I) {return ie(Ops.add , I);}
     Int  add (Int  I) {return ie(Ops.add , I);}
-    Int  add2(Int  I) {zz(); return ie(Ops.add2, I);}                                                                         //N
+    Int  add2(Int  I) {return ie(Ops.add2, I);}                                                                         //N
     Int  sub (int  I) {return ie(Ops.sub , I);}
     Int  sub (Int  I) {return ie(Ops.sub , I);}
     Int  mul (int  I) {return ie(Ops.mul , I);}
@@ -631,18 +649,40 @@ public class Program extends Test                                               
     Int  div (int  I) {return ie(Ops.div , I);}
     Int  div (Int  I) {return ie(Ops.div , I);}
     Int  mod (int  I) {return ie(Ops.mod , I);}
-    Int  mod (Int  I) {zz(); return ie(Ops.mod , I);}                                                                         //N
+    Int  mod (Int  I) {return ie(Ops.mod , I);}                                                                         //N
     Int  inc ()       {return ie(Ops.inc    );}
     Int  dec ()       {return ie(Ops.dec    );}
-    Int  up  ()       {zz(); return ie(Ops.up     );}                                                                         //N
+    Int  up  ()       {return ie(Ops.up     );}                                                                         //N
     Int  down()       {return ie(Ops.down   );}
-    Int  sqrt()       {zz(); return ie(Ops.sqrt   );}                                                                         //N
-    Int  neg ()       {zz(); return ie(Ops.neg    );}                                                                         //N
+    Int  sqrt()       {return ie(Ops.sqrt   );}                                                                         //N
+    Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
     Int  abs ()       {return ie(Ops.abs    );}
 
-    Int ie (Ops Op)        {new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}               // Execute immediately or create an instruction for machine code to execute later
-    Int ie (Ops Op, int I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
-    Int ie (Ops Op, Int I) {new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Int ie (Ops Op)        {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}   // Execute immediately or create an instruction for machine code to execute later
+    Int ie (Ops Op, int I) {T();        new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Int ie (Ops Op, Int I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+
+    void S ()                                                                                                           // Load source delta
+     {if (immediate()) return;
+      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final int i = f.intId;
+      final int d = id - i;
+      new I()
+       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
+        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "sourceDeltaIntId <= "+d+";";}
+       };
+     }
+
+    void T ()                                                                                                           // Load target delta
+     {if (immediate()) return;
+      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
+      final int i = f.intId;
+      final int d = id - i;
+      new I()
+       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
+        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "targetDeltaIntId <= "+d+";";}
+       };
+     }
 
     Int ex (Ops Op)                                                                                                     // Execute a zeradic integer operation
      {executingCheck();
@@ -1486,9 +1526,7 @@ public class Program extends Test                                               
     final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
 
     try
-     (final PrintWriter out = new PrintWriter(Files.newBufferedWriter(Path.of(codeFile),
-        StandardOpenOption.CREATE,
-        StandardOpenOption.TRUNCATE_EXISTING)))
+     (final PrintWriter out = new PrintWriter(codeFile))                                                                // Write the verilog to a file
      {//final StringBuilder   s = new StringBuilder();                                                                  // Verilog
     /*Module*/out.write(substitute("""
 module {name};                                                                                                          // Bit machine to support current test
@@ -1512,19 +1550,23 @@ module {name};                                                                  
        }
 
       /*Execution State Variables*/out.write(substitute("""
-  parameter    INT_VARS  = {numberOfInts};                                                                              // Number of integer variables
-  parameter    BOOL_VARS = {numberOfBools};                                                                             // Number of boolean variables
-  reg          clock;                                                                                                   // Clock for chip
-  reg          reset;                                                                                                   // Reset for chip
-  integer          c;                                                                                                   // Count of instructions executed
-  integer         pc;                                                                                                   // Program counter for stepping through user code
-  integer     lastPc;                                                                                                   // The instruction which started the latest flow of control block
-  integer      index;                                                                                                   // Index for clearing memory
-  integer  lastIntId;                                                                                                   // Base for integer references
-  integer lastBoolId;                                                                                                   // Base for boolean references
-  integer  traceFile;                                                                                                   // File to which trace messages will be written
-  integer          i[INT_VARS:0];                                                                                       // Integers
-  reg              b[BOOL_VARS:0];                                                                                      // Booleans
+  parameter        INT_VARS = {numberOfInts};                                                                           // Number of integer variables
+  parameter       BOOL_VARS = {numberOfBools};                                                                          // Number of boolean variables
+  reg                 clock;                                                                                            // Clock for chip
+  reg                 reset;                                                                                            // Reset for chip
+  integer                 c;                                                                                            // Count of instructions executed
+  integer                pc;                                                                                            // Program counter for stepping through user code
+  integer            lastPc;                                                                                            // The instruction which started the latest flow of control block
+  integer             index;                                                                                            // Index for clearing memory
+  integer         lastIntId;                                                                                            // Base for integer references
+  integer        lastBoolId;                                                                                            // Base for boolean references
+  integer sourceDeltaBoolId;                                                                                            // The delta for the target of the next boolean instruction.
+  integer targetDeltaBoolId;                                                                                            // The delta for the target of the next boolean instruction.
+  integer  sourceDeltaIntId;                                                                                            // The delta for the target of the next integer instruction.
+  integer  targetDeltaIntId;                                                                                            // The delta for the target of the next integer instruction.
+  integer         traceFile;                                                                                            // File to which trace messages will be written
+  integer                 i[INT_VARS:0];                                                                                // Integers
+  reg                     b[BOOL_VARS:0];                                                                               // Booleans
 
 """, "numberOfInts", ""+numberOfInts, "numberOfBools", ""+numberOfBools));
 
@@ -1543,12 +1585,16 @@ module {name};                                                                  
       state = state_clearInts;
 """);
 
-        /*Initialize*/out.write(substitute("""
-      index = 0;
-      c     = 0;
-      pc    = 0;
-      lastBoolId = 0;
-      lastIntId  = 0;
+      /*Initialize*/out.write(substitute("""
+      index             = 0;
+      c                 = 0;
+      pc                = 0;
+      lastBoolId        = 0;
+      lastIntId         = 0;
+      sourceDeltaBoolId = 0;
+      targetDeltaBoolId = 0;
+      sourceDeltaIntId  = 0;
+      targetDeltaIntId  = 0;
 
       traceFile = $fopen("{traceFile}", "w");                                                                           // Clear the trace file
       if (traceFile == 0) begin
@@ -1633,8 +1679,10 @@ module {name};                                                                  
 """);
 
       matchingInstructions.clear();                                                                                     // New base instructions
+
       for(I i : code) {program().compiling = i;           program().compiling.matchInstructions();}                     // Find the base instructions
       for(I i : code) {program().compiling = i; out.write(program().compiling.generateVerilog());}                      // Compile each instruction to Verilog
+
       if (true)                                                                                                         // Instruction reduction statistics
        {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
         say(f("Instruction reduction to: %4d, percent: %4d", m, p));
@@ -2421,7 +2469,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_andOr();
+    test_fibonacci();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
@@ -2439,4 +2487,4 @@ Memory 0
      }
    }
  }
-//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha package com.AppaApps.Silicon;
+//https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
