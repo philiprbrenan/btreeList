@@ -500,7 +500,7 @@ public class Program extends Test                                               
      {executingCheck();
       switch(Op)
        {case flip -> {x(); i = !i;}
-        default   -> stop("Op not implemented:", Op);
+        default   -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
       return this;
@@ -515,7 +515,7 @@ public class Program extends Test                                               
         case ne  -> {x(); i = i != I; }
         case and -> {x(); i = i && I; }
         case or  -> {x(); i = i || I; }
-        default  -> stop("Op not implemented:", Op);
+        default  -> Test.stop("Op not implemented:", Op);
        }
       v = true;
       jtrace();
@@ -531,7 +531,7 @@ public class Program extends Test                                               
      {executingCheck();
       switch(Op)
        {case set -> {I.x(); i = I.i > 0; v = true;}
-        default  -> stop("Op not implemented:", Op);
+        default  -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
       return this;
@@ -542,7 +542,7 @@ public class Program extends Test                                               
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case flip -> {s.append("!targetBool");}
-        default   -> stop("Op not implemented:", Op);
+        default   -> Test.stop("Op not implemented:", Op);
        }
       return vtrace(s);                                                                                                 // Trace the operation
      }
@@ -554,7 +554,9 @@ public class Program extends Test                                               
         case del -> {s.append(              "sourceBool");}
         case eq  -> {s.append("targetBool == sourceBool");}
         case ne  -> {s.append("targetBool != sourceBool");}
-        default  -> stop("Op not implemented:", Op);
+        case and -> {s.append("targetBool && sourceBool");}
+        case or  -> {s.append("targetBool || sourceBool");}
+        default  -> Test.stop("Op not implemented:", Op);
        }
       return vtrace(s);                                                                                                 // Trace the operation
      }
@@ -733,7 +735,7 @@ public class Program extends Test                                               
         case sqrt -> {i = (int)Math.sqrt(i); }
         case neg  -> {i = -i;                }
         case abs  -> {i = i < 0 ? -i : i;    }
-        default   -> stop("Op not implemented:", Op);
+        default   -> Test.stop("Op not implemented:", Op);
        }
 
       jtrace();
@@ -751,7 +753,7 @@ public class Program extends Test                                               
         case div  -> { x(); i /= I;     v = true;}
         case mod  -> { x(); i %= I;     v = true;}
         case add2 -> { x(); i += I + I; v = true;}
-        default   -> stop("Op not implemented:", Op);
+        default   -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
       return this;
@@ -774,7 +776,7 @@ public class Program extends Test                                               
         case sqrt -> {s.append("sqrt("+n+")");}
         case neg  -> {s.append("-"+n        );}
         case abs  -> {s.append("(("+n+" < 0) ? -"+n+" : "+n+")");}
-        default   -> stop("Op not implemented:", Op);
+        default   -> Test.stop("Op not implemented:", Op);
        }
       return vtrace(s);
      }
@@ -791,7 +793,7 @@ public class Program extends Test                                               
         case div  -> {s.append(n+" / "+I);}
         case mod  -> {s.append(n+" % "+I);}
         case add2 -> {s.append(n+" + "+I+" + "+I);}
-        default   -> stop("Op not implemented:", Op);
+        default   -> Test.stop("Op not implemented:", Op);
        }
       return vtrace(s);
      }
@@ -807,7 +809,7 @@ public class Program extends Test                                               
         case div  -> {s.append(n+" / "+i);}
         case mod  -> {s.append(n+" % "+i);}
         case add2 -> {s.append(n+" + "+i+" + "+i);}
-        default   -> stop("Op not implemented:", Op);
+        default   -> Test.stop("Op not implemented:", Op);
        }
       return vtrace(s);
      }
@@ -880,7 +882,7 @@ public class Program extends Test                                               
         case lt -> B.ex(Bool.Ops.set, i <  I);
         case ge -> B.ex(Bool.Ops.set, i >= I);
         case gt -> B.ex(Bool.Ops.set, i >  I);
-        default  -> stop("Op not implemented:", Op);
+        default  -> Test.stop("Op not implemented:", Op);
        }
      }
 
@@ -896,7 +898,7 @@ public class Program extends Test                                               
         case lt -> s.append(n + " <  "+I);
         case ge -> s.append(n + " >= "+I);
         case gt -> s.append(n + " >  "+I);
-        default  -> stop("Op not implemented:", Op);
+        default  -> Test.stop("Op not implemented:", Op);
        }
       return B.vtrace(s);
      }
@@ -911,7 +913,7 @@ public class Program extends Test                                               
         case lt -> s.append(n + " <  "+i);
         case ge -> s.append(n + " >= "+i);
         case gt -> s.append(n + " >  "+i);
-        default  -> stop("Op not implemented:", Op);
+        default  -> Test.stop("Op not implemented:", Op);
        }
       return B.vtrace(s);
      }
@@ -1725,15 +1727,7 @@ module {name};                                                                  
 
       matchingInstructions.clear();                                                                                     // New base instructions
 
-      for(I i : code) {
-
-say("AAAA1111", code.size());
-        program().compiling = i;
-say("AAAA2222", code.size());
-               i.matchInstructions();
-say("AAAA3333", code.size());
-
-               }                                       // Find the base instructions
+      for(I i : code) {program().compiling = i;           i.matchInstructions();}                                       // Find the base instructions
       for(I i : code) {program().compiling = i; out.write(i.generateVerilog());}                                        // Compile each instruction to Verilog
 
       if (true)                                                                                                         // Instruction reduction statistics
@@ -2497,7 +2491,7 @@ Memory 0
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {///test_programming();
+   {test_programming();
     test_andOr();
     test_add();
     test_fibonacci();
