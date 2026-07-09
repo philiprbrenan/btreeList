@@ -13,7 +13,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                    supressTraceComments = true;                                                        // Add trace comments to trace output - requires a lot of memory
+ {final  boolean                    supressTraceComments = !true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
@@ -48,9 +48,27 @@ public class Program extends Test                                               
   final static TreeMap<String,Stack<I>> matchingInstructions = new TreeMap<>();                                         // Combine instruction with identical verilog text
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
-  final TreeMap<Integer,FlowControl>         flowControl = new TreeMap<>();                                             // Instruction number to first instruction (the base instruction) in a flow control block
+        FlowControl                      lastFlowControl;                                                               // Variables at last flow control block entry
         int                                       jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
         int                                       vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
+        int                                    lastIntId = 0;                                                           // Current base index for references to integers
+        int                             sourceDeltaIntId = 0;                                                           // Delta for completing a reference to an integer source operand
+        int                             targetDeltaIntId = 0;                                                           // Delta for completing a reference to an integer target operand
+        int                                   lastBoolId = 0;                                                           // Current base index for references to booleans
+        int                            sourceDeltaBoolId = 0;                                                           // Delta for completing a reference to a boolean source operand
+        int                            targetDeltaBoolId = 0;                                                           // Delta for completing a reference to a boolean target operand
+        int                                    sourceInt = 0;                                                           // Source value for an integer operation obtained from a variable
+        int                                   sourceBool = 0;                                                           // Source value for a boolean  operation obtained from a variable
+        int                                    targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
+        int                                   targetBool = 0;                                                           // Computed target boolean value to be loaded into a variable
+        boolean                                 readBool = false;                                                       // Boolean read from memory
+        int                                readBoolIndex = 0;                                                           // Index at which to read boolean from memory
+        boolean                                writeBool = false;                                                       // Boolean to write into memory
+        int                               writeBoolIndex = 0;                                                           // Index at which to write boolean to memory
+        int                                      readInt = 0;                                                           // Integer read integer from memory
+        int                                 readIntIndex = 0;                                                           // Index at which to read integer from memory
+        int                                     writeInt = 0;                                                           // Integer to write into memory
+        int                                writeIntIndex = 0;                                                           // Index at which to write integer into memory
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -64,10 +82,10 @@ public class Program extends Test                                               
    }
 
   Program (Build Build)                                                                                                 // Construct
-   {immediate     = Build.immediate;                                                                                    // Immediate or delayed execution
-    parentProgram = Build.parent == null ? this : Build.parent;                                                         // Parent program that will contain the code
-    new FlowControl();                                                                                                  // Initialize flow control
-    unitMemory    = Build.size   != null ? new UnitMemory(Build.size) : null;                                           // Memory associated with program if any
+   {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
+    parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
+    lastFlowControl = new FlowControl();                                                                                // Variables at last flow control block entry
+    unitMemory      = Build.size   != null ? new UnitMemory(Build.size) : null;                                         // Memory associated with program if any
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
     deleteAllFiles(verilogTestFolder(), 9);                                                                             // Delete generated Verilog files created by a prior run of the current test
     code();                                                                                                             // Load or execute the code associated with this program
@@ -94,20 +112,27 @@ public class Program extends Test                                               
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
 //D2 Flow control                                                                                                       // Flow  control identifies each section of code that could be jumped into so that references to a variable can be coded as a small constant offset from a variable base to increase the probability that instructions will have the same verilog allowing identical such instructions to be compressed out
+// Hopefully this can be replaced by recording these details in the anonymous instruction class derived from I
 
   void insertFlowControl()                                                                                              // The integer and boolean base at the entry to a flow of control block
    {new FlowControl();                                                                                                  // Record the current position in the integer and boolean variables
 
     new I()                                                                                                             // Instruction to mark the start of a flow of control block
-     {void     a()                                                                                                      // Only a trace record is needed in Java as variables are addressed via references
-       {jTrace(f("%8d InsertLastBaseInstruction: %s\n", program().currentPc, instructionLocationAsComment()));
+     {final int ni = nextIntId, nb = nextBoolId;
+      void     a()                                                                                                      // Only a trace record is needed in Java as variables are addressed via references
+       {lastIntId = ni; lastBoolId = nb;
+         jTrace(f("%8d InsertLastBaseInstruction: [%8d,%8d] %s", program().currentPc, ni, nb, instructionLocationAsComment()));
        }
       String   v()                                                                                                      // Set the current base for integers and booleans so that they can be applied symbolically in instructions just like a base register in S/360. The verilog code generated inline at different points in the program by the same java code will tend to have the same references patterns to variables resulting in more opportunities to identify instructions whose code is identical and can thus be compressed out by making multiple references to the lowest instruction with this code.
-       {final FlowControl f = getFlowControlForInstructionBeingCompiled();                                              // Flow control details for this flow control instruction
-
-        return "lastIntId <= "+f.intId+"; lastBoolId <= "+f.boolId+";"+
-          vTrace("%8d InsertLastBaseInstruction: "+instructionLocationAsComment(), "pc");
+       {return "lastIntId <= "+ni+"; lastBoolId <= "+nb+";"+
+          vTrace("%8d InsertLastBaseInstruction: [%8d,%8d] "+instructionLocationAsComment(), "pc", ""+ni, ""+nb);
        }
+//    String   v()                                                                                                      // Set the current base for integers and booleans so that they can be applied symbolically in instructions just like a base register in S/360. The verilog code generated inline at different points in the program by the same java code will tend to have the same references patterns to variables resulting in more opportunities to identify instructions whose code is identical and can thus be compressed out by making multiple references to the lowest instruction with this code.
+//     {final FlowControl f = getFlowControlForInstructionBeingCompiled();                                              // Flow control details for this flow control instruction
+//
+//      return "lastIntId <= "+f.intId+"; lastBoolId <= "+f.boolId+";"+
+//        vTrace("%8d InsertLastBaseInstruction: "+instructionLocationAsComment(), "pc");
+//     }
       int traces() {return 1;}
      };
    }
@@ -119,27 +144,9 @@ public class Program extends Test                                               
      {final Program p = program();
       boolId = p.nextBoolId;                                                                                            // Base of boolean variables
       intId  = p.nextIntId ;                                                                                            // Base of integer variables
-      flowControl.put(p.codeSize(), this);                                                                              // Map location of flow control instruction to position in integer and boolean variables
+      lastFlowControl = this;                                                                                           // Record state of flow control
      }
    }
-
-  FlowControl getFlowControlForInstructionBeingCompiled()                                                               // Get flow control for instruction being compiled
-   {final TreeMap<Integer,FlowControl> F = program().flowControl;
-    final Integer k = F.floorKey(program().compiling.instructionNumber);
-    if (k == null) stop("Unable to get flow control details while compiling");
-    final FlowControl f = F.get(k);
-    if (f == null) stop("Unable to get flow control details for key:", k, "in:", F);
-    return f;
-   }
-
-  FlowControl getFlowControlForLastInstruction()                                                                        // Get flow control for the last instruction compiled so far
-   {final TreeMap<Integer,FlowControl> F = program().flowControl;
-    final Integer k = F.lastKey();
-    if (k == null) stop("Unable to get flow control details of previous instruction");
-    final FlowControl f = F.get(k);
-    if (f == null) stop("Unable to get flow control details for key:", k, "in:", F);
-    return f;
-    }
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
@@ -407,11 +414,11 @@ public class Program extends Test                                               
     final int id = program().nextBoolId++;                                                                              // Unique id for Bool
     String  name = null;                                                                                                // The name of the variable
 
-    enum Ops {and, eq, flip, ne, or, set};                                                                              // Boolean operation classification by argument types
+    enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
 
     Bool (String Name)             {this();  name = Name;}                                                              // Constructors with name supplied
 
-    Bool ()                        {ai(); invalidate();   bools.push(this);}                                            // Constructors
+    Bool ()                        {ai(); del(false);     bools.push(this);}                                            // Constructors. Set newly constructed integers to invalid and minus one
     Bool (boolean I)               {ai(); ie(Ops.set, I); bools.push(this);}
     Bool (Bool    I)               {ai(); ie(Ops.set, I); bools.push(this);}
     boolean       b ()             {x(); return i;}
@@ -421,37 +428,75 @@ public class Program extends Test                                               
     Bool        set (boolean I)    {return ie(Ops.set,  I);    }
     Bool        set (Bool    I)    {return ie(Ops.set,  I);    }
     Bool      clear ()             {return ie(Ops.set,  false);}
+    Bool        del (boolean I)    {return ie(Ops.del,  I);    }
     Bool       flip ()             {return ie(Ops.flip);       }
     Bool       Flip ()             {return dup().flip();}
     Bool         ne (Bool    I)    {return ie(Ops.ne,  I);}
+    Bool         or (Bool    I)    {return ie(Ops.or,  I);}                                                             // "Or" without short circuit. Modifies the target.
+    Bool        and (Bool    I)    {return ie(Ops.and, I);}                                                             // "And" without short circuit. Modifies the target.
+    Bool         Or (Bool    I)    {return dup().or (I);}                                                               // "Or" without short circuit. Does not modify the target
+    Bool        And (Bool    I)    {return dup().and(I);}                                                               // "And" without short circuit. Does not modify the target
+    Bool        dup ()             {return new Bool(this);}                                                             // Duplicate a boolean so that the duplicated version can be modified without modifying the original
                                                                                                                         // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
-    Bool ie (Ops Op)            {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}
-    Bool ie (Ops Op, boolean I) {T();        new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
-    Bool ie (Ops Op, Bool    I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Bool ie (Ops Op)            {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op);}}; W(); return this;}
+    Bool ie (Ops Op, boolean I) {T(); S(I);  new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
+    Bool ie (Ops Op, Bool    I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
 
-    void S ()                                                                                                           // Load source delta
+    void S ()                                                                                                           // Load source delta and value
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForLastInstruction();
-      final int i = f.boolId;
-      final int d = id - i;                                                                                             // Delta from last set base for booleans
-      new I()
-       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
-        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "sourceDeltaBoolId <= "+d+";";}
+      final Bool        b = this;
+      final FlowControl f = lastFlowControl;
+      final int         i = f.boolId;
+      final int         d = id - i;
+      new I()                                                                                                           // Load source delta
+       {void   a() {        sourceDeltaBoolId  =   d;     jTrace(f("%8d sdb %6d = %8d + %8d", program().currentPc, id, i, d));}
+        String v() {return "sourceDeltaBoolId <= "+d+"; "+vTrace(  "%8d sdb %6d = %8d + %8d", "pc", ""+id, ""+i, ""+d);}
+       };
+      new I()                                                                                                           // Load source value
+       {void   a() {                                                         jTrace(f("%8d sb %7d", program().currentPc, b.i ? 1 : 0));}
+        String v() {return "sourceBool <= b[lastBoolId+sourceDeltaBoolId]; "+vTrace(  "%8d sb %7d", "pc", "b[lastBoolId+sourceDeltaBoolId]");}
        };
      }
 
-    void T ()                                                                                                           // Load target delta
+    void S (boolean I)                                                                                                  // Load source constant
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForLastInstruction();
-      final int i = f.intId;
-      final int d = id - i;                                                                                             // Delta from last set base for booleans
+      final int         v = I ? 1 : 0;
+      final FlowControl f = lastFlowControl;
       new I()
-       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
-        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "targetDeltaBoolId <= "+d+";";}
+       {void   a() {                               jTrace(f("%8d sbc %6d", program().currentPc, v));}
+        String v() {return "sourceBool <= "+v+"; "+vTrace(  "%8d sbc %6d", "pc", ""+v);}
        };
      }
 
-    Bool ex (Ops Op)                                                                                                    // Execute a zeradic boolean operation
+    void T ()                                                                                                           // Load target delta and value
+     {if (immediate()) return;
+      final Bool        b = this;
+      final FlowControl f = lastFlowControl;
+      final int         i = f.boolId;
+      final int         d = id - i;
+      new I()                                                                                                           // Load delta
+       {void   a() {        targetDeltaBoolId   =  d;     jTrace(f("%8d tbd %6d = %8d + %8d", program().currentPc, id, i, d));}
+        String v() {return "targetDeltaBoolId <= "+d+"; "+vTrace(  "%8d tbd %6d = %8d + %8d", "pc", ""+id, ""+i, ""+d);}
+       };
+      new I()                                                                                                           // Load value
+       {void   a() {                                                         jTrace(f("%8d tb %7d", program().currentPc, b.i ? 1 : 0));}
+        String v() {return "targetBool <= b[lastBoolId+targetDeltaBoolId]; "+vTrace(  "%8d tb %7d", "pc", "b[lastBoolId+targetDeltaBoolId]");}
+       };
+     }
+
+    void W ()                                                                                                           // Write result back into variable
+     {if (immediate()) return;
+      final Bool        b = this;
+      final FlowControl f = lastFlowControl;
+      final int         i = f.boolId;
+      final int         d = id - i;
+      new I()                                                                                                           // Load value
+       {void   a() {                                                         jTrace(f("%8d wb %7d", program().currentPc, b.i ? 1 : 0));}
+        String v() {return "b[lastBoolId+targetDeltaBoolId] <= targetBool; "+vTrace(  "%8d wb %7d", "pc", "targetBool");}
+       };
+     }
+
+    Bool ex (Ops Op)                                                                                                    // Execute a monadic boolean operation
      {executingCheck();
       switch(Op)
        {case flip -> {x(); i = !i;}
@@ -461,12 +506,15 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool ex (Ops Op, boolean I)                                                                                         // Execute a monadic boolean operation on a constant
+    Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
      {executingCheck();
       switch (Op)
        {case set -> {i  = I;          }
+        case del -> {i  = I; v = false;}
         case eq  -> {x(); i = i == I; }
         case ne  -> {x(); i = i != I; }
+        case and -> {x(); i = i && I; }
+        case or  -> {x(); i = i || I; }
         default  -> stop("Op not implemented:", Op);
        }
       v = true;
@@ -474,12 +522,12 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool ex (Ops Op, Bool I)                                                                                            // Execute a monadic boolean operation on a variable
+    Bool ex (Ops Op, Bool I)                                                                                            // Execute a dyadic boolean operation on a variable
      {executingCheck();
       I.x(); return ex(Op, I.i);
      }
 
-    Bool ex (Ops Op, Int I)                                                                                             // Execute a monadic boolean operation on an integer variable
+    Bool ex (Ops Op, Int I)                                                                                             // Execute a dyadic boolean operation on an integer variable
      {executingCheck();
       switch(Op)
        {case set -> {I.x(); i = I.i > 0; v = true;}
@@ -493,82 +541,32 @@ public class Program extends Test                                               
      {final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
-       {case flip -> {s.append("!"+n);}
+       {case flip -> {s.append("!targetBool");}
         default   -> stop("Op not implemented:", Op);
        }
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String ev (Ops Op, boolean I)                                                                                       // Execute a monadic boolean operation on a constant
-     {final String        n = vn();                                                                                     // Name of the variable in Verilog
-      final StringBuilder s = new StringBuilder();
+    String eV (Ops Op)                                                                                                  // Execute a monadic boolean operation on a constant
+     {final StringBuilder s = new StringBuilder();
       switch (Op)
-       {case set -> {s.append(              (I ? 1 : 0));}
-        case eq  -> {s.append(n + "  == " + (I ? 1 : 0));}
-        case ne  -> {s.append(n + "  != " + (I ? 1 : 0));}
+       {case set -> {s.append(              "sourceBool");}
+        case del -> {s.append(              "sourceBool");}
+        case eq  -> {s.append("targetBool == sourceBool");}
+        case ne  -> {s.append("targetBool != sourceBool");}
         default  -> stop("Op not implemented:", Op);
        }
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String ev (Ops Op, Bool I)                                                                                          // Execute a monadic boolean operation on a variable
-     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in Verilog
-      final StringBuilder s = new StringBuilder();
-      switch (Op)
-       {case set -> {s.append(i);}
-        case eq  -> {s.append(n + "  == " + i);}
-        case ne  -> {s.append(n + "  != " + i);}
-        default  -> stop("Op not implemented:", Op);
-       }
-      return vtrace(s);                                                                                                 // Trace the operation
-     }
+    void jtrace () {jTrace(f("%8d b= %7d", program().currentPc, (i ? 1 : 0)));}                                         // Trace a java    boolean operation
 
-    String ev (Ops Op, Int I)                                                                                           // Execute a monadic boolean operation on an integer variable
-     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in Verilog
-      final StringBuilder s = new StringBuilder();
-      switch (Op)
-       {case set -> {s.append(i + "!= 0");}
-        default  -> stop("Op not implemented:", Op);
-       }
-      return vtrace(s);                                                                                                 // Trace the operation
-     }
-
-    String vtrace (String Value)                                                                                        // Trace a boolean operation
+    String vtrace (String Value)                                                                                        // Trace a verilog boolean operation
      {vtraceInc();
-      final FlowControl f = getFlowControlForInstructionBeingCompiled();
-      final int         i = f.boolId;
-      return vn()+" <= traceBool("+(id - i)+", "+Value+");";
+      return "targetBool <= "+Value+"; $fdisplay(traceFile, \"%8d b= %7d\", pc, "+Value+");";
      }
 
     String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace a boolean operation
-
-    Bool or (Bool b)                                                                                                    // "Or" without short circuit. Modifies the target.
-     {new I()
-       {void   a() {x(); b.x(); if (b.i) i = true; jtrace();}
-        String v() {return vtrace(vn()+" || "+b.vn());}
-       };
-      return this;
-     }
-
-    Bool and (Bool b)                                                                                                   // "And" without short circuit. Modifies the target.
-     {new I()
-       {void   a() {x(); b.x(); if (!b.i) i = false; jtrace();}
-        String v() {return vtrace(vn()+" && "+b.vn());}
-       };
-      return this;
-     }
-
-    Bool Or ( Bool b) {return dup().or(b);}                                                                             // "Or" without short circuit. Does not modify the target
-    Bool And (Bool b) {return dup().and(b);}                                                                            // "And" without short circuit. Does not modify the target
-    Bool dup ()       {return new Bool(this);}                                                                          // Duplicate a boolean so that the duplicated version can be modified without modifying the original
-
-    private Bool invalidate ()                                                                                          // Invalidate the boolean
-     {new I()
-       {void   a() {       ex(Ops.set, false);}
-        String v() {return ev(Ops.set, false);}
-       };
-     return this;
-     }
 
     public String toString ()                                                                                           // Print the boolean
      {final String u = "undefined_Bool";
@@ -576,10 +574,9 @@ public class Program extends Test                                               
       else              return v ? name+"="+i : u+": "+name;
      }
 
-    String   vn ()                                                                                                      // Verilog name of this variable
-     {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
-      return pad("b[lastBoolId+"+(id - f.boolId)+"]"+n, 12);
+    String   vn ()                                                                                                      // Verilog name of this boolean variable
+     {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
+      return pad("b["+id+"]"+n, 12);
      }
 
     void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
@@ -595,8 +592,6 @@ public class Program extends Test                                               
      }
 
     Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    // Say the boolean
-
-    void jtrace () {jTrace(f("%8d b %8d = %8d\n", program().currentPc, id, (i ? 1 : 0)));}                              // Trace the boolean  operation by appending an entry to the java trace file
 
     Bool ok (boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace
      {final  Bool got = this;
@@ -639,11 +634,12 @@ public class Program extends Test                                               
     Int (String Name, int I) {this(I); name = Name;}
     Int (String Name, Int I) {this(I); name = Name;}
 
-    Int ()           {ai(); invalidate();   ints.push(this);}                                                           // Constructors without names
+    Int ()           {ai(); del(-1);   ints.push(this);}                                                                // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+
     Int (int I)      {ai(); ie(Ops.set, I); ints.push(this);}
     Int (Int I)      {ai(); ie(Ops.set, I); ints.push(this);}
                                                                                                                         // Possible integer operations
-    enum Ops {abs, add, add2, dec, div, down, eq, ge, gt, inc, le, lt,
+    enum Ops {abs, add, add2, dec, del, div, down, eq, ge, gt, inc, le, lt,
        mod, mul, neg, ne, set, sqrt, sub, up};
 
     Int  set (int  I) {return ie(Ops.set , I);}
@@ -667,30 +663,62 @@ public class Program extends Test                                               
     Int  sqrt()       {return ie(Ops.sqrt   );}                                                                         //N
     Int  neg ()       {return ie(Ops.neg    );}                                                                         //N
     Int  abs ()       {return ie(Ops.abs    );}
+    Int  del (int  I) {return ie(Ops.del , I);}
 
-    Int ie (Ops Op)        {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; return this;}   // Execute immediately or create an instruction for machine code to execute later
-    Int ie (Ops Op, int I) {T();        new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
-    Int ie (Ops Op, Int I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; return this;}
+    Int ie (Ops Op)        {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; W(); return this;} // Execute immediately or create an instruction for machine code to execute later
+    Int ie (Ops Op, int I) {T(); S(I);  new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
+    Int ie (Ops Op, Int I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
 
-    void S ()                                                                                                           // Load source delta
+    void S ()                                                                                                           // Load source delta and value
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForLastInstruction();
-      final int i = f.intId;
-      final int d = nextIntId() - i;
-      new I()
-       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
-        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "sourceDeltaIntId <= "+d+";";}
+      final Int         b = this;
+      final FlowControl f = lastFlowControl;
+      final int         i = f.intId;
+      final int         d = id - i;
+      new I()                                                                                                           // Load source delta
+       {void   a() {        sourceDeltaIntId  =   d;    jTrace(f("%8d sdi %6d = %8d + %8d", program().currentPc, id, i, d));}
+        String v() {return "sourceDeltaIntId <= "+d+"; "+vTrace(  "%8d sdi %6d = %8d + %8d", "pc", ""+id, ""+i, ""+d);}
+       };
+      new I()                                                                                                           // Load source value
+       {void   a() {                                                      jTrace(f("%8d si %7d", program().currentPc, b.i));}
+        String v() {return "sourceInt <= i[lastIntId+sourceDeltaIntId]; "+vTrace(  "%8d si %7d", "pc", "i[lastIntId+sourceDeltaIntId]");}
        };
      }
 
-    void T ()                                                                                                           // Load target delta
+    void S (int I)                                                                                                      // Load source constant
      {if (immediate()) return;
-      final FlowControl f = program().getFlowControlForLastInstruction();
-      final int i = f.intId;
-      final int d = nextIntId() - i;
+      final FlowControl f = lastFlowControl;
       new I()
-       {void   a() {jTrace(f("%8d db %8d = $8d + %8d\n",  program().currentPc, id, i, d));}
-        String v() {vTrace(  "%8d db %8d = $8d + %8d\n",  "pc", ""+id, ""+i, ""+d); return "targetDeltaIntId <= "+d+";";}
+       {void   a() {                              jTrace(f("%8d sic %6d", program().currentPc, I));}
+        String v() {return "sourceInt <= "+I+"; "+vTrace(  "%8d sic %6d", "pc", ""+I);}
+       };
+     }
+
+    void T ()                                                                                                           // Load target delta and value
+     {if (immediate()) return;
+      final Int         b = this;
+      final FlowControl f = lastFlowControl;
+      final int         i = f.intId;
+      final int         d = id - i;
+      new I()                                                                                                           // Load delta
+       {void   a() {        targetDeltaIntId  =   d;     jTrace(f("%8d tid %6d = %8d + %8d", program().currentPc, id, i, d));}
+        String v() {return "targetDeltaIntId <= "+d+"; "+vTrace(  "%8d tid %6d = %8d + %8d", "pc", ""+id, ""+i, ""+d);}
+       };
+      new I()                                                                                                           // Load value
+       {void   a() {                                                      jTrace(f("%8d ti %7d", program().currentPc, b.i));}
+        String v() {return "targetInt <= i[lastIntId+targetDeltaIntId]; "+vTrace(  "%8d ti %7d", "pc", "i[lastIntId+targetDeltaIntId]");}
+       };
+     }
+
+    void W ()                                                                                                           // Write result back into variable
+     {if (immediate()) return;
+      final Int         b = this;
+      final FlowControl f = lastFlowControl;
+      final int         i = f.intId;
+      final int         d = id - i;
+      new I()                                                                                                           // Load value
+       {void   a() {                                                      jTrace(f("%8d wi %7d", program().currentPc, b.i));}
+        String v() {return "i[lastIntId+targetDeltaIntId] <= targetInt; "+vTrace(  "%8d wi %7d", "pc", "targetInt");}
        };
      }
 
@@ -715,16 +743,16 @@ public class Program extends Test                                               
     Int ex (Ops Op, int I)                                                                                              // Execute a monadic integer operation on a constant
      {executingCheck();
       switch (Op)
-       {case set  -> {      i  = I;}
-        case add  -> { x(); i += I;}
-        case sub  -> { x(); i -= I;}
-        case mul  -> { x(); i *= I;}
-        case div  -> { x(); i /= I;}
-        case mod  -> { x(); i %= I;}
-        case add2 -> { x(); i += I + I;}
+       {case set  -> {      i  = I;     v = true;}
+        case del  -> {      i  = I;     v = false;}
+        case add  -> { x(); i += I;     v = true;}
+        case sub  -> { x(); i -= I;     v = true;}
+        case mul  -> { x(); i *= I;     v = true;}
+        case div  -> { x(); i /= I;     v = true;}
+        case mod  -> { x(); i %= I;     v = true;}
+        case add2 -> { x(); i += I + I; v = true;}
         default   -> stop("Op not implemented:", Op);
        }
-      v = true;
       jtrace();
       return this;
      }
@@ -736,7 +764,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op)                                                                                                  // Execute a zeradic integer operation in Verilog
-     {final String        n = vn();                                                                                     // Name of the variable in Verilog
+     {final String        n = "targetInt";                                                                              // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
        {case inc  -> {s.append(n+" + 1"     );}
@@ -752,10 +780,11 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, int I)                                                                                           // Execute a monadic integer operation on a constant
-     {final String        n = vn();                                                                                     // Name of the variable in Verilog
+     {final String        n = "targetInt";                                                                              // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        I);}
+        case del  -> {s.append(        I);}
         case add  -> {s.append(n+" + "+I);}
         case sub  -> {s.append(n+" - "+I);}
         case mul  -> {s.append(n+" * "+I);}
@@ -768,7 +797,7 @@ public class Program extends Test                                               
      }
 
     String ev (Ops Op, Int I)                                                                                           // Execute a monadic integer operation on a variable
-     {final String        n = vn(), i = I.vn();                                                                         // Name of the variable in Verilog
+     {final String        n = "targetInt", i = "sourceInt";                                                             // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set  -> {s.append(        i);}
@@ -783,46 +812,45 @@ public class Program extends Test                                               
       return vtrace(s);
      }
 
+    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace an integer operation
     String vtrace (String Value)                                                                                        // Trace an integer operation
      {vtraceInc();
-      final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      final int         i = f.intId;
-      return vn()+" <= traceInt ("+(id - i)+", "+Value+");";
+      return "traceInt ("+Value+");";
      }
 
-    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace an integer operation
+    void jtrace () {jTrace(f("%8d i[%8d,%10d]= %8d",  program().currentPc, lastIntId, targetDeltaIntId, i));}           // Trace the integer operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
-    Int  Add2(Int I) {zz(); return dup().add2(I);}                                                                            //N
+    Int  Add2(Int I) {return dup().add2(I);}                                                                            //N
     Int  Sub (int I) {return dup().sub(I) ;}
     Int  Sub (Int I) {return dup().sub(I) ;}
     Int  Mul (int I) {return dup().mul(I) ;}
     Int  Mul (Int I) {return dup().mul(I) ;}
     Int  Div (int I) {return dup().div(I) ;}
-    Int  Div (Int I) {zz(); return dup().div(I) ;}                                                                            //N
+    Int  Div (Int I) {return dup().div(I) ;}                                                                            //N
     Int  Mod (int I) {return dup().mod(I) ;}
-    Int  Mod (Int I) {zz(); return dup().mod(I) ;}                                                                            //N
+    Int  Mod (Int I) {return dup().mod(I) ;}                                                                            //N
     Int  Inc ()      {return dup().add(1) ;}
     Int  Dec ()      {return dup().sub(1) ;}
-    Int  Up  ()      {zz(); return dup().up()   ;}                                                                            //N
+    Int  Up  ()      {return dup().up()   ;}                                                                            //N
     Int  Down()      {return dup().down() ;}
-    Int  Sqrt()      {zz(); return dup().sqrt() ;}                                                                            //N
-    Int  Neg ()      {zz(); return dup().neg()  ;}                                                                            //N
-    Int  Abs ()      {zz(); return dup().abs()  ;}                                                                            //N
+    Int  Sqrt()      {return dup().sqrt() ;}                                                                            //N
+    Int  Neg ()      {return dup().neg()  ;}                                                                            //N
+    Int  Abs ()      {return dup().abs()  ;}                                                                            //N
 
     Bool eq ( int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a constant integer
-    Bool ne ( int I) {zz(); return bie(Ops.ne, I);}                                                                           //N
+    Bool ne ( int I) {return bie(Ops.ne, I);}                                                                           //N
     Bool le ( int I) {return bie(Ops.le, I);}
     Bool lt ( int I) {return bie(Ops.lt, I);}
     Bool ge ( int I) {return bie(Ops.ge, I);}
     Bool gt ( int I) {return bie(Ops.gt, I);}
 
     Bool eq ( Int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a variable integer
-    Bool ne ( Int I) {zz(); return bie(Ops.ne, I);}                                                                           //N
+    Bool ne ( Int I) {return bie(Ops.ne, I);}                                                                           //N
     Bool le ( Int I) {return bie(Ops.le, I);}
     Bool lt ( Int I) {return bie(Ops.lt, I);}
-    Bool ge ( Int I) {zz(); return bie(Ops.ge, I);}                                                                           //N
+    Bool ge ( Int I) {return bie(Ops.ge, I);}                                                                           //N
     Bool gt ( Int I) {return bie(Ops.gt, I);}
 
     Bool bie (Ops Op, int I)                                                                                            // Instruction to perform a boolean comparison between an integer variable and an integer constant
@@ -902,14 +930,6 @@ public class Program extends Test                                               
       return b;
      }
 
-    Int invalidate ()                                                                                                   // Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
-     {new I()
-       {void   a() {ex(Ops.set, -1); v = false;}
-        String v() {return ev(Ops.set, -1);}
-       };
-      return this;
-     }
-
     Int copy (Int I)                                                                                                    // Copy the state of an integer without regard as to whether it is valid or not
      {new I()
        {void   a() {ex(Ops.set, I.i); v = I.v;}
@@ -925,13 +945,11 @@ public class Program extends Test                                               
      }
 
     String   vn ()                                                                                                      // Verilog name of this variable
-     {final FlowControl f = program().getFlowControlForInstructionBeingCompiled();
-      final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
-      return pad("i[lastIntId+"+(id - f.intId)+"]"+n, 12);
+     {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
+      return pad("i["+id+"]"+n, 12);
      }
 
     Int     say () {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                               // Say the integer
-    void jtrace () {jTrace(f("%8d i %8d = %8d\n",  program().currentPc, id, i));}                                       // Trace the integer operation
 
     Int ok (int Value)                                                                                                  // Check the integer
      {final Int got = this;
@@ -1032,7 +1050,7 @@ public class Program extends Test                                               
 
     private int getUnit (int I, char Type)                                                                              // Get the value of a byte
      {final int b = units[I];
-      jTrace(f("%8d %c %8d = %8d  %s\n", program().currentPc, Type, I, b, n()));
+      jTrace(f("%8d %c %8d = %8d  %s", program().currentPc, Type, I, b, n()));
       return b;                                                                                                         // Get the value of a byte
      }
 
@@ -1042,7 +1060,7 @@ public class Program extends Test                                               
     private void putUnit (int I, int J, char Type)                                                                      // Put a byte into memory
      {final int A = units[I];                                                                                           // Previous value
                     units[I] = J;                                                                                       // Set the value of a byte from an integer
-      jTrace(f("%8d %c %8d %8d < %8d  %s\n", program().currentPc, Type, I, A, J, n()));
+      jTrace(f("%8d %c %8d %8d < %8d  %s", program().currentPc, Type, I, A, J, n()));
      }
 
     private void    putUnit (int I, int J) {putUnit(I, J, 'W');}                                                        // Put a byte into memory
@@ -1367,16 +1385,16 @@ public class Program extends Test                                               
    }
 
   void appendJavaTrace(String Message) {appendFile(javaTraceFile(), Message);}                                          // Append to the java trace file
-  void jTrace (String Message) {jtraceInc(); if (program().executing.trace()) appendJavaTrace(Message);}                // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
+  void jTrace (String Message) {jtraceInc(); if (program().executing.trace()) appendJavaTrace(Message+"\n");}           // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
    {vtraceInc();
     if (!program().compiling.trace()) return "";                                                                        // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
     //s.append(" traceFile = $fopen(\""+verilogTraceFile+"\", \"a\"); ");
-    s.append("$fwrite(traceFile, \""+Format+"\"");
+    s.append("$fdisplay(traceFile, \""+Format+"\"");
     for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
-    s.append("); $fwrite(traceFile, \"\\n\");");
+    s.append(");");
     //s.append(" $fclose(traceFile);");
     return ""+s;
    }
@@ -1436,7 +1454,7 @@ public class Program extends Test                                               
            {stop("Wrong number of java traces generated, got:", jtrace, "expected:", i.traces(),
                  "at:", i.instructionLocation());
            }
-          if (jtrace == 0) jTrace(f("%8d Location: %s\n", currentPc, i.instructionLocationAsComment()));                // Append location to java trace log as no tracing was performed
+          if (jtrace == 0) jTrace(f("%8d Location: %s", currentPc, i.instructionLocationAsComment()));                // Append location to java trace log as no tracing was performed
          }
 
         executing = null;                                                                                               // Show no instruction currently being executed
@@ -1552,7 +1570,7 @@ module {name};                                                                  
       if (true)                                                                                                         // State machine to sequence the initialization of memories
        {int state = 0;
         out.write("  typedef enum integer {\n");                                                                        // State machine to initialize each memory and the variables used by the main program
-        for(UnitMemory m : memories)  out.write("    state_clearMemory_"+m.i()+" = "+(state++)+",\n");                  // State to clear each memory                                                    // Each memory attached to this program
+        for(UnitMemory m : memories)  out.write("    state_clearMemory_"+m.i()+" = "+(state++)+",\n");                  // State to clear each memory
         out.write("    state_clearInts   = "+(state++)+",\n");                                                          // State for clearing integers
         out.write("    state_clearBool   = "+(state++)+",\n");                                                          // States for clearing bools
         out.write("    state_execute     = "+(state++)+"\n");                                                           // States for executing code
@@ -1568,12 +1586,29 @@ module {name};                                                                  
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer            lastPc;                                                                                            // The instruction which started the latest flow of control block
   integer             index;                                                                                            // Index for clearing memory
-  integer         lastIntId;                                                                                            // Base for integer references
-  integer        lastBoolId;                                                                                            // Base for boolean references
-  integer sourceDeltaBoolId;                                                                                            // The delta for the target of the next boolean instruction.
-  integer targetDeltaBoolId;                                                                                            // The delta for the target of the next boolean instruction.
-  integer  sourceDeltaIntId;                                                                                            // The delta for the target of the next integer instruction.
-  integer  targetDeltaIntId;                                                                                            // The delta for the target of the next integer instruction.
+  integer        lastBoolId;                                                                                            // Current base index for references to booleans
+  integer         lastIntId;                                                                                            // Current base index for references to integers
+
+  integer sourceDeltaBoolId;                                                                                            // Delta for completing a reference to a boolean source operand
+  integer targetDeltaBoolId;                                                                                            // Delta for completing a reference to a boolean target operand
+  integer  sourceDeltaIntId;                                                                                            // Delta for completing a reference to an integer source operand
+  integer  targetDeltaIntId;                                                                                            // Delta for completing a reference to an integer target operand
+
+  integer        sourceBool;                                                                                            // Source value for a boolean operation obtained from a variable
+  integer         sourceInt;                                                                                            // Source value for an integer operation obtained from a variable
+
+  integer        targetBool;                                                                                            // Computed target boolean value to be loaded into a variable
+  integer         targetInt;                                                                                            // Computed target integer value to be loaded into a variable
+
+  integer          readBool;                                                                                            // Boolean read from memory
+  integer     readBoolIndex;                                                                                            // Index at which to read boolean from memory
+  integer           readInt;                                                                                            // Integer read from memory
+  integer      readIntIndex;                                                                                            // Index at which to read integer from memory
+
+  integer         writeBool;                                                                                            // Boolean to write into memory
+  integer    writeBoolIndex;                                                                                            // Index at which to write boolean to memory
+  integer          writeInt;                                                                                            // Integer to write into memory
+  integer     writeIntIndex;                                                                                            // Index at which to write integer into memory
   integer         traceFile;                                                                                            // File to which trace messages will be written
   integer                 i[INT_VARS:0];                                                                                // Integers
   reg                     b[BOOL_VARS:0];                                                                               // Booleans
@@ -1664,8 +1699,8 @@ module {name};                                                                  
 
 """);
 
-      /*traceBool*/out.write(traceVerilogVariable("traceBool",  "lastBoolId", "b", traceFile));                         // Memory and variable tracind
-      /*traceInt*/ out.write(traceVerilogVariable("traceInt",   "lastIntId",  "i", traceFile));
+      /*traceBool*/out.write(traceVerilogVariable("Bool", "b"));                                                        // Memory and variable tracind
+      /*traceInt*/ out.write(traceVerilogVariable("Int",  "i"));
       /*dumpVars*/ out.write(dumpVerilogVariables());
 
       for(int i = 0; i < memories.size(); ++i)                                                                          // Actions for each memory
@@ -1716,7 +1751,7 @@ endmodule
 """);
 
      }
-    catch(Exception e) {stop(fullTraceBack(e));}
+    catch(Exception e) {stop(e, fullTraceBack(e));}
    }
 
   String clearMemory(UnitMemory M, String Next)                                                                         // Verilog procedure to clear a memory
@@ -1730,20 +1765,16 @@ endmodule
 """, "memoryId", M.i(), "memoryName", M.n(), "Next", Next);
    }
 
-  String traceVerilogVariable(String Procedure, String Last, String Type, String TraceFile)                             // Verilog procedure to trace a variable
-   {final String display = "$fdisplay(traceFile, \"%8d "+Type+" %8d = %8d\", pc, ("+Last+"+Id), Value);";               // Trace line to be written out. Id and Value are parameters of the generated function
-
-    return f("""
-  function automatic integer %s(input integer Id, input integer Value);                                                 // Trace variable
+  String traceVerilogVariable(String Procedure, String Type)                                                            // Verilog procedure to trace a variable
+   {return substitute("""
+  task automatic trace{Procedure}(input integer Value);                                                                 // Trace {Procedure} variable
     begin
-      %s = Value;                                                                                                       // Return value
-//      traceFile = $fopen("%s", "a");                                                                                  // Open named trace file
-      %s
-//      $fclose(traceFile);
+      target{Procedure} = Value;
+      $fdisplay(traceFile, "%8d {Type}[%8d,%10d]= %8d", pc, last{Procedure}Id, targetDelta{Procedure}Id, Value);
     end
-  endfunction
+  endtask
 """,
-Procedure, Procedure, TraceFile, display);
+"Procedure", Procedure, "Type", Type);
    }
 
   void defineArrayViaVerilogFunction(String Name, int[]Array)                                                           // Define a verilog function from an array
@@ -2160,7 +2191,7 @@ endfunction
         a.valid()   .ok(true);
         A.valid()   .ok(true);
         A.notValid().ok(false);
-        a.invalidate();
+        a.del(-1);
         A.copy(a);
         a.valid()   .ok(false);
         A.valid()   .ok(false);
@@ -2458,7 +2489,7 @@ Memory 0
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
-   {test_programming();
+   {///test_programming();
     test_andOr();
     test_add();
     test_fibonacci();
@@ -2478,8 +2509,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_fibonacci();
+   {oldTests();
+    //test_programming();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
