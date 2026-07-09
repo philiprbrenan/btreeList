@@ -1725,8 +1725,16 @@ module {name};                                                                  
 
       matchingInstructions.clear();                                                                                     // New base instructions
 
-      for(I i : code) {program().compiling = i;           program().compiling.matchInstructions();}                     // Find the base instructions
-      for(I i : code) {program().compiling = i; out.write(program().compiling.generateVerilog());}                      // Compile each instruction to Verilog
+      for(I i : code) {
+
+say("AAAA1111", code.size());
+        program().compiling = i;
+say("AAAA2222", code.size());
+               i.matchInstructions();
+say("AAAA3333", code.size());
+
+               }                                       // Find the base instructions
+      for(I i : code) {program().compiling = i; out.write(i.generateVerilog());}                                        // Compile each instruction to Verilog
 
       if (true)                                                                                                         // Instruction reduction statistics
        {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
