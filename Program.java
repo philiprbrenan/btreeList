@@ -1055,10 +1055,36 @@ public class Program extends Test                                               
       final Stack<UnitMemory> m = program().memories; id = m.size(); m.push(this);                                      // Give the memory a unique identifier and save it in the main program
      }
 
+
+    int size()  {return units.length;}                                                                                  // Size of memory
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
 
     String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memeory in decimal
+
+    String vGetInt(Int Addr)                                                                                             // Verilog to get an integer from memory
+     {return substitute("""
+readInt <= {memoryName}[{Addr}];          $fdisplay(traceFile, "%8d R %8d = %8d  %s",     pc, {Addr}, {memoryName}[{Addr}], "{memoryName}");
+""","Addr", "i["+Addr.id+"]", "memoryName", n());
+     }
+
+    String vGetBool(Int Addr, Int Bit)                                                                                   // Verilog to get a boolean from memory
+     {return substitute("""
+readBool <= {memoryName}[{Addr}][{Bit}];  $fdisplay(traceFile, "%8d r %8d = %8d  %s",     pc, {Addr}, {memoryName}[{Addr}], "{memoryName}");
+""","Addr", "i["+Addr.id+"]", "Bit", "i["+Bit.id+"]", "memoryName", n());
+     }
+
+    String vPutInt(Int Addr)                                                                                             // Verilog to put an integer into memory
+     {return substitute("""
+{memoryName}[{Addr}] <= writeInt;         $fdisplay(traceFile, "%8d W %8d %8d < %8d  %s", pc, {Addr}, {memoryName}[{Addr}], writeInt, "{memoryName}");
+""","Addr", "i["+Addr.id+"]", "memoryName", n());
+     }
+
+    String vPutBool(Int Addr, Int Bit)                                                                                   // Verilog to put a boolean into memory
+     {return substitute("""
+{memoryName}[{Addr}][{Bit}] <= writeBool; $fdisplay(traceFile, "%8d r %8d = %8d  %s",     pc, {Addr}, {memoryName}[{Addr}], "{memoryName}"); $fdisplay(traceFile, "%8d w %8d %8d < %8d  %s", pc, {Addr}, {memoryName}[{Addr}], writeBool, "{memoryName}");
+""","Addr", "i["+Addr.id+"]", "Bit", "i["+Bit.id+"]", "memoryName", n());
+     }
 
     private int getUnit (int I, char Type)                                                                              // Get the value of a byte
      {final int b = units[I];
@@ -1082,16 +1108,35 @@ public class Program extends Test                                               
      {subStart("Program.UnitMemory.copy");
       new ForCount(new Int(Width))
        {void body(Int Index)
-         {new I()
-           {void   a() {putUnit(TargetOffset.i() + Index.i(), SourceMemory.getUnit(SourceOffset.i() + Index.i()));}
-            String v()
-             {vtraceInc(); vtraceInc();
-              return "putMemory_"+i()+"("   + TargetOffset.vn() + "+" + Index.vn()+
-                   ", getMemory_"+SourceMemory.i()+"("  + SourceOffset.vn() + "+" + Index.vn()+"));";
-             }
-            int traces() {return 2;}
+         {final Int s = SourceOffset.Add(Index);
+          final Int t = TargetOffset.Add(Index);
+          new I()
+           {void   a() {readInt = SourceMemory.getUnit(s.i());}
+            String v() {return SourceMemory.vGetInt(s);}
+           };
+          new I()
+           {void   a() {writeInt = readInt; jTrace(f("writeInt = %8d", readInt));}
+            String v() {return "writeInt <= readInt; vTrace(\"writeInt = %8d\", readInt);";}
+           };
+          new I()
+           {void   a() {putUnit(t.i(), writeInt);}
+            String v() {return vPutInt(t);}
            };
          }
+       };
+      subFinish();
+      return this;
+     }
+
+    UnitMemory clearUnit (Int Index)                                                                                    // Clear memory unit
+     {subStart("Program.UnitMemory.clearUnit(I)");
+      new I()
+       {void   a() {writeInt = 0; jTrace(f("writeInt = %8d", 0));}
+        String v() {return "writeInt <= 0; vTrace(\"writeInt = %8d\", 0);";}
+       };
+      new I()
+       {void   a() {putUnit(Index.i(), writeInt);}
+        String v() {return vPutInt(Index);}
        };
       subFinish();
       return this;
@@ -1099,34 +1144,17 @@ public class Program extends Test                                               
 
     UnitMemory clear ()                                                                                                 // Clear memory
      {subStart("Program.UnitMemory.clear(I)");
-      new ForCount(new Int(size()))
-       {void  body(Int Index)
-         {new I()
-           {void   a() {putUnit(Index.i(), 0);}
-            String v() {vtraceInc(); return "putMemory_"+i()+"("+Index.vn() +   ", 0);";}
-           };
-         }
-       };
+      new ForCount(new Int(size())) {void  body(Int Index) {clearUnit(Index);}};
       subFinish();
       return this;
      }
 
     UnitMemory clear (Int Start, int Width)                                                                             // Clear memory
      {subStart("Program.UnitMemory.clear(II)");
-      new ForCount (Start, Start.Add(Width))
-       {void body(Int Index)
-         {new I()
-           {void   a() {putUnit(Index.i(), 0);}
-            String v() {vtraceInc(); return "putMemory_"+i()+"("+Index.vn()+", 0);";}
-            int traces() {return 1;}
-           };
-         }
-       };
+      new ForCount (Start, Start.Add(Width)) {void  body(Int Index) {clearUnit(Index);}};
       subFinish();
       return this;
      }
-
-    int size() {return units.length;}                                                                                   //N Size of memory
 
     Int getInt (Int I)                                                                                                  // Get the int at the indicated position
      {final Int r = new Int();
@@ -1637,6 +1665,7 @@ module {name};                                                                  
     if (reset) begin                                                                                                    // Reset
 """);
       if (memories.size() > 0) /*Reset memory*/out.write(substitute("""
+      index = 0;
       state = state_clearMemory_{start};
 """, "start", memories.firstElement().i()));
 
@@ -1715,7 +1744,7 @@ module {name};                                                                  
     begin
       i[index] = 0;
       index = index + 1;
-      if (index >= INT_VARS) begin state = state_clearBool; index = 0; end
+      if (index >= INT_VARS) begin index = 0; state = state_clearBool; end
     end
   endtask
 
@@ -1723,7 +1752,7 @@ module {name};                                                                  
     begin
       b[index] = 0;
       index = index + 1;
-      if (index >= BOOL_VARS) state = state_execute;
+      if (index >= BOOL_VARS) begin index = 0; state = state_execute; end
     end
   endtask
 
@@ -1788,8 +1817,9 @@ endmodule
    {return substitute("""
   task automatic clearMemory_{memoryId};                                                                                // Clear memory element by element
     begin
-      for(index = 0; index < MEMORY_{memoryId}; index = index + 1) {memoryName}[index] = 0;
-      state = {Next};
+      {memoryName}[index] = 0;
+      index = index + 1;
+      if (index >= MEMORY_{memoryId}) begin index = 0; state = {Next}; end
     end
   endtask
 """, "memoryId", M.i(), "memoryName", M.n(), "Next", Next);
@@ -2269,12 +2299,12 @@ endfunction
        {final UnitMemory m = unitMemory;
         new For(2)
          {void body(Int Index, Bool Continue)
-           {//m.putInt(new Int(0), new Int(1));
-            //m.putInt(new Int(1), new Int(2));
-            //m.getInt(new Int(0)).ok(1);
-            //m.getInt(new Int(1)).ok(2);
+           {m.putInt(new Int(0), new Int(1));
+            m.putInt(new Int(1), new Int(2));
+            m.getInt(new Int(0)).ok(1);
+            m.getInt(new Int(1)).ok(2);
             //dumpProgramState("AAAA");
-            //m.getBool(new Int(1), new Int(0)).ok(false);
+            m.getBool(new Int(1), new Int(0)).ok(false);
             //m.getBool(new Int(1), new Int(1)).ok(true );
             //m.getBool(new Int(1), new Int(2)).ok(false);
             //m.putBool(new Int(1), new Int(0), new Bool(true));
