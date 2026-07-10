@@ -63,14 +63,6 @@ public class Program extends Test                                               
         int                                   source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
         int                                    targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
         int                                   targetBool = 0;                                                           // Computed target boolean value to be loaded into a variable
-        boolean                                 readBool = false;                                                       // Boolean read from memory
-        int                                readBoolIndex = 0;                                                           // Index at which to read boolean from memory
-        boolean                                writeBool = false;                                                       // Boolean to write into memory
-        int                               writeBoolIndex = 0;                                                           // Index at which to write boolean to memory
-        int                                      readInt = 0;                                                           // Integer read integer from memory
-        int                                 readIntIndex = 0;                                                           // Index at which to read integer from memory
-        int                                     writeInt = 0;                                                           // Integer to write into memory
-        int                                writeIntIndex = 0;                                                           // Index at which to write integer into memory
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -1047,6 +1039,15 @@ public class Program extends Test                                               
   final class UnitMemory                                                                                                // Memory made of units
    {private final int id;                                                                                               // Unique identifier for this memory
     private int[]units;                                                                                                 // Bytes of main memory
+    boolean   readBool = false;                                                                                         // Boolean read from memory
+    boolean  writeBool = false;                                                                                         // Boolean to write into memory
+    int        readInt = 0;                                                                                             // Integer read from memory
+    int       writeInt = 0;                                                                                             // Integer to write into memory
+    int   readIntIndex = 0;                                                                                             // Index at which to read an integer from memory
+    int   readBitIndex = 0;                                                                                             // Index within an integer from which to get a bit to make a boolean
+    int  writeIntIndex = 0;                                                                                             // Index at which to write an integer into memory
+    int  writeBitIndex = 0;                                                                                             // Index within an integer at which to set a bit to represent a boolean
+
     static int bitsPerUnit() {return Integer.SIZE;}                                                                     // Bits per memory unit
 
     UnitMemory (int Length)                                                                                             // Create and clear some memory
@@ -1055,14 +1056,31 @@ public class Program extends Test                                               
       final Stack<UnitMemory> m = program().memories; id = m.size(); m.push(this);                                      // Give the memory a unique identifier and save it in the main program
      }
 
-
     int size()  {return units.length;}                                                                                  // Size of memory
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
 
+    String      ReadBool()      {return n() + "readBool"     ;}                                                         // Boolean read from memory
+    String     WriteBool()      {return n() + "writeBool"    ;}                                                         // Boolean to write into memory
+    String       ReadInt()      {return n() + "readInt"      ;}                                                         // Integer read from memory
+    String      WriteInt()      {return n() + "writeInt"     ;}                                                         // Integer to write into memory
+    String  ReadIntIndex()      {return n() + "readIntIndex" ;}                                                         // Index at which to read an integer from memory
+    String  ReadBitIndex()      {return n() + "readBitIndex" ;}                                                         // Index within an integer from which to get a bit to make a boolean
+    String WriteIntIndex()      {return n() + "writeIntIndex";}                                                         // Index at which to write an integer into memory
+    String WriteBitIndex()      {return n() + "writeBitIndex";}                                                         // Index within an integer at which to set a bit to represent a boolean
+
+    String       readInt()      {return ReadInt () + " <= "+n()+"["+ReadIntIndex()+"];                         $fdisplay(traceFile, \"%8d readInt       %8d\", \"pc\", "+n()+"["+ReadIntIndex ()                                       +"]);";}
+    String      readBool()      {return ReadBool() + " <= "+n()+"["+ReadIntIndex()+"]["+ReadBitIndex()+"];     $fdisplay(traceFile, \"%8d readBool      %8d\", \"pc\", "+n()+"["+ReadIntIndex ()+"]["+ReadBitIndex()                   +"]);";}
+    String      writeInt()      {return n()+"["+WriteIntIndex()+"]                     <= " + WriteInt () + "; $fdisplay(traceFile, \"%8d writeInt      %8d\", \"pc\", "+n()+"["+WriteIntIndex()+"],"+WriteInt    ()                   + ");";}
+    String     writeBool()      {return n()+"["+WriteIntIndex()+"]["+ReadBitIndex()+"] <= " + WriteBool() + "; $fdisplay(traceFile, \"%8d writeBool     %8d\", \"pc\", "+n()+"["+WriteIntIndex()+"]["+ReadBitIndex()+"]," + WriteBool()+");";}
+    String  readIntIndex(Int I) {return ReadIntIndex () + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d readIntIndex  %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
+    String  readBitIndex(Int I) {return ReadBitIndex () + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d readBitIndex  %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
+    String writeIntIndex(Int I) {return WriteIntIndex() + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d writeIntIndex %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
+    String writeBitIndex(Int I) {return WriteBitIndex() + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d writeBitIndex %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
+
     String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memeory in decimal
 
-    String vGetInt(Int Addr)                                                                                             // Verilog to get an integer from memory
+    String vGetInt(Int Addr)                                                                                            // Verilog to get an integer from memory
      {return substitute("""
 readInt <= {memoryName}[{Addr}];          $fdisplay(traceFile, "%8d R %8d = %8d  %s",     pc, {Addr}, {memoryName}[{Addr}], "{memoryName}");
 ""","Addr", "i["+Addr.id+"]", "memoryName", n());
