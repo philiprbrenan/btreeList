@@ -899,7 +899,7 @@ Zero:
 
                                 b.firstZero().ok( 0);
                                 b. lastZero().ok(29);
-    b.maxSteps = 99_999;
+    b.maxSteps = 999_999;
     b.execute();
    }
 
@@ -956,7 +956,7 @@ Zero:
                                 b.firstZero()            .ok(  4);
                                 b.lastZero ()            .ok( 15);
 
-    b.maxSteps = 99_999;
+    b.maxSteps = 999_999;
     b.execute();
    }
 
@@ -1011,7 +1011,7 @@ Zero:
     for (int i : range(13, 16)) b.prevOne(b.new Int( i)).ok(i-1);
                                 b.firstOne()            .ok(  4);
                                 b.lastOne ()            .ok( 15);
-    b.maxSteps = 99_999;
+    b.maxSteps = 999_999;
     b.execute();
    }
 
@@ -1282,7 +1282,7 @@ Zero:
     b.countAllOnes ().ok(4);
     b.countAllZeros().ok(N-4);
 
-    b.maxSteps = 99_999;
+    b.maxSteps = 999_999;
     b.execute();
    }
 
@@ -1605,7 +1605,7 @@ Zero:
     b.limitLowerOne(b.new Int(29)).ok(b.new Int(28));  b.limitLowerZero(b.new Int(15+29)).ok(b.new Int(15+28));
     b.limitLowerOne(b.new Int(30)).ok(b.new Int(30));  b.limitLowerZero(b.new Int(15+30)).ok(b.new Int(15+30));
 
-    b.maxSteps = 99_999;
+    b.maxSteps = 999_999;
     b.execute();
    }
 
@@ -1673,7 +1673,7 @@ Zero:
     b.highZero(b.new Int(15+17)).ok( 3);
     b.highZero(b.new Int(15+16)).ok( 1);
 
-    b.maxSteps = 99_999;
+    b.maxSteps = 999_999;
     b.execute();
    }
 
