@@ -18,7 +18,7 @@ public class Program extends Test                                               
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
   final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
-  public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
+  public int                                    maxSteps = 99_999;                                                      // Number of steps permitted in code execution
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
