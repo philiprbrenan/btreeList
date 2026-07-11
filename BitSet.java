@@ -1038,6 +1038,7 @@ Zero:
       b.new I() {void a() {s.append("Clear: "+i+"\n"+b);} boolean trace() {return false;}};
      }
     b.count().ok(0);
+    b.maxSteps= 99_999;
     b.execute();
     //testStop(s);
     ok(""+s, """
