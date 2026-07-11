@@ -13,11 +13,11 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                    supressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+ {final  boolean                    supressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final  boolean                    compressInstructions =!true;                                                        // Compress out identical instructions
+  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
   public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
@@ -61,7 +61,7 @@ public class Program extends Test                                               
         int                                    sourceInt = 0;                                                           // Source value for an integer operation obtained from a variable
         int                                   source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
         int                                    targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
-        int                                   targetBool = 0;                                                           // Computed target boolean value to be loaded into a variable
+        boolean                               targetBool = false;                                                           // Computed target boolean value to be loaded into a variable
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -466,8 +466,8 @@ public class Program extends Test                                               
 
     void T ()                                                                                                           // Load target delta and value
      {new LoadSourceOrTarget(this, "tdb","tb", "targetDeltaBoolId", "targetBool")
-       {void loadDelta(int     D) {sourceDeltaBoolId = D;}
-        void loadValue(boolean V) {sourceBool        = V;}
+       {void loadDelta(int     D) {targetDeltaBoolId = D;}
+        void loadValue(boolean V) {targetBool        = V;}
        };
      }
 
@@ -2483,6 +2483,7 @@ Memory 0
 4 NOT >  7
 4 NOT >= 7
 """);
+        dumpProgramState("AAAA");
         execute();
        }
      };
@@ -2513,8 +2514,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_boolean();
+   {oldTests();
+    //test_boolean();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
