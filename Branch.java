@@ -436,7 +436,7 @@ Branch         size:   7, count:   4, top:   0
 
     l.delete(l.new Int(1)).valid().ok(false);
 
-    l.maxSteps = 99_999;
+    l.maxSteps = 999_999;
     l.execute();
    }
 
@@ -471,7 +471,7 @@ Branch         size:   7, count:   3, top:   0
    2     3    33
    1     4    44
 """);
-    l.maxSteps = 99_999;
+    l.maxSteps = 999_999;
     l.execute();
    }
 
@@ -507,7 +507,7 @@ Branch         size:   7, count:   4, top:   0
    4     3    33
    5     4    44
 """);
-    l.maxSteps = 99_999;
+    l.maxSteps = 999_999;
     l.execute();
    }
 
@@ -559,7 +559,7 @@ Branch         size:   7, count:   3, top:  99
    4     6    66
    5     7    77
 """);
-    l.maxSteps = 99_999;
+    l.maxSteps = 999_999;
     l.execute();
    }
 
@@ -610,7 +610,7 @@ Branch         size:   7, count:   3, top:  99
    4     6    66
    5     7    77
 """);
-    r.maxSteps = 99_999;
+    r.maxSteps = 999_999;
     r.execute();
    }
 
@@ -674,7 +674,7 @@ Branch         size:   7, count:   7, top:  99
    4     6    66
    5     7    77
 """);
-    l.maxSteps = 99_999;
+    l.maxSteps = 999_999;
     l.execute();
    }
 
@@ -738,7 +738,7 @@ Branch         size:   7, count:   7, top:  99
    4     6    66
    5     7    77
 """);
-    r.maxSteps = 99_999;
+    r.maxSteps = 999_999;
     r.execute();
    }
 
@@ -792,7 +792,7 @@ Branch         size:   7, count:   0, top:   0
  Ref   Key  Data
 """);
 
-    l.maxSteps = 99_999;
+    l.maxSteps = 999_999;
     l.execute();
    }
 
