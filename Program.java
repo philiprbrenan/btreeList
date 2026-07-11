@@ -2,7 +2,6 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Replace I.Jump.might with Will plus else
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -21,7 +20,6 @@ public class Program extends Test                                               
   final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
   public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
 
-  static String                                testGroup = null;                                                        // Tests can be split into groups so that they can be run in parallel
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
@@ -107,30 +105,6 @@ public class Program extends Test                                               
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
 //D2 Flow control                                                                                                       // Flow  control identifies each section of code that could be jumped into so that references to a variable can be coded as a small constant offset from a variable base to increase the probability that instructions will have the same verilog allowing identical such instructions to be compressed out
-// Hopefully this can be replaced by recording these details in the anonymous instruction class derived from I
-
-  void insertFlowControl()                                                                                              // The integer and boolean base at the entry to a flow of control block
-   {new FlowControl();                                                                                                  // Record the current position in the integer and boolean variables
-
-    new I()                                                                                                             // Instruction to mark the start of a flow of control block
-     {final int ni = nextIntId, nb = nextBoolId;
-      void     a()                                                                                                      // Only a trace record is needed in Java as variables are addressed via references
-       {lastIntId = ni; lastBoolId = nb;
-         jTrace(f("%8d InsertLastBaseInstruction: [%8d,%8d] %s", program().currentPc, ni, nb, instructionLocationAsComment()));
-       }
-      String   v()                                                                                                      // Set the current base for integers and booleans so that they can be applied symbolically in instructions just like a base register in S/360. The verilog code generated inline at different points in the program by the same java code will tend to have the same references patterns to variables resulting in more opportunities to identify instructions whose code is identical and can thus be compressed out by making multiple references to the lowest instruction with this code.
-       {return "lastIntId <= "+ni+"; lastBoolId <= "+nb+";"+
-          vTrace("%8d InsertLastBaseInstruction: [%8d,%8d] "+instructionLocationAsComment(), "pc", ""+ni, ""+nb);
-       }
-//    String   v()                                                                                                      // Set the current base for integers and booleans so that they can be applied symbolically in instructions just like a base register in S/360. The verilog code generated inline at different points in the program by the same java code will tend to have the same references patterns to variables resulting in more opportunities to identify instructions whose code is identical and can thus be compressed out by making multiple references to the lowest instruction with this code.
-//     {final FlowControl f = getFlowControlForInstructionBeingCompiled();                                              // Flow control details for this flow control instruction
-//
-//      return "lastIntId <= "+f.intId+"; lastBoolId <= "+f.boolId+";"+
-//        vTrace("%8d InsertLastBaseInstruction: "+instructionLocationAsComment(), "pc");
-//     }
-      int traces() {return 1;}
-     };
-   }
 
   class FlowControl                                                                                                     // Start a block of instructions at a jump in point
    {final int boolId;                                                                                                   // Base of boolean variables
@@ -141,6 +115,24 @@ public class Program extends Test                                               
       intId  = p.nextIntId ;                                                                                            // Base of integer variables
       lastFlowControl = this;                                                                                           // Record state of flow control
      }
+   }
+
+  void insertFlowControl()                                                                                              // The integer and boolean base at the entry to a flow of control block
+   {new FlowControl();                                                                                                  // Record the current position in the integer and boolean variables
+
+    new I()                                                                                                             // Instruction to mark the start of a flow of control block
+     {final int ni = nextIntId, nb = nextBoolId;
+      void     a()                                                                                                      // Only a trace record is needed in Java as variables are addressed via references
+       {lastIntId = ni; lastBoolId = nb;
+         jTrace(f("%8d InsertLastBaseInstruction: [%8d,%8d] %s",
+           program().currentPc, ni, nb, instructionLocationAsComment()));
+       }
+      String   v()                                                                                                      // Set the current base for integers and booleans so that they can be applied symbolically in instructions just like a base register in S/360. The verilog code generated inline at different points in the program by the same java code will tend to have the same references patterns to variables resulting in more opportunities to identify instructions whose code is identical and can thus be compressed out by making multiple references to the lowest instruction with this code.
+       {return "lastIntId <= "+ni+"; lastBoolId <= "+nb+";"+
+          vTrace("%8d InsertLastBaseInstruction: [%8d,%8d] "+instructionLocationAsComment(), "pc", ""+ni, ""+nb);
+       }
+      int traces() {return 1;}
+     };
    }
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
@@ -164,15 +156,18 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         insertFlowControl();                                                                                            // Start of flow of control block
-        new I(I.Jump.might)                                                                                             // Will jump
+        new I(false)                                                                                                    // Do not increment of program counter
          {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
-          String v() {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+ (end.offset - instructionNumber) + ";";}// Index out of range
+          String v()                                                                                                    // Terminate loop when index is out of range
+           {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+ (end.offset - instructionNumber) + ";"+
+                   " else pc <= pc + 1;";
+           }
           int traces() {return 0;}
          };
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
-        new I(I.Jump.will)
+        new I(false)
          {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
           String v()
            {return "if ("+ cont.vn()+") pc <= pc + "+ (start.offset - instructionNumber) + "; "+
@@ -206,14 +201,17 @@ public class Program extends Test                                               
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         insertFlowControl();                                                                                            // Start of flow of control block
-        new I(I.Jump.might)                                                                                             // The for loop will not be executed if the execution count is less than 1
+        new I(false)                                                                                                    // The for loop will not be executed if the execution count is less than 1
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
-          String v()   {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+(end.offset-instructionNumber)+";";}   // Index out of range
+          String v()                                                                                                    // Terminate the loop when the index is out of range
+           {return "if ("+index.vn()+" >= "+End.vn()+") pc <= pc + "+
+             (end.offset-instructionNumber)+"; else pc <= pc + 1;";
+           }
           int traces() {return 0;}
          };
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
-        new I(I.Jump.will)                                                                                              // Will jump
+        new I(false)                                                                                                    // Will jump
          {void   a() {program().pc = start.offset;}                                                                     // Restart loop
           String v() {return "pc <= pc + "+(start.offset - instructionNumber)+";";}                                     // Index out of range
           int traces() {return 0;}
@@ -244,13 +242,16 @@ public class Program extends Test                                               
      else                                                                                                               // Machine code
        {final Label lse = new Label();                                                                                  // Start of else
         final Label end = new Label();                                                                                  // End of if
-        new I(I.Jump.might)                                                                                             // Jump to else if condition is false
+        new I(false)                                                                                                    // Jump to else if condition is false
          {void   a() {          if (!Condition.b()) program().pc = lse.offset;}
-          String v() {return "if (!"+Condition.vn() + ") pc <= pc + "+(lse.offset-instructionNumber)+";";}
+          String v()
+           {return "if (!"+Condition.vn() + ") pc <= pc + "+(lse.offset-instructionNumber)+
+                   "; else pc <= pc + 1;";
+           }
           int traces() {return 0;}
          };
         Then();                                                                                                         // Then body
-        new I(I.Jump.will)                                                                                              // Jump over else to end
+        new I(false)                                                                                                    // Jump over else to end
          {void   a() {program().pc  = end.offset;}
           String v() {return "pc <= pc + "+(end.offset-instructionNumber)+";";}
           int traces() {return 0;}
@@ -268,21 +269,6 @@ public class Program extends Test                                               
     abstract void Then ();                                                                                              // Then clause
              void Else () {}                                                                                            // Else clause
    }
-
-//  void If (Bool Choice, Runnable Then, Runnable Else)                                                                   // If then/else with lambdas
-//   {new If (Choice)
-//     {void Then() {Then.run();}
-//      void Else() {Else.run();}
-//     };
-//   }
-
-//  <T extends Int> T If (Bool Choice, T Set, Supplier<T> Then, Supplier<T> Else)                                         //N Choose between two alternatives.
-//   {new If (Choice)
-//     {void Then() {Set.set(Then.get());}
-//      void Else() {Set.set(Else.get());}
-//     };
-//    return Set;
-//   }
 
 //D2 Procedure                                                                                                          // Procedure with parameters and return value.  Only works for static classes because it is unable to emulate "this" so commented out for the moment
 /*
@@ -397,6 +383,7 @@ public class Program extends Test                                               
     Bool      ob(String Name)            {cbo(Name); return outputBool.get(Name);}                                      // Get an output boolean parameter after calling a procedure
    }
 */
+
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
 //public sealed interface Data permits Bool, Int {}                                                                     // Known types of data
@@ -535,7 +522,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    String ev (Ops Op)                                                                                                  // Execute a zeradic boolean operation
+    String ev (Ops Op)                                                                                                  // Execute a monadic boolean operation
      {final String        n = vn();                                                                                     // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
@@ -545,7 +532,7 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    String eV (Ops Op)                                                                                                  // Execute a monadic boolean operation on a constant
+    String eV (Ops Op)                                                                                                  // Execute a dyadic boolean operation
      {final StringBuilder s = new StringBuilder();
       switch (Op)
        {case set -> {s.append(              "sourceBool");}
@@ -561,12 +548,10 @@ public class Program extends Test                                               
 
     void jtrace () {jTrace(f("%8d b= %7d", program().currentPc, (i ? 1 : 0)));}                                         // Trace a java    boolean operation
 
-    String vtrace (String Value)                                                                                        // Trace a verilog boolean operation
+    String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
      {vtraceInc();
       return "targetBool <= "+Value+"; $fdisplay(traceFile, \"%8d b= %7d\", pc, "+Value+");";
      }
-
-    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace a boolean operation
 
     public String toString ()                                                                                           // Print the boolean
      {final String u = "undefined_Bool";
@@ -582,7 +567,7 @@ public class Program extends Test                                               
     void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
      {new If (this)
        {void Then()
-         {new I(I.Jump.will)
+         {new I(false)
            {void   a() {Test.stop(O);}
             String v() {return "pc <= -1;";}
             boolean trace() {return false;}
@@ -738,7 +723,7 @@ public class Program extends Test                                               
        };
      }
 
-    Int ex (Ops Op)                                                                                                     // Execute a zeradic integer operation
+    Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
       x();
       switch(Op)
@@ -756,7 +741,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    Int ex (Ops Op, int I)                                                                                              // Execute a monadic integer operation on a constant
+    Int ex (Ops Op, int I)                                                                                              // Execute a dyadic integer operation on a constant
      {executingCheck();
       switch (Op)
        {case set  -> {      i  = I;     v = true;}
@@ -779,7 +764,7 @@ public class Program extends Test                                               
       return ex(Op, I.i());
      }
 
-    String ev (Ops Op)                                                                                                  // Execute a zeradic integer operation in Verilog
+    String ev (Ops Op)                                                                                                  // Execute a monadic integer operation in Verilog
      {final String        n = "targetInt";                                                                              // Name of the variable in Verilog
       final StringBuilder s = new StringBuilder();
       switch(Op)
@@ -828,11 +813,8 @@ public class Program extends Test                                               
       return vtrace(s);
      }
 
-    String vtrace (StringBuilder Value) {return vtrace(""+Value);}                                                      // Trace an integer operation
-    String vtrace (String Value)                                                                                        // Trace an integer operation
-     {vtraceInc();
-      return "traceInt ("+Value+");";
-     }
+    String vtrace (String        Value) {vtraceInc(); return "traceInt ("+Value+");";}                                  // Trace an integer operation
+    String vtrace (StringBuilder Value) {vtraceInc(); return "traceInt ("+Value+");";}                                  // Trace an integer operation
 
     void jtrace () {jTrace(f("%8d i[%8d,%10d]= %8d",  program().currentPc, lastIntId, targetDeltaIntId, i));}           // Trace the integer operation
 
@@ -1000,12 +982,8 @@ public class Program extends Test                                               
 
     Bint copy (Bint Source)                                                                                             // Copy a boolean integer
      {new If (Source.b)
-       {void Then()                                                                                                     // The source has been set
-         {b.set(); i.set(Source.i());                                                                                   // Set target as valid and copy the associated integer
-         }
-        void Else()
-         {b.clear();
-         }                                                                                                              // The source has not been set yet so mark the target as unset too
+       {void Then() {b.set(); i.set(Source.i());}                                                                       // Set target as valid to match source and copy the source integer                                                                                                    // The source has been set
+        void Else() {b.clear();};                                                                                       // Set target as invalid to match source
        };
       return this;
      }
@@ -1250,18 +1228,17 @@ public class Program extends Test                                               
       Ref       clear (int Width)            {m.clear(offset, Width);                               return this;}       // Clear memory by setting its bytes to zero
       Int      getInt (Int I)                {return m.getInt( I.Add(offset));}                                         // Get the int at the indicated position
       Bool    getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
-      boolean getBool (int I)                {return getBool(new Int(I)).b();}                                          // Get the bit at the bit indexed location - debugging
-      Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
-      Ref     putBool (Int I, Bool K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
-      int      getInt (int I)                {return m.getInt( offset.Add(I)).i();}                                     // Get an int immediately when debugging
       Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
       Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int
+      Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
+      Ref     putBool (Int I, Bool K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
       Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
 
-      public String toString ()                                                                                         // Print memory reference
-       {final StringBuilder s = saySb("Ref: " , offset.i());
-        return ""+s;
-       }
+
+      int      getInt (int I) {                                        return units[I+offset.i];}                       // Get an integer immediately when debugging
+      boolean getBool (int I) {final int i = getInt(I / Integer.SIZE); return getBit(i, I % Integer.SIZE);}             // Get a boolean  immediately when debugging
+
+      public String toString () {final StringBuilder s = saySb("Ref: " , offset.i()); return ""+s;}                     // Print memory reference
      }
 
     public String toString ()                                                                                           // Print memory
@@ -1337,8 +1314,6 @@ public class Program extends Test                                               
   String    javaTraceFile ()  {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
   String VerilogCodeFile ()   {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
 
-  static boolean rtg (int i)  {return testGroup == null || testGroup.equals(""+i);}                                     // Whether to run the indicated test group
-
 //D1 Machine Code                                                                                                       // Generate machine code instructions to implement the program
 
 //D2 Instruction                                                                                                        // An instruction represents code to be executed by a process in a single clock cycle == process step
@@ -1349,14 +1324,12 @@ public class Program extends Test                                               
     final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
     final int         nextIntId = program().nextIntId;                                                                  // Record current position among the integers
     final int        nextBoolId = program().nextBoolId;                                                                 // Record current position among the booleans
+    final boolean        noJump;                                                                                        // The instruction will handle setting the program counter  if false
 
-    enum Jump {no, might, will};                                                                                        // Whether the instruction will jump
-    final Jump jump;                                                                                                    // The instruction might cause a jump
-
-    I (Jump Jump)                                                                                                       // Add this instruction to the code for the process
+    I (boolean NoJump)                                                                                                  // Add this instruction to the code for the process
      {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
       subInc();                                                                                                         // Count the number of instructions associated with each method
-      jump = Jump;                                                                                                      // Ability to jump
+      noJump = NoJump;                                                                                                  // Ability to jump
       if (immediate())                                                                                                  // Execute instruction immediately via interpretation if in immediate execution mode
        {program().executing = this;                                                                                     // Show that we are executing an instruction
         program().jtrace = 0;
@@ -1370,7 +1343,7 @@ public class Program extends Test                                               
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
      }
 
-    I () {this(I.Jump.no);}                                                                                             // Add this instruction to the process's code assuming it will not jump
+    I () {this(true);}                                                                                                  // Add this instruction to the process's code assuming it will not jump
 
 //D3 Overrides                                                                                                          // Methods that modify the behaviour of an instruction
 
@@ -1401,8 +1374,7 @@ public class Program extends Test                                               
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
      {program().vtrace = 0;                                                                                             // Count number of trace calls made in instruction
       final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
-      if (jump == I.Jump.might) s.append(" else");                                                                      // Conditionally increment program counter to allow jumps to occur
-      if (jump != I.Jump.will)  s.append(" pc <= pc + 1;");
+      if (noJump)  s.append(" pc <= pc + 1;");
 
       if (trace())
        {if (program().vtrace != traces())                                                                               // Complain if the wrong number of vtrace calls were generated
@@ -2127,37 +2099,6 @@ endfunction
               test_incremental(false);
    }
 
-//  static void test_bits(boolean Ex)
-//   {sayCurrentTestName();
-//    final Program P = new Program(new Build().immediate(Ex))
-//     {void code()
-//       {new For(new Int(2))
-//         {void body(Int Index, Bool Continue)
-//           {final Int a = new Int(0);
-//            a.set(0);
-//            a.bset(new Int(0))                .ok(1);
-//            a.bset(new Int(1))                .ok(3);
-//            a.bset(new Int(2))                .ok(7);
-//            a.bclr(new Int(0))                .ok(6);
-//            a.bclr(new Int(1))                .ok(4);
-//            a.bclr(new Int(2))                .ok(0);
-//            a.bset(new Int(3), new Bool(true)).ok(8);
-//            final Bool b = a.bget(new Int(2)) .ok(false);
-//            final Bool c = a.bget(new Int(3)) .ok(true);
-//            Continue.set();
-//           }
-//         };
-//       }
-//     };
-//    P.execute();
-//    P.testVerilog(Ex);
-//   }
-//
-//  static void test_bits()
-//   {          test_bits(true);
-//              test_bits(false);
-//   }
-
   static void test_remote(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
@@ -2247,27 +2188,25 @@ endfunction
             m.putInt(new Int(1), new Int(2));
             m.getInt(new Int(0)).ok(1);
             m.getInt(new Int(1)).ok(2);
-            //dumpProgramState("AAAA");
+            dumpProgramState("AAAA");
             m.getBool(new Int(1), new Int(0)).ok(false);
-            //m.getBool(new Int(1), new Int(1)).ok(true );
-            //m.getBool(new Int(1), new Int(2)).ok(false);
-            //m.putBool(new Int(1), new Int(0), new Bool(true));
-            //m.getInt (new Int(1)).            ok(3);
-            //dumpProgramState("BBBB");
-            //m.putBool(new Int(32), new Bool(false));
-            //m.getBool(new Int(32)).ok(false);
-            //m.getBool(new Int(33)).ok(true );
-            //m.getBool(new Int(34)).ok(false);
-            //dumpProgramState("CCCC");
-            //m.putBool(new Int(1), new Int(9), new Bool(true));
-            //m.getBool(new Int(1), new Int(9)).ok(true);
+            m.getBool(new Int(1), new Int(1)).ok(true );
+            m.getBool(new Int(1), new Int(2)).ok(false);
+            m.putBool(new Int(1), new Int(0), new Bool(true));
+            m.getInt (new Int(1)).            ok(3);
+            dumpProgramState("BBBB");
+            m.putBool(new Int(32), new Bool(false));
+            m.getBool(new Int(32)).ok(false);
+            m.getBool(new Int(33)).ok(true );
+            m.getBool(new Int(34)).ok(false);
+            dumpProgramState("CCCC");
+            m.putBool(new Int(1), new Int(9), new Bool(true));
+            m.getBool(new Int(1), new Int(9)).ok(true);
            }
          };
        }
      };
     P.execute();
-//  ok(P.unitMemory.getBool(32), false);
-//  ok(P.unitMemory.getBool(33), true);
    }
 
   static void test_memory()
@@ -2372,43 +2311,6 @@ Memory 0
    {          test_memoryRef(true);
               test_memoryRef(false);
    }
-
-//  static void test_invalidate(boolean Ex)
-//   {sayCurrentTestName();
-//    final Program P = new Program(new Build().immediate(Ex).memory(16))
-//     {void code()
-//       {final UnitMemory     M = memory;
-//        final UnitMemory.Ref m = M.new Ref(8);
-//        m.invalidate(8);
-//        m.clear     (4);
-//       }
-//     };
-//    P.execute();
-//    ok(P.memory, """
-//   0   0
-//   1   0
-//   2   0
-//   3   0
-//   4   0
-//   5   0
-//   6   0
-//   7   0
-//   8   0
-//   9   0
-//  10   0
-//  11   0
-//  12  -1
-//  13  -1
-//  14  -1
-//  15  -1
-//""");
-//    P.testVerilog(Ex);
-//   }
-//
-//  static void test_invalidate()
-//   {          test_invalidate(true);
-//              test_invalidate(false);
-//   }
 /*
   static void test_procedureCall(boolean Ex)
    {sayCurrentTestName();
@@ -2455,7 +2357,6 @@ Memory 0
      {void code()
        {final int[]array = {0, 0, 0, 2, 4, 6};
         defineArrayViaVerilogFunction("array", array);
-//      generateVerilog();
         execute();
        }
      };
@@ -2504,12 +2405,10 @@ Memory 0
     test_mod();
     test_incremental();
     test_remote();
-    //test_bits();
     test_copy();
     test_memory();
     test_memoryNegative();
     test_memoryRef();
-    //test_invalidate();
     //test_procedureCall();
     test_defineArrayViaVerilogFunction();
     test_lastInstructionBase();
