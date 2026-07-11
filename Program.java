@@ -2,6 +2,7 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Replace I.Jump.might with Will plus else
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -17,7 +18,7 @@ public class Program extends Test                                               
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final  boolean                    compressInstructions =!true;                                                        // Compress out identical instructions
+  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
   public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
 
   static String                                testGroup = null;                                                        // Tests can be split into groups so that they can be run in parallel
@@ -599,7 +600,7 @@ public class Program extends Test                                               
          {if (!got.v) stop("Invalid Bool being tested at:", program().executing.instructionLocation());
           Test.ok(i, Value);
          }
-        int traces() {return 0;         }
+        int traces() {return 0;}
        };
       return this;
      }
@@ -1060,67 +1061,39 @@ public class Program extends Test                                               
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
 
-    String      ReadBool()      {return n() + "readBool"     ;}                                                         // Boolean read from memory
-    String     WriteBool()      {return n() + "writeBool"    ;}                                                         // Boolean to write into memory
-    String       ReadInt()      {return n() + "readInt"      ;}                                                         // Integer read from memory
-    String      WriteInt()      {return n() + "writeInt"     ;}                                                         // Integer to write into memory
-    String  ReadIntIndex()      {return n() + "readIntIndex" ;}                                                         // Index at which to read an integer from memory
-    String  ReadBitIndex()      {return n() + "readBitIndex" ;}                                                         // Index within an integer from which to get a bit to make a boolean
-    String WriteIntIndex()      {return n() + "writeIntIndex";}                                                         // Index at which to write an integer into memory
-    String WriteBitIndex()      {return n() + "writeBitIndex";}                                                         // Index within an integer at which to set a bit to represent a boolean
+    String      vReadBool()      {return n() + "_readBool"     ;}                                                       // Boolean read from memory
+    String     vWriteBool()      {return n() + "_writeBool"    ;}                                                       // Boolean to write into memory
+    String       vReadInt()      {return n() + "_readInt"      ;}                                                       // Integer read from memory
+    String      vWriteInt()      {return n() + "_writeInt"     ;}                                                       // Integer to write into memory
+    String  vReadIntIndex()      {return n() + "_readIntIndex" ;}                                                       // Index at which to read an integer from memory
+    String  vReadBitIndex()      {return n() + "_readBitIndex" ;}                                                       // Index within an integer from which to get a bit to make a boolean
+    String vWriteIntIndex()      {return n() + "_writeIntIndex";}                                                       // Index at which to write an integer into memory
+    String vWriteBitIndex()      {return n() + "_writeBitIndex";}                                                       // Index within an integer at which to set a bit to represent a boolean
 
-    String       readInt()      {return ReadInt () + " <= "+n()+"["+ReadIntIndex()+"];                         $fdisplay(traceFile, \"%8d readInt       %8d\", \"pc\", "+n()+"["+ReadIntIndex ()                                       +"]);";}
-    String      readBool()      {return ReadBool() + " <= "+n()+"["+ReadIntIndex()+"]["+ReadBitIndex()+"];     $fdisplay(traceFile, \"%8d readBool      %8d\", \"pc\", "+n()+"["+ReadIntIndex ()+"]["+ReadBitIndex()                   +"]);";}
-    String      writeInt()      {return n()+"["+WriteIntIndex()+"]                     <= " + WriteInt () + "; $fdisplay(traceFile, \"%8d writeInt      %8d\", \"pc\", "+n()+"["+WriteIntIndex()+"],"+WriteInt    ()                   + ");";}
-    String     writeBool()      {return n()+"["+WriteIntIndex()+"]["+ReadBitIndex()+"] <= " + WriteBool() + "; $fdisplay(traceFile, \"%8d writeBool     %8d\", \"pc\", "+n()+"["+WriteIntIndex()+"]["+ReadBitIndex()+"]," + WriteBool()+");";}
-    String  readIntIndex(Int I) {return ReadIntIndex () + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d readIntIndex  %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
-    String  readBitIndex(Int I) {return ReadBitIndex () + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d readBitIndex  %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
-    String writeIntIndex(Int I) {return WriteIntIndex() + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d writeIntIndex %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
-    String writeBitIndex(Int I) {return WriteBitIndex() + " <= i["+I.id+"];                                    $fdisplay(traceFile, \"%8d writeBitIndex %8d\", \"pc\", "+I.id+", i["+I.id+"]);";}
+    String       readIntV()      {vtraceInc(); return vReadInt () + " <= "+n()+"["+vReadIntIndex()+"];                           $fdisplay(traceFile, \"%8d readInt       %8d\", pc, "    +n()+"["+vReadIntIndex ()                                          +"]);";}
+    String      readBoolV()      {vtraceInc(); return vReadBool() + " <= "+n()+"["+vReadIntIndex()+"]["+vReadBitIndex()+"];      $fdisplay(traceFile, \"%8d readBool      %8d\", pc, "    +n()+"["+vReadIntIndex ()+"]["+vReadBitIndex ()                    +"]);";}
+    String      writeIntV()      {vtraceInc(); return n()+"["+vWriteIntIndex()+"]                       <= " + vWriteInt () + "; $fdisplay(traceFile, \"%8d writeInt      %8d<%8d\", pc, "+n()+"["+vWriteIntIndex()+"],"+vWriteInt     ()                    + ");";}
+    String     writeBoolV()      {vtraceInc(); return n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"] <= " + vWriteBool() + "; $fdisplay(traceFile, \"%8d writeBool     %8d<%8d\", pc, "+n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"]," + vWriteBool()+ ");";}
+    String  readIntIndexV(Int I) {vtraceInc(); return vReadIntIndex () + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d readIntIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String  readBitIndexV(Int I) {vtraceInc(); return vReadBitIndex () + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d readBitIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String writeIntIndexV(Int I) {vtraceInc(); return vWriteIntIndex() + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d writeIntIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String writeBitIndexV(Int I) {vtraceInc(); return vWriteBitIndex() + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d writeBitIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+
+    void         readIntJ()      {readInt  = units[readIntIndex];                                                                             jTrace(f("%8d readInt       %8d",     pc(), readInt          ));}
+    void        readBoolJ()      {readBool = getBit(units[readIntIndex], readBitIndex);                                                       jTrace(f("%8d readBool      %8d",     pc(), readBool  ? 1 : 0));}
+    void        writeIntJ()      {final int i = writeIntIndex, p = units[i]; units[i] = writeInt;                                             jTrace(f("%8d writeInt      %8d<%8d", pc(), p, writeInt));}
+    void       writeBoolJ()      {final int i = writeIntIndex, b = writeBitIndex, p = units[i]; units[i] = setBit(p, b, writeBool);           jTrace(f("%8d writeBool     %8d<%8d", pc(), getBit(p, b) ? 1 : 0, writeBool ? 1 : 0));}
+    void    readIntIndexJ(Int I) {readIntIndex  = I.i();                                                                                      jTrace(f("%8d readIntIndex  %8d=%8d", pc(), I.id, I.i()      ));}
+    void    readBitIndexJ(Int I) {readBitIndex  = I.i();                                                                                      jTrace(f("%8d readBitIndex  %8d=%8d", pc(), I.id, I.i()      ));}
+    void   writeIntIndexJ(Int I) {writeIntIndex = I.i();                                                                                      jTrace(f("%8d writeIntIndex %8d=%8d", pc(), I.id, I.i()      ));}
+    void   writeBitIndexJ(Int I) {writeBitIndex = I.i();                                                                                      jTrace(f("%8d writeBitIndex %8d=%8d", pc(), I.id, I.i()      ));}
+
+    int pc() {return program().currentPc;}
+
+    int     setBit(int X, int I, boolean V) {return  X & ~(1 << I) | (V ? 1 : 0) << I;}                                 // Set a bit in an integer
+    boolean getBit(int X, int I)            {return (X >> I & 1) != 0;}                                                 // Get a bit from an integer
 
     String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memeory in decimal
-
-    String vGetInt(Int Addr)                                                                                            // Verilog to get an integer from memory
-     {return substitute("""
-readInt <= {memoryName}[{Addr}];          $fdisplay(traceFile, "%8d R %8d = %8d  %s",     pc, {Addr}, {memoryName}[{Addr}], "{memoryName}");
-""","Addr", "i["+Addr.id+"]", "memoryName", n());
-     }
-
-    String vGetBool(Int Addr, Int Bit)                                                                                   // Verilog to get a boolean from memory
-     {return substitute("""
-readBool <= {memoryName}[{Addr}][{Bit}];  $fdisplay(traceFile, "%8d r %8d = %8d  %s",     pc, {Addr}, {memoryName}[{Addr}], "{memoryName}");
-""","Addr", "i["+Addr.id+"]", "Bit", "i["+Bit.id+"]", "memoryName", n());
-     }
-
-    String vPutInt(Int Addr)                                                                                             // Verilog to put an integer into memory
-     {return substitute("""
-{memoryName}[{Addr}] <= writeInt;         $fdisplay(traceFile, "%8d W %8d %8d < %8d  %s", pc, {Addr}, {memoryName}[{Addr}], writeInt, "{memoryName}");
-""","Addr", "i["+Addr.id+"]", "memoryName", n());
-     }
-
-    String vPutBool(Int Addr, Int Bit)                                                                                   // Verilog to put a boolean into memory
-     {return substitute("""
-{memoryName}[{Addr}][{Bit}] <= writeBool; $fdisplay(traceFile, "%8d r %8d = %8d  %s",     pc, {Addr}, {memoryName}[{Addr}], "{memoryName}"); $fdisplay(traceFile, "%8d w %8d %8d < %8d  %s", pc, {Addr}, {memoryName}[{Addr}], writeBool, "{memoryName}");
-""","Addr", "i["+Addr.id+"]", "Bit", "i["+Bit.id+"]", "memoryName", n());
-     }
-
-    private int getUnit (int I, char Type)                                                                              // Get the value of a byte
-     {final int b = units[I];
-      jTrace(f("%8d %c %8d = %8d  %s", program().currentPc, Type, I, b, n()));
-      return b;                                                                                                         // Get the value of a byte
-     }
-
-    private int getUnit    (int I) {return getUnit(I, 'R');}                                                            // Get the value of a byte
-    private int getBitUnit (int I) {return getUnit(I, 'r');}                                                            // Get the value of a byte from which to read a bit
-
-    private void putUnit (int I, int J, char Type)                                                                      // Put a byte into memory
-     {final int A = units[I];                                                                                           // Previous value
-                    units[I] = J;                                                                                       // Set the value of a byte from an integer
-      jTrace(f("%8d %c %8d %8d < %8d  %s", program().currentPc, Type, I, A, J, n()));
-     }
-
-    private void    putUnit (int I, int J) {putUnit(I, J, 'W');}                                                        // Put a byte into memory
-    private void putBitUnit (int I, int J) {putUnit(I, J, 'w');}                                                        // Put a byte into memory after modifying a bit
 
     UnitMemory copy (UnitMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
      {subStart("Program.UnitMemory.copy");
@@ -1128,17 +1101,25 @@ readBool <= {memoryName}[{Addr}][{Bit}];  $fdisplay(traceFile, "%8d r %8d = %8d 
        {void body(Int Index)
          {final Int s = SourceOffset.Add(Index);
           final Int t = TargetOffset.Add(Index);
-          new I()
-           {void   a() {readInt = SourceMemory.getUnit(s.i());}
-            String v() {return SourceMemory.vGetInt(s);}
+          new I()                                                                                                       // Set source index
+           {void   a() {       readIntIndexJ(s);}
+            String v() {return readIntIndexV(s);}
            };
-          new I()
-           {void   a() {writeInt = readInt; jTrace(f("writeInt = %8d", readInt));}
-            String v() {return "writeInt <= readInt; vTrace(\"writeInt = %8d\", readInt);";}
+          new I()                                                                                                       // Read from source memory
+           {void   a() {       readIntJ();}
+            String v() {return readIntV();}
            };
-          new I()
-           {void   a() {putUnit(t.i(), writeInt);}
-            String v() {return vPutInt(t);}
+          new I()                                                                                                       // Set target index
+           {void   a() {       writeIntIndexJ(t);}
+            String v() {return writeIntIndexV(t);}
+           };
+          new I()                                                                                                       // Set write from read
+           {void   a() {writeInt = readInt;                                                   jTrace(f("%8d writeInt=readInt %8d",  pc(),  readInt));}
+            String v() {vtraceInc(); return vWriteInt() + " <= "+vReadInt() + "; $fdisplay(traceFile, \"%8d writeInt=readInt %8d\", pc, "+vReadInt()+ ");";}
+           };
+          new I()                                                                                                       // Write into target memory
+           {void   a() {       writeIntJ();}
+            String v() {return writeIntV();}
            };
          }
        };
@@ -1148,13 +1129,17 @@ readBool <= {memoryName}[{Addr}][{Bit}];  $fdisplay(traceFile, "%8d r %8d = %8d 
 
     UnitMemory clearUnit (Int Index)                                                                                    // Clear memory unit
      {subStart("Program.UnitMemory.clearUnit(I)");
-      new I()
-       {void   a() {writeInt = 0; jTrace(f("writeInt = %8d", 0));}
-        String v() {return "writeInt <= 0; vTrace(\"writeInt = %8d\", 0);";}
+      new I()                                                                                                           // Set target index
+       {void   a() {       writeIntIndexJ(Index);}
+        String v() {return writeIntIndexV(Index);}
        };
-      new I()
-       {void   a() {putUnit(Index.i(), writeInt);}
-        String v() {return vPutInt(Index);}
+      new I()                                                                                                           // Set write from read
+       {void   a() {writeInt = 0;                                          jTrace(f("%8d writeInt=0",  pc()));}
+        String v() {vtraceInc(); return vWriteInt() + " <= 0; $fdisplay(traceFile, \"%8d writeInt=0\", pc);";}
+       };
+      new I()                                                                                                           // Write into target memory
+       {void   a() {       writeIntJ();}
+        String v() {return writeIntV();}
        };
       subFinish();
       return this;
@@ -1176,22 +1161,38 @@ readBool <= {memoryName}[{Addr}][{Bit}];  $fdisplay(traceFile, "%8d r %8d = %8d 
 
     Int getInt (Int I)                                                                                                  // Get the int at the indicated position
      {final Int r = new Int();
-      new I()
-       {void   a()   {r.ex(Int.Ops.set, getUnit(I.i()));}
-        String v()   {vtraceInc(); return r.vtrace(new StringBuilder("getMemory_"+i()+"("+I.vn()+")"));}
-        int traces() {return 2;}
+      new I()                                                                                                           // Set index
+       {void   a() {       readIntIndexJ(I);}
+        String v() {return readIntIndexV(I);}
+       };
+      new I()                                                                                                           // Read from memory
+       {void   a() {       readIntJ();}
+        String v() {return readIntV();}
+       };
+      new I()                                                                                                           // Set target index
+       {void   a() {r.i = readInt; r.v = true;                                       jTrace(f("%8d ReadInt from Memory %8d = %8d",  pc(), r.id,     I.id));}
+        String v() {vtraceInc(); return "i["+r.id+"] <= "+vReadInt()+"; $fdisplay(traceFile, \"%8d ReadInt from Memory %8d = %8d\", pc, "+r.id+", "+I.id+");";}
        };
       return r;
      }
 
-    int getInt (int I) {return getUnit(I);}                                                                             // Get the int at the indicated position
-
     Bool getBool (Int I, Int J)                                                                                         // Get the bit in the specified byte at the specified position within the byte
      {Bool r = new Bool();
-      new I()
-       {void   a() {r.ex(Bool.Ops.set, getBit(getBitUnit(I.i()), J.i()));}
-        String v() {vtraceInc(); return r.vtrace(new StringBuilder("getMemoryBool_"+i()+"("+I.vn()+", "+J.vn()+")"));}
-        int traces() {return 2;}
+      new I()                                                                                                           // Set int index
+       {void   a() {       readIntIndexJ(I);}
+        String v() {return readIntIndexV(I);}
+       };
+      new I()                                                                                                           // Set bit index
+       {void   a() {       readBitIndexJ(J);}
+        String v() {return readBitIndexV(J);}
+       };
+      new I()                                                                                                           // Read from memory
+       {void   a() {       readBoolJ();}
+        String v() {return readBoolV();}
+       };
+      new I()                                                                                                           // Set target index
+       {void   a() {r.i = readBool; r.v = true;                                       jTrace(f("%8d ReadBool from Memory %8d = %8d",  pc(), r.id,     readBool ? 1 : 0));}
+        String v() {vtraceInc(); return "b["+r.id+"] <= "+vReadBool()+"; $fdisplay(traceFile, \"%8d ReadBool from Memory %8d = %8d\", pc, "+r.id+", "+vReadBool()+");";}
        };
       return r;
      }
@@ -1199,27 +1200,37 @@ readBool <= {memoryName}[{Addr}][{Bit}];  $fdisplay(traceFile, "%8d r %8d = %8d 
     Bool getBool (Int I) {return getBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                    // Get the bit at the bit indexed location
 
     UnitMemory putInt (Int I, Int J)                                                                                    // Set the int at the indicated position relative to the start to the specified value
-     {new I()
-       {void   a() {putUnit(I.i(), J.i());}
-        String v() {vtraceInc(); return "putMemory_"+i()+"("+I.vn()+", "+J.vn()+");";}
+     {new I()                                                                                                           // Set target index
+       {void   a() {       writeIntIndexJ(I);}
+        String v() {return writeIntIndexV(I);}
+       };
+      new I()                                                                                                           // Set write from read
+       {void   a() {final             int p = writeInt; writeInt = J.i();              jTrace(f("%8d writeInt2 %8d = %8d < %8d",  pc(),  writeIntIndex,          J.i,          p));}
+        String v() {vtraceInc(); return vWriteInt() + " <= i["+J.id + "]; $fdisplay(traceFile, \"%8d writeInt2 %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", i["+J.id + "], "+vWriteInt()+ ");";}
+       };
+      new I()                                                                                                           // Write into target memory
+       {void   a() {       writeIntJ();}
+        String v() {return writeIntV();}
        };
       return this;
      }
 
     UnitMemory putBool (Int I, Int J, Bool K)                                                                           // Set the bit at the indicated position in the byte at the specified position to the specified value
-     {new I()
-       {void a()
-         {final int p = I.i();
-          final int b = getBitUnit(p);
-          final int B = setBit(b, J.i(), K.b());
-          putBitUnit(p, B);
-         }
-        String v()
-         {final String i = I.vn(), j = J.vn(), k = K.vn();
-          vtraceInc(); vtraceInc();
-          return "putMemoryBool_"+i()+"("+i+", "+j+", "+k+");";
-         }
-        int traces() {return 2;}
+     {new I()                                                                                                           // Set target index
+       {void   a() {       writeIntIndexJ(I);}
+        String v() {return writeIntIndexV(I);}
+       };
+      new I()                                                                                                           // Set target index
+       {void   a() {       writeBitIndexJ(J);}
+        String v() {return writeBitIndexV(J);}
+       };
+      new I()                                                                                                           // Set write from read
+       {void   a() {writeBool = K.b();                                                  jTrace(f("%8d writeBool2 %8d, %8d = %8d < %8d",  pc(),  writeIntIndex,         writeBitIndex,          K.i ? 1 : 0,  writeBool ? 1 : 0));}
+        String v() {vtraceInc(); return vWriteBool() + " <= b["+K.id + "]; $fdisplay(traceFile, \"%8d writeBool2 %8d, %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", "+vWriteBitIndex()+ ", b["+K.id + "], b["+K.id + "]);";}
+       };
+      new I()                                                                                                           // Write into memory
+       {void   a() {       writeBoolJ();}
+        String v() {return writeBoolV();}
        };
       return this;
      }
@@ -1231,21 +1242,20 @@ readBool <= {memoryName}[{Addr}][{Bit}];  $fdisplay(traceFile, "%8d r %8d = %8d 
     final class Ref                                                                                                     // Reference into memory
      {final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
       final UnitMemory m = UnitMemory.this;
+
       Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
       Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
 
-//      UnitMemory memory ()                                                              {return UnitMemory.this;}       // Memory that owns this memory ref
-//      Program program ()                                                                   {return Program.this;}       // Program that owns this memory
       Ref        copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width);       return this;}       // Copy the specified memory possibly from another byte memory
       Ref       clear (int Width)            {m.clear(offset, Width);                               return this;}       // Clear memory by setting its bytes to zero
       Int      getInt (Int I)                {return m.getInt( I.Add(offset));}                                         // Get the int at the indicated position
       Bool    getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
+      boolean getBool (int I)                {return getBool(new Int(I)).b();}                                          // Get the bit at the bit indexed location - debugging
       Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
       Ref     putBool (Int I, Bool K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
-      int      getInt (int I)                {return m.getInt( I+offset.i());}                                          // Get an int immediately when debugging
+      int      getInt (int I)                {return m.getInt( offset.Add(I)).i();}                                     // Get an int immediately when debugging
       Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
       Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int
-      boolean getBool (int I) {return getBit(unitMemory.getBitUnit(I / Integer.SIZE+offset.i()), I % Integer.SIZE);}    // Get the bit at the bit indexed location - debugging
       Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
 
       public String toString ()                                                                                         // Print memory reference
@@ -1643,6 +1653,7 @@ module {name};                                                                  
   integer                 c;                                                                                            // Count of instructions executed
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer            lastPc;                                                                                            // The instruction which started the latest flow of control block
+  integer         traceFile;                                                                                            // Write verilog trace records to this file
   integer             index;                                                                                            // Index for clearing memory
   integer        lastBoolId;                                                                                            // Current base index for references to booleans
   integer         lastIntId;                                                                                            // Current base index for references to integers
@@ -1660,16 +1671,6 @@ module {name};                                                                  
   integer        targetBool;                                                                                            // Computed target boolean value to be loaded into a variable
   integer         targetInt;                                                                                            // Computed target integer value to be loaded into a variable
 
-  integer          readBool;                                                                                            // Boolean read from memory
-  integer     readBoolIndex;                                                                                            // Index at which to read boolean from memory
-  integer           readInt;                                                                                            // Integer read from memory
-  integer      readIntIndex;                                                                                            // Index at which to read integer from memory
-
-  integer         writeBool;                                                                                            // Boolean to write into memory
-  integer    writeBoolIndex;                                                                                            // Index at which to write boolean to memory
-  integer          writeInt;                                                                                            // Integer to write into memory
-  integer     writeIntIndex;                                                                                            // Index at which to write integer into memory
-  integer         traceFile;                                                                                            // File to which trace messages will be written
   integer                 i[INT_VARS:0];                                                                                // Integers
   reg                     b[BOOL_VARS:0];                                                                               // Booleans
 
@@ -1707,16 +1708,6 @@ module {name};                                                                  
              source2Int = 0;
              targetBool = 0;
               targetInt = 0;
-               readBool = 0;                                                                                            // Boolean read from memory
-          readBoolIndex = 0;                                                                                            // Index at which to read boolean from memory
-                readInt = 0;                                                                                            // Integer read from memory
-           readIntIndex = 0;                                                                                            // Index at which to read integer from memory
-
-              writeBool = 0;                                                                                            // Boolean to write into memory
-         writeBoolIndex = 0;                                                                                            // Index at which to write boolean to memory
-               writeInt = 0;                                                                                            // Integer to write into memory
-          writeIntIndex = 0;                                                                                            // Index at which to write integer into memory
-
 
       traceFile = $fopen("{traceFile}", "w");                                                                           // Clear the trace file
       if (traceFile == 0) begin
@@ -1740,8 +1731,8 @@ module {name};                                                                  
          }
 
         /*Execute*/out.write("""
-        state_clearInts  : clearInts  ();
-        state_clearBool  : clearBool  ();
+        state_clearInts  : clearInts();
+        state_clearBool  : clearBool();
         state_execute    : execute();
       endcase
     end
@@ -1782,14 +1773,19 @@ module {name};                                                                  
 
       for(int i = 0; i < memories.size(); ++i)                                                                          // Actions for each memory
        {final UnitMemory m = memories.elementAt(i);
-        out.write(traceVerilogMemoryPutInt    (m));
-        out.write(traceVerilogMemoryGetInt    (m));
-        out.write(traceVerilogMemoryPutBool(m));
-        out.write(traceVerilogMemoryGetBool(m));
         out.write(              clearMemory(m, i < memories.size()-1 ?
          "state_clearMemory_"+memories.elementAt(i+1).i() :
          "state_clearInts"));
         out.write(   dumpVerilogMemoryInDecimal(m));
+
+        out.write("  integer "+ m.     vReadBool() + ";\n");                                                            // Boolean read from memory
+        out.write("  integer "+ m.    vWriteBool() + ";\n");                                                            // Boolean to write into memory
+        out.write("  integer "+ m.      vReadInt() + ";\n");                                                            // Integer read from memory
+        out.write("  integer "+ m.     vWriteInt() + ";\n");                                                            // Integer to write into memory
+        out.write("  integer "+ m. vReadIntIndex() + ";\n");                                                            // Index at which to read an integer from memory
+        out.write("  integer "+ m. vReadBitIndex() + ";\n");                                                            // Index within an integer from which to get a bit to make a boolean
+        out.write("  integer "+ m.vWriteIntIndex() + ";\n");                                                            // Index at which to write an integer into memory
+        out.write("  integer "+ m.vWriteBitIndex() + ";\n");                                                            // Index within an integer at which to set a bit to represent a boolean
        }
 
       for(String m : extraVerilogMethods) out.write(m);                                                                 // Incorporate extra Verilog methods required to support generated instructions
@@ -1943,77 +1939,7 @@ endfunction
     return ""+s;
    }
 
-  String traceVerilogMemoryGetInt (UnitMemory M)                                                                        // Trace byte read from memory
-   {vtraceInc();
-    return substitute("""
-  function automatic integer getMemory_{memoryId} (input integer Addr);
-    begin
-      getMemory_{memoryId} = {memoryName}[Addr];
-
-      //traceFile = $fopen("{traceFile}", "a");
-      $fdisplay(traceFile, "%8d R %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
-      //$fclose(traceFile);
-    end
-  endfunction
-""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
-  }
-
-  String traceVerilogMemoryGetBool (UnitMemory M)                                                                       // Trace bool read from memory
-   {vtraceInc();
-    return substitute("""
-  function automatic reg getMemoryBool_{memoryId} (input integer Addr, input integer Bit);
-    integer f;
-    begin
-      getMemoryBool_{memoryId} = {memoryName}[Addr][Bit];
-
-      //traceFile = $fopen("{traceFile}", "a");
-      $fdisplay(traceFile, "%8d r %8d = %8d  %s", pc, Addr, {memoryName}[Addr], "{memoryName}");
-      //$fclose(traceFile);
-    end
-  endfunction
-""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
-  }
-
-  String traceVerilogMemoryPutInt (UnitMemory M)                                                                        // Trace byte written to memory
-   {vtraceInc();
-    return substitute("""
-  task automatic putMemory_{memoryId} (input integer Addr, input integer Value);
-    integer f;
-    integer a;
-    begin
-      a = {memoryName}[Addr];
-          {memoryName}[Addr] = Value;
-
-      //traceFile = $fopen("{traceFile}", "a");
-      $fdisplay(traceFile, "%8d W %8d %8d < %8d  %s", pc, Addr, a, Value, "{memoryName}");
-      //$fclose(traceFile);
-    end
-  endtask
-""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
-  }
-
-  String traceVerilogMemoryPutBool (UnitMemory M)                                                                       // Trace bit written to memory
-   {vtraceInc();
-    return substitute("""
-  task automatic putMemoryBool_{memoryId} (input integer Addr, input integer Bit, input integer Value);
-    integer f;
-    integer a;
-    integer b;
-    begin
-      a = {memoryName}[Addr];
-          {memoryName}[Addr][Bit] = Value[0];
-      b = {memoryName}[Addr];
-
-      //traceFile = $fopen("{traceFile}", "a");
-      $fdisplay(traceFile, "%8d r %8d = %8d  %s",     pc, Addr, a,    "{memoryName}");
-      $fdisplay(traceFile, "%8d w %8d %8d < %8d  %s", pc, Addr, a, b, "{memoryName}");
-      //$fclose(traceFile);
-    end
-  endtask
-""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n());
-  }
-
-  String dumpVerilog ()
+  String dumpVerilog ()                                                                                                 // Dump verilog memory and variables
    {final StringBuilder s = new StringBuilder();
     for(UnitMemory m : memories) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
     s.append(dumpVerilogVariablesName()+"();");
@@ -2394,16 +2320,19 @@ Memory 0
             m.getInt(new Int(1)).ok(2);
 
             m.getBool(new Int(32)).ok(false);
-            m.getBool(new Int(33)).ok(true );
+            m.getBool(new Int(33)).ok(true);
             m.putBool(new Int(32), new Bool(true));
             m.putBool(new Int(34), new Bool(true));
+            dumpProgramState("AAAA1111");
             m.getInt (new Int( 1)).ok(7);
+            dumpProgramState("AAAA2222");
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    7
 """);
 
+            dumpProgramState("AAAA3333");
             m.putBool(new Int(32), new Bool(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
@@ -2432,7 +2361,6 @@ Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000
 """);
-            maxSteps(999);
             execute();
            }
          };
@@ -2589,8 +2517,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_memory();
+   {oldTests();
+   test_memoryRef();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
