@@ -13,11 +13,11 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                    supressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+ {final  boolean                    supressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
+  final  boolean                    compressInstructions =!true;                                                        // Compress out identical instructions
   public int                                    maxSteps = 9999;                                                        // Number of steps permitted in code execution
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
@@ -2397,6 +2397,102 @@ Memory 0
     test_lastInstructionBase(false);
    }
 
+  static void test_boolean(Boolean Ex)
+   {sayCurrentTestName();
+    final int N = 8;
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int z = new Int ("z");
+        final Int a = new Int ("a").set(N/2);
+        final StringBuilder s = new StringBuilder();
+        new ForCount(new Int(N))
+         {void body(Int Index)
+           {new If (a.eq(Index))
+             {void Then() {new I() {void a() {s.append(f("%d     == %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+              void Else() {new I() {void a() {s.append(f("%d NOT == %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+             };
+            new If (a.ne(Index))
+             {void Then() {new I() {void a() {s.append(f("%d     != %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+              void Else() {new I() {void a() {s.append(f("%d NOT != %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+             };
+            new If (a.lt(Index))
+             {void Then() {new I() {void a() {s.append(f("%d     <  %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+              void Else() {new I() {void a() {s.append(f("%d NOT <  %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+             };
+            new If (a.le(Index))
+             {void Then() {new I() {void a() {s.append(f("%d     <= %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+              void Else() {new I() {void a() {s.append(f("%d NOT <= %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+             };
+            new If (a.gt(Index))
+             {void Then() {new I() {void a() {s.append(f("%d     >  %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+              void Else() {new I() {void a() {s.append(f("%d NOT >  %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+             };
+            new If (a.ge(Index))
+             {void Then() {new I() {void a() {s.append(f("%d     >= %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+              void Else() {new I() {void a() {s.append(f("%d NOT >= %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
+             };
+           }
+         };
+        Check(s, """
+4 NOT == 0
+4     != 0
+4 NOT <  0
+4 NOT <= 0
+4     >  0
+4     >= 0
+4 NOT == 1
+4     != 1
+4 NOT <  1
+4 NOT <= 1
+4     >  1
+4     >= 1
+4 NOT == 2
+4     != 2
+4 NOT <  2
+4 NOT <= 2
+4     >  2
+4     >= 2
+4 NOT == 3
+4     != 3
+4 NOT <  3
+4 NOT <= 3
+4     >  3
+4     >= 3
+4     == 4
+4 NOT != 4
+4 NOT <  4
+4     <= 4
+4 NOT >  4
+4     >= 4
+4 NOT == 5
+4     != 5
+4     <  5
+4     <= 5
+4 NOT >  5
+4 NOT >= 5
+4 NOT == 6
+4     != 6
+4     <  6
+4     <= 6
+4 NOT >  6
+4 NOT >= 6
+4 NOT == 7
+4     != 7
+4     <  7
+4     <= 7
+4 NOT >  7
+4 NOT >= 7
+""");
+        execute();
+       }
+     };
+   }
+
+  static void test_boolean()
+   {          test_boolean(true);
+              test_boolean(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
     test_andOr();
@@ -2413,11 +2509,12 @@ Memory 0
     test_defineArrayViaVerilogFunction();
     test_lastInstructionBase();
     test_variables();
+    test_boolean();
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-   test_memoryRef();
+   {//oldTests();
+    test_boolean();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
