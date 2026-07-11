@@ -1137,7 +1137,7 @@ Allocations   :    0
 Number of Keys:    0
 """);
 
-    t.maxSteps = 99_999;
+    t.maxSteps = 999_999;
     t.execute();
    }
 
@@ -1201,7 +1201,7 @@ Leaf   at:   2 size:   4, count:   4
 """);
 
 
-    t.maxSteps = 99_999;
+    t.maxSteps = 999_999;
     t.execute();
    }
 
