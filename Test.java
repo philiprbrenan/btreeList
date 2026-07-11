@@ -18,19 +18,21 @@ import java.util.zip.GZIPOutputStream;
 //D1 Construct                                                                                                          // Test a java program describing a chip
 
 public class Test                                                                                                       // Test a java program describing a chip
- {final static boolean github_actions          = "true".equals(System.getenv("GITHUB_ACTIONS"));                        // Whether we are on a github
-  final static long start                      = System.nanoTime();                                                     // Start time
-  final static Stack<String>     sayThisOrStop = new Stack<>();                                                         // The next says should say this or else we should stop
-  final static TreeSet<String>    filesWritten = new TreeSet<>();                                                       // Files written
-  final static TreeSet<String>   testsExecuted = new TreeSet<>();                                                       // Tests executed
-  final static boolean theShorterIsTheDaughter = true;                                                                  // True for a shorter traceback during tests to get more counts on the page at a time in Geany
-  static       boolean                   debug = false;                                                                 // Global debug flag
-  final static boolean        coverageAnalysis = false;                                                                 // Enables coverage checks
+ {final static boolean            github_actions = "true".equals(System.getenv("GITHUB_ACTIONS"));                      // Whether we are on a github
+  final static long                        start = System.nanoTime();                                                   // Start time
+  final static Stack<String>       sayThisOrStop = new Stack<>();                                                       // The next says should say this or else we should stop
+  final static TreeSet<String>      filesWritten = new TreeSet<>();                                                     // Files written
+  final static TreeSet<String>     testsExecuted = new TreeSet<>();                                                     // Tests executed
+  final static boolean   theShorterIsTheDaughter = true;                                                                // True for a shorter traceback during tests to get more counts on the page at a time in Geany
+  static       boolean                     debug = false;                                                               // Global debug flag
+  final static boolean          coverageAnalysis = false;                                                               // Enables coverage checks
 // Uncomment zz for methods not called analysis
 // Uncomment z  for blocks not called analysis
-  final static String coverageAnalysisSubStart = "zz"+"();";                                                            // A string indicating the start of a subroutine - method entries only
-//final static String coverageAnalysisSubStart = "z"+"();";                                                             // Any labeled statement
+  final static String   coverageAnalysisSubStart = "zz"+"();";                                                          // A string indicating the start of a subroutine - method entries only
+//final static String   coverageAnalysisSubStart = "z"+"();";                                                           // Any labeled statement
   static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
+  static String                        testGroup = null;                                                                // Tests can be split into groups so that they can be run in parallel
+  static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   Test Test() {return this;}                                                                                            // Instance
 
@@ -1127,7 +1129,7 @@ public class Test                                                               
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
-  static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
+  static boolean rtg (int i)  {return testGroup == null || testGroup.equals(""+i);}                                     // Whether to run the indicated test group
 
   static boolean ok(boolean b)                                                                                          // Check test results match expected results.
    {if (b) {++testsPassed; return true;}
