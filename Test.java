@@ -622,13 +622,17 @@ public class Test                                                               
        }
      }
 
-    if (notExecuted.size() > 0)                                                                                         // Lines not executed
+    if (notExecuted.size() > 0)                                                                                         // Some marked lines/methods were not executed
      {say("Not executed");
       for (String f: notExecuted.keySet())                                                                              // The files containing lines that have not been executed
        {for (Integer i : notExecuted.get(f)) say(f+":"+i+":");                                                          // Not executed lines
        }
      }
-    else say("All methods executed");                                                                                   // All lines were executed
+    else                                                                                                                // All marked lines/methods were executed
+     {final int s = executed.size();
+      if (s > 0 ) say("All", s, "methods executed");                                                                    // One or marked lines or methods
+      else        say("No methods selected for coverage analysis");                                                     // No marked lines or methods so coverage is not testing anything
+     }
 
     if (executed.size() > 0 && top > 0)                                                                                 // Most frequently executed
      {final Stack<LineCount> lc = new Stack<>();                                                                        // Lines executed most frequently
@@ -1183,7 +1187,7 @@ public class Test                                                               
 
         final String[]sg = G.split("\\n");                                                                              // Got as lines
         final String[]se = E.split("\\n");                                                                              // Expected as lines
-        for(int k = 0; k < sg.length; k++)                                                                              // Show each line in the string
+        for(int k = 0; k < min(se.length, sg.length); k++)                                                              // Show each line in the string
          {if (l == k+1)                                                                                                 // Write the difference line for the first line with errors
            {final String Eg = sg[k], Ee = se[k];                                                                        // Differing versions of first line with errors in it
             final StringBuilder dg = new StringBuilder();                                                               // The difference on got
