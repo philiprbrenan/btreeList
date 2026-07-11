@@ -274,17 +274,17 @@ final public class BitSet extends Program                                       
   int      base_zero ()        {return posZero(0);}                                                                     // Start of the zeros tree
   int       base_one ()        {return posOne (0);}                                                                     // Start of the ones tree
 
-  Int       baseZero ()        {final Int r = new Int("baseZero" ); new I() {void a() {r.ex(Int.Ops.set, base_zero ()       );} String v() {return r.vtrace(""+posZero(0));}}; return r;} //N Position in the current row
-  Int        baseOne ()        {final Int r = new Int("baseOne"  ); new I() {void a() {r.ex(Int.Ops.set, base_one  ()       );} String v() {return r.vtrace(""+posOne (0));}}; return r;} //N Position in the current row
-  Int       pos_zero (Int Pos) {final Int r = new Int("pos_zero" ); new I() {void a() {r.ex(Int.Ops.set, posZero   [Pos.i()]);} String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; return r;} // Position in the current row in the zeros tree
-  Int        pos_one (Int Pos) {final Int r = new Int("pos_one"  ); new I() {void a() {r.ex(Int.Ops.set, posOne    [Pos.i()]);} String v() {return r.vtrace(poVerilog +"("+Pos.vn()+")");}}; return r;} //N Position in the current row in the ones tree
+  Int       baseZero ()        {final Int r = new Int("baseZero" );         r.T(); new I() {void a() {r.ex(Int.Ops.set, base_zero      ()       );} String v() {return r.vtrace(""+posZero(0));}};               r.W(); return r;} //N Position in the current row
+  Int        baseOne ()        {final Int r = new Int("baseOne"  );         r.T(); new I() {void a() {r.ex(Int.Ops.set, base_one       ()       );} String v() {return r.vtrace(""+posOne (0));}};               r.W(); return r;} //N Position in the current row
+  Int       pos_zero (Int Pos) {final Int r = new Int("pos_zero" );         r.T(); new I() {void a() {r.ex(Int.Ops.set, posZero        [Pos.i()]);} String v() {return r.vtrace(pzVerilog +"("+Pos.vn()+")");}}; r.W(); return r;} // Position in the current row in the zeros tree
+  Int        pos_one (Int Pos) {final Int r = new Int("pos_one"  );         r.T(); new I() {void a() {r.ex(Int.Ops.set, posOne         [Pos.i()]);} String v() {return r.vtrace(poVerilog +"("+Pos.vn()+")");}}; r.W(); return r;} //N Position in the current row in the ones tree
 
-  Int  limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace(luoVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the ones tree
-  Int limitUpperZero (Int Pos) {final Int r = new Int("zero upper limit");  new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace(luzVerilog+"("+Pos.vn()+")");}}; return r;} // Upper limit of the current row in the zeros tree
-  Int  limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);} String v() {return r.vtrace(lloVerilog+"("+Pos.vn()+")");}}; return r;} // Lower limit of the current row in the ones tree
-  Int limitLowerZero (Int Pos) {final Int r = new Int("zero lower limit");  new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);} String v() {return r.vtrace(llzVerilog+"("+Pos.vn()+")");}}; return r;} //N Lower limit of the current row in the zeros tree
-  Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace(hoVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the ones tree
-  Int     heightZero (Int Pos) {final Int r = new Int("zero height");       new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace(hzVerilog +"("+Pos.vn()+")");}}; return r;} // Height of the specified position in the zeros tree
+  Int  limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); r.T(); new I() {void a() {r.ex(Int.Ops.set, limitsUpperOne [Pos.i()]);} String v() {return r.vtrace(luoVerilog+"("+Pos.vn()+")");}}; r.W(); return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero (Int Pos) {final Int r = new Int("zero upper limit");  r.T(); new I() {void a() {r.ex(Int.Ops.set, limitsUpperZero[Pos.i()]);} String v() {return r.vtrace(luzVerilog+"("+Pos.vn()+")");}}; r.W(); return r;} // Upper limit of the current row in the zeros tree
+  Int  limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); r.T(); new I() {void a() {r.ex(Int.Ops.set, limitsLowerOne [Pos.i()]);} String v() {return r.vtrace(lloVerilog+"("+Pos.vn()+")");}}; r.W(); return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero (Int Pos) {final Int r = new Int("zero lower limit");  r.T(); new I() {void a() {r.ex(Int.Ops.set, limitsLowerZero[Pos.i()]);} String v() {return r.vtrace(llzVerilog+"("+Pos.vn()+")");}}; r.W(); return r;} //N Lower limit of the current row in the zeros tree
+  Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      r.T(); new I() {void a() {r.ex(Int.Ops.set, heightOne      [Pos.i()]);} String v() {return r.vtrace(hoVerilog +"("+Pos.vn()+")");}}; r.W(); return r;} // Height of the specified position in the ones tree
+  Int     heightZero (Int Pos) {final Int r = new Int("zero height");       r.T(); new I() {void a() {r.ex(Int.Ops.set, heightZero     [Pos.i()]);} String v() {return r.vtrace(hzVerilog +"("+Pos.vn()+")");}}; r.W(); return r;} // Height of the specified position in the zeros tree
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
@@ -729,18 +729,18 @@ final public class BitSet extends Program                                       
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
     new For(new Int(size()))                                                                                            // Step from one to one
      {void body(Int Index, Bool Continue)
-       {//new If (p.valid())                                                                                              // Latest step is valid
-        // {void Then()
-        //   {c.inc();
-        //    final Bint q = nextOne(p.i());                                                                              // Step to next one
-        //    new If (q.valid())                                                                                          // Valid if we are still in the bitset
-        //     {void Then()
-        //       {p.copy(q);                                                                                              // Continue from the found one
-        //        Continue.set(true);                                                                                     // Continue stepping
-        //       }
-        //     };
-        //   }
-        // };
+       {new If (p.valid())                                                                                              // Latest step is valid
+         {void Then()
+           {c.inc();
+            final Bint q = nextOne(p.i());                                                                              // Step to next one
+            new If (q.valid())                                                                                          // Valid if we are still in the bitset
+             {void Then()
+               {p.copy(q);                                                                                              // Continue from the found one
+                Continue.set(true);                                                                                     // Continue stepping
+               }
+             };
+           }
+         };
        }
      };
     subFinish();
@@ -828,7 +828,7 @@ final public class BitSet extends Program                                       
    {final BitSet b = test_bits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
     for (int i : s) b.set(b.new Int(i));
-    if (false) b.ok(()->b, """
+    b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
 One:
@@ -846,14 +846,14 @@ Zero:
 """);
 
     final Int o = b.countAllOnes ().ok( 9);
-//    final Int z = b.countAllZeros().ok(23);
+    final Int z = b.countAllZeros().ok(23);
 
     //b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
     //b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
     //b.adjacentOnes(b.new Int(24), b.new Int(19)).ok(true);
     //b.adjacentOnes(b.new Int(25), b.new Int(19)).ok(false);
     //b.adjacentOnes(b.new Int(25), b.new Int(25)).ok(false);
-/*
+
     if (true)
      {final Bint q = b.prevZero(b.new Int(14));
       q.ok(true);
@@ -899,7 +899,6 @@ Zero:
 
                                 b.firstZero().ok( 0);
                                 b. lastZero().ok(29);
-*/
     b.maxSteps = 99_999;
     b.execute();
    }
