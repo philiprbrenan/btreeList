@@ -1254,7 +1254,7 @@ Zero:
      };
     b.full().ok(true);
 
-    b.maxSteps = 99_999;
+    b.maxSteps = 999_999;
     b.execute();
    }
 
@@ -1725,7 +1725,7 @@ Zero:
 
   static void newTests()                                                                                                // Tests under development.
    {//oldTests();                                                                                                         // Run baseline tests.
-    test_fullEmpty(true);
+    test_fullEmpty(16, false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
