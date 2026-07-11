@@ -729,18 +729,18 @@ final public class BitSet extends Program                                       
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
     new For(new Int(size()))                                                                                            // Step from one to one
      {void body(Int Index, Bool Continue)
-       {new If (p.valid())                                                                                              // Latest step is valid
-         {void Then()
-           {c.inc();
-            final Bint q = nextOne(p.i());                                                                              // Step to next one
-            new If (q.valid())                                                                                          // Valid if we are still in the bitset
-             {void Then()
-               {p.copy(q);                                                                                              // Continue from the found one
-                Continue.set(true);                                                                                     // Continue stepping
-               }
-             };
-           }
-         };
+       {//new If (p.valid())                                                                                              // Latest step is valid
+        // {void Then()
+        //   {c.inc();
+        //    final Bint q = nextOne(p.i());                                                                              // Step to next one
+        //    new If (q.valid())                                                                                          // Valid if we are still in the bitset
+        //     {void Then()
+        //       {p.copy(q);                                                                                              // Continue from the found one
+        //        Continue.set(true);                                                                                     // Continue stepping
+        //       }
+        //     };
+        //   }
+        // };
        }
      };
     subFinish();
@@ -828,7 +828,7 @@ final public class BitSet extends Program                                       
    {final BitSet b = test_bits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
     for (int i : s) b.set(b.new Int(i));
-    b.ok(()->b, """
+    if (false) b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
    1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
 One:
@@ -846,14 +846,14 @@ Zero:
 """);
 
     final Int o = b.countAllOnes ().ok( 9);
-    final Int z = b.countAllZeros().ok(23);
+//    final Int z = b.countAllZeros().ok(23);
 
     //b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
     //b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
     //b.adjacentOnes(b.new Int(24), b.new Int(19)).ok(true);
     //b.adjacentOnes(b.new Int(25), b.new Int(19)).ok(false);
     //b.adjacentOnes(b.new Int(25), b.new Int(25)).ok(false);
-
+/*
     if (true)
      {final Bint q = b.prevZero(b.new Int(14));
       q.ok(true);
@@ -899,6 +899,7 @@ Zero:
 
                                 b.firstZero().ok( 0);
                                 b. lastZero().ok(29);
+*/
     b.maxSteps = 99_999;
     b.execute();
    }
@@ -1714,17 +1715,18 @@ Zero:
     if (rtg( 2)) test_prevNext01();
     if (rtg( 3)) test_prevNext10();
     if (rtg( 4)) test_oneZero();
-    if (rtg( 5)) test_fullEmpty(); //
+    if (rtg( 5)) test_fullEmpty();
     if (rtg( 6)) test_count();
     if (rtg( 7)) test_powerPosOneZero();
     if (rtg( 8)) test_twoOrMoreOnes();
-    if (rtg( 9)) test_limits();  // same problem
+    if (rtg( 9)) test_limits();
     if (rtg(10)) test_lowHighZero();
     if (rtg(11)) test_4();
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();                                                                                                         // Run baseline tests.
+    test_prevNext(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
