@@ -14,12 +14,13 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                    supressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+ {final  boolean                    suppressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
   final  boolean                    compressInstructions =!true;                                                        // Compress out identical instructions
-   public int                                    maxSteps = 999_999;                                                    // Number of steps permitted in code execution - this provides some protection against endless loops during development
+  final  boolean              suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
+         int                                    maxSteps = 999_999;                                                    // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
@@ -82,6 +83,7 @@ public class Program extends Test                                               
     unitMemory      = Build.size   != null ? new UnitMemory(Build.size) : null;                                         // Memory associated with program if any
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
     deleteAllFiles(verilogTestFolder(), 9);                                                                             // Delete generated Verilog files created by a prior run of the current test
+stop();
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -584,7 +586,7 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    void jtrace () {jTrace(f("%8d b= %7d", currentPc(), (i ? 1 : 0)));}                                                // Trace a java    boolean operation
+    void jtrace () {jTrace(f("%8d b= %7d", currentPc(), (i ? 1 : 0)));}                                                 // Trace a java    boolean operation
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
      {vtraceInc();
@@ -853,9 +855,7 @@ public class Program extends Test                                               
     String vtrace (String        Value) {vtraceInc(); return "traceInt("+Value+");";}                                   // Trace an integer operation
     String vtrace (StringBuilder Value) {vtraceInc(); return "traceInt("+Value+");";}                                   // Trace an integer operation
 
-    void jtrace ()                                                                                                      // Trace the integer operation
-     {jTrace(f("%8d traceInt[%8d,%10d]= %8d",  currentPc(), lastIntId(), targetDeltaIntId(), i));
-     }
+    void jtrace () {jTrace(f("%8d traceInt[%8d,%10d]= %8d",  currentPc(), lastIntId(), targetDeltaIntId(), i));}        // Trace the integer operation
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -1359,7 +1359,7 @@ public class Program extends Test                                               
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String        traceBack = supressTraceComments ?  null : traceBack();                                         // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String        traceBack = suppressTraceComments ?  null : traceBack();                                         // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
     final String         traceSub = subsTrace;                                                                          // Sub during which this instruction was created
     final FlowControl flowcontrol = lastFlowControl;                                                                    // Record current position among the integers
     final boolean          noJump;                                                                                      // The instruction will handle setting the program counter  if false
@@ -1386,13 +1386,13 @@ public class Program extends Test                                               
 //D3 Overrides                                                                                                          // Methods that modify the behaviour of an instruction
 
     abstract void a ();                                                                                                 // The action to be performed by the instruction
-    String        v () {return instructionLocationAsComment();};                                                        // Location of missing verilog instruction
+    String        v () {return "not set";};                                                                             // Verilog code
     int      traces () {return 1;}                                                                                      // Number of trace records expected
     boolean   trace () {return true;}                                                                                   // Enable tracing
 
     String instructionLocation () {return traceBack != null ? traceBack : traceSub  != null ? traceSub : "";}           // Trace the location at which the instruction was generated
     String instructionLocationAsComment ()                                                                              // Trace the location at which the instruction was generated as a comment
-     {if (!supressTraceComments)
+     {if (!suppressTraceComments)
        {if (traceBack != null) return "/*" + traceBack.replaceAll("\\n", ", ") + "*/";                                  // Appending trace comments makes the code easier to debug but inhibits code compression
         if (traceSub  != null) return "/*" + traceSub .replaceAll("\\n", ", ") + "*/";
        }
@@ -1411,7 +1411,8 @@ public class Program extends Test                                               
 
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
      {program().vtrace = 0;                                                                                             // Count number of trace calls made in instruction
-      final StringBuilder s = new StringBuilder(v());                                                                   // Generated code
+      final String        v = suppressInstructionTracing ? v().replaceAll("\\$fd.*?;", "") : v();                       // Generate verilog and remove tracing if requested
+      final StringBuilder s = new StringBuilder(v);                                                                     // Generated code
       if (noJump)  s.append(" pc <= pc + 1;");
 
       if (trace())
@@ -1452,7 +1453,7 @@ public class Program extends Test                                               
        {l.add(f("%4d", instructionNumber));                                                                             // Instruction number
         s.append(verilogCodeForOneInstruction(l, v));                                                                   // Verilog code for instruction with its label
        }
-      return ""+s;                                                                                                         // Generated code
+      return ""+s;                                                                                                      // Generated code
      }
    }
 
@@ -1463,7 +1464,12 @@ public class Program extends Test                                               
    }
 
   void appendJavaTrace(String Message) {appendFile(javaTraceFile(), Message);}                                          // Append to the java trace file
-  void jTrace (String Message) {jtraceInc(); if (program().executing.trace()) appendJavaTrace(Message+"\n");}           // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
+  void jTrace (String Message)                                                                                          // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
+   {jtraceInc();
+    if (program().suppressInstructionTracing) return;                                                                   // Suppress instruction tracing
+    if (!program().executing.trace()) return;                                                                           // Not tracing this instruction
+    appendJavaTrace(Message+"\n");                                                                                      // Write tracing message
+   }
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
    {vtraceInc();
@@ -1495,7 +1501,7 @@ public class Program extends Test                                               
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
-    for (Bool  b : bools)
+    for (Bool b : bools)
      {s.append(f("Bool %8d == %8d", b.id, b.i ? 1 : 0));
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
