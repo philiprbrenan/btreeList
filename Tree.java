@@ -1137,7 +1137,7 @@ Allocations   :    0
 Number of Keys:    0
 """);
 
-    t.maxSteps = 999_999;
+    t.maxSteps(999_999);
     t.execute();
    }
 
@@ -1201,7 +1201,7 @@ Leaf   at:   2 size:   4, count:   4
 """);
 
 
-    t.maxSteps = 999_999;
+    t.maxSteps(999_999);
     t.execute();
    }
 
@@ -1245,7 +1245,7 @@ Leaf   at:   2 size:   4, count:   4
 (3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
 """);
 
-    t.maxSteps = 9_999_999;
+    t.maxSteps(9_999_999);
     t.execute();
    }
 
@@ -1287,7 +1287,7 @@ Leaf   at:   2 size:   4, count:   4
 (3,9,0)       (4,9,2)       (7,9,4)          (8,9)           (10,6,0)         (5,6,2)         (12,6,4)         (2,6)      |
 """);
 
-    t.maxSteps = 9_999_999;
+    t.maxSteps(9_999_999);
     t.execute();
    }
 
@@ -1319,7 +1319,7 @@ Leaf   at:   2 size:   4, count:   4
 (12,9,0)       (5,9,2)       (10,9,4)         (8,9)           (7,6,0)         (4,6,2)         (3,6,4)         (2,6)      |
 """);
 
-    t.maxSteps = 9_999_999;
+    t.maxSteps(9_999_999);
     t.execute();
    }
 
@@ -1359,7 +1359,7 @@ Leaf   at:   2 size:   4, count:   4
 (14,5,0)       (1,5,2)       (9,5,4)         (4,5)           (12,11,1)          (3,11,4)        (8,11,5)        (7,11)      (10,6,2)         (2,6)|
 """);
 
-        maxSteps = 9_999_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1476,7 +1476,7 @@ Leaf   at:   2 size:   4, count:   4
 31,32|
 32|
 """);
-    t.maxSteps = 9_999_999;
+    t.maxSteps(9_999_999);
     t.execute();
    }
 
@@ -1593,7 +1593,7 @@ Leaf   at:   2 size:   4, count:   4
 1|
 """);
 
-    t.maxSteps = 9_999_999;
+    t.maxSteps(9_999_999);
     t.execute();
    }
 
@@ -1714,7 +1714,7 @@ Leaf   at:   2 size:   4, count:   4
 22|
 """);
 
-    t.maxSteps = 9_999_999;
+    t.maxSteps(9_999_999);
     t.execute();
    }
 
@@ -1751,7 +1751,7 @@ Leaf           size:   4, count:   2
    0     0     1
    1     1     1
 """);
-        maxSteps = 9_999_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1782,7 +1782,7 @@ Leaf           size:   4, count:   2
        }
      };
 
-    t.maxSteps = 9_999_999;
+    t.maxSteps(9_999_999);
     t.execute();
    }
 
