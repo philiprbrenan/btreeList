@@ -19,7 +19,7 @@ public class Program extends Test                                               
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
   final  boolean                    compressInstructions =!true;                                                        // Compress out identical instructions
-  public int                                    maxSteps = 99_999;                                                      // Number of steps permitted in code execution
+   public int                                    maxSteps = 999_999;                                                    // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
@@ -1131,8 +1131,8 @@ public class Program extends Test                                               
             String v() {return writeIntIndexV(t);}
            };
           new I()                                                                                                       // Set write from read
-           {void   a() {writeInt = SourceMemory.readInt;                                      jTrace(f("%8d writeInt=readInt %8d",  pc(),  readInt));}
-            String v() {vtraceInc(); return vWriteInt() + " <= "+vReadInt() + "; $fdisplay(traceFile, \"%8d writeInt=readInt %8d\", pc, "+vReadInt()+ ");";}
+           {void   a() {writeInt = SourceMemory.readInt;                                                   jTrace(f("%8d writeInt=readInt %8d",  pc(), writeInt));}
+            String v() {vtraceInc(); return vWriteInt() + " <= "+SourceMemory.vReadInt() + "; $fdisplay(traceFile, \"%8d writeInt=readInt %8d\", pc, "+SourceMemory.vReadInt()+ ");";}
            };
           new I()                                                                                                       // Write into target memory
            {void   a() {       writeIntJ();}
