@@ -1317,7 +1317,7 @@ usedSlots:    .   .   .   .   .   .   X   X
 usedKeys :    .   .   X   X
 keys     :    0   0   1   2
 """);
-        maxSteps = 999_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1332,7 +1332,7 @@ keys     :    0   0   1   2
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {maxSteps = 99_999;
+       {maxSteps(9_999_999);
         setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
         setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
@@ -1377,7 +1377,7 @@ keys     :    7   1   3   2   4   5   6   0
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {maxSteps = 99_999;
+       {maxSteps(9_999_999);
         setSlotAndKey(new Int(2),   new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),   new Int(3),  new Int(2));
         setSlotAndKey(new Int(7),   new Int(2),  new Int(3));
@@ -1482,7 +1482,7 @@ usedSlots:    .   X   .   .   .   X   .   .
 usedKeys :    .   .   X   X
 keys     :    0   0   4   3
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1528,7 +1528,7 @@ usedSlots:    X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X
 keys     :    2   1   4   3
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1596,7 +1596,7 @@ keys     :    4   5   0   0   0
 //keys     :    0   0   0   5   4
 //""");
 //        mergeFromRightOdd(l, new Int(3)).ok(false);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1654,7 +1654,7 @@ usedSlots:    X   .   X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X   X
 keys     :    1   2   3   5   4
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1711,7 +1711,7 @@ Zero:
    3   43    2 |  0  0
    4   45    1 |  0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
         check(find(new Int( 5)).print(), "Find(slot=Bint(0), lower=true, higher=false, equal=false, empty=false)");
         check(find(new Int(11)).print(), "Find(slot=Bint(0), lower=true, higher=true, equal=true, empty=false)");
@@ -1776,7 +1776,7 @@ Zero:
    3   43    2 |  0  0
    4   45    1 |  0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
         check(find(new Int( 5)).print(), "Find(slot=Bint(9), lower=true, higher=false, equal=false, empty=false)");
         check(find(new Int(11)).print(), "Find(slot=Bint(9), lower=true, higher=true, equal=true, empty=false)");
@@ -1882,7 +1882,7 @@ usedSlots:    X   X   .   X   .   .   .   .   X   .   X   .   X   X   X   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   14  13  16  15  18  17  12  11
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1916,7 +1916,7 @@ usedSlots:    .   .   X   .   X   .   X   X   X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  18  14
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -1986,7 +1986,7 @@ Zero:
         findGe(new Int(80)).ok((14));
         findGe(new Int(90)).notValid().ok(true);
 
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -2044,7 +2044,7 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    .   .   .   X   X   X   X   .
 keys     :    0   0   0  15  16  17  18   0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -2102,7 +2102,7 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    .   .   .   X   X   X   X   .
 keys     :    0   0   0  15  16  17  18   0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -2159,7 +2159,7 @@ usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
 usedKeys :    .   .   .   X   X   X   .
 keys     :    0   0   0  15  16  17   0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -2216,7 +2216,7 @@ usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
 usedKeys :    .   .   .   X   X   X   .
 keys     :    0   0   0  15  16  17  14
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -2261,7 +2261,7 @@ usedSlots:    .   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   .   .   .   .   .   .
 keys     :    0   0   0   0   0   0   0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -2291,7 +2291,7 @@ keys     :    0   0   0   0   0   0   0
 //        stuckPop ().ok(33);
 //        stuckPop ().ok(2);
 //        stuckPop ().ok(11);
-//        maxSteps = 99_999;
+//        maxSteps(9_999_999);
 //        execute();
 //       }
 //     };
@@ -2331,7 +2331,7 @@ usedSlots:    .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    X   X   X   .   .   .   .
 keys     :    4   2   6   0   0   0   0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
@@ -2377,7 +2377,7 @@ usedSlots:    .   .   .   .   .   .   .   .
 usedKeys :    .   .   .   .
 keys     :    0   0   0   0
 """);
-        maxSteps = 99_999;
+        maxSteps(9_999_999);
         execute();
        }
      };
