@@ -309,7 +309,7 @@ Leaf           size:   8, count:   4
 
     l.delete(l.new Int(1)).valid().ok(false);
 
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -344,7 +344,7 @@ Leaf           size:   8, count:   3
    2     3    33
    1     4    44
 """);
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -380,7 +380,7 @@ Leaf           size:   8, count:   4
    5     3    33
    6     4    44
 """);
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -435,7 +435,7 @@ Leaf           size:   8, count:   4
    5     7    77
    7     8    88
 """);
-    l.maxSteps(99_999);
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -489,7 +489,7 @@ Leaf           size:   8, count:   4
    5     7    77
    7     8    88
 """);
-    r.maxSteps = 999_999;
+    r.maxSteps(999_999);
     r.execute();
    }
 
@@ -555,7 +555,7 @@ Leaf           size:   8, count:   8
    5     7    77
    7     8    88
 """);
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -623,7 +623,7 @@ Leaf           size:   8, count:   8
    5     7    77
    7     8    88
 """);
-    r.maxSteps = 999_999;
+    r.maxSteps(999_999);
     r.execute();
    }
 
@@ -680,7 +680,7 @@ Leaf           size:   8, count:   0
  Ref   Key  Data
 """);
 
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -727,7 +727,7 @@ Leaf           size:   8, count:   8
    8    88
 """);
 
-        maxSteps = 99_999;
+        maxSteps(999_999);
         execute();
        }
      };
@@ -779,7 +779,7 @@ Leaf           size:   8, count:   8
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_iterate(!true);
+    test_fixedFields(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
