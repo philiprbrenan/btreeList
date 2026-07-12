@@ -436,7 +436,7 @@ Branch         size:   7, count:   4, top:   0
 
     l.delete(l.new Int(1)).valid().ok(false);
 
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -471,7 +471,7 @@ Branch         size:   7, count:   3, top:   0
    2     3    33
    1     4    44
 """);
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -507,7 +507,7 @@ Branch         size:   7, count:   4, top:   0
    4     3    33
    5     4    44
 """);
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -559,7 +559,7 @@ Branch         size:   7, count:   3, top:  99
    4     6    66
    5     7    77
 """);
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -610,7 +610,7 @@ Branch         size:   7, count:   3, top:  99
    4     6    66
    5     7    77
 """);
-    r.maxSteps = 999_999;
+    r.maxSteps(999_999);
     r.execute();
    }
 
@@ -674,7 +674,7 @@ Branch         size:   7, count:   7, top:  99
    4     6    66
    5     7    77
 """);
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -738,7 +738,7 @@ Branch         size:   7, count:   7, top:  99
    4     6    66
    5     7    77
 """);
-    r.maxSteps = 999_999;
+    r.maxSteps(999_999);
     r.execute();
    }
 
@@ -792,7 +792,7 @@ Branch         size:   7, count:   0, top:   0
  Ref   Key  Data
 """);
 
-    l.maxSteps = 999_999;
+    l.maxSteps(999_999);
     l.execute();
    }
 
@@ -837,7 +837,7 @@ Branch         size:   7, count:   7, top:  88
    7    77
 """);
 
-        maxSteps = 99_999;
+        maxSteps(999_999);
         execute();
        }
      };
@@ -888,7 +888,7 @@ Branch         size:   7, count:   7, top:  88
         final Branch.StepDown s2 = stepDown(new Int(12)); s2.node.ok(2); s2.slot.ok(4);
         final Branch.StepDown s3 = stepDown(new Int(22)); s3.node.ok(3); s3.slot.ok(5);
         final Branch.StepDown s4 = stepDown(new Int(32)); s4.node.ok(4); s4.slot.notValid().ok(true);
-        maxSteps = 99_999;
+        maxSteps(999_999);
         execute();
        }
      };
@@ -954,7 +954,7 @@ usedSlots:    .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    X   X   X   .   .   .   .
 keys     :    4   2   6   0   0   0   0
 """);
-        maxSteps = 99_999;
+        maxSteps(999_999);
         execute();
        }
      };
