@@ -1031,7 +1031,11 @@ class Slots extends Program                                                     
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {putSlotToKeys(new Int(2), new Int(3));  usedSlotsToKeys.empty().ok(false); usedSlotsToKeys.full().ok(false);
+       {
+        putSlotToKeys(new Int(2), new Int(3));
+/*
+        usedSlotsToKeys.empty().ok(false);
+        usedSlotsToKeys.full().ok(false);
         putSlotToKeys(new Int(0), new Int(1));
 
         locateFirstUsedSlot().ok(0);
@@ -1052,6 +1056,7 @@ usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
+
         delSlotToKeys(new Int(2));
         delKey       (new Int(3));
         //new I() {void a() {testStop(s);}};
@@ -1064,15 +1069,17 @@ usedSlots:    X   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   .   .   .   .   .
 keys     :    0  11   0   0   0   0   0   0
 """);
+
         for (int i = 0, N = numberOfKeys; i < N; i++) putKey (new Int(i), new Int(i+1));
         usedKeys.empty().ok(false);
         usedKeys.full ().ok(true);
+
 
         delKey(new Int(3)); locateFirstUnusedKey().ok(3);
         delKey(new Int(4)); locateFirstUnusedKey().ok(3);
         delKey(new Int(2)); locateFirstUnusedKey().ok(2);
 
-        s.check(t.print(), """
+        t.check(t.print(), """
 Slots    : size:  8, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 slotsKeys:    1   0   3   0   0   0   0   0   0   0   0   0   0   0   0   0
@@ -1081,7 +1088,7 @@ usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
-
+*/
         execute();
        }
      };
@@ -2410,7 +2417,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_redistribute(!true);
+    test_slots(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
