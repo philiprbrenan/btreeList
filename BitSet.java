@@ -117,8 +117,11 @@ final public class BitSet extends Program                                       
      {void Then()
        {if (trackCount)
          {final Int c = memoryCount.getInt();                                                                           // Current count
+
           new If (Value)                                                                                                // Change the count if the bit is being changed
-           {void Then() {memoryCount.putInt(new Int(c.Inc()));}
+           {void Then()
+             {memoryCount.putInt(new Int(c.Inc()));
+             }
             void Else() {memoryCount.putInt(new Int(c.Dec()));}
            };
 
