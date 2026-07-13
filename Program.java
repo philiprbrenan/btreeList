@@ -13,13 +13,13 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                   suppressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+ {final  boolean                   suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final  boolean                    compressInstructions =!true;                                                        // Compress out identical instructions
-  final  boolean              suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
-         int                                    maxSteps = 999_999;                                                    // Number of steps permitted in code execution - this provides some protection against endless loops during development
+  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
+  final  boolean              suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
+         int                                    maxSteps = 999_999;                                                     // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
@@ -1579,16 +1579,16 @@ public class Program extends Test                                               
 
   void dumpProgramState (String Location)                                                                               // Dump program memories and variables
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n"); dumpJava();}
-      String  v()     {return "$fdisplay(traceFile, \""+Location+"\");"+dumpVerilog();}
+     {void    a()     {appendJavaTrace(Location+"\n");                   dumpJava();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");"+dumpVerilog();}                                // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
 
   void dumpProgramMemories (String Location)                                                                            // Dump program memories
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                  dumpJavaMemories();}
-      String  v()     {return "$fdisplay(traceFile, \""+Location+"\");"+dumpVerilogMemories();}
+     {void    a()     {appendJavaTrace(Location+"\n");                   dumpJavaMemories();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");"+dumpVerilogMemories();}                        // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
