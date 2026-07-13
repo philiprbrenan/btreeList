@@ -1727,8 +1727,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                         // Run baseline tests.
-    test_powerPosOneZero(!true);
+   {oldTests();                                                                                                         // Run baseline tests.
+    //test_powerPosOneZero(!true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
