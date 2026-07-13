@@ -431,6 +431,7 @@ public class Program extends Test                                               
   final class Bool                                                                                                      // A boolean value
    {boolean    i = false;                                                                                               // Value of the boolean
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
+    boolean   nd = false;                                                                                               // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
     final int id = program().nextBoolId++;                                                                              // Unique id for Bool
     String  name = null;                                                                                                // The name of the variable
 
@@ -943,13 +944,13 @@ public class Program extends Test                                               
     Int dup () {return new Int(this);}                                                                                  // Duplicate an integer so that the duplicated version can be modified without modifying the original
 
     Bool valid ()                                                                                                       // Whether the integer is valid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
-     {final Bool b = new Bool();
+     {final Bool b = new Bool(); b.nd = true;                                                                           // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
       new I() {void a() {b.i = v; b.v = true;} int traces() {return 0;}};
       return b;
      }
 
     Bool notValid ()                                                                                                    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
-     {final Bool b = new Bool();
+     {final Bool b = new Bool(); b.nd = true;                                                                           // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
       new I() {void a() {b.i = !v; b.v = true;} int traces() {return 0;}};
       return b;
      }
@@ -1494,13 +1495,14 @@ public class Program extends Test                                               
 
   void dumpJavaVars ()                                                                                                  // Dump all memories and variables to the java trace file
    {final StringBuilder s = new StringBuilder();
-    for (Int  i  : ints)
+    for (Int  i  : ints)                                                                                                // Dump ints
      {s.append(f("Int  %8d == %8d", i.id, i.i));
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
-    for (Bool b : bools)
-     {s.append(f("Bool %8d == %8d", b.id, b.i ? 1 : 0));
+    for (Bool b : bools)                                                                                                // Dump bools
+     {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
+      s.append(f("Bool %8d == %8d", b.id, b.i ? 1 : 0));
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
      }
@@ -1517,7 +1519,7 @@ public class Program extends Test                                               
 
     if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,7d", codeSize()));            // Code size check
     deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
-    dumpProgramMemories("Finished");                                                                                    // Dump program state at end of execution
+    dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
 
     currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
@@ -1933,7 +1935,7 @@ endfunction
     begin
 """, "name", dumpVerilogVariablesName()));
 
-    for(Int i : ints)
+    for(Int i : ints)                                                                                                   // Dump integers
      {if (i.name != null) s.append(substitute("""
       $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
 """, "name", i.name, "id", ""+i.id));
@@ -1942,8 +1944,9 @@ endfunction
 """, "id", ""+i.id));
      }
 
-    for(Bool b : bools)
-     {if (b.name != null) s.append(substitute("""
+    for(Bool b : bools)                                                                                                 // Dump booleans
+     {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
+      if (b.name != null) s.append(substitute("""
       $fdisplay(traceFile, "Bool %8d == %8d {name}", {id}, b[{id}]);
 """, "name", b.name, "id", ""+b.id));
       else s.append(substitute("""
