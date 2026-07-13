@@ -1575,7 +1575,7 @@ public class Program extends Test                                               
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
-  void dumpProgramState (String Location)                                                                               // Dump memory
+  void dumpProgramState (String Location)                                                                               // Dump program memories and variables
    {new I()
      {void    a()     {appendJavaTrace(Location+"\n"); dumpJava();}
       String  v()     {return "$fdisplay(traceFile, \""+Location+"\");"+dumpVerilog();}
@@ -1583,7 +1583,7 @@ public class Program extends Test                                               
      };
    }
 
-  void dumpProgramMemories (String Location)                                                                               // Dump memory
+  void dumpProgramMemories (String Location)                                                                            // Dump program memories
    {new I()
      {void    a()     {appendJavaTrace(Location+"\n");                  dumpJavaMemories();}
       String  v()     {return "$fdisplay(traceFile, \""+Location+"\");"+dumpVerilogMemories();}
@@ -1995,11 +1995,8 @@ endfunction
            }
          };
         i.ok(5);
-dumpProgramState("AAAA1111");
         final Bool j = i.valid();
-dumpProgramState("AAAA2222");
         j.ok(true);
-dumpProgramState("AAAA3333");
        }
      };
     P.execute();
@@ -2604,8 +2601,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_programming(false);
+   {oldTests();
+    //test_programming(false);
     //test_copy       (false);
    }
 
