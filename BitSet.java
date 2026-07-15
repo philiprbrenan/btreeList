@@ -278,19 +278,19 @@ final public class BitSet extends Program                                       
   int       base_one ()        {return posOne (0);}                                                                     // Start of the ones tree
 
 
-  Int       baseZero ()        {final Int r = new Int("baseZero" );         r.T();          new I() {void a() {jt(r, base_zero      ()         );} String v() {return vt(r, ""+posZero(0));}};            r.W(); return r;} //N Position in the current row
-  Int        baseOne ()        {final Int r = new Int("baseOne"  );         r.T();          new I() {void a() {jt(r, base_one       ()         );} String v() {return vt(r, ""+posOne (0));}};            r.W(); return r;} //N Position in the current row
-  Int       pos_zero (Int Pos) {final Int r = new Int("pos_zero" );         r.T(); Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt]);} String v() {return vt(r, pzVerilog +"(sourceInt)");}}; r.W(); return r;} // Position in the current row in the zeros tree
-  Int        pos_one (Int Pos) {final Int r = new Int("pos_one"  );         r.T(); Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt]);} String v() {return vt(r, poVerilog +"(sourceInt)");}}; r.W(); return r;} //N Position in the current row in the ones tree
+  Int       baseZero ()        {final Int r = new Int("baseZero" );         r.T();          new I() {void a() {jt(r, base_zero      ()           );} String v() {return vt(r, ""+posZero(0));}};            r.W(); return r;} //N Position in the current row
+  Int        baseOne ()        {final Int r = new Int("baseOne"  );         r.T();          new I() {void a() {jt(r, base_one       ()           );} String v() {return vt(r, ""+posOne (0));}};            r.W(); return r;} //N Position in the current row
+  Int       pos_zero (Int Pos) {final Int r = new Int("pos_zero" );         r.T(); Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt()]);} String v() {return vt(r, pzVerilog +"(sourceInt)");}}; r.W(); return r;} // Position in the current row in the zeros tree
+  Int        pos_one (Int Pos) {final Int r = new Int("pos_one"  );         r.T(); Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt()]);} String v() {return vt(r, poVerilog +"(sourceInt)");}}; r.W(); return r;} //N Position in the current row in the ones tree
 
-  Int  limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperOne [sourceInt]);} String v() {return vt(r, luoVerilog+"(sourceInt)");}}; r.W(); return r;} // Upper limit of the current row in the ones tree
-  Int limitUpperZero (Int Pos) {final Int r = new Int("zero upper limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperZero[sourceInt]);} String v() {return vt(r, luzVerilog+"(sourceInt)");}}; r.W(); return r;} // Upper limit of the current row in the zeros tree
-  Int  limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerOne [sourceInt]);} String v() {return vt(r, lloVerilog+"(sourceInt)");}}; r.W(); return r;} // Lower limit of the current row in the ones tree
-  Int limitLowerZero (Int Pos) {final Int r = new Int("zero lower limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerZero[sourceInt]);} String v() {return vt(r, llzVerilog+"(sourceInt)");}}; r.W(); return r;} //N Lower limit of the current row in the zeros tree
-  Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      r.T(); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt]);} String v() {return vt(r, hoVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the ones tree
-  Int     heightZero (Int Pos) {final Int r = new Int("zero height");       r.T(); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt]);} String v() {return vt(r, hzVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the zeros tree
+  Int  limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperOne [sourceInt()]);} String v() {return vt(r, luoVerilog+"(sourceInt)");}}; r.W(); return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero (Int Pos) {final Int r = new Int("zero upper limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperZero[sourceInt()]);} String v() {return vt(r, luzVerilog+"(sourceInt)");}}; r.W(); return r;} // Upper limit of the current row in the zeros tree
+  Int  limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerOne [sourceInt()]);} String v() {return vt(r, lloVerilog+"(sourceInt)");}}; r.W(); return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero (Int Pos) {final Int r = new Int("zero lower limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerZero[sourceInt()]);} String v() {return vt(r, llzVerilog+"(sourceInt)");}}; r.W(); return r;} //N Lower limit of the current row in the zeros tree
+  Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      r.T(); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the ones tree
+  Int     heightZero (Int Pos) {final Int r = new Int("zero height");       r.T(); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the zeros tree
 
-  void   jt(Int R, int    I) {targetInt = I; R.setValid();  jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}         // Java trace of array look ups
+  void   jt(Int R, int    I) {targetInt(I); R.setValid();   jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}         // Java trace of array look ups
   String vt(Int R, String I) {return "targetInt <= "+I+"; "+vTrace(  "%8d "+R.name+" = %8d", "pc",        I);}          // Java trace of array look ups
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
@@ -506,21 +506,17 @@ final public class BitSet extends Program                                       
     new For(logBitSize())                                                                                               // Traverse down through the tree to the root
      {void body(Int I, Bool C)
        {final Int q = p.Inc();                                                                                          // Next bit over
-if (debug) say("BBBB1111", p, q, limitUpperOne(p));
         new If (q.le(limitUpperOne(p)))                                                                                 // Found adjacent bit set to one to the right of the path up from the start bit
          {void Then()
            {new If (getBitNC(q))
              {void Then()                                                                                               // Found the adjacent bit to the right
                {Next.set(lowOne(q));
-if (debug) say("BBBB2222", Next);
                }
               void Else()                                                                                               // No adjacent one yet
                {p.set(parentOne(p));                                                                                    // Move up to parent
-if (debug) say("BBBB3333", p);
                 C.set();                                                                                                // Whether we are done yet
                }
              };
-if (debug) say("BBBB4444");
            }
          };
        }
@@ -532,7 +528,6 @@ if (debug) say("BBBB4444");
          {new If (Next.i().ge(size()))                                                                                  // Valid but out of range
            {void Then()
              {Next.invalidate();
-if (debug) say("BBBB5555");
              }
            };
          }
@@ -598,14 +593,15 @@ if (debug) say("BBBB5555");
   public Bint nextZero(Int Start)                                                                                       // Find the index of the next clear  bit above the specified bit
    {subStart("Bitset.nextZero");
     checkInActual(Start);
+
     if (immediate()) checkInActual(Start);
     final Bint Next = new Bint();                                                                                       // Invalid indicates not found
     final Int  p    = new Int(Start);                                                                                   // Start position
     final Int  Q    = p.Inc();
 
-    new If (Q.le(limitUpperZero(p)))                                                                                    // Adjacent bit amongst the actual bits exists and is set so we must search
+    new If (Q.le(limitUpperZero(p)))                                                                                    // Adjacent bit exists
      {void Then()                                                                                                       // Found the adjacent bit to the right
-       {new If (getBitNC(Q))                                                                                            // Adjacent bit amongst the actual bits exists and is set so we must search
+       {new If (getBitNC(Q))                                                                                            // Adjacent bit exists and is set so we must search
          {void Then()                                                                                                   // Found the adjacent bit to the right
            {p.set(parentZero(p));                                                                                       // Move int zeros tree
             new For(logBitSize())                                                                                       // Traverse down through the tree to the root
@@ -1695,24 +1691,27 @@ Zero:
 
   static void test_4(boolean Ex)
    {sayCurrentTestName();
-    final int N = 4;
+    final int N = 8;
     final BitSet b = test_bits(Ex, N);
 
-    for (int i : range(N)) if (i == 2 || i == 3) b.set(b.new Int(i));
+    for (int i : range(N)) if (i == 2 || i == 4 || i == 5 || i == 6) b.set(b.new Int(i));
 
-    //testStop("AAAA", b);
+    //stop(b);
     b.ok(()->b, """
-BitSet            0  1  2  3
-   1    0    4 |  0  0  1  1
+BitSet            0  1  2  3  4  5  6  7
+   1    0    8 |  0  0  1  0  1  1  1  0
 One:
-   2    4    2 |  0  1
-   3    6    1 |  1
+   2    8    4 |  0  1  1  1
+   3   12    2 |  1  1
+   4   14    1 |  1
 Zero:
-   1    7    2 |  0  1
-   2    9    1 |  0
+   1   15    4 |  0  0  1  0
+   2   19    2 |  0  0
+   3   21    1 |  0
 """);
 
-    b.lastZero().ok(1);
+    b.prevZero(b.new Int(2)).ok(1);
+    b.nextZero(b.new Int(2)).ok(3);
    }
 
   static void test_4()
@@ -1735,8 +1734,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
-    //test_powerPosOneZero(!true);
+   {//oldTests();                                                                                                         // Run baseline tests.
+    test_4(true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
