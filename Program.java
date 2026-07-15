@@ -2,7 +2,9 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Incremental load of deltaIntId
+// use setValid everywhere where we I.v = true
+// replace program().xxx with xxx() to make sore theta w are in the right program
+// Replace ex(Int.Ops.set and for bool
 // Remove trace(True) option from program
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -118,33 +120,33 @@ public class Program extends Test                                               
   void jtraceInc() {++program().jtrace;}                                                                                // Count trace records written
   void vtraceInc() {++program().vtrace;}
 
-  int      currentPc()          {      return program().     currentPc;}
-  int    sourceIntId()          {      return program().   sourceIntId;}
-  int   source2IntId()          {      return program().  source2IntId;}
-  int    targetIntId()          {      return program().   targetIntId;}
-  int   sourceBoolId()          {      return program().  sourceBoolId;}
-  int   targetBoolId()          {      return program().  targetBoolId;}
-  int      sourceInt()          {rx(); return program().     sourceInt;}
-  int     source2Int()          {rx(); return program().    source2Int;}
-  int      targetInt()          {rx(); return program().     targetInt;}
-  boolean sourceBool()          {rx(); return program().    sourceBool;}
-  boolean targetBool()          {rx(); return program().    targetBool;}
+  int      currentPc()          {return program().     currentPc;}
+  int    sourceIntId()          {return program().   sourceIntId;}
+  int   source2IntId()          {return program().  source2IntId;}
+  int    targetIntId()          {return program().   targetIntId;}
+  int   sourceBoolId()          {return program().  sourceBoolId;}
+  int   targetBoolId()          {return program().  targetBoolId;}
+  int      sourceInt()          {return program().     sourceInt;}
+  int     source2Int()          {return program().    source2Int;}
+  int      targetInt()          {return program().     targetInt;}
+  boolean sourceBool()          {return program().    sourceBool;}
+  boolean targetBool()          {return program().    targetBool;}
 
-  int      currentPc(int V)     {rx(); return program().     currentPc = V;}
-  int    sourceIntId(int V)     {      return program().   sourceIntId = V;}
-  int   source2IntId(int V)     {      return program().  source2IntId = V;}
-  int    targetIntId(int V)     {      return program().   targetIntId = V;}
-  int   sourceBoolId(int V)     {      return program().  sourceBoolId = V;}
-  int   targetBoolId(int V)     {      return program().  targetBoolId = V;}
-  int      sourceInt(int V)     {rx(); return program().     sourceInt = V;}
-  int     source2Int(int V)     {rx(); return program().    source2Int = V;}
-  int      targetInt(int V)     {rx(); return program().     targetInt = V;}
-  boolean sourceBool(boolean V) {rx(); return program().    sourceBool = V;}
-  boolean targetBool(boolean V) {rx(); return program().    targetBool = V;}
+  int      currentPc(int V)     {return program().     currentPc = V;}
+  int    sourceIntId(int V)     {return program().   sourceIntId = V;}
+  int   source2IntId(int V)     {return program().  source2IntId = V;}
+  int    targetIntId(int V)     {return program().   targetIntId = V;}
+  int   sourceBoolId(int V)     {return program().  sourceBoolId = V;}
+  int   targetBoolId(int V)     {return program().  targetBoolId = V;}
+  int      sourceInt(int V)     {return program().     sourceInt = V;}
+  int     source2Int(int V)     {return program().    source2Int = V;}
+  int      targetInt(int V)     {return program().     targetInt = V;}
+  boolean sourceBool(boolean V) {return program().    sourceBool = V;}
+  boolean targetBool(boolean V) {return program().    targetBool = V;}
 
   void initializeRegisters()                                                                                            // Initialize registers
-   {currentPc  = sourceIntId = source2IntId = targetIntId = sourceBoolId = targetBoolId = sourceInt = source2Int = targetInt = 0;
-    sourceBool = targetBool = false;
+   {currentPc(0); sourceIntId(0); source2IntId(0); targetIntId(0); sourceBoolId(0); targetBoolId(0); sourceInt(0); source2Int(0); targetInt(0);
+    sourceBool(false); targetBool(false);
    }
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
@@ -465,14 +467,14 @@ public class Program extends Test                                               
     void S ()                                                                                                           // Load source delta and value
      {new LoadSourceOrTarget(this, "sourceBoolId", "sourceBool")
        {void loadId   (int I)     {sourceBoolId(I);}
-        void loadValue(boolean V) {sourceBool (V);}
+        void loadValue(boolean V) {sourceBool  (V);}
        };
      }
 
     void S (boolean I)                                                                                                  // Load source constant
      {final int v = I ? 1 : 0;
       new I()
-       {void   a() {sourceBool = I;                jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
+       {void   a() {sourceBool(I);                 jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
         String v() {return "sourceBool <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
        };
      }
@@ -487,7 +489,7 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Bool b = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetBool;                          jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
+       {void   a() {i = targetBool();                        jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
         String v() {return "b[targetBoolId] <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
        };
      }
@@ -495,7 +497,7 @@ public class Program extends Test                                               
     Bool ex (Ops Op)                                                                                                    // Execute a monadic boolean operation
      {executingCheck();
       switch(Op)
-       {case flip -> {x(); targetBool = !sourceBool;}
+       {case flip -> {x(); targetBool(!sourceBool());}
         default   -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
@@ -505,12 +507,12 @@ public class Program extends Test                                               
     Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
      {executingCheck();
       switch (Op)
-       {case set -> {     targetBool = sourceBool;               v = true;}
-        case del -> {     targetBool = sourceBool;               v = false;}
-        case eq  -> {x(); targetBool = targetBool == sourceBool; v = true;}
-        case ne  -> {x(); targetBool = targetBool != sourceBool; v = true;}
-        case and -> {x(); targetBool = targetBool && sourceBool; v = true;}
-        case or  -> {x(); targetBool = targetBool || sourceBool; v = true;}
+       {case set -> {     targetBool(sourceBool());                 v = true;}
+        case del -> {     targetBool(sourceBool());                 v = false;}
+        case eq  -> {x(); targetBool(targetBool() == sourceBool()); v = true;}
+        case ne  -> {x(); targetBool(targetBool() != sourceBool()); v = true;}
+        case and -> {x(); targetBool(targetBool() && sourceBool()); v = true;}
+        case or  -> {x(); targetBool(targetBool() || sourceBool()); v = true;}
         default  -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
@@ -562,7 +564,7 @@ public class Program extends Test                                               
       return "targetBool <= "+Value+
         "; $fdisplay(traceFile, \"%8d bool %8d = %8d\", pc,          targetBoolId, "+Value+");";
      }
-    void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool ? 1 : 0));}             // Trace a java    boolean operation
+    void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool() ? 1 : 0));}           // Trace a java    boolean operation
 
     public String toString ()                                                                                           // Print the boolean
      {final String u = "undefined_Bool";
@@ -670,7 +672,7 @@ public class Program extends Test                                               
        {final String ri = RegisterID;                                                                                   // Shorten name
         final String rv = RegisterValue;                                                                                // Shorten name
 
-        pcVariableId.put(codeSize(), id);                                                                                     // Id of variable being addressed by these instructions
+        pcVariableId.put(codeSize(), id);                                                                               // Id of variable being addressed by these instructions
 
         new I()                                                                                                         // Id of integer
          {void   a() {loadId(id);                           jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
@@ -726,7 +728,7 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Int w = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetInt;                         jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId,   targetInt));}
+       {void   a() {i = targetInt();                       jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(),   targetInt()));}
         String v() {return "i[targetIntId] <= targetInt; "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
        };
      }
@@ -735,13 +737,13 @@ public class Program extends Test                                               
      {executingCheck();
       x();
       switch(Op)
-       {case inc  -> {targetInt = targetInt    + 1;}
-        case dec  -> {targetInt = targetInt    - 1;}
-        case up   -> {targetInt = targetInt  <<= 1;}
-        case down -> {targetInt = targetInt >>>= 1;}
-        case sqrt -> {targetInt = (int)Math.sqrt(targetInt);}
-        case neg  -> {targetInt = - targetInt;}
-        case abs  -> {targetInt = targetInt < 0 ? -targetInt : targetInt;}
+       {case inc  -> {targetInt(targetInt()   + 1);}
+        case dec  -> {targetInt(targetInt()   - 1);}
+        case up   -> {targetInt(targetInt()  << 1);}
+        case down -> {targetInt(targetInt() >>> 1);}
+        case sqrt -> {targetInt((int)Math.sqrt(targetInt()));}
+        case neg  -> {targetInt(- targetInt());}
+        case abs  -> {targetInt(targetInt() < 0 ? -targetInt() : targetInt());}
         default   -> Test.stop("Op not implemented:", Op);
        }
 
@@ -752,14 +754,14 @@ public class Program extends Test                                               
     Int ex (Ops Op, int I)                                                                                              // Execute a dyadic integer operation on a constant
      {executingCheck();
       switch (Op)
-       {case set  -> {      targetInt =             I;     v = true;}
-        case del  -> {      targetInt =             I;     v = false;}
-        case add  -> { x(); targetInt = targetInt + I;     v = true;}
-        case sub  -> { x(); targetInt = targetInt - I;     v = true;}
-        case mul  -> { x(); targetInt = targetInt * I;     v = true;}
-        case div  -> { x(); targetInt = targetInt / I;     v = true;}
-        case mod  -> { x(); targetInt = targetInt % I;     v = true;}
-        case add2 -> { x(); targetInt = targetInt + I + I; v = true;}
+       {case set  -> {      targetInt(            I);     v = true;}
+        case del  -> {      targetInt(            I);     v = false;}
+        case add  -> { x(); targetInt(targetInt() + I);     v = true;}
+        case sub  -> { x(); targetInt(targetInt() - I);     v = true;}
+        case mul  -> { x(); targetInt(targetInt() * I);     v = true;}
+        case div  -> { x(); targetInt(targetInt() / I);     v = true;}
+        case mod  -> { x(); targetInt(targetInt() % I);     v = true;}
+        case add2 -> { x(); targetInt(targetInt() + I + I); v = true;}
         default   -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
@@ -826,7 +828,7 @@ public class Program extends Test                                               
       return "targetInt <= "+Value+"; $fdisplay(traceFile, \"%8d assign targetInt = %8d\", pc,          "+Value+");";
      }
 
-    void jtrace () {                               jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt));} // Trace the integer operation in Java
+    void jtrace () {                               jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt()));} // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -886,12 +888,12 @@ public class Program extends Test                                               
     void bex (Ops Op, Bool B, int I)                                                                                    // Boolean comparison between an integer variable and an integer constant
      {x();
       switch(Op)
-       {case eq -> targetBool = sourceInt == source2Int;
-        case ne -> targetBool = sourceInt != source2Int;
-        case le -> targetBool = sourceInt <= source2Int;
-        case lt -> targetBool = sourceInt <  source2Int;
-        case ge -> targetBool = sourceInt >= source2Int;
-        case gt -> targetBool = sourceInt >  source2Int;
+       {case eq -> targetBool(sourceInt() == source2Int());
+        case ne -> targetBool(sourceInt() != source2Int());
+        case le -> targetBool(sourceInt() <= source2Int());
+        case lt -> targetBool(sourceInt() <  source2Int());
+        case ge -> targetBool(sourceInt() >= source2Int());
+        case gt -> targetBool(sourceInt() >  source2Int());
         default -> Test.stop("Op not implemented:", Op);
        }
       B.v = true;
@@ -917,6 +919,8 @@ public class Program extends Test                                               
      }
 
     Int dup () {return new Int(this);}                                                                                  // Duplicate an integer so that the duplicated version can be modified without modifying the original
+
+    void setValid () {v = true;}                                                                                        // Mark an integer as valid
 
     Bool valid ()                                                                                                       // Whether the integer is valid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
      {final Bool b = new Bool(); b.nd = true;                                                                           // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
@@ -1486,16 +1490,16 @@ public class Program extends Test                                               
   void dumpJavaRegisters ()                                                                                             // Dump all memories and variables to the java trace file
    {final StringBuilder s = new StringBuilder();
     s.append(f("       currentPc = %8d\n",         pc-1));
-    s.append(f("     sourceIntId = %8d\n",  sourceIntId));
-    s.append(f("    source2IntId = %8d\n", source2IntId));
-    s.append(f("     targetIntId = %8d\n",  targetIntId));
-    s.append(f("    sourceBoolId = %8d\n", sourceBoolId));
-    s.append(f("    targetBoolId = %8d\n", targetBoolId));
-    s.append(f("       sourceInt = %8d\n",    sourceInt));
-    s.append(f("      source2Int = %8d\n",   source2Int));
-    s.append(f("       targetInt = %8d\n",    targetInt));
-    s.append(f("      sourceBool = %8d\n",   sourceBool ? 1 : 0));
-    s.append(f("      targetBool = %8d\n",   targetBool ? 1 : 0));
+    s.append(f("     sourceIntId = %8d\n",  sourceIntId()));
+    s.append(f("    source2IntId = %8d\n", source2IntId()));
+    s.append(f("     targetIntId = %8d\n",  targetIntId()));
+    s.append(f("    sourceBoolId = %8d\n", sourceBoolId()));
+    s.append(f("    targetBoolId = %8d\n", targetBoolId()));
+    s.append(f("       sourceInt = %8d\n",    sourceInt()));
+    s.append(f("      source2Int = %8d\n",   source2Int()));
+    s.append(f("       targetInt = %8d\n",    targetInt()));
+    s.append(f("      sourceBool = %8d\n",   sourceBool() ? 1 : 0));
+    s.append(f("      targetBool = %8d\n",   targetBool() ? 1 : 0));
     appendJavaTrace(""+s);
    }
 
@@ -2634,8 +2638,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_remote(!true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
