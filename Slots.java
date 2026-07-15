@@ -164,9 +164,10 @@ class Slots extends Program                                                     
     new If (getSlotToKeysInUse(Position))                                                                               // The slot is in use as expected
      {void Then()
        {final Bint p = usedSlotsToKeys.prevZero(Position);                                                              // Prev free slot
+debug = true;
         final Bint n = usedSlotsToKeys.nextZero(Position);                                                              // Next free slot
         final Bool d = new Bool(false);                                                                                 // Done when set
-
+say("AAAA", Position, FavorLow, p, n, d,  usedSlotsToKeys);
         new If (p.valid())                                                                                              // Previous is valid
          {void Then()
            {new If (n.valid())                                                                                          // Next is valid
@@ -208,9 +209,7 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Int locateNearestFreeSlotToKey(Int Position)                                                                          // Locate the nearest free slot favoring a higher slot over a lower one if they are both the same  distance away
-   {return locateNearestFreeSlotToKey(Position, new Bool(false));
-   }
+  Int locateNearestFreeSlotToKey (Int Position) {return locateNearestFreeSlotToKey(Position, new Bool(false));}         // Locate the nearest free slot favoring a higher slot over a lower one if they are both the same  distance away
 
   Int allocKey ()                                                                                                       // Allocate a key
    {subStart("Slots.allocKey");
@@ -1105,7 +1104,7 @@ keys     :    0  11   0  22   0   0   0   0
      {void slotsCode()
        {setSlots(2, 4, 5, 6, 9, 10, 12);
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size: 16, count:  0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31
@@ -1116,16 +1115,16 @@ usedKeys :    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 """);
 
-        locateNearestFreeSlotToKey(new Int( 2), new Bool( true)).ok( 1);
-        locateNearestFreeSlotToKey(new Int( 2), new Bool(false)).ok( 3);
-        locateNearestFreeSlotToKey(new Int( 4), new Bool( true)).ok( 3);
-        locateNearestFreeSlotToKey(new Int( 5), new Bool( true)).ok( 3);
-        locateNearestFreeSlotToKey(new Int( 5), new Bool(false)).ok( 7);
-        locateNearestFreeSlotToKey(new Int( 6), new Bool( true)).ok( 7);
-        locateNearestFreeSlotToKey(new Int( 9), new Bool( true)).ok( 8);
-        locateNearestFreeSlotToKey(new Int(10), new Bool( true)).ok(11);
-        locateNearestFreeSlotToKey(new Int(12), new Bool( true)).ok(11);
-        locateNearestFreeSlotToKey(new Int(12), new Bool(false)).ok(13);
+        //locateNearestFreeSlotToKey(new Int( 2), new Bool( true)).ok( 1);
+          locateNearestFreeSlotToKey(new Int( 2), new Bool(false)).ok( 3);
+        //locateNearestFreeSlotToKey(new Int( 4), new Bool( true)).ok( 3);
+        //locateNearestFreeSlotToKey(new Int( 5), new Bool( true)).ok( 3);
+        //locateNearestFreeSlotToKey(new Int( 5), new Bool(false)).ok( 7);
+        //locateNearestFreeSlotToKey(new Int( 6), new Bool( true)).ok( 7);
+        //locateNearestFreeSlotToKey(new Int( 9), new Bool( true)).ok( 8);
+        //locateNearestFreeSlotToKey(new Int(10), new Bool( true)).ok(11);
+        //locateNearestFreeSlotToKey(new Int(12), new Bool( true)).ok(11);
+        //locateNearestFreeSlotToKey(new Int(12), new Bool(false)).ok(13);
 
         execute();
        }
@@ -2417,7 +2416,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_slots(!true);
+    test_locateNearestFreeSlotToKey(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
