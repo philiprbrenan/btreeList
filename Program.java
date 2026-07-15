@@ -556,12 +556,13 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-    void   jtrace ()                               {jTrace(f("%8d bool %8d = %8d",  currentPc(), id, (i ? 1 : 0)));}    // Trace a java    boolean operation
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
      {vtraceInc();
-      return "targetBool <= "+Value+"; $fdisplay(traceFile, \"%8d bool %8d = %8d\", pc, targetBoolId, targetBool);";
+      return "targetBool <= "+Value+
+        "; $fdisplay(traceFile, \"%8d bool %8d = %8d\", pc,          targetBoolId, "+Value+");";
      }
+    void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool ? 1 : 0));}             // Trace a java    boolean operation
 
     public String toString ()                                                                                           // Print the boolean
      {final String u = "undefined_Bool";
@@ -706,7 +707,7 @@ public class Program extends Test                                               
      }
 
     void S2 ()                                                                                                          // Save second source delta and value
-     {new LoadSourceOrTarget(this, "source2Int",  "source2Int")
+     {new LoadSourceOrTarget(this, "source2IntId",  "source2Int")
        {void loadId   (int I) {source2IntId(I);}
         void loadValue(int V) {source2Int  (V);}
        };
@@ -885,14 +886,17 @@ public class Program extends Test                                               
     void bex (Ops Op, Bool B, int I)                                                                                    // Boolean comparison between an integer variable and an integer constant
      {x();
       switch(Op)
-       {case eq -> B.ex(Bool.Ops.set, i == I);
-        case ne -> B.ex(Bool.Ops.set, i != I);
-        case le -> B.ex(Bool.Ops.set, i <= I);
-        case lt -> B.ex(Bool.Ops.set, i <  I);
-        case ge -> B.ex(Bool.Ops.set, i >= I);
-        case gt -> B.ex(Bool.Ops.set, i >  I);
-        default  -> Test.stop("Op not implemented:", Op);
+       {case eq -> targetBool = sourceInt == source2Int;
+        case ne -> targetBool = sourceInt != source2Int;
+        case le -> targetBool = sourceInt <= source2Int;
+        case lt -> targetBool = sourceInt <  source2Int;
+        case ge -> targetBool = sourceInt >= source2Int;
+        case gt -> targetBool = sourceInt >  source2Int;
+        default -> Test.stop("Op not implemented:", Op);
        }
+      B.v = true;
+      B.jtrace();
+      //jTrace(f("%8d bool %8d = %8d", currentPc, B.id, targetBool ? 1 : 0));
      }
 
     void bex (Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}                                                          // Boolean comparison between two integer variables
@@ -2136,14 +2140,17 @@ endfunction
         final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bool Continue)
-           {a.set(Index.Inc()).mod(2);
+           {dumpProgramState("AAAA");
+            a.set(Index.Inc()).mod(2);
+            dumpProgramState("BBBB");
+
             new If (b.set(a.ne(0)).flip())
              {void Then() {c.dec();}
               void Else() {c.inc(); c.inc();}
              };
+            dumpProgramState("CCCC");
             new I() {void a() {s.append(""+c+" ");} int traces() {return 0;}};
             Continue.set();
-say("AAAA", Index);
            }
          };
         check(s, "c=2 c=1 c=3 c=2");
@@ -2492,6 +2499,7 @@ Memory 0
              {void Then() {new I() {void a() {s.append(f("%d     == %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
               void Else() {new I() {void a() {s.append(f("%d NOT == %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
              };
+            dumpProgramState("AAAA");
             new If (a.ne(Index))
              {void Then() {new I() {void a() {s.append(f("%d     != %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
               void Else() {new I() {void a() {s.append(f("%d NOT != %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
@@ -2627,7 +2635,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_mod(true);
+    test_remote(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
