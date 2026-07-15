@@ -500,7 +500,7 @@ public class Program extends Test                                               
     Bool ex (Ops Op)                                                                                                    // Execute a monadic boolean operation
      {executingCheck();
       switch(Op)
-       {case flip -> {x(); targetBool(!sourceBool());}
+       {case flip -> {x(); targetBool(!targetBool());}
         default   -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
@@ -2054,6 +2054,11 @@ endfunction
         z.And(o).ok(false);
         o.And(z).ok(false);
         o.And(o).ok(true);
+        final Bool a = new Bool(true);
+        final Bool b = new Bool(false);
+        final Bool c = a.dup().or(b).flip().ok(false);
+        final Bool d = b.dup().or(a).flip().ok(false);
+
         execute();
        }
      };
@@ -2642,7 +2647,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_andOr(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
