@@ -138,10 +138,9 @@ class Tree extends Program                                                      
 
   Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
    {if (immediate())
-     {new If (Node.lt(0)            ) {void Then() {stop("Node less than zero:", Node);}};                              // Check not less than zero
-      new If (Node.gt(numberOfNodes)) {void Then() {stop("Node too big:",        Node);}};                              // Check in range
-      final String alreadyFreed = "Attempting to access a branch or leaf that has been freed:";
-      new If (freeChain.getBit(Node)) {void Then() {stop(alreadyFreed, Node);}};                                        // Complain if the node has been freed and not reallocated
+     {if (Node.lt(0).b())             stop("Node less than zero:",                                       Node);         // Check not less than zero
+      if (Node.gt(numberOfNodes).b()) stop("Node too big:",                                              Node);         // Check in range
+      if (freeChain.getBit(Node).b()) stop("Attempting to access a branch or leaf that has been freed:", Node);         // Complain if the node has been freed and not reallocated
      }
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
@@ -153,7 +152,7 @@ class Tree extends Program                                                      
     int value()              {return value;}
    }
 
-  Int  root()         {return new Int(0);}                                                                              // The root is always at node zero
+  Int  root ()        {return new Int(0);}                                                                              // The root is always at node zero
   Bool isRootLeaf  () {return checkType(root(), BranchOrLeaf.leaf);}                                                    // Whether the root is a leaf
   Bool isRootBranch() {return checkType(root(), BranchOrLeaf.branch);}                                                  // Whether the root is a branch
 
@@ -175,7 +174,7 @@ class Tree extends Program                                                      
 
   Leaf leaf(Int Node) {return leaf(Node, true);}                                                                        // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
-   {if (Check) new If (isLeaf(Node).Flip()) {void Then() {stop("Not a leaf:", Node);}};                                 // Check the location actually holds a leaf
+   {if (immediate() && Check && !isLeaf(Node).b()) stop("Not a leaf:", Node);                                           // Check the location actually holds a leaf
     final UnitMemory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                   // Base leaf at the indexed address
    }
@@ -191,7 +190,7 @@ class Tree extends Program                                                      
 
   Branch branch (Int Node) {return branch(Node, true);}                                                                 // Index an existing branch in memory            confirming that it really is a branch
   Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
-   {if (Check) new If (isBranch(Node).Flip()) {void Then() {stop("Not a branch:", Node);}};                             // Check the location actually holds a branch
+   {if (immediate() && Check && !isBranch(Node).b()) stop("Not a branch:", Node);                                       // Check the location actually holds a branch
     final UnitMemory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                     // Address branch
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
@@ -296,6 +295,7 @@ class Tree extends Program                                                      
     final Int      p = root();                                                                                          // Start at root
     final FindLeaf f = new FindLeaf();                                                                                  // Find results
     f.start(Key);
+
     new For(new Int(mnl()))                                                                                             // Step down from branch to branch
      {void body(Int Index, Bool Continue)
        {new If (isLeaf(p))                                                                                              // On a leaf
@@ -310,7 +310,8 @@ class Tree extends Program                                                      
          };
        }
      };
-    new If (f.valid.Flip()) {void Then() {stop("Find fell off the end of tree after this many searches:", mnl());}};
+
+    if (immediate && !f.valid.b()) stop("Find fell off the end of tree after this many searches:", mnl());
     subFinish();
     return f;
    }
@@ -348,7 +349,7 @@ class Tree extends Program                                                      
            };
          }
        };
-      new If (valid.Flip()) {void Then() {stop("Find fell off the end of tree after this many searches:", mnl());}};
+      if (immediate() && !valid.b()) stop("Find fell off the end of tree after this many searches:", mnl());
       subFinish();
      }
 
