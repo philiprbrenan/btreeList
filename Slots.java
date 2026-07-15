@@ -164,10 +164,9 @@ class Slots extends Program                                                     
     new If (getSlotToKeysInUse(Position))                                                                               // The slot is in use as expected
      {void Then()
        {final Bint p = usedSlotsToKeys.prevZero(Position);                                                              // Prev free slot
-debug = true;
         final Bint n = usedSlotsToKeys.nextZero(Position);                                                              // Next free slot
         final Bool d = new Bool(false);                                                                                 // Done when set
-say("AAAA", Position, FavorLow, p, n, d,  usedSlotsToKeys);
+
         new If (p.valid())                                                                                              // Previous is valid
          {void Then()
            {new If (n.valid())                                                                                          // Next is valid
