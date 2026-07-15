@@ -5,6 +5,7 @@
 // use setValid everywhere where we I.v = true
 // replace program().xxx with xxx() to make sore theta w are in the right program
 // Replace ex(Int.Ops.set and for bool
+// put program() in front ints and bools
 // Remove trace(True) option from program
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -17,13 +18,13 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                   suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
-  final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
-  final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final  boolean                    compressInstructions = true;                                                        // Compress out identical instructions
-  final  boolean              suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
-         int                                    maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
+ {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
+  final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
+  final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
+  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
+        int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
@@ -47,8 +48,8 @@ public class Program extends Test                                               
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
-  final static TreeMap<String,Stack<I>> matchingInstructions = new TreeMap<>();                                         // Combine instruction with identical verilog text
-  final static TreeMap<Integer,Integer>     pcVariableId = new TreeMap<>();                                             // Program counter to variable id
+  final TreeMap<String,Stack<I>>    matchingInstructions = new TreeMap<>();                                             // Combine instruction with identical verilog text
+  final TreeMap<Integer,Integer>            pcVariableId = new TreeMap<>();                                             // Program counter to variable id
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
   int                                          currentPc = 0;                                                           // Current program counter
@@ -148,6 +149,8 @@ public class Program extends Test                                               
    {currentPc(0); sourceIntId(0); source2IntId(0); targetIntId(0); sourceBoolId(0); targetBoolId(0); sourceInt(0); source2Int(0); targetInt(0);
     sourceBool(false); targetBool(false);
    }
+
+  TreeMap<Integer,Integer> pcVariableId() {return program().pcVariableId;}                                              // Address instruction number to variable for instructions that only manipulate one variable
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -447,7 +450,7 @@ public class Program extends Test                                               
        {final String ri = RegisterId;                                                                                   // Id register
         final String rv = RegisterValue;                                                                                // Value register
 
-        pcVariableId.put(codeSize(), id);                                                                                     // Id of variable being addressed by these instructions
+        pcVariableId().put(codeSize(), id);                                                                             // Id of variable being addressed by these instructions
 
         final I i = new I()                                                                                             // Load id of variable
          {void   a() {loadId(id);                         jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
@@ -577,19 +580,19 @@ public class Program extends Test                                               
       return pad("b["+id+"]"+n, padName);
      }
 
-    void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
-     {new If (this)
-       {void Then()
-         {new I(false)
-           {void   a() {Test.stop(O);}
-            String v() {return "pc <= -1;";}
-            boolean trace() {return false;}
-           };
-         }
-       };
-     }
-
-    Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    // Say the boolean
+//    void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
+//     {new If (this)
+//       {void Then()
+//         {new I(false)
+//           {void   a() {Test.stop(O);}
+//            String v() {return "pc <= -1;";}
+//            boolean trace() {return false;}
+//           };
+//         }
+//       };
+//     }
+//
+//    Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    // Say the boolean
 
     Bool ok (boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace and so there will be an empty instruction generated in the verilog to "regulate the service"
      {final  Bool got = this;
@@ -672,7 +675,7 @@ public class Program extends Test                                               
        {final String ri = RegisterID;                                                                                   // Shorten name
         final String rv = RegisterValue;                                                                                // Shorten name
 
-        pcVariableId.put(codeSize(), id);                                                                               // Id of variable being addressed by these instructions
+        pcVariableId().put(codeSize(), id);                                                                             // Id of variable being addressed by these instructions
 
         new I()                                                                                                         // Id of integer
          {void   a() {loadId(id);                           jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
@@ -744,7 +747,7 @@ public class Program extends Test                                               
         case sqrt -> {targetInt((int)Math.sqrt(targetInt()));}
         case neg  -> {targetInt(- targetInt());}
         case abs  -> {targetInt(targetInt() < 0 ? -targetInt() : targetInt());}
-        default   -> Test.stop("Op not implemented:", Op);
+        default   -> stop("Op not implemented:", Op);
        }
 
       jtrace();
@@ -762,7 +765,7 @@ public class Program extends Test                                               
         case div  -> { x(); targetInt(targetInt() / I);     v = true;}
         case mod  -> { x(); targetInt(targetInt() % I);     v = true;}
         case add2 -> { x(); targetInt(targetInt() + I + I); v = true;}
-        default   -> Test.stop("Op not implemented:", Op);
+        default   -> stop("Op not implemented:", Op);
        }
       jtrace();
       return this;
@@ -785,7 +788,7 @@ public class Program extends Test                                               
         case sqrt -> {s.append("sqrt("+n+")");}
         case neg  -> {s.append("-"+n        );}
         case abs  -> {s.append("(("+n+" < 0) ? -"+n+" : "+n+")");}
-        default   -> Test.stop("Op not implemented:", Op);
+        default   -> stop("Op not implemented:", Op);
        }
       return vExecuteAndTrace(""+s);
      }
@@ -802,7 +805,7 @@ public class Program extends Test                                               
         case div  -> {s.append(n+" / "+I);}
         case mod  -> {s.append(n+" % "+I);}
         case add2 -> {s.append(n+" + "+I+" + "+I);}
-        default   -> Test.stop("Op not implemented:", Op);
+        default   -> stop("Op not implemented:", Op);
        }
       return vExecuteAndTrace(""+s);
      }
@@ -818,7 +821,7 @@ public class Program extends Test                                               
         case div  -> {s.append(n+" / "+i);}
         case mod  -> {s.append(n+" % "+i);}
         case add2 -> {s.append(n+" + "+i+" + "+i);}
-        default   -> Test.stop("Op not implemented:", Op);
+        default   -> stop("Op not implemented:", Op);
        }
       return vExecuteAndTrace(""+s);
      }
@@ -894,7 +897,7 @@ public class Program extends Test                                               
         case lt -> targetBool(sourceInt() <  source2Int());
         case ge -> targetBool(sourceInt() >= source2Int());
         case gt -> targetBool(sourceInt() >  source2Int());
-        default -> Test.stop("Op not implemented:", Op);
+        default -> stop("Op not implemented:", Op);
        }
       B.v = true;
       B.jtrace();
@@ -913,7 +916,7 @@ public class Program extends Test                                               
         case lt -> s.append(a + " <  " + b);
         case ge -> s.append(a + " >= " + b);
         case gt -> s.append(a + " >  " + b);
-        default  -> Test.stop("Op not implemented:", Op);
+        default -> stop("Op not implemented:", Op);
        }
       return B.vtrace(s);
      }
@@ -989,7 +992,7 @@ public class Program extends Test                                               
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
     Bool   b ()      {return b;}                                                                                        // Return boolean component
     Int    i ()
-     {b.Flip().stop("Requested int component from unset Bint");                                                         // Complain if there is no integer component to return
+     {new If (b.Flip()) {void Then() {stop("Requested int component from unset Bint");}};                                // Complain if there is no integer component to return
       return new Int(i);
      }
 
@@ -1649,7 +1652,7 @@ public class Program extends Test                                               
     final int  numberOfInts =  nextIntId;                                                                               // Number of integers needed
     final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
 
-    pcVariableId();                                                                                                     // Generate array to map pc to id of variable to be loaded or written
+    generatePcVariableId();                                                                                             // Generate array to map pc to id of variable to be loaded or written
 
     try
      (final PrintWriter out = new PrintWriter(codeFile))                                                                // Write the verilog to a file
@@ -1807,7 +1810,7 @@ module {name};                                                                  
         out.write("  integer "+ m.vWriteBitIndex() + ";\n");                                                            // Index within an integer at which to set a bit to represent a boolean
        }
 
-      for(String m : extraVerilogMethods) out.write(m);                                                                 // Incorporate extra Verilog methods required to support generated instructions
+      for(String m : program().extraVerilogMethods) out.write(m);                                                       // Incorporate extra Verilog methods required to support generated instructions
 
       /*Execute*/out.write("""
   task automatic execute;                                                                                               // Execute actual code
@@ -1977,12 +1980,13 @@ endfunction
   String removeTracing(String V) {return suppressInstructionTracing ? V.replaceAll("(?s)\\$fd.*?;", "") : V;}           // Remove tracing if necessary
 
 
-  void pcVariableId()                                                                                                   // Generate array to map pc to id of variable to be loaded or written
-   {if (pcVariableId.size() == 0) return;
-    final int    m = pcVariableId.lastKey()+1;
-    final int [] a = new int[m];
-    for(int i = 0; i < m; ++i)              a[i] = 0;
-    for (Integer i : pcVariableId.keySet()) a[i] = pcVariableId.get(i);
+  void generatePcVariableId()                                                                                           // Generate array to map pc to id of variable to be loaded or written
+   {final TreeMap<Integer,Integer>  m = pcVariableId();
+    if (m.size() == 0) return;
+    final int    l = m.lastKey()+1;
+    final int [] a = new int[l];
+    for(int i = 0; i < l; ++i)              a[i] = 0;
+    for (Integer i : m.keySet()) a[i] = m.get(i);
     defineArrayViaVerilogFunction("pcVariableId", a, -1);
    }
 
