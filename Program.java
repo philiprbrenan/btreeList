@@ -15,7 +15,7 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final  boolean                   suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+ {final  boolean                   suppressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final  boolean                         generateVerilog = true;                                                        // Generate verilog version of each program
   final  boolean                              runVerilog = true;                                                        // Execute  verilog version of each program
   final  boolean             suppressNamesInInstructions = true;                                                        // Include names in instructions
@@ -118,7 +118,7 @@ public class Program extends Test                                               
   void jtraceInc() {++program().jtrace;}                                                                                // Count trace records written
   void vtraceInc() {++program().vtrace;}
 
-  int      currentPc()          {rx(); return program().     currentPc;}
+  int      currentPc()          {      return program().     currentPc;}
   int    sourceIntId()          {      return program().   sourceIntId;}
   int   source2IntId()          {      return program().  source2IntId;}
   int    targetIntId()          {      return program().   targetIntId;}
@@ -445,7 +445,7 @@ public class Program extends Test                                               
        {final String ri = RegisterId;                                                                                   // Id register
         final String rv = RegisterValue;                                                                                // Value register
 
-        pcVariableId.put(pc(), id);                                                                                     // Id of variable being addressed by these instructions
+        pcVariableId.put(codeSize(), id);                                                                                     // Id of variable being addressed by these instructions
 
         final I i = new I()                                                                                             // Load id of variable
          {void   a() {loadId(id);                         jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
@@ -472,8 +472,8 @@ public class Program extends Test                                               
     void S (boolean I)                                                                                                  // Load source constant
      {final int v = I ? 1 : 0;
       new I()
-       {void   a() {                               jTrace(f("%8d boolLoadConstant %6d",  pc(),   v));}
-        String v() {return "sourceBool <= "+v+"; "+vTrace(  "%8d boolLoadConstant %6d", "pc", ""+v);}
+       {void   a() {sourceBool = I;                jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
+        String v() {return "sourceBool <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
        };
      }
 
@@ -487,8 +487,8 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Bool b = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetBool;                        jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
-        String v() {return "b[targetBoolId] <= targetBool; vTrace( \"%8d writeBool %8d = %8d\", pc,   targetBoolId, targetBool);";}
+       {void   a() {i = targetBool;                          jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
+        String v() {return "b[targetBoolId] <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
        };
      }
 
@@ -1987,7 +1987,7 @@ endfunction
        {final Int a = new Int(22);
         dumpProgramState("AAAA");
         final Int b = new Int(33);
-        dumpProgramState("AAAA");
+        dumpProgramState("BBBB");
         final Int c = b.dup();
         dumpProgramState("CCCC");
         execute();
@@ -2070,7 +2070,7 @@ endfunction
               int traces() {return 0;}
              };
             Continue.set();
-say("AAAA", Index);
+            dumpProgramState("CCCC");
            }
          };
         Check(s, """
@@ -2143,6 +2143,7 @@ say("AAAA", Index);
              };
             new I() {void a() {s.append(""+c+" ");} int traces() {return 0;}};
             Continue.set();
+say("AAAA", Index);
            }
          };
         check(s, "c=2 c=1 c=3 c=2");
@@ -2379,6 +2380,7 @@ Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000
 """);
+            maxSteps(9_999);
             execute();
            }
          };
@@ -2605,7 +2607,7 @@ Memory 0
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_programming();
-    //test_andOr();
+    test_andOr();
     test_add();
     test_fibonacci();
     test_mod();
@@ -2625,7 +2627,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_add(true);
+    test_mod(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
