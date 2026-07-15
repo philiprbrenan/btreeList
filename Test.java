@@ -23,9 +23,8 @@ public class Test                                                               
   final static Stack<String>       sayThisOrStop = new Stack<>();                                                       // The next says should say this or else we should stop
   final static TreeSet<String>      filesWritten = new TreeSet<>();                                                     // Files written
   final static TreeSet<String>     testsExecuted = new TreeSet<>();                                                     // Tests executed
-  final static boolean   theShorterIsTheDaughter = true;                                                                // True for a shorter traceback during tests to get more counts on the page at a time in Geany
-  static       boolean                     debug = false;                                                               // Global debug flag
   final static boolean          coverageAnalysis = false;                                                               // Enables coverage checks
+  static       boolean                     debug = false;                                                               // Global debug flag
 // Uncomment zz for methods not called analysis
 // Uncomment z  for blocks not called analysis
   final static String   coverageAnalysisSubStart = "zz"+"();";                                                          // A string indicating the start of a subroutine - method entries only
@@ -1232,20 +1231,17 @@ public class Test                                                               
    }
 
   static boolean ok(Integer G, Integer E)                                                                               // Check that two integers are equal
-   {if (false)                        {                                                             return true;}
-    else if ( G == null && E == null) {                                              ++testsPassed; return true;}
+   {if (false)                        {                                                             return true ;}
+    else if ( G == null && E == null) {                                              ++testsPassed; return true ;}
     else if ( G != null && E == null) {err(String.format("Expected null, got:", G)); ++testsFailed; return false;}
     else if ( G == null && E != null) {err(String.format("Got null, expected:", E)); ++testsFailed; return false;}
-    else if (!G.equals(E))
-     {if (theShorterIsTheDaughter)    {errTest(currentTestName(), G, "!=", E);       ++testsFailed; return false;}
-      else                            {err(currentTestName(), G, "!=", E);           ++testsFailed; return false;}
-     }
-    else                              {                                              ++testsPassed; return true;}
+    else if (!G.equals(E))            {err(currentTestName(), G, "!=", E);           ++testsFailed; return false;}
+    else                              {                                              ++testsPassed; return true ;}
    }
 
   static boolean ok(Long    G, Long    E)                                                                               // Check that two longs are equal
    {if (false)                        {return false;}
-    else if ( G == null && E == null) {                                              ++testsPassed; return true;}
+    else if ( G == null && E == null) {                                              ++testsPassed; return true ;}
     else if ( G != null && E == null) {err(String.format("Expected null, got:", G)); ++testsFailed; return false;}
     else if ( G == null && E != null) {err(String.format("Got null, expected:", E)); ++testsFailed; return false;}
     else if (!G.equals(E))            {err(currentTestName(), G, "!=", E);           ++testsFailed; return false;}
