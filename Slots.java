@@ -698,6 +698,7 @@ class Slots extends Program                                                     
      {slot .set(Slot); lower.set(Lower); higher.set(Higher);
       equal.set(lower.dup().and(higher));
       empty.set(lower.dup().or (higher).flip());
+say("AAAA", lower,  higher, empty);
       insertBelow = false;                                                                                              // Determine whether to insert above or below at runtime
       return this;
      }
@@ -2415,7 +2416,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_locateNearestFreeSlotToKey(true);
+    test_findRight(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
