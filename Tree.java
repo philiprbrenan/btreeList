@@ -138,10 +138,10 @@ class Tree extends Program                                                      
 
   Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
    {if (immediate())
-     {Node.lt(0)            .stop("Node less than zero:", Node);                                                        // Check not less than zero
-      Node.gt(numberOfNodes).stop("Node too big:",        Node);                                                        // Check in range
-      final Bool f = freeChain.getBit(Node);                                                                            // Check not freed
-      f.stop("Attempting to access a branch or leaf that has been freed:", Node);                                       // Complain if the node has been freed and not reallocated
+     {new If (Node.lt(0)            ) {void Then() {stop("Node less than zero:", Node);}};                              // Check not less than zero
+      new If (Node.gt(numberOfNodes)) {void Then() {stop("Node too big:",        Node);}};                              // Check in range
+      final String alreadyFreed = "Attempting to access a branch or leaf that has been freed:";
+      new If (freeChain.getBit(Node)) {void Then() {stop(alreadyFreed, Node);}};                                        // Complain if the node has been freed and not reallocated
      }
     return Node.Mul(sizeOfNode);                                                                                        // Actual byte position of this node in memory
    }
@@ -175,7 +175,7 @@ class Tree extends Program                                                      
 
   Leaf leaf(Int Node) {return leaf(Node, true);}                                                                        // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
-   {if (Check) isLeaf(Node).Flip().stop("Not a leaf:", Node);                                                           // Check the location actually holds a leaf
+   {if (Check) new If (isLeaf(Node).Flip()) {void Then() {stop("Not a leaf:", Node);}};                                 // Check the location actually holds a leaf
     final UnitMemory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                     // Address leaf
     return new Leaf(build.leaf.parent(program()).memory(r).at(Node));                                                   // Base leaf at the indexed address
    }
@@ -191,7 +191,7 @@ class Tree extends Program                                                      
 
   Branch branch (Int Node) {return branch(Node, true);}                                                                 // Index an existing branch in memory            confirming that it really is a branch
   Branch branch (Int Node, boolean Check)                                                                               // Index an existing branch in memory optionally confirming that it really is a branch
-   {if (Check) isBranch(Node).Flip().stop("Not a branch:", Node);                                                       // Check the location actually holds a branch
+   {if (Check) new If (isBranch(Node).Flip()) {void Then() {stop("Not a branch:", Node);}};                             // Check the location actually holds a branch
     final UnitMemory.Ref r = unitMemory.new Ref(nodeAddress(Node));                                                     // Address branch
     return new Branch(build.branch.parent(program()).memory(r).at(Node));                                               // Base branch at the indexed address
    }
@@ -310,7 +310,7 @@ class Tree extends Program                                                      
          };
        }
      };
-    f.valid.Flip().stop("Find fell off the end of tree after this many searches:", mnl());
+    new If (f.valid.Flip()) {void Then() {stop("Find fell off the end of tree after this many searches:", mnl());}};
     subFinish();
     return f;
    }
@@ -348,7 +348,7 @@ class Tree extends Program                                                      
            };
          }
        };
-      valid.Flip().stop("Find fell off the end of tree after this many searches:", mnl());
+      new If (valid.Flip()) {void Then() {stop("Find fell off the end of tree after this many searches:", mnl());}};
       subFinish();
      }
 
