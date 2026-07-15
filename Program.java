@@ -52,21 +52,21 @@ public class Program extends Test                                               
   final TreeMap<Integer,Integer>            pcVariableId = new TreeMap<>();                                             // Program counter to variable id
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
-  int                                          currentPc = 0;                                                           // Current program counter
-  int                                             jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
-  int                                             vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
-  int                                          nextIntId = 0;                                                           // Unique id for each Int
-  int                                         nextBoolId = 0;                                                           // Unique id for each Bool
-  int                                        sourceIntId = 0;                                                           // Id of source int
-  int                                       source2IntId = 0;                                                           // Id of source2 int
-  int                                        targetIntId = 0;                                                           // Id of target int
-  int                                       sourceBoolId = 0;                                                           // Id of source bool
-  int                                       targetBoolId = 0;                                                           // Id of target bool
-  boolean                                     sourceBool = false;                                                       // Source value for a boolean  operation obtained from a variable
-  int                                          sourceInt = 0;                                                           // Source value for an integer operation obtained from a variable
-  int                                         source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
-  int                                          targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
-  boolean                                     targetBool = false;                                                       // Computed target boolean value to be loaded into a variable
+  private int                                  currentPc = 0;                                                           // Current program counter
+  private int                                     jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
+  private int                                     vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
+  private int                                  nextIntId = 0;                                                           // Unique id for each Int
+  private int                                 nextBoolId = 0;                                                           // Unique id for each Bool
+  private int                                sourceIntId = 0;                                                           // Id of source int
+  private int                               source2IntId = 0;                                                           // Id of source2 int
+  private int                                targetIntId = 0;                                                           // Id of target int
+  private int                               sourceBoolId = 0;                                                           // Id of source bool
+  private int                               targetBoolId = 0;                                                           // Id of target bool
+  private boolean                             sourceBool = false;                                                       // Source value for a boolean  operation obtained from a variable
+  private int                                  sourceInt = 0;                                                           // Source value for an integer operation obtained from a variable
+  private int                                 source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
+  private int                                  targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
+  private boolean                             targetBool = false;                                                       // Computed target boolean value to be loaded into a variable
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
