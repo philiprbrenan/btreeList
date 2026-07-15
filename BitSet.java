@@ -506,18 +506,21 @@ final public class BitSet extends Program                                       
     new For(logBitSize())                                                                                               // Traverse down through the tree to the root
      {void body(Int I, Bool C)
        {final Int q = p.Inc();                                                                                          // Next bit over
-
+if (debug) say("BBBB1111", p, q, limitUpperOne(p));
         new If (q.le(limitUpperOne(p)))                                                                                 // Found adjacent bit set to one to the right of the path up from the start bit
          {void Then()
            {new If (getBitNC(q))
              {void Then()                                                                                               // Found the adjacent bit to the right
                {Next.set(lowOne(q));
+if (debug) say("BBBB2222", Next);
                }
               void Else()                                                                                               // No adjacent one yet
                {p.set(parentOne(p));                                                                                    // Move up to parent
+if (debug) say("BBBB3333", p);
                 C.set();                                                                                                // Whether we are done yet
                }
              };
+if (debug) say("BBBB4444");
            }
          };
        }
@@ -529,6 +532,7 @@ final public class BitSet extends Program                                       
          {new If (Next.i().ge(size()))                                                                                  // Valid but out of range
            {void Then()
              {Next.invalidate();
+if (debug) say("BBBB5555");
              }
            };
          }
