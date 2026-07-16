@@ -31,6 +31,11 @@ public class Test                                                               
 //final static String   coverageAnalysisSubStart = "z"+"();";                                                           // Any labeled statement
   static final TreeMap<String, Integer> coverage = new TreeMap<>();                                                     // Count of how many times each line has been executed
   static String                        testGroup = null;                                                                // Tests can be split into groups so that they can be run in parallel
+
+  static int                   currentTestNumber = 0;                                                                   // Current test being run
+  static long                    currentTestTime = System.nanoTime();                                                   // Time current test started
+
+  static double elapsedTime (Long Start) {return (System.nanoTime() - Start) / 1_000_000_000.0;}                        // Elapsed time in seconds since start
   static int testsPassed = 0, testsFailed = 0;                                                                          // Number of tests passed and failed
 
   Test Test() {return this;}                                                                                            // Instance
@@ -435,13 +440,9 @@ public class Test                                                               
     return null;
    }
 
-  static int  currentTestNumber = 0;
-  static long currentTestTime = System.nanoTime();
-
   static double elapsedTime ()                                                                                          // Elapsed time since last call or start of run
-   {final long    e = System.nanoTime();
-    final double  d = (e - currentTestTime) / 1_000_000_000.0;
-    currentTestTime = e;
+   {final double  d = elapsedTime(currentTestTime);
+    currentTestTime = System.nanoTime();
     return d;
    }
 
@@ -961,14 +962,12 @@ public class Test                                                               
 //D1 Timing                                                                                                             // Print log messages
 
   static class Timer                                                                                                    // Time a section of code
-   {final long start = System.nanoTime();
+   {final long start = System.nanoTime();                                                                               // Start time
+        double end;                                                                                                     // Last request for elapsed time
     public String toString ()
      {return String.format("%6.2f %s", seconds(), currentCallerName());
      }
-    double seconds ()
-     {final long duration = System.nanoTime() - start;
-      return duration / 1e9;
-     }
+    double seconds () {return end = elapsedTime(start);}                                                                // Seconds since the timer was started
    }
 
   static Timer timer () {return new Timer();}                                                                           // Create a new timer
@@ -1290,7 +1289,7 @@ public class Test                                                               
    }
 
   static void testSummary ()                                                                                            // Print a summary of the testing
-   {final double d = (System.nanoTime() - start) / (double)(1<<30);                                                     // Run time in seconds
+   {final double d = elapsedTime(start);                                                                                // Run time in seconds
     final String
       a = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")),                                              // Time at which run was executed
       C = Thread.currentThread().getStackTrace()[2].getClassName(),                                                     // Containing class
@@ -1309,8 +1308,9 @@ public class Test                                                               
 
   static class ExecCommand                                                                                              // Execute a command sequence
    {final String    command;
-    final StringBuilder out = new StringBuilder();
-    final StringBuilder err = new StringBuilder();
+    final StringBuilder out = new StringBuilder();                                                                      // Normal output
+    final StringBuilder err = new StringBuilder();                                                                      // Error output
+    final Timer timer       = new Timer();                                                                              // Time taken to execute command in seconds
     int exitCode;
 
     ExecCommand (String Command)
@@ -1355,9 +1355,13 @@ public class Test                                                               
           "code   :", exitCode, "\n",
           "stdout :", out,      "\n",
           "stderr :", err);
+        f("time   : 7.2f seconds", timer.seconds());
          }
        }
       catch (Exception e) {e.printStackTrace();}
+
+      final double deltaTime = timer.seconds();
+      if (deltaTime > 120) say(f("%7.2f seconds for: %s", deltaTime, command));
      }
     ExecCommand(StringBuilder Command) {this(""+Command);}
    }
