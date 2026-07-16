@@ -1031,7 +1031,7 @@ class Slots extends Program                                                     
      {void slotsCode()
        {
         putSlotToKeys(new Int(2), new Int(3));
-/*
+
         usedSlotsToKeys.empty().ok(false);
         usedSlotsToKeys.full().ok(false);
         putSlotToKeys(new Int(0), new Int(1));
@@ -1086,7 +1086,7 @@ usedSlots:    X   .   X   .   .   .   .   .   .   .   .   .   .   .   .   .
 usedKeys :    .   X   .   X   .   .   .   .
 keys     :    0  11   0  22   0   0   0   0
 """);
-*/
+
         execute();
        }
      };
@@ -1114,16 +1114,16 @@ usedKeys :    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 """);
 
-        //locateNearestFreeSlotToKey(new Int( 2), new Bool( true)).ok( 1);
-          locateNearestFreeSlotToKey(new Int( 2), new Bool(false)).ok( 3);
-        //locateNearestFreeSlotToKey(new Int( 4), new Bool( true)).ok( 3);
-        //locateNearestFreeSlotToKey(new Int( 5), new Bool( true)).ok( 3);
-        //locateNearestFreeSlotToKey(new Int( 5), new Bool(false)).ok( 7);
-        //locateNearestFreeSlotToKey(new Int( 6), new Bool( true)).ok( 7);
-        //locateNearestFreeSlotToKey(new Int( 9), new Bool( true)).ok( 8);
-        //locateNearestFreeSlotToKey(new Int(10), new Bool( true)).ok(11);
-        //locateNearestFreeSlotToKey(new Int(12), new Bool( true)).ok(11);
-        //locateNearestFreeSlotToKey(new Int(12), new Bool(false)).ok(13);
+        locateNearestFreeSlotToKey(new Int( 2), new Bool( true)).ok( 1);
+        locateNearestFreeSlotToKey(new Int( 2), new Bool(false)).ok( 3);
+        locateNearestFreeSlotToKey(new Int( 4), new Bool( true)).ok( 3);
+        locateNearestFreeSlotToKey(new Int( 5), new Bool( true)).ok( 3);
+        locateNearestFreeSlotToKey(new Int( 5), new Bool(false)).ok( 7);
+        locateNearestFreeSlotToKey(new Int( 6), new Bool( true)).ok( 7);
+        locateNearestFreeSlotToKey(new Int( 9), new Bool( true)).ok( 8);
+        locateNearestFreeSlotToKey(new Int(10), new Bool( true)).ok(11);
+        locateNearestFreeSlotToKey(new Int(12), new Bool( true)).ok(11);
+        locateNearestFreeSlotToKey(new Int(12), new Bool(false)).ok(13);
 
         execute();
        }
@@ -1552,15 +1552,15 @@ keys     :    2   1   4   3
            }
          };
         //new I() {void a() {testStop(l); }};
-//        l.check(l.print(), """
-//Slots    : size:  5, count:  2
-//positions:    0   1   2   3   4   5   6   7   8   9
-//slotsKeys:    0   0   1   0   0   0   0   0   0   0
-//keysSlots:    5   2   0   0   0   0   0   0   0   0
-//usedSlots:    .   .   X   .   .   X   .   .   .   .
-//usedKeys :    X   X   .   .   .
-//keys     :    2   1   0   0   0
-//""");
+        l.check(l.print(), """
+Slots    : size:  5, count:  2
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   0   1   0   0   0   0   0   0   0
+keysSlots:    5   2   0   0   0   0   0   0   0   0
+usedSlots:    .   .   X   .   .   X   .   .   .   .
+usedKeys :    X   X   .   .   .
+keys     :    2   1   0   0   0
+""");
         //new I() {void a() {testStop(r); }};
         r.check(r.print(), """
 Slots    : size:  5, count:  2
@@ -1572,28 +1572,28 @@ usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
         l.mergeFromRightOdd(r, new Int(3)).ok(true);
-//
-//        //new I() {void a() {testStop(l); }};
-//        //new I() {void a() {testStop(r); }};
-//        l.check(l.print(), """
-//Slots    : size:  5, count:  5
-//positions:    0   1   2   3   4   5   6   7   8   9
-//slotsKeys:    1   0   0   0   2   0   4   0   3   0
-//keysSlots:    2   0   4   8   6   0   0   0   0   0
-//usedSlots:    X   .   X   .   X   .   X   .   X   .
-//usedKeys :    X   X   X   X   X
-//keys     :    2   1   3   5   4
-//""");
-//        r.check(r.print(), """
-//Slots    : size:  5, count:  2
-//positions:    0   1   2   3   4   5   6   7   8   9
-//slotsKeys:    0   0   4   0   0   0   0   3   0   0
-//keysSlots:    0   0   0   7   2   0   0   0   0   0
-//usedSlots:    .   .   X   .   .   .   .   X   .   .
-//usedKeys :    .   .   .   X   X
-//keys     :    0   0   0   5   4
-//""");
-//        mergeFromRightOdd(l, new Int(3)).ok(false);
+
+        //new I() {void a() {testStop(l); }};
+        //new I() {void a() {testStop(r); }};
+        l.check(l.print(), """
+Slots    : size:  5, count:  5
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    1   0   0   0   2   0   4   0   3   0
+keysSlots:    2   0   4   8   6   0   0   0   0   0
+usedSlots:    X   .   X   .   X   .   X   .   X   .
+usedKeys :    X   X   X   X   X
+keys     :    2   1   3   5   4
+""");
+        r.check(r.print(), """
+Slots    : size:  5, count:  2
+positions:    0   1   2   3   4   5   6   7   8   9
+slotsKeys:    0   0   4   0   0   0   0   3   0   0
+keysSlots:    0   0   0   7   2   0   0   0   0   0
+usedSlots:    .   .   X   .   .   .   .   X   .   .
+usedKeys :    .   .   .   X   X
+keys     :    0   0   0   5   4
+""");
+        mergeFromRightOdd(l, new Int(3)).ok(false);
         maxSteps(9_999_999);
         execute();
        }
