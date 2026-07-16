@@ -25,7 +25,7 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
-  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
+  final boolean               suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
