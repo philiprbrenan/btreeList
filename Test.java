@@ -1360,7 +1360,7 @@ public class Test                                                               
        }
       catch (Exception e) {e.printStackTrace();}
      }
-    ExecCommand(StringBuilder command) {this(""+command);}
+    ExecCommand(StringBuilder Command) {this(""+Command);}
    }
 
 //D1 Tests                                                                                                              // Tests
