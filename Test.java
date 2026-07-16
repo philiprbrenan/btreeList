@@ -37,19 +37,19 @@ public class Test                                                               
 
 //D1 String routines                                                                                                    // String routines
 
-  public static String f(String format, Object...args)                                                                  // Alias for String.format
+  public static String f (String format, Object...args)                                                                 // Alias for String.format
    {return String.format(format, args);
    }
 
-  static String binaryString(int n, int width)                                                                          // Convert a integer to a binary string of specified width
+  static String binaryString (int n, int width)                                                                         // Convert a integer to a binary string of specified width
    {final String b = "0".repeat(width)+Long.toBinaryString(n);
     return b.substring(b.length() - width);
    }
 
-  static String   ones(int n) {return "1".repeat(n);}                                                                   // A string of ones
-  static String  zeros(int n) {return "0".repeat(n);}                                                                   // A string of zeros
+  static String   ones (int n) {return "1".repeat(n);}                                                                  // A string of ones
+  static String  zeros (int n) {return "0".repeat(n);}                                                                  // A string of zeros
 
-  static int longestLine(String s)                                                                                      // Longest line  in a string
+  static int longestLine (String s)                                                                                     // Longest line  in a string
    {int l = 0, i = 0, j = 0;
     for (; i < s.length(); i++, j++)
      {if (s.charAt(i) == '\n')
@@ -60,29 +60,29 @@ public class Test                                                               
     return max(l, j);
    }
 
-  static String joinStrings(Stack<String> S, String join)                                                               // Perl join
+  static String joinStrings (Stack<String> S, String join)                                                              // Perl join
    {final StringJoiner t = new StringJoiner(join);
     for  (String s : S) t.add(s);
     return ""+t;
    }
 
-  static String joinStringBuilders(Stack<StringBuilder> S, String join)                                                 // Perl join
+  static String joinStringBuilders (Stack<StringBuilder> S, String join)                                                // Perl join
    {final Stack<String> t = new Stack<>();
     for(StringBuilder s: S) t.push(s.toString());
     return joinStrings(t, join);
    }
 
-  static String joinStringBuilderLines(Stack<StringBuilder> S) {return joinStringBuilders(S, "\n");}
+  static String joinStringBuilderLines (Stack<StringBuilder> S) {return joinStringBuilders(S, "\n");}
 
-  static String joinStrings(Set<String> S, String join)                                                                 // Perl join
+  static String joinStrings (Set<String> S, String join)                                                                // Perl join
    {final StringJoiner t = new StringJoiner(join);
     for (String s: S) t.add(s);
     return ""+t;
    }
 
-  static String joinLines(Stack<String> S) {return joinStrings(S, "\n");}                                               // Perl join lines
+  static String joinLines (Stack<String> S) {return joinStrings(S, "\n");}                                              // Perl join lines
 
-  static String differentiateLines(int margin, String input)                                                            // Show differences between each line and its predecessor
+  static String differentiateLines (int margin, String input)                                                           // Show differences between each line and its predecessor
    {final String[] L = input.split("\n");
     final int      N = L.length;
     if (N < 2) return input;                                                                                            // No action required
@@ -109,8 +109,7 @@ public class Test                                                               
     return ""+D;
    }
 
-  static void writeProperties                                                                                           // Write a properties file
-   (String fileName, TreeMap<String,String> properties)
+  static void writeProperties (String fileName, TreeMap<String,String> properties)                                      // Write a properties file
    {final StringBuilder s = new StringBuilder();                                                                        // Properties written out
     for (String k : properties.keySet())                                                                                // Each key
      {s.append(k.trim()+"="+properties.get(k).trim()+"\n");                                                             // One key=value per line
@@ -118,7 +117,7 @@ public class Test                                                               
     writeFile(fileName, s);                                                                                             // Write propertie to file
    }
 
-  static TreeMap<String,String> readProperties(String filename)                                                         // Parse a properties file
+  static TreeMap<String,String> readProperties (String filename)                                                        // Parse a properties file
    {final Properties              properties = new Properties();                                                        // Properties parser
     final TreeMap<String, String> treeMap    = new TreeMap<> ();                                                        // TreeMap to store key-value pairs
 
@@ -135,7 +134,7 @@ public class Test                                                               
     return treeMap;                                                                                                     // Return treemap
    }
 
-  static String md5Sum(String text)                                                                                     // Md5 sum of a string
+  static String md5Sum (String text)                                                                                    // Md5 sum of a string
    {try
      {final MessageDigest m = MessageDigest.getInstance("MD5");
       final byte[]        b = m.digest(text.getBytes("UTF-8"));
@@ -145,11 +144,11 @@ public class Test                                                               
     return null;
    }
 
-  static String ref(Object obj)                                                                                         // Print the address of an object
+  static String ref (Object obj)                                                                                        // Print the address of an object
    {return Integer.toHexString(System.identityHashCode(obj));
    }
 
-  static void replaceAll(StringBuilder S, String s, String t)                                                           // Replace all instances of a source string with a target string on a string builder
+  static void replaceAll (StringBuilder S, String s, String t)                                                          // Replace all instances of a source string with a target string on a string builder
    {if (S == null || s == null || s.isEmpty() || t == null) return;
     int i = 0;
     while((i = S.indexOf(s, i)) != -1)
@@ -158,34 +157,34 @@ public class Test                                                               
      }
    }
 
-  static String substitute(String A, String...Pairs)                                                                    // Substitute pairs of key values into a string
+  static String substitute (String A, String...Pairs)                                                                   // Substitute pairs of key values into a string
    {if (Pairs.length % 2 == 1) stop("Even number of key, values required");
     for (int i = 0; i < Pairs.length; i += 2) A = A.replace("{" + Pairs[i] + "}", Pairs[i+1]);
     return A;
    }
 
-  static String nws(Object S)                                                                                           // Normalize white space in a string describing an object
+  static String nws (Object S)                                                                                          // Normalize white space in a string describing an object
    {final String r = ""+S;                                                                                              // Get string description
     final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
     return s;
    }
 
-  static String dateTimeStamp()                                                                                         // Date and time stamp
+  static String dateTimeStamp ()                                                                                        // Date and time stamp
    {return ZonedDateTime.now(ZoneOffset.UTC).
       format(DateTimeFormatter.ISO_INSTANT).replace(":", "-");
    }
 
-  static StringBuilder clearStringBuilder(StringBuilder S) {S.setLength(0);                               return S;}    // Clear a StringBuilder as java seems to have forgotten to provide this useful method
-  static StringBuilder chompStringBuilder(StringBuilder S) {if (S.length() > 0) S.setLength(S.length()-1);return S;}    // Remove last character from a StringBuilder
+  static StringBuilder clearStringBuilder (StringBuilder S) {S.setLength(0);                               return S;}   // Clear a StringBuilder as java seems to have forgotten to provide this useful method
+  static StringBuilder chompStringBuilder (StringBuilder S) {if (S.length() > 0) S.setLength(S.length()-1);return S;}   // Remove last character from a StringBuilder
 
-  static String pad(String S, int Length)                                                                               // Pad a string to a specified length or to a multiple of half of said length
+  static String pad (String S, int Length)                                                                              // Pad a string to a specified length or to a multiple of half of said length
    {final int l = S.length(), L = Length, T = L / 2;                                                                    // Current length, moinimum length, increments beyond minimum
     if      (l < L) return S+" ".repeat(L - l);                                                                         // Pad to specified length
     else if (l > L) return S+" ".repeat(T - ((l - L) % T));                                                             // Extend to a multiple of the specified increment
     return S;
    }
 
-  static StringBuilder pad(StringBuilder S, int Length)                                                                 // Pad a string builder to a specified length or to a multiple of half of said length
+  static StringBuilder pad (StringBuilder S, int Length)                                                                // Pad a string builder to a specified length or to a multiple of half of said length
    {final int l = S.length(), L = Length, T = L / 2;                                                                    // Current length, moinimum length, increments beyond minimum
     if      (l < L) S.append(" ".repeat(L - l));                                                                        // Pad to specified length
     else if (l > L) S.append(" ".repeat(T - ((l - L) % T)));                                                            // Extend to a multiple of the specified increment
@@ -194,27 +193,27 @@ public class Test                                                               
 
 //D1 Numeric routines                                                                                                   // Numeric routines
 
-  static int abs(int i) {return i >= 0 ? +i : -i;}                                                                      // Absolute value of integer
+  static int abs (int i) {return i >= 0 ? +i : -i;}                                                                     // Absolute value of integer
 
-  static int ifs(String n)                                                                                              // Integer from string
+  static int ifs (String n)                                                                                             // Integer from string
    {final Integer i = Integer.parseInt(n);
     if (i == null) stop("Invalid integer;", n);
     return i;
    }
 
-  static int max(int n, int...rest)                                                                                     // Maximum of some integers
+  static int max (int n, int...rest)                                                                                    // Maximum of some integers
    {int m = n;
     for (int i = 0; i < rest.length; i++) m = m < rest[i] ? rest[i] : m;
     return m;
    }
 
-  static long max(long n, long...rest)                                                                                  // Maximum of some longs
+  static long max (long n, long...rest)                                                                                 // Maximum of some longs
    {long m = n;
     for (int i = 0; i < rest.length; i++) m = m < rest[i] ? rest[i] : m;
     return m;
    }
 
-  static Integer maxInt(Integer n, Integer...rest)                                                                      // Maximum of some Integers with null acting as minus infinity
+  static Integer maxInt (Integer n, Integer...rest)                                                                     // Maximum of some Integers with null acting as minus infinity
    {Integer m = n;
     for (int i = 0; i < rest.length; i++)                                                                               // Find a non null value to act as the initial maximum
      {if (m == null && rest[i] != null) m = rest[i];
@@ -226,13 +225,13 @@ public class Test                                                               
     return m;
    }
 
-  static int min(int n, int...rest)                                                                                     // Minimum of some numbers
+  static int min (int n, int...rest)                                                                                    // Minimum of some numbers
    {int m = n;
     for (int i = 0; i < rest.length; i++) m = m > rest[i] ? rest[i] : m;
     return m;
    }
 
-  static Integer minInt(Integer n, Integer...rest)                                                                      // Minimum of some Integers with null acting as plus infinity
+  static Integer minInt (Integer n, Integer...rest)                                                                     // Minimum of some Integers with null acting as plus infinity
    {Integer m = n;
     for (int i = 0; i < rest.length; i++)                                                                               // Find a non null value to act as the initial minimum
      {if (m == null && rest[i] != null) m = rest[i];
@@ -244,26 +243,26 @@ public class Test                                                               
     return m;
    }
 
-  static double max(double n, double...rest)                                                                            // Maximum number from a list of one or more numbers
+  static double max (double n, double...rest)                                                                           // Maximum number from a list of one or more numbers
    {double m = n;
     for (int i = 0; i < rest.length; ++i) m = m < rest[i] ? rest[i] : m;
     return m;
    }
 
-  static double min(double n, double...rest)                                                                            // Minimum number from a list of one or more numbers
+  static double min (double n, double...rest)                                                                           // Minimum number from a list of one or more numbers
    {double m = n;
     for (int i = 0; i < rest.length; ++i) m = m > rest[i] ? rest[i] : m;
     return m;
    }
 
-  static int nextPowerOfTwo(int n)                                                                                      // If this is a power of two return it, else return the next power of two greater than this number
+  static int nextPowerOfTwo (int n)                                                                                     // If this is a power of two return it, else return the next power of two greater than this number
    {int p = 1;
     for (int i = 0; i < 32; ++i, p *= 2) if (p >= n) return p;
     stop("Cannot find next power of two for", n);
     return -1;
    }
 
-  static int prevPowerOfTwo(int n)                                                                                      // If this is a power of two return it, else return the previous power of two
+  static int prevPowerOfTwo (int n)                                                                                     // If this is a power of two return it, else return the previous power of two
    {int p = 1;
     if (n == 0) stop("No previous power of two for zero");
     for (int i = 0; i < 32; ++i, p *= 2) if (p*2 > n) return p;
@@ -271,50 +270,50 @@ public class Test                                                               
     return -1;
    }
 
-  static int logTwo(int n)                                                                                              // Log 2 of containing power of 2
+  static int logTwo (int n)                                                                                             // Log 2 of containing power of 2
    {int p = 1;
     for (int i = 0; i < 32; ++i, p *= 2) if (p >= n) return i;
     stop("Cannot find log two for", n);
     return -1;
    }
 
-  static int powerTwo(int n) {return 1 << n;}                                                                           // Power of 2
+  static int powerTwo (int n) {return 1 << n;}                                                                          // Power of 2
 
   static int powerOf (int a, int b)                                                                                     // Raise a to the power b
    {int v = 1; for (int i = 0; i < b; ++i) v *= a; return v;
    }
 
-  static int modZero(int i, int m) {return i % m  == 0 ? i : i + m - (i % m);}                                          // Next integer conguent to zero modulus the specified base
+  static int modZero (int i, int m) {return i % m  == 0 ? i : i + m - (i % m);}                                         // Next integer conguent to zero modulus the specified base
 
-  static int hexToInt(String hex)                                                                                       // Convert a hexadecimal string to int
+  static int hexToInt (String hex)                                                                                      // Convert a hexadecimal string to int
    {return Integer.parseInt(hex.replaceAll("[^0-9A-Fa-f]", ""), 16);
    }
 
-  static int decToInt(String dec)                                                                                       // Convert a decimal string to int
+  static int decToInt (String dec)                                                                                      // Convert a decimal string to int
    {return Integer.parseInt(dec.replaceAll("[^0-9]", ""));
    }
 
-  static int sqrt(int Value)                                                                                            // Integer square root as an integer
+  static int sqrt (int Value)                                                                                           // Integer square root as an integer
    {if (Value < 0) stop("Sqrt of negative number:", Value);                                                             // Negative numbers rejected
     return (int)Math.sqrt(Value);
    }
 
 //D1 Bit routines                                                                                                       // Routines operating on bits
 
-  static boolean getBit(int value, int index)              {return ((value >>> index) & 1) > 0;}                        // Extract a bit from an integer
-  static int     setBit(int value, int index)              {return value |  (1 << index);}                              // Set a bit in an integer
-  static int     clrBit(int value, int index)              {return value & ~(1 << index);}                              // Clear a bit in an integer
-  static int     setBit(int value, int index, boolean bit) {return bit ? setBit(value, index) : clrBit(value, index);}  // Set or clear a bit in an integer
+  static boolean getBit (int value, int index)              {return ((value >>> index) & 1) > 0;}                       // Extract a bit from an integer
+  static int     setBit (int value, int index)              {return value |  (1 << index);}                             // Set a bit in an integer
+  static int     clrBit (int value, int index)              {return value & ~(1 << index);}                             // Clear a bit in an integer
+  static int     setBit (int value, int index, boolean bit) {return bit ? setBit(value, index) : clrBit(value, index);} // Set or clear a bit in an integer
 
 //D1 Array routines                                                                                                     // Routines operating on arrays
 
-  static int[]range(int Limit)                                                                                          // Range of integers
+  static int[]range (int Limit)                                                                                         // Range of integers
    {final int[]r = new int[Limit];
     for (int i = 0; i < r.length; i++) r[i] = i;
     return r;
    }
 
-  static int[]range(int Start, int Limit)                                                                               // Range of integers
+  static int[]range (int Start, int Limit)                                                                              // Range of integers
    {final int[]r = new int[Limit - Start];
     for (int i = 0, j = Start; i < r.length; i++) r[i] = j++;
     return r;
@@ -329,7 +328,7 @@ public class Test                                                               
      }
    }
 
-  static void randomizeArray(Object[] array)                                                                            // Randomize an array
+  static void randomizeArray (Object[] array)                                                                           // Randomize an array
    {final Random random = new Random();
     for (int i = array.length - 1; i > 0; i--)
      {int j = random.nextInt(i + 1);
@@ -341,7 +340,7 @@ public class Test                                                               
 
 //D1 Traceback                                                                                                          // Trace back so we know where we are
 
-  static Stack<String> traceNames()                                                                                     // Containing method names
+  static Stack<String> traceNames ()                                                                                    // Containing method names
    {final StackTraceElement[]  t = Thread.currentThread().getStackTrace();
     final Stack<String>        T = new Stack<>();
 
@@ -354,12 +353,12 @@ public class Test                                                               
     return T;
    }
 
-  static String traceNamesString()                                                                                      // Containing method names as a dotted string
+  static String traceNamesString ()                                                                                     // Containing method names as a dotted string
    {final Stack<String> s  = traceNames(); s.pop();                                                                     // Remove our method name
     return joinStrings(s, ".");
    }
 
-  static String fullTraceBack(Exception e)                                                                              // Get a full stack trace that we can use in Geany
+  static String fullTraceBack (Exception e)                                                                             // Get a full stack trace that we can use in Geany
    {final StackTraceElement[]  t = e.getStackTrace();
     final StringBuilder        b = new StringBuilder();
     if (e.getMessage() != null)b.append(e.getMessage()+'\n');
@@ -374,7 +373,7 @@ public class Test                                                               
     return b.toString();
    }
 
-  static String traceBack(Exception e)                                                                                  // Get an abbrieviated stack trace that we can use in Geany
+  static String traceBack (Exception e)                                                                                 // Get an abbrieviated stack trace that we can use in Geany
    {final int Skip = 1;
     final StackTraceElement[]  t = e.getStackTrace();
     final StringBuilder        b = new StringBuilder();
@@ -396,9 +395,9 @@ public class Test                                                               
     return b.toString();
    }
 
-  static String traceBack()    {return traceBack(new Exception());}                                                     // Get a stack trace that we can use in Geany
+  static String traceBack ()   {return traceBack(new Exception());}                                                     // Get a stack trace that we can use in Geany
 
-  static String traceDdd()                                                                                              // Locate line associated with a say statement
+  static String traceDdd ()                                                                                             // Locate line associated with a say statement
    {final StackTraceElement[]  t = new Exception().getStackTrace();
     for(int i = 0; i < t.length; ++i)
      {if (t[i].getMethodName().equals("ddd"))
@@ -412,7 +411,7 @@ public class Test                                                               
     return "";
    }
 
-  static String currentTestName()                                                                                       // Name of the current test
+  static String currentTestName ()                                                                                      // Name of the current test
    {final StackTraceElement[] T = Thread.currentThread().getStackTrace();                                               // Current stack trace
     for (StackTraceElement t : T)                                                                                       // Locate deepest method that starts with test
      {final String c = t.getMethodName();
@@ -421,7 +420,7 @@ public class Test                                                               
     return null;                                                                                                        // Not called in a test
    }
 
-  static String positionInTest()                                                                                        // Position in a test in geany clickable format
+  static String positionInTest ()                                                                                       // Position in a test in geany clickable format
    {final StackTraceElement[]t = new Exception().getStackTrace();
     for(int i = 0; i < t.length; ++i)
      {final String m = t[i].getMethodName();
@@ -439,14 +438,14 @@ public class Test                                                               
   static int  currentTestNumber = 0;
   static long currentTestTime = System.nanoTime();
 
-  static double elapsedTime()                                                                                           // Elapsed time since last call or start of run
+  static double elapsedTime ()                                                                                          // Elapsed time since last call or start of run
    {final long    e = System.nanoTime();
     final double  d = (e - currentTestTime) / 1_000_000_000.0;
     currentTestTime = e;
     return d;
    }
 
-  static void sayCurrentTestName() {say(f("%2d %8.2f", ++currentTestNumber, elapsedTime()), currentTestName());}        // Name of the current test
+  static void sayCurrentTestName () {say(f("%2d %8.2f", ++currentTestNumber, elapsedTime()), currentTestName());}       // Name of the current test
 
   static String testLine()                                                                                              // Locate line associated with the current test
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
@@ -463,7 +462,7 @@ public class Test                                                               
     return null;
    }
 
-  static String currentTestNameSuffix()                                                                                 // Name of the current test
+  static String currentTestNameSuffix ()                                                                                // Name of the current test
    {final String t = currentTestName();
     if (t == null) stop("Not in a test");
     final String[]s = t.split("_", 2);
@@ -472,7 +471,7 @@ public class Test                                                               
     return s[1];
    }
 
-  static String currentCallerName()                                                                                     // Looks for the first method written in camel case
+  static String currentCallerName ()                                                                                    // Looks for the first method written in camel case
    {final StackTraceElement[] T = Thread.currentThread().getStackTrace();                                               // Current stack trace
     for (StackTraceElement t : T)                                                                                       // Locate deepest method with a name written in camel case
      {final String c = t.getMethodName();
@@ -481,12 +480,12 @@ public class Test                                                               
     return null;                                                                                                        // No method written in camel case
    }
 
-  static String sourceFileName()                                                                                        // Name of source file calling this method
+  static String sourceFileName ()                                                                                       // Name of source file calling this method
    {final StackTraceElement e = Thread.currentThread().getStackTrace()[2];                                              // 0 is getStackTrace, 1 is this routine, 2 is calling method
     return e.getFileName();
    }
 
-  static String callerFileAndLine3()                                                                                    // Locate file and line number of caller of caller
+  static String callerFileAndLine3 ()                                                                                   // Locate file and line number of caller of caller
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     if (t.length < 4) return null;
     final StackTraceElement s = t[3];
@@ -496,7 +495,7 @@ public class Test                                                               
     return f+" "+m+" "+l;
    }
 
-  static String traceComment()                                                                                          // Trace back comment
+  static String traceComment ()                                                                                         // Trace back comment
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     final StringBuilder       S = new StringBuilder();
 
@@ -513,13 +512,13 @@ public class Test                                                               
 //D1 Coverage                                                                                                           // Analyze code coverage
 
   static void z()                                                                                                       // A line that is being executed
-   {final String s = callerFileAndLine3();                                                                              // File method line
+   {final String s = callerFileAndLine3 ();                                                                             // File method line
     Integer c = coverage.get(s);
     coverage.put(s, c == null ? 1 : c+1);
    }
 
   static void zz()                                                                                                      // A subroutine that is being executed
-   {final String s = callerFileAndLine3();                                                                              // File method line
+   {final String s = callerFileAndLine3 ();                                                                             // File method line
     Integer c = coverage.get(s);
     coverage.put(s, c == null ? 1 : c+1);
    }
@@ -527,16 +526,16 @@ public class Test                                                               
   static class LineCount                                                                                                // Line count
    {final String line;
     final int count;
-    LineCount(String Line, int Count) {line = Line; count = Count;}
+    LineCount (String Line, int Count) {line = Line; count = Count;}
    }
 
-  static void printMostExecuted(Stack<LineCount> stack, String line, int n)                                             // Print a most frequently executed subroutine as in: 9843 Btree.java leafSize 0124
+  static void printMostExecuted (Stack<LineCount> stack, String line, int n)                                            // Print a most frequently executed subroutine as in: 9843 Btree.java leafSize 0124
    {final String[]s = line.split("\\s");
     stack.push(new LineCount(String.format("%s:%s:%s", s[0], s[2], s[1]), n));
    }
 
   final static String coverageAnalysisBlock = "z();";                                                                   // A string indicating the start of a block
-  static void coverageAnalysis(String source, int top)                                                                  // Coverage analysis: unexecuted lines and lines most frequently executed in the specified file in a Geany clickable format.
+  static void coverageAnalysis (String source, int top)                                                                 // Coverage analysis: unexecuted lines and lines most frequently executed in the specified file in a Geany clickable format.
    {final Stack<String> sourceLines = readFile(source);                                                                 // Lines of source from indicated file
     final Stack<String> notExecuted = new Stack<>();                                                                    // Lines not executed
     final TreeSet<Integer> executed = new TreeSet<>();                                                                  // Lines executed
@@ -582,14 +581,14 @@ public class Test                                                               
      }
    }
 
-  static boolean coverageExecuted(String file, Integer line,                                                            // Coverage analysis: check that a line was executed
+  static boolean coverageExecuted (String file, Integer line,                                                           // Coverage analysis: check that a line was executed
     TreeMap<String,TreeMap<Integer,Integer>> executed)
    {if (!executed.containsKey(file)) return false;                                                                      // Nothing in this file was ever executed
     final TreeMap<Integer,Integer> e = executed.get(file);
     return e.containsKey(line);                                                                                         // Whether this line in this file was executed
    }
 
-  static void coverageAnalysis(int top, String...Ignore)                                                                // Coverage analysis: lines not executed and the lines most frequently executed over all files encountered in a Geany clickable format.  For a file to be included in the coverage analysis one of the functions: z() or zz() function must have been made to bring that file to our attention.
+  static void coverageAnalysis (int top, String...Ignore)                                                               // Coverage analysis: lines not executed and the lines most frequently executed over all files encountered in a Geany clickable format.  For a file to be included in the coverage analysis one of the functions: z() or zz() function must have been made to bring that file to our attention.
    {final TreeMap<String,TreeSet<Integer>> notExecuted      = new TreeMap<>();                                          // File, lines not executed
     final TreeMap<String,TreeMap<Integer,Integer>> executed = new TreeMap<>();                                          // Lines executed
     final TreeSet<String> ignore                            = new TreeSet<>();
@@ -655,7 +654,7 @@ public class Test                                                               
 
 //D1 Files                                                                                                              // Operations on files
 
-  static Long fileSize(String file)                                                                                     // Size of a file
+  static Long fileSize (String file)                                                                                    // Size of a file
    {final Path path = Path.of(file);
     try
      {return Files.size(path);
@@ -665,7 +664,7 @@ public class Test                                                               
      }
    }
 
-  static Long fileCompare(String a, String b)                                                                           // Compare two files
+  static Long fileCompare (String a, String b)                                                                          // Compare two files
    {final Path A = Path.of(a);
     final Path B = Path.of(b);
     try
@@ -689,16 +688,16 @@ public class Test                                                               
      {final String  a, b;
       final int     line;
       final boolean ahead;
-      Match(int Line, String A, String B)
+      Match (int Line, String A, String B)
        {line = Line; a = A; b = B; ahead = false;
        }
-      Match(int Line, String A, String B, boolean Ahead)
+      Match (int Line, String A, String B, boolean Ahead)
        {line = Line; a = A; b = B; ahead = Ahead;
        }
      }
 
 
-    FileCompareAndLocate(String a, String b)                                                                            // Compare two files A, B line by line and return the last instance of a line starting with last before their point of divergence or null if file B is a prefix of file A
+    FileCompareAndLocate (String a, String b)                                                                           // Compare two files A, B line by line and return the last instance of a line starting with last before their point of divergence or null if file B is a prefix of file A
      {fileA = a; fileB = b;
       final Path A = Path.of(a);
       final Path B = Path.of(b);
@@ -737,7 +736,7 @@ public class Test                                                               
      }
    }
 
-  static Stack<String> readFile(String FilePath)                                                                        // Read a file into stack of strings
+  static Stack<String> readFile (String FilePath)                                                                       // Read a file into stack of strings
    {try
      {final Stack<String> S = new Stack<>();
       for(String s:  Files.readAllLines(Paths.get(FilePath))) S.push(s);
@@ -749,18 +748,18 @@ public class Test                                                               
     return null;
    }
 
-  static String readFileAsString(String FilePath)                                                                       // Read a file into a string
+  static String readFileAsString (String FilePath)                                                                      // Read a file into a string
    {final Stack<String> s = readFile(FilePath);
     return joinLines(s);
    }
 
-  static String tempFile()                                                                                              // Create a temporary file
+  static String tempFile ()                                                                                             // Create a temporary file
    {try  {return ""+File.createTempFile("zzz", "111");}
     catch(Exception e) {stop(e);}
     return null;
    }
 
-  static void appendFile(String FilePath, StringBuilder String)                                                         // Append a string builder to a file
+  static void appendFile (String FilePath, StringBuilder String)                                                        // Append a string builder to a file
    {try
      {makePath(folderName(FilePath));
       Files.write(Paths.get(FilePath), String.toString().getBytes(),
@@ -772,11 +771,11 @@ public class Test                                                               
      }
    }
 
-  static void appendFile(String FilePath, String String)                                                                // Append a string to a file
+  static void appendFile (String FilePath, String String)                                                               // Append a string to a file
    {appendFile(FilePath, new StringBuilder(String));
    }
 
-  static void writeFile(String FilePath, StringBuilder String)                                                          // Write a string builder to a file
+  static void writeFile (String FilePath, StringBuilder String)                                                         // Write a string builder to a file
    {try
      {makePath(folderName(FilePath));
       Files.write(Paths.get(FilePath), String.toString().getBytes());
@@ -787,11 +786,11 @@ public class Test                                                               
      }
    }
 
-  static void writeFile(String FilePath, String String)                                                                 // Write a string to a file
+  static void writeFile (String FilePath, String String)                                                                // Write a string to a file
    {writeFile(FilePath, new StringBuilder(String));
    }
 
-  static void deleteFile(String FilePath, boolean required)                                                             // Delete a file
+  static void deleteFile (String FilePath, boolean required)                                                            // Delete a file
    {try
      {Files.delete(Paths.get(FilePath));
      }
@@ -799,9 +798,9 @@ public class Test                                                               
      {if (required) stop("Cannot delete file", FilePath, e);
      }
    }
-  static void deleteFile(String FilePath) {deleteFile(FilePath, false);}
+  static void deleteFile (String FilePath) {deleteFile(FilePath, false);}
 
-  static void makePath(String folder)                                                                                   // Make a path
+  static void makePath (String folder)                                                                                  // Make a path
    {if (folder == null) return;
     try
      {Files.createDirectories(Paths.get(folder));
@@ -814,7 +813,7 @@ public class Test                                                               
      }
    }
 
-  static Stack<Path> findFiles(String FilePath)                                                                         // Find all files in and below a folder
+  static Stack<Path> findFiles (String FilePath)                                                                        // Find all files in and below a folder
    {final Stack<Path> files = new Stack<>();
     try
      {final Path dir = Paths.get(FilePath);
@@ -828,7 +827,7 @@ public class Test                                                               
     return files;
    }
 
-  static void deleteAllFiles(String FilePath, int Limit)                                                                // Delete files and folders in the specified folder and its sub folders if the number of such files is less than the limit specified
+  static void deleteAllFiles (String FilePath, int Limit)                                                               // Delete files and folders in the specified folder and its sub folders if the number of such files is less than the limit specified
    {final Path dir = Paths.get(FilePath);                                                                               // Specify the directory path
     final int[]limits = {Limit};
     final int N = findFiles(FilePath).size();
@@ -859,33 +858,33 @@ public class Test                                                               
      }
    }
 
-  static boolean fileExists(String FilePath)                                                                            // Check whether a file exists
+  static boolean fileExists (String FilePath)                                                                           // Check whether a file exists
    {final Path p = Paths.get(FilePath);
     return Files.exists(p) && Files.isRegularFile(p);
    }
 
-  static boolean folderExists(String folder)                                                                            // Check whether a folder exists
+  static boolean folderExists (String folder)                                                                           // Check whether a folder exists
    {final Path p = Paths.get(folder);
     return Files.exists(p) && Files.isDirectory(p);
    }
 
-  static String fileName(String FilePath)                                                                               // Get the file name from a file path name
+  static String fileName (String FilePath)                                                                              // Get the file name from a file path name
    {return Paths.get(FilePath).getFileName().toString();
    }
 
-  static String folderName(String FilePath)                                                                             // Get the folder name from a file path name
+  static String folderName (String FilePath)                                                                            // Get the folder name from a file path name
    {final Path p = Paths.get(FilePath).getParent();
     if (p == null) return null;
     return p.toString() + "/";
    }
 
-  static String fileExt(String FilePath)                                                                                // Get the extension name from a file path name
+  static String fileExt (String FilePath)                                                                               // Get the extension name from a file path name
    {final int p = FilePath.lastIndexOf(".");
     return p > 0 && p < FilePath.length() - 1 ?
       FilePath.substring(p + 1) : null;
    }
 
-  static String fe(String...Names)                                                                                      // Join file name components to make a file name with an extension
+  static String fe (String...Names)                                                                                     // Join file name components to make a file name with an extension
    {final StringBuilder f = new StringBuilder();
     final int N = Names.length;
     for (int i = 0; i < N-2; i++)
@@ -898,7 +897,7 @@ public class Test                                                               
     return ""+f+Names[N-2]+"."+Names[N-1];
    }
 
-  static String fn(String...Names)                                                                                      // Join file name components to make a file name
+  static String fn (String...Names)                                                                                     // Join file name components to make a file name
    {final StringBuilder f = new StringBuilder();
     final int N = Names.length;
     for (int i = 0; i < N-1; i++)
@@ -911,7 +910,7 @@ public class Test                                                               
     return ""+f+Names[N-1];
    }
 
-  static String fp(String...Names)                                                                                      // Join file name components to make a file path
+  static String fp (String...Names)                                                                                     // Join file name components to make a file path
    {final StringBuilder f = new StringBuilder();
     final int N = Names.length;
     for (int i = 0; i < N; i++)
@@ -924,18 +923,18 @@ public class Test                                                               
     return ""+f;
    }
 
-  static String fex (String Path) {return Path.replaceFirst("^.*\\.", "");}                                             // Extract file extension from path
-  static String fnex(String Path) {return Path.replaceFirst("^.*/", "");}                                               // Extract file name and extension from path
-  static String fnx (String Path) {return fnex(Path).replaceFirst("\\.[^.]*$", "");}                                     // Extract file name without extension from path
-  static String fpnx(String Path) {return Path.replaceFirst("\\.[^.]*$", "");}                                          // Remove extension from file path
-  static String fpx (String Path) {return Path.replaceFirst("[^/]*$", "");}                                             // Extract file path from path
+  static String fex ( String Path) {return Path.replaceFirst("^.*\\.", "");}                                            // Extract file extension from path
+  static String fnex (String Path) {return Path.replaceFirst("^.*/", "");}                                              // Extract file name and extension from path
+  static String fnx ( String Path) {return fnex(Path).replaceFirst("\\.[^.]*$", "");}                                   // Extract file name without extension from path
+  static String fpnx (String Path) {return Path.replaceFirst("\\.[^.]*$", "");}                                         // Remove extension from file path
+  static String fpx ( String Path) {return Path.replaceFirst("[^/]*$", "");}                                            // Extract file path from path
 
   class CompressFile
    {final  String sourceFile;
     final  String compressedFile;
            String message;
     int           read = 0;
-    CompressFile(String SourceFile, String CompressedFile)
+    CompressFile (String SourceFile, String CompressedFile)
      {final byte[] buffer = new byte[4096 * 4096];
       sourceFile     = SourceFile;
       compressedFile = CompressedFile;
@@ -963,25 +962,25 @@ public class Test                                                               
 
   static class Timer                                                                                                    // Time a section of code
    {final long start = System.nanoTime();
-    public String toString()
+    public String toString ()
      {return String.format("%6.2f %s", seconds(), currentCallerName());
      }
-    double seconds()
+    double seconds ()
      {final long duration = System.nanoTime() - start;
       return duration / 1e9;
      }
    }
 
-  static Timer timer() {return new Timer();}                                                                            // Create a new timer
+  static Timer timer () {return new Timer();}                                                                           // Create a new timer
 
 //D1 Printing                                                                                                           // Print log messages
 
-  static void sayf(String format, Object...O)                                                                           // Say something under the control of a format string
+  static void sayf (String format, Object...O)                                                                          // Say something under the control of a format string
    {System.err.println(String.format(format, O));
     return;
    }
 
-  static StringBuilder saySb(Object...O)                                                                                // Say something into a string builder
+  static StringBuilder saySb (Object...O)                                                                               // Say something into a string builder
    {final StringBuilder b = new StringBuilder();                                                                        // Print as a series of whitespace separated items
     for (int i = 0; i <  O.length; ++i)
      {final Object o = O[i];
@@ -1000,7 +999,7 @@ public class Test                                                               
     return  b;
    }
 
-  static void say(Object...O)                                                                                           // Say something
+  static void say (Object...O)                                                                                          // Say something
    {final StringBuilder b = saySb(O);                                                                                   // Print as a series of whitespace separated items
 
     if (sayThisOrStop.size() > 0)                                                                                       // Convert the say into a stop if the expected message does not eventuate
@@ -1016,7 +1015,7 @@ public class Test                                                               
     else if (b.length() > 0) System.err.println(b.toString());
    }
 
-  static StringBuilder say(StringBuilder b, Object...O)                                                                 // Say something in a string builder
+  static StringBuilder say (StringBuilder b, Object...O)                                                                // Say something in a string builder
    {for (int i = 0; i < O.length; i++)
      {if (i > 0) b.append(" ");
       b.append(O[i]);
@@ -1054,21 +1053,21 @@ public class Test                                                               
     for (int i=1; i < s.length; i++) System.err.println(" ".repeat(w)+" "+s[i]);                                        // Any following lines are indented to match the first line
    }
 
-  static void err(Object...O)                                                                                           // Say something and provide an error trace.
+  static void err (Object...O)                                                                                          // Say something and provide an error trace.
    {final boolean testing = sayThisOrStop.size() > 0;                                                                   // We are testing something that would normally stop the system
     say(O);
     if (!testing) System.err.println(traceBack());
    }
 
-  static void sayTest(Object...O) {errTest(O);}                                                                         // Say something about the current test
+  static void sayTest (Object...O) {errTest(O);}                                                                        // Say something about the current test
 
-  static void errTest(Object...O)                                                                                       // Say something about the current test
+  static void errTest (Object...O)                                                                                      // Say something about the current test
    {say(O);
     final String t = testLine();
     if (t != null) System.err.println(t);
    }
 
-  static void stop(Object...O)                                                                                          // Say something, provide an error trace and stop
+  static void stop (Object...O)                                                                                         // Say something, provide an error trace and stop
    {final boolean sos = sayThisOrStop.size() > 0;                                                                       // Say or stop checking in effect
     say(O);
     if (sos)
@@ -1080,7 +1079,7 @@ public class Test                                                               
      }
    }
 
-  static void sayThisOrStop(Object...O)                                                                                 // The next things to be said
+  static void sayThisOrStop (Object...O)                                                                                // The next things to be said
    {sayThisOrStop.clear();
     for (Object o : O) sayThisOrStop.push(o.toString());
    }
@@ -1092,22 +1091,22 @@ public class Test                                                               
 //    say(b);
 //   }
 
-//  static void squeezeVerticalSpaces(Stack<StringBuilder>S)                                                              // Squeeze common vertical spaces out of a stack of string builders
+//  static void squeezeVerticalSpaces(Stack<StringBuilder>S)                                                            // Squeeze common vertical spaces out of a stack of string builders
 //   {final int collapse = 3;
-//    int m = 0; for(StringBuilder s: S) if (s.length() > m) m = s.length();                                              // Maximum length
+//    int m = 0; for(StringBuilder s: S) if (s.length() > m) m = s.length();                                            // Maximum length
 //
-//    for(int j = 0; j < S.size(); j++)                                                                                   // Pad each row to the maximum length
+//    for(int j = 0; j < S.size(); j++)                                                                                 // Pad each row to the maximum length
 //     {S.elementAt(j).append(" ".repeat(m - S.elementAt(j).length()));
 //     }
 //
-//    columns: for(int i = m; i >= collapse; i--)                                                                         // Each column working backwards through each string
-//     {for(StringBuilder s: S)                                                                                           // Check there are two spaces that can be squeezed to one in all rows in this column
+//    columns: for(int i = m; i >= collapse; i--)                                                                       // Each column working backwards through each string
+//     {for(StringBuilder s: S)                                                                                         // Check there are two spaces that can be squeezed to one in all rows in this column
 //       {if (!s.substring(i-collapse, i).equals(" ".repeat(collapse)))
 //         {continue columns;
 //         }
 //       }
 //
-//      for(int j = 0; j < S.size(); j++)                                                                                 // Squeeze common spaces in column
+//      for(int j = 0; j < S.size(); j++)                                                                               // Squeeze common spaces in column
 //       {final String s = S.elementAt(j).toString();
 //        S.setElementAt
 //         (new StringBuilder
@@ -1115,7 +1114,7 @@ public class Test                                                               
 //       }
 //     }
 //
-//    for(int j = 0; j < S.size(); j++)                                                                                   // Remove trailing padding
+//    for(int j = 0; j < S.size(); j++)                                                                                 // Remove trailing padding
 //     {final StringBuilder s = S.elementAt(j);
 //      for(;s.length() > 0 && s.charAt(s.length()-1) == ' ';)
 //       {s.setLength(s.length()-1);
@@ -1123,7 +1122,7 @@ public class Test                                                               
 //     }
 //   }
 
-  static void testStop(Object...O)                                                                                      // Say something during a test, show the location in the test and stop
+  static void testStop (Object...O)                                                                                     // Say something during a test, show the location in the test and stop
    {say(O);
     System.err.println(positionInTest());
     System.exit(1);
@@ -1134,14 +1133,14 @@ public class Test                                                               
 
   static boolean rtg (int i)  {return testGroup == null || testGroup.equals(""+i);}                                     // Whether to run the indicated test group
 
-  static boolean ok(boolean b)                                                                                          // Check test results match expected results.
+  static boolean ok (boolean b)                                                                                         // Check test results match expected results.
    {if (b) {++testsPassed; return true;}
     testsFailed++;
     err(currentTestName(), "failed");
     return false;
    }
 
-  static boolean ok(Object a, Object b)                                                                                 // Check test results match expected results.
+  static boolean ok (Object a, Object b)                                                                                // Check test results match expected results.
    {if (a.toString().equals(b.toString())) {++testsPassed; return true;}
     final boolean n = b.toString().contains("\n");
     testsFailed++;
@@ -1150,7 +1149,7 @@ public class Test                                                               
     return false;
    }
 
-  static boolean ok(String got, String expected, int Margin)                                                            // Confirm two strings match beyond the margin or show the first line of differences
+  static boolean ok (String got, String expected, int Margin)                                                           // Confirm two strings match beyond the margin or show the first line of differences
    {final String G = got, E = expected;
     final int lg = G.length(), le = E.length();
     final StringBuilder b = new StringBuilder();
@@ -1220,17 +1219,17 @@ public class Test                                                               
     return pass;
    }
 
-  static boolean ok(String got, String expected)                                                                        // Confirm two strings match or show the first line of differences
+  static boolean ok (String got, String expected)                                                                       // Confirm two strings match or show the first line of differences
    {return ok(got, expected, 0);
    }
 
-  static boolean ok(int margin, String got, String expected)                                                            // Confirm two strings
+  static boolean ok (int margin, String got, String expected)                                                           // Confirm two strings
    {final String G = differentiateLines(margin, got),
                  E = differentiateLines(margin, expected);
     return ok(G, E, margin);
    }
 
-  static boolean ok(Integer G, Integer E)                                                                               // Check that two integers are equal
+  static boolean ok (Integer G, Integer E)                                                                              // Check that two integers are equal
    {if (false)                        {                                                             return true ;}
     else if ( G == null && E == null) {                                              ++testsPassed; return true ;}
     else if ( G != null && E == null) {err(String.format("Expected null, got:", G)); ++testsFailed; return false;}
@@ -1239,7 +1238,7 @@ public class Test                                                               
     else                              {                                              ++testsPassed; return true ;}
    }
 
-  static boolean ok(Long    G, Long    E)                                                                               // Check that two longs are equal
+  static boolean ok (Long    G, Long    E)                                                                              // Check that two longs are equal
    {if (false)                        {return false;}
     else if ( G == null && E == null) {                                              ++testsPassed; return true ;}
     else if ( G != null && E == null) {err(String.format("Expected null, got:", G)); ++testsFailed; return false;}
@@ -1248,11 +1247,11 @@ public class Test                                                               
     else                              {                                              ++testsPassed; return false;}
    }
 
-  static boolean ok(Integer[]G, String E)                                                                               // Check that two integer arrays are are equal
+  static boolean ok (Integer[]G, String E)                                                                              // Check that two integer arrays are are equal
    {return ok(""+G, E);
    }
 
-  static boolean ok(Integer[]G, Integer[]E)                                                                             // Check that two integer arrays are are equal
+  static boolean ok (Integer[]G, Integer[]E)                                                                            // Check that two integer arrays are are equal
    {final StringBuilder b = new StringBuilder();
     final int lg = G.length, le = E.length;
 
@@ -1278,7 +1277,7 @@ public class Test                                                               
     return fails > 0;
    }
 
-  static boolean ok(int[]G, int[]E)                                                                                     // Check that two integer arrays are are equal
+  static boolean ok (int[]G, int[]E)                                                                                    // Check that two integer arrays are are equal
    {final Integer[]g = new Integer[G.length];
     final Integer[]e = new Integer[E.length];
     for (int i = 0; i < G.length; i++) g[i] = G[i];
@@ -1286,11 +1285,11 @@ public class Test                                                               
     return ok(g, e);
    }
 
-  static boolean ok(Stack<String>G, Stack<String>E)                                                                     // Check that two stacks of strings are equal
+  static boolean ok (Stack<String>G, Stack<String>E)                                                                    // Check that two stacks of strings are equal
    {return ok(joinLines(G), joinLines(E));
    }
 
-  static void testSummary()                                                                                             // Print a summary of the testing
+  static void testSummary ()                                                                                            // Print a summary of the testing
    {final double d = (System.nanoTime() - start) / (double)(1<<30);                                                     // Run time in seconds
     final String
       a = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")),                                              // Time at which run was executed
@@ -1306,7 +1305,7 @@ public class Test                                                               
 
 //D1 Command Execution                                                                                                  // Execute a command sequence and return its stdout and stderr
 
-  static String pwd() {return System.getProperty("user.dir");}                                                          // Current working folder
+  static String pwd () {return System.getProperty("user.dir");}                                                         // Current working folder
 
   static class ExecCommand                                                                                              // Execute a command sequence
    {final String    command;
@@ -1314,7 +1313,7 @@ public class Test                                                               
     final StringBuilder err = new StringBuilder();
     int exitCode;
 
-    ExecCommand(String Command)
+    ExecCommand (String Command)
      {command = Command;
       try
        {final ProcessBuilder b = new ProcessBuilder("bash", "-c", command);
