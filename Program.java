@@ -21,7 +21,7 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
  {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                          generateVerilog = !true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
@@ -299,7 +299,7 @@ public class Program extends Test                                               
    }
 
 //D2 Procedure                                                                                                          // Procedure with parameters and return value.  Only works for static classes because it is unable to emulate "this" so commented out for the moment
-/*
+/* Good idea but not reliable enough yet
   abstract class Procedure                                                                                              // Procedure
    {final String      name;                                                                                             // The name of the procedure so it can be cataloged and reused later by name which allows the just in time generation of procedures
     final Label       start = new Label(), end = new Label();                                                           // The location of the start and end of the procedure
@@ -2425,7 +2425,7 @@ Memory 0
    {          test_memoryRef(true);
               test_memoryRef(false);
    }
-/*
+/* Good idea but not reliable enough yet
   static void test_procedureCall(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(16))
@@ -2679,3 +2679,4 @@ Memory 0
    }
  }
 //https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
+//https://github.com/philiprbrenan/btreeList/compare/4ccd0f2a...0f6a014517ba
