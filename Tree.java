@@ -1225,6 +1225,7 @@ Leaf   at:   2 size:   4, count:   4
      {t.new ForCount(t.new Int(1), t.new Int(N+1))
        {void body(Int Index)
          {t.insert(Index, Index.Mul(11));
+          t.dumpProgramState("AAAA");
          }
        };
       //t.new I() {void a() {say("final static String[]tree32 = "+ t.saveMemories()+";");} boolean trace() {return false;}};
@@ -1272,6 +1273,7 @@ Leaf   at:   2 size:   4, count:   4
     t.new ForCount(t.new Int(1), t.new Int(N+1))
      {void body(Int Index)
        {t.insert(Index, Index);
+        t.dumpProgramState("AAAA");
        }
      };
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
@@ -1304,6 +1306,7 @@ Leaf   at:   2 size:   4, count:   4
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {t.insert(t.new Int(N).sub(Index), Index);
+        t.dumpProgramState("AAAA");
        }
      };
     //final StringBuilder s = t.dump();  t.new I() {void a() {stop(s);}};
@@ -1348,6 +1351,7 @@ Leaf   at:   2 size:   4, count:   4
              };
             k.W();
             insert(k, Index);
+            dumpProgramState("AAAA");
            }
          };
 
@@ -1384,6 +1388,7 @@ Leaf   at:   2 size:   4, count:   4
        {t.insert(Index, Index.Mul(11));
        }
      };
+    t.dumpProgramState("AAAA");
 
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
@@ -1394,6 +1399,7 @@ Leaf   at:   2 size:   4, count:   4
        {t.delete(Index.Inc());
         final StringBuilder T = t.print();
         t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+        t.dumpProgramState("BBBB");
        }
      };
         //t.new I() {void a() {stop(s);}};
@@ -1499,6 +1505,7 @@ Leaf   at:   2 size:   4, count:   4
        {t.insert(Index, Index.Mul(11));
        }
      };
+    t.dumpProgramState("AAAA");
 
     final StringBuilder s = new StringBuilder();
     final StringBuilder S = t.print();
@@ -1509,6 +1516,7 @@ Leaf   at:   2 size:   4, count:   4
        {t.delete(t.new Int(N).sub(Index));
         final StringBuilder T = t.print();
         t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+        t.dumpProgramState("BBBB");
        }
      };
 
@@ -1617,6 +1625,7 @@ Leaf   at:   2 size:   4, count:   4
        {t.insert(Index, Index.Mul(11));
        }
      };
+    t.dumpProgramState("AAAA");
 
     final StringBuilder s = t.print();
     if (!Ex) t.defineArrayViaVerilogFunction("loadRandomKeys", random_32);                                              // Create an array of the random keys to be deleted so that the array is accessible from Verilog
@@ -1634,6 +1643,7 @@ Leaf   at:   2 size:   4, count:   4
 
         final StringBuilder T = t.print();
         t.new I() {void a() {s.append(T);} boolean trace() {return false;}};
+        t.dumpProgramState("BBBB");
        }
      };
 
@@ -1785,6 +1795,7 @@ Leaf           size:   4, count:   2
        }
      };
 
+    t.dumpProgramState("AAAA");
     t.maxSteps(9_999_999);
     t.execute();
    }
