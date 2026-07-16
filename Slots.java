@@ -1057,7 +1057,7 @@ keys     :    0  11   0  22   0   0   0   0
 
         delSlotToKeys(new Int(2));
         delKey       (new Int(3));
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         s.check(s.print(), """
 Slots    : size:  8, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1141,7 +1141,7 @@ keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
      {void slotsCode()
        {putKey(new Int(2),  new Int(1));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  4, count:  1
 positions:    0   1   2   3   4   5   6   7
@@ -1155,7 +1155,7 @@ keys     :    0   0   1   0
         final Int k0 = allocKey(); putKey(k0,  new Int(2));
         final Int k1 = allocKey(); putKey(k1,  new Int(3));
         final Int k4 = allocKey(); putKey(k4,  new Int(4));
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  4, count:  4
 positions:    0   1   2   3   4   5   6   7
@@ -1183,7 +1183,7 @@ keys     :    2   3   1   4
        {setSlotAndKey(new Int(3),  new Int(2),  new Int(1));
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
@@ -1195,7 +1195,7 @@ keys     :    0   0   1   2
 """);
 
         delete(new Int(3));
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  4, count:  1
 positions:    0   1   2   3   4   5   6   7
@@ -1223,7 +1223,7 @@ keys     :    0   0   0   2
        {setSlotAndKey(new Int(2),  new Int(1),  new Int(1));
         setSlotAndKey(new Int(4),  new Int(3),  new Int(2));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
@@ -1235,7 +1235,7 @@ keys     :    0   1   0   2
 """);
 
         compactSlotsLeft();
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
@@ -1247,7 +1247,7 @@ keys     :    0   1   0   2
 """);
 
         compactSlotsRight();
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         s.check(s.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
@@ -1260,7 +1260,7 @@ keys     :    0   1   0   2
 
         final StringBuilder T = new StringBuilder();
         compactKeysLeft((S, b, a)->{new I() {void a() {T.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
-        //new I() {void a() {testStop(T, s);}};
+        //stop(s);}};
         ok(()->T, "3->0;");
         s.check(s.print(), """
 Slots    : size:  4, count:  2
@@ -1274,7 +1274,7 @@ keys     :    2   1   0   0
 
         final StringBuilder U = new StringBuilder();
         compactKeysRight((S, b, a)->{new I() {void a() {U.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
-        //new I() {void a() {testStop(U, s);}};
+        //stop(s);}};
         ok(()->U, "0->3;1->2;");
         s.check(s.print(), """
 Slots    : size:  4, count:  2
@@ -1289,7 +1289,7 @@ keys     :    0   0   1   2
         final StringBuilder W = new StringBuilder();
         compactKeysLeft ((S, b, a)->{new I() {void a() {W.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
         compactSlotsLeft();
-        //new I() {void a() {testStop(W, s);}};
+        //stop(s);}};
         ok(()->W, "3->0;2->1;");
         s.check(s.print(), """
 Slots    : size:  4, count:  2
@@ -1304,7 +1304,7 @@ keys     :    2   1   0   0
         final StringBuilder X = new StringBuilder();
         compactKeysRight ((S, b, a)->{new I() {void a() {X.append(a.i()+"->"+b.i()+";");} boolean trace() {return false;}};});
         compactSlotsRight();
-        //new I() {void a() {testStop(X, s);}};
+        //stop(s);}};
         ok(()->X, "0->3;1->2;");
         s.check(s.print(), """
 Slots    : size:  4, count:  2
@@ -1339,7 +1339,7 @@ keys     :    0   0   1   2
         setSlotAndKey(new Int(13),  new Int(6),  new Int(6));
         setSlotAndKey(new Int(14),  new Int(0),  new Int(7));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1351,7 +1351,7 @@ keys     :    7   1   3   2   4   5   6   0
 """);
 
         redistribute();
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1384,7 +1384,7 @@ keys     :    7   1   3   2   4   5   6   0
         setSlotAndKey(new Int(13),  new Int(6),  new Int(6));
         setSlotAndKey(new Int(14),  new Int(0),  new Int(7));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1397,7 +1397,7 @@ keys     :    7   1   3   2   4   5   6   0
 
 
         shiftUpOne(new Int(2), new Int(1));
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1410,7 +1410,7 @@ keys     :    7   1   3   2   4   5   6   0
 
         shiftUpOne(new Int(3), new Int(2));
         shiftUpOne(new Int(4), new Int(2));
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1424,7 +1424,7 @@ keys     :    7   1   3   2   4   5   6   0
         shiftDownOne(new Int(14), new Int(3));
         shiftDownOne(new Int(13), new Int(3));
         shiftDownOne(new Int(12), new Int(3));
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1506,7 +1506,7 @@ keys     :    0   0   4   3
            }
          };
         mergeFromLeftEven(l).ok(true);
-        //new I() {void a() {testStop(l);}};
+        //stop(l);
         l.check(l.print(), """
 Slots    : size:  4, count:  2
 positions:    0   1   2   3   4   5   6   7
@@ -1516,7 +1516,7 @@ usedSlots:    .   X   .   .   .   X   .   .
 usedKeys :    X   X   .   .
 keys     :    2   1   0   0
 """);
-        //new I() {void a() {testStop(r);}};
+        //stop(r);
         r.check(r.print(), """
 Slots    : size:  4, count:  4
 positions:    0   1   2   3   4   5   6   7
@@ -1543,15 +1543,15 @@ keys     :    2   1   4   3
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots l = this;
-        //l.insert(new Int(2));
-        //l.insert(new Int(1));
+        l.insert(new Int(2));
+        l.insert(new Int(1));
         final Slots r = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(l))
          {void slotsCode()
            {insert(new Int(4));
             insert(new Int(5));
            }
          };
-        //new I() {void a() {testStop(l); }};
+        //stop(l);
         l.check(l.print(), """
 Slots    : size:  5, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9
@@ -1561,7 +1561,7 @@ usedSlots:    .   .   X   .   .   X   .   .   .   .
 usedKeys :    X   X   .   .   .
 keys     :    2   1   0   0   0
 """);
-        //new I() {void a() {testStop(r); }};
+        //stop(r);
         r.check(r.print(), """
 Slots    : size:  5, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9
@@ -1573,8 +1573,8 @@ keys     :    4   5   0   0   0
 """);
         l.mergeFromRightOdd(r, new Int(3)).ok(true);
 
-        //new I() {void a() {testStop(l); }};
-        //new I() {void a() {testStop(r); }};
+        //stop(l);
+        //stop(r);
         l.check(l.print(), """
 Slots    : size:  5, count:  5
 positions:    0   1   2   3   4   5   6   7   8   9
@@ -1619,7 +1619,7 @@ keys     :    0   0   0   5   4
             insert(new Int(2));
            }
          };
-        //new I() {void a() {testStop(r);}};
+        //stop(r);
         r.check(r.print(), """
 Slots    : size:  5, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9
@@ -1629,7 +1629,7 @@ usedSlots:    .   .   .   .   .   X   .   .   X   .
 usedKeys :    X   X   .   .   .
 keys     :    4   5   0   0   0
 """);
-        //new I() {void a() {testStop(l);}};
+        //stop(l);
         l.check(l.print(), """
 Slots    : size:  5, count:  2
 positions:    0   1   2   3   4   5   6   7   8   9
@@ -1642,7 +1642,7 @@ keys     :    1   2   0   0   0
 
         r.mergeFromLeftOdd(l, new Int(3)).ok(true);
 
-        //new I() {void a() {testStop(r);}};
+        //stop(r);
         r.check(r.print(), """
 Slots    : size:  5, count:  5
 positions:    0   1   2   3   4   5   6   7   8   9
@@ -1678,7 +1678,7 @@ keys     :    1   2   3   5   4
         putKey       (new Int( 0), new Int(44)); count().ok(4);
 
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1694,7 +1694,7 @@ keys     :   44  11   0  22   0  33   0   0
        getSlotToKeyValue(new Int(4)).ok(33);
        getSlotToKeyValue(new Int(8)).ok(44);
 
-       //new I() {void a() {testStop(s.usedSlotsToKeys);}};
+       //stop(s.usedSlotsToKeys);
        ok(()->s.usedSlotsToKeys, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  1  0  1  0  1  0  0  0  0  0  0  0  0  0  0  1
@@ -1743,7 +1743,7 @@ Zero:
         putKey       (new Int( 0), new Int(44));
 
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1759,7 +1759,7 @@ keys     :   44  11   0  22   0  33   0   0
        getSlotToKeyValue(new Int(13)).ok(33);
        getSlotToKeyValue(new Int(15)).ok(44);
 
-       //new I() {void a() {testStop(s.usedSlotsToKeys);}};
+       //stop(s.usedSlotsToKeys);
        ok(()->s.usedSlotsToKeys, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  0  0  0  0  0  0  0  0  0  1  0  1  0  1  0  1
@@ -1903,7 +1903,7 @@ keys     :   14  13  16  15  18  17  12  11
         insert(new Int(18));
         insert(new Int(14));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1938,7 +1938,7 @@ keys     :   11  12  13  15  16  17  18  14
         insert(new Int(88));
 
         redistribute();
-        //testStop(this, usedSlotsToKeys);
+        //stop(usedSlotsToKeys);
         check(print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -1948,7 +1948,7 @@ usedSlots:    X   .   X   .   X   .   X   .   X   .   X   .   X   .   X   .
 usedKeys :    X   X   X   X   X   X   X   X
 keys     :   11  22  33  44  55  66  77  88
 """);
-        //testStop(usedSlotsToKeys);
+        //stop(usedSlotsToKeys);
         ok(()->usedSlotsToKeys, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
    1    0   16 |  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1  0
@@ -2008,7 +2008,7 @@ Zero:
         insert(new Int(18));
         insert(new Int(14));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2021,7 +2021,7 @@ keys     :   11  12  13  15  16  17  18  14
         final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11));
         s.splitRightEven(t).ok(14);
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         s.check(s.print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2031,7 +2031,7 @@ usedSlots:    .   X   .   .   .   X   .   .   .   X   .   .   .   X   .   .
 usedKeys :    X   X   X   .   .   .   .   X
 keys     :   11  12  13   0   0   0   0  14
 """);
-        //new I() {void a() {testStop(t);}};
+        //stop(t);
         t.check(t.print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2066,7 +2066,7 @@ keys     :    0   0   0  15  16  17  18   0
         insert(new Int(18));
         insert(new Int(14));
         final Slots r = this;
-        //new I() {void a() {testStop(r);}};
+        //stop(r);
         r.check(r.print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2079,8 +2079,8 @@ keys     :   11  12  13  15  16  17  18  14
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r));
         l.insert(new Int(11)); l.compactSlotsRight();
         r.splitLeftEven(l).ok(14);
-        //new I() {void a() {testStop(l);}};
-        //new I() {void a() {testStop(r);}};
+        //stop(l);
+        //stop(r);
         l.check(l.print(), """
 Slots    : size:  8, count:  4
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2123,7 +2123,7 @@ keys     :    0   0   0  15  16  17  18   0
         insert(new Int(17));
         insert(new Int(14));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  7, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2136,7 +2136,7 @@ keys     :   11  12  13  15  16  17  14
         final Slots t = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(s));
         t.insert(new Int(11));
         s.splitRightOdd(t).ok(6);
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         s.check(s.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2146,7 +2146,7 @@ usedSlots:    .   .   X   .   .   .   X   .   .   .   X   .   .   .
 usedKeys :    X   X   X   .   .   .   .
 keys     :   11  12  13   0   0   0  14
 """);
-        //new I() {void a() {testStop(t);}};
+        //stop(t);
         t.check(t.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2180,7 +2180,7 @@ keys     :    0   0   0  15  16  17   0
         insert(new Int(17));
         insert(new Int(14));
         final Slots r = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  7, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2193,8 +2193,8 @@ keys     :   11  12  13  15  16  17  14
         final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r));
         l.insert(new Int(11)); l.compactSlotsRight();
         r.splitLeftOdd(l).ok(6);
-        //new I() {void a() {testStop(t);}};
-        //new I() {void a() {testStop(s);}};
+        //stop(t);
+        //stop(s);
         l.check(l.print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2237,7 +2237,7 @@ keys     :    0   0   0  15  16  17  14
         insert(new Int(17));
         insert(new Int(14));
         final Slots s = this;
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  7, count:  7
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2248,7 +2248,7 @@ usedKeys :    X   X   X   X   X   X   X
 keys     :   11  12  13  15  16  17  14
 """);
         initializeMemory();
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  7, count:  0
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2306,7 +2306,7 @@ keys     :    0   0   0   0   0   0   0
      {void slotsCode()
        {final Slots s = this;
         insertEmpty(new Int(4)).ok(7);
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  7, count:  1
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2318,7 +2318,7 @@ keys     :    4   0   0   0   0   0   0
 """);
         final Find f = new Find().set(new Int(7), true);  f.insert(new Int(2));
         final Find F = new Find().set(new Int(7), false); F.insert(new Int(6));
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  7, count:  3
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13
@@ -2350,7 +2350,7 @@ keys     :    4   2   6   0   0   0   0
         insert(new Int(2)); count().ok(2);
         insert(new Int(3)); count().ok(3);
         insert(new Int(1)); count().ok(4);
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  4, count:  4
 positions:    0   1   2   3   4   5   6   7
@@ -2364,7 +2364,7 @@ keys     :    4   2   3   1
         delete(new Int(1)); count().ok(2);
         delete(new Int(0)); count().ok(1);
         delete(new Int(4)); count().ok(0);
-        //new I() {void a() {testStop(s);}};
+        //stop(s);
         check(print(), """
 Slots    : size:  4, count:  0
 positions:    0   1   2   3   4   5   6   7
@@ -2414,7 +2414,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert(!true);
+    test_mergeFromRightOdd(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
