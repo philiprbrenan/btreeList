@@ -1,4 +1,4 @@
-# Test 2026-07-16 at 23:58:35
+# Test 2026-07-16 at 23:58:40
 
 name: Test
 run-name: btreeList
@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11]
+        task: [BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11, Branch_1, Branch_2, Branch_3, Branch_4, Branch_5, Branch_6, Branch_7, Branch_8, Branch_9, Branch_10, Branch_11, Branch_12, Leaf_1, Leaf_2, Leaf_3, Leaf_4, Leaf_5, Leaf_6, Leaf_7, Leaf_8, Leaf_9, Leaf_10, Program_1, Slots_1, Slots_2, Slots_3, Slots_4, Slots_5, Slots_6, Slots_7, Slots_8, Slots_9, Slots_10, Slots_11, Slots_12, Slots_13, Slots_14, Slots_15, Slots_16, Slots_17, Slots_18, Slots_19, Slots_20, Slots_21, Slots_22, Slots_23, Test_1, Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11]
 
     steps:
     - uses: actions/checkout@v6
@@ -46,6 +46,818 @@ jobs:
     - name: Java
       run: |
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
+
+    - name: BitSet_1
+      if: ${{             matrix.task == 'BitSet_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 1
+        tree
+
+    - name: Upload BitSet_1
+      if: ${{ always() && matrix.task == 'BitSet_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_1
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_2
+      if: ${{             matrix.task == 'BitSet_2' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 2
+        tree
+
+    - name: Upload BitSet_2
+      if: ${{ always() && matrix.task == 'BitSet_2' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_2
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_3
+      if: ${{             matrix.task == 'BitSet_3' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 3
+        tree
+
+    - name: Upload BitSet_3
+      if: ${{ always() && matrix.task == 'BitSet_3' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_3
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_4
+      if: ${{             matrix.task == 'BitSet_4' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 4
+        tree
+
+    - name: Upload BitSet_4
+      if: ${{ always() && matrix.task == 'BitSet_4' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_4
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_5
+      if: ${{             matrix.task == 'BitSet_5' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 5
+        tree
+
+    - name: Upload BitSet_5
+      if: ${{ always() && matrix.task == 'BitSet_5' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_5
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_6
+      if: ${{             matrix.task == 'BitSet_6' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 6
+        tree
+
+    - name: Upload BitSet_6
+      if: ${{ always() && matrix.task == 'BitSet_6' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_6
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_7
+      if: ${{             matrix.task == 'BitSet_7' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 7
+        tree
+
+    - name: Upload BitSet_7
+      if: ${{ always() && matrix.task == 'BitSet_7' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_7
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_8
+      if: ${{             matrix.task == 'BitSet_8' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 8
+        tree
+
+    - name: Upload BitSet_8
+      if: ${{ always() && matrix.task == 'BitSet_8' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_8
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_9
+      if: ${{             matrix.task == 'BitSet_9' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 9
+        tree
+
+    - name: Upload BitSet_9
+      if: ${{ always() && matrix.task == 'BitSet_9' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_9
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_10
+      if: ${{             matrix.task == 'BitSet_10' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 10
+        tree
+
+    - name: Upload BitSet_10
+      if: ${{ always() && matrix.task == 'BitSet_10' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_10
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_11
+      if: ${{             matrix.task == 'BitSet_11' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 11
+        tree
+
+    - name: Upload BitSet_11
+      if: ${{ always() && matrix.task == 'BitSet_11' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_11
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_1
+      if: ${{             matrix.task == 'Branch_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 1
+        tree
+
+    - name: Upload Branch_1
+      if: ${{ always() && matrix.task == 'Branch_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_1
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_2
+      if: ${{             matrix.task == 'Branch_2' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 2
+        tree
+
+    - name: Upload Branch_2
+      if: ${{ always() && matrix.task == 'Branch_2' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_2
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_3
+      if: ${{             matrix.task == 'Branch_3' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 3
+        tree
+
+    - name: Upload Branch_3
+      if: ${{ always() && matrix.task == 'Branch_3' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_3
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_4
+      if: ${{             matrix.task == 'Branch_4' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 4
+        tree
+
+    - name: Upload Branch_4
+      if: ${{ always() && matrix.task == 'Branch_4' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_4
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_5
+      if: ${{             matrix.task == 'Branch_5' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 5
+        tree
+
+    - name: Upload Branch_5
+      if: ${{ always() && matrix.task == 'Branch_5' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_5
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_6
+      if: ${{             matrix.task == 'Branch_6' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 6
+        tree
+
+    - name: Upload Branch_6
+      if: ${{ always() && matrix.task == 'Branch_6' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_6
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_7
+      if: ${{             matrix.task == 'Branch_7' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 7
+        tree
+
+    - name: Upload Branch_7
+      if: ${{ always() && matrix.task == 'Branch_7' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_7
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_8
+      if: ${{             matrix.task == 'Branch_8' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 8
+        tree
+
+    - name: Upload Branch_8
+      if: ${{ always() && matrix.task == 'Branch_8' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_8
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_9
+      if: ${{             matrix.task == 'Branch_9' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 9
+        tree
+
+    - name: Upload Branch_9
+      if: ${{ always() && matrix.task == 'Branch_9' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_9
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_10
+      if: ${{             matrix.task == 'Branch_10' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 10
+        tree
+
+    - name: Upload Branch_10
+      if: ${{ always() && matrix.task == 'Branch_10' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_10
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_11
+      if: ${{             matrix.task == 'Branch_11' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 11
+        tree
+
+    - name: Upload Branch_11
+      if: ${{ always() && matrix.task == 'Branch_11' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_11
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Branch_12
+      if: ${{             matrix.task == 'Branch_12' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Branch 12
+        tree
+
+    - name: Upload Branch_12
+      if: ${{ always() && matrix.task == 'Branch_12' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Branch_12
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_1
+      if: ${{             matrix.task == 'Leaf_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 1
+        tree
+
+    - name: Upload Leaf_1
+      if: ${{ always() && matrix.task == 'Leaf_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_1
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_2
+      if: ${{             matrix.task == 'Leaf_2' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 2
+        tree
+
+    - name: Upload Leaf_2
+      if: ${{ always() && matrix.task == 'Leaf_2' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_2
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_3
+      if: ${{             matrix.task == 'Leaf_3' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 3
+        tree
+
+    - name: Upload Leaf_3
+      if: ${{ always() && matrix.task == 'Leaf_3' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_3
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_4
+      if: ${{             matrix.task == 'Leaf_4' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 4
+        tree
+
+    - name: Upload Leaf_4
+      if: ${{ always() && matrix.task == 'Leaf_4' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_4
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_5
+      if: ${{             matrix.task == 'Leaf_5' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 5
+        tree
+
+    - name: Upload Leaf_5
+      if: ${{ always() && matrix.task == 'Leaf_5' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_5
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_6
+      if: ${{             matrix.task == 'Leaf_6' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 6
+        tree
+
+    - name: Upload Leaf_6
+      if: ${{ always() && matrix.task == 'Leaf_6' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_6
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_7
+      if: ${{             matrix.task == 'Leaf_7' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 7
+        tree
+
+    - name: Upload Leaf_7
+      if: ${{ always() && matrix.task == 'Leaf_7' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_7
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_8
+      if: ${{             matrix.task == 'Leaf_8' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 8
+        tree
+
+    - name: Upload Leaf_8
+      if: ${{ always() && matrix.task == 'Leaf_8' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_8
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_9
+      if: ${{             matrix.task == 'Leaf_9' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 9
+        tree
+
+    - name: Upload Leaf_9
+      if: ${{ always() && matrix.task == 'Leaf_9' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_9
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Leaf_10
+      if: ${{             matrix.task == 'Leaf_10' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Leaf 10
+        tree
+
+    - name: Upload Leaf_10
+      if: ${{ always() && matrix.task == 'Leaf_10' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Leaf_10
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Program_1
+      if: ${{             matrix.task == 'Program_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
+        tree
+
+    - name: Upload Program_1
+      if: ${{ always() && matrix.task == 'Program_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Program_1
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_1
+      if: ${{             matrix.task == 'Slots_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 1
+        tree
+
+    - name: Upload Slots_1
+      if: ${{ always() && matrix.task == 'Slots_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_1
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_2
+      if: ${{             matrix.task == 'Slots_2' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 2
+        tree
+
+    - name: Upload Slots_2
+      if: ${{ always() && matrix.task == 'Slots_2' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_2
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_3
+      if: ${{             matrix.task == 'Slots_3' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 3
+        tree
+
+    - name: Upload Slots_3
+      if: ${{ always() && matrix.task == 'Slots_3' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_3
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_4
+      if: ${{             matrix.task == 'Slots_4' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 4
+        tree
+
+    - name: Upload Slots_4
+      if: ${{ always() && matrix.task == 'Slots_4' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_4
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_5
+      if: ${{             matrix.task == 'Slots_5' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 5
+        tree
+
+    - name: Upload Slots_5
+      if: ${{ always() && matrix.task == 'Slots_5' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_5
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_6
+      if: ${{             matrix.task == 'Slots_6' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 6
+        tree
+
+    - name: Upload Slots_6
+      if: ${{ always() && matrix.task == 'Slots_6' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_6
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_7
+      if: ${{             matrix.task == 'Slots_7' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 7
+        tree
+
+    - name: Upload Slots_7
+      if: ${{ always() && matrix.task == 'Slots_7' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_7
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_8
+      if: ${{             matrix.task == 'Slots_8' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 8
+        tree
+
+    - name: Upload Slots_8
+      if: ${{ always() && matrix.task == 'Slots_8' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_8
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_9
+      if: ${{             matrix.task == 'Slots_9' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 9
+        tree
+
+    - name: Upload Slots_9
+      if: ${{ always() && matrix.task == 'Slots_9' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_9
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_10
+      if: ${{             matrix.task == 'Slots_10' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 10
+        tree
+
+    - name: Upload Slots_10
+      if: ${{ always() && matrix.task == 'Slots_10' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_10
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_11
+      if: ${{             matrix.task == 'Slots_11' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 11
+        tree
+
+    - name: Upload Slots_11
+      if: ${{ always() && matrix.task == 'Slots_11' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_11
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_12
+      if: ${{             matrix.task == 'Slots_12' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 12
+        tree
+
+    - name: Upload Slots_12
+      if: ${{ always() && matrix.task == 'Slots_12' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_12
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_13
+      if: ${{             matrix.task == 'Slots_13' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 13
+        tree
+
+    - name: Upload Slots_13
+      if: ${{ always() && matrix.task == 'Slots_13' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_13
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_14
+      if: ${{             matrix.task == 'Slots_14' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 14
+        tree
+
+    - name: Upload Slots_14
+      if: ${{ always() && matrix.task == 'Slots_14' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_14
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_15
+      if: ${{             matrix.task == 'Slots_15' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 15
+        tree
+
+    - name: Upload Slots_15
+      if: ${{ always() && matrix.task == 'Slots_15' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_15
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_16
+      if: ${{             matrix.task == 'Slots_16' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 16
+        tree
+
+    - name: Upload Slots_16
+      if: ${{ always() && matrix.task == 'Slots_16' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_16
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_17
+      if: ${{             matrix.task == 'Slots_17' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 17
+        tree
+
+    - name: Upload Slots_17
+      if: ${{ always() && matrix.task == 'Slots_17' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_17
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_18
+      if: ${{             matrix.task == 'Slots_18' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 18
+        tree
+
+    - name: Upload Slots_18
+      if: ${{ always() && matrix.task == 'Slots_18' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_18
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_19
+      if: ${{             matrix.task == 'Slots_19' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 19
+        tree
+
+    - name: Upload Slots_19
+      if: ${{ always() && matrix.task == 'Slots_19' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_19
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_20
+      if: ${{             matrix.task == 'Slots_20' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 20
+        tree
+
+    - name: Upload Slots_20
+      if: ${{ always() && matrix.task == 'Slots_20' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_20
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_21
+      if: ${{             matrix.task == 'Slots_21' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 21
+        tree
+
+    - name: Upload Slots_21
+      if: ${{ always() && matrix.task == 'Slots_21' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_21
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_22
+      if: ${{             matrix.task == 'Slots_22' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 22
+        tree
+
+    - name: Upload Slots_22
+      if: ${{ always() && matrix.task == 'Slots_22' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_22
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Slots_23
+      if: ${{             matrix.task == 'Slots_23' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Slots 23
+        tree
+
+    - name: Upload Slots_23
+      if: ${{ always() && matrix.task == 'Slots_23' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Slots_23
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: Test_1
+      if: ${{             matrix.task == 'Test_1' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Test 1
+        tree
+
+    - name: Upload Test_1
+      if: ${{ always() && matrix.task == 'Test_1' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: Test_1
+        path: verilog
+        if-no-files-found: ignore
 
     - name: Tree_1
       if: ${{             matrix.task == 'Tree_1' }}
