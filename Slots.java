@@ -1796,26 +1796,25 @@ Zero:
 
   static void test_insert(boolean Ex)
    {sayCurrentTestName();
+    final int [] keys = new int[] {14, 13, 16, 15, 18, 17, 12, 11};
+
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
        {final Slots         s = this;
         final StringBuilder t = new StringBuilder();
+        defineArrayViaVerilogFunction("keys", keys);
 
-        new ForCount(new Int(8))                                                                                        // Using this rather complex for loop reduces the amount of code generated
+        new ForCount(new Int(keys.length))                                                                              // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
            {final Int  k = new Int();
-            final int[]i = new int[] {14, 13, 16, 15, 18, 17, 12, 11};
+
             new I()                                                                                                     // Set the key to insert
-             {void   a() {k.ex(Int.Ops.set, i[Index.i()]);}
-              String v()
-               {final StringBuilder s = new StringBuilder("case("+Index.vn()+") ");
-                for(int j = 0; j < i.length; ++j) s.append(""+j+":"+k.vn() + " <= "+i[j]+"; ");
-                s.append(" endcase");
-                return ""+s;
-               }
+             {void        a() {targetInt(keys[Index.i()]); targetIntValid(true);}
+              String      v() {return "targetInt <= keys("+Index.vn()+");";}
               boolean trace() {return false;}
              };
 
+            k.W();                                                                                                      // Write key into variable
             insert(k);
             final StringBuilder p = s.print();
             new I() {void a() {t.append(p);}  boolean trace() {return false;}};
@@ -2415,7 +2414,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_findRight(true);
+    test_insert(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
