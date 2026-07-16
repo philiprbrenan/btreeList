@@ -5,11 +5,8 @@
 // use setValid everywhere where we I.v = true
 // replace program().xxx with xxx() to make sore theta w are in the right program
 // Replace ex(Int.Ops.set and for bool
-// put program() in front ints and bools
-// Remove trace(True) option from program
 // Place source/source2/target variables into Bool and Int as appropriate
 // On assign to targetBool or targetInt make it valid by default
-// Dump prograsm styate every so many steps option
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -81,7 +78,6 @@ public class Program extends Test                                               
     Build immediate (boolean Immediate) {immediate = Immediate; return this;}
     Build parent (   Program Parent)    {parent    = Parent;    return this;}
     Build memory (   int     Size)      {size      = Size;      return this;}
-    Build trace (    boolean Trace)     {trace     = Trace;     return this;}
    }
 
   Program (Build Build)                                                                                                 // Construct
@@ -125,6 +121,9 @@ public class Program extends Test                                               
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
   void jtraceInc() {++program().jtrace;}                                                                                // Count trace records written
   void vtraceInc() {++program().vtrace;}
+
+  Stack<Int>  ints ()           {return program().ints;}
+  Stack<Bool> bools ()          {return program().bools;}
 
   int      currentPc()          {return program().     currentPc;}
   int    sourceIntId()          {return program().   sourceIntId;}
@@ -430,9 +429,9 @@ public class Program extends Test                                               
 
     Bool (String Name)             {this();  name = Name;}                                                              // Constructors with name supplied
 
-    Bool ()                        {ai(); del(false);     program().bools.push(this);}                                  // Constructors. Set newly constructed integers to invalid and minus one
-    Bool (boolean I)               {ai(); ie(Ops.set, I); program().bools.push(this);}
-    Bool (Bool    I)               {ai(); ie(Ops.set, I); program().bools.push(this);}
+    Bool ()                        {ai(); del(false);     bools().push(this);}                                          // Constructors. Set newly constructed integers to invalid and minus one
+    Bool (boolean I)               {ai(); ie(Ops.set, I); bools().push(this);}
+    Bool (Bool    I)               {ai(); ie(Ops.set, I); bools().push(this);}
     boolean       b ()             {x(); return i;}
     void          x ()             {if (!v) variableNotSet("Bool", name);}                                              // Check a value has been set for the boolean
 
@@ -648,10 +647,10 @@ public class Program extends Test                                               
     Int (String Name, int I) {this(I); name = Name;}
     Int (String Name, Int I) {this(I); name = Name;}
 
-    Int ()           {ai(); del(-1);        program().ints.push(this);}                                                 // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+    Int ()           {ai(); del(-1);        ints().push(this);}                                                 // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
 
-    Int (int I)      {ai(); ie(Ops.set, I); program().ints.push(this);}
-    Int (Int I)      {ai(); ie(Ops.set, I); program().ints.push(this);}
+    Int (int I)      {ai(); ie(Ops.set, I); ints().push(this);}
+    Int (Int I)      {ai(); ie(Ops.set, I); ints().push(this);}
                                                                                                                         // Possible integer operations
     enum Ops {abs, add, add2, dec, del, div, down, eq, ge, gt, inc, le, lt,
        mod, mul, neg, ne, set, sqrt, sub, up};
@@ -1482,20 +1481,20 @@ public class Program extends Test                                               
    }
 
   void initializeJavaVars()                                                                                             // Initialize java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
-   {for (Int  i : ints)  {i.i = 0;     i.v = false;}
-    for (Bool b : bools) {b.i = false; b.v = false;}
+   {for (Int  i : ints())  {i.i = 0;     i.v = false;}
+    for (Bool b : bools()) {b.i = false; b.v = false;}
    }
 
   void dumpJavaMemories () {for(UnitMemory m : memories) appendJavaTrace(m.dumpAsDecimal());}                           // Dump all the memories
 
   void dumpJavaVars ()                                                                                                  // Dump all memories and variables to the java trace file
    {final StringBuilder s = new StringBuilder();
-    for (Int  i  : ints)                                                                                                // Dump ints
+    for (Int  i  : ints())                                                                                              // Dump ints
      {s.append(f("Int  %8d == %8d", i.id, i.i));
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
-    for (Bool b : bools)                                                                                                // Dump bools
+    for (Bool b : bools())                                                                                              // Dump bools
      {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
       s.append(f("Bool %8d == %8d", b.id, b.i ? 1 : 0));
       if (b.name != null) s.append(" "+b.name);
@@ -2010,7 +2009,7 @@ endfunction
 
   static void test_programming(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).trace(true))
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(22);
         dumpProgramState("AAAA");
@@ -2025,7 +2024,7 @@ endfunction
 
   static void test_programming22(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).trace(true))
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int i = new Int(0);
         final Int N = new Int(11);
@@ -2130,7 +2129,7 @@ endfunction
 
   static void test_fibonacci(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).trace(true))
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int("a", 0);
         final Int b = new Int("b", 1);
@@ -2195,7 +2194,7 @@ endfunction
 
   static Program test_incremental(boolean Ex)
    {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex).trace(true))
+    final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int a = new Int(0);
         final StringBuilder s = new StringBuilder();
