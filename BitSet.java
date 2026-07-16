@@ -1734,8 +1734,7 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {//oldTests();                                                                                                         // Run baseline tests.
-    test_4(true);
+   {oldTests();                                                                                                         // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
