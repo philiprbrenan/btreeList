@@ -1339,14 +1339,14 @@ Leaf   at:   2 size:   4, count:   4
 
         new ForCount(new Int(N))
          {void body(Int Index)
-           {final Int k = new Int();
+           {final Int k = new Int("Key");
 
             new I()
              {void        a() {targetInt(random_32[Index.i()]); targetIntValid(true);}
               String      v() {return "targetInt <= loadRandomKeys("+Index.vn()+");";}
               boolean trace() {return false;}
              };
-
+            k.W();
             insert(k, Index);
            }
          };
@@ -1623,13 +1623,13 @@ Leaf   at:   2 size:   4, count:   4
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
-       {final Int k = t.new Int();
+       {final Int k = t.new Int("Key");
         t.new I()
          {void        a() {t.targetInt(random_32[Index.i()]); t.targetIntValid(true);}
           String      v() {return "targetInt <= loadRandomKeys("+Index.vn()+");";}
           boolean trace() {return false;}
          };
-
+        k.W();
         t.delete(k);
 
         final StringBuilder T = t.print();
