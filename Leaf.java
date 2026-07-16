@@ -22,7 +22,6 @@ class Leaf extends Program implements Program.Locatable                         
    {Integer         maxSize;                                                                                            // Maximum number of keys in leaf
     Int             at;                                                                                                 // The location of the leaf
     boolean         immediate = true;                                                                                   // Immediate execution mode
-    boolean         trace     = true;                                                                                   // Trace execution
     Program         parent;                                                                                             // Parent program if any
     UnitMemory.Ref  unitMemoryRef;                                                                                      // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
@@ -32,7 +31,6 @@ class Leaf extends Program implements Program.Locatable                         
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
     Build memory   (UnitMemory.Ref Ref) {unitMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
-    Build trace    (boolean Trace     ) {trace         = Trace;     return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
 
     Program.Build build()                                                                                               // Create a description of the needed containing program
@@ -43,7 +41,6 @@ class Leaf extends Program implements Program.Locatable                         
       if (unitMemoryRef == null) p.memory(size());
       if (parent        != null) p.parent(parent);
       p.immediate(immediate);
-      p.trace    (trace);
       return p;
      }
 
