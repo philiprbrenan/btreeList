@@ -1812,6 +1812,7 @@ Leaf           size:   4, count:   2
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
     test_insertRandom32(true);
+    test_deleteRandom32(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
