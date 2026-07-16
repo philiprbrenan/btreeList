@@ -9,6 +9,7 @@
 // Remove trace(True) option from program
 // Place source/source2/target variables into Bool and Int as appropriate
 // On assign to targetBool or targetInt make it valid by default
+// Dump prograsm styate every so many steps option
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -1568,13 +1569,15 @@ public class Program extends Test                                               
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
-        final ExecCommand x =                                                                                           // Return code 124 shows that the program run was timed out
-          new ExecCommand(f("cd %s; rm -f x; "+                                                                         // Execute Verilog code
-                            "iverilog -g2012 -o x %s.v && "+
-//                          "timeout 1m ./x",
-                            "./x",
-                            verilogTestFolder(), currentTestNameSuffix()));
-        say(""+x.out);
+        final StringBuilder s = new StringBuilder();
+
+        s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} ./{n}",                             // Construct command
+                            "f", verilogTestFolder(),
+                            "n", currentTestNameSuffix(),
+                            "t", github_actions ? "" : "timeout 1m "));
+        say(s);
+        final ExecCommand x = new ExecCommand(s);
+        say(x.out);
 
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
        }
