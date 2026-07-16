@@ -1625,7 +1625,7 @@ Leaf   at:   2 size:   4, count:   4
      {void body(Int Index)
        {final Int k = t.new Int();
         t.new I()
-         {void        a() {targetInt(random_32[Index.i()]); targetIntValid(true);}
+         {void        a() {t.targetInt(random_32[Index.i()]); t.targetIntValid(true);}
           String      v() {return "targetInt <= loadRandomKeys("+Index.vn()+");";}
           boolean trace() {return false;}
          };
@@ -1811,7 +1811,7 @@ Leaf           size:   4, count:   2
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insertMerged(!true);
+    test_tree(true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
