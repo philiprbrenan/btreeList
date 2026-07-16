@@ -20,8 +20,7 @@ my $wf      = q(.github/workflows/main.yml);                                    
 my $wfcpd   = q(.github/workflows/cpd.yml);                                                                             # Work flow on Ubuntu - copy paste detection
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
 my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
-#my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
-my $include = q(Tree);                                                                                                  # Java files to include in testing as they are not yet ready
+my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
