@@ -26,7 +26,6 @@ class Tree extends Program                                                      
 
   final static class Build                                                                                              // Parameters describing a tree
    {boolean       immediate = true;                                                                                     // Immediate execution mode
-    boolean           trace = true;                                                                                     // Trace execution
     int          branchSize;                                                                                            // Size of a branch
     int            leafSize;                                                                                            // Size of a leaf
     int            nodeSize;                                                                                            // Size of a node: a leaf or a branch whichever is bigger. By using fixed size memory allocation we greatly simplify memory allocation - so it is worth adjusting the branch and leaf sizes to be as equal as possible.
@@ -42,7 +41,6 @@ class Tree extends Program                                                      
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
 
     Build     immediate (boolean Immediate    ) {immediate     = Immediate;     return this;}
-    Build         trace (boolean Trace        ) {trace         = Trace;         return this;}
     Build   maxLeafSize (int     MaxLeafSize  ) {maxLeafSize   = MaxLeafSize  ; return this;}
     Build maxBranchSize (int     MaxBranchSize) {maxBranchSize = MaxBranchSize; return this;}
     Build numberOfNodes (int     NumberOfNodes) {numberOfNodes = NumberOfNodes; return this;}
@@ -62,7 +60,6 @@ class Tree extends Program                                                      
 
       p.memory(   size());
       p.immediate(immediate);
-      p.trace(    trace);
       return p;
      }
 
