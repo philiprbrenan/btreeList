@@ -1340,11 +1340,13 @@ Leaf   at:   2 size:   4, count:   4
         new ForCount(new Int(N))
          {void body(Int Index)
            {final Int k = new Int();
+
             new I()
-             {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
-              String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
+             {void        a() {targetInt(random_32[Index.i()]); targetIntValid(true);}
+              String      v() {return "targetInt <= loadRandomKeys("+Index.vn()+");";}
               boolean trace() {return false;}
              };
+
             insert(k, Index);
            }
          };
@@ -1623,9 +1625,9 @@ Leaf   at:   2 size:   4, count:   4
      {void body(Int Index)
        {final Int k = t.new Int();
         t.new I()
-         {void   a() {       k.ex(Int.Ops.set, random_32[Index.i()]);}
-          String v() {return k.vn()+" <= loadRandomKeys("+Index.vn()+");";}
-           boolean trace() {return false;}
+         {void        a() {targetInt(random_32[Index.i()]); targetIntValid(true);}
+          String      v() {return "targetInt <= loadRandomKeys("+Index.vn()+");";}
+          boolean trace() {return false;}
          };
 
         t.delete(k);
