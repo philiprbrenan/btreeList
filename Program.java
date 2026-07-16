@@ -7,6 +7,8 @@
 // Replace ex(Int.Ops.set and for bool
 // put program() in front ints and bools
 // Remove trace(True) option from program
+// Place source/source2/target variables into Bool and Int as appropriate
+// On assign to targetBool or targetInt make it valid by default
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -67,6 +69,8 @@ public class Program extends Test                                               
   private int                                 source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
   private int                                  targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
   private boolean                             targetBool = false;                                                       // Computed target boolean value to be loaded into a variable
+  private boolean                        targetBoolValid = false;                                                       // Whether the value produced by a boolean operation is valid or not
+  private boolean                         targetIntValid = false;                                                       // Whether the value produced by an integer operation is valid or not
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -144,6 +148,12 @@ public class Program extends Test                                               
   int      targetInt(int V)     {return program().     targetInt = V;}
   boolean sourceBool(boolean V) {return program().    sourceBool = V;}
   boolean targetBool(boolean V) {return program().    targetBool = V;}
+
+  boolean targetBoolValid()          {return program().targetBoolValid;}
+  boolean targetBoolValid(boolean V) {return program().targetBoolValid = V;}
+
+  boolean targetIntValid ()          {return program().targetIntValid;}
+  boolean targetIntValid (boolean V) {return program().targetIntValid = V;}
 
   void initializeRegisters()                                                                                            // Initialize registers
    {currentPc(0); sourceIntId(0); source2IntId(0); targetIntId(0); sourceBoolId(0); targetBoolId(0); sourceInt(0); source2Int(0); targetInt(0);
@@ -492,7 +502,7 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Bool b = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetBool();                        jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
+       {void   a() {i = targetBool(); v = targetBoolValid(); jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
         String v() {return "b[targetBoolId] <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
        };
      }
@@ -509,13 +519,14 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
      {executingCheck();
+      targetBoolValid(true);
       switch (Op)
-       {case set -> {     targetBool(sourceBool());                 v = true;}
-        case del -> {     targetBool(sourceBool());                 v = false;}
-        case eq  -> {x(); targetBool(targetBool() == sourceBool()); v = true;}
-        case ne  -> {x(); targetBool(targetBool() != sourceBool()); v = true;}
-        case and -> {x(); targetBool(targetBool() && sourceBool()); v = true;}
-        case or  -> {x(); targetBool(targetBool() || sourceBool()); v = true;}
+       {case set -> {     targetBool(sourceBool());}
+        case del -> {     targetBool(sourceBool()); targetBoolValid(false);}
+        case eq  -> {x(); targetBool(targetBool() == sourceBool());}
+        case ne  -> {x(); targetBool(targetBool() != sourceBool());}
+        case and -> {x(); targetBool(targetBool() && sourceBool());}
+        case or  -> {x(); targetBool(targetBool() || sourceBool());}
         default  -> Test.stop("Op not implemented:", Op);
        }
       jtrace();
@@ -524,7 +535,8 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op, Bool I)                                                                                            // Execute a dyadic boolean operation on a variable
      {executingCheck();
-      I.x(); return ex(Op, I.i);
+      I.x();
+      return ex(Op, I.i);
      }
 
 //    Bool ex (Ops Op, Int I)                                                                                             // Execute a dyadic boolean operation on an integer variable
@@ -731,14 +743,14 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Int w = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetInt();                       jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(),   targetInt()));}
+       {void   a() {i = targetInt(); v = targetIntValid(); jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(),   targetInt()));} // We are assuming that
         String v() {return "i[targetIntId] <= targetInt; "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
        };
      }
 
     Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
-      x();
+      x(); targetIntValid(true);
       switch(Op)
        {case inc  -> {targetInt(targetInt()   + 1);}
         case dec  -> {targetInt(targetInt()   - 1);}
@@ -756,15 +768,16 @@ public class Program extends Test                                               
 
     Int ex (Ops Op, int I)                                                                                              // Execute a dyadic integer operation on a constant
      {executingCheck();
+      targetIntValid(true);
       switch (Op)
-       {case set  -> {      targetInt(            I);     v = true;}
-        case del  -> {      targetInt(            I);     v = false;}
-        case add  -> { x(); targetInt(targetInt() + I);     v = true;}
-        case sub  -> { x(); targetInt(targetInt() - I);     v = true;}
-        case mul  -> { x(); targetInt(targetInt() * I);     v = true;}
-        case div  -> { x(); targetInt(targetInt() / I);     v = true;}
-        case mod  -> { x(); targetInt(targetInt() % I);     v = true;}
-        case add2 -> { x(); targetInt(targetInt() + I + I); v = true;}
+       {case set  -> {      targetInt(              I);}
+        case del  -> {      targetInt(              I); targetIntValid(false);}
+        case add  -> { x(); targetInt(targetInt() + I);}
+        case sub  -> { x(); targetInt(targetInt() - I);}
+        case mul  -> { x(); targetInt(targetInt() * I);}
+        case div  -> { x(); targetInt(targetInt() / I);}
+        case mod  -> { x(); targetInt(targetInt() % I);}
+        case add2 -> { x(); targetInt(targetInt() + I + I);}
         default   -> stop("Op not implemented:", Op);
        }
       jtrace();
@@ -899,7 +912,7 @@ public class Program extends Test                                               
         case gt -> targetBool(sourceInt() >  source2Int());
         default -> stop("Op not implemented:", Op);
        }
-      B.v = true;
+      targetBoolValid(true);
       B.jtrace();
       //jTrace(f("%8d bool %8d = %8d", currentPc, B.id, targetBool ? 1 : 0));
      }
@@ -956,7 +969,7 @@ public class Program extends Test                                               
       return pad("i["+id+"]"+n, padName);
      }
 
-    Int     say () {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                               // Say the integer
+//  Int     say () {final Int i = this; new I() {void a() {Test.say(i);} }; return this;}                               // Say the integer
 
     Int ok (int Value)                                                                                                  // Check the integer. Ther is no corresponding check in Verilog other than the execution logs matching so there will be an empty instruction generated in the verilog to "regulate the service"
      {final Int got = this;
@@ -2647,8 +2660,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    test_andOr(true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
