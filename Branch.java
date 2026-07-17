@@ -77,7 +77,7 @@ class Branch extends Program implements Program.Locatable                       
 
   Branch initializeMemory()                                                                                             // Initialize slots and data associated with the branch
    {clear();                                                                                                            // Clear backing memory
-    //slots.initializeMemory();                                                                                           // Initialize slots
+    //slots.initializeMemory();                                                                                         // Initialize slots
     return this;
    }
 
@@ -337,7 +337,7 @@ class Branch extends Program implements Program.Locatable                       
    {void process(Int Key, Int Data);
    }
 
-  void iterate (Iterator Iterator)                                                                                       // Iterate over a leaf
+  void iterate (Iterator Iterator)                                                                                      // Iterate over a leaf
    {subStart("Branch.print");
     final Bint f = slots.usedSlotsToKeys.firstOne();
     new If (f)
