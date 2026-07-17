@@ -474,8 +474,8 @@ final public class BitSet extends Program                                       
   public Bint firstOne()                                                                                                // Find the index of the first set bit
    {subStart("Bitset.firstOne");
     final Int  p = new Int(0); p.name = "p";                                                                            // Offset of first bit
-new I() {void a() {say("AAAA", p);} boolean trace() {return false;}};
     final Bint r = new Bint();                                                                                          // Result
+
     new If (getBit(p))
      {void Then() {r.set(p);          }
       void Else() {r.copy(nextOne(p));}                                                                                 // Use copy because the result might be invalid showing that there is no first one
