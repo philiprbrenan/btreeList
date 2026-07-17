@@ -143,8 +143,8 @@ public class Program extends Test                                               
   int      sourceInt(int V)     {return program().     sourceInt = V;}
   int     source2Int(int V)     {return program().    source2Int = V;}
   boolean sourceBool(boolean V) {return program().    sourceBool = V;}
-  int      targetInt(int V)     {targetIntValid  = true; return program().targetInt = V;}
-  boolean targetBool(boolean V) {targetBoolValid = true; return program().targetBool = V;}
+  int      targetInt(int V)     {targetIntValid (true); return program().targetInt  = V;}
+  boolean targetBool(boolean V) {targetBoolValid(true); return program().targetBool = V;}
 
   boolean targetBoolValid()          {return program().targetBoolValid;}
   boolean targetBoolValid(boolean V) {return program().targetBoolValid = V;}
@@ -508,7 +508,7 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op)                                                                                                    // Execute a monadic boolean operation
      {executingCheck();
-      targetBoolValid(true);
+      //targetBoolValid(true);
       switch(Op)
        {case flip -> {x(); targetBool(!targetBool());}
         default   -> Test.stop("Op not implemented:", Op);
@@ -519,7 +519,7 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
      {executingCheck();
-      targetBoolValid(true);
+      //targetBoolValid(true);
       switch (Op)
        {case set -> {     targetBool(sourceBool());}
         case del -> {     targetBool(sourceBool()); targetBoolValid(false);}
@@ -539,7 +539,7 @@ public class Program extends Test                                               
       return ex(Op, I.i);
      }
 
-//    Bool ex (Ops Op, Int I)                                                                                             // Execute a dyadic boolean operation on an integer variable
+//    Bool ex (Ops Op, Int I)                                                                                           // Execute a dyadic boolean operation on an integer variable
 //     {executingCheck();
 //      switch(Op)
 //       {case set -> {I.x();  = I.i > 0; v = true;}
@@ -592,7 +592,7 @@ public class Program extends Test                                               
       return pad("b["+id+"]"+n, padName);
      }
 
-//    void stop (final Object...O)                                                                                        // Conditionally print a message if true and stop
+//    void stop (final Object...O)                                                                                      // Conditionally print a message if true and stop
 //     {new If (this)
 //       {void Then()
 //         {new I(false)
@@ -604,7 +604,7 @@ public class Program extends Test                                               
 //       };
 //     }
 //
-//    Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                    // Say the boolean
+//    Bool say () {new I() {void a() {Test.say(this);}}; return this;}                                                  // Say the boolean
 
     Bool ok (boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace and so there will be an empty instruction generated in the verilog to "regulate the service"
      {final  Bool got = this;
@@ -647,7 +647,7 @@ public class Program extends Test                                               
     Int (String Name, int I) {this(I); name = Name;}
     Int (String Name, Int I) {this(I); name = Name;}
 
-    Int ()           {ai(); del(-1);        ints().push(this);}                                                 // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+    Int ()           {ai(); del(-1);        ints().push(this);}                                                         // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
 
     Int (int I)      {ai(); ie(Ops.set, I); ints().push(this);}
     Int (Int I)      {ai(); ie(Ops.set, I); ints().push(this);}
@@ -689,7 +689,7 @@ public class Program extends Test                                               
 
         pcVariableId().put(codeSize(), id);                                                                             // Id of variable being addressed by these instructions
 
-        new I()                                                                                                          // Id of integer
+        new I()                                                                                                         // Id of integer
          {void   a() {loadId(id);                                       jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
           String v() {return pad(ri, padCR) + " <= pcVariableId(pc); "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id) ;}
          };
@@ -706,7 +706,7 @@ public class Program extends Test                                               
 
     abstract class LoadConstant
      {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressability of instructions
-       {final String ac = pad(pad(Register, padCR) + " <= "+I+"; ", padName);                                                       // Assign the constant to the source register
+       {final String ac = pad(pad(Register, padCR) + " <= "+I+"; ", padName);                                           // Assign the constant to the source register
         new I()
          {void   a() {load(I);    jTrace(f("%8d "+Register+" constant %8d",  currentPc(), I));}
           String v() {return ac + vTrace(  "%8d "+Register+" constant %8d", "pc",      ""+I);}
@@ -751,7 +751,7 @@ public class Program extends Test                                               
     Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
       x();
-      targetIntValid(true);
+      //targetIntValid(true);
       switch(Op)
        {case inc  -> {targetInt(targetInt()   + 1);}
         case dec  -> {targetInt(targetInt()   - 1);}
@@ -769,7 +769,7 @@ public class Program extends Test                                               
 
     Int ex (Ops Op, int I)                                                                                              // Execute a dyadic integer operation on a constant
      {executingCheck();
-      targetIntValid(true);
+      //targetIntValid(true);
       switch (Op)
        {case set  -> {      targetInt(              I);}
         case del  -> {      targetInt(              I); targetIntValid(false);}
@@ -842,10 +842,10 @@ public class Program extends Test                                               
 
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
      {vtraceInc();
-      return "targetInt <= "+Value+"; $fdisplay(traceFile, \"%8d assign targetInt = %8d\", pc,          "+Value+");";
+      return pad("targetInt", padCR) + " <= "+Value+"; $fdisplay(traceFile, \"%8d assign targetInt = %8d\", pc,          "+Value+");";
      }
 
-    void jtrace () {                               jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt()));} // Trace the integer operation in Java
+    void jtrace () {                                                jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt()));} // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -1006,7 +1006,7 @@ public class Program extends Test                                               
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
     Bool   b ()      {return b;}                                                                                        // Return boolean component
     Int    i ()
-     {new If (b.Flip()) {void Then() {stop("Requested int component from unset Bint");}};                                // Complain if there is no integer component to return
+     {new If (b.Flip()) {void Then() {stop("Requested int component from unset Bint");}};                               // Complain if there is no integer component to return
       return new Int(i);
      }
 
@@ -1677,12 +1677,12 @@ public class Program extends Test                                               
      (final PrintWriter out = new PrintWriter(codeFile))                                                                // Write the verilog to a file
      {//final StringBuilder   s = new StringBuilder();                                                                  // Verilog
     /*Module*/out.write(substitute("""
-module {name};                                                                                                          // Bit machine to support current test
+module {name};                                                                                                          // Bit machine
 """, "name", name));
 
       for(UnitMemory m : memories)                                                                                      // Each memory attached to this program
        {/*Memory*/out.write(substitute("""
-  parameter  MEMORY_{memoryId}    = {memory_size};                                                                      // Amount of memory
+  parameter  MEMORY_{memoryId} = {memory_size};                                                                         // Amount of memory
   integer   {memoryName}[MEMORY_{memoryId}:0];                                                                          // Declare byte memory
 """, "memoryId", m.i(), "memoryName", m.n(), "memory_size", ""+m.size()));
        }
@@ -1786,14 +1786,14 @@ module {name};                                                                  
     forever #1 clock = ~clock;
   end
 
-  initial begin                                                                                                         // Reset then wait for the program to execute in a reasonable amount of time
+  initial begin                                                                                                         // Reset memory and variables
        reset = 0;
     #1 reset = 1;
     #1 reset = 0;
   end
 """);
 
-      for(UnitMemory m : memories)                                                                                          // Control registers for each memeory
+      for(UnitMemory m : memories)                                                                                      // Control registers for each memeory
        {out.write("  integer "+ m.     vReadBool() + ";\n");                                                            // Boolean read from memory
         out.write("  integer "+ m.    vWriteBool() + ";\n");                                                            // Boolean to write into memory
         out.write("  integer "+ m.      vReadInt() + ";\n");                                                            // Integer read from memory
@@ -1867,7 +1867,7 @@ module {name};                                                                  
 
       if (compressInstructionLabels) defineArrayViaVerilogFunction("firstMatchingInstruction", firstInstruction(), -1); // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
-      /*Clear variables*/ out.write(dumpVerilogVariables()+"\n");                                                            // Dump verilog variables task
+      /*Clear variables*/ out.write(dumpVerilogVariables()+"\n");                                                       // Dump verilog variables task
 
       for(String m : program().extraVerilogMethods) out.write(m);                                                       // Incorporate extra Verilog methods required to support generated instructions
 
@@ -1899,24 +1899,24 @@ endmodule
     final int[]array = new int[size];
     Arrays.fill(array, Error);
     for (Integer i : map.keySet()) array[i] = map.get(i);
-    defineArrayViaVerilogFunction(Name, array, Error);                                                                   // Define a verilog function from the resulting array
+    defineArrayViaVerilogFunction(Name, array, Error);                                                                  // Define a verilog function from the resulting array
    }
 
   void defineArrayViaVerilogFunction(String Name, int[]Array, int Error)                                                // Define a verilog function from an array
-   {final StringBuilder s = new StringBuilder("function automatic integer "+Name+"(input integer i);");
+   {final StringBuilder s = new StringBuilder("  function automatic integer "+Name+"(input integer i);\n");
     s.append("""
-  begin                                                                                                                 // From: defineArrayViaVerilogFunction
-    case (i)
+    begin                                                                                                               // From: defineArrayViaVerilogFunction
+      case (i)
 """);
     for (int i = 0; i < Array.length; ++i)
      {final int v = Array[i];
       if (v != Error) s.append(f("      %4d: %s = %4d;\n", i, Name, v));                                                // The java proves the code works so we can collapse zeros into default
      }
     s.append(f("""
-      default: %s = %d;
-    endcase
-  end
-endfunction
+        default: %s = %d;
+      endcase
+    end
+  endfunction
 """, Name, Error));
     program().extraVerilogMethods.add(""+s);
    }
