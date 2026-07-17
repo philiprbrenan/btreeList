@@ -508,6 +508,7 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op)                                                                                                    // Execute a monadic boolean operation
      {executingCheck();
+      targetBoolValid(true);
       switch(Op)
        {case flip -> {x(); targetBool(!targetBool());}
         default   -> Test.stop("Op not implemented:", Op);
@@ -518,6 +519,7 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
      {executingCheck();
+      targetBoolValid(true);
       switch (Op)
        {case set -> {     targetBool(sourceBool());}
         case del -> {     targetBool(sourceBool()); targetBoolValid(false);}
@@ -749,6 +751,7 @@ public class Program extends Test                                               
     Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
       x();
+      targetIntValid(true);
       switch(Op)
        {case inc  -> {targetInt(targetInt()   + 1);}
         case dec  -> {targetInt(targetInt()   - 1);}
@@ -766,6 +769,7 @@ public class Program extends Test                                               
 
     Int ex (Ops Op, int I)                                                                                              // Execute a dyadic integer operation on a constant
      {executingCheck();
+      targetIntValid(true);
       switch (Op)
        {case set  -> {      targetInt(              I);}
         case del  -> {      targetInt(              I); targetIntValid(false);}
@@ -777,6 +781,7 @@ public class Program extends Test                                               
         case add2 -> { x(); targetInt(targetInt() + I + I);}
         default   -> stop("Op not implemented:", Op);
        }
+say("AAAA", targetInt, targetIntValid);
       jtrace();
       return this;
      }
@@ -900,6 +905,7 @@ public class Program extends Test                                               
 
     void bex (Ops Op, Bool B, int I)                                                                                    // Boolean comparison between an integer variable and an integer constant
      {x();
+      targetBoolValid(true);
       switch(Op)
        {case eq -> targetBool(sourceInt() == source2Int());
         case ne -> targetBool(sourceInt() != source2Int());
@@ -2686,7 +2692,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
     //test_remote(!true);
    }
 
