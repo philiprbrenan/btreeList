@@ -290,8 +290,8 @@ final public class BitSet extends Program                                       
   Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      r.T(); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the ones tree
   Int     heightZero (Int Pos) {final Int r = new Int("zero height");       r.T(); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the zeros tree
 
-  void   jt(Int R, int    I) {targetInt(I);                   jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}       // Java trace of array look ups
-  String vt(Int R, String I) {return "targetInt <= "+I+"; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        I);}        // Java trace of array look ups
+  void   jt(Int R, int    I) {targetInt(I); targetIntValid(true); jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}   // Java trace of array look ups
+  String vt(Int R, String I) {return "targetInt <= "+I+"; " +     vTrace(  "%8d "+R.name+" = %8d", "pc",        I);}    // Java trace of array look ups
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
    {final int p = Pos < bitSize ? Pos : Pos < base_zero() ?  0 : pos_one(Pos - base_zero() + bitSize);
@@ -473,9 +473,9 @@ final public class BitSet extends Program                                       
 
   public Bint firstOne()                                                                                                // Find the index of the first set bit
    {subStart("Bitset.firstOne");
-    final Int  p = new Int(0);                                                                                          // Offset of first bit
+    final Int  p = new Int(0); p.name = "p";                                                                            // Offset of first bit
+new I() {void a() {say("AAAA", p);} boolean trace() {return false;}};
     final Bint r = new Bint();                                                                                          // Result
-
     new If (getBit(p))
      {void Then() {r.set(p);          }
       void Else() {r.copy(nextOne(p));}                                                                                 // Use copy because the result might be invalid showing that there is no first one
