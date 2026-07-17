@@ -651,20 +651,20 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-//D4 Stuck                                                                                                              // The bitset can be made to operate like a fixed size stack - a stuck - as long as only stuck operations are used on it
+//D4 Stuck                                                                                                              // The bitset can be made to operate like a fixed size stack - a stuck - as long as only stuck operations are used on it 0 however not needed.
 
-//  private String slotsAsStuck(String Message)            {return "BitSet acting as a stuck "+Message;}                  // Useful component of an error message
-//  private String slotsStuckAs(String Message)            {return Message+" a bitSet acting as a stuck";}                // Useful component of an error message
-//  private String slotsAsStuck(String Message, Int Index) {return Message+" a bitSet acting as a stuck: "+Index;}        // Useful component of an error message
+//  private String slotsAsStuck(String Message)            {return "BitSet acting as a stuck "+Message;}                // Useful component of an error message
+//  private String slotsStuckAs(String Message)            {return Message+" a bitSet acting as a stuck";}              // Useful component of an error message
+//  private String slotsAsStuck(String Message, Int Index) {return Message+" a bitSet acting as a stuck: "+Index;}      // Useful component of an error message
 //
-//  void stuckPush(Int Key)                                                                                               // Push a key onto a bitset acting as a stuck
+//  void stuckPush(Int Key)                                                                                             // Push a key onto a bitset acting as a stuck
 //   {full().stop(slotsStuckAs("is full so cannot push"));
 //    final Int t = usedKeys.firstZero().i();
 //    getSlotToKeysInUse(t).stop(slotsAsStuck("Non stuck operation has been applied to"));
 //    setSlotAndKey(t, t, Key);
 //   }
 //
-//  Int stuckPop()                                                                                                        // Push a key onto a bitset acting as a stuck
+//  Int stuckPop()                                                                                                      // Push a key onto a bitset acting as a stuck
 //    {empty()              .stop(slotsAsStuck("is empty so cannot pop"));
 //    final Int t = usedKeys.firstZero().i().dec();
 //    final Int v = getSlotToKeyValue(t);
@@ -672,14 +672,14 @@ class Slots extends Program                                                     
 //    return v;
 //   }
 //
-//  void stuckPut(Int Index, Int Key)                                                                                     // Overwrite an existing key or extend the stuck by one element if possible to accommodate a new key
+//  void stuckPut(Int Index, Int Key)                                                                                   // Overwrite an existing key or extend the stuck by one element if possible to accommodate a new key
 //   {Index.lt(0)                   .stop(slotsAsStuck("Index cannot be less than zero when accessing", Index));
 //    Index.ge(numberOfKeys())      .stop(slotsAsStuck("Index too large for put on",                    Index));
 //    Index.gt(usedKeys.firstZero()).stop(slotsAsStuck("Index addressing beyond bounds of",             Index));
 //    setSlotAndKey(Index, Index, Key);
 //   }
 //
-//  Int stuckGet(Int Index)                                                                                               // Get the element at the indicated position in the bitset acting as a stuck
+//  Int stuckGet(Int Index)                                                                                             // Get the element at the indicated position in the bitset acting as a stuck
 //   {Index.lt(0)                   .stop(slotsAsStuck("Index cannot be less than zero when accessing", Index));
 //    Index.ge(usedKeys.firstZero()).stop(slotsAsStuck("Index addressing beyond bounds of",             Index));
 //    return getSlotToKeyValue(Index);
@@ -1728,7 +1728,7 @@ Zero:
               test_find(false);
    }
 
-  static void test_findRight(boolean Ex)                                                                                          // Same as find but with the slots on the right
+  static void test_findRight(boolean Ex)                                                                                // Same as find but with the slots on the right
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
