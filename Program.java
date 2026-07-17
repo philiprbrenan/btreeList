@@ -2,11 +2,6 @@
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// use setValid everywhere where we I.v = true
-// replace program().xxx with xxx() to make sore theta w are in the right program
-// Replace ex(Int.Ops.set and for bool
-// Place source/source2/target variables into Bool and Int as appropriate
-// On assign to targetBool or targetInt make it valid by default
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -23,14 +18,15 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
-  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at teh end opf the run will be the test of wether the program ran as expected
+  final boolean                compressInstructionLabels = true;                                                        // Reduce instruction loop case statement by using an array to find the first instruction associated with each instruction and recording that single instruction id as the sole label for the case statement possibilities
+  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of wether the program ran as expected
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final static int padLabels = 20, padName = 12, padVerilog = 64;                                                       // Padding for components of the generated verilog copde
+  final static int padLabels = 20, padName = 12, padCR = 16, padVerilog = 64;                                           // Padding for components of the generated verilog copde
 
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
   final Stack<Label>                              labels = new Stack<>();                                               // Labels for instructions in this process
@@ -49,6 +45,7 @@ public class Program extends Test                                               
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final TreeMap<String,Stack<I>>    matchingInstructions = new TreeMap<>();                                             // Combine instruction with identical verilog text
+  final TreeMap<Integer,Integer>        firstInstruction = new TreeMap<>();                                             // Mapping from any instruction to the first matching instruction
   final TreeMap<Integer,Integer>            pcVariableId = new TreeMap<>();                                             // Program counter to variable id
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
@@ -145,9 +142,9 @@ public class Program extends Test                                               
   int   targetBoolId(int V)     {return program().  targetBoolId = V;}
   int      sourceInt(int V)     {return program().     sourceInt = V;}
   int     source2Int(int V)     {return program().    source2Int = V;}
-  int      targetInt(int V)     {return program().     targetInt = V;}
   boolean sourceBool(boolean V) {return program().    sourceBool = V;}
-  boolean targetBool(boolean V) {return program().    targetBool = V;}
+  int      targetInt(int V)     {targetIntValid  = true; return program().targetInt = V;}
+  boolean targetBool(boolean V) {targetBoolValid = true; return program().targetBool = V;}
 
   boolean targetBoolValid()          {return program().targetBoolValid;}
   boolean targetBoolValid(boolean V) {return program().targetBoolValid = V;}
@@ -160,7 +157,9 @@ public class Program extends Test                                               
     sourceBool(false); targetBool(false);
    }
 
-  TreeMap<Integer,Integer> pcVariableId() {return program().pcVariableId;}                                              // Address instruction number to variable for instructions that only manipulate one variable
+  TreeMap<Integer,Integer> pcVariableId ()         {return program().pcVariableId;}                                     // Instruction number to variable for instructions that only manipulate one variable
+  TreeMap<String,Stack<I>> matchingInstructions () {return program().matchingInstructions;}                             // Instruction code to set of matching instructions with the same code
+  TreeMap<Integer,Integer> firstInstruction ()     {return program().firstInstruction;}                                 // Instruction number to first instruction in set of matching instructions
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -463,13 +462,13 @@ public class Program extends Test                                               
         pcVariableId().put(codeSize(), id);                                                                             // Id of variable being addressed by these instructions
 
         final I i = new I()                                                                                             // Load id of variable
-         {void   a() {loadId(id);                         jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
-          String v() {return ri+" <= pcVariableId(pc); "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id);}
+         {void   a() {loadId(id);                                       jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
+          String v() {return pad(ri, padCR) + " <= pcVariableId(pc); "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id);}
          };
 
         new I()                                                                                                         // Load source value
-         {void   a() {loadValue(B.i);                 jTrace(f("%8d "+rv+" %8d",  pc(),  B.i ? 1 : 0));}
-          String v() {return rv + " <= b["+ri+"]; " + vTrace(  "%8d "+rv+" %8d", "pc",  "b["+ ri +"]");}
+         {void   a() {loadValue(B.i);                             jTrace(f("%8d "+rv+" %8d",  pc(),  B.i ? 1 : 0));}
+          String v() {return pad(rv, padCR) + " <= b["+ri+"]; " + vTrace(  "%8d "+rv+" %8d", "pc",  "b["+ ri +"]");}
          };
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
@@ -487,8 +486,8 @@ public class Program extends Test                                               
     void S (boolean I)                                                                                                  // Load source constant
      {final int v = I ? 1 : 0;
       new I()
-       {void   a() {sourceBool(I);                 jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
-        String v() {return "sourceBool <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
+       {void   a() {sourceBool(I);                                  jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
+        String v() {return pad("sourceBool", padCR) + " <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
        };
      }
 
@@ -502,8 +501,8 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Bool b = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetBool(); v = targetBoolValid(); jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
-        String v() {return "b[targetBoolId] <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
+       {void   a() {i = targetBool(); v = targetBoolValid();                  jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
+        String v() {return pad("b[targetBoolId]", padCR) + " <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
        };
      }
 
@@ -519,7 +518,6 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
      {executingCheck();
-      targetBoolValid(true);
       switch (Op)
        {case set -> {     targetBool(sourceBool());}
         case del -> {     targetBool(sourceBool()); targetBoolValid(false);}
@@ -576,7 +574,7 @@ public class Program extends Test                                               
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
      {vtraceInc();
-      return "targetBool <= "+Value+
+      return pad("targetBool", padCR)+ " <= "+Value+
         "; $fdisplay(traceFile, \"%8d bool %8d = %8d\", pc,          targetBoolId, "+Value+");";
      }
     void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool() ? 1 : 0));}           // Trace a java    boolean operation
@@ -689,14 +687,14 @@ public class Program extends Test                                               
 
         pcVariableId().put(codeSize(), id);                                                                             // Id of variable being addressed by these instructions
 
-        new I()                                                                                                         // Id of integer
-         {void   a() {loadId(id);                           jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
-          String v() {return ri + " <= pcVariableId(pc); "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id) ;}
+        new I()                                                                                                          // Id of integer
+         {void   a() {loadId(id);                                       jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
+          String v() {return pad(ri, padCR) + " <= pcVariableId(pc); "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id) ;}
          };
 
         new I()                                                                                                         // Value of integer
-         {void   a() {loadValue(I.i);                jTrace(f("%8d "+rv+" = %8d",  pc(),  I.i));}
-          String v() {return rv + " <= i["+ri+"]; "+ vTrace(  "%8d "+rv+" = %8d", "pc",  "i["+ri+"]");}
+         {void   a() {loadValue(I.i);                            jTrace(f("%8d "+rv+" = %8d",  pc(),  I.i));}
+          String v() {return pad(rv, padCR) + " <= i["+ri+"]; "+ vTrace(  "%8d "+rv+" = %8d", "pc",  "i["+ri+"]");}
          };
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
@@ -706,10 +704,10 @@ public class Program extends Test                                               
 
     abstract class LoadConstant
      {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressability of instructions
-       {final String ac = pad(Register + " <= "+I+"; ", padName);                                                       // Assign the constant to the source register
+       {final String ac = pad(pad(Register, padCR) + " <= "+I+"; ", padName);                                                       // Assign the constant to the source register
         new I()
-         {void   a() {load(I);        jTrace(f("%8d "+Register+" constant %8d",  currentPc(), I));}
-          String v() {return ac +     vTrace(  "%8d "+Register+" constant %8d", "pc",      ""+I);}
+         {void   a() {load(I);    jTrace(f("%8d "+Register+" constant %8d",  currentPc(), I));}
+          String v() {return ac + vTrace(  "%8d "+Register+" constant %8d", "pc",      ""+I);}
          };
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
@@ -743,14 +741,14 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Int w = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetInt(); v = targetIntValid(); jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(),   targetInt()));} // We are assuming that
-        String v() {return "i[targetIntId] <= targetInt; "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
+       {void   a() {i = targetInt(); v = targetIntValid();                  jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(),   targetInt()));}
+        String v() {return pad("i[targetIntId]", padCR) + " <= targetInt; "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
        };
      }
 
     Int ex (Ops Op)                                                                                                     // Execute a monadic integer operation
      {executingCheck();
-      x(); targetIntValid(true);
+      x();
       switch(Op)
        {case inc  -> {targetInt(targetInt()   + 1);}
         case dec  -> {targetInt(targetInt()   - 1);}
@@ -768,7 +766,6 @@ public class Program extends Test                                               
 
     Int ex (Ops Op, int I)                                                                                              // Execute a dyadic integer operation on a constant
      {executingCheck();
-      targetIntValid(true);
       switch (Op)
        {case set  -> {      targetInt(              I);}
         case del  -> {      targetInt(              I); targetIntValid(false);}
@@ -912,7 +909,6 @@ public class Program extends Test                                               
         case gt -> targetBool(sourceInt() >  source2Int());
         default -> stop("Op not implemented:", Op);
        }
-      targetBoolValid(true);
       B.jtrace();
       //jTrace(f("%8d bool %8d = %8d", currentPc, B.id, targetBool ? 1 : 0));
      }
@@ -921,7 +917,7 @@ public class Program extends Test                                               
 
     String bev (Ops Op, Bool B)                                                                                         // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = "sourceInt", b = "source2Int";
+      final String a = pad("sourceInt",padCR), b = pad("source2Int", padCR);
       switch(Op)
        {case eq -> s.append(a + " == " + b);
         case ne -> s.append(a + " != " + b);
@@ -1072,12 +1068,12 @@ public class Program extends Test                                               
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
 
-    String      vReadBool()      {return n() + "_readBool"     ;}                                                       // Boolean read from memory
-    String     vWriteBool()      {return n() + "_writeBool"    ;}                                                       // Boolean to write into memory
-    String       vReadInt()      {return n() + "_readInt"      ;}                                                       // Integer read from memory
-    String      vWriteInt()      {return n() + "_writeInt"     ;}                                                       // Integer to write into memory
-    String  vReadIntIndex()      {return n() + "_readIntIndex" ;}                                                       // Index at which to read an integer from memory
-    String  vReadBitIndex()      {return n() + "_readBitIndex" ;}                                                       // Index within an integer from which to get a bit to make a boolean
+    String      vReadBool()      {return n() + "_readBool     ";}                                                       // Boolean read from memory
+    String     vWriteBool()      {return n() + "_writeBool    ";}                                                       // Boolean to write into memory
+    String       vReadInt()      {return n() + "_readInt      ";}                                                       // Integer read from memory
+    String      vWriteInt()      {return n() + "_writeInt     ";}                                                       // Integer to write into memory
+    String  vReadIntIndex()      {return n() + "_readIntIndex ";}                                                       // Index at which to read an integer from memory
+    String  vReadBitIndex()      {return n() + "_readBitIndex ";}                                                       // Index within an integer from which to get a bit to make a boolean
     String vWriteIntIndex()      {return n() + "_writeIntIndex";}                                                       // Index at which to write an integer into memory
     String vWriteBitIndex()      {return n() + "_writeBitIndex";}                                                       // Index within an integer at which to set a bit to represent a boolean
 
@@ -1353,9 +1349,9 @@ public class Program extends Test                                               
 
   abstract class I                                                                                                      // Instructions implement the action of a program
    {final int instructionNumber = program().code.size();                                                                // The number of this instruction
-    final String        traceBack = suppressTraceComments ?  null : traceBack();                                         // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
-    final String         traceSub = subsTrace;                                                                          // Sub during which this instruction was created
-    final boolean          noJump;                                                                                      // The instruction will handle setting the program counter  if false
+    final String      traceBack = suppressTraceComments ?  null : traceBack();                                          // Line at which this instruction was created - suppressible because it imposes a lot of extra processing
+    final String       traceSub = subsTrace;                                                                            // Sub during which this instruction was created
+    final boolean        noJump;                                                                                        // The instruction will handle setting the program counter  if false
 
     I (boolean NoJump)                                                                                                  // Add this instruction to the code for the process
      {ai();                                                                                                             // Prevent addition of new instructions and allocations while compiling this instruction
@@ -1395,11 +1391,13 @@ public class Program extends Test                                               
 //D3 Verilog                                                                                                            // Generate verilog for an instruction
 
     void matchInstructions ()                                                                                           // Find base instructions as the instruction with the lowest label among a set of instructions with the same interior verilog code
-     {final TreeMap<String,Stack<I>> b = matchingInstructions;                                                          // Shorten the name
+     {final TreeMap<String,Stack<I>> b = matchingInstructions();                                                        // Shorten the name
       final String                   v = interiorVerilog();                                                             // Generate verilog code as key
       final Stack<I>                 m = b.containsKey(v) ? b.get(v) : new Stack<>();                                   // Matching instructions
       m.push(this);                                                                                                     // Add current instruction to matching instructions
-      b.put(v, m);                                                                                                      // Record this set of matching instructions
+      b.put(v, m);
+
+      firstInstruction().put(instructionNumber, m.firstElement().instructionNumber);                                    // Map each instruction to its first instance                                                                                                     // Record this set of matching instructions
      }
 
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
@@ -1421,31 +1419,32 @@ public class Program extends Test                                               
       return ""+s;                                                                                                      // Generated code
      }
 
-    StringBuilder verilogCodeForOneInstruction(StringJoiner Labels, String Verilog)                                     // Verilog code for one instruction
+    String formatVerilogCode (String Verilog)                                                                           // Verilog code for an instruction
      {final StringBuilder s = new StringBuilder();
-      s.append(f("        %s : begin %s", pad(""+Labels, padLabels), pad(Verilog, padVerilog)));                        // Instruction numbers followed by code
+      s.append(" : begin "+pad(Verilog, padVerilog));                                                                   // Instruction numbers followed by code
       s.append(" end");
       s.append(instructionLocationAsComment());                                                                         // Trace java program location that generated the first instance of the instruction so that the verilog code can be tied back to the java code
       s.append("\n");
-      return s;
+      return ""+s;                                                                                                      // Generated code
      }
 
     String generateVerilog ()                                                                                           // Generate verilog code for an instruction
      {final String        v = interiorVerilog();                                                                        // Generate verilog code as key
-      final Stack<I>      m = matchingInstructions.get(v);                                                              // Matching instructions
-      final StringJoiner  l = new StringJoiner(", ");                                                                   // Labels
+      final Stack<I>      m = matchingInstructions().get(v);                                                            // Matching instructions
+      final String        L = " ".repeat(8);                                                                            // Left margin before code starts in the line
       final StringBuilder s = new StringBuilder();                                                                      // Generated code
 
       if (program().compressInstructions)                                                                               // Compress out identical instructions
-       {if (this == m.firstElement())                                                                                   // Generate code for first instance of this instruction
-         {for(I i : m) l.add(f("%4d", i.instructionNumber));                                                            // Collect labels for matching instructions
-          s.append(verilogCodeForOneInstruction(l, v));                                                                 // Verilog code for base instruction with labels for all matching instructions
+       {if (this == m.firstElement())                                                                                   // Generate code for first instance of this instruction which must exist as we are on an instruction
+         {if (!compressInstructionLabels)
+           {final StringJoiner  l = new StringJoiner(", ");                                                             // Labels
+            for(I i : m) l.add(f("%4d", i.instructionNumber));                                                          // Collect labels for matching instructions
+            s.append(L + pad(""+l, padLabels) + formatVerilogCode(v));                                                  // Verilog code for base instruction with labels for all matching instructions
+           }
+          else s.append(L + f("%4d", instructionNumber) + formatVerilogCode(v));                                        // Verilog code for base instruction only with labels compressed
          }
        }
-      else
-       {l.add(f("%4d", instructionNumber));                                                                             // Instruction number
-        s.append(verilogCodeForOneInstruction(l, v));                                                                   // Verilog code for instruction with its label
-       }
+      else s.append(L + f("%4d", instructionNumber) + formatVerilogCode(v));                                            // Verilog code for uncompressed instructions
       return ""+s;                                                                                                      // Generated code
      }
    }
@@ -1592,24 +1591,24 @@ public class Program extends Test                                               
 
   void dumpProgramState (String Location)                                                                               // Dump program memories and variables
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                   dumpJava();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");"+dumpVerilog();}                                // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Location+"\n");                     dumpJava();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");\n"+dumpVerilog();}                              // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
 
   void dumpProgramMemories (String Location)                                                                            // Dump program memories
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                   dumpJavaMemories();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");"+dumpVerilogMemories();}                        // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Location+"\n");                     dumpJavaMemories();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");\n"+dumpVerilogMemories();}                      // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
 
   void dumpProgramRegisters (String Location)                                                                           // Dump program registers
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                   dumpJavaRegisters();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");"+dumpVerilogRegisters();}                       // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Location+"\n");                     dumpJavaRegisters();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");\n"+dumpVerilogRegisters();}                     // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
@@ -1769,7 +1768,7 @@ module {name};                                                                  
 """, "memoryId", m.i()));
          }
 
-        /*Execute*/out.write("""
+        /*Initialize variables*/out.write("""
         state_clearInts  : clearInts();
         state_clearBool  : clearBool();
         state_execute    : execute();
@@ -1787,7 +1786,54 @@ module {name};                                                                  
     #1 reset = 1;
     #1 reset = 0;
   end
+""");
 
+      for(UnitMemory m : memories)                                                                                          // Control registers for each memeory
+       {out.write("  integer "+ m.     vReadBool() + ";\n");                                                            // Boolean read from memory
+        out.write("  integer "+ m.    vWriteBool() + ";\n");                                                            // Boolean to write into memory
+        out.write("  integer "+ m.      vReadInt() + ";\n");                                                            // Integer read from memory
+        out.write("  integer "+ m.     vWriteInt() + ";\n");                                                            // Integer to write into memory
+        out.write("  integer "+ m. vReadIntIndex() + ";\n");                                                            // Index at which to read an integer from memory
+        out.write("  integer "+ m. vReadBitIndex() + ";\n");                                                            // Index within an integer from which to get a bit to make a boolean
+        out.write("  integer "+ m.vWriteIntIndex() + ";\n");                                                            // Index at which to write an integer into memory
+        out.write("  integer "+ m.vWriteBitIndex() + ";\n");                                                            // Index within an integer at which to set a bit to represent a boolean
+       }
+
+      /*Execute*/out.write("""
+
+  task automatic execute;                                                                                               // Execute actual code
+    begin
+""");
+      if (!compressInstructionLabels)                                                                                   // No compression of instruction labels
+      /*Execute case*/out.write("""
+      case(pc)
+""");
+      else                                                                                                              // Compress instruction labels
+      /*Execute case*/out.write("""
+      case(firstMatchingInstruction(pc))
+""");
+
+      matchingInstructions().clear(); firstInstruction().clear();                                                       // New base instructions
+      for(I i : code) {program().compiling = i;           i.matchInstructions();}                                       // Find the base instructions
+      for(I i : code) {program().compiling = i; out.write(i.generateVerilog());}                                        // Compile each instruction to Verilog
+
+      if (true)                                                                                                         // Instruction reduction statistics
+       {final int m = matchingInstructions().size(), c = code.size(), p = 100*(c-m)/c;
+        say(f("Instruction reduction to: %4d, percent: %4d", m, p));
+       }
+
+      /* Execute default*/out.write("""
+        default: begin
+          $fclose(traceFile);
+          $finish(0);
+        end
+      endcase
+      pc = pc + 1;
+    end
+  endtask
+
+""");
+      /*Clear variables*/out.write("""
   task automatic clearInts;                                                                                             // Clear integers
     begin
       i[index] = 0;
@@ -1806,58 +1852,27 @@ module {name};                                                                  
 
 """);
 
-      /*dumpVars*/ out.write(dumpVerilogVariables());
-
-      for(int i = 0; i < memories.size(); ++i)                                                                          // Actions for each memory
+      for(int i = 0; i < memories.size(); ++i)                                                                          // Dump memory tasks
        {final UnitMemory m = memories.elementAt(i);
-        out.write(              clearMemory(m, i < memories.size()-1 ?
+        out.write(clearMemory(m, i < memories.size()-1 ?
          "state_clearMemory_"+memories.elementAt(i+1).i() :
          "state_clearInts"));
-        out.write(   dumpVerilogMemoryInDecimal(m));
-
-        out.write("  integer "+ m.     vReadBool() + ";\n");                                                            // Boolean read from memory
-        out.write("  integer "+ m.    vWriteBool() + ";\n");                                                            // Boolean to write into memory
-        out.write("  integer "+ m.      vReadInt() + ";\n");                                                            // Integer read from memory
-        out.write("  integer "+ m.     vWriteInt() + ";\n");                                                            // Integer to write into memory
-        out.write("  integer "+ m. vReadIntIndex() + ";\n");                                                            // Index at which to read an integer from memory
-        out.write("  integer "+ m. vReadBitIndex() + ";\n");                                                            // Index within an integer from which to get a bit to make a boolean
-        out.write("  integer "+ m.vWriteIntIndex() + ";\n");                                                            // Index at which to write an integer into memory
-        out.write("  integer "+ m.vWriteBitIndex() + ";\n");                                                            // Index within an integer at which to set a bit to represent a boolean
+        out.write(   dumpVerilogMemoryInDecimal(m)+"\n");
        }
+
+      if (compressInstructionLabels) defineArrayViaVerilogFunction("firstMatchingInstruction", firstInstruction(), -1); // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+
+      /*Clear variables*/ out.write(dumpVerilogVariables()+"\n");                                                            // Dump verilog variables task
 
       for(String m : program().extraVerilogMethods) out.write(m);                                                       // Incorporate extra Verilog methods required to support generated instructions
 
-      /*Execute*/out.write("""
-  task automatic execute;                                                                                               // Execute actual code
-    begin
-      case(pc)
-""");
-
-      matchingInstructions.clear();                                                                                     // New base instructions
-      for(I i : code) {program().compiling = i;           i.matchInstructions();}                                       // Find the base instructions
-      for(I i : code) {program().compiling = i;           i.matchInstructions();}                                       // Find the base instructions
-      for(I i : code) {program().compiling = i; out.write(i.generateVerilog());}                                        // Compile each instruction to Verilog
-
-      if (true)                                                                                                         // Instruction reduction statistics
-       {final int m = matchingInstructions.size(), c = code.size(), p = 100*(c-m)/c;
-        say(f("Instruction reduction to: %4d, percent: %4d", m, p));
-       }
-      matchingInstructions.clear();                                                                                     // Release storage occupied by base instructions
-
-      /* Execute default*/out.write("""
-        default: begin
-          $fclose(traceFile);
-          $finish(0);
-        end
-      endcase
-      pc = pc + 1;
-    end
-  endtask
+      /*End*/out.write("""
 endmodule
 """);
-
      }
     catch(Exception e) {stop(e, fullTraceBack(e));}
+
+    matchingInstructions().clear(); firstInstruction().clear();                                                         // Clear these large structures now they are no longer needed to reduce memory used
    }
 
   String clearMemory(UnitMemory M, String Next)                                                                         // Verilog procedure to clear a memory
@@ -1873,6 +1888,15 @@ endmodule
    }
 
   void defineArrayViaVerilogFunction(String Name, int[]Array) {defineArrayViaVerilogFunction(Name, Array, 0);}          // Define a verilog function from an array
+
+  void defineArrayViaVerilogFunction(String Name, TreeMap<Integer,Integer> map, int Error)                              // Define a verilog function from a tree map
+   {final int  size = map.lastKey() + 1;
+    final int[]array = new int[size];
+    Arrays.fill(array, Error);
+    for (Integer i : map.keySet()) array[i] = map.get(i);
+    defineArrayViaVerilogFunction(Name, array, Error);                                                                   // Define a verilog function from the resulting array
+   }
+
   void defineArrayViaVerilogFunction(String Name, int[]Array, int Error)                                                // Define a verilog function from an array
    {final StringBuilder s = new StringBuilder("function automatic integer "+Name+"(input integer i);");
     s.append("""
@@ -1979,16 +2003,16 @@ endfunction
     s.append("$fwrite(traceFile, \"       sourceInt = %8d\\n\", sourceInt   );\n");
     s.append("$fwrite(traceFile, \"      source2Int = %8d\\n\", source2Int  );\n");
     s.append("$fwrite(traceFile, \"       targetInt = %8d\\n\", targetInt   );\n");
-    s.append("$fwrite(traceFile, \"      sourceBool = %8d\\n\",  sourceBool );\n");
-    s.append("$fwrite(traceFile, \"      targetBool = %8d\\n\",  targetBool );\n");
+    s.append("$fwrite(traceFile, \"      sourceBool = %8d\\n\", sourceBool  );\n");
+    s.append("$fwrite(traceFile, \"      targetBool = %8d\\n\", targetBool  );\n");
     return ""+s;
    }
 
   String dumpVerilog ()                                                                                                 // Dump verilog memory and variables
    {final StringBuilder s = new StringBuilder();
-    s.append(" "+dumpVerilogMemories());
-    s.append(" "+dumpVerilogVariablesName()+"();");
-    s.append(" "+dumpVerilogRegisters());
+    s.append(dumpVerilogMemories());
+    s.append(dumpVerilogVariablesName()+"();\n");
+    s.append(dumpVerilogRegisters());
     return ""+s;
    }
 
@@ -2058,8 +2082,8 @@ endfunction
    {sayCurrentTestName();
     final Program  P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Bool z = new Bool().clear();
-        final Bool o = new Bool().set();
+       {final Bool z = new Bool("zero").clear();
+        final Bool o = new Bool("one" ).set();
         z.Or (z).ok(false);
         z.Or (o).ok(true);
         o.Or (z).ok(true);
@@ -2663,6 +2687,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_remote(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
