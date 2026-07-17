@@ -6,7 +6,6 @@ package com.AppaApps.Silicon;                                                   
 
 import java.util.*;
 import java.util.function.*;
-import java.io.*;
 import java.nio.*;
 import java.nio.file.*;
 
@@ -14,12 +13,12 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
  {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
   final boolean                compressInstructionLabels = true;                                                        // Reduce instruction loop case statement by using an array to find the first instruction associated with each instruction and recording that single instruction id as the sole label for the case statement possibilities
-  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of wether the program ran as expected
+  final boolean               suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of wether the program ran as expected
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
@@ -44,8 +43,8 @@ public class Program extends Test                                               
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
-  final TreeMap<String,Stack<I>>    matchingInstructions = new TreeMap<>();                                             // Combine instruction with identical verilog text
-  final TreeMap<Integer,Integer>        firstInstruction = new TreeMap<>();                                             // Mapping from any instruction to the first matching instruction
+  final TreeMap<String, MatchSet>   matchingInstructions = new TreeMap<>();                                             // Combine instruction with identical verilog text
+  final TreeMap<Integer,MatchSet>           pcToMatchSet = new TreeMap<>();                                             // Mapping from any instruction to the first matching instruction
   final TreeMap<Integer,Integer>            pcVariableId = new TreeMap<>();                                             // Instruction  to variable used by the instruction
   final TreeMap<Integer,Integer>         pcMemoryAddress = new TreeMap<>();                                             // Instruction  to memory used by the instruction
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
@@ -164,8 +163,8 @@ public class Program extends Test                                               
 
   TreeMap<Integer,Integer>         pcVariableId () {return program().pcVariableId;}                                     // Instruction number to variable for instructions that only manipulate one variable
   TreeMap<Integer,Integer>      pcMemoryAddress () {return program().pcMemoryAddress;}                                  // Instruction number to variable memory access for instructions that only manipulate one variable
-  TreeMap<String,Stack<I>> matchingInstructions () {return program().matchingInstructions;}                             // Instruction code to set of matching instructions with the same code
-  TreeMap<Integer,Integer>     firstInstruction () {return program().firstInstruction;}                                 // Instruction number to first instruction in set of matching instructions
+  TreeMap<String,MatchSet> matchingInstructions () {return program().matchingInstructions;}                             // Instruction code to set of matching instructions with the same code
+  TreeMap<Integer,MatchSet>        pcToMatchSet () {return program().pcToMatchSet;}                                     // Instruction number to first instruction in set of matching instructions
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -1405,13 +1404,13 @@ public class Program extends Test                                               
 //D3 Verilog                                                                                                            // Generate verilog for an instruction
 
     void matchInstructions ()                                                                                           // Find base instructions as the instruction with the lowest label among a set of instructions with the same interior verilog code
-     {final TreeMap<String,Stack<I>> b = matchingInstructions();                                                        // Shorten the name
+     {final TreeMap<String,MatchSet> b = matchingInstructions();                                                        // Shorten the name
       final String                   v = interiorVerilog();                                                             // Generate verilog code as key
-      final Stack<I>                 m = b.containsKey(v) ? b.get(v) : new Stack<>();                                   // Matching instructions
-      m.push(this);                                                                                                     // Add current instruction to matching instructions
+      final MatchSet                 m = b.containsKey(v) ? b.get(v) : new MatchSet(v);                                 // Matching instructions
+      m.add(this);                                                                                                      // Add current instruction to matching instructions
       b.put(v, m);
-
-      firstInstruction().put(instructionNumber, m.firstElement().instructionNumber);                                    // Map each instruction to its first instance                                                                                                     // Record this set of matching instructions
+say("AAAA", instructionNumber, m.sequence);
+      pcToMatchSet().put(instructionNumber, m);                                                                         // Map each instruction to its match set
      }
 
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
@@ -1444,18 +1443,18 @@ public class Program extends Test                                               
 
     String generateVerilog ()                                                                                           // Generate verilog code for an instruction
      {final String        v = interiorVerilog();                                                                        // Generate verilog code as key
-      final Stack<I>      m = matchingInstructions().get(v);                                                            // Matching instructions
+      final MatchSet      m = matchingInstructions().get(v);                                                            // Matching instructions
       final String        L = " ".repeat(8);                                                                            // Left margin before code starts in the line
       final StringBuilder s = new StringBuilder();                                                                      // Generated code
 
       if (program().compressInstructions)                                                                               // Compress out identical instructions
-       {if (this == m.firstElement())                                                                                   // Generate code for first instance of this instruction which must exist as we are on an instruction
-         {if (!compressInstructionLabels)
+       {if (this == m.first())                                                                                          // Generate code for first instance of this instruction which must exist as we are on an instruction
+         {if (!program().compressInstructionLabels)                                                                     // Not compressing labels
            {final StringJoiner  l = new StringJoiner(", ");                                                             // Labels
-            for(I i : m) l.add(f("%4d", i.instructionNumber));                                                          // Collect labels for matching instructions
+            for(I i : m.matches) l.add(f("%4d", i.instructionNumber));                                                  // Collect labels for matching instructions
             s.append(L + pad(""+l, padLabels) + formatVerilogCode(v));                                                  // Verilog code for base instruction with labels for all matching instructions
            }
-          else s.append(L + f("%4d", instructionNumber) + formatVerilogCode(v));                                        // Verilog code for base instruction only with labels compressed
+          else s.append(L + f("%4d", m.sequence) + formatVerilogCode(v));                                               // Verilog code for base instruction only with labels compressed
          }
        }
       else s.append(L + f("%4d", instructionNumber) + formatVerilogCode(v));                                            // Verilog code for uncompressed instructions
@@ -1473,7 +1472,7 @@ public class Program extends Test                                               
   void jTrace (String Message)                                                                                          // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
    {jtraceInc();
     if (program().suppressInstructionTracing) return;                                                                   // Suppress instruction tracing
-    if (!executing().trace()) return;                                                                           // Not tracing this instruction
+    if (!executing().trace()) return;                                                                                   // Not tracing this instruction
     appendJavaTrace(Message+"\n");                                                                                      // Write tracing message
    }
 
@@ -1682,9 +1681,8 @@ public class Program extends Test                                               
     defineArrayViaVerilogFunction("pcVariableId"   , pcVariableId   , -1);                                              // Generate an array to map the instruction number to the id of variable to be operated on in that instruction. There is never more than one such operation per instruction so a single array is sufficient for all such operations
 
     try
-     (final PrintWriter out = new PrintWriter(codeFile))                                                                // Write the verilog to a file
-     {//final StringBuilder   s = new StringBuilder();                                                                  // Verilog
-    /*Module*/out.write(substitute("""
+     (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                       // Write the verilog to a file
+     {/*Module*/out.write(substitute("""
 module {name};                                                                                                          // Bit machine
 """, "name", name));
 
@@ -1817,18 +1815,18 @@ module {name};                                                                  
   task automatic execute;                                                                                               // Execute actual code
     begin
 """);
-      if (!compressInstructionLabels)                                                                                   // No compression of instruction labels
+      if (!compressInstructions || !compressInstructionLabels)                                                          // No compression of instruction labels
       /*Execute case*/out.write("""
       case(pc)
 """);
       else                                                                                                              // Compress instruction labels
       /*Execute case*/out.write("""
-      case(firstMatchingInstruction(pc))
+      case(pcToMatchSet(pc))
 """);
 
-      matchingInstructions().clear(); firstInstruction().clear();                                                       // New base instructions
-      for(I i : code) {compiling(i);           i.matchInstructions();}                                               // Find the base instructions
-      for(I i : code) {compiling(i); out.write(i.generateVerilog ());}                                               // Compile each instruction to Verilog
+      matchingInstructions().clear(); pcToMatchSet().clear();                                                           // Clear rather than renew as final
+      for(I i : code) {compiling(i);           i.matchInstructions();}                                                  // Find the base instructions
+      for(I i : code) {compiling(i); out.write(i.generateVerilog ());}                                                  // Compile each instruction to Verilog
 
       if (true)                                                                                                         // Instruction reduction statistics
        {final int m = matchingInstructions().size(), c = code.size(), p = 100*(c-m)/c;
@@ -1873,7 +1871,7 @@ module {name};                                                                  
         out.write(   dumpVerilogMemoryInDecimal(m)+"\n");
        }
 
-      if (compressInstructionLabels) defineArrayViaVerilogFunction("firstMatchingInstruction", firstInstruction(), -1); // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+      if (compressInstructionLabels) defineArrayViaVerilogFunctionFromMatchSet("pcToMatchSet", pcToMatchSet(), -1);     // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
       defineArrayViaVerilogFunction("pcMemoryAddress", pcMemoryAddress, -1);                                            // Generate an array to map the instruction number to the id of variable to perform a memory access in that instruction. There is never more than one such operation per instruction so a single array is sufficient for all such operations
 
       /*Clear variables*/ out.write(dumpVerilogVariables()+"\n");                                                       // Dump verilog variables task
@@ -1886,7 +1884,7 @@ endmodule
      }
     catch(Exception e) {stop(e, fullTraceBack(e));}
 
-    matchingInstructions().clear(); firstInstruction().clear();                                                         // Clear these large structures now they are no longer needed to reduce memory used
+    matchingInstructions().clear(); pcToMatchSet().clear();                                                             // Clear these large structures now they are no longer needed to reduce memory used
    }
 
   String clearMemory(UnitMemory M, String Next)                                                                         // Verilog procedure to clear a memory
@@ -1909,6 +1907,15 @@ endmodule
     final int[]array = new int[size];
     Arrays.fill(array, Error);
     for (Integer i : map.keySet()) array[i] = map.get(i);
+    defineArrayViaVerilogFunction(Name, array, Error);                                                                  // Define a verilog function from the resulting array
+   }
+
+  void defineArrayViaVerilogFunctionFromMatchSet(String Name, TreeMap<Integer,MatchSet> map, int Error)                 // Define a verilog function from a tree map
+   {if (map.size() == 0) return;                                                                                        // Nothing to map to an array
+    final int  size = codeSize();
+    final int[]array = new int[size];
+    Arrays.fill(array, Error);
+    for (Integer i : map.keySet()) array[i] = map.get(i).sequence;
     defineArrayViaVerilogFunction(Name, array, Error);                                                                  // Define a verilog function from the resulting array
    }
 
@@ -2033,24 +2040,22 @@ endmodule
 
   String removeTracing(String V) {return suppressInstructionTracing ? V.replaceAll("(?s)\\$fd.*?;", "") : V;}           // Remove tracing if necessary
 
+  class MatchSet                                                                                                        // Matching set of instructions
+   {final int      sequence;                                                                                            // Sequence number of match set
+    final Stack<I> matches = new Stack<I>();                                                                            // Instructions in this set of identical instructions
+
+    MatchSet(String Verilog) {sequence = matchingInstructions.size(); matchingInstructions.put(Verilog, this);}         // Create a new match set and add it to the existing matching instructions
+    int sequence()           {return sequence;}
+
+    void               add (I I) {matches.push(I);}                                                                     // Add another instruction to the match set
+    int               size ()    {return matches.size();}                                                               // Number of instructions in the match set
+    I                first ()    {return matches.size() == 0 ? null : matches.firstElement();}                          // First instruction in match set
+    public String toString ()    {return "MatchSet("+sequence + ", matches: " + matches.size()+")";}                    // Description of the match set
+   }
+
 //D1 Testing                                                                                                            // Test expected output against got output
 
   static void test_programming(boolean Ex)
-   {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex))
-     {void code()
-       {final Int a = new Int(22);
-        dumpProgramState("AAAA");
-        final Int b = new Int(33);
-        dumpProgramState("BBBB");
-        final Int c = b.dup();
-        dumpProgramState("CCCC");
-        execute();
-       }
-     };
-   }
-
-  static void test_programming22(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
@@ -2067,11 +2072,11 @@ endmodule
               void Else() {i.sub(Index);}
              };
             Continue.set();
+            dumpProgramState("AAAA");
            }
          };
         i.ok(5);
-        final Bool j = i.valid();
-        j.ok(true);
+        i.valid().ok(true);
         execute();
        }
      };
@@ -2690,7 +2695,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_remote(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
