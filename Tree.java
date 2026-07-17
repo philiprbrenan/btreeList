@@ -1342,7 +1342,7 @@ Leaf   at:   2 size:   4, count:   4
            {final Int k = new Int("Key");
 
             new I()
-             {void        a() {targetInt(random_32[Index.i()]); targetIntValid(true);}
+             {void        a() {targetInt(random_32[Index.i()]);}
               String      v() {return "targetInt <= loadRandomKeys("+Index.vn()+");";}
               boolean trace() {return false;}
              };
@@ -1631,7 +1631,7 @@ Leaf   at:   2 size:   4, count:   4
      {void body(Int Index)
        {final Int k = t.new Int("Key");
         t.new I()
-         {void        a() {t.targetInt(random_32[Index.i()]); t.targetIntValid(true);}
+         {void        a() {t.targetInt(random_32[Index.i()]);}
           String      v() {return "targetInt <= loadRandomKeys("+Index.vn()+");";}
           boolean trace() {return false;}
          };
