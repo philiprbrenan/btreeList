@@ -14,7 +14,7 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
  {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
@@ -46,7 +46,8 @@ public class Program extends Test                                               
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final TreeMap<String,Stack<I>>    matchingInstructions = new TreeMap<>();                                             // Combine instruction with identical verilog text
   final TreeMap<Integer,Integer>        firstInstruction = new TreeMap<>();                                             // Mapping from any instruction to the first matching instruction
-  final TreeMap<Integer,Integer>            pcVariableId = new TreeMap<>();                                             // Program counter to variable id
+  final TreeMap<Integer,Integer>            pcVariableId = new TreeMap<>();                                             // Instruction  to variable used by the instruction
+  final TreeMap<Integer,Integer>         pcMemoryAddress = new TreeMap<>();                                             // Instruction  to memory used by the instruction
 //final static TreeMap<String,Procedure> procedures      = new TreeMap<>();                                             // Procedures by name for this program
   final TreeSet<String>              extraVerilogMethods = new TreeSet<>();                                             // Save additional Verilog methods here prefixed by "x" - they will be incorporated into the generated Verilog and thus become available to instructions
   private int                                  currentPc = 0;                                                           // Current program counter
@@ -87,29 +88,28 @@ public class Program extends Test                                               
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
-  void code ()         {}                                                                                               // Override to provide some code for this program
-  boolean immediate () {return program().immediate;}                                                                    // Executing immediately via interpretation
-  boolean executing () {return program().executing != null;}                                                            // Executing machine code
-  Program   program () {return parentProgram;}                                                                          // Address this program
-
-  void executingCheck ()     {if (!program().executing()) stop("Not executing");}                                       // Confirm that code is being executed and that consequently an instruction should be executed otherwise complain
+  void               code () {}                                                                                         // Override to provide some code for this program
+  boolean       immediate () {return program().immediate;}                                                              // Executing immediately via interpretation
+  boolean     isExecuting () {return program().executing != null;}                                                      // Executing machine code
+  Program         program () {return parentProgram;}                                                                    // Address this program
+  void     executingCheck () {if (!isExecuting()) stop("Not executing");}                                               // Confirm that code is being executed and that consequently an instruction should be executed otherwise complain
   void parentProgramCheck () {if (program() != program().program()) stop("Parent program not set to parent program");}  // Check that code is being written to the expected program
 
   void  ai ()                                                                                                           // An executing program cannot be extended by adding new data or instructions
-   {final I      i = program().executing;
+   {final I      i = executing();
     final String m = immediate() ? "immediate" : "delayed";
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
 
   void  rx ()                                                                                                           // This register can only be accessed during execution
-   {final I x = program().executing;
+   {final I x = executing();
     if (!immediate() && x == null)
      {stop("Control register can only be accessed during execution:", x.traceBack, "====");
      }
    }
 
   void  rc ()                                                                                                           // This register can only be accessed during compilation
-   {final I x = program().executing;
+   {final I x = executing();
     if (x != null)
      {stop("Control registers can only be accessed during compilation:", x.traceBack, "====");
      }
@@ -118,6 +118,11 @@ public class Program extends Test                                               
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
   void jtraceInc() {++program().jtrace;}                                                                                // Count trace records written
   void vtraceInc() {++program().vtrace;}
+
+  I compiling()    {return program().compiling;}                                                                        // Instruction currently being compiled
+  I executing()    {return program().executing;}                                                                        // Instruction currently being executed
+  I compiling(I I) {return program().compiling = I;}                                                                    // Instruction currently being compiled
+  I executing(I I) {return program().executing = I;}                                                                    // Instruction currently being executed
 
   Stack<Int>  ints ()           {return program().ints;}
   Stack<Bool> bools ()          {return program().bools;}
@@ -157,9 +162,10 @@ public class Program extends Test                                               
     sourceBool(false); targetBool(false);
    }
 
-  TreeMap<Integer,Integer> pcVariableId ()         {return program().pcVariableId;}                                     // Instruction number to variable for instructions that only manipulate one variable
+  TreeMap<Integer,Integer>         pcVariableId () {return program().pcVariableId;}                                     // Instruction number to variable for instructions that only manipulate one variable
+  TreeMap<Integer,Integer>      pcMemoryAddress () {return program().pcMemoryAddress;}                                  // Instruction number to variable memory access for instructions that only manipulate one variable
   TreeMap<String,Stack<I>> matchingInstructions () {return program().matchingInstructions;}                             // Instruction code to set of matching instructions with the same code
-  TreeMap<Integer,Integer> firstInstruction ()     {return program().firstInstruction;}                                 // Instruction number to first instruction in set of matching instructions
+  TreeMap<Integer,Integer>     firstInstruction () {return program().firstInstruction;}                                 // Instruction number to first instruction in set of matching instructions
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -610,7 +616,7 @@ public class Program extends Test                                               
      {final  Bool got = this;
       new I()
        {void a()
-         {if (!got.v) stop("Invalid Bool being tested at:", program().executing.instructionLocation());
+         {if (!got.v) stop("Invalid Bool being tested at:", executing().instructionLocation());
           Test.ok(i, Value);
          }
         int traces() {return 0;}
@@ -623,7 +629,7 @@ public class Program extends Test                                               
       if (immediate() && !Value.v) stop("Invalid expected Bool has been supplied for testing");
       new I()
        {void a()
-         {if (!got.v) stop("Invalid Bool being tested at:", program().executing.instructionLocation());
+         {if (!got.v) stop("Invalid Bool being tested at:", executing().instructionLocation());
           Test.ok(got.b(), Value.b());
          }
         int traces() {return 0;}
@@ -976,7 +982,7 @@ public class Program extends Test                                               
      {final Int got = this;
       new I()
        {void        a()
-         {if (!got.v) stop("Invalid Int being tested at:", program().executing.instructionLocation());
+         {if (!got.v) stop("Invalid Int being tested at:", executing().instructionLocation());
           Test.ok(i, Value);
          }
         boolean trace() {return false;}                                                                                 // No need to test  under Verilog as long as all data accesses match
@@ -989,7 +995,7 @@ public class Program extends Test                                               
       if (immediate() && !Value.v) stop("Invalid expected Int has been supplied for testing");
       new I()
        {void    a    ()
-         {if (!got.v) stop("Invalid Int being tested at:", program().executing.instructionLocation());
+         {if (!got.v) stop("Invalid Int being tested at:", executing().instructionLocation());
            Test.ok(got.i(), Value.i());
          }
         boolean trace() {return false;}
@@ -1073,6 +1079,9 @@ public class Program extends Test                                               
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
 
+    void im(Int I)  {pcMemoryAddress().put(compiling().instructionNumber, I.id);}                                       // Save the integer variable used for this memory access at this instruction
+    void im(Bool B) {pcMemoryAddress().put(compiling().instructionNumber, B.id);}                                       // Save the boolean variable used for this memory access at this instruction
+
     String      vReadBool()      {return n() + "_readBool     ";}                                                       // Boolean read from memory
     String     vWriteBool()      {return n() + "_writeBool    ";}                                                       // Boolean to write into memory
     String       vReadInt()      {return n() + "_readInt      ";}                                                       // Integer read from memory
@@ -1082,14 +1091,14 @@ public class Program extends Test                                               
     String vWriteIntIndex()      {return n() + "_writeIntIndex";}                                                       // Index at which to write an integer into memory
     String vWriteBitIndex()      {return n() + "_writeBitIndex";}                                                       // Index within an integer at which to set a bit to represent a boolean
 
-    String       readIntV()      {vtraceInc(); return vReadInt () + " <= "+n()+"["+vReadIntIndex()+"];                           $fdisplay(traceFile, \"%8d readInt       %8d\", pc, "    +n()+"["+vReadIntIndex ()                                          +"]);";}
-    String      readBoolV()      {vtraceInc(); return vReadBool() + " <= "+n()+"["+vReadIntIndex()+"]["+vReadBitIndex()+"];      $fdisplay(traceFile, \"%8d readBool      %8d\", pc, "    +n()+"["+vReadIntIndex ()+"]["+vReadBitIndex ()                    +"]);";}
+    String       readIntV()      {vtraceInc(); return vReadInt () + "<= "+n()+"["+vReadIntIndex()+"];                            $fdisplay(traceFile, \"%8d readInt       %8d\", pc, "    +n()+"["+vReadIntIndex ()                                          +"]);";}
+    String      readBoolV()      {vtraceInc(); return vReadBool() + "<= "+n()+"["+vReadIntIndex()+"]["+vReadBitIndex()+"];       $fdisplay(traceFile, \"%8d readBool      %8d\", pc, "    +n()+"["+vReadIntIndex ()+"]["+vReadBitIndex ()                    +"]);";}
     String      writeIntV()      {vtraceInc(); return n()+"["+vWriteIntIndex()+"]                       <= " + vWriteInt () + "; $fdisplay(traceFile, \"%8d writeInt      %8d<%8d\", pc, "+n()+"["+vWriteIntIndex()+"],"+vWriteInt     ()                    + ");";}
     String     writeBoolV()      {vtraceInc(); return n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"] <= " + vWriteBool() + "; $fdisplay(traceFile, \"%8d writeBool     %8d<%8d\", pc, "+n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"]," + vWriteBool()+ ");";}
-    String  readIntIndexV(Int I) {vtraceInc(); return vReadIntIndex () + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d readIntIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
-    String  readBitIndexV(Int I) {vtraceInc(); return vReadBitIndex () + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d readBitIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
-    String writeIntIndexV(Int I) {vtraceInc(); return vWriteIntIndex() + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d writeIntIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
-    String writeBitIndexV(Int I) {vtraceInc(); return vWriteBitIndex() + " <= i["+I.id+"];                                       $fdisplay(traceFile, \"%8d writeBitIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String  readIntIndexV(Int I) {vtraceInc(); im(I); return vReadIntIndex () + "<= i[pcMemoryAddress(pc)];                      $fdisplay(traceFile, \"%8d readIntIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String  readBitIndexV(Int I) {vtraceInc(); im(I); return vReadBitIndex () + "<= i[pcMemoryAddress(pc)];                      $fdisplay(traceFile, \"%8d readBitIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String writeIntIndexV(Int I) {vtraceInc(); im(I); return vWriteIntIndex() + "<= i[pcMemoryAddress(pc)];                      $fdisplay(traceFile, \"%8d writeIntIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String writeBitIndexV(Int I) {vtraceInc(); im(I); return vWriteBitIndex() + "<= i[pcMemoryAddress(pc)];                      $fdisplay(traceFile, \"%8d writeBitIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
 
     void         readIntJ()      {readInt  = units[readIntIndex];                                                                             jTrace(f("%8d readInt       %8d",     pc(), readInt          ));}
     void        readBoolJ()      {readBool = getBit(units[readIntIndex], readBitIndex);                                                       jTrace(f("%8d readBool      %8d",     pc(), readBool  ? 1 : 0));}
@@ -1174,16 +1183,16 @@ public class Program extends Test                                               
     Int getInt (Int I)                                                                                                  // Get the int at the indicated position
      {final Int r = new Int();
       new I()                                                                                                           // Set index
-       {void   a() {       readIntIndexJ(I);}
-        String v() {return readIntIndexV(I);}
+       {void   a() {              readIntIndexJ(I);}
+        String v() {im(I); return readIntIndexV(I);}
        };
       new I()                                                                                                           // Read from memory
-       {void   a() {       readIntJ();}
+       {void   a() {        readIntJ();}
         String v() {return readIntV();}
        };
       new I()                                                                                                           // Set target index
-       {void   a() {r.i = readInt; r.v = true;                                       jTrace(f("%8d ReadInt from Memory %8d = %8d",  pc(), r.id,     I.id));}
-        String v() {vtraceInc(); return "i["+r.id+"] <= "+vReadInt()+"; $fdisplay(traceFile, \"%8d ReadInt from Memory %8d = %8d\", pc, "+r.id+", "+I.id+");";}
+       {void   a() {r.i = readInt; r.v = true;                                                         jTrace(f("%8d ReadInt from Memory %8d = %8d",  pc(), r.id,                  I.id));}
+        String v() {vtraceInc(); im(r); return "i[pcMemoryAddress(pc)] <= "+vReadInt()+"; $fdisplay(traceFile, \"%8d ReadInt from Memory %8d = %8d\", pc,   pcMemoryAddress(pc), "+I.id+");";}
        };
       return r;
      }
@@ -1192,35 +1201,35 @@ public class Program extends Test                                               
      {Bool r = new Bool();
       new I()                                                                                                           // Set int index
        {void   a() {       readIntIndexJ(I);}
-        String v() {return readIntIndexV(I);}
+        String v() {im(I); return readIntIndexV(I);}
        };
       new I()                                                                                                           // Set bit index
        {void   a() {       readBitIndexJ(J);}
-        String v() {return readBitIndexV(J);}
+        String v() {im(J); return readBitIndexV(J);}
        };
       new I()                                                                                                           // Read from memory
        {void   a() {       readBoolJ();}
         String v() {return readBoolV();}
        };
       new I()                                                                                                           // Set target index
-       {void   a() {r.i = readBool; r.v = true;                                       jTrace(f("%8d ReadBool from Memory %8d = %8d",  pc(), r.id,     readBool ? 1 : 0));}
-        String v() {vtraceInc(); return "b["+r.id+"] <= "+vReadBool()+"; $fdisplay(traceFile, \"%8d ReadBool from Memory %8d = %8d\", pc, "+r.id+", "+vReadBool()+");";}
+       {void   a() {r.i = readBool; r.v = true;                                                         jTrace(f("%8d ReadBool from Memory %8d = %8d",             pc(), r.id,                   readBool ? 1 : 0));}
+        String v() {vtraceInc(); im(r); return "b[pcMemoryAddress(pc)] <= "+vReadBool()+"; $fdisplay(traceFile, \"%8d ReadBool from Memory %8d = %8d\", pc,   pcMemoryAddress(pc), "+vReadBool()+");";}
        };
       return r;
      }
 
     Bool getBool (Int I) {return getBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                    // Get the bit at the bit indexed location
 
-    UnitMemory putInt (Int I, Int J)                                                                                    // Set the int at the indicated position relative to the start to the specified value
-     {new I()                                                                                                           // Set target index
-       {void   a() {       writeIntIndexJ(I);}
-        String v() {return writeIntIndexV(I);}
+    UnitMemory putInt (Int I, Int J)                                                                                    // Write to the indexed memory location the value of the specified source integer
+     {new I()                                                                                                           // Set target index of memory to be written to
+       {void   a() {              writeIntIndexJ(I);}
+        String v() {im(I); return writeIntIndexV(I);}
        };
-      new I()                                                                                                           // Set write from read
-       {void   a() {final             int p = writeInt; writeInt = J.i();              jTrace(f("%8d writeInt2 %8d = %8d < %8d",  pc(),  writeIntIndex,          J.i,          p));}
-        String v() {vtraceInc(); return vWriteInt() + " <= i["+J.id + "]; $fdisplay(traceFile, \"%8d writeInt2 %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", i["+J.id + "], "+vWriteInt()+ ");";}
+      new I()                                                                                                           // Read from source integer
+       {void   a() {final int p = writeInt; writeInt = J.i();                                                              jTrace(f("%8d writeInt2 %8d = %8d < %8d",  pc(),  writeIntIndex,          J.i,          p));}
+        String v() {vtraceInc(); im(J); return vWriteInt() + "<= i[pcMemoryAddress(pc)]; $fdisplay(traceFile, \"%8d writeInt2 %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", i["+J.id + "], "+vWriteInt()+ ");";}
        };
-      new I()                                                                                                           // Write into target memory
+      new I()                                                                                                           // Write source integer value into target memory at indexed location
        {void   a() {       writeIntJ();}
         String v() {return writeIntV();}
        };
@@ -1229,16 +1238,16 @@ public class Program extends Test                                               
 
     UnitMemory putBool (Int I, Int J, Bool K)                                                                           // Set the bit at the indicated position in the byte at the specified position to the specified value
      {new I()                                                                                                           // Set target index
-       {void   a() {       writeIntIndexJ(I);}
-        String v() {return writeIntIndexV(I);}
+       {void   a() {              writeIntIndexJ(I);}
+        String v() {im(I); return writeIntIndexV(I);}
        };
       new I()                                                                                                           // Set target index
-       {void   a() {       writeBitIndexJ(J);}
-        String v() {return writeBitIndexV(J);}
+       {void   a() {              writeBitIndexJ(J);}
+        String v() {im(J); return writeBitIndexV(J);}
        };
       new I()                                                                                                           // Set write from read
-       {void   a() {writeBool = K.b();                                                  jTrace(f("%8d writeBool2 %8d, %8d = %8d < %8d",  pc(),  writeIntIndex,         writeBitIndex,          K.i ? 1 : 0,  writeBool ? 1 : 0));}
-        String v() {vtraceInc(); return vWriteBool() + " <= b["+K.id + "]; $fdisplay(traceFile, \"%8d writeBool2 %8d, %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", "+vWriteBitIndex()+ ", b["+K.id + "], b["+K.id + "]);";}
+       {void   a() {writeBool = K.b();                                                                 jTrace(f("%8d writeBool2 %8d, %8d = %8d < %8d",  pc(),  writeIntIndex,         writeBitIndex,          K.i ? 1 : 0,  writeBool ? 1 : 0));}
+        String v() {vtraceInc(); im(K); return vWriteBool() + "<= b[pcMemoryAddress(pc)]; $fdisplay(traceFile, \"%8d writeBool2 %8d, %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", "+vWriteBitIndex()+ ", b["+K.id + "], b["+K.id + "]);";}
        };
       new I()                                                                                                           // Write into memory
        {void   a() {       writeBoolJ();}
@@ -1363,14 +1372,14 @@ public class Program extends Test                                               
       subInc();                                                                                                         // Count the number of instructions associated with each method
       noJump = NoJump;                                                                                                  // Ability to jump
       if (immediate())                                                                                                  // Execute instruction immediately via interpretation if in immediate execution mode
-       {program().executing = this;                                                                                     // Show that we are executing an instruction
+       {executing(this);                                                                                     // Show that we are executing an instruction
         program().jtrace = 0;
         a();
         if (trace() && program().jtrace != traces())                                                                    // Check traces written if tracing
          {stop("Wrong number of java traces generated, got: ", program().jtrace,
                "expected:", traces(), "at:", instructionLocation());
          }
-        program().executing = null;                                                                                     // Show that we are no longer executing an instruction
+        executing(null);                                                                                     // Show that we are no longer executing an instruction
        }
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
      }
@@ -1464,19 +1473,17 @@ public class Program extends Test                                               
   void jTrace (String Message)                                                                                          // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
    {jtraceInc();
     if (program().suppressInstructionTracing) return;                                                                   // Suppress instruction tracing
-    if (!program().executing.trace()) return;                                                                           // Not tracing this instruction
+    if (!executing().trace()) return;                                                                           // Not tracing this instruction
     appendJavaTrace(Message+"\n");                                                                                      // Write tracing message
    }
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
    {vtraceInc();
-    if (!program().compiling.trace()) return "";                                                                        // Suppress tracing for this instruction
+    if (!compiling().trace()) return "";                                                                                // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
-    //s.append(" traceFile = $fopen(\""+verilogTraceFile+"\", \"a\"); ");
     s.append("$fdisplay(traceFile, \""+Format+"\"");
     for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
     s.append(");");
-    //s.append(" $fclose(traceFile);");
     return ""+s;
    }
 
@@ -1570,6 +1577,7 @@ public class Program extends Test                                               
 
     if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
+
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
@@ -1588,7 +1596,7 @@ public class Program extends Test                                               
    }
 
   void variableNotSet (String Type, String Name)                                                                        // Variable not yet set message
-   {final I i = program().executing;
+   {final I i = executing();
     final String m = (Name != null ? '"'+Name+'"'+", " : "") + "has not been set yet";
     if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
     else           stop(Type, m);                                                                                       // No traceback available
@@ -1671,7 +1679,7 @@ public class Program extends Test                                               
     final int  numberOfInts =  nextIntId;                                                                               // Number of integers needed
     final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
 
-    generatePcVariableId();                                                                                             // Generate array to map pc to id of variable to be loaded or written
+    defineArrayViaVerilogFunction("pcVariableId"   , pcVariableId   , -1);                                              // Generate an array to map the instruction number to the id of variable to be operated on in that instruction. There is never more than one such operation per instruction so a single array is sufficient for all such operations
 
     try
      (final PrintWriter out = new PrintWriter(codeFile))                                                                // Write the verilog to a file
@@ -1819,8 +1827,8 @@ module {name};                                                                  
 """);
 
       matchingInstructions().clear(); firstInstruction().clear();                                                       // New base instructions
-      for(I i : code) {program().compiling = i;           i.matchInstructions();}                                       // Find the base instructions
-      for(I i : code) {program().compiling = i; out.write(i.generateVerilog());}                                        // Compile each instruction to Verilog
+      for(I i : code) {compiling(i);           i.matchInstructions();}                                               // Find the base instructions
+      for(I i : code) {compiling(i); out.write(i.generateVerilog ());}                                               // Compile each instruction to Verilog
 
       if (true)                                                                                                         // Instruction reduction statistics
        {final int m = matchingInstructions().size(), c = code.size(), p = 100*(c-m)/c;
@@ -1866,6 +1874,7 @@ module {name};                                                                  
        }
 
       if (compressInstructionLabels) defineArrayViaVerilogFunction("firstMatchingInstruction", firstInstruction(), -1); // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+      defineArrayViaVerilogFunction("pcMemoryAddress", pcMemoryAddress, -1);                                            // Generate an array to map the instruction number to the id of variable to perform a memory access in that instruction. There is never more than one such operation per instruction so a single array is sufficient for all such operations
 
       /*Clear variables*/ out.write(dumpVerilogVariables()+"\n");                                                       // Dump verilog variables task
 
@@ -1895,7 +1904,8 @@ endmodule
   void defineArrayViaVerilogFunction(String Name, int[]Array) {defineArrayViaVerilogFunction(Name, Array, 0);}          // Define a verilog function from an array
 
   void defineArrayViaVerilogFunction(String Name, TreeMap<Integer,Integer> map, int Error)                              // Define a verilog function from a tree map
-   {final int  size = map.lastKey() + 1;
+   {if (map.size() == 0) return;                                                                                        // Nothing to map to an array
+    final int  size = map.lastKey() + 1;
     final int[]array = new int[size];
     Arrays.fill(array, Error);
     for (Integer i : map.keySet()) array[i] = map.get(i);
@@ -2022,17 +2032,6 @@ endmodule
    }
 
   String removeTracing(String V) {return suppressInstructionTracing ? V.replaceAll("(?s)\\$fd.*?;", "") : V;}           // Remove tracing if necessary
-
-
-  void generatePcVariableId()                                                                                           // Generate array to map pc to id of variable to be loaded or written
-   {final TreeMap<Integer,Integer>  m = pcVariableId();
-    if (m.size() == 0) return;
-    final int    l = m.lastKey()+1;
-    final int [] a = new int[l];
-    for(int i = 0; i < l; ++i)              a[i] = 0;
-    for (Integer i : m.keySet()) a[i] = m.get(i);
-    defineArrayViaVerilogFunction("pcVariableId", a, -1);
-   }
 
 //D1 Testing                                                                                                            // Test expected output against got output
 
