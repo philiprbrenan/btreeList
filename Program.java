@@ -14,7 +14,7 @@ import java.nio.file.*;
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
  {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
@@ -781,7 +781,6 @@ public class Program extends Test                                               
         case add2 -> { x(); targetInt(targetInt() + I + I);}
         default   -> stop("Op not implemented:", Op);
        }
-say("AAAA", targetInt, targetIntValid);
       jtrace();
       return this;
      }
@@ -2692,8 +2691,7 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    //test_remote(!true);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
