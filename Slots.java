@@ -1808,7 +1808,7 @@ Zero:
            {final Int  k = new Int();
 
             new I()                                                                                                     // Set the key to insert
-             {void        a() {targetInt(keys[Index.i()]); targetIntValid(true);}
+             {void        a() {targetInt(keys[Index.i()]);}
               String      v() {return "targetInt <= keys("+Index.vn()+");";}
               boolean trace() {return false;}
              };
