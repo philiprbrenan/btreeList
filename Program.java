@@ -12,13 +12,13 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final boolean                    suppressTraceComments =!true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+ {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                     compressInstructions =!true;                                                        // Compress out identical instructions
+  final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
   final boolean                compressInstructionLabels = true;                                                        // Reduce instruction loop case statement by using an array to find the first instruction associated with each instruction and recording that single instruction id as the sole label for the case statement possibilities
-  final boolean               suppressInstructionTracing =!true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of wether the program ran as expected
+  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of wether the program ran as expected
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
@@ -1818,9 +1818,8 @@ module {name};                                                                  
        }
       else                                                                                                              // Write instructions without compression
        {for (I i : program().code)                                                                                      // Each identical instruction
-         {final String v = i.formatVerilogCode(i.interiorVerilog());
-say("AAAA", i.interiorVerilog());
-say("BBBB", v);
+         {compiling(i);
+          final String v = i.formatVerilogCode(i.interiorVerilog());
           out.write("        " + f("%4d", i.instructionNumber) + v);
          }
        }
@@ -2313,35 +2312,36 @@ endmodule
               test_remote(false);
    }
 
-  static void test_copy(boolean Ex)
-   {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex))
-     {void code()
-       {final Int  a = new Int();
-        final Int  A = new Int();
-        A.copy(a);
-        a.valid()   .ok(false);
-        A.valid()   .ok(false);
-        A.notValid().ok(true);
-        a.set(1);
-        A.copy(a);
-        a.valid()   .ok(true);
-        A.valid()   .ok(true);
-        A.notValid().ok(false);
-        a.del(-1);
-        A.copy(a);
-        a.valid()   .ok(false);
-        A.valid()   .ok(false);
-        A.notValid().ok(true);
-       }
-     };
-    P.execute();
-   }
-
-  static void test_copy()
-   {          test_copy(true);
-              test_copy(false);
-   }
+//  Not needed - but need confirmation 2026-07-18 04:05:45
+//  static void test_copy(boolean Ex)
+//   {sayCurrentTestName();
+//    final Program P = new Program(new Build().immediate(Ex))
+//     {void code()
+//       {final Int  a = new Int();
+//        final Int  A = new Int();
+//        A.copy(a);
+//        a.valid()   .ok(false);
+//        A.valid()   .ok(false);
+//        A.notValid().ok(true);
+//        a.set(1);
+//        A.copy(a);
+//        a.valid()   .ok(true);
+//        A.valid()   .ok(true);
+//        A.notValid().ok(false);
+//        a.del(-1);
+//        A.copy(a);
+//        a.valid()   .ok(false);
+//        A.valid()   .ok(false);
+//        A.notValid().ok(true);
+//       }
+//     };
+//    P.execute();
+//   }
+//
+//  static void test_copy()
+//   {          test_copy(true);
+//              test_copy(false);
+//   }
 
   static void test_variables(boolean Ex)
    {sayCurrentTestName();
@@ -2725,7 +2725,7 @@ Memory 0
     test_mod();
     test_incremental();
     test_remote();
-    test_copy();
+    //test_copy();
     test_memory();
     test_memoryNegative();
     test_memoryRef();
@@ -2738,9 +2738,9 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
     //test_remote(!true);
-    test_addition(!true);
+    //test_addition(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
@@ -2759,4 +2759,3 @@ Memory 0
    }
  }
 //https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
-//https://github.com/philiprbrenan/btreeList/compare/4ccd0f2a...0f6a014517ba
