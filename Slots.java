@@ -1801,7 +1801,7 @@ Zero:
      {void slotsCode()
        {final Slots         s = this;
         final StringBuilder t = new StringBuilder();
-        defineArrayViaVerilogFunction("keys", keys);
+        verilogArrays().add("keys", keys);
 
         new ForCount(new Int(keys.length))                                                                              // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
