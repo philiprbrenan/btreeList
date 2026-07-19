@@ -9,7 +9,7 @@ import java.util.function.*;
 import java.nio.*;
 import java.nio.file.*;
 
-//D1 Construct                                                                                                          // Develop and test a java program to describe a chip and emulate its operation.
+//D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
  {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
@@ -1257,7 +1257,7 @@ public class Program extends Test                                               
      {program().vtrace = 0;                                                                                             // Count number of trace calls made in instruction
       final String        v = suppressInstructionTracing ? v().replaceAll("\\$fd.*?;", "") : v();                       // Generate verilog and remove tracing if requested
       final StringBuilder s = new StringBuilder();                                                                      // Generated code
-      if (noJump)  s.append(" pc <= pc + 1; ");                                                                         // Next instruction
+      if (noJump)  s.append("pc <= pc + 1; ");                                                                          // Next instruction
       s.append(v);                                                                                                      // Generated code
 
       if (trace())
