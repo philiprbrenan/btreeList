@@ -196,6 +196,17 @@ public class Test                                                               
     return S;
    }
 
+  static String q (String S)                                                                                             // Quote a string
+   {return "\"" + S
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+        + "\"";
+    }
+  static String q(StringBuilder S) {return q(""+S);}                                                                    // Quote a string builder
+
 //D1 Numeric routines                                                                                                   // Numeric routines
 
   static int abs (int i) {return i >= 0 ? +i : -i;}                                                                     // Absolute value of integer
