@@ -25,7 +25,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final static int padLabels = 20, padName = 12, padCR = 16, padVerilog = 64;                                           // Padding for components of the generated verilog copde
+  final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog copde
 
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
   final Stack<Label>                              labels = new Stack<>();                                               // Labels for instructions in this process
@@ -44,7 +44,7 @@ public class Program extends Test                                               
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
   final VerilogArrays                      verilogArrays = new VerilogArrays();                                         // Verilog array definitions
-  final TreeMap<Integer,Integer>               pcConstant = new TreeMap<>();                                             // Each instruction touches at most either the one variable or the one memory location given by this map
+  final TreeMap<Integer,Integer>              pcConstant = new TreeMap<>();                                             // Each instruction touches at most either the one variable or the one memory location given by this map
   private int                                  currentPc = 0;                                                           // Current program counter
   private int                                     jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
   private int                                     vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
@@ -162,6 +162,10 @@ public class Program extends Test                                               
   VerilogArrays            verilogArrays () {return program().verilogArrays;}                                           // Verilog array definitions
 
   void pcConstant(int V) {pcConstant().put(codeSize(), V);}                                                             // Save a constant into the instruction to constant map
+
+  String pName (String Text) {return pad(Text, padName   );}                                                            // Pad Verilog names
+  String pCR (  String Text) {return pad(Text, padCR     );}                                                            // Pad Verilog control register names
+  String pExpr (String Text) {return pad(Text, padVerilog);}                                                            // Pad Verilog expressions
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -350,13 +354,13 @@ public class Program extends Test                                               
         pcConstant(id);                                                                                                 // Id of variable being addressed by these instructions
 
         final I i = new I()                                                                                             // Load id of variable
-         {void   a() {loadId(id);                                           jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
-          String v() {return pad(ri, padCR) + " <= pcConstant_array[pc]; "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id);}
+         {void   a() {loadId(id);                                    jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
+          String v() {return pCR(ri) + " <= pcConstant_array[pc]; "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id);}
          };
 
         new I()                                                                                                         // Load source value
-         {void   a() {loadValue(B.i);                             jTrace(f("%8d "+rv+" %8d",  pc(),  B.i ? 1 : 0));}
-          String v() {return pad(rv, padCR) + " <= b["+ri+"]; " + vTrace(  "%8d "+rv+" %8d", "pc",  "b["+ ri +"]");}
+         {void   a() {loadValue(B.i);                      jTrace(f("%8d "+rv+" %8d",  pc(),  B.i ? 1 : 0));}
+          String v() {return pCR(rv) + " <= b["+ri+"]; " + vTrace(  "%8d "+rv+" %8d", "pc",  "b["+ ri +"]");}
          };
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
@@ -374,8 +378,8 @@ public class Program extends Test                                               
     void S (boolean I)                                                                                                  // Load source constant
      {final int v = I ? 1 : 0;
       new I()
-       {void   a() {sourceBool(I);                                  jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
-        String v() {return pad("sourceBool", padCR) + " <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
+       {void   a() {sourceBool(I);                           jTrace(f("%8d boolLoadConstant %8d",  pc(),   v));}
+        String v() {return pCR("sourceBool") + " <= "+v+"; "+vTrace(  "%8d boolLoadConstant %8d", "pc", ""+v);}
        };
      }
 
@@ -389,14 +393,13 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Bool b = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetBool(); v = targetBoolValid();                  jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,         b.i ? 1 : 0));}
-        String v() {return pad("b[targetBoolId]", padCR) + " <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
+       {void   a() {i = targetBool(); v = targetBoolValid();           jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,           b.i ? 1 : 0));}
+        String v() {return pCR("b[targetBoolId]") + " <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
        };
      }
 
     Bool ex (Ops Op)                                                                                                    // Execute a monadic boolean operation
      {executingCheck();
-      //targetBoolValid(true);
       switch(Op)
        {case flip -> {x(); targetBool(!targetBool());}
         default   -> Test.stop("Op not implemented:", Op);
@@ -407,7 +410,6 @@ public class Program extends Test                                               
 
     Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
      {executingCheck();
-      //targetBoolValid(true);
       switch (Op)
        {case set -> {     targetBool(sourceBool());}
         case del -> {     targetBool(sourceBool()); targetBoolValid(false);}
@@ -451,11 +453,10 @@ public class Program extends Test                                               
       return vtrace(s);                                                                                                 // Trace the operation
      }
 
-
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
      {vtraceInc();
-      return pad("targetBool", padCR)+ " <= "+pad(Value, padVerilog)+
-        "; $fdisplay(traceFile, \"%8d bool %8d = %8d\", pc,          targetBoolId, "+Value+");";
+      return pCR("targetBool")+ " <= "+pExpr(""+Value)+"; "+
+                        vTrace(q("%8d bool %8d = %8d"), "pc",        "targetBoolId", q(Value));
      }
     void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool() ? 1 : 0));}           // Trace a java    boolean operation
 
@@ -467,7 +468,7 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this boolean variable
      {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
-      return pad("b["+id+"]"+n, padName);
+      return pName("b["+id+"]"+n);
      }
 
     Bool ok (boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace and so there will be an empty instruction generated in the verilog to "regulate the service"
@@ -543,7 +544,6 @@ public class Program extends Test                                               
     Int  del (int  I) {return ie(Ops.del , I);}
 
     Int ie (Ops Op)        {T();          new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; W(); return this;} // Execute immediately or create an instruction for machine code to execute later
-//  Int ie (Ops Op, int I) {T(); S(I);    new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
     Int ie (Ops Op, int I) {T(Op); C(I);  new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;} // Selectively loaded target, store constant
     Int ie (Ops Op, Int I) {T();   I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
 
@@ -557,13 +557,13 @@ public class Program extends Test                                               
         pcConstant(id);                                                                                                 // Id of variable being addressed by these instructions
 
         new I()                                                                                                         // Id of integer
-         {void   a() {loadId(id);                                                                  jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
-          String v() {return pad(ri, padCR) + " <= "+pad("pcConstant_array[pc];", padVerilog)+" "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
+         {void   a() {loadId(id);                                                 jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
+          String v() {return pCR(ri) + " <= "+pExpr("pcConstant_array[pc];")+" "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
          };
 
         if (LoadValue) new I()                                                                                          // Value of integer
-         {void   a() {loadValue(I.i);                                                             jTrace(f("%8d LST2 "+rv+" = %8d",  pc(),  I.i));}
-          String v() {return pad(rv, padCR) + " <= "+pad("i["+ri+"];",           padVerilog)+" "+ vTrace(  "%8d LST2 "+rv+" = %8d", "pc",  "i["+ri+"]");}
+         {void   a() {loadValue(I.i);                                jTrace(f("%8d LST2 "+rv+" = %8d",  pc(),  I.i));}
+          String v() {return pCR(rv) + " <= "+pExpr("i["+ri+"]; ") + vTrace(  "%8d LST2 "+rv+" = %8d", "pc",  "i["+ri+"]");}
          };
        }
       LoadSourceOrTarget(Int I, String RegisterId, String RegisterValue) {this(I, RegisterId, RegisterValue, true);}    // Load source or target value via integer id
@@ -574,7 +574,7 @@ public class Program extends Test                                               
 
     abstract class LoadConstant
      {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressability of instructions
-       {final String ac = pad(Register, padCR) + " <= "+pad(""+I, padVerilog)+"; ";                                     // Assign the constant to the source register
+       {final String ac = pCR(Register) + " <= "+pExpr(""+I)+"; ";                                                      // Assign the constant to the source register
         new I()
          {void   a() {load(I);    jTrace(f("%8d "+Register+" constant %8d",  currentPc(), I));}
           String v() {return ac + vTrace(  "%8d "+Register+" constant %8d", "pc",      ""+I);}
@@ -618,8 +618,8 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Int w = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetInt(); v = targetIntValid();                                         jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(),   targetInt()));}
-        String v() {return pad("i[targetIntId]", padCR) + " <= "+pad("targetInt;", padVerilog)+" "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
+       {void   a() {i = targetInt(); v = targetIntValid();                        jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(), targetInt()));}
+        String v() {return pCR("i[targetIntId]") + " <= "+pExpr("targetInt;")+" "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
        };
      }
 
@@ -715,10 +715,11 @@ public class Program extends Test                                               
 
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
      {vtraceInc();
-      return pad("targetInt", padCR) + " <= "+pad(Value+";", padVerilog)+" $fdisplay(traceFile, \"%8d assign targetInt = %8d\", pc,          "+Value+");";
+      return pCR("targetInt") + " <= "+pExpr(Value+";")+ " $fdisplay(traceFile,"+
+                          " \"%8d assign targetInt = %8d\", pc, "         +Value+");";
      }
 
-    void jtrace () {                                                                    jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt()));} // Trace the integer operation in Java
+    void jtrace () {jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt()));}                              // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -794,7 +795,7 @@ public class Program extends Test                                               
 
     String bev (Ops Op, Bool B)                                                                                         // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
-      final String a = pad("sourceInt",padCR), b = pad("source2Int", padCR);
+      final String a = pCR("sourceInt"), b = pCR("source2Int");
       switch(Op)
        {case eq -> s.append(a + " == " + b);
         case ne -> s.append(a + " != " + b);
@@ -839,7 +840,7 @@ public class Program extends Test                                               
 
     String   vn ()                                                                                                      // Verilog name of this variable
      {final String n = suppressNamesInInstructions ? "" : name != null ? "/*"+name+"*/" : "";
-      return pad("i["+id+"]"+n, padName);
+      return pName("i["+id+"]"+n);
      }
 
     Int ok (int Value)                                                                                                  // Check the integer. Ther is no corresponding check in Verilog other than the execution logs matching so there will be an empty instruction generated in the verilog to "regulate the service"
@@ -1194,9 +1195,9 @@ public class Program extends Test                                               
   String dumpMemory () {return program().unitMemory.dumpAsDecimal();}                                                   // Dump memory in decimal format
 
   String saveMemories ()                                                                                                // Save all the memories to an array of strings
-   {final StringJoiner j = new StringJoiner("\", \"");
-    for (UnitMemory m : memories) j.add(m.save());
-    return "{\""+j+"\"}";
+   {final StringJoiner j = new StringJoiner(", ");
+    for (UnitMemory m : memories) j.add(q(m.save()));
+    return "{"+j+"}";
    }
 
   void reloadMemories (String[]Dump)                                                                                    // Reload saved memories
@@ -1221,14 +1222,14 @@ public class Program extends Test                                               
       subInc();                                                                                                         // Count the number of instructions associated with each method
       noJump = NoJump;                                                                                                  // Ability to jump
       if (immediate())                                                                                                  // Execute instruction immediately via interpretation if in immediate execution mode
-       {executing(this);                                                                                     // Show that we are executing an instruction
+       {executing(this);                                                                                                // Show that we are executing an instruction
         program().jtrace = 0;
         a();
         if (trace() && program().jtrace != traces())                                                                    // Check traces written if tracing
          {stop("Wrong number of java traces generated, got: ", program().jtrace,
                "expected:", traces(), "at:", instructionLocation());
          }
-        executing(null);                                                                                     // Show that we are no longer executing an instruction
+        executing(null);                                                                                                // Show that we are no longer executing an instruction
        }
       else  {program().code.push(this);}                                                                                // Save instruction in program for later execution if in delayed == non immediate execution mode
      }
@@ -1266,7 +1267,7 @@ public class Program extends Test                                               
                "expected:", traces(), "at:", instructionLocation());
          }
         if (program().vtrace == 0 && !suppressInstructionTracing)                                                       // Write current location to verilog trace log if no trace was supplied and tracing is not being suppressed
-         {s.append(vTrace("%8d Location: %s", "pc", "\""+instructionLocationAsComment()+"\""));
+         {s.append(vTrace("%8d Location: %s", "pc", q(instructionLocationAsComment())));
          }
        }
       return ""+s;                                                                                                      // Generated code
@@ -1274,7 +1275,7 @@ public class Program extends Test                                               
 
     String formatVerilogCode (String Verilog)                                                                           // Verilog code for an instruction
      {final StringBuilder s = new StringBuilder();
-      s.append(" : begin "+pad(Verilog, padVerilog));                                                                   // Instruction numbers followed by code
+      s.append(" : begin "+pExpr(Verilog));                                                                             // Instruction numbers followed by code
       s.append(" end");
       s.append(instructionLocationAsComment());                                                                         // Trace java program location that generated the first instance of the instruction so that the verilog code can be tied back to the java code
       s.append("\n");
@@ -1300,7 +1301,7 @@ public class Program extends Test                                               
    {vtraceInc();
     if (!compiling().trace()) return "";                                                                                // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
-    s.append("$fdisplay(traceFile, \""+Format+"\"");
+    s.append("$fdisplay(traceFile, "+q(Format));
     for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
     s.append(");");
     return ""+s;
@@ -1520,11 +1521,11 @@ module {name};                                                                  
       if (true)                                                                                                         // State machine to sequence the initialization of memories
        {int state = 0;
         out.write("  typedef enum integer {\n");                                                                        // State machine to initialize each memory and the variables used by the main program
-        for(UnitMemory          m : memories                ) out.write("    state_"+pad("clearMemory_"+m.i(), padName)+" = "+(state++)+",\n"); // State to clear each memory
+        for(UnitMemory          m : memories                ) out.write("    state_"+pName("clearMemory_"+m.i())+" = "+(state++)+",\n"); // State to clear each memory
         for(VerilogArrays.Array a : verilogArrays().arrays()) out.write(a.state(state++));                              // Define verilog arrays
-        out.write("    state_"+pad("clearInts", padName)+" = "+(state++)+",\n");                                        // State for clearing integers
-        out.write("    state_"+pad("clearBool", padName)+" = "+(state++)+",\n");                                        // States for clearing bools
-        out.write("    state_"+pad("execute",   padName)+" = "+(state++)+"\n");                                         // States for executing code
+        out.write("    state_"+pName("clearInts")+" = "+(state++)+",\n");                                               // State for clearing integers
+        out.write("    state_"+pName("clearBool")+" = "+(state++)+",\n");                                               // States for clearing bools
+        out.write("    state_"+pName("execute")  +" = "+(state++)+ "\n");                                               // States for executing code
         out.write("   } State;\n");
        }
 
@@ -1718,11 +1719,6 @@ module {name};                                                                  
          verilogArrays.firstState()));
         out.write(   dumpVerilogMemoryInDecimal(m)+"\n");
        }
-
-//      if (compressInstructionLabels)                                                                                  // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
-//       {verilogArrays().add("pcToMatchSet",    instructionMatches.pcToMatch(), -1);
-//       }
-//    verilogArrays()  .add("pcConstant",       pcConstant(),                    -1);                                   // Generate an array to map the instruction number to the id of variable to perform a memory access in that instruction. There is never more than one such operation per instruction so a single array is sufficient for all such operations
 
       /*Clear variables*/ out.write(dumpVerilogVariables()+"\n");                                                       // Dump verilog variables task
 
@@ -1939,7 +1935,7 @@ endmodule
         return ""+s;
        }
 
-      String state ()          {return "state_"+pad(name, padName);}                                                    // State name
+      String state ()          {return "state_"+pName(name);}                                                         // State name
       String state (int State) {return "    "+state()+" = "+State+",\n";}                                               // State definition to sequence memory initialization
 
       String nextState ()                                                                                               // Name of next state
