@@ -1651,7 +1651,7 @@ module {name};                                                                  
 """);
       else                                                                                                              // Compress instruction labels
       /*Execute case*/out.write("""
-      case(pcToMatchSet(pc))
+      case(pcToMatchSet_array[pc])
 """);
 
       if (compressInstructions)                                                                                         // Compress instructions
