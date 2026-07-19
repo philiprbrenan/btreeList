@@ -280,15 +280,15 @@ final public class BitSet extends Program                                       
 
   Int       baseZero ()        {final Int r = new Int("baseZero" );         r.T();          new I() {void a() {jt(r, base_zero      ()           );} String v() {return vt(r, ""+posZero(0));}};            r.W(); return r;} //N Position in the current row
   Int        baseOne ()        {final Int r = new Int("baseOne"  );         r.T();          new I() {void a() {jt(r, base_one       ()           );} String v() {return vt(r, ""+posOne (0));}};            r.W(); return r;} //N Position in the current row
-  Int       pos_zero (Int Pos) {final Int r = new Int("pos_zero" );         r.T(); Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt()]);} String v() {return vt(r, pzVerilog +"(sourceInt)");}}; r.W(); return r;} // Position in the current row in the zeros tree
-  Int        pos_one (Int Pos) {final Int r = new Int("pos_one"  );         r.T(); Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt()]);} String v() {return vt(r, poVerilog +"(sourceInt)");}}; r.W(); return r;} //N Position in the current row in the ones tree
+  Int       pos_zero (Int Pos) {final Int r = new Int("pos_zero" );         r.T(); Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt()]);} String v() {return vt(r, pzVerilog +"_array[sourceInt]");}}; r.W(); return r;} // Position in the current row in the zeros tree
+  Int        pos_one (Int Pos) {final Int r = new Int("pos_one"  );         r.T(); Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt()]);} String v() {return vt(r, poVerilog +"_array[sourceInt]");}}; r.W(); return r;} //N Position in the current row in the ones tree
 
-  Int  limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperOne [sourceInt()]);} String v() {return vt(r, luoVerilog+"(sourceInt)");}}; r.W(); return r;} // Upper limit of the current row in the ones tree
-  Int limitUpperZero (Int Pos) {final Int r = new Int("zero upper limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperZero[sourceInt()]);} String v() {return vt(r, luzVerilog+"(sourceInt)");}}; r.W(); return r;} // Upper limit of the current row in the zeros tree
-  Int  limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerOne [sourceInt()]);} String v() {return vt(r, lloVerilog+"(sourceInt)");}}; r.W(); return r;} // Lower limit of the current row in the ones tree
-  Int limitLowerZero (Int Pos) {final Int r = new Int("zero lower limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerZero[sourceInt()]);} String v() {return vt(r, llzVerilog+"(sourceInt)");}}; r.W(); return r;} //N Lower limit of the current row in the zeros tree
-  Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      r.T(); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the ones tree
-  Int     heightZero (Int Pos) {final Int r = new Int("zero height");       r.T(); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzVerilog +"(sourceInt)");}}; r.W(); return r;} // Height of the specified position in the zeros tree
+  Int  limitUpperOne (Int Pos) {final Int r = new Int("one  upper limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperOne [sourceInt()]);} String v() {return vt(r, luoVerilog+"_array[sourceInt]");}}; r.W(); return r;} // Upper limit of the current row in the ones tree
+  Int limitUpperZero (Int Pos) {final Int r = new Int("zero upper limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsUpperZero[sourceInt()]);} String v() {return vt(r, luzVerilog+"_array[sourceInt]");}}; r.W(); return r;} // Upper limit of the current row in the zeros tree
+  Int  limitLowerOne (Int Pos) {final Int r = new Int("one  lower limit" ); r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerOne [sourceInt()]);} String v() {return vt(r, lloVerilog+"_array[sourceInt]");}}; r.W(); return r;} // Lower limit of the current row in the ones tree
+  Int limitLowerZero (Int Pos) {final Int r = new Int("zero lower limit");  r.T(); Pos.S(); new I() {void a() {jt(r, limitsLowerZero[sourceInt()]);} String v() {return vt(r, llzVerilog+"_array[sourceInt]");}}; r.W(); return r;} //N Lower limit of the current row in the zeros tree
+  Int      heightOne (Int Pos) {final Int r = new Int("one  height" );      r.T(); Pos.S(); new I() {void a() {jt(r, heightOne      [sourceInt()]);} String v() {return vt(r, hoVerilog +"_array[sourceInt]");}}; r.W(); return r;} // Height of the specified position in the ones tree
+  Int     heightZero (Int Pos) {final Int r = new Int("zero height");       r.T(); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzVerilog +"_array[sourceInt]");}}; r.W(); return r;} // Height of the specified position in the zeros tree
 
   void   jt(Int R, int    I) {targetInt(I); targetIntValid(true); jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}   // Java trace of array look ups
   String vt(Int R, String I) {return "targetInt <= "+I+"; " +     vTrace(  "%8d "+R.name+" = %8d", "pc",        I);}    // Java trace of array look ups
@@ -1734,7 +1734,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();                                                                                                         // Run baseline tests.
+   {//oldTests();
+    test_prevNext();                                                                                                      // Run baseline tests.
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
