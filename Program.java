@@ -17,15 +17,15 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
-  final boolean                compressInstructionLabels = true;                                                        // Reduce instruction loop case statement by using an array to find the first instruction associated with each instruction and recording that single instruction id as the sole label for the case statement possibilities
-  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of wether the program ran as expected
+  final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
+  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog copde
+  final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog code
 
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
   final Stack<Label>                              labels = new Stack<>();                                               // Labels for instructions in this process
@@ -510,7 +510,7 @@ public class Program extends Test                                               
     Int (String Name, int I) {this(I); name = Name;}
     Int (String Name, Int I) {this(I); name = Name;}
 
-    Int ()           {ai(); del(-1);        ints().push(this);}                                                         // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction sequences for java and Verilog match. Recall that that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the algorithm is correct. The integers used in the java version do carry a valid flag to assist in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
+    Int ()           {ai(); del(-1);        ints().push(this);}                                                         // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the java version . The integers used in the java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
 
     Int (int I)      {ai(); ie(Ops.set, I); ints().push(this);}
     Int (Int I)      {ai(); ie(Ops.set, I); ints().push(this);}
@@ -547,7 +547,7 @@ public class Program extends Test                                               
      {T(Op);                                                                                                            // Instruction to load target details if needed for the operation
       final I i = new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}};                                       // Perform operation
       W();                                                                                                              // Write results back into a variable
-      pcConstant(i, I);                                                                                                 // Save conatntused in operation in map from instructions to constants used
+      pcConstant(i, I);                                                                                                 // Record the constant used in this operation in the map from instructions to constants used
       return this;                                                                                                      // The current integer
      }
 
@@ -576,7 +576,7 @@ public class Program extends Test                                               
      }
 
     abstract class LoadConstant
-     {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressability of instructions
+     {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressibility of instructions
        {final String ac = pCR(Register) + " <= "+pExpr(""+I+";")+" ";                                                   // Assign the constant to the source register
         new I()
          {void   a() {load(I);    jTrace(f("%8d "+Register+" constant %8d",  currentPc(), I));}
@@ -584,7 +584,7 @@ public class Program extends Test                                               
          };
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
-      abstract void load(int C);                                                                                        // Override to load the constantalue of the integer variable being loaded into a java variable
+      abstract void load(int C);                                                                                        // Override to load the constant value of the integer variable being loaded into a java variable
      }
 
     void S ()                                                                                                           // Save source delta and value
@@ -846,7 +846,7 @@ public class Program extends Test                                               
       return pName("i["+id+"]"+n);
      }
 
-    Int ok (int Value)                                                                                                  // Check the integer. Ther is no corresponding check in Verilog other than the execution logs matching so there will be an empty instruction generated in the verilog to "regulate the service"
+    Int ok (int Value)                                                                                                  // Check the integer. There is no corresponding check in Verilog other than the execution logs matching so there will be an empty instruction generated in the verilog to "regulate the service"
      {final Int got = this;
       new I()
        {void        a()
@@ -858,7 +858,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    Int ok (Int Value)                                                                                                  // Test an Integer. The value expected and the value got must be valid during the java execution because the verilog execution deliberately removes this information on the basis that the java code is definitive and so if the verilog race matches the java trace the verilog code is working correctly. The purpose of the validity bit is to internally track whether the integer was ever set during program execution, it is not to convey application information. If an integer with an attached validity bit is required in application logic then Bint should be used.  This features does not exist in the Verilog code and so there will be an empty instruction generated in the verilog to "regulate the service"
+    Int ok (Int Value)                                                                                                  // Test an Integer. The value expected and the value got must be valid during the java execution because the verilog execution deliberately removes this information on the basis that the java code is definitive and so if the verilog trace matches the java trace the verilog code is working correctly. The purpose of the validity bit is to internally track whether the integer was ever set during program execution, it is not to convey application information. If an integer with an attached validity bit is required in application logic then Bint should be used.  This feature does not exist in the Verilog code and so there will be an empty instruction generated in the verilog to "regulate the service"
      {final Int got = this;
       if (immediate() && !Value.v) stop("Invalid expected Int has been supplied for testing");
       new I()
@@ -1319,7 +1319,7 @@ public class Program extends Test                                               
    }
 
   void initializeJavaMemory()                                                                                           // Initialize java memory
-   {for(UnitMemory m : memories) for (int i = 0, N = m.size(); i < N; ++i) m.units[i] = 0;                              // Clear all of memeory to zero
+   {for(UnitMemory m : memories) for (int i = 0, N = m.size(); i < N; ++i) m.units[i] = 0;                              // Clear all of memory to zero
    }
 
   void initializeJavaVars()                                                                                             // Initialize java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
@@ -1429,7 +1429,7 @@ public class Program extends Test                                               
   void variableNotSet (String Type, String Name)                                                                        // Variable not yet set message
    {final I i = executing();
     final String m = (Name != null ? '"'+Name+'"'+", " : "") + "has not been set yet";
-    if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possibe
+    if (i != null) stop(Type, m, i.traceBack, "====");                                                                  // With traceback on failing instruction if possible
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
@@ -1641,7 +1641,7 @@ module {name};                                                                  
   end
 """);
 
-      for(UnitMemory m : memories)                                                                                      // Control registers for each memeory
+      for(UnitMemory m : memories)                                                                                      // Control registers for each memory
        {out.write("  integer "+ m.     vReadBool() + ";\n");                                                            // Boolean read from memory
         out.write("  integer "+ m.    vWriteBool() + ";\n");                                                            // Boolean to write into memory
         out.write("  integer "+ m.      vReadInt() + ";\n");                                                            // Integer read from memory
