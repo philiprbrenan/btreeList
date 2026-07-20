@@ -111,8 +111,6 @@ public class Program extends Test                                               
    }
 
   Program maxSteps (int MaxSteps) {program().maxSteps = MaxSteps; return this;}                                         // Set number of steps
-  void jtraceInc() {++program().jtrace;}                                                                                // Count trace records written
-  void vtraceInc() {++program().vtrace;}
 
   I compiling()    {return program().compiling;}                                                                        // Instruction currently being compiled
   I executing()    {return program().executing;}                                                                        // Instruction currently being executed
@@ -454,8 +452,7 @@ public class Program extends Test                                               
      }
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
-     {vtraceInc();
-      return pCR("targetBool")+ " <= "+pExpr(""+Value)+"; "+
+     {return pCR("targetBool")+ " <= "+pExpr(""+Value)+"; "+
                         vTrace(q("%8d bool %8d = %8d"), "pc",        "targetBoolId", q(Value));
      }
     void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool() ? 1 : 0));}           // Trace a java    boolean operation
@@ -557,13 +554,15 @@ public class Program extends Test                                               
         pcConstant(id);                                                                                                 // Id of variable being addressed by these instructions
 
         new I()                                                                                                         // Id of integer
-         {void   a() {loadId(id);                                                 jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
-          String v() {return pCR(ri) + " <= "+pExpr("pcConstant_array[pc];")+" "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
+         {final String c = pExpr("pcConstant_array[pc]");
+          void   a() {loadId(id);                     jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
+          String v() {return pCR(ri) + " <= "+c+"; "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
          };
 
         if (LoadValue) new I()                                                                                          // Value of integer
-         {void   a() {loadValue(I.i);                                jTrace(f("%8d LST2 "+rv+" = %8d",  pc(),  I.i));}
-          String v() {return pCR(rv) + " <= "+pExpr("i["+ri+"]; ") + vTrace(  "%8d LST2 "+rv+" = %8d", "pc",  "i["+ri+"]");}
+         {final String v = pExpr("i["+ri+"]");
+          void   a() {loadValue(I.i);                jTrace(f("%8d LST2 "+rv+" = %8d",  pc(),  I.i));}
+          String v() {return pCR(rv)+" <= "+v+"; " + vTrace(  "%8d LST2 "+rv+" = %8d", "pc",  "i["+ri+"]");}
          };
        }
       LoadSourceOrTarget(Int I, String RegisterId, String RegisterValue) {this(I, RegisterId, RegisterValue, true);}    // Load source or target value via integer id
@@ -619,7 +618,7 @@ public class Program extends Test                                               
      {final Int w = this;
       new I()                                                                                                           // Load value
        {void   a() {i = targetInt(); v = targetIntValid();                        jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(), targetInt()));}
-        String v() {return pCR("i[targetIntId]") + " <= "+pExpr("targetInt;")+" "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
+        String v() {return pCR("i[targetIntId]") + " <= "+pExpr("targetInt")+"; "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
        };
      }
 
@@ -714,9 +713,7 @@ public class Program extends Test                                               
      }
 
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {vtraceInc();
-      return pCR("targetInt") + " <= "+pExpr(Value+";")+ " $fdisplay(traceFile,"+
-                          " \"%8d assign targetInt = %8d\", pc, "         +Value+");";
+     {return pCR("targetInt") + " <= "+pExpr(Value+";")+ vTrace(q("%8d assign targetInt = %8d"), "pc", q(Value));
      }
 
     void jtrace () {jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt()));}                              // Trace the integer operation in Java
@@ -943,9 +940,11 @@ public class Program extends Test                                               
     int size()  {return units.length;}                                                                                  // Size of memory
     String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
     String n () {return "m_"+id;}                                                                                       // Name of memory
+    String n (String Index)         {return n() + "["+Index+"]";}                                                       // Name of indexed memory
+    String n (String I1, String I2) {return n() + "["+I1+"]["+I2+"]";}                                                  // Name of indexed memory
 
-    void im(Int I)  {pcConstant().put(compiling().instructionNumber, I.id);}                                             // Save the integer variable used for this memory access at this instruction
-    void im(Bool B) {pcConstant().put(compiling().instructionNumber, B.id);}                                             // Save the boolean variable used for this memory access at this instruction
+    void im(Int I)  {pcConstant().put(compiling().instructionNumber, I.id);}                                            // Save the integer variable used for this memory access at this instruction
+    void im(Bool B) {pcConstant().put(compiling().instructionNumber, B.id);}                                            // Save the boolean variable used for this memory access at this instruction
 
     String      vReadBool()      {return n() + "_readBool     ";}                                                       // Boolean read from memory
     String     vWriteBool()      {return n() + "_writeBool    ";}                                                       // Boolean to write into memory
@@ -956,30 +955,30 @@ public class Program extends Test                                               
     String vWriteIntIndex()      {return n() + "_writeIntIndex";}                                                       // Index at which to write an integer into memory
     String vWriteBitIndex()      {return n() + "_writeBitIndex";}                                                       // Index within an integer at which to set a bit to represent a boolean
 
-    String       readIntV()      {vtraceInc(); return vReadInt () + "<= "+n()+"["+vReadIntIndex()+"];                            $fdisplay(traceFile, \"%8d readInt       %8d\", pc, "    +n()+"["+vReadIntIndex ()                                          +"]);";}
-    String      readBoolV()      {vtraceInc(); return vReadBool() + "<= "+n()+"["+vReadIntIndex()+"]["+vReadBitIndex()+"];       $fdisplay(traceFile, \"%8d readBool      %8d\", pc, "    +n()+"["+vReadIntIndex ()+"]["+vReadBitIndex ()                    +"]);";}
-    String      writeIntV()      {vtraceInc(); return n()+"["+vWriteIntIndex()+"]                       <= " + vWriteInt () + "; $fdisplay(traceFile, \"%8d writeInt      %8d<%8d\", pc, "+n()+"["+vWriteIntIndex()+"],"+vWriteInt     ()                    + ");";}
-    String     writeBoolV()      {vtraceInc(); return n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"] <= " + vWriteBool() + "; $fdisplay(traceFile, \"%8d writeBool     %8d<%8d\", pc, "+n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"]," + vWriteBool()+ ");";}
-    String  readIntIndexV(Int I) {vtraceInc(); im(I); return vReadIntIndex () + "<= i[pcConstant_array[pc]];                     $fdisplay(traceFile, \"%8d readIntIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
-    String  readBitIndexV(Int I) {vtraceInc(); im(I); return vReadBitIndex () + "<= i[pcConstant_array[pc]];                     $fdisplay(traceFile, \"%8d readBitIndex  %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
-    String writeIntIndexV(Int I) {vtraceInc(); im(I); return vWriteIntIndex() + "<= i[pcConstant_array[pc]];                     $fdisplay(traceFile, \"%8d writeIntIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
-    String writeBitIndexV(Int I) {vtraceInc(); im(I); return vWriteBitIndex() + "<= i[pcConstant_array[pc]];                     $fdisplay(traceFile, \"%8d writeBitIndex %8d=%8d\", pc, "+I.id+", i["+I.id+"]);";}
+    String       readIntV()      {return vReadInt () + "<= "+n()+"["+vReadIntIndex()+"];                            "+              vTrace(q("%8d readInt       %8d"),     "pc", n(vReadIntIndex ())                                 );}
+    String      readBoolV()      {return vReadBool() + "<= "+n()+"["+vReadIntIndex()+"]["+vReadBitIndex()+"];       "+              vTrace(q("%8d readBool      %8d"),     "pc", n(vReadIntIndex (),  vReadBitIndex ())              );}
+    String      writeIntV()      {return n()+"["+vWriteIntIndex()+"]                       <= " + vWriteInt () + "; "+              vTrace(q("%8d writeInt      %8d<%8d"), "pc", n(vWriteIntIndex()), vWriteInt     ()               );}
+    String     writeBoolV()      {return n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"] <= " + vWriteBool() + "; "+              vTrace(q("%8d writeBool     %8d<%8d"), "pc", n(vWriteIntIndex(),  vWriteBitIndex()), vWriteBool());}
+    String  readIntIndexV(Int I) {im(I); return vReadIntIndex () + "<= i[pcConstant_array[pc]];                     "+              vTrace(q("%8d readIntIndex  %8d=%8d"), "pc", ""+I.id, I.vn());}
+    String  readBitIndexV(Int I) {im(I); return vReadBitIndex () + "<= i[pcConstant_array[pc]];                     "+              vTrace(q("%8d readBitIndex  %8d=%8d"), "pc", ""+I.id, I.vn());}
+    String writeIntIndexV(Int I) {im(I); return vWriteIntIndex() + "<= i[pcConstant_array[pc]];                     "+              vTrace(q("%8d writeIntIndex %8d=%8d"), "pc", ""+I.id, I.vn());}
+    String writeBitIndexV(Int I) {im(I); return vWriteBitIndex() + "<= i[pcConstant_array[pc]];                     "+              vTrace(q("%8d writeBitIndex %8d=%8d"), "pc", ""+I.id, I.vn());}
 
-    void         readIntJ()      {readInt  = units[readIntIndex];                                                                             jTrace(f("%8d readInt       %8d",     pc(), readInt          ));}
-    void        readBoolJ()      {readBool = getBit(units[readIntIndex], readBitIndex);                                                       jTrace(f("%8d readBool      %8d",     pc(), readBool  ? 1 : 0));}
-    void        writeIntJ()      {final int i = writeIntIndex, p = units[i]; units[i] = writeInt;                                             jTrace(f("%8d writeInt      %8d<%8d", pc(), p, writeInt));}
-    void       writeBoolJ()      {final int i = writeIntIndex, b = writeBitIndex, p = units[i]; units[i] = setBit(p, b, writeBool);           jTrace(f("%8d writeBool     %8d<%8d", pc(), getBit(p, b) ? 1 : 0, writeBool ? 1 : 0));}
-    void    readIntIndexJ(Int I) {readIntIndex  = I.i();                                                                                      jTrace(f("%8d readIntIndex  %8d=%8d", pc(), I.id, I.i()      ));}
-    void    readBitIndexJ(Int I) {readBitIndex  = I.i();                                                                                      jTrace(f("%8d readBitIndex  %8d=%8d", pc(), I.id, I.i()      ));}
-    void   writeIntIndexJ(Int I) {writeIntIndex = I.i();                                                                                      jTrace(f("%8d writeIntIndex %8d=%8d", pc(), I.id, I.i()      ));}
-    void   writeBitIndexJ(Int I) {writeBitIndex = I.i();                                                                                      jTrace(f("%8d writeBitIndex %8d=%8d", pc(), I.id, I.i()      ));}
+    void         readIntJ()      {readInt  = units[readIntIndex];                                                                   jTrace(f("%8d readInt       %8d",       pc(), readInt          ));}
+    void        readBoolJ()      {readBool = getBit(units[readIntIndex], readBitIndex);                                             jTrace(f("%8d readBool      %8d",       pc(), readBool  ? 1 : 0));}
+    void        writeIntJ()      {final int i = writeIntIndex, p = units[i]; units[i] = writeInt;                                   jTrace(f("%8d writeInt      %8d<%8d",   pc(), p, writeInt));}
+    void       writeBoolJ()      {final int i = writeIntIndex, b = writeBitIndex, p = units[i]; units[i] = setBit(p, b, writeBool); jTrace(f("%8d writeBool     %8d<%8d",   pc(), getBit(p, b) ? 1 : 0, writeBool ? 1 : 0));}
+    void    readIntIndexJ(Int I) {readIntIndex  = I.i();                                                                            jTrace(f("%8d readIntIndex  %8d=%8d",   pc(),   I.id, I.i()));}
+    void    readBitIndexJ(Int I) {readBitIndex  = I.i();                                                                            jTrace(f("%8d readBitIndex  %8d=%8d",   pc(),   I.id, I.i()));}
+    void   writeIntIndexJ(Int I) {writeIntIndex = I.i();                                                                            jTrace(f("%8d writeIntIndex %8d=%8d",   pc(),   I.id, I.i()));}
+    void   writeBitIndexJ(Int I) {writeBitIndex = I.i();                                                                            jTrace(f("%8d writeBitIndex %8d=%8d",   pc(),   I.id, I.i()));}
 
     int pc() {return currentPc();}
 
     int     setBit(int X, int I, boolean V) {return  X & ~(1 << I) | (V ? 1 : 0) << I;}                                 // Set a bit in an integer
     boolean getBit(int X, int I)            {return (X >> I & 1) != 0;}                                                 // Get a bit from an integer
 
-    String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memeory in decimal
+    String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memory in decimal
 
     UnitMemory copy (UnitMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
      {subStart("Program.UnitMemory.copy");
@@ -1000,8 +999,8 @@ public class Program extends Test                                               
             String v() {return writeIntIndexV(t);}
            };
           new I()                                                                                                       // Set write from read
-           {void   a() {writeInt = SourceMemory.readInt;                                                   jTrace(f("%8d writeInt=readInt %8d",  pc(), writeInt));}
-            String v() {vtraceInc(); return vWriteInt() + " <= "+SourceMemory.vReadInt() + "; $fdisplay(traceFile, \"%8d writeInt=readInt %8d\", pc, "+SourceMemory.vReadInt()+ ");";}
+           {void   a() {writeInt = SourceMemory.readInt;                           jTrace(f("%8d writeInt=readInt %8d",  pc(), writeInt));}
+            String v() {return vWriteInt() + " <= "+SourceMemory.vReadInt() + "; "+vTrace(q("%8d writeInt=readInt %8d"), "pc", q(SourceMemory.vReadInt()));}
            };
           new I()                                                                                                       // Write into target memory
            {void   a() {       writeIntJ();}
@@ -1020,8 +1019,8 @@ public class Program extends Test                                               
         String v() {return writeIntIndexV(Index);}
        };
       new I()                                                                                                           // Set write from read
-       {void   a() {writeInt = 0;                                          jTrace(f("%8d writeInt=0",  pc()));}
-        String v() {vtraceInc(); return vWriteInt() + " <= 0; $fdisplay(traceFile, \"%8d writeInt=0\", pc);";}
+       {void   a() {writeInt = 0;                  jTrace(f("%8d writeInt=0",   pc()));}
+        String v() {return vWriteInt() + " <= 0; "+vTrace(q("%8d writeInt=0"), "pc"  );}
        };
       new I()                                                                                                           // Write into target memory
        {void   a() {       writeIntJ();}
@@ -1056,8 +1055,8 @@ public class Program extends Test                                               
         String v() {return readIntV();}
        };
       new I()                                                                                                           // Set target index
-       {void   a() {r.i = readInt; r.v = true;                                                          jTrace(f("%8d ReadInt from Memory %8d = %8d",  pc(), r.id,                   I.id));}
-        String v() {vtraceInc(); im(r); return "i[pcConstant_array[pc]] <= "+vReadInt()+"; $fdisplay(traceFile, \"%8d ReadInt from Memory %8d = %8d\", pc,   pcConstant_array[pc], "+I.id+");";}
+       {void   a() {r.i = readInt; r.v = true;                                  jTrace(f("%8d ReadInt from Memory %8d = %8d",  pc(),   r.id,                     I.id));}
+        String v() {im(r); return "i[pcConstant_array[pc]] <= "+vReadInt()+"; "+vTrace(q("%8d ReadInt from Memory %8d = %8d"), "pc",  "pcConstant_array[pc]", ""+I.id);}
        };
       return r;
      }
@@ -1077,8 +1076,8 @@ public class Program extends Test                                               
         String v() {return readBoolV();}
        };
       new I()                                                                                                           // Set target index
-       {void   a() {r.i = readBool; r.v = true;                                                          jTrace(f("%8d ReadBool from Memory %8d = %8d",  pc(), r.id,                   readBool ? 1 : 0));}
-        String v() {vtraceInc(); im(r); return "b[pcConstant_array[pc]] <= "+vReadBool()+"; $fdisplay(traceFile, \"%8d ReadBool from Memory %8d = %8d\", pc,   pcConstant_array[pc], "+vReadBool()+");";}
+       {void   a() {r.i = readBool; r.v = true;                                  jTrace(f("%8d ReadBool from Memory %8d = %8d",   pc(),   r.id,                   readBool ? 1 : 0));}
+        String v() {im(r); return "b[pcConstant_array[pc]] <= "+vReadBool()+"; "+vTrace(q("%8d ReadBool from Memory %8d = %8d"), "pc",   "pcConstant_array[pc]", vReadBool());}
        };
       return r;
      }
@@ -1091,8 +1090,8 @@ public class Program extends Test                                               
         String v() {im(I); return writeIntIndexV(I);}
        };
       new I()                                                                                                           // Read from source integer
-       {void   a() {final int p = writeInt; writeInt = J.i();                                          jTrace(f("%8d writeInt2 %8d = %8d < %8d",  pc(),  writeIntIndex,          J.i,          p));}
-        String v() {vtraceInc(); im(J); return vWriteInt() + "<= i[pcConstant_array[pc]]; $fdisplay(traceFile, \"%8d writeInt2 %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", i["+J.id + "], "+vWriteInt()+ ");";}
+       {void   a() {final int p = writeInt; writeInt = J.i();                  jTrace(f("%8d writeInt2 %8d = %8d < %8d",  pc(),  writeIntIndex,         J.i,      p));}
+        String v() {im(J); return vWriteInt() + "<= i[pcConstant_array[pc]]; "+vTrace(q("%8d writeInt2 %8d = %8d < %8d"), "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
        };
       new I()                                                                                                           // Write source integer value into target memory at indexed location
        {void   a() {       writeIntJ();}
@@ -1111,8 +1110,8 @@ public class Program extends Test                                               
         String v() {im(J); return writeBitIndexV(J);}
        };
       new I()                                                                                                           // Set write from read
-       {void   a() {writeBool = K.b();                                                                  jTrace(f("%8d writeBool2 %8d, %8d = %8d < %8d",  pc(),  writeIntIndex,         writeBitIndex,          K.i ? 1 : 0,  writeBool ? 1 : 0));}
-        String v() {vtraceInc(); im(K); return vWriteBool() + "<= b[pcConstant_array[pc]]; $fdisplay(traceFile, \"%8d writeBool2 %8d, %8d = %8d < %8d\", pc, "+vWriteIntIndex()+ ", "+vWriteBitIndex()+ ", b["+K.id + "], b["+K.id + "]);";}
+       {void   a() {writeBool = K.b();                                          jTrace(f("%8d writeBool2 %8d, %8d = %8d < %8d",  pc(),  writeIntIndex,    writeBitIndex,        K.i ? 1 : 0,  writeBool ? 1 : 0));}
+        String v() {im(K); return vWriteBool() + "<= b[pcConstant_array[pc]]; "+vTrace(q("%8d writeBool2 %8d, %8d = %8d < %8d"), "pc", vWriteIntIndex(), vWriteBitIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
       new I()                                                                                                           // Write into memory
        {void   a() {       writeBoolJ();}
@@ -1291,14 +1290,14 @@ public class Program extends Test                                               
 
   void appendJavaTrace(String Message) {appendFile(javaTraceFile(), Message);}                                          // Append to the java trace file
   void jTrace (String Message)                                                                                          // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
-   {jtraceInc();
+   {++program().jtrace;                                                                                                 // Count trace records written
     if (program().suppressInstructionTracing) return;                                                                   // Suppress instruction tracing
     if (!executing().trace()) return;                                                                                   // Not tracing this instruction
     appendJavaTrace(Message+"\n");                                                                                      // Write tracing message
    }
 
   String vTrace (String Format, String...Message)                                                                       // Generate verilog code to write a message to the verilog trace log
-   {vtraceInc();
+   {++program().vtrace;
     if (!compiling().trace()) return "";                                                                                // Suppress tracing for this instruction
     final StringBuilder s = new StringBuilder();
     s.append("$fdisplay(traceFile, "+q(Format));
@@ -1405,7 +1404,7 @@ public class Program extends Test                                               
         s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} ./{n}",                             // Construct command
                             "f", verilogTestFolder(),
                             "n", currentTestNameSuffix(),
-                            "t", github_actions ? "" : "timeout 1m "));
+                            "t", github_actions ? "" : "timeout 10m "));
         say(s);
         final ExecCommand x = new ExecCommand(s);
         say(x.out);
@@ -1678,8 +1677,9 @@ module {name};                                                                  
        }
 
       if (true)                                                                                                         // Instruction reduction statistics
-       {final int m = instructionMatches.sequence.size(), c = code.size(), p = 100*(c-m)/c;
-        say(f("Instruction reduction to: %4d, percent: %4d", m, p));
+       {final int m = instructionMatches.sequence.size(), c = code.size();
+        final double p = 100 * (c - m) / (double)c;
+        say(f("Instruction reduction to: %4d, percent: %5.2f", m, p));
        }
 
       /* Execute default*/out.write("""
@@ -1794,7 +1794,7 @@ endmodule
       $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
 """, "name", i.name, "id", ""+i.id));
       else s.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d == %8d", {id}, i[{id}]);
+      $fdisplay(traceFile, "Int  %8d == %8d",        {id}, i[{id}]);
 """, "id", ""+i.id));
      }
 
@@ -1935,7 +1935,7 @@ endmodule
         return ""+s;
        }
 
-      String state ()          {return "state_"+pName(name);}                                                         // State name
+      String state ()          {return "state_"+pName(name);}                                                           // State name
       String state (int State) {return "    "+state()+" = "+State+",\n";}                                               // State definition to sequence memory initialization
 
       String nextState ()                                                                                               // Name of next state
