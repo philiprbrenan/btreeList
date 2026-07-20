@@ -159,7 +159,8 @@ public class Program extends Test                                               
   TreeMap<Integer,Integer> pcConstant ()    {return program().pcConstant;}                                              // Instruction number to variable or memory
   VerilogArrays            verilogArrays () {return program().verilogArrays;}                                           // Verilog array definitions
 
-  void pcConstant(int V) {pcConstant().put(codeSize(), V);}                                                             // Save a constant into the instruction to constant map
+  void pcConstant(I I, Label Target) {pcConstant().put(I.instructionNumber, Target.offset);}                            // Save a constant label into the instruction to constant map
+  void pcConstant(I I, int   Target) {pcConstant().put(I.instructionNumber, Target);}                                   // Save a constant integer into the instruction to constant map
 
   String pName (String Text) {return pad(Text, padName   );}                                                            // Pad Verilog names
   String pCR (  String Text) {return pad(Text, padCR     );}                                                            // Pad Verilog control register names
@@ -187,28 +188,26 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
+        final Bool   done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
-        new I(false)                                                                                                    // Do not increment of program counter
-         {void   a() {if (index.i() >=  End.i()) program().pc = end.offset;}                                            // Index out of range
-          String v()                                                                                                    // Terminate loop when index is out of range
-           {return "if (targetInt >= "+End.vn()+") pc <= pc + "+ (end.offset - instructionNumber) + ";"+
-                   " else pc <= pc + 1;";
-           }
+        final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
+         {void   a()   {if (index.i() >= End.i()) program().pc = end.offset;}                                           // Index out of range
+          String v()   {return "if (targetBool) pc <= pcConstant_array[pc]; else pc <= pc + 1;";}                       // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
          };
         cont.clear();                                                                                                   // Terminate unless told otherwise
         body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
         cont.T();                                                                                                       // Load continue
-        pcConstant(start.offset-codeSize());                                                                            // Store jump delta in the instruction to constants map
-        new I(false)
+        final I E = new I(false)
          {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
           String v()
-           {return "if (targetBool) pc <= pc + pcConstant_array[pc]; "+
-                              "else pc <= pc + "+ (end  .offset - instructionNumber) + ";";}                            // Continue execution of the loop as long as requested
+           {return "if (targetBool) pc <= pcConstant_array[pc]; else pc <= pc + 1;";}
           int traces() {return 0;}
          };
         end.set();                                                                                                      // End of the loop
+        pcConstant(S, end);                                                                                             // Set end of loop jump now we know its target
+        pcConstant(E, start);                                                                                           // Store jump to restart the loop in the instruction to constants map
        }
      }
 
@@ -233,24 +232,23 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
+        final Bool   done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
-        new I(false)                                                                                                    // The for loop will not be executed if the execution count is less than 1
+        final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
-          String v()                                                                                                    // Terminate the loop when the index is out of range
-           {return "if (targetInt >= "+End.vn()+") pc <= pc + "+
-             (end.offset-instructionNumber)+"; else pc <= pc + 1;";
-           }
+          String v()   {return "if (targetBool) pc <= pcConstant_array[pc]; else pc <= pc + 1;";}                       // Terminate the loop when the index is out of range. The if statement relies on the side effect of the previous instruction having set the target boolean value
           int traces() {return 0;}
          };
         body(index);                                                                                                    // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
-        pcConstant(start.offset-codeSize());                                                                            // Store jump delta in the instruction to constants map
-        new I(false)                                                                                                    // Restart loop
+        final I E = new I(false)                                                                                        // Restart loop
          {void   a()   {program().pc = start.offset;}
-          String v()   {return "pc <= pc + pcConstant_array[pc];";}
+          String v()   {return "pc <= pcConstant_array[pc];";}
           int traces() {return 0;}
          };
         end.set();                                                                                                      // End of the loop
+        pcConstant(S, end);                                                                                             // Set end   of loop jump now we know its target
+        pcConstant(E, start);                                                                                           // Set start of loop jump now we know its target
        }
      }
 
@@ -277,23 +275,25 @@ public class Program extends Test                                               
        {final Label lse = new Label();                                                                                  // Start of else
         final Label end = new Label();                                                                                  // End of if
         Condition.T();                                                                                                  // Load target with condition
-        new I(false)                                                                                                    // Jump to else if condition is false
-         {void   a() {          if (!Condition.b()) program().pc = lse.offset;}
+
+        final I Then = new I(false)                                                                                     // Jump to else if condition is false
+         {void   a() {if (!Condition.b()) program().pc = lse.offset;}
           String v()
-           {return "if (!targetBool) pc <= pc + "+(lse.offset-instructionNumber)+
-                   "; else pc <= pc + 1;";
+           {return "if (!targetBool) pc <= pcConstant_array[pc]; else pc <= pc + 1;";
            }
           int traces() {return 0;}
          };
         Then();                                                                                                         // Then body
-        new I(false)                                                                                                    // Jump over else to end
-         {void   a() {program().pc  = end.offset;}
-          String v() {return "pc <= pc + "+(end.offset-instructionNumber)+";";}
+        final I Else = new I(false)                                                                                     // Jump over else to end
+         {void     a() {program().pc  = end.offset;}
+          String   v() {return "pc <= pcConstant_array[pc];";}
           int traces() {return 0;}
          };
         lse.set();                                                                                                      // Start of else
         Else();                                                                                                         // Else body
         end.set();                                                                                                      // End of the if statement
+        pcConstant(Then, lse);                                                                                          // Set then jump now we know its target
+        pcConstant(Else, end);                                                                                          // Set else jump now we know its target
        }
      }
 
@@ -349,12 +349,12 @@ public class Program extends Test                                               
        {final String ri = RegisterId;                                                                                   // Id register
         final String rv = RegisterValue;                                                                                // Value register
 
-        pcConstant(id);                                                                                                 // Id of variable being addressed by these instructions
-
         final I i = new I()                                                                                             // Load id of variable
          {void   a() {loadId(id);                                    jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
           String v() {return pCR(ri) + " <= pcConstant_array[pc]; "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id);}
          };
+
+        pcConstant(i, id);                                                                                              // Id of variable being addressed by these instructions
 
         new I()                                                                                                         // Load source value
          {void   a() {loadValue(B.i);                      jTrace(f("%8d "+rv+" %8d",  pc(),  B.i ? 1 : 0));}
@@ -391,8 +391,9 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Bool b = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetBool(); v = targetBoolValid();           jTrace(f("%8d writeBool %8d = %8d",  pc(), b.id,           b.i ? 1 : 0));}
-        String v() {return pCR("b[targetBoolId]") + " <= targetBool; "+vTrace(  "%8d writeBool %8d = %8d", "pc", "targetBoolId", "targetBool");}
+       {final String f = "%8d writeBool %8d = %8d";
+        void   a() {i = targetBool(); v = targetBoolValid();           jTrace(f(f,  pc(), b.id,           b.i ? 1 : 0));}
+        String v() {return pCR("b[targetBoolId]") + " <= targetBool; "+vTrace(  f, "pc", "targetBoolId", "targetBool");}
        };
      }
 
@@ -452,7 +453,7 @@ public class Program extends Test                                               
      }
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
-     {return pCR("targetBool")+ " <= "+pExpr(""+Value)+"; "+
+     {return pCR("targetBool")+ " <= "+pExpr(""+Value+";")+" "+
                         vTrace(q("%8d bool %8d = %8d"), "pc",        "targetBoolId", q(Value));
      }
     void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool() ? 1 : 0));}           // Trace a java    boolean operation
@@ -540,29 +541,32 @@ public class Program extends Test                                               
     Int  abs ()       {return ie(Ops.abs    );}
     Int  del (int  I) {return ie(Ops.del , I);}
 
-    Int ie (Ops Op)        {T();          new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; W(); return this;} // Execute immediately or create an instruction for machine code to execute later
-    Int ie (Ops Op, int I) {T(Op); C(I);  new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;} // Selectively loaded target, store constant
-    Int ie (Ops Op, Int I) {T();   I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
-
-    void C(int I) {pcConstant(I);}                                                                                      // Store the constant for this instruction in instruction to constants map
+    Int ie (Ops Op)        {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op   );}}; W(); return this;} // Execute immediately or create an instruction for machine code to execute later
+    Int ie (Ops Op, Int I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}}; W(); return this;}
+    Int ie (Ops Op, int I)                                                                                              // Selectively loaded target, store constant for this instruction in the constants map
+     {T(Op);                                                                                                            // Instruction to load target details if needed for the operation
+      final I i = new I() {void a() {ex(Op, I);} String v() {return ev(Op, I);}};                                       // Perform operation
+      W();                                                                                                              // Write results back into a variable
+      pcConstant(i, I);                                                                                                 // Save conatntused in operation in map from instructions to constants used
+      return this;                                                                                                      // The current integer
+     }
 
     abstract class LoadSourceOrTarget
      {LoadSourceOrTarget(Int I, String RegisterId, String RegisterValue, boolean LoadValue)                             // Load source or target index and possibly value via integer id
        {final String ri = RegisterId;                                                                                   // Shorten name
         final String rv = RegisterValue;                                                                                // Shorten name
 
-        pcConstant(id);                                                                                                 // Id of variable being addressed by these instructions
-
-        new I()                                                                                                         // Id of integer
-         {final String c = pExpr("pcConstant_array[pc]");
-          void   a() {loadId(id);                     jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
-          String v() {return pCR(ri) + " <= "+c+"; "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
+        final I i = new I()                                                                                             // Load index of integer
+         {final String c = pExpr("pcConstant_array[pc];");
+          void   a() {loadId(id);                    jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
+          String v() {return pCR(ri) + " <= "+c+" "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
          };
+        pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions
 
         if (LoadValue) new I()                                                                                          // Value of integer
-         {final String v = pExpr("i["+ri+"]");
-          void   a() {loadValue(I.i);                jTrace(f("%8d LST2 "+rv+" = %8d",  pc(),  I.i));}
-          String v() {return pCR(rv)+" <= "+v+"; " + vTrace(  "%8d LST2 "+rv+" = %8d", "pc",  "i["+ri+"]");}
+         {final String v = pExpr("i["+ri+"];");
+          void   a() {loadValue(I.i);               jTrace(f("%8d LST2 "+rv+" = %8d",  pc(),  I.i));}
+          String v() {return pCR(rv)+" <= "+v+" " + vTrace(  "%8d LST2 "+rv+" = %8d", "pc",  "i["+ri+"]");}
          };
        }
       LoadSourceOrTarget(Int I, String RegisterId, String RegisterValue) {this(I, RegisterId, RegisterValue, true);}    // Load source or target value via integer id
@@ -573,7 +577,7 @@ public class Program extends Test                                               
 
     abstract class LoadConstant
      {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressability of instructions
-       {final String ac = pCR(Register) + " <= "+pExpr(""+I)+"; ";                                                      // Assign the constant to the source register
+       {final String ac = pCR(Register) + " <= "+pExpr(""+I+";")+" ";                                                   // Assign the constant to the source register
         new I()
          {void   a() {load(I);    jTrace(f("%8d "+Register+" constant %8d",  currentPc(), I));}
           String v() {return ac + vTrace(  "%8d "+Register+" constant %8d", "pc",      ""+I);}
@@ -617,8 +621,9 @@ public class Program extends Test                                               
     void W ()                                                                                                           // Write result back into variable
      {final Int w = this;
       new I()                                                                                                           // Load value
-       {void   a() {i = targetInt(); v = targetIntValid();                        jTrace(f("%8d writeInt %8d = %8d",  currentPc(),  targetIntId(), targetInt()));}
-        String v() {return pCR("i[targetIntId]") + " <= "+pExpr("targetInt")+"; "+vTrace(  "%8d writeInt %8d = %8d", "pc",         "targetIntId", "targetInt");}
+       {final String f = "%8d writeInt %8d = %8d";
+        void   a() {            i = targetInt();             v = targetIntValid(); jTrace(f(f,  currentPc(),  targetIntId(), targetInt()));}
+        String v() {return pCR("i[targetIntId]") + " <= "+pExpr("targetInt;")+" " +vTrace(  f, "pc",         "targetIntId", "targetInt");}
        };
      }
 
@@ -712,11 +717,12 @@ public class Program extends Test                                               
       return vExecuteAndTrace(""+s);
      }
 
+    final String atf = "%8d assign targetInt = %8d";                                                                    // Trace format for an assign statement
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {return pCR("targetInt") + " <= "+pExpr(Value+";")+ vTrace(q("%8d assign targetInt = %8d"), "pc", q(Value));
+     {return pCR("targetInt") + " <= "+pExpr(Value+";")+ vTrace(q(atf), "pc",        q(Value));
      }
 
-    void jtrace () {jTrace(f("%8d assign targetInt = %8d",  currentPc(),   targetInt()));}                              // Trace the integer operation in Java
+    void jtrace ()                                      {jTrace(f(atf,  currentPc(), targetInt()));}                    // Trace the integer operation in Java
 
     Int  Add (int I) {return dup().add(I) ;}                                                                            // Duplicate the target so that a copy is modified rather than the original integer
     Int  Add (Int I) {return dup().add(I) ;}
@@ -943,8 +949,8 @@ public class Program extends Test                                               
     String n (String Index)         {return n() + "["+Index+"]";}                                                       // Name of indexed memory
     String n (String I1, String I2) {return n() + "["+I1+"]["+I2+"]";}                                                  // Name of indexed memory
 
-    void im(Int I)  {pcConstant().put(compiling().instructionNumber, I.id);}                                            // Save the integer variable used for this memory access at this instruction
-    void im(Bool B) {pcConstant().put(compiling().instructionNumber, B.id);}                                            // Save the boolean variable used for this memory access at this instruction
+    void im(Int  I) {pcConstant(compiling(), I.id);}                                                                    // Save the integer variable used for this memory access at this instruction
+    void im(Bool B) {pcConstant(compiling(), B.id);}                                                                    // Save the boolean variable used for this memory access at this instruction
 
     String      vReadBool()      {return n() + "_readBool     ";}                                                       // Boolean read from memory
     String     vWriteBool()      {return n() + "_writeBool    ";}                                                       // Boolean to write into memory
@@ -982,6 +988,7 @@ public class Program extends Test                                               
 
     UnitMemory copy (UnitMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
      {subStart("Program.UnitMemory.copy");
+      final UnitMemory S = SourceMemory;
       new ForCount(new Int(Width))
        {void body(Int Index)
          {final Int s = SourceOffset.Add(Index);
@@ -999,8 +1006,9 @@ public class Program extends Test                                               
             String v() {return writeIntIndexV(t);}
            };
           new I()                                                                                                       // Set write from read
-           {void   a() {writeInt = SourceMemory.readInt;                           jTrace(f("%8d writeInt=readInt %8d",  pc(), writeInt));}
-            String v() {return vWriteInt() + " <= "+SourceMemory.vReadInt() + "; "+vTrace(q("%8d writeInt=readInt %8d"), "pc", q(SourceMemory.vReadInt()));}
+           {final String f = "%8d writeInt=readInt %8d";
+            void   a() {         writeInt       =   S. readInt;         jTrace(f(f,  pc(),     writeInt));}             // Java updates variables immediately so their value can be used later in the same expression
+            String v() {return vWriteInt() + " <= "+S.vReadInt() + "; "+vTrace(q(f), "pc", q(S.vReadInt()));}           // Verilog updates at the end of the block so we have to supply the original expression
            };
           new I()                                                                                                       // Write into target memory
            {void   a() {       writeIntJ();}
@@ -1055,8 +1063,9 @@ public class Program extends Test                                               
         String v() {return readIntV();}
        };
       new I()                                                                                                           // Set target index
-       {void   a() {r.i = readInt; r.v = true;                                  jTrace(f("%8d ReadInt from Memory %8d = %8d",  pc(),   r.id,                     I.id));}
-        String v() {im(r); return "i[pcConstant_array[pc]] <= "+vReadInt()+"; "+vTrace(q("%8d ReadInt from Memory %8d = %8d"), "pc",  "pcConstant_array[pc]", ""+I.id);}
+       {final String f = "%8d ReadInt from Memory %8d = %8d";
+        void   a() {r.i = readInt; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                     I.id));}
+        String v() {im(r); return "i[pcConstant_array[pc]] <= "+vReadInt()+"; "+vTrace(q(f), "pc",  "pcConstant_array[pc]", ""+I.id);}
        };
       return r;
      }
@@ -1076,8 +1085,9 @@ public class Program extends Test                                               
         String v() {return readBoolV();}
        };
       new I()                                                                                                           // Set target index
-       {void   a() {r.i = readBool; r.v = true;                                  jTrace(f("%8d ReadBool from Memory %8d = %8d",   pc(),   r.id,                   readBool ? 1 : 0));}
-        String v() {im(r); return "b[pcConstant_array[pc]] <= "+vReadBool()+"; "+vTrace(q("%8d ReadBool from Memory %8d = %8d"), "pc",   "pcConstant_array[pc]", vReadBool());}
+       {final String f = "%8d ReadBool from Memory %8d = %8d";
+        void   a() {r.i = readBool; r.v = true;                                  jTrace(f(f,   pc(),   r.id,                   readBool ? 1 : 0));}
+        String v() {im(r); return "b[pcConstant_array[pc]] <= "+vReadBool()+"; "+vTrace(q(f), "pc",   "pcConstant_array[pc]", vReadBool());}
        };
       return r;
      }
@@ -1090,8 +1100,9 @@ public class Program extends Test                                               
         String v() {im(I); return writeIntIndexV(I);}
        };
       new I()                                                                                                           // Read from source integer
-       {void   a() {final int p = writeInt; writeInt = J.i();                  jTrace(f("%8d writeInt2 %8d = %8d < %8d",  pc(),  writeIntIndex,         J.i,      p));}
-        String v() {im(J); return vWriteInt() + "<= i[pcConstant_array[pc]]; "+vTrace(q("%8d writeInt2 %8d = %8d < %8d"), "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
+       {final String f = "%8d writeInt2 %8d = %8d < %8d";
+        void   a() {final int p = writeInt; writeInt = J.i();                  jTrace(f(f,  pc(),  writeIntIndex,         J.i,      p));}
+        String v() {im(J); return vWriteInt() + "<= i[pcConstant_array[pc]]; "+vTrace(q(f), "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
        };
       new I()                                                                                                           // Write source integer value into target memory at indexed location
        {void   a() {       writeIntJ();}
@@ -1110,8 +1121,9 @@ public class Program extends Test                                               
         String v() {im(J); return writeBitIndexV(J);}
        };
       new I()                                                                                                           // Set write from read
-       {void   a() {writeBool = K.b();                                          jTrace(f("%8d writeBool2 %8d, %8d = %8d < %8d",  pc(),  writeIntIndex,    writeBitIndex,        K.i ? 1 : 0,  writeBool ? 1 : 0));}
-        String v() {im(K); return vWriteBool() + "<= b[pcConstant_array[pc]]; "+vTrace(q("%8d writeBool2 %8d, %8d = %8d < %8d"), "pc", vWriteIntIndex(), vWriteBitIndex(), "b["+K.id+"]", "b["+K.id+"]");}
+       {final String f = "%8d writeBool2 %8d, %8d = %8d < %8d";
+         void   a() {writeBool = K.b();                                         jTrace(f(f,  pc(),  writeIntIndex,    writeBitIndex,        K.i ? 1 : 0,  writeBool ? 1 : 0));}
+        String v() {im(K); return vWriteBool() + "<= b[pcConstant_array[pc]]; "+vTrace(q(f), "pc", vWriteIntIndex(), vWriteBitIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
       new I()                                                                                                           // Write into memory
        {void   a() {       writeBoolJ();}
