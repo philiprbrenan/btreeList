@@ -12,13 +12,14 @@ import java.nio.file.*;
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent java code to produce the kernel of "Database on a Chip"
 
 public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
- {final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
-  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
-  final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
+ {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
+  final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
+  final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
@@ -577,11 +578,12 @@ public class Program extends Test                                               
 
     abstract class LoadConstant
      {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressibility of instructions
-       {final String ac = pCR(Register) + " <= "+pExpr(""+I+";")+" ";                                                   // Assign the constant to the source register
-        new I()
+       {final String ac = pCR(Register) + pExpr(" <= pcConstant_array[pc];") + " ";                                     // Assign the constant to the source register
+        final I i = new I()
          {void   a() {load(I);    jTrace(f("%8d "+Register+" constant %8d",  currentPc(), I));}
           String v() {return ac + vTrace(  "%8d "+Register+" constant %8d", "pc",      ""+I);}
          };
+        pcConstant(i, I);                                                                                               // Save constant in instruction to constant map
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
       abstract void load(int C);                                                                                        // Override to load the constant value of the integer variable being loaded into a java variable
@@ -1412,12 +1414,12 @@ public class Program extends Test                                               
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
-
+        final boolean      rr = github_actions || aws_run;                                                              // Running remotely
         s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} ./{n}",                             // Construct command
                             "f", verilogTestFolder(),
                             "n", currentTestNameSuffix(),
-                            "t", github_actions || aws_run ? "" : "timeout 1m "));                                      // Time out oi running locally
-        say(s);
+                            "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The progfrsam will return a coed of 124 if it times out
+        say(""+s, rr ? "running remotely" : "running locally");                                                         // Confirm location of run
         final ExecCommand x = new ExecCommand(s);
         say(x.out);
 
