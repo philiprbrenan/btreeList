@@ -1319,42 +1319,32 @@ public class Test                                                               
   static String pwd () {return System.getProperty("user.dir");}                                                         // Current working folder
 
   static class ExecCommand                                                                                              // Execute a command sequence
-   {final String    command;
-    final StringBuilder out = new StringBuilder();                                                                      // Normal output
-    final StringBuilder err = new StringBuilder();                                                                      // Error output
-    final Timer timer       = new Timer();                                                                              // Time taken to execute command in seconds
+   {final String command;
+    final String     out;                                                                                               // Normal output
+    final String     err;                                                                                               // Error output
+    final Timer    timer = new Timer();                                                                                 // Time taken to execute command in seconds
     int exitCode;
 
     ExecCommand (String Command)
      {command = Command;
+      final StringBuilder O = new StringBuilder();                                                                      // Standard output
+      final StringBuilder E = new StringBuilder();                                                                      // Standard input
       try
        {final ProcessBuilder b = new ProcessBuilder("bash", "-c", command);
-        final Process p = b.start();
+        final Process        p = b.start();
 
         final Thread o = new Thread(() ->
-         {try (final BufferedReader reader =
-             new BufferedReader(new InputStreamReader(p.getInputStream())))
-           {String line;
-            while ((line = reader.readLine()) != null)
-             {out.append(line).append(System.lineSeparator());
-             }
+         {try (final BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream())))
+           {String line; while ((line = reader.readLine()) != null) O.append(line).append(System.lineSeparator());
            }
-          catch (IOException x)
-           {x.printStackTrace();
-           }
+          catch (IOException x) {x.printStackTrace();}
          }); o.start();
 
         final Thread e = new Thread(() ->
-         {try (final BufferedReader reader =
-             new BufferedReader(new InputStreamReader(p.getErrorStream())))
-           {String line;
-            while ((line = reader.readLine()) != null)
-             {err.append(line).append(System.lineSeparator());
-             }
+         {try (final BufferedReader reader = new BufferedReader(new InputStreamReader(p.getErrorStream())))
+           {String line; while ((line = reader.readLine()) != null) E.append(line).append(System.lineSeparator());
            }
-          catch (IOException x)
-           {x.printStackTrace();
-           }
+          catch (IOException x) {x.printStackTrace();}
          }); e.start();
 
         exitCode = p.waitFor();
@@ -1367,8 +1357,8 @@ public class Test                                                               
          {stop(
           "Command:", command,  "\n",
           "code   :", exitCode, "\n",
-          "stdout :", out,      "\n",
-          "stderr :", err,
+          "stdout :", O,        "\n",
+          "stderr :", E,        "\n",
         f("time   : 7.2f seconds", timer.seconds()),
            m);
          }
@@ -1377,6 +1367,7 @@ public class Test                                                               
 
       final double deltaTime = timer.seconds();
       if (deltaTime > 120) say(f("%7.2f seconds for: %s", deltaTime, command));
+      out = ""+O; err = ""+E;
      }
     ExecCommand(StringBuilder Command) {this(""+Command);}
    }
