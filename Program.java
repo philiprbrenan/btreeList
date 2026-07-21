@@ -1267,7 +1267,7 @@ public class Program extends Test                                               
 
     String interiorVerilog ()                                                                                           // Generate the interior verilog code for an instruction
      {program().vtrace = 0;                                                                                             // Count number of trace calls made in instruction
-      final String        v = suppressInstructionTracing ? v().replaceAll("\\$fd.*?;", "") : v();                       // Generate verilog and remove tracing if requested
+      final String        v = removeTracing(v());                                                                       // Generate verilog and remove tracing if requested
       final StringBuilder s = new StringBuilder();                                                                      // Generated code
       if (noJump)  s.append("pc <= pc + 1; ");                                                                          // Next instruction
       s.append(v);                                                                                                      // Generated code
@@ -1370,7 +1370,7 @@ public class Program extends Test                                               
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
 
-    if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,7d", codeSize()));            // Code size check
+    if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,12d", codeSize()));            // Code size check
     deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
     dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
 
@@ -1691,7 +1691,7 @@ module {name};                                                                  
       if (true)                                                                                                         // Instruction reduction statistics
        {final int m = instructionMatches.sequence.size(), c = code.size();
         final double p = 100 * (c - m) / (double)c;
-        say(f("Instruction reduction to: %4d, percent: %5.2f", m, p));
+        say(f("Instruction reduction: %,12d, percent: %7.4f", m, p));
        }
 
       /* Execute default*/out.write("""
@@ -1856,7 +1856,10 @@ endmodule
     return ""+s;
    }
 
-  String removeTracing(String V) {return suppressInstructionTracing ? V.replaceAll("(?s)\\$fd.*?;", "") : V;}           // Remove tracing if necessary
+  String removeTracing(String V)                                                                                        // Remove tracing if necessary
+   {return suppressInstructionTracing ? V.replaceAll("(?s)\\$fdisplay.*?;", "")
+                                         .replaceAll("(?s)\\$fflush.*?;"  , "") : V;
+   }
 
 //D2 Instruction Matching                                                                                               // Classify instructions into blocks of identical instructions and then compressing out the duplicates to reduce code size
 
