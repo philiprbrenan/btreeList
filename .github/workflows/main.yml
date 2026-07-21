@@ -1,4 +1,4 @@
-# Test 2026-07-21 at 22:01:06
+# Test 2026-07-21 at 22:05:13
 
 name: Test
 run-name: btreeList
@@ -45,6 +45,8 @@ jobs:
 
     - name: Java
       run: |
+        java --version
+        javac --version
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
 
     - name: Program_1
