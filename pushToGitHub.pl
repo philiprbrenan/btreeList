@@ -21,7 +21,8 @@ my $wfcpd   = q(.github/workflows/cpd.yml);                                     
 my @ext     = qw(.java .pl .md);                                                                                        # Extensions of files to upload to github
 my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
 #my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
-my $include = q(Tree);                                                                                                  # Java files to include in testing as they are not yet ready
+#my $include = q(Tree);                                                                                                  # Java files to include in testing as they are not yet ready
+my $include = q(Program);                                                                                                  # Java files to include in testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
@@ -110,12 +111,12 @@ jobs:
       with:
         ref: 'main'
 
-    - name: 'JDK'
-      uses: oracle-actions/setup-java\@v1
+#    - name: 'JDK'
+#      uses: oracle-actions/setup-java\@v1
 
-    - name: Verilog install
+    - name: Install
       run: |
-        sudo apt install iverilog yosys tree
+        sudo apt install iverilog yosys tree openjdk-25-jdk
         mkdir -p verilog
 
 
