@@ -1983,7 +1983,7 @@ endmodule
       index = index + 1;
       if (index == {size}) begin
         $wall_time;
-        $display(": End load {arrayName}");
+        $display(": End   load {arrayName}");
       end
       if (index >= {size}) begin index = 0; state = {next}; end
     end
