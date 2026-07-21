@@ -1444,7 +1444,7 @@ keys     :    7   1   3   2   4   5   6   0
               test_shift(false);
    }
 
-  static void test_mergeFromRightEven(boolean Ex)
+  static void test_mergeFromRightEven(boolean Ex)  // 11,400 s
    {sayCurrentTestName();
     final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
@@ -1496,12 +1496,13 @@ keys     :    0   0   4   3
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
      {void slotsCode()
        {final Slots r = this;
-        r.insert(new Int(3));
-        r.insert(new Int(4));
-        final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r))
-         {void slotsCode()
-           {insert(new Int(2));
-            insert(new Int(1));
+        final Slots l = new Slots(new Build().numberOfKeys(N).immediate(Ex).parent(r));
+        new ForCount(2)
+         {void body(Int Index)
+           {final Int kr = new Int(), kl = new Int(0);
+            new If (Index.eq(0)) {void Then() {kr.set(3); kl.set(2);}};
+            new If (Index.eq(1)) {void Then() {kr.set(4); kl.set(1);}};
+            r.insert(kr); l.insert(kl);
            }
          };
         mergeFromLeftEven(l).ok(true);
@@ -2421,7 +2422,8 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_insert2();
+    //test_insert2();
+    test_mergeFromLeftEven();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
