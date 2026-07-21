@@ -1361,13 +1361,16 @@ public class Test                                                               
 
         o.join();
         e.join();
+        final StringBuilder m = new StringBuilder();
+        if (exitCode == 124) saySb(m, "Timed out after:", timer.seconds(), "seconds");                                  // Check for time out
         if (exitCode != 0)
          {stop(
           "Command:", command,  "\n",
           "code   :", exitCode, "\n",
           "stdout :", out,      "\n",
-          "stderr :", err);
-        f("time   : 7.2f seconds", timer.seconds());
+          "stderr :", err,
+        f("time   : 7.2f seconds", timer.seconds()),
+           m);
          }
        }
       catch (Exception e) {e.printStackTrace();}
