@@ -16,7 +16,7 @@ public class Program extends Test                                               
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
@@ -1414,14 +1414,18 @@ public class Program extends Test                                               
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
-        final boolean      rr = github_actions || aws_run;                                                              // Running remotely
-        s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} ./{n}",                             // Construct command
+        final boolean       r = github_actions || aws_run;                                                              // Running remotely
+        final String        v = "vvp -M../../vpi -mwall_time " +currentTestNameSuffix();                                // Command to run verilog simulation
+
+        s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} {v}",                               // Construct command
                             "f", verilogTestFolder(),
                             "n", currentTestNameSuffix(),
+                            "v", v,
                             "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The progfrsam will return a coed of 124 if it times out
-        say(""+s, rr ? "running remotely" : "running locally");                                                         // Confirm location of run
+        say(""+s, r ? "running remotely" : "running locally");                                                          // Confirm location of run
         final ExecCommand x = new ExecCommand(s);
         say(x.out);
+        say(x.err);
 
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
        }
@@ -1971,8 +1975,16 @@ endmodule
        {return   substitute("""
   task automatic {loadName};
     begin
-      {arrayName}[index] = {name}(index);
+      if (index == 0) begin
+        $wall_time;
+        $display(": Start load {arrayName}");
+      end
+     {arrayName}[index] = {name}(index);
       index = index + 1;
+      if (index == {size}) begin
+        $wall_time;
+        $display(": End load {arrayName}");
+      end
       if (index >= {size}) begin index = 0; state = {next}; end
     end
   endtask
