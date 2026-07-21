@@ -1,4 +1,4 @@
-# Test 2026-07-20 at 23:33:58
+# Test 2026-07-21 at 02:34:29
 
 name: Test
 run-name: btreeList
@@ -21,19 +21,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [Tree_1, Tree_2, Tree_3, Tree_4, Tree_5, Tree_6, Tree_7, Tree_8, Tree_9, Tree_10, Tree_11]
+        task: [Program_1]
 
     steps:
     - uses: actions/checkout@v6
       with:
         ref: 'main'
 
-    - name: 'JDK'
-      uses: oracle-actions/setup-java@v1
+#    - name: 'JDK'
+#      uses: oracle-actions/setup-java@v1
 
-    - name: Verilog install
+    - name: Install
       run: |
-        sudo apt install iverilog yosys tree
+        sudo apt install iverilog yosys tree openjdk-25-jdk
         mkdir -p verilog
 
 
@@ -47,156 +47,16 @@ jobs:
       run: |
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
 
-    - name: Tree_1
-      if: ${{             matrix.task == 'Tree_1' }}
+    - name: Program_1
+      if: ${{             matrix.task == 'Program_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
         tree
 
-    - name: Upload Tree_1
-      if: ${{ always() && matrix.task == 'Tree_1' }}
+    - name: Upload Program_1
+      if: ${{ always() && matrix.task == 'Program_1' }}
       uses: actions/upload-artifact@v7
       with:
-        name: Tree_1
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_2
-      if: ${{             matrix.task == 'Tree_2' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 2
-        tree
-
-    - name: Upload Tree_2
-      if: ${{ always() && matrix.task == 'Tree_2' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_2
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_3
-      if: ${{             matrix.task == 'Tree_3' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 3
-        tree
-
-    - name: Upload Tree_3
-      if: ${{ always() && matrix.task == 'Tree_3' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_3
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_4
-      if: ${{             matrix.task == 'Tree_4' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 4
-        tree
-
-    - name: Upload Tree_4
-      if: ${{ always() && matrix.task == 'Tree_4' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_4
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_5
-      if: ${{             matrix.task == 'Tree_5' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 5
-        tree
-
-    - name: Upload Tree_5
-      if: ${{ always() && matrix.task == 'Tree_5' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_5
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_6
-      if: ${{             matrix.task == 'Tree_6' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 6
-        tree
-
-    - name: Upload Tree_6
-      if: ${{ always() && matrix.task == 'Tree_6' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_6
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_7
-      if: ${{             matrix.task == 'Tree_7' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 7
-        tree
-
-    - name: Upload Tree_7
-      if: ${{ always() && matrix.task == 'Tree_7' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_7
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_8
-      if: ${{             matrix.task == 'Tree_8' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 8
-        tree
-
-    - name: Upload Tree_8
-      if: ${{ always() && matrix.task == 'Tree_8' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_8
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_9
-      if: ${{             matrix.task == 'Tree_9' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 9
-        tree
-
-    - name: Upload Tree_9
-      if: ${{ always() && matrix.task == 'Tree_9' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_9
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_10
-      if: ${{             matrix.task == 'Tree_10' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 10
-        tree
-
-    - name: Upload Tree_10
-      if: ${{ always() && matrix.task == 'Tree_10' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_10
-        path: verilog
-        if-no-files-found: ignore
-
-    - name: Tree_11
-      if: ${{             matrix.task == 'Tree_11' }}
-      run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Tree 11
-        tree
-
-    - name: Upload Tree_11
-      if: ${{ always() && matrix.task == 'Tree_11' }}
-      uses: actions/upload-artifact@v7
-      with:
-        name: Tree_11
+        name: Program_1
         path: verilog
         if-no-files-found: ignore
