@@ -28,7 +28,7 @@ my $showHtml;                                                                   
 #my   $upload;                                                                                                          # Upload files
 my $valgrind;                                                                                                           # Check C memory usage
 my $xmlCatalog;                                                                                                         # Verify xml
-my $timeOut = "2120s";                                                                                                   # Time out
+my $timeOut = "1800s";                                                                                                   # Time out
 
 sub makeWithPerl {                                                                                                      # Make a file
 
