@@ -1,4 +1,4 @@
-# Test 2026-07-21 at 23:59:03
+# Test 2026-07-22 at 00:28:31
 
 name: Test
 run-name: btreeList
@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [Program_1]
+        task: [BitSet_1, BitSet_2, BitSet_3, BitSet_4, BitSet_5, BitSet_6, BitSet_7, BitSet_8, BitSet_9, BitSet_10, BitSet_11]
 
     steps:
     - uses: actions/checkout@v6
@@ -54,16 +54,156 @@ jobs:
         javac --version
         javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
 
-    - name: Program_1
-      if: ${{             matrix.task == 'Program_1' }}
+    - name: BitSet_1
+      if: ${{             matrix.task == 'BitSet_1' }}
       run: |
-        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/Program 1
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 1
         tree
 
-    - name: Upload Program_1
-      if: ${{ always() && matrix.task == 'Program_1' }}
+    - name: Upload BitSet_1
+      if: ${{ always() && matrix.task == 'BitSet_1' }}
       uses: actions/upload-artifact@v7
       with:
-        name: Program_1
+        name: BitSet_1
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_2
+      if: ${{             matrix.task == 'BitSet_2' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 2
+        tree
+
+    - name: Upload BitSet_2
+      if: ${{ always() && matrix.task == 'BitSet_2' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_2
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_3
+      if: ${{             matrix.task == 'BitSet_3' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 3
+        tree
+
+    - name: Upload BitSet_3
+      if: ${{ always() && matrix.task == 'BitSet_3' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_3
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_4
+      if: ${{             matrix.task == 'BitSet_4' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 4
+        tree
+
+    - name: Upload BitSet_4
+      if: ${{ always() && matrix.task == 'BitSet_4' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_4
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_5
+      if: ${{             matrix.task == 'BitSet_5' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 5
+        tree
+
+    - name: Upload BitSet_5
+      if: ${{ always() && matrix.task == 'BitSet_5' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_5
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_6
+      if: ${{             matrix.task == 'BitSet_6' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 6
+        tree
+
+    - name: Upload BitSet_6
+      if: ${{ always() && matrix.task == 'BitSet_6' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_6
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_7
+      if: ${{             matrix.task == 'BitSet_7' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 7
+        tree
+
+    - name: Upload BitSet_7
+      if: ${{ always() && matrix.task == 'BitSet_7' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_7
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_8
+      if: ${{             matrix.task == 'BitSet_8' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 8
+        tree
+
+    - name: Upload BitSet_8
+      if: ${{ always() && matrix.task == 'BitSet_8' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_8
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_9
+      if: ${{             matrix.task == 'BitSet_9' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 9
+        tree
+
+    - name: Upload BitSet_9
+      if: ${{ always() && matrix.task == 'BitSet_9' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_9
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_10
+      if: ${{             matrix.task == 'BitSet_10' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 10
+        tree
+
+    - name: Upload BitSet_10
+      if: ${{ always() && matrix.task == 'BitSet_10' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_10
+        path: verilog
+        if-no-files-found: ignore
+
+    - name: BitSet_11
+      if: ${{             matrix.task == 'BitSet_11' }}
+      run: |
+        java -XX:+UseZGC -cp Classes com/AppaApps/Silicon/BitSet 11
+        tree
+
+    - name: Upload BitSet_11
+      if: ${{ always() && matrix.task == 'BitSet_11' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: BitSet_11
         path: verilog
         if-no-files-found: ignore
