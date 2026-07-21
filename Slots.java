@@ -1891,18 +1891,26 @@ keys     :   14  13  16  15  18  17  12  11
 
   static void test_insert2(boolean Ex)
    {sayCurrentTestName();
-    final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
+    final int [] keys = new int[] {11, 12, 13, 15, 16, 17, 18, 14};
+    final Slots s = new Slots(new Build().numberOfKeys(keys.length).immediate(Ex))
      {void slotsCode()
-       {insert(new Int(11));
-        insert(new Int(12));
-        insert(new Int(13));
-        insert(new Int(15));
-        insert(new Int(16));
-        insert(new Int(17));
-        insert(new Int(18));
-        insert(new Int(14));
-        final Slots s = this;
-        //stop(s);
+       {verilogArrays().add("keys", keys);
+
+        new ForCount(new Int(keys.length))                                                                              // Using this rather complex for loop reduces the amount of code generated
+         {void body(Int Index)
+           {final   Int k = new Int();
+
+            new I()                                                                                                     // Set the key to insert
+             {void        a() {targetInt(keys[Index.i()]);}
+              String      v() {return "targetInt <= keys_array[pc];";}
+              boolean trace() {return false;}
+             };
+
+            k.W();                                                                                                      // Write key into variable
+            insert(k);
+           }
+         };
+        //stop(this);
         check(print(), """
 Slots    : size:  8, count:  8
 positions:    0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -2412,7 +2420,8 @@ keys     :    0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_insert2();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
