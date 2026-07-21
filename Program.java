@@ -1314,7 +1314,7 @@ public class Program extends Test                                               
     final StringBuilder s = new StringBuilder();
     s.append("$fdisplay(traceFile, "+q(Format));
     for(int i = 0; i < Message.length; ++i) s.append(", "+Message[i]);
-    s.append(");");
+    s.append("); $fflush(traceFile);");
     return ""+s;
    }
 
@@ -1435,24 +1435,24 @@ public class Program extends Test                                               
 
   void dumpProgramState (String Location)                                                                               // Dump program memories and variables
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                     dumpJava();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");\n"+dumpVerilog();}                              // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Location+"\n");                                         dumpJava();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\"); $fflush(traceFile);\n"+dumpVerilog();}          // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
 
   void dumpProgramMemories (String Location)                                                                            // Dump program memories
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                     dumpJavaMemories();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");\n"+dumpVerilogMemories();}                      // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Location+"\n");                                         dumpJavaMemories();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\"); $fflush(traceFile);\n"+dumpVerilogMemories();}  // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
 
   void dumpProgramRegisters (String Location)                                                                           // Dump program registers
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                     dumpJavaRegisters();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\");\n"+dumpVerilogRegisters();}                     // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Location+"\n");                                         dumpJavaRegisters();}
+      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\"); $fflush(traceFile);\n"+dumpVerilogRegisters();} // fdisplay gets removed by trace suppression
       boolean trace() {return false;}
      };
    }
@@ -1764,8 +1764,6 @@ endmodule
     integer I;
     parameter integer N = 10;
     begin
-      //traceFile = $fopen("{traceFile}", "a");
-
       $fwrite(traceFile, "Memory %s\\n", "{memoryId}");
 
       $fwrite(traceFile, "         ");
@@ -1785,8 +1783,7 @@ endmodule
       end
 
       if (MEMORY_{memoryId} % N != 0) $fwrite(traceFile, "\\n");
-
-      //$fclose(traceFile);
+      $fflush(traceFile);
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n(),
@@ -1821,6 +1818,7 @@ endmodule
      }
 
     s.append("""
+    $fflush(traceFile);
     end
   endtask
 """);
@@ -1846,6 +1844,7 @@ endmodule
     s.append("$fwrite(traceFile, \"       targetInt = %8d\\n\", targetInt   );\n");
     s.append("$fwrite(traceFile, \"      sourceBool = %8d\\n\", sourceBool  );\n");
     s.append("$fwrite(traceFile, \"      targetBool = %8d\\n\", targetBool  );\n");
+    s.append("$fflush(traceFile);\n");
     return ""+s;
    }
 
