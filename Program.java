@@ -1416,7 +1416,7 @@ public class Program extends Test                                               
         s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} ./{n}",                             // Construct command
                             "f", verilogTestFolder(),
                             "n", currentTestNameSuffix(),
-                            "t", github_actions ? "" : "timeout 10m "));
+                            "t", github_actions || aws_run ? "" : "timeout 1m "));                                      // Time out oi running locally
         say(s);
         final ExecCommand x = new ExecCommand(s);
         say(x.out);
