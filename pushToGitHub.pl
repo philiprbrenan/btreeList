@@ -128,6 +128,8 @@ jobs:
 
     - name: Java
       run: |
+        java --version
+        javac --version
         javac -g -d Classes -cp Classes $c/*.java
 END
 
