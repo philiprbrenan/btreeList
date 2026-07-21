@@ -1,4 +1,4 @@
-# Test 2026-07-21 at 22:05:13
+# Test 2026-07-21 at 23:30:49
 
 name: Test
 run-name: btreeList
@@ -36,6 +36,11 @@ jobs:
         sudo apt install iverilog yosys tree openjdk-25-jdk
         mkdir -p verilog
 
+    - name: Verilog Programmable Interface
+      run: |
+        cd vpi
+        iverilog-vpi wall_time.c
+        ls -la
 
     - name: Position files in package
       run: |
