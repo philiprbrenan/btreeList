@@ -2525,7 +2525,7 @@ Memory 0
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
+     {deleteAllFiles(verilogFolder, 999);                                                                                // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       testSummary();                                                                                                    // Summarize test results
       coverageAnalysis(12);
