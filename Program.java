@@ -26,6 +26,7 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
+  final static String                  verilogArrayFiles = "array";                                                     // Suffix for verilog files containing array definitions
   final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog code
 
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
@@ -456,7 +457,7 @@ public class Program extends Test                                               
 
     String vtrace (StringBuilder Value)                                                                                 // Trace a verilog boolean operation
      {return pCR("targetBool")+ " <= "+pExpr(""+Value+";")+" "+
-                        vTrace(q("%8d bool %8d = %8d"), "pc",        "targetBoolId", q(Value));
+                        vTrace("%8d bool %8d = %8d",   "pc",        "targetBoolId", ""+Value);
      }
     void jtrace ()     {jTrace(f("%8d bool %8d = %8d",  currentPc(), id,             targetBool() ? 1 : 0));}           // Trace a java    boolean operation
 
@@ -722,7 +723,7 @@ public class Program extends Test                                               
 
     final String atf = "%8d assign targetInt = %8d";                                                                    // Trace format for an assign statement
     String vExecuteAndTrace (String Value)                                                                              // Execute and trace an integer operation in Verilog
-     {return pCR("targetInt") + " <= "+pExpr(Value+";")+ vTrace(q(atf), "pc",        q(Value));
+     {return pCR("targetInt") + " <= "+pExpr(Value+";")+ vTrace(atf, "pc",           Value);
      }
 
     void jtrace ()                                      {jTrace(f(atf,  currentPc(), targetInt()));}                    // Trace the integer operation in Java
@@ -964,23 +965,23 @@ public class Program extends Test                                               
     String vWriteIntIndex()      {return n() + "_writeIntIndex";}                                                       // Index at which to write an integer into memory
     String vWriteBitIndex()      {return n() + "_writeBitIndex";}                                                       // Index within an integer at which to set a bit to represent a boolean
 
-    String       readIntV()      {return vReadInt () + "<= "+n()+"["+vReadIntIndex()+"];                            "+              vTrace(q("%8d readInt       %8d"),     "pc", n(vReadIntIndex ())                                 );}
-    String      readBoolV()      {return vReadBool() + "<= "+n()+"["+vReadIntIndex()+"]["+vReadBitIndex()+"];       "+              vTrace(q("%8d readBool      %8d"),     "pc", n(vReadIntIndex (),  vReadBitIndex ())              );}
-    String      writeIntV()      {return n()+"["+vWriteIntIndex()+"]                       <= " + vWriteInt () + "; "+              vTrace(q("%8d writeInt      %8d<%8d"), "pc", n(vWriteIntIndex()), vWriteInt     ()               );}
-    String     writeBoolV()      {return n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"] <= " + vWriteBool() + "; "+              vTrace(q("%8d writeBool     %8d<%8d"), "pc", n(vWriteIntIndex(),  vWriteBitIndex()), vWriteBool());}
-    String  readIntIndexV(Int I) {im(I); return vReadIntIndex () + "<= i[array_pcConstant[pc]];                     "+              vTrace(q("%8d readIntIndex  %8d=%8d"), "pc", ""+I.id, I.vn());}
-    String  readBitIndexV(Int I) {im(I); return vReadBitIndex () + "<= i[array_pcConstant[pc]];                     "+              vTrace(q("%8d readBitIndex  %8d=%8d"), "pc", ""+I.id, I.vn());}
-    String writeIntIndexV(Int I) {im(I); return vWriteIntIndex() + "<= i[array_pcConstant[pc]];                     "+              vTrace(q("%8d writeIntIndex %8d=%8d"), "pc", ""+I.id, I.vn());}
-    String writeBitIndexV(Int I) {im(I); return vWriteBitIndex() + "<= i[array_pcConstant[pc]];                     "+              vTrace(q("%8d writeBitIndex %8d=%8d"), "pc", ""+I.id, I.vn());}
+    String       readIntV()      {return vReadInt () + "<= "+n()+"["+vReadIntIndex()+"];                            "+              vTrace(  "%8d readInt       %8d",     "pc", n(vReadIntIndex ())                                 );}
+    String      readBoolV()      {return vReadBool() + "<= "+n()+"["+vReadIntIndex()+"]["+vReadBitIndex()+"];       "+              vTrace(  "%8d readBool      %8d",     "pc", n(vReadIntIndex (),  vReadBitIndex ())              );}
+    String      writeIntV()      {return n()+"["+vWriteIntIndex()+"]                       <= " + vWriteInt () + "; "+              vTrace(  "%8d writeInt      %8d<%8d", "pc", n(vWriteIntIndex()), vWriteInt     ()               );}
+    String     writeBoolV()      {return n()+"["+vWriteIntIndex()+"]["+vWriteBitIndex()+"] <= " + vWriteBool() + "; "+              vTrace(  "%8d writeBool     %8d<%8d", "pc", n(vWriteIntIndex(),  vWriteBitIndex()), vWriteBool());}
+    String  readIntIndexV(Int I) {im(I); return vReadIntIndex () + "<= i[array_pcConstant[pc]];                     "+              vTrace(  "%8d readIntIndex  %8d=%8d", "pc", ""+I.id, I.vn());}
+    String  readBitIndexV(Int I) {im(I); return vReadBitIndex () + "<= i[array_pcConstant[pc]];                     "+              vTrace(  "%8d readBitIndex  %8d=%8d", "pc", ""+I.id, I.vn());}
+    String writeIntIndexV(Int I) {im(I); return vWriteIntIndex() + "<= i[array_pcConstant[pc]];                     "+              vTrace(  "%8d writeIntIndex %8d=%8d", "pc", ""+I.id, I.vn());}
+    String writeBitIndexV(Int I) {im(I); return vWriteBitIndex() + "<= i[array_pcConstant[pc]];                     "+              vTrace(  "%8d writeBitIndex %8d=%8d", "pc", ""+I.id, I.vn());}
 
-    void         readIntJ()      {readInt  = units[readIntIndex];                                                                   jTrace(f("%8d readInt       %8d",       pc(), readInt          ));}
-    void        readBoolJ()      {readBool = getBit(units[readIntIndex], readBitIndex);                                             jTrace(f("%8d readBool      %8d",       pc(), readBool  ? 1 : 0));}
-    void        writeIntJ()      {final int i = writeIntIndex, p = units[i]; units[i] = writeInt;                                   jTrace(f("%8d writeInt      %8d<%8d",   pc(), p, writeInt));}
-    void       writeBoolJ()      {final int i = writeIntIndex, b = writeBitIndex, p = units[i]; units[i] = setBit(p, b, writeBool); jTrace(f("%8d writeBool     %8d<%8d",   pc(), getBit(p, b) ? 1 : 0, writeBool ? 1 : 0));}
-    void    readIntIndexJ(Int I) {readIntIndex  = I.i();                                                                            jTrace(f("%8d readIntIndex  %8d=%8d",   pc(),   I.id, I.i()));}
-    void    readBitIndexJ(Int I) {readBitIndex  = I.i();                                                                            jTrace(f("%8d readBitIndex  %8d=%8d",   pc(),   I.id, I.i()));}
-    void   writeIntIndexJ(Int I) {writeIntIndex = I.i();                                                                            jTrace(f("%8d writeIntIndex %8d=%8d",   pc(),   I.id, I.i()));}
-    void   writeBitIndexJ(Int I) {writeBitIndex = I.i();                                                                            jTrace(f("%8d writeBitIndex %8d=%8d",   pc(),   I.id, I.i()));}
+    void         readIntJ()      {readInt  = units[readIntIndex];                                                                   jTrace(f("%8d readInt       %8d",      pc(), readInt          ));}
+    void        readBoolJ()      {readBool = getBit(units[readIntIndex], readBitIndex);                                             jTrace(f("%8d readBool      %8d",      pc(), readBool  ? 1 : 0));}
+    void        writeIntJ()      {final int i = writeIntIndex, p = units[i]; units[i] = writeInt;                                   jTrace(f("%8d writeInt      %8d<%8d",  pc(), p, writeInt));}
+    void       writeBoolJ()      {final int i = writeIntIndex, b = writeBitIndex, p = units[i]; units[i] = setBit(p, b, writeBool); jTrace(f("%8d writeBool     %8d<%8d",  pc(), getBit(p, b) ? 1 : 0, writeBool ? 1 : 0));}
+    void    readIntIndexJ(Int I) {readIntIndex  = I.i();                                                                            jTrace(f("%8d readIntIndex  %8d=%8d",  pc(),   I.id, I.i()));}
+    void    readBitIndexJ(Int I) {readBitIndex  = I.i();                                                                            jTrace(f("%8d readBitIndex  %8d=%8d",  pc(),   I.id, I.i()));}
+    void   writeIntIndexJ(Int I) {writeIntIndex = I.i();                                                                            jTrace(f("%8d writeIntIndex %8d=%8d",  pc(),   I.id, I.i()));}
+    void   writeBitIndexJ(Int I) {writeBitIndex = I.i();                                                                            jTrace(f("%8d writeBitIndex %8d=%8d",  pc(),   I.id, I.i()));}
 
     int pc() {return currentPc();}
 
@@ -1010,8 +1011,8 @@ public class Program extends Test                                               
            };
           new I()                                                                                                       // Set write from read
            {final String f = "%8d writeInt=readInt %8d";
-            void   a() {         writeInt       =   S. readInt;         jTrace(f(f,  pc(),     writeInt));}             // Java updates variables immediately so their value can be used later in the same expression
-            String v() {return vWriteInt() + " <= "+S.vReadInt() + "; "+vTrace(q(f), "pc", q(S.vReadInt()));}           // Verilog updates at the end of the block so we have to supply the original expression
+            void   a() {         writeInt       =   S. readInt;         jTrace(f(f,  pc(),   writeInt));}               // Java updates variables immediately so their value can be used later in the same expression
+            String v() {return vWriteInt() + " <= "+S.vReadInt() + "; "+vTrace(  f, "pc",  S.vReadInt());}              // Verilog updates at the end of the block so we have to supply the original expression
            };
           new I()                                                                                                       // Write into target memory
            {void   a() {       writeIntJ();}
@@ -1030,8 +1031,8 @@ public class Program extends Test                                               
         String v() {return writeIntIndexV(Index);}
        };
       new I()                                                                                                           // Set write from read
-       {void   a() {writeInt = 0;                  jTrace(f("%8d writeInt=0",   pc()));}
-        String v() {return vWriteInt() + " <= 0; "+vTrace(q("%8d writeInt=0"), "pc"  );}
+       {void   a() {writeInt = 0;                  jTrace(f("%8d writeInt=0",  pc()));}
+        String v() {return vWriteInt() + " <= 0; "+vTrace(  "%8d writeInt=0", "pc"  );}
        };
       new I()                                                                                                           // Write into target memory
        {void   a() {       writeIntJ();}
@@ -1068,7 +1069,7 @@ public class Program extends Test                                               
       new I()                                                                                                           // Set target index
        {final String f = "%8d ReadInt from Memory %8d = %8d";
         void   a() {r.i = readInt; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                     I.id));}
-        String v() {im(r); return "i[array_pcConstant[pc]] <= "+vReadInt()+"; "+vTrace(q(f), "pc",  "array_pcConstant[pc]", ""+I.id);}
+        String v() {im(r); return "i[array_pcConstant[pc]] <= "+vReadInt()+"; "+vTrace(  f, "pc",  "array_pcConstant[pc]", ""+I.id);}
        };
       return r;
      }
@@ -1089,8 +1090,8 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d ReadBool from Memory %8d = %8d";
-        void   a() {r.i = readBool; r.v = true;                                  jTrace(f(f,   pc(),   r.id,                   readBool ? 1 : 0));}
-        String v() {im(r); return "b[array_pcConstant[pc]] <= "+vReadBool()+"; "+vTrace(q(f), "pc",   "array_pcConstant[pc]", vReadBool());}
+        void   a() {r.i = readBool; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                   readBool ? 1 : 0));}
+        String v() {im(r); return "b[array_pcConstant[pc]] <= "+vReadBool()+"; "+vTrace(  f, "pc",   "array_pcConstant[pc]", vReadBool());}
        };
       return r;
      }
@@ -1105,7 +1106,7 @@ public class Program extends Test                                               
       new I()                                                                                                           // Read from source integer
        {final String f = "%8d writeInt2 %8d = %8d < %8d";
         void   a() {final int p = writeInt; writeInt = J.i();                  jTrace(f(f,  pc(),  writeIntIndex,         J.i,      p));}
-        String v() {im(J); return vWriteInt() + "<= i[array_pcConstant[pc]]; "+vTrace(q(f), "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
+        String v() {im(J); return vWriteInt() + "<= i[array_pcConstant[pc]]; "+vTrace(  f, "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
        };
       new I()                                                                                                           // Write source integer value into target memory at indexed location
        {void   a() {       writeIntJ();}
@@ -1126,7 +1127,7 @@ public class Program extends Test                                               
       new I()                                                                                                           // Set write from read
        {final String f = "%8d writeBool2 %8d, %8d = %8d < %8d";
          void   a() {writeBool = K.b();                                         jTrace(f(f,  pc(),  writeIntIndex,    writeBitIndex,        K.i ? 1 : 0,  writeBool ? 1 : 0));}
-        String v() {im(K); return vWriteBool() + "<= b[array_pcConstant[pc]]; "+vTrace(q(f), "pc", vWriteIntIndex(), vWriteBitIndex(), "b["+K.id+"]", "b["+K.id+"]");}
+        String v() {im(K); return vWriteBool() + "<= b[array_pcConstant[pc]]; "+vTrace(  f, "pc", vWriteIntIndex(), vWriteBitIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
       new I()                                                                                                           // Write into memory
        {void   a() {       writeBoolJ();}
@@ -1888,16 +1889,16 @@ endmodule
        {final StringBuilder s = new StringBuilder();
         for(int i = 0; i < array.length; ++i) s.append(f("%8x\n", array[i]));
         s.append("0\n");                                                                                                // The array is deliberately made one element bigger than strictly needed - why I cannot recall.
-        final String        f = fe(verilogTestFolder(), name, "txt");
+        final String        f = fe(verilogTestArrayFolder(), name, "txt");
         return writeFile(f, s);
        }
 
       String load ()                                                                                                    // Load the array by writing its values in hex to a file and then loading that file via $readmemh
-       {final String file = writeInHex();
-
+       {final String File = writeInHex();                                                                               // Absolute path name to array file
+        final String file = fn(verilogArrayFiles, fnex(File));                                                          // Relative path name to array file
         return   substitute("""
   initial $readmemh("{file}", {array}, 0, {size});
-""", "file", fnex(file), "array", arrayName(), "size", ""+array.length);
+""", "file", file, "array", arrayName(), "size", ""+array.length);
        }
 
       String loadName ()       {return "load_"       +name;}                                                            // Free data associated with instruction matching as it can get quite big
@@ -1927,10 +1928,11 @@ endmodule
    {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} int traces() {return 0;}};
    }
 
-  String verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                                // Folder for this test using Verilog
-  String  verilogTraceFile () {return fn(verilogTestFolder(), verilogTraceFile);}                                       // Verilog trace file
-  String     javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                          // Java trace file
-  String   VerilogCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}                 // Verilog code file
+  String      verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                           // Folder for this test using Verilog
+  String verilogTestArrayFolder () {return fp(verilogTestFolder(), verilogArrayFiles);}                                 // Folder for arrays used in this test using Verilog
+  String       verilogTraceFile () {return fn(verilogTestFolder(), verilogTraceFile);}                                  // Verilog trace file
+  String          javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                     // Java trace file
+  String        VerilogCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}            // Verilog code file
 
   static void test_addition(boolean Ex)
    {sayCurrentTestName();
