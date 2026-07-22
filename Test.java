@@ -788,7 +788,7 @@ public class Test                                                               
    {appendFile(FilePath, new StringBuilder(String));
    }
 
-  static void writeFile (String FilePath, StringBuilder String)                                                         // Write a string builder to a file
+  static String writeFile (String FilePath, StringBuilder String)                                                         // Write a string builder to a file
    {try
      {makePath(folderName(FilePath));
       Files.write(Paths.get(FilePath), String.toString().getBytes());
@@ -797,6 +797,7 @@ public class Test                                                               
     catch (Exception e)
      {stop("Cannot write file", FilePath, e);
      }
+    return FilePath;
    }
 
   static void writeFile (String FilePath, String String)                                                                // Write a string to a file
