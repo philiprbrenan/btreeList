@@ -712,7 +712,7 @@ final public class BitSet extends Program                                       
 
     new If (getBitNC(p))                                                                                                // The root has a one so the bit set is not empty
      {void Then()
-       {new For(new Int(logBitSize))                                                                                    // Step down looking for an adjacent sub tree that also has a one
+       {new For(new Int(logBitSize()))                                                                                   // Step down looking for an adjacent sub tree that also has a one
          {void body(Int Index, Bool Continue)
            {final Int l = childLowOne (p);
             final Int h = childHighOne(p);
