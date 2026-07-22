@@ -1810,7 +1810,7 @@ Zero:
 
             new I()                                                                                                     // Set the key to insert
              {void        a() {targetInt(keys[Index.i()]);}
-              String      v() {return "targetInt <= keys("+Index.vn()+");";}
+              String      v() {return "targetInt <= array_keys["+Index.vn()+"];";}
               boolean trace() {return false;}
              };
 
@@ -1903,7 +1903,7 @@ keys     :   14  13  16  15  18  17  12  11
 
             new I()                                                                                                     // Set the key to insert
              {void        a() {targetInt(keys[Index.i()]);}
-              String      v() {return "targetInt <= keys_array[pc];";}
+              String      v() {return "targetInt <= array_keys["+Index.vn()+"];";}
               boolean trace() {return false;}
              };
 
@@ -2421,15 +2421,13 @@ keys     :    0   0   0   0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
-    //test_insert2();
-    test_insert2(false);
+   {oldTests();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFiles(verilogFolder, 99);                                                                                // Delete generated Verilog files created by a prior run of the current test
+     {deleteAllFiles(verilogFolder, 999);                                                                               // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
       testSummary();                                                                                                    // Summarize test results
