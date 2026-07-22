@@ -559,12 +559,14 @@ public class Program extends Test                                               
        {final String ri = RegisterId;                                                                                   // Shorten name
         final String rv = RegisterValue;                                                                                // Shorten name
 
-        final I i = new I()                                                                                             // Load index of integer
-         {final String c = pExpr("array_pcConstant[pc];");
-          void   a() {loadId(id);                    jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
-          String v() {return pCR(ri) + " <= "+c+" "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
-         };
-        pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions
+        if (RegisterId != null)                                                                                         // Load index of integer operand if requested
+         {final I i = new I()                                                                                           // Load index of integer
+           {final String c = pExpr("array_pcConstant[pc];");
+            void   a() {loadId(id);                    jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
+            String v() {return pCR(ri) + " <= "+c+" "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
+           };
+          pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions
+         }
 
         if (LoadValue) new I()                                                                                          // Value of integer
          {final String v = pExpr("i["+ri+"];");
@@ -1058,7 +1060,7 @@ public class Program extends Test                                               
 
     Int getInt (Int I)                                                                                                  // Get the int at the indicated position
      {final Int r = new Int();
-      new I()                                                                                                           // Set index
+      if (I != null) new I()                                                                                            // Set index to read if not already set
        {void   a() {              readIntIndexJ(I);}
         String v() {im(I); return readIntIndexV(I);}
        };
@@ -1068,7 +1070,7 @@ public class Program extends Test                                               
        };
       new I()                                                                                                           // Set target index
        {final String f = "%8d ReadInt from Memory %8d = %8d";
-        void   a() {r.i = readInt; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                     I.id));}
+        void   a() {r.i = readInt; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                    I.id));}
         String v() {im(r); return "i[array_pcConstant[pc]] <= "+vReadInt()+"; "+vTrace(  f, "pc",  "array_pcConstant[pc]", ""+I.id);}
        };
       return r;
@@ -1076,11 +1078,11 @@ public class Program extends Test                                               
 
     Bool getBool (Int I, Int J)                                                                                         // Get the bit in the specified byte at the specified position within the byte
      {Bool r = new Bool();
-      new I()                                                                                                           // Set int index
+      if (I != null) new I()                                                                                            // Set int index if not already set
        {void   a() {       readIntIndexJ(I);}
         String v() {im(I); return readIntIndexV(I);}
        };
-      new I()                                                                                                           // Set bit index
+      if (I != null) new I()                                                                                            // Set bit index if not already set
        {void   a() {       readBitIndexJ(J);}
         String v() {im(J); return readBitIndexV(J);}
        };
@@ -1099,11 +1101,11 @@ public class Program extends Test                                               
     Bool getBool (Int I) {return getBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                    // Get the bit at the bit indexed location
 
     UnitMemory putInt (Int I, Int J)                                                                                    // Write to the indexed memory location the value of the specified source integer
-     {new I()                                                                                                           // Set target index of memory to be written to
+     {if (I != null) new I()                                                                                            // Set target index of memory to be written to if not already set
        {void   a() {              writeIntIndexJ(I);}
         String v() {im(I); return writeIntIndexV(I);}
        };
-      new I()                                                                                                           // Read from source integer
+      if (J != null) new I()                                                                                            // Integer to write if not already set
        {final String f = "%8d writeInt2 %8d = %8d < %8d";
         void   a() {final int p = writeInt; writeInt = J.i();                  jTrace(f(f,  pc(),  writeIntIndex,         J.i,      p));}
         String v() {im(J); return vWriteInt() + "<= i[array_pcConstant[pc]]; "+vTrace(  f, "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
@@ -1116,17 +1118,17 @@ public class Program extends Test                                               
      }
 
     UnitMemory putBool (Int I, Int J, Bool K)                                                                           // Set the bit at the indicated position in the byte at the specified position to the specified value
-     {new I()                                                                                                           // Set target index
+     {if (I != null) new I()                                                                                            // Set target index if not already set
        {void   a() {              writeIntIndexJ(I);}
         String v() {im(I); return writeIntIndexV(I);}
        };
-      new I()                                                                                                           // Set target index
+      if (J != null) new I()                                                                                            // Set target bit index if not already set
        {void   a() {              writeBitIndexJ(J);}
         String v() {im(J); return writeBitIndexV(J);}
        };
-      new I()                                                                                                           // Set write from read
+      if (K != null) new I()                                                                                            // If a value to be written has been supplied then put it into the control register, else assume the control register has already been set
        {final String f = "%8d writeBool2 %8d, %8d = %8d < %8d";
-         void   a() {writeBool = K.b();                                         jTrace(f(f,  pc(),  writeIntIndex,    writeBitIndex,        K.i ? 1 : 0,  writeBool ? 1 : 0));}
+         void  a() {writeBool = K.b();                                          jTrace(f(f,  pc(), writeIntIndex,    writeBitIndex,        K.i ? 1 : 0,  writeBool ? 1 : 0));}
         String v() {im(K); return vWriteBool() + "<= b[array_pcConstant[pc]]; "+vTrace(  f, "pc", vWriteIntIndex(), vWriteBitIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
       new I()                                                                                                           // Write into memory
