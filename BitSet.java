@@ -106,10 +106,11 @@ final public class BitSet extends Program                                       
 
 //D1 Get and Set Bits                                                                                                   // Get and set bits in the bitset setting the corresponding paths in the bits trees
 
-  public void clear (Int Index) {set(Index, new Bool(false));}                                                          // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void   set (Int Index) {set(Index, new Bool(true ));}                                                          // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
-  public void   set (Int Index, Bool Value)                                                                             // Set or clear a bit in the bitset
-   {subStart("Bitset.set");
+  public void clear (Int Index) {set(Index, false);}                                                                    // Clear bit and corresponding path bits from the indexed bit to the root of the bit tree
+  public void   set (Int Index) {set(Index, true );}                                                                    // Set bit and corresponding path bits from the indexed bit to the root of the bit tree
+
+  public void   set (Int Index, boolean Value)                                                                          // Set a bit to a constant value known at compile time
+   {subStart("Bitset.setTrue");
     if (immediate())                                                                                                    // Check index is in range
      {if (Index.i() <        0) stop("Index less than zero: ", Index);
       if (Index.i() >= bitSize) stop("Index larger than bitset size:", Index, bitSize);
@@ -119,12 +120,7 @@ final public class BitSet extends Program                                       
        {if (trackCount)
          {final Int c = memoryCount.getInt();                                                                           // Current count
 
-          new If (Value)                                                                                                // Change the count if the bit is being changed
-           {void Then()
-             {memoryCount.putInt(new Int(c.Inc()));
-             }
-            void Else() {memoryCount.putInt(new Int(c.Dec()));}
-           };
+          memoryCount.putInt(Value ? c.Inc() : c.Dec());                                                                // Change the count if the bit is being changed
 
           if (immediate())
            {final int C = memoryCount.getInt().i();                                                                     // Check new count is in range
@@ -133,8 +129,8 @@ final public class BitSet extends Program                                       
            }
          }
         setBitNC(Index, Value);                                                                                         // Set the bit
-        new If (Value) {void Then() {setOnePath (Index);} void Else() {clearOnePath (Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the ones  tree
-        new If (Value) {void Then() {setZeroPath(Index);} void Else() {clearZeroPath(Index);}};                         // Set or clear bits along the path from the indexed bit to the root of the zeros tree
+        if (Value) setOnePath (Index); else clearOnePath (Index);                                                       // Set or clear bits along the path from the indexed bit to the root of the ones  tree
+        if (Value) setZeroPath(Index); else clearZeroPath(Index);                                                       // Set or clear bits along the path from the indexed bit to the root of the zeros tree
        }
      };
     subFinish();
@@ -148,6 +144,17 @@ final public class BitSet extends Program                                       
   void    setBitNC (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                           // Set bit value without checking index
   void    setBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(true));}                                  // Set bit value without checking index
   void  clearBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(false));}                                 // Clear a bit value without checking index
+
+  void    setBitNC (Int Index, boolean B)                                                                               // Set a bit to a value known at compile time
+   {subStart     ("Bitset.setBitNC_IB");
+    final String f = "%8d setBitNC_IB writeBool = %8d";
+    new I()                                                                                                             // Set target boolean directly
+     {void   a() {memoryRef.m.writeBool = B;                                 jTrace(f(f,  currentPc(), B ?  1  :  0));}
+      String v() {return memoryRef.m.vWriteBool() + " <= " + (B ? 1 : 0)+";"+vTrace(  f, "pc",         B ? "1" : "0");}
+     };
+    memoryRef.putBool(Index, null);                                                                                     // Save target boolean into memory
+    subFinish();
+   }
 
   void setOnePath (Int Index)                                                                                           // Set bits along the path from the indexed bit to the root of the ones tree
    {subStart("Bitset.setOnePath");
@@ -930,7 +937,7 @@ Zero:
     final int N = 16;
     final BitSet b = test_bits(Ex, N);
 
-    for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 0));
+    for (int i : range(N)) b.set(b.new Int(i), (i / 4) % 2 == 0);
     //testStop(b);
     b.ok(()->b, """
 BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
@@ -986,7 +993,7 @@ Zero:
    {sayCurrentTestName();
     final int N = 16;
     final BitSet b = test_bits(Ex, N);
-    for (int i : range(N)) b.set(b.new Int(i), b.new Bool((i / 4) % 2 == 1));
+    for (int i : range(N)) b.set(b.new Int(i), (i / 4) % 2 == 1);
 
    //testStop(b);
 
@@ -1286,16 +1293,16 @@ Zero:
    {sayCurrentTestName();
     final BitSet b = test_bits(Ex, N);
 
-    b.set(b.new Int(  1),   b.new Bool(true));
-    b.set(b.new Int(N-1),   b.new Bool(true));
+    b.set(b.new Int(  1),   true);
+    b.set(b.new Int(N-1),   true);
     b.countAllOnes ().ok(2);
     b.countAllZeros().ok(N-2);
 
-    b.set(b.new Int(N/2),   b.new Bool(true));
+    b.set(b.new Int(N/2),   true);
     b.countAllOnes ().ok(3);
     b.countAllZeros().ok(N-3);
 
-    b.set(b.new Int(N/2+1), b.new Bool(true));
+    b.set(b.new Int(N/2+1), true);
     b.countAllOnes ().ok(4);
     b.countAllZeros().ok(N-4);
 
@@ -1339,7 +1346,7 @@ Zero:
     final int N = 16;
     final BitSet b = test_bits(Ex, N);
 
-    for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), b.new Bool(true));
+    for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), true);
 
     b.topOne().ok(30); /*b.topZero().ok(45);*/ b.baseOne() .ok(16); b.baseZero().ok(31);
 
@@ -1657,7 +1664,7 @@ Zero:
     final int N = 16;
     final BitSet b = test_bits(Ex, N);
 
-    for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), b.new Bool(true));
+    for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), true);
 
     //testStop("AAAA", b);
     b.ok(()->b, """
@@ -1763,3 +1770,79 @@ Zero:
      }
    }
  }
+/*   950,276  Bitset.setZeroPath
+     639,562  Bitset.clearOnePath
+     599,886  Bitset.nextOne
+     466,303  Tree.Print
+     434,536  Bitset.clearZeroPath
+     351,688  Bitset.setOnePath
+     348,448  Bitset.lowOne
+     296,651  Bitset.set
+     232,994  Bitset.nextZero
+     183,703  Bitset.highOne
+     158,688  Slots
+     116,076  Bitset.lowZero
+     113,860  Bitset.firstOne
+      82,878  Tree.mergeUp
+      75,586  Bitset.firstZero
+      64,562  Tree.Path
+      52,308  Tree.insert
+      52,152  Tree.mergeLeftIntoRightSibling
+      47,429  Bitset.prevZero
+      41,477  Slots.delSlotToKeys
+      40,313  Tree.findLeaf
+      37,219  Tree.insertFullLeaf
+      37,071  Bitset.limitUpperOne
+      35,422  Tree.mergeLeftLeafIntoRightSibling
+      30,694  Tree.delete
+      30,586  Slots.redistribute
+      27,913  Program.UnitMemory.copy
+      25,935  Slots.putSlotToKeys
+      25,759  Bitset.highZero
+      21,879  Bitset.heightOne
+      19,908  Slots.moveSlot(BBb
+      19,680  Slots.locateNearestFreeSlotToKey
+      19,266  Program.UnitMemory.clearUnit(I)
+      17,858  Slots.compactSlotsLeft
+      15,661  Program.UnitMemory.clear(I)
+      15,552  Bitset.limitUpperZero
+      15,427  Tree.splitDown
+      15,380  Bitset.lastOne
+      13,399  Program.UnitMemory.clear(II)
+      13,254  Bitset.lastZero
+      10,635  Tree.mergeLeftBranchIntoRightSibling
+      10,580  Slots.compactKeysRight
+      10,342  Slots.compactKeysLeft
+       7,804  Tree.splitRootBranch
+       6,260  Bitset.canGoRight
+       6,234  Bitset.canGoLeft
+       6,060  Slots.moveKey
+       6,051  Tree.splitPoint
+       5,870  Slots.splitLeftEven
+       5,805  Bitset.limitLowerOne
+       5,643  Bitset.heightZero
+       5,420  Slots.putKey
+       5,359  Slots.delKey
+       4,851  mergeLeftLeft
+       3,954  Slots.moveSlot(II)
+       3,593  Slots.compactSlotsRight
+       2,587  Tree.mergeLeft
+       2,378  Slots.mergeFromLeftEven
+       2,019  Slots.shiftDownOne
+       1,515  Tree.mergeRightRight
+       1,501  Branch.mergeLeft
+       1,403  Slots.shiftUpOne
+       1,017  Bitset.pos_zero
+         981  Slots.splitLeftOdd
+         641  Branch.splitRight
+         638  Slots.splitRightEven
+         597  Slots.mergeFromLeftOdd
+         576  Slots.splitRightOdd
+         264  Branch.copyMergeData
+         129  Branch.mergeRight
+         116  Branch.insertEmpty
+          35  Tree.print
+           0  Branch.compactLeft
+           0  Branch.compactRight
+           0  Slots.build()
+*/
