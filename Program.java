@@ -260,6 +260,10 @@ public class Program extends Test                                               
      {for (int i = 0; i < End; ++i) body(new Int(i));                                                                   // Iterate over the specified range
      }
 
+    ForCount (int Start, int End)                                                                                       // Execute the loop the known number of times
+     {for (int i = Start; i < End; ++i) body(new Int(i));                                                               // Iterate over the specified range
+     }
+
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
    }
 
