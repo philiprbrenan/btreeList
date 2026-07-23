@@ -401,8 +401,8 @@ class Slots extends Program                                                     
     final Int sk = new Int(left.getSlotToKeyValue(new Int(numberOfKeys/2-1))).                                          // Splitting key is half the two middle keys
                        add(left.getSlotToKeyValue(new Int(numberOfKeys/2-0))).down();
 
-    new ForCount(new Int(N/2))             {void body(Int Index) {Right.delete(Index);}};                               // Clear lower half of target right slots
-    new ForCount(new Int(N/2), new Int(N)) {void body(Int Index) {left .delete(Index);}};                               // Clear upper half of left slots
+    new ForCount(N/2)    {void body(Int Index) {Right.delete(Index);}};                                                 // Clear lower half of target right slots
+    new ForCount(N/2, N) {void body(Int Index) {left .delete(Index);}};                                                 // Clear upper half of left slots
     left .redistribute();                                                                                               // Redistribute source and target slots if requested
     Right.redistribute();
     subFinish();
@@ -422,8 +422,8 @@ class Slots extends Program                                                     
     final Int sk = new Int(right.getSlotToKeyValue(new Int(numberOfKeys/2-1))).                                         // Splitting key is half the two middle keys
                        add(right.getSlotToKeyValue(new Int(numberOfKeys/2-0))).down();
 
-    new ForCount(new Int(N/2))             {void body(Int Index) {right.delete(Index);}};                               // Clear lower half of target left slots
-    new ForCount(new Int(N/2), new Int(N)) {void body(Int Index) {Left .delete(Index);}};                               // Clear upper half of left slots
+    new ForCount(N/2)    {void body(Int Index) {right.delete(Index);}};                                                 // Clear lower half of target left slots
+    new ForCount(N/2, N) {void body(Int Index) {Left .delete(Index);}};                                                 // Clear upper half of left slots
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
     subFinish();
@@ -447,8 +447,8 @@ class Slots extends Program                                                     
     final Int sk = new Int(left.getSlotToKeyIndex(M));                                                                  // Get the index of the splitting key. The actual key can be recovered from the index.
     final Int sK = new Int(left.getKeyValue(sk));                                                                       // Value of the splitting key
 
-    new ForCount(R)             {void body(Int Index) {Right.delete(Index);}};                                          // Clear lower half of target right slots
-    new ForCount(M, new Int(N)) {void body(Int Index) {left .delete(Index);}};                                          // Clear upper half of left slots
+    new ForCount(R)      {void body(Int Index) {Right.delete(Index);}};                                                 // Clear lower half of target right slots
+    new ForCount(N/2, N) {void body(Int Index) {left .delete(Index);}};                                                 // Clear upper half of left slots
 
     left.refKeys.putInt(sk, sK);                                                                                        // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
 
@@ -473,9 +473,9 @@ class Slots extends Program                                                     
     final Int sk = new Int(right.getSlotToKeyIndex(M));                                                                 // Get the index of the splitting key. The actual key can be recovered from the index.
     final Int sK = new Int(right.getKeyValue(sk));                                                                      // Value of the splitting key
 
-    new ForCount(R)              {void body(Int Index) {right.delete(Index);}};                                         // Clear lower half of target right slots
+    new ForCount(R)       {void body(Int Index) {right.delete(Index);}};                                                // Clear lower half of target right slots
     right.refKeys.putInt(sk, sK);                                                                                       // Leave splitting key in position so that the returned splitting key index can still refer to it, but the slot has been marked as free so it is only valid until it is overwritten
-    new ForCount(M, new Int(N))  {void body(Int Index) {Left .delete(Index);}};                                         // Clear upper half of left slots
+    new ForCount(N/2, N)  {void body(Int Index) {Left .delete(Index);}};                                                // Clear upper half of left slots
     Left .redistribute();                                                                                               // Redistribute source and target slots if requested
     right.redistribute();
     subFinish();
