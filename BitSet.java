@@ -1265,7 +1265,7 @@ Zero:
     final BitSet b = test_bits(Ex, N);
 
     b.empty().ok(true);
-    b.new ForCount(b.new Int(N))
+    b.new ForCount(N)
      {void body(Int Index)
        {b.full ().ok(false);
         final Int c = b.countAllOnes();
