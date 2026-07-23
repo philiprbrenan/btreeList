@@ -2,6 +2,7 @@
 // Locate set or cleared bits in a fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
+// Check how often each variable is read or written to eliminate variables that are only used once.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -142,8 +143,8 @@ final public class BitSet extends Program                                       
 
   void      setBit (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                           // Set bit value.
   void    setBitNC (Int Index, Bool Value) {memoryRef.putBool(Index, Value);}                                           // Set bit value without checking index
-  void    setBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(true));}                                  // Set bit value without checking index
-  void  clearBitNC (Int Index)             {memoryRef.putBool(Index, new Bool(false));}                                 // Clear a bit value without checking index
+  void    setBitNC (Int Index)             {setBitNC(Index, true);}                                                     // Set bit value without checking index
+  void  clearBitNC (Int Index)             {setBitNC(Index, false);}                                                    // Clear a bit value without checking index
 
   void    setBitNC (Int Index, boolean B)                                                                               // Set a bit to a value known at compile time
    {subStart     ("Bitset.setBitNC_IB");
@@ -1845,4 +1846,87 @@ Zero:
            0  Branch.compactLeft
            0  Branch.compactRight
            0  Slots.build()
+
+1     0.02 test_deleteRandom32
+ 2     9.28 test_deleteRandom32
+            Code size:    1,242,676
+Instruction reduction:          100, percent: 99.9920
+cd verilog/deleteRandom32/; rm -f deleteRandom32; iverilog -g2012 -o deleteRandom32 deleteRandom32.v &&  vvp -M../../vpi -mwall_time deleteRandom32 running remotely
+     698,035  Bitset.setZeroPath
+     599,886  Bitset.nextOne
+     476,162  Bitset.clearOnePath
+     466,303  Tree.Print
+     348,448  Bitset.lowOne
+     294,257  Bitset.setOnePath
+     273,286  Bitset.clearZeroPath
+     232,994  Bitset.nextZero
+     183,703  Bitset.highOne
+     165,980  Bitset.setTrue
+     158,688  Slots
+     116,076  Bitset.lowZero
+     113,860  Bitset.firstOne
+      95,036  Bitset.setBitNC_IB
+      82,848  Tree.mergeUp
+      75,586  Bitset.firstZero
+      64,562  Tree.Path
+      52,152  Tree.mergeLeftIntoRightSibling
+      52,123  Tree.insert
+      47,429  Bitset.prevZero
+      40,313  Tree.findLeaf
+      37,962  Slots.delSlotToKeys
+      37,159  Tree.insertFullLeaf
+      37,071  Bitset.limitUpperOne
+      35,342  Tree.mergeLeftLeafIntoRightSibling
+      30,694  Tree.delete
+      30,586  Slots.redistribute
+      27,913  Program.UnitMemory.copy
+      25,759  Bitset.highZero
+      22,230  Slots.putSlotToKeys
+      21,879  Bitset.heightOne
+      19,908  Slots.moveSlot(BBb
+      19,680  Slots.locateNearestFreeSlotToKey
+      19,266  Program.UnitMemory.clearUnit(I)
+      17,858  Slots.compactSlotsLeft
+      15,661  Program.UnitMemory.clear(I)
+      15,552  Bitset.limitUpperZero
+      15,407  Tree.splitDown
+      15,380  Bitset.lastOne
+      13,399  Program.UnitMemory.clear(II)
+      13,254  Bitset.lastZero
+      10,610  Tree.mergeLeftBranchIntoRightSibling
+      10,580  Slots.compactKeysRight
+      10,342  Slots.compactKeysLeft
+       7,779  Tree.splitRootBranch
+       6,260  Bitset.canGoRight
+       6,234  Bitset.canGoLeft
+       6,060  Slots.moveKey
+       6,051  Tree.splitPoint
+       5,870  Slots.splitLeftEven
+       5,805  Bitset.limitLowerOne
+       5,643  Bitset.heightZero
+       4,851  mergeLeftLeft
+       4,194  Slots.delKey
+       4,065  Slots.putKey
+       3,954  Slots.moveSlot(II)
+       3,593  Slots.compactSlotsRight
+       2,587  Tree.mergeLeft
+       2,378  Slots.mergeFromLeftEven
+       2,019  Slots.shiftDownOne
+       1,515  Tree.mergeRightRight
+       1,501  Branch.mergeLeft
+       1,403  Slots.shiftUpOne
+       1,017  Bitset.pos_zero
+         981  Slots.splitLeftOdd
+         641  Branch.splitRight
+         638  Slots.splitRightEven
+         597  Slots.mergeFromLeftOdd
+         576  Slots.splitRightOdd
+         264  Branch.copyMergeData
+         129  Branch.mergeRight
+         116  Branch.insertEmpty
+          35  Tree.print
+           0  Branch.compactLeft
+           0  Branch.compactRight
+           0  Slots.build()
+
 */
