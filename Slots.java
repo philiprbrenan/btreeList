@@ -100,7 +100,7 @@ class Slots extends Program                                                     
    {subStart("Slots.putSlotToKeys");
     refSlotsToKeys.putInt(Index, Key);                                                                                  // Set forward  reference
     refKeysToSlots.putInt(Key, Index);                                                                                  // Set backward reference
-    usedSlotsToKeys.set(Index, new Bool(true));                                                                         // Set bit showing this slot reference is active
+    usedSlotsToKeys.set(Index, true);                                                                                   // Set bit showing this slot reference is active
     subFinish();
    }
 
@@ -109,21 +109,21 @@ class Slots extends Program                                                     
     final Int K = refSlotsToKeys.getInt(Index);                                                                         // Slot to key index
                   refSlotsToKeys.putInt(Index, new Int(0));                                                             // Zero forward reference
     refKeysToSlots.putInt(K,                   new Int(0));                                                             // Zero backward reference
-    usedSlotsToKeys.set  (Index,               new Bool(false));                                                        // Make this slot reference inactive
+    usedSlotsToKeys.set  (Index,               false);                                                                  // Make this slot reference inactive
     subFinish();
    }
 
   void putKey(Int Index, Int Key)                                                                                       // Set a key
    {subStart("Slots.putKey");
     refKeys .putInt(Index, Key);
-    usedKeys.set   (Index, new Bool(true));
+    usedKeys.set   (Index, true);
     subFinish();
    }
 
   void delKey(Int Index)                                                                                                // Clear a key
    {subStart("Slots.delKey");
     refKeys.putInt(Index, new Int(0));                                                                                  // Clear the key by zeroing it - this is not strictly necessary - it does make tests neater
-    usedKeys.set  (Index, new Bool(false));
+    usedKeys.set  (Index, false);
     subFinish();
    }
 
