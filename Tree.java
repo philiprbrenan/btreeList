@@ -421,7 +421,7 @@ class Tree extends Program                                                      
          {final Int             i = step.Sub(Index).dec();                                                              // Index of parent branch that contains the split siblings
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
-          final Bint            L = new Bint();
+          final Bint            L = new Bint();                                                                         // There are four possibilities to consider
           new ForCount(new Int(4))                                                                                      // Locate the left sibling
            {void body(Int Index)
              {new If (Index.eq(0))                                                                                      // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
