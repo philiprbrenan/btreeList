@@ -335,6 +335,7 @@ public class Program extends Test                                               
     Bool       flip ()             {return ie(Ops.flip);       }
     Bool       Flip ()             {return dup().flip();}
     Bool         ne (Bool    I)    {return ie(Ops.ne,  I);}
+    Bool         ne (boolean I)    {return ie(Ops.ne,  I);}
     Bool         or (Bool    I)    {return ie(Ops.or,  I);}                                                             // "Or" without short circuit. Modifies the target.
     Bool        and (Bool    I)    {return ie(Ops.and, I);}                                                             // "And" without short circuit. Modifies the target.
     Bool         Or (Bool    I)    {return dup().or (I);}                                                               // "Or" without short circuit. Does not modify the target
@@ -352,12 +353,14 @@ public class Program extends Test                                               
        {final String ri = RegisterId;                                                                                   // Id register
         final String rv = RegisterValue;                                                                                // Value register
 
-        final I i = new I()                                                                                             // Load id of variable
-         {void   a() {loadId(id);                                    jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
-          String v() {return pCR(ri) + " <= array_pcConstant[pc]; "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id);}
-         };
+        if (ri != null)
+         {final I i = new I()                                                                                           // Load id of variable if requested
+           {void   a() {loadId(id);                                    jTrace(f("%8d "+ri+" = %8d",  pc(),   id));}
+            String v() {return pCR(ri) + " <= array_pcConstant[pc]; "+ vTrace(  "%8d "+ri+" = %8d", "pc", ""+id);}
+           };
 
-        pcConstant(i, id);                                                                                              // Id of variable being addressed by these instructions
+          pcConstant(i, id);                                                                                              // Id of variable being addressed by these instructions
+         }
 
         new I()                                                                                                         // Load source value
          {void   a() {loadValue(B.i);                      jTrace(f("%8d "+rv+" %8d",  pc(),  B.i ? 1 : 0));}
@@ -559,7 +562,7 @@ public class Program extends Test                                               
        {final String ri = RegisterId;                                                                                   // Shorten name
         final String rv = RegisterValue;                                                                                // Shorten name
 
-        if (RegisterId != null)                                                                                         // Load index of integer operand if requested
+        if (ri != null)                                                                                                 // Load index of integer operand if requested
          {final I i = new I()                                                                                           // Load index of integer
            {final String c = pExpr("array_pcConstant[pc];");
             void   a() {loadId(id);                    jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
