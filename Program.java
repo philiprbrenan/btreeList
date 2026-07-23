@@ -223,17 +223,16 @@ public class Program extends Test                                               
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount (Int Start, Int End)                                                                                       // Execute the loop the specified number of times
      {final Int index = new Int("Index");
+      if (Start == null) index.set(0); else index.set(Start);                                                           // Start index
 
       if (immediate())                                                                                                  // Immediate execution
-       {index.set(Start);                                                                                               // Start index
-        for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
+       {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
          {body(index);                                                                                                  // Execute the loop
           index.inc();                                                                                                  // Increment loop counter
          }
        }
       else                                                                                                              // Machine code
-       {index.set(Start);                                                                                               // Start index
-        final Label start = new Label();                                                                                // Start of for loop code
+       {final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bool   done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
@@ -255,9 +254,8 @@ public class Program extends Test                                               
        }
      }
 
-    ForCount (int  End) {this(new Int("Start", 0), new Int("End", End)   );}                                            // Execute the loop the specified number of times
-    ForCount (Int  End) {this(new Int("Start", 0),                End    );}                                            // Execute the loop the specified number of times
-    ForCount (Bint End) {this(new Int("Start", 0),                End.i());}                                            // Execute the loop the specified number of times
+    ForCount (int End) {this(null, new Int("End", End));}                                                               // Execute the loop the specified number of times
+    ForCount (Int End) {this(null,                End );}                                                               // Execute the loop the specified number of times
 
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
    }
