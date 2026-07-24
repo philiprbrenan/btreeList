@@ -1,0 +1,63 @@
+# Test 2026-07-24 at 18:56:52
+name: Build container image to run tests more quickly by avoiding initial installs
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-container.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-container:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Create Dockerfile
+        run: |
+          cat > Dockerfile <<'EOF'
+          FROM ubuntu:24.04
+
+          RUN sed -i 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g' 
+              /etc/apt/sources.list.d/ubuntu.sources
+
+          RUN apt-get clean && 
+              rm -rf /var/lib/apt/lists/* && 
+              apt-get update
+
+          RUN DEBIAN_FRONTEND=noninteractive apt-get install -y 
+              git 
+              tree 
+              yosys 
+              iverilog 
+              openjdk-25-jdk-headless 
+              && rm -rf /var/lib/apt/lists/*
+
+          WORKDIR /workspace
+          EOF
+
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Build image with Podman
+        run: |
+          podman build -t ghcr.io/${{ github.repository_owner }}/btree:latest  .
+
+
+      - name: Push image
+        run: |
+          podman push     ghcr.io/${{ github.repository_owner }}/btree:latest
