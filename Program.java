@@ -20,8 +20,8 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                            noSayCodeSize = true;                                                        // Whether to print the number of instructions in the program
-  final boolean                noSayInstructionReduction = true;                                                        // Whether to print the instruction reduction details achieved in the verilog code
+  final boolean                            noSayCodeSize = local_run;                                                   // Whether to suppress the printing of the number of instructions in the program
+  final boolean                noSayInstructionReduction = local_run;                                                   // Whether to suppress the printing of the instruction reduction details achieved in the verilog code
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
