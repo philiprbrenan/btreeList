@@ -108,12 +108,6 @@ jobs:
       with:
         ref: 'main'
 
-    - name: Verilog Programmable Interface
-      run: |
-        cd vpi
-        iverilog-vpi wall_time.c
-        ls -la
-
     - name: Position files in package
       run: |
         mkdir -p verilog $c
@@ -133,6 +127,12 @@ END
 #    - name: Install
 #      run: |
 #       sudo apt install iverilog yosys tree # openjdk-25-jdk
+
+#    - name: Verilog Programmable Interface
+#      run: |
+#        cd vpi
+#        iverilog-vpi wall_time.c
+#        ls -la
 
   for my $t(@t)                                                                                                         # Tasks
    {my $C  = $$t{class};
