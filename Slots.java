@@ -307,9 +307,9 @@ class Slots extends Program                                                     
   void compactKeysLeft(CompactKey CompactKey)                                                                           // Compact the keys to the left using as few moves as possible while allowing the caller to observe the moves made
    {subStart("Slots.compactKeysLeft");
     final Slots slots = this;
-    new If (empty().Flip())                                                                                             // Keys cannot be compacted if the slots are full or empty
+    new If (empty().flip())                                                                                             // Keys cannot be compacted if the slots are full or empty
      {void Then()
-       {new If (full().Flip())                                                                                          // Keys cannot be compacted if the slots are full or empty
+       {new If (full().flip())                                                                                          // Keys cannot be compacted if the slots are full or empty
          {void Then()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
@@ -334,9 +334,9 @@ class Slots extends Program                                                     
   void compactKeysRight(CompactKey CompactKey)                                                                          // Compact the keys to the right using as few moves as possible while allowing the caller to observe the moves made
    {subStart("Slots.compactKeysRight");
     final Slots slots = this;
-     new If (empty().Flip())                                                                                            // Keys cannot be compacted if the slots are full or empty
+     new If (empty().flip())                                                                                            // Keys cannot be compacted if the slots are full or empty
       {void Then()
-        {new If (full().Flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
+        {new If (full().flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
          {void Then()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
              {void body(Int Index, Bool Continue)
@@ -360,7 +360,7 @@ class Slots extends Program                                                     
   void redistribute()                                                                                                   // Improve insert performance by making the slots sparse while leaving the keys in their current positions
    {subStart("Slots.redistribute");
     final Slots slots = this;
-    new If (empty().Flip())                                                                                             // Something to redistribute
+    new If (empty().flip())                                                                                             // Something to redistribute
      {void Then()                                                                                                       // Redistribute
        {final Int         N = new Int(numberOfSlotsToKeys());                                                           // Maximum number of slots
         final Int         R = new Int(numberOfKeys());                                                                  // Maximum number of keys
