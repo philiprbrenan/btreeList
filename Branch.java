@@ -185,7 +185,7 @@ class Branch extends Program implements Program.Locatable                       
        {new If (slots.empty())                                                                                          // Easy insert as the slots are empty
          {void Then()
            {r.set(slots.insertEmpty(Key));                                                                              // Insert immediately in the center
-            refData.putInt(new Int(0), Data);                                                                           // Place data in the location that corresponds to the key slot used to complete the insertion
+            refData.putInt(Data);                                                                                       // Place data in the location that corresponds to the key slot used to complete the insertion
            }
           void Else()                                                                                                   // Insert above the last key, which is known to exist because the slots are not empty
            {final Int l = slots.locateLastUsedSlot().i();
@@ -205,7 +205,7 @@ class Branch extends Program implements Program.Locatable                       
     if (immediate() && !slots.empty().b()) stop("Branch must be empty, but it is not");                                 // Check that the branch is empty
     final Int r = new Int();                                                                                            // The slot containing the inserted key
     r.set(slots.insertEmpty(Key));                                                                                      // Insert immediately in the center
-    refData.putInt(new Int(0), Data);                                                                                   // Place data in first key slot
+    refData.putInt(Data);                                                                                               // Place data in first key slot
     subFinish();
     return r;                                                                                                           // Return the slot in the branch in which the key, data pair was actually inserted
    }
@@ -342,7 +342,7 @@ class Branch extends Program implements Program.Locatable                       
     final Bint f = slots.usedSlotsToKeys.firstOne();
     new If (f)
      {void Then()
-       {new For(new Int(maxSize))
+       {new For(maxSize)
          {void body(Int Index, Bool Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
             new I() {void a() {Iterator.process(k, d);} boolean trace() {return false;}};
