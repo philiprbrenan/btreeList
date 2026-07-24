@@ -269,7 +269,7 @@ class Slots extends Program                                                     
 
   void compactSlotsLeft ()                                                                                              // Compact the slots to the left hand side
    {subStart("Slots.compactSlotsLeft");
-    new If (empty().Flip())                                                                                             // Compact slots
+    new If (empty().flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
          {void body(Int Index, Bool Continue)
