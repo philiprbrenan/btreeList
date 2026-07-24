@@ -255,15 +255,17 @@ public class Program extends Test                                               
        }
      }
 
-    ForCount (Int End) {this(null, new Int("End", End));}                                                               // Execute the loop the specified number of times
+    ForCount (Int End)            {this(null,                                   End );}                                 // Execute the loop the specified number of times
+    ForCount (int End)            {this(null,                    new Int("End", End));}                                 // Execute the loop the specified number of times
+    ForCount (int Start, int End) {this(new Int("Start", Start), new Int("End", End));}                                 // Execute the loop the known number of times
 
-    ForCount (int End)                                                                                                  // Execute the loop the known number of times
-     {for (int i = 0; i < End; ++i) body(new Int(i));                                                                   // Iterate over the specified range
-     }
+//  ForCount (int End)                                                                                                  // Execute the loop the known number of times
+//   {for (int i = 0; i < End; ++i) body(new Int(i));                                                                   // Iterate over the specified range
+//   }
 
-    ForCount (int Start, int End)                                                                                       // Execute the loop the known number of times
-     {for (int i = Start; i < End; ++i) body(new Int(i));                                                               // Iterate over the specified range
-     }
+//  ForCount (int Start, int End)                                                                                       // Execute the loop the known number of times
+//   {for (int i = Start; i < End; ++i) body(new Int(i));                                                               // Iterate over the specified range
+//   }
 
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
    }
@@ -2592,3 +2594,4 @@ Memory 0
    }
  }
 //https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
+//https://github.com/philiprbrenan/btreeList/compare/a0628ecc...e39091445c
