@@ -279,7 +279,9 @@ public class Program extends Test                                               
        }
      }
 
-    ForCount (int Start, int End)                                                                                       // Execute the loop the known number of times
+    ForCount (int Start, int End) {this(new Int(Start), new Int(End));}                                                 // Execute the loop the known number of times
+
+    void ForCount22 (int Start, int End)                                                                                       // Execute the loop the known number of times
      {final Int index = new Int("index");
       for (int i = Start; i < End; ++i) body(index.set(i));                                                             // Iterate over the specified range
      }
