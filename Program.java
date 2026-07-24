@@ -1163,7 +1163,7 @@ public class Program extends Test                                               
       Int      getInt (Int I)                {return m.getInt( I.Add(offset));}                                         // Get the int at the indicated position
       Bool    getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
       Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
-      Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int
+      Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int at zero offset in this memory reference
       Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
       Ref     putBool (Int I, Bool K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
       Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
