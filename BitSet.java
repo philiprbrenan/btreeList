@@ -161,7 +161,7 @@ final public class BitSet extends Program                                       
 
     new For(logBitSize())                                                                                               // Set bits along the path to the root of the ones tree
      {void body(Int Index, Bool Continue)
-       {new If (getBitNC(p).Flip())                                                                                     // Is the bit not already set
+       {new If (getBitNC(p).flip())                                                                                     // Is the bit not already set
          {void Then() {setBitNC(p); p.set(parentOne(p)); Continue.set(); }                                              // Stop creating the path once we have arrived at a tree bit that is correctly set: as there are no changes at this level the upper levels must be ok too
          };
        }
