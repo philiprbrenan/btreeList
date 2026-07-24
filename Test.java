@@ -20,6 +20,7 @@ import java.util.zip.GZIPOutputStream;
 public class Test                                                                                                       // Test a java program describing a chip
  {final static boolean            github_actions = "true".equals(System.getenv("GITHUB_ACTIONS"));                      // Whether we are on a github
   final static boolean                   aws_run = folderExists("/home/ubuntu");                                        // Whether we are running on AWS
+  final static boolean                 local_run = !github_actions && !aws_run;                                         // Whether we are running locally
   final static long                        start = System.nanoTime();                                                   // Start time
   final static Stack<String>       sayThisOrStop = new Stack<>();                                                       // The next says should say this or else we should stop
   final static TreeSet<String>      filesWritten = new TreeSet<>();                                                     // Files written
