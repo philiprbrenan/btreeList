@@ -449,7 +449,7 @@ final public class BitSet extends Program                                       
   Bool canGoLeftToOne (Int Pos)                                                                                         // Whether we can go left from the current position
    {subStart("Bitset.canGoLeft");
     checkInOnesTree(Pos);
-    if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
+    if (immediate() && getBitNC(Pos).flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     final Bool r = new Bool(getBitNC(childLowOne(Pos)));
     subFinish();
     return r;
