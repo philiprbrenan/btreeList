@@ -16,7 +16,7 @@ my $repo    = q(btreeList);                                                     
 my $user    = q(philiprbrenan);                                                                                         # User
 my $wf      = q(.github/workflows/build-container.yml);                                                                 # Work flow on Ubuntu to build container
 
-say STDERR timeStamp,  " push build cpntainer to github $repo";
+say STDERR timeStamp,  " push build container to github $repo";
 
 my $d = dateTimeStamp;
 my $y = <<"END";
