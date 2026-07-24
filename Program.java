@@ -1004,7 +1004,7 @@ public class Program extends Test                                               
     UnitMemory copy (UnitMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
      {subStart("Program.UnitMemory.copy");
       final UnitMemory S = SourceMemory;
-      new ForCount(new Int(Width))
+      new ForCount(Width)
        {void body(Int Index)
          {final Int s = SourceOffset.Add(Index);
           final Int t = TargetOffset.Add(Index);
@@ -1055,7 +1055,7 @@ public class Program extends Test                                               
 
     UnitMemory clear ()                                                                                                 // Clear memory in Java
      {subStart("Program.UnitMemory.clear(I)");
-      new ForCount(new Int(size())) {void  body(Int Index) {clearUnit(Index);}};
+      new ForCount(size()) {void  body(Int Index) {clearUnit(Index);}};
       subFinish();
       return this;
      }
@@ -2394,7 +2394,7 @@ Memory 0
        {final Int z = new Int ("z");
         final Int a = new Int ("a").set(N/2);
         final StringBuilder s = new StringBuilder();
-        new ForCount(new Int(N))
+        new ForCount(N)
          {void body(Int Index)
            {new If (a.eq(Index))
              {void Then() {new I() {void a() {s.append(f("%d     == %d\n", a.i(), Index.i()));} boolean trace() {return false;}};}
@@ -2486,10 +2486,11 @@ Memory 0
 
   static void test_ifInc(Boolean Ex)
    {sayCurrentTestName();
+    final int N = 10;
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int  a = new Int(10);
-        new ForCount(new Int(10))
+       {final Int  a = new Int(N);
+        new ForCount(N)
          {void body(Int Index)
            {final Bool b = new Bool(false);
             new If (b)
