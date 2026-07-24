@@ -458,13 +458,13 @@ final public class BitSet extends Program                                       
   Bool canGoRightToOne (Int Pos)                                                                                        // Whether we can go right from the current position
    {subStart("Bitset.canGoRight");
     checkInOnesTree(Pos);
-    if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:",  Pos, this);                           // We can only step down from a one in the ones tree
+    if (immediate() && getBitNC(Pos).flip().b()) stop("Cannot go low from Pos:",  Pos, this);                           // We can only step down from a one in the ones tree
     final Bool r = new Bool(getBitNC(childHighOne(Pos)));
     subFinish();
     return r;
    }
 
-//Bool adjacentOnes(Int A, Int B)                                                                                       //N Whether two ones in the actual bits are separated by zero or more zeros
+//Bool adjacentOnes(Int A, Int B)                                                                                       //N Whether two ones in the actual bits are separated by zero or more zeros - not needed
 // {final Bool r = new Bool();
 //  checkInActual(A);
 //  checkInActual(B);
@@ -626,7 +626,7 @@ final public class BitSet extends Program                                       
 
                 new If (q.le(limitUpperZero(p)))                                                                        // Found adjacent bit set to one to the right of the path up from the start bit
                  {void Then()                                                                                           // Found the adjacent bit to the right
-                   {new If (getBitNC(q).Flip())                                                                         // Found adjacent bit set to one to the right of the path up from the start bit
+                   {new If (getBitNC(q).flip())                                                                         // Found adjacent bit set to one to the right of the path up from the start bit
                      {void Then()                                                                                       // Found the adjacent bit to the right
                        {Next.set(lowZero(q));                                                                           // Lowest one bit in adjacent zeros tree
                        }
