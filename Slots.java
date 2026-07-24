@@ -754,7 +754,7 @@ class Slots extends Program                                                     
                  }
                 void Else()                                                                                             // Previous free slot has intervening occupied slots
                  {//Improvements Distribute block across any adjacent zeros
-                  shiftDownOne (p.Inc(), s.Sub(p).Dec());                                                               // Shift block starting one slot above lower free slot and ending one slot below nearest found key slot
+                  shiftDownOne (p.Inc(), s.Sub(p).dec());                                                               // Shift block starting one slot above lower free slot and ending one slot below nearest found key slot
                   setSlotAndKey(P.set(s.Dec()), K.i(), Key);                                                            // Insert key immediately below nearest found key slot in a slot freed by moving the previous block down one step
                  }
                };
@@ -797,8 +797,8 @@ class Slots extends Program                                                     
                   setSlotAndKey(P.set(m), K.i(), Key);                                                                  // Insert key in the middle zero
                  }
                 void Else()                                                                                             // Next free slot has intervening occupied slots
-                 {shiftUpOne   (s.Inc(), p.Sub(s).Dec());                                                               // Shift block above nearest found key slot
-                  final Int k = s.Inc();                                                                                // Insert at this index
+                 {final Int k = s.Inc();                                                                                // Insert at this index
+                  shiftUpOne   (k, p.Sub(s).Dec());                                                                     // Shift block above nearest found key slot
                   setSlotAndKey(P.set(k), K.i(), Key);                                                                  // Insert key immediately above nearest found key slot in a slot freed by moving the block above up one step
                  }
                };
