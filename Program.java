@@ -210,7 +210,10 @@ public class Program extends Test                                               
        }
      }
 
-    For (int Start, int End)                                                                                            // Execute the loop the specified number of times as long as it returns true
+// Check that we get faster execution of memoryRef with loops rolled up rather than unrolled
+    For (int Start, int End) {this(new Int(Start), new Int(End));}                                                      // Execute the loop the specified number of times as long as it returns true
+
+    void For22 (int Start, int End)                                                                                     // Execute the loop the specified number of times as long as it returns true
      {final Int index = new Int ("Index");
       final Bool cont = new Bool("Continue");
 
@@ -2610,3 +2613,4 @@ Memory 0
    }
  }
 //https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
+//https://github.com/philiprbrenan/btreeList/compare/980589...a9924bdd6
