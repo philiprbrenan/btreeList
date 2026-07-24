@@ -355,7 +355,7 @@ class Tree extends Program                                                      
       final Int u = new Int();                                                                                          // Location of split point
       new For(step)                                                                                                     // Number of steps in path
        {void body(Int Index, Bool Continue)                                                                             // Step up from leaf to root
-         {final Int p = step.Sub(Index).Dec();                                                                          // Position on path
+         {final Int p = step.Sub(Index).dec();                                                                          // Position on path
           final Int b = path.getInt(p);                                                                                 // Branch index
           new If (branch(b).full())                                                                                     // On a full branch
            {void Then()
@@ -793,8 +793,9 @@ class Tree extends Program                                                      
            }
           void Else()                                                                                                   // The branch being currently processed is not the root
            {root.set(false);                                                                                            // Not on the root
-            parent     .set(node  .getInt(ib(depth.Dec())));                                                            // Parent branch
-            parentSlot .set(action.getInt(ib(depth.Dec())));                                                            // Slot in parent whereby we reached the current branch
+            final Int d = depth.Dec();
+            parent     .set(node  .getInt(ib(d    )));                                                                  // Parent branch
+            parentSlot .set(action.getInt(ib(d    )));                                                                  // Slot in parent whereby we reached the current branch
             branch     .set(node  .getInt(ib(depth)));                                                                  // The current branch
            }
          };
@@ -889,9 +890,10 @@ class Tree extends Program                                                      
                        };
                      }
                     void Else()                                                                                         // Process a leaf from the stack
-                     {final Int   b = parentBranch(depth.Dec());
+                     {final Int   d = depth.Dec();
+                      final Int   b = parentBranch(d);
                       final Slots s = branch(b).slots;
-                      leafBody(new LeafContext(node.getInt(ib(depth)), action.getInt(ib(depth.Dec())), depth, b));      // Process the referenced leaf
+                      leafBody(new LeafContext(node.getInt(ib(depth)), action.getInt(ib(d)), depth, b));                // Process the referenced leaf
                       depth.dec();
                      }
                    };
