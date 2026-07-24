@@ -1,4 +1,4 @@
-# Test 2026-07-24 at 19:06:15
+# Test 2026-07-24 at 19:08:20
 
 name: Test
 run-name: btreeList
@@ -31,13 +31,6 @@ jobs:
       with:
         ref: 'main'
 
-#    - name: 'JDK'
-#      uses: oracle-actions/setup-java@v1
-
-    - name: Install
-      run: |
-#       sudo apt install iverilog yosys tree # openjdk-25-jdk
-        mkdir -p verilog
 
     - name: Verilog Programmable Interface
       run: |
@@ -47,7 +40,7 @@ jobs:
 
     - name: Position files in package
       run: |
-        mkdir -p com/AppaApps/Silicon
+        mkdir -p verilog com/AppaApps/Silicon
         cp BitSet.java Branch.java Leaf.java Program.java Slots.java Test.java Tree.java com/AppaApps/Silicon
         tree
 
