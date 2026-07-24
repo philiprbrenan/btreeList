@@ -437,7 +437,7 @@ final public class BitSet extends Program                                       
      {void body(Int Index)
        {p.set(childHighZero(p));                                                                                        // Lower  level bit
         new If (getBitNC(p))                                                                                            // Take upper bit if possible else lower one
-         {void Then() {p.set(p.Dec());}
+         {void Then() {p.dec();}
           void Else() {p.set(p);}
          };
        }
@@ -685,12 +685,8 @@ final public class BitSet extends Program                                       
                  {void Then()                                                                                           // At start of row - not found
                    {p.dec();                                                                                            // Position to left
                     new If (getBitNC(p).flip())                                                                         // Found a one
-                    {void Then()                                                                                        // Reached a one so we turn over and head back up the tree going as high as possible
-                      {Prev.set(highZero(p));                                                                           // Highest zero from this point
-                      }
-                     void Else()                                                                                        // Continue the search for a one
-                      {ContinueUp.set();
-                      }
+                     {void Then() {Prev.set(highZero(p));}                                                               // Reached a one so we turn over and head back up the tree going as high as possible
+                      void Else() {ContinueUp.set();}                                                                    // Continue the search for a one
                      };
                    }
                  };
