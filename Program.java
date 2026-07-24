@@ -20,6 +20,8 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
+  final boolean                            noSayCodeSize = true;                                                        // Whether to print the number of instructions in the program
+  final boolean                noSayInstructionReduction = true;                                                        // Whether to print the instruction reduction details achieved in the verilog code
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
@@ -1387,7 +1389,8 @@ public class Program extends Test                                               
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
 
-    if (codeSize() == 0) stop("No code to execute"); else say(f("            Code size: %,12d", codeSize()));            // Code size check
+    if (codeSize() == 0)     stop("No code to execute");                                                                // Complain if there is no code to execute
+    else if (!noSayCodeSize) say(f("            Code size: %,12d", codeSize()));                                        // Code size check
     deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
     dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
 
@@ -1437,10 +1440,10 @@ public class Program extends Test                                               
                             "n", currentTestNameSuffix(),
                             "v", v,
                             "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The progfrsam will return a coed of 124 if it times out
-        say(""+s, r ? "running remotely" : "running locally");                                                          // Confirm location of run
         final ExecCommand x = new ExecCommand(s);
         say(x.out);
         say(x.err);
+        say(f("%11.2f seconds for: %s\n", x.timer.seconds(), x.command));                                                // Execution time of command
 
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
        }
@@ -1628,7 +1631,7 @@ module {name};                                                                  
       if (true)                                                                                                         // Instruction reduction statistics
        {final int m = instructionMatches.sequence.size(), c = code.size();
         final double p = 100 * (c - m) / (double)c;
-        say(f("Instruction reduction: %,12d, percent: %7.4f", m, p));
+        if (!noSayInstructionReduction) say(f("Instruction reduction: %,12d, percent: %7.4f", m, p));
        }
 
       /* Execute default*/out.write("""
@@ -2207,8 +2210,8 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
        {final UnitMemory m = unitMemory;
-        new For(2)
-         {void body(Int Index, Bool Continue)
+        new ForCount(2)
+         {void body(Int Index)
            {m.putInt(new Int(0), new Int(1));
             m.putInt(new Int(1), new Int(2));
             m.getInt(new Int(0)).ok(1);
@@ -2229,9 +2232,9 @@ endmodule
             m.getBool(new Int(1), new Int(9)).ok(true);
            }
          };
+        execute();
        }
      };
-    P.execute();
    }
 
   static void test_memory()
@@ -2244,8 +2247,8 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex).memory(8))
      {void code()
        {final UnitMemory m = unitMemory;
-        new For(2)
-         {void body(Int Index, Bool Continue)
+        new ForCount(2)
+         {void body(Int Index)
            {m.putInt(new Int(0), new Int(-2));
             m.putInt(new Int(4), new Int(-3));
             m.getInt(new Int(0)).ok(-2);
@@ -2269,8 +2272,8 @@ endmodule
        {final UnitMemory     M = unitMemory;
         final UnitMemory.Ref m = M.new Ref(2);
         final UnitMemory.Ref n = M.new Ref(3);
-        new For(2)
-         {void body(Int Index, Bool Continue)
+        new ForCount(2)
+         {void body(Int Index)
            {m.putInt(new Int(0), new Int(1));
 
             m.putInt(new Int(1), new Int(-1));
@@ -2512,6 +2515,43 @@ Memory 0
               test_ifInc(false);
    }
 
+  static void test_forLoops(Boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Int  a = new Int("a").set(0);
+        new For(new Int(1), new Int(10))
+         {void body(Int Index, Bool Continue)
+           {new If (Index.le(2))
+             {void Then() {a.add(01);}
+              void Else() {a.add(11);}
+             };
+            Continue.set(Index.lt(3));
+           }
+         };
+        a.ok(13);
+        dumpProgramState("AAAA");
+        a.set(0);
+        new ForCount(1, 4)
+         {void body(Int Index)
+           {new If (Index.le(2))
+             {void Then() {a.add(02);}
+              void Else() {a.add(22);}
+             };
+           }
+         };
+        a.ok(26);
+        dumpProgramState("BBBB");
+        execute();
+       }
+     };
+   }
+
+  static void test_forLoops()
+   {          test_forLoops(true);
+              test_forLoops(false);
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_addition();
     test_programming();
@@ -2529,11 +2569,11 @@ Memory 0
     test_variables();
     test_boolean();
     test_ifInc();
+    test_forLoops();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_memory(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
