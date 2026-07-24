@@ -112,12 +112,12 @@ jobs:
       with:
         ref: 'main'
 
-    - name: 'JDK'
-      uses: oracle-actions/setup-java\@v1
+#    - name: 'JDK'
+#      uses: oracle-actions/setup-java\@v1
 
     - name: Install
       run: |
-        sudo apt install iverilog yosys tree # openjdk-25-jdk
+#       sudo apt install iverilog yosys tree # openjdk-25-jdk
         mkdir -p verilog
 
     - name: Verilog Programmable Interface
