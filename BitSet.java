@@ -177,7 +177,7 @@ final public class BitSet extends Program                                       
        {new If (getBitNC(p))                                                                                            // Bit might need to be cleared
          {void Then()
            {final Int q = childLowOne(p);
-            new If (getBitNC(q).Flip())                                                                                 // Both child bits are clear so the parent should be clear as well
+            new If (getBitNC(q).flip())                                                                                 // Both child bits are clear so the parent should be clear as well
              {void Then()
                {new If (getBitNC(q.Inc()).Flip())
                  {void Then() {clearBitNC(p); p.set(parentOne(p)); Continue.set();}                                     // Zeroed the parent so  keep moving up until we encounter a correctly set parent or the root
