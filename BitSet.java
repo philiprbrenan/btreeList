@@ -673,7 +673,7 @@ final public class BitSet extends Program                                       
     new If (p.gt(0))                                                                                                    // Not at the start of bitset
      {void Then()
        {final Int q = p.Dec();                                                                                          // Position to left
-        new If (getBitNC(q).Flip())                                                                                     // Adjacent zero
+        new If (getBitNC(q).flip())                                                                                     // Adjacent zero
          {void Then()
            {Prev.set(q);
            }
@@ -684,7 +684,7 @@ final public class BitSet extends Program                                       
                 new If (pos_zero(p).gt(0))                                                                              // At start of row
                  {void Then()                                                                                           // At start of row - not found
                    {p.dec();                                                                                            // Position to left
-                    new If (getBitNC(p).Flip())                                                                         // Found a one
+                    new If (getBitNC(p).flip())                                                                         // Found a one
                     {void Then()                                                                                        // Reached a one so we turn over and head back up the tree going as high as possible
                       {Prev.set(highZero(p));                                                                           // Highest zero from this point
                       }
