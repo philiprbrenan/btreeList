@@ -89,18 +89,14 @@ on:
     paths:
       - '**/main.yml'
 
-    container:
-      image: ghcr.io/philiprbrenan/btree:latest
-
-#concurrency:
-#  group: \${{ github.workflow }}-\${{ github.ref }}
-# cancel-in-progress: true
-
 jobs:
 
   test:
     permissions: write-all
     runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/philiprbrenan/btree:latest
 
     strategy:
       fail-fast: false
@@ -111,7 +107,6 @@ jobs:
     - uses: actions/checkout\@v6
       with:
         ref: 'main'
-
 
     - name: Verilog Programmable Interface
       run: |
