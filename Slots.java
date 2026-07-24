@@ -695,8 +695,8 @@ class Slots extends Program                                                     
 
     Find set(Int Slot, Bool Lower, Bool Higher)                                                                         // Set a find result
      {slot .set(Slot); lower.set(Lower); higher.set(Higher);
-      equal.set(lower.dup().and(higher));
-      empty.set(lower.dup().or (higher).flip());
+      equal.set(lower.And(higher));
+      empty.set(lower.Or (higher).flip());
       insertBelow = false;                                                                                              // Determine whether to insert above or below at runtime
       return this;
      }
