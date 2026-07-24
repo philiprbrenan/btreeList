@@ -735,7 +735,7 @@ class Slots extends Program                                                     
           K.copy(usedKeys.firstZero());                                                                                 // Position for key in key slots
           //final Find F = find(Key);                                                                                   // Locate key in redistributed slots
           f.set(a, f.lower, f.higher);                                                                                  // Locate key in redistributed slots
-          s.set(new Int(f.slot.i()));                                                                                   // Nearest existing key slot
+          s.set(f.slot.i());                                                                                            // Nearest existing key slot
           p.set(locateNearestFreeSlotToKey(s, f.lower));                                                                // Absolute position of nearest free slot
          }
        };
@@ -854,7 +854,7 @@ class Slots extends Program                                                     
                {f.set(r, new Bool(true), new Bool(true));
                }
               void Else()
-               {new For(new Int(u.logBitSize-1))                                                                        // Step down through ones tree narrowing the search range as we go
+               {new For(u.logBitSize1())                                                                                // Step down through ones tree narrowing the search range as we go
                  {void body(Int Index, Bool Continue)
                    {new If (Key.lt(L))
                      {void Then()
