@@ -1339,7 +1339,7 @@ Leaf   at:   2 size:   4, count:   4
      {void treeBody()
        {if (!Ex) verilogArrays().add("loadRandomKeys", random_32);                                            // Create an array of the random keys to be inserted from Verilog
 
-        new ForCount(new Int(N))
+        new ForCount(N)
          {void body(Int Index)
            {final Int k = new Int("Key");
 
@@ -1739,9 +1739,9 @@ Leaf   at:   2 size:   4, count:   4
    {sayCurrentTestName();
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(4).immediate(Ex))
      {void treeBody()
-       {new ForCount(new Int(2))
+       {new ForCount(2)
          {void body(Int I)
-           {new ForCount(new Int(2))
+           {new ForCount(2)
              {void body(Int J)
                {insert(J, I);
                }
