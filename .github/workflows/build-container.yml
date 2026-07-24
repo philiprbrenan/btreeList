@@ -1,4 +1,4 @@
-# Test 2026-07-24 at 18:58:32
+# Test 2026-07-24 at 19:01:52
 name: Build container image to run tests more quickly by avoiding initial installs
 
 on:
@@ -26,17 +26,12 @@ jobs:
           cat > Dockerfile <<'EOF'
           FROM ubuntu:24.04
 
-          RUN apt-get clean && 
-              rm -rf /var/lib/apt/lists/* && 
-              apt-get update
+          RUN apt-get clean
+          RUN rm -rf /var/lib/apt/lists/*
+          RUN apt-get update
 
-          RUN DEBIAN_FRONTEND=noninteractive apt-get install -y 
-              git 
-              tree 
-              yosys 
-              iverilog 
-              openjdk-25-jdk-headless 
-              && rm -rf /var/lib/apt/lists/*
+          RUN DEBIAN_FRONTEND=noninteractive apt-get install -y git iverilog  openjdk-25-jdk-headless tree
+          RUN rm -rf /var/lib/apt/lists/*
 
           WORKDIR /workspace
           EOF
