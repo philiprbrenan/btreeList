@@ -1028,8 +1028,7 @@ class Slots extends Program                                                     
    {sayCurrentTestName();
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {
-        putSlotToKeys(new Int(2), new Int(3));
+       {putSlotToKeys(new Int(2), new Int(3));
 
         usedSlotsToKeys.empty().ok(false);
         usedSlotsToKeys.full().ok(false);
@@ -1804,7 +1803,7 @@ Zero:
         final StringBuilder t = new StringBuilder();
         verilogArrays().add("keys", keys);
 
-        new ForCount(new Int(keys.length))                                                                              // Using this rather complex for loop reduces the amount of code generated
+        new ForCount(keys.length)                                                                              // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
            {final Int  k = new Int();
 
@@ -1897,7 +1896,7 @@ keys     :   14  13  16  15  18  17  12  11
      {void slotsCode()
        {verilogArrays().add("keys", keys);
 
-        new ForCount(new Int(keys.length))                                                                              // Using this rather complex for loop reduces the amount of code generated
+        new ForCount(keys.length)                                                                              // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
            {final   Int k = new Int();
 
