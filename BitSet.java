@@ -771,7 +771,7 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.countAllZeros");
     final Int  c = new Int(0);                                                                                          // Count
     final Bint p = firstZero();
-    new For(new Int(size()))
+    new For(size())
      {void body(Int Index, Bool Continue)
        {new If (p.valid())
          {void Then()
