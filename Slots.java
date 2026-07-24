@@ -985,7 +985,7 @@ class Slots extends Program                                                     
   Int insertEmpty (Int Key)                                                                                             // Insert a key into slots known to be empty and return the slot chosen
    {if (immediate() && !usedKeys.empty().b()) stop("Slots must be empty");                                              // Slots must be empty
     final Int P = new Int();                                                                                            // Slot into which the key was inserted
-    setSlotAndKey(P.set(new Int(numberOfKeys)), new Int(0), Key);                                                       // Insert immediately in the center
+    setSlotAndKey(P.set(numberOfKeys), new Int(0), Key);                                                                // Insert immediately in the center
     return P;                                                                                                           // Place key in first key slot
    }
 
