@@ -1,7 +1,6 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Locate set or cleared bits in a fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
-// Replaced slow version
 //----------------------------------------------------------------------------------------------------------------------
 // Check how often each variable is read or written to eliminate variables that are only used once.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
