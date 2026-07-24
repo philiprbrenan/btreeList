@@ -209,7 +209,7 @@ final public class BitSet extends Program                                       
                  {void Then()
                    {new If (getBitNC(q.Inc()))
                      {void Then()
-                       {new If (getBitNC(p).Flip())
+                       {new If (getBitNC(p).flip())
                          {void Then() {setBitNC(p); p.set(parentZero(p)); Continue.set();}                              // Set parent and continue towards the root
                          };
                        }
