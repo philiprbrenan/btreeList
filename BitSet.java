@@ -377,7 +377,7 @@ final public class BitSet extends Program                                       
   Int lowOne (Int Pos)                                                                                                  // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
    {subStart("Bitset.lowOne");
     checkInActualOrOnes(Pos);
-    if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
+    if (immediate() && getBitNC(Pos).flip().b()) stop("Cannot go low from Pos:", Pos, this);                            // We can only step down from a one in the ones tree
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
     new ForCount(heightOne(Pos))                                                                                        // Step down through the ones tree to reach the actual bits
      {void body(Int Index)
@@ -395,7 +395,7 @@ final public class BitSet extends Program                                       
   Int highOne (Int Pos)                                                                                                 // Find the highest bit position with a one in it below the indicated subtree in the ones tree
    {subStart("Bitset.highOne");
     checkInActualOrOnes(Pos);
-    if (immediate() && getBitNC(Pos).Flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
+    if (immediate() && getBitNC(Pos).flip().b()) stop("Cannot go high from Pos:",   Pos, this);                         // We can only step down from a one in the ones tree
     final Int p = new Int(Pos);                                                                                         // Position in ones tree
     new ForCount(heightOne(Pos))                                                                                        // Step down through the ones tree to reach the actual bits
      {void body(Int Index)
