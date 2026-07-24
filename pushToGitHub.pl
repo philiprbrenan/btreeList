@@ -112,13 +112,6 @@ jobs:
       with:
         ref: 'main'
 
-#    - name: 'JDK'
-#      uses: oracle-actions/setup-java\@v1
-
-    - name: Install
-      run: |
-#       sudo apt install iverilog yosys tree # openjdk-25-jdk
-        mkdir -p verilog
 
     - name: Verilog Programmable Interface
       run: |
@@ -128,7 +121,7 @@ jobs:
 
     - name: Position files in package
       run: |
-        mkdir -p $c
+        mkdir -p verilog $c
         cp $J $c
         tree
 
@@ -138,6 +131,13 @@ jobs:
         javac --version
         javac -g -d Classes -cp Classes $c/*.java
 END
+
+
+#    - name: 'JDK'
+#      uses: oracle-actions/setup-java\@v1
+#    - name: Install
+#      run: |
+#       sudo apt install iverilog yosys tree # openjdk-25-jdk
 
   for my $t(@t)                                                                                                         # Tasks
    {my $C  = $$t{class};
