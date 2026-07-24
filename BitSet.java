@@ -282,7 +282,7 @@ final public class BitSet extends Program                                       
   Int      zeroToOne (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Sub(bitSize1));}}; return r;} // Translate from Zeros tree to Ones tree
   Int      oneToZero (Int Pos) {final Int r = new Int(); new If (Pos.lt(bitSize)) {void Then() {r.set(Pos);} void Else() {r.set(Pos.Add(bitSize1));}}; return r;} // Translate from Ones tree to Zeros tree
 
-  Int   childHighOne (Int Pos) {return childLowOne(Pos).Inc();}                                                         // Step to the corresponding child high bit index from this parent bit index
+  Int   childHighOne (Int Pos) {return childLowOne(Pos).inc();}                                                         // Step to the corresponding child high bit index from this parent bit index
   Int    childLowOne (Int Pos) {return Pos.Dec().up().sub(topOne());}                                                   // Step to the corresponding child low  bit index from this parent bit index
   Int      parentOne (Int Pos) {return Pos.Add(topOne()).add(2).down();}                                                // Step to the corresponding parent bit index for this child bit index
 
@@ -384,7 +384,7 @@ final public class BitSet extends Program                                       
        {p.set(childLowOne(p));                                                                                          // Lower level bit
         new If (getBitNC(p))                                                                                            // Take lower bit if possible else upper one
          {void Then() {p.set(p);}
-          void Else() {p.set(p.Inc());}
+          void Else() {p.inc();}
          };
        }
      };
@@ -402,7 +402,7 @@ final public class BitSet extends Program                                       
        {p.set(childHighOne(p));                                                                                         // Lower level bit
         new If (getBitNC(p))                                                                                            // Choose upper bit over lower bit if possible
          {void Then() {p.set(p);}
-          void Else() {p.set(p.Dec());}
+          void Else() {p.dec();}
          };
        }
      };
