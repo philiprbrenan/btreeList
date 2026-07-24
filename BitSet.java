@@ -100,6 +100,7 @@ final public class BitSet extends Program                                       
   int         unitsNeeded () {return build.units();}                                                                    // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
   Int          logBitSize () {return new Int(logBitSize);}                                                              // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+  Int         logBitSize1 () {return new Int(logBitSize-1);}                                                            // Log of bit size minus ones as an Int to control for loops searching up and down through the bit tree
   Int               count ()                                                                                            // Count number of set bits in bitset - the performasnc will nbe order (1) if the count is being tracked else N log(N)
    {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
     return memoryCount.getInt();
@@ -157,7 +158,7 @@ final public class BitSet extends Program                                       
 
   void setOnePath (Int Index)                                                                                           // Set bits along the path from the indexed bit to the root of the ones tree
    {subStart("Bitset.setOnePath");
-    final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
+    final Int p = parentOne(Index);                                                                                     // Position in ones tree
 
     new For(logBitSize())                                                                                               // Set bits along the path to the root of the ones tree
      {void body(Int Index, Bool Continue)
@@ -171,7 +172,7 @@ final public class BitSet extends Program                                       
 
   void clearOnePath (Int Index)                                                                                         // Clear bits along the path to the root of the ones tree if both children are zero
    {subStart("Bitset.clearOnePath");
-    final Int p = parentOne(new Int(Index));                                                                            // Position in ones tree
+    final Int p = parentOne(Index);                                                                                     // Position in ones tree
     new For(logBitSize())
      {void body(Int Index, Bool Continue)
        {new If (getBitNC(p))                                                                                            // Bit might need to be cleared
@@ -202,7 +203,7 @@ final public class BitSet extends Program                                       
            {setBitNC(p);                                                                                                // Show parent has no zeros
             p.set(parentZero(p));                                                                                       // Move up
 
-            new For(new Int(logBitSize-1))                                                                              // Remaining possible parents
+            new For(logBitSize1())                                                                                      // Remaining possible parents
              {void body(Int Index, Bool Continue)
                {final Int q = childLowZero(p);                                                                          // Children of parent
                 new If (getBitNC(q))                                                                                    // Both children are zero so the parent must be zero also
@@ -714,7 +715,7 @@ final public class BitSet extends Program                                       
 
     new If (getBitNC(p))                                                                                                // The root has a one so the bit set is not empty
      {void Then()
-       {new For(new Int(logBitSize()))                                                                                   // Step down looking for an adjacent sub tree that also has a one
+       {new For(logBitSize())                                                                                   // Step down looking for an adjacent sub tree that also has a one
          {void body(Int Index, Bool Continue)
            {final Int l = childLowOne (p);
             final Int h = childHighOne(p);
@@ -746,7 +747,7 @@ final public class BitSet extends Program                                       
    {subStart("Bitset.countAllOnes");
     final Int  c = new Int(0);                                                                                          // Count
     final Bint p = firstOne();                                                                                          // Position in bitset starting at first one
-    new For(new Int(size()))                                                                                            // Step from one to one
+    new For(size())                                                                                                     // Step from one to one
      {void body(Int Index, Bool Continue)
        {new If (p.valid())                                                                                              // Latest step is valid
          {void Then()
