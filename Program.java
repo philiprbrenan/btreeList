@@ -327,9 +327,9 @@ public class Program extends Test                                               
 
     Bool (String Name)             {this();  name = Name;}                                                              // Constructors with name supplied
 
-    Bool ()                        {ai(); del(false);     bools().push(this);}                                          // Constructors. Set newly constructed integers to invalid and minus one
-    Bool (boolean I)               {ai(); ie(Ops.set, I); bools().push(this);}
-    Bool (Bool    I)               {ai(); ie(Ops.set, I); bools().push(this);}
+    Bool ()                        {ai(); del(false);      bools().push(this);}                                         // Constructors. Set newly constructed integers to invalid and minus one
+    Bool (boolean I)               {ai();  ie(Ops.set, I); bools().push(this);}
+    Bool (Bool    I)               {ai();  ie(Ops.set, I); bools().push(this);}
     boolean       b ()             {x(); return i;}
     void          x ()             {if (!v) variableNotSet("Bool", name);}                                              // Check a value has been set for the boolean
 
