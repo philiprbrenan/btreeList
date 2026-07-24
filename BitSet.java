@@ -121,7 +121,7 @@ final public class BitSet extends Program                                       
        {if (trackCount)
          {final Int c = memoryCount.getInt();                                                                           // Current count
 
-          memoryCount.putInt(Value ? c.Inc() : c.Dec());                                                                // Change the count if the bit is being changed
+          memoryCount.putInt(Value ? c.inc() : c.dec());                                                                // Change the count if the bit is being changed
 
           if (immediate())
            {final int C = memoryCount.getInt().i();                                                                     // Check new count is in range
@@ -137,12 +137,12 @@ final public class BitSet extends Program                                       
     subFinish();
    }
 
-  Bool      getBit (Int Index)             {if (immediate()) checkInActual(Index); return getBitNC(Index);}             // Get a bit from the bit set
-  Bool    getBitNC (Int Index)             {return memoryRef.getBool(Index);}                                           // Get bit value at an index without checking that the index is valid
-  boolean getBitNC (int Index)             {return memoryRef.getBool(Index);}                                           // Get bit value at an index without checking that the index is valid
+  Bool      getBit (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                        // Get a bit from the bit set
+  Bool    getBitNC (Int Index)  {return memoryRef.getBool(Index);}                                                      // Get bit value at an index without checking that the index is valid
+  boolean getBitNC (int Index)  {return memoryRef.getBool(Index);}                                                      // Get bit value at an index without checking that the index is valid
 
-  void    setBitNC (Int Index)             {setBitNC(Index, true);}                                                     // Set bit value without checking index
-  void  clearBitNC (Int Index)             {setBitNC(Index, false);}                                                    // Clear a bit value without checking index
+  void    setBitNC (Int Index)  {setBitNC(Index, true);}                                                                // Set bit value without checking index
+  void  clearBitNC (Int Index)  {setBitNC(Index, false);}                                                               // Clear a bit value without checking index
 
   void    setBitNC (Int Index, boolean B)                                                                               // Set a bit to a value known at compile time
    {subStart     ("Bitset.setBitNC_IB");
@@ -179,7 +179,7 @@ final public class BitSet extends Program                                       
            {final Int q = childLowOne(p);
             new If (getBitNC(q).flip())                                                                                 // Both child bits are clear so the parent should be clear as well
              {void Then()
-               {new If (getBitNC(q.Inc()).flip())
+               {new If (getBitNC(q.inc()).flip())
                  {void Then() {clearBitNC(p); p.set(parentOne(p)); Continue.set();}                                     // Zeroed the parent so  keep moving up until we encounter a correctly set parent or the root
                  };
                }
@@ -197,7 +197,7 @@ final public class BitSet extends Program                                       
     final Int q = childLowZero(p);                                                                                      // Children in actual bits
     new If (getBitNC(q))                                                                                                // Both actual bits are one so the parent must be zero indicating no zeros
      {void Then()
-       {new If (getBitNC(q.Inc()))
+       {new If (getBitNC(q.inc()))
          {void Then()
            {setBitNC(p);                                                                                                // Show parent has no zeros
             p.set(parentZero(p));                                                                                       // Move up
@@ -207,7 +207,7 @@ final public class BitSet extends Program                                       
                {final Int q = childLowZero(p);                                                                          // Children of parent
                 new If (getBitNC(q))                                                                                    // Both children are zero so the parent must be zero also
                  {void Then()
-                   {new If (getBitNC(q.Inc()))
+                   {new If (getBitNC(q.inc()))
                      {void Then()
                        {new If (getBitNC(p).flip())
                          {void Then() {setBitNC(p); p.set(parentZero(p)); Continue.set();}                              // Set parent and continue towards the root
