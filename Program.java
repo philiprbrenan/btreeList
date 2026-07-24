@@ -176,7 +176,7 @@ public class Program extends Test                                               
 
 //D2 For loops                                                                                                          // For loops with fixed and variable number of iterations
 
-  abstract class For                                                                                                    // For loop
+  abstract class For                                                                                                    // For loop: executed a specified number of times as long as the iterated code requests continuation
    {For (Int Start, Int End)                                                                                            // Execute the loop the specified number of times
      {final Int index = new Int("Index");
       final Bool cont = new Bool("Continue");
@@ -184,8 +184,7 @@ public class Program extends Test                                               
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
         for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
-         {cont.clear();                                                                                                 // Terminate unless told otherwise
-          body(index, cont);                                                                                            // Execute the loop
+         {body(index, cont.clear());                                                                                    // Execute the loop body
           index.inc();                                                                                                  // Set the index to each element of the specified range
           if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
          }
@@ -201,8 +200,7 @@ public class Program extends Test                                               
           String v()   {return "if (targetBool) pc <= array_pcConstant[pc]; else pc <= pc + 1;";}                       // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
          };
-        cont.clear();                                                                                                   // Terminate unless told otherwise
-        body(index, cont);                                                                                              // Execute the loop
+        body(index, cont.clear());                                                                                      // Execute the loop body
         index.inc();                                                                                                    // Increment loop counter
         cont.T();                                                                                                       // Load continue
         final I E = new I(false)
