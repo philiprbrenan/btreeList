@@ -99,7 +99,8 @@ final public class BitSet extends Program                                       
   BitSet initializeMemory () {memoryRef.clear(unitsNeeded()); return this;}                                             // Initialize memory
   int         unitsNeeded () {return build.units();}                                                                    // Number of bytes needed for a bit set of specified size without the ability to locate zeros or ones
   int                size () {return build.bitSize;}                                                                    // Bitset size requested which may differ from the actual size as the size requested is rounded to the next power of two
-  Int          logBitSize () {return new Int(logBitSize);}                                                              // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+  int          logBitSize () {return logBitSize;}                                                                       // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
+  int         logBitSize1 () {return logBitSize-1;}                                                                     // Log of bit size as an Int to control for loops searching up and down through the bit tree - Up and down, up and down; I will lead them up and down: I am fear'd in field and town. Goblin, lead them up and down.
   Int               count ()                                                                                            // Count number of set bits in bitset - the performasnc will nbe order (1) if the count is being tracked else N log(N)
    {if (!trackCount) stop("Count capability not requested, use Build.count(true) to do so");
     return memoryCount.getInt();
@@ -202,7 +203,7 @@ final public class BitSet extends Program                                       
            {setBitNC(p);                                                                                                // Show parent has no zeros
             p.set(parentZero(p));                                                                                       // Move up
 
-            new For(new Int(logBitSize-1))                                                                              // Remaining possible parents
+            new For(logBitSize1())                                                                                      // Remaining possible parents
              {void body(Int Index, Bool Continue)
                {final Int q = childLowZero(p);                                                                          // Children of parent
                 new If (getBitNC(q))                                                                                    // Both children are zero so the parent must be zero also
