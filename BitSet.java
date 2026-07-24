@@ -419,7 +419,7 @@ final public class BitSet extends Program                                       
      {void body(Int Index)
        {p.set(childLowZero(p));                                                                                         // Lower level bit
         new If (getBitNC(p))                                                                                            // Take lower bit if possible else upper one
-         {void Then() {p.set(p.Inc());}
+         {void Then() {p.inc();}
           void Else() {p.set(p);}
          };
        }
