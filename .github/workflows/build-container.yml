@@ -1,4 +1,4 @@
-# Test 2026-07-24 at 18:56:52
+# Test 2026-07-24 at 18:58:32
 name: Build container image to run tests more quickly by avoiding initial installs
 
 on:
@@ -25,9 +25,6 @@ jobs:
         run: |
           cat > Dockerfile <<'EOF'
           FROM ubuntu:24.04
-
-          RUN sed -i 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g' 
-              /etc/apt/sources.list.d/ubuntu.sources
 
           RUN apt-get clean && 
               rm -rf /var/lib/apt/lists/* && 
