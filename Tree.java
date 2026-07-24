@@ -225,7 +225,7 @@ class Tree extends Program                                                      
       boolean trace() {return false;}
      };
 
-    new ForCount(new Int(min(numberOfNodes, 20)))                                                                       // Dump the leaves and branches
+    new ForCount(min(numberOfNodes, 20))                                                                                // Dump the leaves and branches
      {void body(Int Index)
        {new If(isAllocated(Index))
          {void Then()
@@ -293,7 +293,7 @@ class Tree extends Program                                                      
     final FindLeaf f = new FindLeaf();                                                                                  // Find results
     f.start(Key);
 
-    new For(new Int(mnl()))                                                                                             // Step down from branch to branch
+    new For(mnl())                                                                                             // Step down from branch to branch
      {void body(Int Index, Bool Continue)
        {new If (isLeaf(p))                                                                                              // On a leaf
          {void Then()
@@ -329,7 +329,7 @@ class Tree extends Program                                                      
       step.set(0);                                                                                                      // Start at the root
       mergePath.clear();                                                                                                // Clear the path
 
-      new For(new Int(mnl()))                                                                                           // Step down from branch to branch
+      new For(mnl())                                                                                                    // Step down from branch to branch
        {void body(Int Index, Bool Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
@@ -422,7 +422,7 @@ class Tree extends Program                                                      
           final Branch          p = branch(path.getInt(i));                                                             // Parent branch containing split children
           final Branch.StepDown d = p.stepDown(key);                                                                    // Locate key slot
           final Bint            L = new Bint();                                                                         // There are four possibilities to consider
-          new ForCount(new Int(4))                                                                                      // Locate the left sibling
+          new ForCount(4)                                                                                               // Locate the left sibling
            {void body(Int Index)
              {new If (Index.eq(0))                                                                                      // This arrangement reduces the  amount of inline code produced by mergeLeftIntoRightSibling
                {void Then()                                 {L.copy(mergeLeftLeft(  p, d.slot));}
@@ -830,7 +830,7 @@ class Tree extends Program                                                      
                    {void Then()
                      {final Int    a = action.getInt(ib(depth));  a.name = "action";                                    // Action to be performed on branch
                       final Branch b = branch(node.getInt(ib(depth)));                                                  // Branch on which action is to be performed
-                      new If (a.eq(new Int(action_first)))                                                              // Add first child
+                      new If (a.eq(action_first))                                                                       // Add first child
                        {void Then()
                          {final Bint c = b.slots.usedSlotsToKeys.firstOne();                                            // First child if any
                           new If (c)                                                                                    // Put first child on stack
