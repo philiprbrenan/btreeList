@@ -1775,7 +1775,6 @@ Leaf           size:   4, count:   2
   static void test_find(boolean Ex)
    {sayCurrentTestName();
     final int  N = 32;
-    //final Tree t = test_reloadTree(Ex);
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex));
     t.new ForCount(t.new Int(1), t.new Int(N+1))
      {void body(Int Index)
