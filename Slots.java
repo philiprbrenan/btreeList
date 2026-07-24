@@ -495,7 +495,7 @@ class Slots extends Program                                                     
     final Int     rc = Right.count();                                                                                   // Count on right
     final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
 
-    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+    new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
        {r.set(true);                                                                                                    // Able to merge
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
@@ -528,7 +528,7 @@ class Slots extends Program                                                     
     final Int      lc = Left .count();
     final Bool      r = new Bool(false);
 
-    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+    new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
        {r.set(true);
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
@@ -563,7 +563,7 @@ class Slots extends Program                                                     
     final Int     rc = Right.count();                                                                                   // Count on right
     final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
 
-    new If (lc.Add(rc).le(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots
+    new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
        {r.set(true);                                                                                                    // Able to merge
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
@@ -598,7 +598,7 @@ class Slots extends Program                                                     
     final Int      lc = Left .count();
     final Bool      r = new Bool(false);
 
-    new If (lc.Add(rc).lt(new Int(numberOfKeys())))                                                                     // Can only merge if the result can fit in one set of slots with space for the additional key
+    new If (lc.Add(rc).lt(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots with space for the additional key
      {void Then()
        {r.set(true);
         if (CompactKey != null)                                                                                         // Skip compaction if already done by the caller
