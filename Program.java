@@ -1431,7 +1431,8 @@ public class Program extends Test                                               
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
         final boolean       r = github_actions || aws_run;                                                              // Running remotely
-        final String        v = "vvp -M../../vpi -mwall_time " +currentTestNameSuffix();                                // Command to run verilog simulation
+      //final String        v = "vvp -M../../vpi -mwall_time " +currentTestNameSuffix();                                // Command to run verilog simulation
+        final String        v = "vvp " +currentTestNameSuffix();                                                        // Command to run verilog simulation
 
         s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} {v}",                               // Construct command
                             "f", verilogTestFolder(),
