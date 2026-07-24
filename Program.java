@@ -1424,7 +1424,7 @@ public class Program extends Test                                               
        }
      }
 
-    if (c >= maxSteps) stop("Out of steps after step:", c);                                                             // Show abnormal termination reason
+    if (c >= maxSteps) stop("Out of steps after step:", c); else say("Execution steps:", c);                            // Show abnormal termination reason or number of steps taken to reach completion
 
     if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
