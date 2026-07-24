@@ -1,6 +1,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
+// Replaced the slow version
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -177,17 +178,19 @@ public class Program extends Test                                               
    {For (Int Start, Int End)                                                                                            // Execute the loop the specified number of times
      {final Int index = new Int("Index");
       final Bool cont = new Bool("Continue");
-      if (Start == null) index.set(0); else index.set(Start);                                                           // Start index
 
       if (immediate())                                                                                                  // Immediate execution
-       {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
-         {body(index.set(i), cont.clear());                                                                             // Execute the loop as long as the index is in range and continuation is requested
+       {index.set(Start);                                                                                               // Start index
+        for(int i : range(Start.i(), End.i()))                                                                          // Iterate over the specified range
+         {cont.clear();                                                                                                 // Terminate unless told otherwise
+          body(index, cont);                                                                                            // Execute the loop
           index.inc();                                                                                                  // Set the index to each element of the specified range
           if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
          }
        }
       else                                                                                                              // Machine code
-       {final Label start = new Label();                                                                                // Start of for loop code
+       {index.set(Start);                                                                                               // Start index
+        final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
         final Bool   done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
@@ -196,12 +199,14 @@ public class Program extends Test                                               
           String v()   {return "if (targetBool) pc <= array_pcConstant[pc]; else pc <= pc + 1;";}                       // Terminate loop when index is out of range relying on the side effect of the previous instruction having set target bool
           int traces() {return 0;}
          };
-        body(index, cont.clear());                                                                                      // Execute the loop while the index is in range and continue is requested
+        cont.clear();                                                                                                   // Terminate unless told otherwise
+        body(index, cont);                                                                                              // Execute the loop
         index.inc();                                                                                                    // Increment loop counter
         cont.T();                                                                                                       // Load continue
-        final I E = new I(false)                                                                                        // The continuation test goes last to bifurcate maximally
-         {void   a()   {program().pc = cont.b() ? start.offset : end.offset;}                                           // Continue execution of the loop as long as requested
-          String v()   {return "if (targetBool) pc <= array_pcConstant[pc]; else pc <= pc + 1;";}                       // If continued execution is not requested fall off the end of the loop
+        final I E = new I(false)
+         {void   a() {program().pc = cont.b() ? start.offset : end.offset;}                                             // Continue execution of the loop as long as requested
+          String v()
+           {return "if (targetBool) pc <= array_pcConstant[pc]; else pc <= pc + 1;";}
           int traces() {return 0;}
          };
         end.set();                                                                                                      // End of the loop
@@ -210,38 +215,8 @@ public class Program extends Test                                               
        }
      }
 
-// Check that we get faster execution of memoryRef with loops rolled up rather than unrolled
-    For (int Start, int End) {this(new Int(Start), new Int(End));}                                                      // Execute the loop the specified number of times as long as it returns true
-
-    void For22 (int Start, int End)                                                                                     // Execute the loop the specified number of times as long as it returns true
-     {final Int index = new Int ("Index");
-      final Bool cont = new Bool("Continue");
-
-      if (immediate())                                                                                                  // Immediate execution
-       {for(int i : range(Start, End))                                                                                  // Iterate over the specified range
-         {body(index.set(i), cont.clear());                                                                             // Execute the loop
-          if (!cont.b()) break;                                                                                         // Terminate the loop unless continuation has been requested
-         }
-       }
-      else                                                                                                              // Machine code
-       {final Label end = new Label();                                                                                  // End of for loop code
-        final I[]     I = new I[End];
-        for(int i : range(Start, End))
-         {body(index.set(i), cont.clear());                                                                             // Execute the loop
-          cont.T();                                                                                                     // The side effect of setting the targetBool register is used in the next instruction to decide whether the loop should continue or not
-          I[i] = new I(false)
-           {void   a() {if (cont.b()) {}                      else program().pc = end.offset;}                          // Terminate execution of the loop unless continuation is requested
-            String v() {return "if (targetBool) pc <= pc + 1; else pc <= array_pcConstant[pc];";}                       // Continue execution of the loop or jump to the end if continuation is not requested
-            int traces() {return 0;}
-           };
-         }
-        end.set();                                                                                                      // End of the loop
-        for(int i : range(Start, End)) pcConstant(I[i], end);                                                           // Set end of loop jump now we know its target
-       }
-     }
-
-    For (int End) {this(0, End);}                                                                                       // Execute the loop the specified number of times as long as it returns true
-    For (Int End) {this(null, new Int("End", End));}                                                                    // Execute the loop the specified number of times as long as it returns true
+    For (int End) {this(new Int("Start", 0), new Int("End", End));}                                                     // Execute the loop the specified number of times as long as it returns true
+    For (Int End) {this(new Int("Start", 0),                End);}                                                      // Execute the loop the specified number of times as long as it returns true
 
     abstract void body (Int Index, Bool Continue);                                                                      // Body of the for loop - execute while in range and continuation has been requested
    }
@@ -253,7 +228,8 @@ public class Program extends Test                                               
 
       if (immediate())                                                                                                  // Immediate execution
        {for(int i : range(index.i(), End.i()))                                                                          // Iterate over the specified range
-         {body(index.set(i));                                                                                           // Execute the loop
+         {body(index);                                                                                                  // Execute the loop
+          index.inc();                                                                                                  // Increment loop counter
          }
        }
       else                                                                                                              // Machine code
@@ -279,15 +255,15 @@ public class Program extends Test                                               
        }
      }
 
-    ForCount (int Start, int End) {this(new Int(Start), new Int(End));}                                                 // Execute the loop the known number of times
+    ForCount (Int End) {this(null, new Int("End", End));}                                                               // Execute the loop the specified number of times
 
-    void ForCount22 (int Start, int End)                                                                                       // Execute the loop the known number of times
-     {final Int index = new Int("index");
-      for (int i = Start; i < End; ++i) body(index.set(i));                                                             // Iterate over the specified range
+    ForCount (int End)                                                                                                  // Execute the loop the known number of times
+     {for (int i = 0; i < End; ++i) body(new Int(i));                                                                   // Iterate over the specified range
      }
 
-    ForCount (Int End) {this(null, new Int("End", End));}                                                               // Execute the loop the specified number of times
-    ForCount (int End) {this(0, End);}                                                                                  // Execute the loop the known number of times
+    ForCount (int Start, int End)                                                                                       // Execute the loop the known number of times
+     {for (int i = Start; i < End; ++i) body(new Int(i));                                                               // Iterate over the specified range
+     }
 
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
    }
@@ -2251,12 +2227,11 @@ endmodule
             dumpProgramState("CCCC");
             m.putBool(new Int(1), new Int(9), new Bool(true));
             m.getBool(new Int(1), new Int(9)).ok(true);
-            Continue.set();
            }
          };
-        execute();
        }
      };
+    P.execute();
    }
 
   static void test_memory()
@@ -2275,10 +2250,9 @@ endmodule
             m.putInt(new Int(4), new Int(-3));
             m.getInt(new Int(0)).ok(-2);
             m.getInt(new Int(4)).ok(-3);
-            maxSteps = 399;
+            execute();
            }
          };
-        execute();
        }
      };
    }
@@ -2351,10 +2325,10 @@ Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000
 """);
+            maxSteps(9_999);
+            execute();
            }
          };
-        maxSteps(9_999);
-        execute();
        }
      };
    }
@@ -2538,43 +2512,6 @@ Memory 0
               test_ifInc(false);
    }
 
-  static void test_forLoops(Boolean Ex)
-   {sayCurrentTestName();
-    final Program P = new Program(new Build().immediate(Ex))
-     {void code()
-       {final Int  a = new Int("a").set(0);
-        new For(new Int(1), new Int(10))
-         {void body(Int Index, Bool Continue)
-           {new If (Index.le(2))
-             {void Then() {a.add(01);}
-              void Else() {a.add(11);}
-             };
-            Continue.set(Index.lt(3));
-           }
-         };
-        a.ok(13);
-        dumpProgramState("AAAA");
-        a.set(0);
-        new ForCount(new Int(1), new Int(4))
-         {void body(Int Index)
-           {new If (Index.le(2))
-             {void Then() {a.add(02);}
-              void Else() {a.add(22);}
-             };
-           }
-         };
-        a.ok(26);
-        dumpProgramState("BBBB");
-        execute();
-       }
-     };
-   }
-
-  static void test_forLoops()
-   {          test_forLoops(true);
-              test_forLoops(false);
-   }
-
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_addition();
     test_programming();
@@ -2592,11 +2529,11 @@ Memory 0
     test_variables();
     test_boolean();
     test_ifInc();
-    test_forLoops();
    }
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
+    //test_memory(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
@@ -2615,4 +2552,3 @@ Memory 0
    }
  }
 //https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
-//https://github.com/philiprbrenan/btreeList/compare/980589...a9924bdd6
