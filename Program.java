@@ -20,9 +20,8 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                            noSayCodeSize = local_run;                                                   // Whether to suppress the printing of the number of instructions in the program
-  final boolean                noSayInstructionReduction = local_run;                                                   // Whether to suppress the printing of the instruction reduction details achieved in the verilog code
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
+        int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
@@ -1389,19 +1388,19 @@ public class Program extends Test                                               
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
 
-    if (codeSize() == 0)     stop("No code to execute");                                                                // Complain if there is no code to execute
-    else if (!noSayCodeSize) say(f("            Code size: %,12d", codeSize()));                                        // Code size check
+    if (codeSize() == 0)      stop("No code to execute");                                                               // Complain if there is no code to execute
+    else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Veilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
     deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
     dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
 
     currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
     final int N = codeSize();                                                                                           // Number of instructions
-          int c = 0;                                                                                                    // Number of instructions executed
+          int c2 = 0;                                                                                                    // Number of instructions executed
 
     initializeJavaMemory();                                                                                             // Initialize memory
     initializeJavaVars();                                                                                               // Initialize variables
 
-    for(; c < maxSteps && pc >= 0 && pc < N; ++c)                                                                       // Execute each instruction within a specified number of steps
+    for(steps = 0; steps < maxSteps && pc >= 0 && pc < N; ++steps)                                                      // Execute each instruction within a specified number of steps
      {final I i = code.elementAt(pc);
       try
        {currentPc = pc++;                                                                                               // This is the anticipated next instruction, but the instruction can set it to effect a branch in execution flow
@@ -1424,7 +1423,8 @@ public class Program extends Test                                               
        }
      }
 
-    if (c >= maxSteps) stop("Out of steps after step:", c); else say("Execution steps:", c);                            // Show abnormal termination reason or number of steps taken to reach completion
+    if (steps >= maxSteps) stop("Out of steps after step:", steps);                                                     // Show ran out of steps
+    else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steops unless we are going to print this in during the verilog process
 
     if (generateVerilog)                                                                                                // Run verilog
      {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
@@ -1632,7 +1632,7 @@ module {name};                                                                  
       if (true)                                                                                                         // Instruction reduction statistics
        {final int m = instructionMatches.sequence.size(), c = code.size();
         final double p = 100 * (c - m) / (double)c;
-        if (!noSayInstructionReduction) say(f("Instruction reduction: %,12d, percent: %7.4f", m, p));
+        say(f("=%,9d Execution,  %,9d Reduction,  %,12d Code size, %7.4f percent", steps, m, codeSize(), p));
        }
 
       /* Execute default*/out.write("""
@@ -2254,9 +2254,9 @@ endmodule
             m.putInt(new Int(4), new Int(-3));
             m.getInt(new Int(0)).ok(-2);
             m.getInt(new Int(4)).ok(-3);
-            execute();
            }
          };
+        execute();
        }
      };
    }
@@ -2329,10 +2329,10 @@ Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000
 """);
-            maxSteps(9_999);
-            execute();
            }
          };
+        maxSteps(9_999);
+        execute();
        }
      };
    }
