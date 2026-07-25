@@ -176,10 +176,14 @@ public class Test                                                               
     return s;
    }
 
-  static String dateTimeStamp ()                                                                                        // Date and time stamp
+  static String dateTimeStamp ()                                                                                        // Date and time stamp to nanosecond
    {return ZonedDateTime.now(ZoneOffset.UTC).
       format(DateTimeFormatter.ISO_INSTANT).replace(":", "-");
    }
+
+   static String dateTime ()                                                                                            // Date and time to second
+    {return java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
 
   static StringBuilder clearStringBuilder (StringBuilder S) {S.setLength(0);                               return S;}   // Clear a StringBuilder as java seems to have forgotten to provide this useful method
   static StringBuilder chompStringBuilder (StringBuilder S) {if (S.length() > 0) S.setLength(S.length()-1);return S;}   // Remove last character from a StringBuilder
