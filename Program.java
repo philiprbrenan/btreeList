@@ -256,16 +256,16 @@ public class Program extends Test                                               
      }
 
     ForCount (Int End)            {this(null,                                   End );}                                 // Execute the loop the specified number of times
-//    ForCount (int End)            {this(null,                    new Int("End", End));}                                 // Execute the loop the specified number of times
-//    ForCount (int Start, int End) {this(new Int("Start", Start), new Int("End", End));}                                 // Execute the loop the known number of times
+    ForCount (int End)            {this(null,                    new Int("End", End));}                                 // Execute the loop the specified number of times
+    ForCount (int Start, int End) {this(new Int("Start", Start), new Int("End", End));}                                 // Execute the loop the known number of times
 
-  ForCount (int End)                                                                                                  // Execute the loop the known number of times
-   {for (int i = 0; i < End; ++i) body(new Int(i));                                                                   // Iterate over the specified range
-   }
-
-  ForCount (int Start, int End)                                                                                       // Execute the loop the known number of times
-   {for (int i = Start; i < End; ++i) body(new Int(i));                                                               // Iterate over the specified range
-   }
+//  ForCount (int End)                                                                                                  // Execute the loop the known number of times. Tree.insert_random32 fails if we use the unrolled loops with Java out of memory
+//   {for (int i = 0; i < End; ++i) body(new Int(i));                                                                   // Iterate over the specified range
+//   }
+//
+//  ForCount (int Start, int End)                                                                                       // Execute the loop the known number of times
+//   {for (int i = Start; i < End; ++i) body(new Int(i));                                                               // Iterate over the specified range
+//   }
 
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
    }
@@ -1428,7 +1428,8 @@ public class Program extends Test                                               
     else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steops unless we are going to print this in during the verilog process
 
     if (generateVerilog)                                                                                                // Run verilog
-     {generateVerilog();                                                                                                // Generate corresponding Verilog code and run it
+     {final GenerateVerilog g = generateVerilog();                                                                      // Generate corresponding Verilog code and run it
+      final String    message;
 
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
@@ -1443,12 +1444,14 @@ public class Program extends Test                                               
                             "v", v,
                             "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The progfrsam will return a coed of 124 if it times out
         final ExecCommand x = new ExecCommand(s);
-        say(x.out);
-        say(x.err);
-        say(f("%11.2f seconds for: %s\n", x.timer.seconds(), x.command));                                                // Execution time of command
+        message = g.message() + f(" %11.2f seconds for: %s\n", x.timer.seconds(), x.command);                           // Execution time of command
 
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
        }
+      else message = g.message();                                                                                       // Verilog compilation statistics
+
+      say(message);                                                                                                     // Report Verilog statistics
+      appendFile(verilogLogFile, message);
      }
    }
 
@@ -1528,7 +1531,29 @@ public class Program extends Test                                               
 
 //D1 Verilog                                                                                                            // Generate Verilog
 
-  void generateVerilog ()                                                                                               // Generate and execute the corresponding Verilog
+  class GenerateVerilog                                                                                                 // Generate verilog statistics
+   {final String         name = currentTestNameSuffix();                                                                // Name of test
+    final String     dateTime = dateTime();                                                                             // Date and time of test
+    final int       execSteps = steps;                                                                                  // Number of execution steps
+    final int        codeSize = codeSize();                                                                             // Original uncompressed code size
+    final int instructionSets;                                                                                          // Number of instruction equivalence classes
+
+    GenerateVerilog(int InstructionSets)                                                                                // Constructor records the number of instruction equivalence classes
+     {instructionSets = InstructionSets;
+     }
+
+    String message()                                                                                                    // Message describing statistics
+     {return f("%s:  %30s  %,9d execution,  %3d after,  %,9d before, %7.4f percent",
+                dateTime,  name, execSteps, instructionSets, codeSize, percent());
+     }
+
+    double percent()                                                                                                    // Percentage reduction in program size after compression based on interior verilog for each instruction
+     {final int m = instructionSets, c = code.size();
+      return 100 * (c - m) / (double)c;
+     }
+   }
+
+  GenerateVerilog generateVerilog ()                                                                                    // Generate the Verilog corresponding to the java code
    {final String       name = currentTestNameSuffix();                                                                  // Name of program
     final String  traceFile = verilogTraceFile;                                                                         // Trace file name relative to Verilog code
     final String   codeFile = VerilogCodeFile();                                                                        // Code file
@@ -1537,6 +1562,7 @@ public class Program extends Test                                               
     final int  numberOfInts =  nextIntId;                                                                               // Number of integers needed
     final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
     final InstructionMatches instructionMatches = new InstructionMatches();                                             // Mapping from instructions to blocks of matching instructions
+          GenerateVerilog       generateVerilog = null;                                                                 // Verilog generation statistics
 
     for(I i : code) {compiling(i); instructionMatches.add(i);}                                                          // Match instructions
     verilogArrays().add("pcConstant",   pcConstant(),                   -1);                                            // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
@@ -1630,14 +1656,7 @@ module {name};                                                                  
          }
        }
 
-      if (true)                                                                                                         // Instruction statistics
-       {final int    M = instructionMatches.sequence.size(), c = code.size();
-        final double p = 100 * (c - M) / (double)c;
-        final String m = f("%s:  %30s  %,9d execution,  %3d after,  %,9d before, %7.4f percent",
-                           dateTime(),  name, steps, M, codeSize(), p);
-        say(m);
-        appendFile(verilogLogFile, m);
-       }
+      generateVerilog = new GenerateVerilog(instructionMatches.sequence.size());                                        // Record statistics for generated verilog
 
       /* Execute default*/out.write("""
         default: begin
@@ -1701,6 +1720,8 @@ endmodule
 """);
      }
     catch(Exception e) {stop(e, fullTraceBack(e));}
+
+    return generateVerilog;                                                                                             // Return Verilog generation statistics
    }
 
   String clearMemory(UnitMemory M, String Next)                                                                         // Verilog procedure to clear a memory
@@ -2586,7 +2607,7 @@ Memory 0
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
      {deleteAllFiles(verilogFolder, 999);                                                                               // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
-    //coverageAnalysis(12);                                                                                             // Code coverage
+      if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
       testSummary();                                                                                                    // Summarize test results
       System.exit(testsFailed);
      }
