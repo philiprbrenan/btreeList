@@ -25,6 +25,7 @@ public class Program extends Test                                               
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
+  final static String                     verilogLogFile = "verilogLog/Log.txt";                                        // Verilog log file showing instruction execution statistics for each test
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
@@ -1629,10 +1630,13 @@ module {name};                                                                  
          }
        }
 
-      if (true)                                                                                                         // Instruction reduction statistics
-       {final int m = instructionMatches.sequence.size(), c = code.size();
-        final double p = 100 * (c - m) / (double)c;
-        say(f("=%,9d Execution,  %,9d Reduction,  %,12d Code size, %7.4f percent", steps, m, codeSize(), p));
+      if (true)                                                                                                         // Instruction statistics
+       {final int    M = instructionMatches.sequence.size(), c = code.size();
+        final double p = 100 * (c - M) / (double)c;
+        final String m = f("%s:  %30s  %,9d execution,  %3d after,  %,9d before, %7.4f percent",
+                           dateTime(),  name, steps, M, codeSize(), p);
+        say(m);
+        appendFile(verilogLogFile, m);
        }
 
       /* Execute default*/out.write("""
@@ -2580,10 +2584,10 @@ Memory 0
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFiles(verilogFolder, 999);                                                                                // Delete generated Verilog files created by a prior run of the current test
+     {deleteAllFiles(verilogFolder, 999);                                                                               // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
+    //coverageAnalysis(12);                                                                                             // Code coverage
       testSummary();                                                                                                    // Summarize test results
-      coverageAnalysis(12);
       System.exit(testsFailed);
      }
     catch(Exception e)                                                                                                  // Get a traceback in a format clickable in Geany
