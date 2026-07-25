@@ -1819,7 +1819,8 @@ Leaf           size:   4, count:   2
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
+    test_insertRandom32();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
@@ -1840,4 +1841,3 @@ Leaf           size:   4, count:   2
      }
    }
  }
-//rsync -az ~/btreeList/ nb:~/btreeList/;javac -g -d ~/btreeList/Classes -cp ~/btreeList/Classes ~/btreeList/*.java;ssh nb java -XX:+UseZGC -cp ~/btreeList/Classes/ com/AppaApps/Silicon/Tree
