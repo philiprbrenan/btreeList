@@ -152,7 +152,7 @@ END
       uses: actions/upload-artifact\@v7
       with:
         name: $N
-        path: verilog, verilogLog
+        path: verilog*
         if-no-files-found: ignore
 END
   }
