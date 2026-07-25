@@ -202,7 +202,7 @@ public class Test                                                               
     return S;
    }
 
-  static String q (String S)                                                                                             // Quote a string
+  static String q (String S)                                                                                            // Quote a string
    {return "\"" + S
         .replace("\\", "\\\\")
         .replace("\"", "\\\"")
