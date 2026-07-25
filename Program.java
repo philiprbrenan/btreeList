@@ -1,7 +1,6 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Machine level programming in Java
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
-// Replaced the slow version
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
@@ -25,7 +24,10 @@ public class Program extends Test                                               
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
   final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
-  final static String                     verilogLogFile = "verilogLog/Log.txt";                                        // Verilog log file showing instruction execution statistics for each test
+  final static String                         verilogLog = fp(verilogFolder, "log");                                    // Verilog log folder
+  final static String                     verilogLogFile = fe(verilogLog,    "Log", "txt" );                            // Verilog log file showing instruction execution statistics for each test in text format
+  final static String                     verilogLogJson = fe(verilogLog,    "Log", "json");                            // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
+  final static String                       verilogTests = fp(verilogFolder, "tests");                                  // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
@@ -1389,7 +1391,7 @@ public class Program extends Test                                               
   void execute ()                                                                                                       // Execute the current code
    {if (immediate()) return;                                                                                            // The code has already been executed interpretively
 
-    if (codeSize() == 0)      stop("No code to execute");                                                               // Complain if there is no code to execute
+    if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
     else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Veilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
     deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
     dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
@@ -1425,11 +1427,12 @@ public class Program extends Test                                               
      }
 
     if (steps >= maxSteps) stop("Out of steps after step:", steps);                                                     // Show ran out of steps
-    else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steops unless we are going to print this in during the verilog process
+    else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steps unless we are going to print this in during the verilog process
 
     if (generateVerilog)                                                                                                // Run verilog
      {final GenerateVerilog g = generateVerilog();                                                                      // Generate corresponding Verilog code and run it
-      final String    message;
+      final String    message;                                                                                          // Message describing outcome of execution (all on one line)
+      final String       json;                                                                                          // Jsone describing outcome of execution (all on one line)
 
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
@@ -1443,15 +1446,18 @@ public class Program extends Test                                               
                             "n", currentTestNameSuffix(),
                             "v", v,
                             "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The progfrsam will return a coed of 124 if it times out
-        final ExecCommand x = new ExecCommand(s);
-        message = g.message() + f(" %11.2f seconds for: %s\n", x.timer.seconds(), x.command);                           // Execution time of command
+
+        final ExecCommand x = new ExecCommand(s);                                                                       // Execute commands
+        message = g.message() + f(" %11.2f seconds for: %s",                    x.timer.seconds(), x.command);          // Execution time of command in message
+        json    = g.json()    + f(", \"seconds\": %11.2f, \"command\": \"%s\"", x.timer.seconds(), x.command);          // Execution time of command in json
 
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
        }
-      else message = g.message();                                                                                       // Verilog compilation statistics
+      else {message = g.message(); json = g.json();}                                                                    // Verilog compilation statistics
 
       say(message);                                                                                                     // Report Verilog statistics
-      appendFile(verilogLogFile, message);
+      appendFile(verilogLogFile,  message+ "\n");                                                                       // Log in text format
+      appendFile(verilogLogJson, "{"+json+"}\n");                                                                       // Log in json format
      }
    }
 
@@ -1533,6 +1539,7 @@ public class Program extends Test                                               
 
   class GenerateVerilog                                                                                                 // Generate verilog statistics
    {final String         name = currentTestNameSuffix();                                                                // Name of test
+    final String       source = fnx(sourceFileName());                                                                  // Source file
     final String     dateTime = dateTime();                                                                             // Date and time of test
     final int       execSteps = steps;                                                                                  // Number of execution steps
     final int        codeSize = codeSize();                                                                             // Original uncompressed code size
@@ -1544,7 +1551,23 @@ public class Program extends Test                                               
 
     String message()                                                                                                    // Message describing statistics
      {return f("%s:  %30s  %,9d execution,  %3d after,  %,9d before, %7.4f percent",
-                dateTime,  name, execSteps, instructionSets, codeSize, percent());
+               dateTime,  source+"."+name, execSteps, instructionSets, codeSize, percent());
+     }
+
+    String json()                                                                                                       // Json describing statistics
+     {final StringBuilder s = new StringBuilder();
+      s.append(f(("'log': 'verilogStatistics', 'dateTime': '%s', 'sourceFile': '%s', 'testName': '%s',"+
+                " 'executionSteps': %d, 'instructions': %d, 'codeSize': %d, 'percent': %9.4f").replaceAll("'", "\""),
+                dateTime,  source, name, execSteps, instructionSets, codeSize, percent()));
+
+      s.append(f( ", \"suppressInstructionTracing\" : \"%d\"",  suppressInstructionTracing ? 1 : 0));                   // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
+      s.append(f(      ", \"suppressTraceComments\" : \"%d\"",       suppressTraceComments ? 1 : 0));                   // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
+      s.append(f(       ", \"compressInstructions\" : \"%d\"",        compressInstructions ? 1 : 0));                   // Compress out identical instructions
+      s.append(f(  ", \"compressInstructionLabels\" : \"%d\"",   compressInstructionLabels ? 1 : 0));                   // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
+      s.append(f(            ", \"generateVerilog\" : \"%d\"",             generateVerilog ? 1 : 0));                   // Generate verilog version of each program
+      s.append(f(                 ", \"runVerilog\" : \"%d\"",                  runVerilog ? 1 : 0));                   // Execute  verilog version of each program
+      s.append(f(", \"suppressNamesInInstructions\" : \"%d\"", suppressNamesInInstructions ? 1 : 0));                   // Include names in instructions
+      return ""+s;
      }
 
     double percent()                                                                                                    // Percentage reduction in program size after compression based on interior verilog for each instruction
@@ -1968,7 +1991,7 @@ endmodule
    {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} int traces() {return 0;}};
    }
 
-  String      verilogTestFolder () {return fp(verilogFolder,       currentTestNameSuffix());}                           // Folder for this test using Verilog
+  String      verilogTestFolder () {return fp(verilogTests,        currentTestNameSuffix());}                           // Folder for this test using Verilog
   String verilogTestArrayFolder () {return fp(verilogTestFolder(), verilogArrayFiles);}                                 // Folder for arrays used in this test using Verilog
   String       verilogTraceFile () {return fn(verilogTestFolder(), verilogTraceFile);}                                  // Verilog trace file
   String          javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                     // Java trace file
@@ -2605,7 +2628,7 @@ Memory 0
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFiles(verilogFolder, 999);                                                                               // Delete generated Verilog files created by a prior run of the current test
+     {deleteAllFiles(verilogTests, 999);                                                                                // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
       testSummary();                                                                                                    // Summarize test results
