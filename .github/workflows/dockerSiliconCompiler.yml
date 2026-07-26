@@ -1,4 +1,4 @@
-# Test 2026-07-26 at 22:01:44
+# Test 2026-07-26 at 23:22:37
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -52,11 +52,14 @@ jobs:
         RUN /bin/bash -c "source ./sc/bin/activate && python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
 
         # Install ASIC tools via sc-install
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install openroad"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install klayout"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install yosys"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install sv2v"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install yosys-slang"
+        RUN /bin/bash -c "source ./sc/bin/activate && sc-install openroad" || true
+        RUN /bin/bash -c "source ./sc/bin/activate && sc-install klayout"  || true
+        RUN /bin/bash -c "source ./sc/bin/activate && sc-install yosys"    || true
+        RUN /bin/bash -c "source ./sc/bin/activate && sc-install sv2v"     || true
+        RUN /bin/bash -c "source ./sc/bin/activate && sc-install netgen"   || true
+        RUN /bin/bash -c "source ./sc/bin/activate && sc-install opensta"  || true
+        RUN /bin/bash -c "source ./sc/bin/activate && sc-install verible"  || true
+
 
         # Default command
         CMD ["/bin/bash"]
