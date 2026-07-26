@@ -504,6 +504,12 @@ public class Test                                                               
     return e.getFileName();
    }
 
+  static String mainFileName ()                                                                                         // Name of file containing main program for this method
+   {final StackTraceElement[]E = Thread.currentThread().getStackTrace();
+    final StackTraceElement  e = E[E.length-1];
+    return e.getFileName();
+   }
+
   static String callerFileAndLine3 ()                                                                                   // Locate file and line number of caller of caller
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
     if (t.length < 4) return null;
