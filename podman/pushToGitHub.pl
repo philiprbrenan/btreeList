@@ -1,6 +1,6 @@
 #!/usr/bin/perl -I/home/phil/perl/cpan/DataTableText/lib/ -I/home/phil/perl/cpan/GitHubCrud/lib/
 #-----------------------------------------------------------------------------------------------------------------------
-# Push container build to GitHub.
+# Build a container to run the Java code and resulting Verilog tests on GitHub.
 # Philip R Brenan at gmail dot com, Appa Apps Ltd Inc., 2026
 #-----------------------------------------------------------------------------------------------------------------------
 use v5.38;
