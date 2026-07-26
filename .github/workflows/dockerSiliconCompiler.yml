@@ -1,4 +1,4 @@
-# Test 2026-07-26 at 17:04:56
+# Test 2026-07-26 at 17:09:31
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -64,8 +64,8 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t ghcr.io/philiprbrenan/btreeList:latest .
+        docker build -t ghcr.io/philiprbrenan/sc:latest .
 
     - name: Push Docker image to GHCR
       run: |
-        docker push ghcr.io/philiprbrenan/btreeList:latest
+        docker push ghcr.io/philiprbrenan/sc:latest
