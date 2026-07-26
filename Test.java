@@ -22,6 +22,7 @@ public class Test                                                               
   final static boolean                   aws_run = folderExists("/home/ubuntu");                                        // Whether we are running on AWS
   final static boolean                 local_run = !github_actions && !aws_run;                                         // Whether we are running locally
   final static long                        start = System.nanoTime();                                                   // Start time
+  final static String          github_commit_sha = System.getenv("GITHUB_SHA");                                         // Github commit sha if running as a github action
   final static Stack<String>       sayThisOrStop = new Stack<>();                                                       // The next says should say this or else we should stop
   final static TreeSet<String>      filesWritten = new TreeSet<>();                                                     // Files written
   final static TreeSet<String>     testsExecuted = new TreeSet<>();                                                     // Tests executed
