@@ -1556,8 +1556,8 @@ public class Program extends Test                                               
 
     String json()                                                                                                       // Json describing statistics
      {final StringBuilder s = new StringBuilder();
-      s.append(f(("'log': 'verilogStatistics', 'dateTime': '%s', 'sourceFile': '%s', 'testName': '%s',"+
-                " 'executionSteps': %d, 'instructions': %d, 'codeSize': %d, 'percent': %9.4f").replaceAll("'", "\""),
+      s.append(f(("'log': 'verilogStatistics', 'dateTime': '%s', 'sourceFile': '%20s', 'testName': '%20s',"+
+                " 'executionSteps': %8d, 'instructions': %4d, 'codeSize': %8d, 'percent': %9.4f").replaceAll("'", "\""),
                 dateTime,  source, name, execSteps, instructionSets, codeSize, percent()));
 
       s.append(f( ", \"suppressInstructionTracing\" : \"%d\"",  suppressInstructionTracing ? 1 : 0));                   // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
