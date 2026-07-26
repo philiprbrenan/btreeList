@@ -1544,7 +1544,7 @@ public class Program extends Test                                               
 
   class GenerateVerilog                                                                                                 // Generate verilog statistics
    {final String         name = currentTestNameSuffix();                                                                // Name of test
-    final String       source = fnx(sourceFileName());                                                                  // Source file
+    final String       source = fnx(mainFileName());                                                                    // Main source file
     final String     dateTime = dateTime();                                                                             // Date and time of test
     final int       execSteps = steps;                                                                                  // Number of execution steps
     final int        codeSize = codeSize();                                                                             // Original uncompressed code size
