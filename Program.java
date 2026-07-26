@@ -19,6 +19,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
+  final boolean                             runSynthesis = true;                                                        // Run synthesis
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -170,9 +171,13 @@ public class Program extends Test                                               
   void pcConstant(I I, Label Target) {pcConstant().put(I.instructionNumber, Target.offset);}                            // Save a constant label into the instruction to constant map
   void pcConstant(I I, int   Target) {pcConstant().put(I.instructionNumber, Target);}                                   // Save a constant integer into the instruction to constant map
 
-  String pName (String Text) {return pad(Text, padName   );}                                                            // Pad Verilog names
-  String pCR (  String Text) {return pad(Text, padCR     );}                                                            // Pad Verilog control register names
-  String pExpr (String Text) {return pad(Text, padVerilog);}                                                            // Pad Verilog expressions
+  String pName ( String Text) {return pad(Text,    padName   );}                                                        // Pad Verilog names
+  String pCR (   String Text) {return pad(Text,    padCR     );}                                                        // Pad Verilog control register names
+  String pExpr ( String Text) {return pad(Text,    padVerilog);}                                                        // Pad Verilog expressions
+
+  String pqName (String Text) {return pad(q(Text), padName   );}                                                        // Pad Verilog names
+  String pqCR (  String Text) {return pad(q(Text), padCR     );}                                                        // Pad Verilog control register names
+  String pqExpr (String Text) {return pad(q(Text), padVerilog);}                                                        // Pad Verilog expressions
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -1556,9 +1561,9 @@ public class Program extends Test                                               
 
     String json()                                                                                                       // Json describing statistics
      {final StringBuilder s = new StringBuilder();
-      s.append(f(("'log': 'verilogStatistics', 'dateTime': '%s', 'sourceFile': '%20s', 'testName': '%20s',"+
+      s.append(f(("'log': 'verilogStatistics', 'dateTime': %s, 'sourceFile': %s, 'testName': %s,"+
                 " 'executionSteps': %8d, 'instructions': %4d, 'codeSize': %8d, 'percent': %9.4f").replaceAll("'", "\""),
-                dateTime,  source, name, execSteps, instructionSets, codeSize, percent()));
+                q(dateTime),  pqName(source), pqName(name), execSteps, instructionSets, codeSize, percent()));
 
       s.append(f( ", \"suppressInstructionTracing\" : \"%d\"",  suppressInstructionTracing ? 1 : 0));                   // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
       s.append(f(      ", \"suppressTraceComments\" : \"%d\"",       suppressTraceComments ? 1 : 0));                   // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
@@ -1567,6 +1572,8 @@ public class Program extends Test                                               
       s.append(f(            ", \"generateVerilog\" : \"%d\"",             generateVerilog ? 1 : 0));                   // Generate verilog version of each program
       s.append(f(                 ", \"runVerilog\" : \"%d\"",                  runVerilog ? 1 : 0));                   // Execute  verilog version of each program
       s.append(f(", \"suppressNamesInInstructions\" : \"%d\"", suppressNamesInInstructions ? 1 : 0));                   // Include names in instructions
+      s.append(f(",                \"runSynthesis\" : \"%d\"",                runSynthesis ? 1 : 0));                   // Run synthesis
+      if (github_commit_sha != null) s.append(f(", \"github_commit_sha\" : \"%s\"", github_commit_sha));                // Commit sha if available
       return ""+s;
      }
 
@@ -1580,7 +1587,7 @@ public class Program extends Test                                               
    {final String       name = currentTestNameSuffix();                                                                  // Name of program
     final String  traceFile = verilogTraceFile;                                                                         // Trace file name relative to Verilog code
     final String   codeFile = VerilogCodeFile();                                                                        // Code file
-    final String     indent = " ".repeat(8);                                                                            // Indentation for verilog code
+    final String     indent = " ".repeat(6);                                                                            // Indentation for verilog code
     final int    sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                               // Size of memory
     final int  numberOfInts =  nextIntId;                                                                               // Number of integers needed
     final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
@@ -1608,6 +1615,7 @@ module {name};                                                                  
       /*Execution State Variables*/out.write(substitute("""
   parameter        INT_VARS = {numberOfInts};                                                                           // Number of integer variables
   parameter       BOOL_VARS = {numberOfBools};                                                                          // Number of boolean variables
+  reg                 clock;                                                                                            // Program clock to drive instruction execution
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer            lastPc;                                                                                            // The instruction which started the latest flow of control block
   integer         traceFile;                                                                                            // Write verilog trace records to this file
@@ -1643,18 +1651,22 @@ module {name};                                                                  
        }
 
       /*Execute*/out.write("""
-  initial begin                                                                                                         // Execute actual code
+  initial begin                                                                                                         // Clock
     #10;                                                                                                                // Let all the initialization complete
-    forever #1 begin                                                                                                    // Execute instructions
+    clock = 0;                                                                                                          // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
+    forever #1 clock = ~clock;                                                                                          // Execute instructions
+  end                                                                                                                   // Execute instructions
+
+  always_ff @(posedge clock) begin                                                                                      // Execute instructions
 """);
 
       if (!compressInstructions || !compressInstructionLabels)                                                          // No compression of instruction labels
       /*Execute case*/out.write("""
-      case(pc)
+    case(pc)
 """);
       else                                                                                                              // Compress instruction labels
       /*Execute case*/out.write("""
-      case(array_pcToMatchSet[pc])
+    case(array_pcToMatchSet[pc])
 """);
 
       if (compressInstructions)                                                                                         // Compress instructions
@@ -1682,12 +1694,11 @@ module {name};                                                                  
       generateVerilog = new GenerateVerilog(instructionMatches.sequence.size());                                        // Record statistics for generated verilog
 
       /* Execute default*/out.write("""
-        default: begin
-          $fclose(traceFile);
-          $finish(0);
-        end
-      endcase
-    end
+      default: begin
+        $fclose(traceFile);
+        $finish(0);
+      end
+    endcase
   end
 """);
 
