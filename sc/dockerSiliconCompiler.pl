@@ -53,12 +53,19 @@ jobs:
         cat << 'EOF' > Dockerfile
         FROM ubuntu:22.04
 
+        ENV DEBIAN_FRONTEND=noninteractive
+        ENV TZ=Etc/UTC
+
         RUN apt-get update
-        RUN apt-get install -y python3-dev python3-pip python3-venv curl git build-essential sudo
+        RUN apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo
         RUN rm -rf /var/lib/apt/lists/*
 
-        # Set working directory
-        WORKDIR /app
+        # Create normal user with sudo access without password
+        RUN useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+
+        # Everything below runs as phil
+        USER phil
+        WORKDIR /home/phil
 
         # Create virtual environment
         RUN python3 -m venv ./sc
