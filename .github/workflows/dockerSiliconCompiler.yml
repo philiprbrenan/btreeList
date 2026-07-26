@@ -1,4 +1,4 @@
-# Test 2026-07-26 at 18:05:54
+# Test 2026-07-26 at 18:25:36
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -33,8 +33,8 @@ jobs:
         RUN apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo
         RUN rm -rf /var/lib/apt/lists/*
 
-        # Create normal user
-        RUN useradd -ms /bin/bash phil
+        # Create normal user with sudo access without password
+        RUN useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
         # Everything below runs as phil
         USER phil
