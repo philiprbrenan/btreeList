@@ -22,7 +22,7 @@ my $repo = q(btreeList);                                                        
 my $home = q(/home/phil/btreeList);                                                                                     # Home folder
 my $wf   = q(.github/workflows/dockerSiliconCompiler.yml);                                                              # Work flow on Ubuntu
 
-my $n    = "ghcr.io/$user/$repo:latest";                                                                                # Container storage on github
+my $n    = "ghcr.io/philiprbrenan/sc:latest";                                                                           # Container storage on github
 my $d    = dateTimeStamp;                                                                                               # Force the file to be different on each push
 my $y    = <<"END";                                                                                                     # Workflow
 # Test $d
