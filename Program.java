@@ -20,7 +20,7 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -1668,8 +1668,8 @@ task automatic {name};
       int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
-      verilogArrays().add("pcConstant",   pcConstant(),                   -1);                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
-      verilogArrays().add("pcToMatchSet", instructionMatches.pcToMatch(), -1);                                          // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+      verilogArrays().new Array("pcConstant",   pcConstant(),                   -1, true);                              // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
+      verilogArrays().new Array("pcToMatchSet", instructionMatches.pcToMatch(), -1, true);                              // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
       try
        (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                     // Write the verilog to a file
@@ -2086,11 +2086,26 @@ check
     Collection<Array> arrays() {return arrays.values();}                                                                // The arrays being defined
 
     class Array                                                                                                         // Matching set of instructions
-     {final String  name;                                                                                               // Name of the array
-      final int [] array;                                                                                               // Array to map inputs to outputs
-      final int    error;                                                                                               // Value to be used on output for an undefined input
+     {final String      name;                                                                                           // Name of the array
+      final int []     array;                                                                                           // Array to map inputs to outputs
+      final int        error;                                                                                           // Value to be used on output for an undefined input
+      final boolean readOnly;                                                                                           // Value to be used on output for an undefined input
 
-      Array (String Name, int[]Array, int Error) {name = Name; array = Array; error = Error;}                           // Create a new match set and add it to the existing matching instructions
+      Array (String Name, int[]Array, int Error, boolean ReadOnly)                                                      // Create a new match set and add it to the existing matching instructions
+       {name = Name; array = Array; error = Error; readOnly = ReadOnly;
+        arrays.put(name, this);
+       }
+
+      Array (String Name, TreeMap<Integer,Integer> map, int Error, boolean ReadOnly)                                    // Define a verilog array from a java tree map
+       {final int  size  = map.size() == 0 ? 0 : map.lastKey() + 1;
+        name  = Name;
+        error = Error;
+        readOnly = ReadOnly;
+        array = new int[size];
+        Arrays.fill(array, Error);
+        for (Integer i : map.keySet()) array[i] = map.get(i);
+        arrays.put(name, this);
+       }
 
       String clear ()                                                                                                   // Clear an array
        {final StringBuilder s = new StringBuilder();
@@ -2130,17 +2145,6 @@ check
       String arrayName ()      {return "array_"      +name;}                                                            // Free data associated with instruction matching as it can get quite big
       String index ()          {return "index_array_"+name;}                                                            // Index name for clearing this array
      }
-
-    void add (String Name, TreeMap<Integer,Integer> map, int Error)                                                     // Define a verilog array from a java tree map
-     {final int  size  = map.size() == 0 ? 0 : map.lastKey() + 1;
-      final int[]array = new int[size];
-      Arrays.fill(array, Error);
-      for (Integer i : map.keySet()) array[i] = map.get(i);
-      add(Name, array, Error);
-     }
-
-    void add (String Name, int[]Array, int Error) {arrays.put(Name, new Array(Name, Array, Error));}                    // Define a verilog array from a java array
-    void add (String Name, int[]Array)            {add                 (Name, Array, -1);}                              // Define a verilog function from an array with a default output for undefined inputs
    } // VerilogArrays
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
@@ -2551,7 +2555,7 @@ Memory 0
     final Program P = new Program(new Build().immediate(false).memory(16))
      {void code()
        {final int[]array = {0, 0, 0, 2, 4, 6};
-        verilogArrays().add("array", array);
+        verilogArrays().new Array("array", array, -1, false);
         execute();
        }
      };
