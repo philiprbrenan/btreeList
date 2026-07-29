@@ -1337,7 +1337,7 @@ Leaf   at:   2 size:   4, count:   4
     final int  N = random_32.length;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeBody()
-       {if (!Ex) verilogArrays().add("loadRandomKeys", random_32);                                            // Create an array of the random keys to be inserted from Verilog
+       {if (!Ex) verilogArrays().new Array("loadRandomKeys", random_32, -1, true);                                      // Create an array of the random keys to be inserted from Verilog
 
         new ForCount(N)
          {void body(Int Index)
@@ -1627,7 +1627,7 @@ Leaf   at:   2 size:   4, count:   4
     t.dumpProgramState("AAAA");
 
     final StringBuilder s = t.print();
-    if (!Ex) t.verilogArrays().add("loadRandomKeys", random_32);                                              // Create an array of the random keys to be deleted so that the array is accessible from Verilog
+    if (!Ex) t.verilogArrays().new Array("loadRandomKeys", random_32, -1, true);                                        // Create an array of the random keys to be deleted so that the array is accessible from Verilog
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
