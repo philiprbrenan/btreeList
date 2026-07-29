@@ -190,7 +190,8 @@ public class Program extends Test                                               
   String          javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                     // Java trace file
   String        VerilogCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}            // Verilog code file
   String       scDriverCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), pythonSuffix);}             // Python code to drive silicon compiler
-  String              yosysFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), yosysSuffix);}              // Yosys code
+  String              yosysFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), yosysSuffix);}              // Yosys code file name
+  String              YosysFile () {return fn(verilogTestFolder(), yosysFile());}                                       // Yosys code path to file namer
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -1481,12 +1482,13 @@ podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" pyth
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
          }
 
-        if (runYosys)                                                                                                   // Run yosys in a podman container to get a faster check on whether the verilog can be synthesized
+        if (runYosys)                                                                                                   // Run yosys to get a faster check on whether the verilog can be synthesized
          {final String        p = g.yosys();
           final StringBuilder S = new StringBuilder();
           S.append(substitute("""
-podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" yosys {y}
-""", "f", fqn(verilogTestFolder()), "n", currentTestNameSuffix(), "y", fqn(yosysFile()), "image", siliconCompilerImage));
+cd {f}; yosys {y}
+""", "f", verilogTestFolder(), "y", yosysFile()));
+
           final ExecCommand X = new ExecCommand(S);                                                                     // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
@@ -1986,7 +1988,7 @@ proc
 check
 """, "n", name));
 
-      return writeFile(yosysFile(), s);
+      return writeFile(YosysFile(), s);
      }
 
    } // GenerateVerilog
