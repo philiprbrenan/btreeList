@@ -955,6 +955,8 @@ public class Test                                                               
   static String fpnx (String Path) {return Path.replaceFirst("\\.[^.]*$", "");}                                         // Remove extension from file path
   static String fpx ( String Path) {return Path.replaceFirst("[^/]*$", "");}                                            // Extract file path from path
 
+  static String fqn(String Relative) {return Path.of(Relative).toAbsolutePath().normalize().toString();}                // Fully qualified file name from filename relative to current working directory
+
   class CompressFile
    {final  String sourceFile;
     final  String compressedFile;
@@ -1372,7 +1374,7 @@ public class Test                                                               
           "code   :", exitCode, "\n",
           "stdout :", O,        "\n",
           "stderr :", E,        "\n",
-        f("time   : 7.2f seconds", timer.seconds()),
+        f("time   : %7.2f seconds", timer.seconds()),
            m);
          }
        }
