@@ -56,37 +56,16 @@ jobs:
         ENV DEBIAN_FRONTEND=noninteractive
         ENV TZ=Etc/UTC
 
-        RUN apt-get update
-        RUN apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo
-        RUN rm -rf /var/lib/apt/lists/*
-
-        # Create normal user with sudo access without password
-        RUN useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+        RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo; rm -rf /var/lib/apt/lists/*; useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
         # Everything below runs as phil
         USER phil
         WORKDIR /home/phil
 
-        # Create virtual environment
-        RUN python3 -m venv ./sc
+        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
 
-        # Upgrade pip inside virtual environment
-        RUN /bin/bash -c "source ./sc/bin/activate && pip install --upgrade pip"
-
-        # Install SiliconCompiler
-        RUN /bin/bash -c "source ./sc/bin/activate && pip install siliconcompiler"
-        RUN /bin/bash -c "source ./sc/bin/activate && pip show siliconcompiler"
-        RUN /bin/bash -c "source ./sc/bin/activate && python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
-
-        # Install ASIC tools via sc-install
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install openroad"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install klayout"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install yosys"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install sv2v"
-        RUN /bin/bash -c "source ./sc/bin/activate && sc-install yosys-slang"
-
-        # Default command
-        CMD ["/bin/bash"]
+        ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        CMD ["/bin/bash", "--login"]
         EOF
 
     - name: Log in to GitHub Container Registry
@@ -105,5 +84,9 @@ jobs:
         docker push $n
 END
 
-my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                         # Upload workflow
-lll "$f  Ubuntu work flow for $repo";
+my $f = writeFileUsingSavedToken $user, $repo, $wf,     $y;                                                               # Upload workflow
+lll "$f  $wf";
+my $F = writeFileUsingSavedToken $user, $repo, "sc/$0", $0;                                                             # Upload this file
+lll "$F  sc/$0";
+# RUN /bin/bash -c "source ./sc/bin/activate && pip show siliconcompiler"
+# RUN /bin/bash -c "source ./sc/bin/activate && python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
