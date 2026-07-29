@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Machine level programming in Java
+// Create a micro-coded cpu in synthesizable Verilog from a Java program coded using integers, booleans and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
@@ -11,7 +11,7 @@ import java.nio.file.*;
 
 //D1 Construct                                                                                                          // Generate the Btree algorithm in Verilog from the equivalent java code to produce the kernel of "Database on a Chip"
 
-public class Program extends Test                                                                                       // Develop and test a java program to describe a chip and emulate its operation.
+public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
@@ -19,7 +19,8 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                             runSynthesis = true;                                                        // Run synthesis
+  final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
+  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -32,7 +33,10 @@ public class Program extends Test                                               
   final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
   final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
+  final static String                       pythonSuffix = "py";                                                        // Suffix for python files
+  final static String                        yosysSuffix = "ys";                                                        // Suffix for yosys files
   final static String                  verilogArrayFiles = "array";                                                     // Suffix for verilog files containing array definitions
+  final static String               siliconCompilerImage = "ghcr.io/philiprbrenan/sc:latest";                           // Podman container containing silicon compiler
   final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog code
 
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
@@ -51,6 +55,7 @@ public class Program extends Test                                               
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
+  final Stack<DumpLocation>                dumpLocations = new Stack<>();                                               // Locations in the code at which dumps have been requested
   final VerilogArrays                      verilogArrays = new VerilogArrays();                                         // Verilog array definitions
   final TreeMap<Integer,Integer>              pcConstant = new TreeMap<>();                                             // Each instruction touches at most either the one variable or the one memory location given by this map
   private int                                  currentPc = 0;                                                           // Current program counter
@@ -171,13 +176,21 @@ public class Program extends Test                                               
   void pcConstant(I I, Label Target) {pcConstant().put(I.instructionNumber, Target.offset);}                            // Save a constant label into the instruction to constant map
   void pcConstant(I I, int   Target) {pcConstant().put(I.instructionNumber, Target);}                                   // Save a constant integer into the instruction to constant map
 
-  String pName ( String Text) {return pad(Text,    padName   );}                                                        // Pad Verilog names
-  String pCR (   String Text) {return pad(Text,    padCR     );}                                                        // Pad Verilog control register names
-  String pExpr ( String Text) {return pad(Text,    padVerilog);}                                                        // Pad Verilog expressions
+  String pName ( String Text)      {return pad(Text,    padName   );}                                                   // Pad Verilog names
+  String pCR (   String Text)      {return pad(Text,    padCR     );}                                                   // Pad Verilog control register names
+  String pExpr ( String Text)      {return pad(Text,    padVerilog);}                                                   // Pad Verilog expressions
 
-  String pqName (String Text) {return pad(q(Text), padName   );}                                                        // Pad Verilog names
-  String pqCR (  String Text) {return pad(q(Text), padCR     );}                                                        // Pad Verilog control register names
-  String pqExpr (String Text) {return pad(q(Text), padVerilog);}                                                        // Pad Verilog expressions
+  String pqName (String Text)      {return pad(q(Text), padName   );}                                                   // Pad Verilog names
+  String pqCR (  String Text)      {return pad(q(Text), padCR     );}                                                   // Pad Verilog control register names
+  String pqExpr (String Text)      {return pad(q(Text), padVerilog);}                                                   // Pad Verilog expressions
+
+  String      verilogTestFolder () {return fp(verilogTests,        currentTestNameSuffix());}                           // Folder for this test using Verilog
+  String verilogTestArrayFolder () {return fp(verilogTestFolder(), verilogArrayFiles);}                                 // Folder for arrays used in this test using Verilog
+  String       verilogTraceFile () {return fn(verilogTestFolder(), verilogTraceFile);}                                  // Verilog trace file
+  String          javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                     // Java trace file
+  String        VerilogCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}            // Verilog code file
+  String       scDriverCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), pythonSuffix);}             // Python code to drive silicon compiler
+  String              yosysFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), yosysSuffix);}              // Yosys code
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -583,7 +596,7 @@ public class Program extends Test                                               
             void   a() {loadId(id);                    jTrace(f("%8d LST1 "+ri+" = %8d",  pc(),   id));}
             String v() {return pCR(ri) + " <= "+c+" "+ vTrace(  "%8d LST1 "+ri+" = %8d", "pc", ""+id) ;}
            };
-          pcConstant(i, I.id);                                                                                            // Id of variable being addressed by these instructions
+          pcConstant(i, I.id);                                                                                          // Id of variable being addressed by these instructions
          }
 
         if (LoadValue) new I()                                                                                          // Value of integer
@@ -972,6 +985,7 @@ public class Program extends Test                                               
     String n () {return "m_"+id;}                                                                                       // Name of memory
     String n (String Index)         {return n() + "["+Index+"]";}                                                       // Name of indexed memory
     String n (String I1, String I2) {return n() + "["+I1+"]["+I2+"]";}                                                  // Name of indexed memory
+    String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memory in decimal
 
     void im(Int  I) {pcConstant(compiling(), I.id);}                                                                    // Save the integer variable used for this memory access at this instruction
     void im(Bool B) {pcConstant(compiling(), B.id);}                                                                    // Save the boolean variable used for this memory access at this instruction
@@ -1007,8 +1021,6 @@ public class Program extends Test                                               
 
     int     setBit(int X, int I, boolean V) {return  X & ~(1 << I) | (V ? 1 : 0) << I;}                                 // Set a bit in an integer
     boolean getBit(int X, int I)            {return (X >> I & 1) != 0;}                                                 // Get a bit from an integer
-
-    String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memory in decimal
 
     UnitMemory copy (UnitMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
      {subStart("Program.UnitMemory.copy");
@@ -1355,7 +1367,7 @@ public class Program extends Test                                               
     for (Bool b : bools()) {b.i = false; b.v = false;}
    }
 
-  void dumpJavaVars ()                                                                                                  // Dump all memories and variables to the java trace file
+  void dumpJavaVariables ()                                                                                                  // Dump all memories and variables to the java trace file
    {final StringBuilder s = new StringBuilder();
     for (Int  i  : ints())                                                                                              // Dump ints
      {s.append(f("Int  %8d == %8d", i.id, i.i));
@@ -1389,7 +1401,7 @@ public class Program extends Test                                               
 
   void dumpJava ()                                                                                                      // Dump all memories and variables to the java trace file
    {dumpJavaMemories();
-    dumpJavaVars();
+    dumpJavaVariables();
     dumpJavaRegisters();
    }
 
@@ -1435,9 +1447,9 @@ public class Program extends Test                                               
     else if (!generateVerilog) say(f("            Execution: %,12d", steps));                                           // Show number of steps unless we are going to print this in during the verilog process
 
     if (generateVerilog)                                                                                                // Run verilog
-     {final GenerateVerilog g = generateVerilog();                                                                      // Generate corresponding Verilog code and run it
-      final String    message;                                                                                          // Message describing outcome of execution (all on one line)
-      final String       json;                                                                                          // Jsone describing outcome of execution (all on one line)
+     {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
+      final StringBuilder message = new StringBuilder(g.message());                                                     // Message describing outcome of execution (all on one line)
+      final StringBuilder    json = new StringBuilder(g.json   ());                                                     // Json describing outcome of execution (all on one line)
 
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
@@ -1452,13 +1464,34 @@ public class Program extends Test                                               
                             "v", v,
                             "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The progfrsam will return a coed of 124 if it times out
 
-        final ExecCommand x = new ExecCommand(s);                                                                       // Execute commands
-        message = g.message() + f(" %11.2f seconds for: %s",                    x.timer.seconds(), x.command);          // Execution time of command in message
-        json    = g.json()    + f(", \"seconds\": %11.2f, \"command\": \"%s\"", x.timer.seconds(), x.command);          // Execution time of command in json
+        final ExecCommand x = new ExecCommand(s);                                                                       // Execute verilog commands
+        message.append(f(" %11.2f seconds for: %s",                    x.timer.seconds(), x.command));                  // Execution time of command in message
+        json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", x.timer.seconds(), x.command));                  // Execution time of command in json
 
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
+
+        if (runSynthesis)                                                                                               // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
+         {final String        p = g.siliconCompiler();
+          final StringBuilder S = new StringBuilder();
+          S.append(substitute("""
+podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {n}.py
+""", "f", fqn(verilogTestFolder()), "n", currentTestNameSuffix(), "image", siliconCompilerImage));
+          final ExecCommand X = new ExecCommand(S);                                                                     // Execute silicon compiler commands
+          message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
+          json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
+         }
+
+        if (runYosys)                                                                                                   // Run yosys in a podman container to get a faster check on whether the verilog can be synthesized
+         {final String        p = g.yosys();
+          final StringBuilder S = new StringBuilder();
+          S.append(substitute("""
+podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" yosys {y}
+""", "f", fqn(verilogTestFolder()), "n", currentTestNameSuffix(), "y", fqn(yosysFile()), "image", siliconCompilerImage));
+          final ExecCommand X = new ExecCommand(S);                                                                     // Execute silicon compiler commands
+          message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
+          json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
+         }
        }
-      else {message = g.message(); json = g.json();}                                                                    // Verilog compilation statistics
 
       say(message);                                                                                                     // Report Verilog statistics
       appendFile(verilogLogFile,  message+ "\n");                                                                       // Log in text format
@@ -1473,26 +1506,63 @@ public class Program extends Test                                               
     else           stop(Type, m);                                                                                       // No traceback available
    }
 
-  void dumpProgramState (String Location)                                                                               // Dump program memories and variables
+//D2 Dump                                                                                                               // Dump the state of the program at requested locations during execution of both Java and Verilog so that the evolution of memories, variables, registers can be confirmed
+
+  class DumpLocation                                                                                                    // Create a dump location definition
+   {final int location;                                                                                                 // Location in program of dump
+    final String title;                                                                                                 // Title of dump
+
+    DumpLocation(int Location, String Title)
+     {location = Location; title = Title;
+      dumpLocations.push(this);
+     }
+
+    String called() {return f("dumpLocation_"+location+"(); ");}                                                        // The name of the dump location
+
+    String define()                                                                                                     // Define a dump locarion
+     {return  substitute("""
+
+task automatic {name};
+  begin
+`ifndef SYNTHESIS
+    $fwrite(traceFile, "{title}\\n"); $fflush(traceFile);
+`endif
+    end
+  endtask
+""", "name", called(), "title", title);
+     }
+   } //DumpLocation
+
+  void dumpProgramState (String Title)                                                                                  // Dump program memories and variables
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                                         dumpJava();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\"); $fflush(traceFile);\n"+dumpVerilog();}          // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Title+"\n");                               dumpJava();}
+      String  v()     {return new DumpLocation(instructionNumber, Title).called()+dumpVerilog();}                                // Dump entire state of program: memories, variables, registers
       boolean trace() {return false;}
      };
    }
 
-  void dumpProgramMemories (String Location)                                                                            // Dump program memories
+  void dumpProgramMemories (String Title)                                                                               // Dump program memories
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                                         dumpJavaMemories();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\"); $fflush(traceFile);\n"+dumpVerilogMemories();}  // fdisplay gets removed by trace suppression
+     {void    a()     {appendJavaTrace(Title+"\n");                               dumpJavaMemories();}
+      String  v()     {return new DumpLocation(instructionNumber, Title).called()+dumpVerilogMemories();}
       boolean trace() {return false;}
      };
    }
 
-  void dumpProgramRegisters (String Location)                                                                           // Dump program registers
+  void dumpProgramVariables (String Title)                                                                              // Dump program variable
    {new I()
-     {void    a()     {appendJavaTrace(Location+"\n");                                         dumpJavaRegisters();}
-      String  v()     {return "$fwrite(traceFile, \""+Location+"\\n\"); $fflush(traceFile);\n"+dumpVerilogRegisters();} // fdisplay gets removed by trace suppression
+     {final int location = codeSize()-2;                                                                                // Record instruction location
+      void    a()     {appendJavaTrace(Title+"\n");                               dumpJavaVariables();}
+      String  v()     {return new DumpLocation(instructionNumber, Title).called()+dumpVerilogVariables();}
+      boolean trace() {return false;}
+     };
+   }
+
+  void dumpProgramRegisters (String Title)                                                                              // Dump program registers
+   {new I()
+     {final int location = codeSize();                                                                                  // Record instruction location
+      void    a()     {appendJavaTrace(Title+"\n");                               dumpJavaRegisters();}
+      String  v()     {return new DumpLocation(instructionNumber, Title).called()+dumpVerilogRegisters();}
       boolean trace() {return false;}
      };
    }
@@ -1542,7 +1612,7 @@ public class Program extends Test                                               
 
 //D1 Verilog                                                                                                            // Generate Verilog
 
-  class GenerateVerilog                                                                                                 // Generate verilog statistics
+  class GenerateVerilog                                                                                                 // Generate verilog
    {final String         name = currentTestNameSuffix();                                                                // Name of test
     final String       source = fnx(mainFileName());                                                                    // Main source file
     final String     dateTime = dateTime();                                                                             // Date and time of test
@@ -1581,36 +1651,37 @@ public class Program extends Test                                               
      {final int m = instructionSets, c = code.size();
       return 100 * (c - m) / (double)c;
      }
-   }
 
-  GenerateVerilog generateVerilog ()                                                                                    // Generate the Verilog corresponding to the java code
-   {final String       name = currentTestNameSuffix();                                                                  // Name of program
-    final String  traceFile = verilogTraceFile;                                                                         // Trace file name relative to Verilog code
-    final String   codeFile = VerilogCodeFile();                                                                        // Code file
-    final String     indent = " ".repeat(6);                                                                            // Indentation for verilog code
-    final int    sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                               // Size of memory
-    final int  numberOfInts =  nextIntId;                                                                               // Number of integers needed
-    final int numberOfBools = nextBoolId;                                                                               // Number of bools needed
-    final InstructionMatches instructionMatches = new InstructionMatches();                                             // Mapping from instructions to blocks of matching instructions
-          GenerateVerilog       generateVerilog = null;                                                                 // Verilog generation statistics
+    GenerateVerilog ()                                                                                                  // Generate the Verilog corresponding to the java code
+     {final String       name = currentTestNameSuffix();                                                                // Name of program
+      final String  traceFile = verilogTraceFile;                                                                       // Trace file name relative to Verilog code
+      final String   codeFile = VerilogCodeFile();                                                                      // Code file
+      final String     indent = " ".repeat(6);                                                                          // Indentation for verilog code
+      final int    sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                             // Size of memory
+      final int  numberOfInts =  nextIntId;                                                                             // Number of integers needed
+      final int numberOfBools = nextBoolId;                                                                             // Number of bools needed
+      final InstructionMatches instructionMatches = new InstructionMatches();                                           // Mapping from instructions to blocks of matching instructions
+            GenerateVerilog       generateVerilog = null;                                                               // Verilog generation statistics
 
-    for(I i : code) {compiling(i); instructionMatches.add(i);}                                                          // Match instructions
-    verilogArrays().add("pcConstant",   pcConstant(),                   -1);                                            // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
-    verilogArrays().add("pcToMatchSet", instructionMatches.pcToMatch(), -1);                                            // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+      int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
-    try
-     (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                       // Write the verilog to a file
-     {/*Module*/out.write(substitute("""
+      for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
+      verilogArrays().add("pcConstant",   pcConstant(),                   -1);                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
+      verilogArrays().add("pcToMatchSet", instructionMatches.pcToMatch(), -1);                                          // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+
+      try
+       (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                     // Write the verilog to a file
+       {/*Module*/out.write(substitute("""
 module {name};                                                                                                          // Bit machine
 """, "name", name));
 
-      for(UnitMemory m : memories)                                                                                      // Each memory attached to this program
-       {/*Memory*/out.write(substitute("""
+        for(UnitMemory m : memories)                                                                                    // Each memory attached to this program
+         {/*Memory*/out.write(substitute("""
   parameter {SIZE} = {size};                                                                                            // Amount of memory
   integer   {name}[{SIZE}:0];                                                                                           // Declare memory made of integer
   integer   {index};                                                                                                    // Integer to index this memory
 """,  "name", m.n(), "index", m.index(), "size", ""+m.size(), "SIZE", ""+m.sizeParameter()));
-       }
+         }
 
       /*Execution State Variables*/out.write(substitute("""
   parameter        INT_VARS = {numberOfInts};                                                                           // Number of integer variables
@@ -1637,72 +1708,79 @@ module {name};                                                                  
 
 """, "numberOfInts", ""+numberOfInts, "numberOfBools", ""+numberOfBools));
 
-      for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.define());                                        // Define verilog arrays
+        for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.define());                                      // Define verilog arrays
 
-      for(UnitMemory m : memories)                                                                                      // Control registers for each memory
-       {out.write("  integer "+ m.     vReadBool() + ";\n");                                                            // Boolean read from memory
-        out.write("  integer "+ m.    vWriteBool() + ";\n");                                                            // Boolean to write into memory
-        out.write("  integer "+ m.      vReadInt() + ";\n");                                                            // Integer read from memory
-        out.write("  integer "+ m.     vWriteInt() + ";\n");                                                            // Integer to write into memory
-        out.write("  integer "+ m. vReadIntIndex() + ";\n");                                                            // Index at which to read an integer from memory
-        out.write("  integer "+ m. vReadBitIndex() + ";\n");                                                            // Index within an integer from which to get a bit to make a boolean
-        out.write("  integer "+ m.vWriteIntIndex() + ";\n");                                                            // Index at which to write an integer into memory
-        out.write("  integer "+ m.vWriteBitIndex() + ";\n");                                                            // Index within an integer at which to set a bit to represent a boolean
-       }
+        for(UnitMemory m : memories)                                                                                    // Control registers for each memory
+         {out.write("  integer "+ m.     vReadBool() + ";\n");                                                          // Boolean read from memory
+          out.write("  integer "+ m.    vWriteBool() + ";\n");                                                          // Boolean to write into memory
+          out.write("  integer "+ m.      vReadInt() + ";\n");                                                          // Integer read from memory
+          out.write("  integer "+ m.     vWriteInt() + ";\n");                                                          // Integer to write into memory
+          out.write("  integer "+ m. vReadIntIndex() + ";\n");                                                          // Index at which to read an integer from memory
+          out.write("  integer "+ m. vReadBitIndex() + ";\n");                                                          // Index within an integer from which to get a bit to make a boolean
+          out.write("  integer "+ m.vWriteIntIndex() + ";\n");                                                          // Index at which to write an integer into memory
+          out.write("  integer "+ m.vWriteBitIndex() + ";\n");                                                          // Index within an integer at which to set a bit to represent a boolean
+         }
 
-      /*Execute*/out.write("""
-  initial begin                                                                                                         // Clock
+        /*Execute*/out.write("""
+
+`ifndef SYNTHESIS
+  initial begin
     #10;                                                                                                                // Let all the initialization complete
     clock = 0;                                                                                                          // Initialize the clock - failure to do this will result in an infinite loop as the clock cannot transition on an undefined value
     forever #1 clock = ~clock;                                                                                          // Execute instructions
   end                                                                                                                   // Execute instructions
+`endif                                                                                                                  // Clock - only needed during icarus verilog sumulation not during synthesis
 
   always_ff @(posedge clock) begin                                                                                      // Execute instructions
 """);
 
-      if (!compressInstructions || !compressInstructionLabels)                                                          // No compression of instruction labels
-      /*Execute case*/out.write("""
-    case(pc)
+        if (!compressInstructions || !compressInstructionLabels)                                                        // No compression of instruction labels
+        /*Execute case*/out.write("""
+      case(pc)
 """);
-      else                                                                                                              // Compress instruction labels
-      /*Execute case*/out.write("""
-    case(array_pcToMatchSet[pc])
+        else                                                                                                            // Compress instruction labels
+        /*Execute case*/out.write("""
+      case(array_pcToMatchSet[pc])
 """);
 
-      if (compressInstructions)                                                                                         // Compress instructions
-       {if  (!compressInstructionLabels)                                                                                // Compress by writing all labels against the first instance of an instruction
-         {for (InstructionMatches.Match m : instructionMatches.sequence)                                                // Each block of identical instructions
-           {final String v = m.first().formatVerilogCode(m.verilog);
-            out.write(indent + m.labels() + v);
+        if (compressInstructions)                                                                                       // Compress instructions
+         {if  (!compressInstructionLabels)                                                                              // Compress by writing all labels against the first instance of an instruction
+           {for (InstructionMatches.Match m : instructionMatches.sequence)                                              // Each block of identical instructions
+             {final String v = m.first().formatVerilogCode(m.verilog);
+              out.write(indent + m.labels() + v);
+             }
+           }
+          else                                                                                                          // Compress each block to a single sequential instruction and map pc at head of case statement accordingly
+           {for (InstructionMatches.Match m : instructionMatches.sequence)                                              // Each block of identical instructions
+             {final String v = m.first().formatVerilogCode(m.verilog);
+              out.write(indent + f("%4d", m.block) + v);
+             }
            }
          }
-        else                                                                                                            // Compress each block to a single sequential instruction and map pc at head of case statement accordingly
-         {for (InstructionMatches.Match m : instructionMatches.sequence)                                                // Each block of identical instructions
-           {final String v = m.first().formatVerilogCode(m.verilog);
-            out.write(indent + f("%4d", m.block) + v);
+        else                                                                                                            // Write instructions without compression
+         {for (I i : program().code)                                                                                    // Each identical instruction
+           {compiling(i);
+            final String v = i.formatVerilogCode(i.interiorVerilog());
+            out.write(indent + f("%4d", i.instructionNumber) + v);
            }
          }
-       }
-      else                                                                                                              // Write instructions without compression
-       {for (I i : program().code)                                                                                      // Each identical instruction
-         {compiling(i);
-          final String v = i.formatVerilogCode(i.interiorVerilog());
-          out.write(indent + f("%4d", i.instructionNumber) + v);
-         }
-       }
+        countInstructionSets = instructionMatches.matches.size();                                                       // Instruction set size
 
-      generateVerilog = new GenerateVerilog(instructionMatches.sequence.size());                                        // Record statistics for generated verilog
+        generateVerilog = new GenerateVerilog(instructionMatches.sequence.size());                                      // Record statistics for generated verilog
 
-      /* Execute default*/out.write("""
+        /* Execute default*/out.write("""
       default: begin
-        $fclose(traceFile);
+`ifndef SYNTHESIS
+        $fclose(traceFile);                                                                                             // Close trace file
         $finish(0);
+`endif
       end
     endcase
   end
 """);
 
-      /*Clear registers*/out.write(substitute("""
+        /*Clear registers*/out.write(substitute("""
+
   initial begin                                                                                                         // Clear registers
     index        = 0;
     pc           = 0;
@@ -1717,6 +1795,7 @@ module {name};                                                                  
        targetInt = 0;                                                                                                   // Computed target integer value to be loaded into a variable
       targetBool = 0;                                                                                                   // Computed target boolean value to be loaded into a variable
 
+`ifndef SYNTHESIS
     traceFile = $fopen("{traceFile}", "w");                                                                             // Clear the trace file
     if (traceFile == 0) begin
       $display("ERROR: Could not open file '{traceFile}' for writing.");
@@ -1727,39 +1806,46 @@ module {name};                                                                  
       $display("ERROR: Could not open file '{traceFile}' for appending.");
       $finish;
     end
+`endif
   end
 """, "traceFile", traceFile));
 
-      /*Clear variables*/out.write("""
+        /*Clear variables*/out.write("""
+
   initial begin;                                                                                                        // Clear integers and booleans in verilog
     for(index_ints = 0; index_ints < INT_VARS;  index_ints = index_ints + 1) i[index_ints] = 0;
     for(index_bool = 0; index_bool < BOOL_VARS; index_bool = index_bool + 1) b[index_bool] = 0;
   end
 """);
 
-    /*Clear memory*/for(UnitMemory m : memories)                                                                        // Control registers for each memory
+        /*Clear memory*/for(UnitMemory m : memories)                                                                    // Control registers for each memory
        {out.write(substitute("""
+
   initial begin                                                                                                         // Clear memory in Verilog
     for ({index} = 0; {index} < {SIZE}; {index} = {index} + 1) {name}[{index}] = 0;
   end
 """,  "index", m.index(),  "name", m.n(), "SIZE", ""+m.sizeParameter()));
        }
 
-      for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.load());                                          // Write array definitions
-      for(UnitMemory          m : memories)               out.write(   dumpVerilogMemoryInDecimal(m)+"\n");             // Dump memories in Verilog
+        for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.load());                                        // Write array definitions
+        for(UnitMemory          m : memories)               out.write(dumpVerilogMemoryInDecimal(m));                   // Dump memories in Verilog
+        for(DumpLocation        d : dumpLocations)          out.write(d.define());                                      // Locations in program that have requested dumps
 
-      /*Clear variables*/ out.write(dumpVerilogVariables()+"\n");                                                       // Dump verilog variables task
-      /*End*/out.write("""
+        out.write(dumpVerilogVariables()+"\n");                                                                         // Dump verilog variables task
+        out.write(dumpVerilogRegisters()+"\n");                                                                         // Dump verilog variables task
+        /*End*/out.write("""
 endmodule
 """);
+       }
+      catch(Exception e)                                                                                                // Failed to generate verilog
+       {stop(e, fullTraceBack(e));                                                                                      // Write the error and stop
+       }
+      instructionSets = countInstructionSets;                                                                           // Finalize instruction set size
      }
-    catch(Exception e) {stop(e, fullTraceBack(e));}
 
-    return generateVerilog;                                                                                             // Return Verilog generation statistics
-   }
+    String clearMemory(UnitMemory M, String Next)                                                                       // Verilog procedure to clear a memory
+     {return substitute("""
 
-  String clearMemory(UnitMemory M, String Next)                                                                         // Verilog procedure to clear a memory
-   {return substitute("""
   task automatic clearMemory_{memoryId};                                                                                // Clear memory element by element
     begin
       {memoryName}[index] = 0;
@@ -1768,17 +1854,19 @@ endmodule
     end
   endtask
 """, "memoryId", M.i(), "memoryName", M.n(), "Next", Next);
-   }
+     }
 
 //D2 Dumps                                                                                                              // Dump memory, variables, registers
 
-  String dumpVerilogMemoryInDecimal (UnitMemory M)                                                                      // Dump memory in decimal
-   {return substitute("""
-  task {dumpVerilogMemoryInDecimalName};
+    String dumpVerilogMemoryInDecimal (UnitMemory M)                                                                    // Dump memory in decimal
+     {return substitute("""
+
+  task {dumpVerilogMemoryInDecimalName};                                                                                // Dump verilog memories in decimal
     integer i;
     integer I;
     parameter integer N = 10;
     begin
+`ifndef SYNTHESIS
       $fwrite(traceFile, "Memory %s\\n", "{memoryId}");
 
       $fwrite(traceFile, "         ");
@@ -1799,75 +1887,117 @@ endmodule
 
       if (MEMORY_{memoryId} % N != 0) $fwrite(traceFile, "\\n");
       $fflush(traceFile);
+`endif
     end
   endtask
 """, "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n(),
 "dumpVerilogMemoryInDecimalName", M.dumpVerilogMemoryInDecimalName());
-  }
+    }
 
-  String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the verilog method to dump all the vars to the trace file
-  String dumpVerilogVariables ()                                                                                        // Dump the value of an integer to the verilog trace file
-   {final StringBuilder s = new StringBuilder();
-    s.append(substitute("""
-  task automatic {name} ();
-    begin
-""", "name", dumpVerilogVariablesName()));
+//D2 Instruction Matching                                                                                               // Classify instructions into blocks of identical instructions and then compressing out the duplicates to reduce code size
 
-    for(Int i : ints)                                                                                                   // Dump integers
-     {if (i.name != null) s.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
-""", "name", i.name, "id", ""+i.id));
-      else s.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d == %8d",        {id}, i[{id}]);
-""", "id", ""+i.id));
+    class InstructionMatches                                                                                            // Matching set of instructions
+     {final TreeMap<String,  Match> matches  = new TreeMap<>();                                                         // Matches by verilog
+      final TreeMap<Integer, Match> inMatch  = new TreeMap<>();                                                         // Matches by instruction number
+      final Stack           <Match> sequence = new Stack  <>();                                                         // Sequence of matches
+
+      class Match                                                                                                       // Matching set of instructions
+       {final String   verilog;                                                                                         // Interior verilog for this match
+        final int        block = sequence.size();                                                                       // Match number in sequence
+        final Stack<I> matches = new Stack<I>();                                                                        // Instructions in this set of identical instructions
+
+        Match(String Verilog, I I) {verilog = Verilog; sequence.push(this); matches.push(I);}                           // Create a new match set and add it to the existing matching instructions
+
+        void push (I I) {matches.push(I);}                                                                              // Add another instruction to the match set
+        int  size ()    {return matches.size();}                                                                        // Number of instructions in the match set
+        I   first ()    {return matches.size() == 0 ? null : matches.firstElement();}                                   // First instruction in match set
+
+        String labels()                                                                                                 // Instruction numbers formatted as a comma separated list for attachment to the always case statement
+         {final StringJoiner j = new StringJoiner(", ");
+          for (I i : matches) j.add(""+i.instructionNumber);
+          return ""+j;
+         }
+       }
+
+      void add(I I)                                                                                                     // Add an instruction
+       {final String v = I.interiorVerilog();
+        if (matches.containsKey(v))                                                                                     // Add to an existing set of matches
+         {final Match m = matches.get(v);
+          m.push(I);
+          inMatch.put(I.instructionNumber, m);
+         }
+        else                                                                                                            // Create a new set of matches
+         {final Match m = new Match(v, I);
+          matches.put(v, m);
+          inMatch.put(I.instructionNumber, m);
+         }
+       }
+
+      Match firstMatch(I I)                                                                                             // Is this instruction the first of a match block
+       {final Match m = inMatch.get(I.instructionNumber);
+        return m.matches.firstElement() == I ? m : null;
+       }
+
+      TreeMap<Integer,Integer> pcToMatch()                                                                              // Match instructions to sets of matching instructions
+       {final TreeMap<Integer,Integer> M = new TreeMap<>();                                                             // Instruction number to class of equivalent instructions
+        for (Match m : sequence) for (I i : m.matches) M.put(i.instructionNumber, m.block);                             // Instruction to matching instructions block number
+        return M;
+       }
+      void clear() {matches.clear(); sequence.clear();}                                                                 // Free data associated with instruction matching as it can get quite big
+     } // InstructionMatches
+
+//D2 Silicon compiler                                                                                                   // Create driving python to compile the verilog code using silicon compiler
+
+    String siliconCompiler()                                                                                            // Python code to drive silicon compiler
+     {final StringBuilder s = new StringBuilder();                                                                      // Generated code
+      s.append(substitute("""
+#!/usr/bin/env python3
+import sys
+from siliconcompiler         import ASIC, Design
+from siliconcompiler.targets import skywater130_demo
+
+def gen(module):
+  design = Design     (module)
+  design.set_topmodule(f"{module}",   fileset="rtl")
+  design.add_file     (f"{module}.v", fileset="rtl")
+
+  project = ASIC(design)
+  project.add_fileset(["rtl"])
+  skywater130_demo(project)
+
+  project.run()
+  project.summary()
+
+if __name__ == "__main__":
+    gen(sys.argv[1] if len(sys.argv) > 1 else "{name}")
+""", "name", name));
+
+      return writeFile(scDriverCodeFile(), s);
      }
 
-    for(Bool b : bools)                                                                                                 // Dump booleans
-     {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
-      if (b.name != null) s.append(substitute("""
-      $fdisplay(traceFile, "Bool %8d == %8d {name}", {id}, b[{id}]);
-""", "name", b.name, "id", ""+b.id));
-      else s.append(substitute("""
-      $fdisplay(traceFile, "Bool %8d == %8d", {id}, b[{id}]);
-""", "id", ""+b.id));
+//D2 Yosys                                                                                                              // Generate yosys commands
+
+    String yosys()                                                                                                      // Tcl to drive yosys
+     {final StringBuilder s = new StringBuilder();                                                                      // Generated code
+      s.append(substitute("""
+read_verilog -sv -D SYNTHESIS {n}.v
+hierarchy -top {n}
+proc
+check
+""", "n", name));
+
+      return writeFile(yosysFile(), s);
      }
 
-    s.append("""
-    $fflush(traceFile);
-    end
-  endtask
-""");
-    return ""+s;
-   }
+   } // GenerateVerilog
 
-  String dumpVerilogMemories ()                                                                                         // Dump verilog memories
-   {final StringBuilder s = new StringBuilder();
-    for(UnitMemory m : memories) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
-    return ""+s;
-   }
-
-  String dumpVerilogRegisters ()                                                                                        // Dump all verilog registers
-   {final StringBuilder s = new StringBuilder();
-    s.append("$fwrite(traceFile, \"       currentPc = %8d\\n\", pc          );\n");
-    s.append("$fwrite(traceFile, \"     sourceIntId = %8d\\n\", sourceIntId );\n");
-    s.append("$fwrite(traceFile, \"    source2IntId = %8d\\n\", source2IntId);\n");
-    s.append("$fwrite(traceFile, \"     targetIntId = %8d\\n\", targetIntId );\n");
-    s.append("$fwrite(traceFile, \"    sourceBoolId = %8d\\n\", sourceBoolId);\n");
-    s.append("$fwrite(traceFile, \"    targetBoolId = %8d\\n\", targetBoolId);\n");
-    s.append("$fwrite(traceFile, \"       sourceInt = %8d\\n\", sourceInt   );\n");
-    s.append("$fwrite(traceFile, \"      source2Int = %8d\\n\", source2Int  );\n");
-    s.append("$fwrite(traceFile, \"       targetInt = %8d\\n\", targetInt   );\n");
-    s.append("$fwrite(traceFile, \"      sourceBool = %8d\\n\", sourceBool  );\n");
-    s.append("$fwrite(traceFile, \"      targetBool = %8d\\n\", targetBool  );\n");
-    s.append("$fflush(traceFile);\n");
-    return ""+s;
-   }
+//D2 Dump Verilog                                                                                                       // Dump the state of the Verilog implementation of the bit machine into the trace file for comparison with the equivalent state of the java implementation of the bit machine
 
   String dumpVerilog ()                                                                                                 // Dump verilog memory and variables
    {final StringBuilder s = new StringBuilder();
     s.append(dumpVerilogMemories());
-    s.append(dumpVerilogVariablesName()+"();\n");
-    s.append(dumpVerilogRegisters());
+    s.append(dumpVerilogVariablesName()+"(); ");
+    s.append(dumpVerilogRegistersName()+"(); ");
     return ""+s;
    }
 
@@ -1876,56 +2006,74 @@ endmodule
                                          .replaceAll("(?s)\\$fflush.*?;"  , "") : V;
    }
 
-//D2 Instruction Matching                                                                                               // Classify instructions into blocks of identical instructions and then compressing out the duplicates to reduce code size
+  String dumpVerilogMemories ()                                                                                         // Dump verilog memories
+   {final StringBuilder s = new StringBuilder();
+    for(UnitMemory m : memories) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
+    return ""+s;
+   }
 
-  class InstructionMatches                                                                                              // Matching set of instructions
-   {final TreeMap<String,  Match> matches  = new TreeMap<>();                                                           // Matches by verilog
-    final TreeMap<Integer, Match> inMatch  = new TreeMap<>();                                                           // Matches by instruction number
-    final Stack           <Match> sequence = new Stack  <>();                                                           // Sequence of matches
+  String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the verilog method to dump all the variables to the trace file
+  String dumpVerilogVariables ()                                                                                        // Dump the value of an integer to the verilog trace file
+   {final StringBuilder s = new StringBuilder();
+    s.append(substitute("""
 
-    class Match                                                                                                         // Matching set of instructions
-     {final String   verilog;                                                                                           // Interior verilog for this match
-      final int        block = sequence.size();                                                                         // Match number in sequence
-      final Stack<I> matches = new Stack<I>();                                                                          // Instructions in this set of identical instructions
+  task automatic {name} ();
+    begin
+`ifndef SYNTHESIS
+""", "name", dumpVerilogVariablesName()));
 
-      Match(String Verilog, I I) {verilog = Verilog; sequence.push(this); matches.push(I);}                             // Create a new match set and add it to the existing matching instructions
-
-      void push (I I) {matches.push(I);}                                                                                // Add another instruction to the match set
-      int  size ()    {return matches.size();}                                                                          // Number of instructions in the match set
-      I   first ()    {return matches.size() == 0 ? null : matches.firstElement();}                                     // First instruction in match set
-
-      String labels()                                                                                                   // Instruction numbers formatted as a comma separated list for attachment to the always case statement
-       {final StringJoiner j = new StringJoiner(", ");
-        for (I i : matches) j.add(""+i.instructionNumber);
-        return ""+j;
+      for(Int i : ints)                                                                                                 // Dump integers
+       {if (i.name != null) s.append(substitute("""
+      $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
+""", "name", i.name, "id", ""+i.id));
+      else s.append(substitute("""
+      $fdisplay(traceFile, "Int  %8d == %8d",        {id}, i[{id}]);
+""", "id", ""+i.id));
        }
+
+      for(Bool b : bools)                                                                                               // Dump booleans
+       {if (b.nd) continue;                                                                                             // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
+        if (b.name != null) s.append(substitute("""
+      $fdisplay(traceFile, "Bool %8d == %8d {name}", {id}, b[{id}]);
+""", "name", b.name, "id", ""+b.id));
+        else s.append(substitute("""
+      $fdisplay(traceFile, "Bool %8d == %8d", {id}, b[{id}]);
+""", "id", ""+b.id));
      }
 
-    void add(I I)                                                                                                       // Add an instruction
-     {final String v = I.interiorVerilog();
-      if (matches.containsKey(v))                                                                                       // Add to an existing set of matches
-       {final Match m = matches.get(v);
-        m.push(I);
-        inMatch.put(I.instructionNumber, m);
-       }
-      else                                                                                                              // Create a new set of matches
-       {final Match m = new Match(v, I);
-        matches.put(v, m);
-        inMatch.put(I.instructionNumber, m);
-       }
-     }
+    s.append("""
+    $fflush(traceFile);
+`endif
+    end
+  endtask
+""");
+    return ""+s;
+   }
 
-    Match firstMatch(I I)                                                                                               // Is this instruction the first of a match block
-     {final Match m = inMatch.get(I.instructionNumber);
-      return m.matches.firstElement() == I ? m : null;
-     }
-
-    TreeMap<Integer,Integer> pcToMatch()                                                                                // Match instructions to sets of matching instructions
-     {final TreeMap<Integer,Integer> M = new TreeMap<>();                                                               //
-      for (Match m : sequence) for (I i : m.matches) M.put(i.instructionNumber, m.block);                               // Instruction to matching instructions block number
-      return M;
-     }
-    void clear() {matches.clear(); sequence.clear();}                                                                   // Free data associated with instruction matching as it can get quite big
+  String dumpVerilogRegistersName () {return "dumpVerilogRegisters";}                                                   // Name of the verilog method to dump all the registers to the trace file
+  String dumpVerilogRegisters ()                                                                                        // Dump all verilog registers
+   {final StringBuilder s = new StringBuilder();
+    s.append(substitute("""
+  task automatic {name} ();
+    begin
+`ifndef SYNTHESIS
+      $fwrite(traceFile, \"       currentPc = %8d\\n\", pc          );
+      $fwrite(traceFile, \"     sourceIntId = %8d\\n\", sourceIntId );
+      $fwrite(traceFile, \"    source2IntId = %8d\\n\", source2IntId);
+      $fwrite(traceFile, \"     targetIntId = %8d\\n\", targetIntId );
+      $fwrite(traceFile, \"    sourceBoolId = %8d\\n\", sourceBoolId);
+      $fwrite(traceFile, \"    targetBoolId = %8d\\n\", targetBoolId);
+      $fwrite(traceFile, \"       sourceInt = %8d\\n\", sourceInt   );
+      $fwrite(traceFile, \"      source2Int = %8d\\n\", source2Int  );
+      $fwrite(traceFile, \"       targetInt = %8d\\n\", targetInt   );
+      $fwrite(traceFile, \"      sourceBool = %8d\\n\", sourceBool  );
+      $fwrite(traceFile, \"      targetBool = %8d\\n\", targetBool  );
+      $fflush(traceFile);
+`endif
+    end
+  endtask
+""", "name", dumpVerilogRegistersName()));
+    return ""+s;
    }
 
 //D2 Verilog Arrays                                                                                                     // Define arrays in verilog to match this used in Java
@@ -1971,6 +2119,7 @@ endmodule
        {final String File = writeInHex();                                                                               // Absolute path name to array file
         final String file = fn(verilogArrayFiles, fnex(File));                                                          // Relative path name to array file
         return   substitute("""
+
   initial $readmemh("{file}", {array}, 0, {size});
 """, "file", file, "array", arrayName(), "size", ""+array.length);
        }
@@ -1990,7 +2139,7 @@ endmodule
 
     void add (String Name, int[]Array, int Error) {arrays.put(Name, new Array(Name, Array, Error));}                    // Define a verilog array from a java array
     void add (String Name, int[]Array)            {add                 (Name, Array, -1);}                              // Define a verilog function from an array with a default output for undefined inputs
-   }
+   } // VerilogArrays
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
@@ -2001,12 +2150,6 @@ endmodule
   void Check (StringBuilder G, String E)                                                                                // Test the supplied content against the specified string, print the actual output area contents and stop
    {new I() {void a() {if (!Test.ok(nws(G), nws(E))) stop(G, traceBack);} int traces() {return 0;}};
    }
-
-  String      verilogTestFolder () {return fp(verilogTests,        currentTestNameSuffix());}                           // Folder for this test using Verilog
-  String verilogTestArrayFolder () {return fp(verilogTestFolder(), verilogArrayFiles);}                                 // Folder for arrays used in this test using Verilog
-  String       verilogTraceFile () {return fn(verilogTestFolder(), verilogTraceFile);}                                  // Verilog trace file
-  String          javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                     // Java trace file
-  String        VerilogCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}            // Verilog code file
 
   static void test_addition(boolean Ex)
    {sayCurrentTestName();
