@@ -325,19 +325,19 @@ final public class BitSet extends Program                                       
 
   void  posZeroArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_zero(); i <= N; ++i) posZero[i] = pos_zero(i);
-    verilogArrays().new Array(pzVerilog, posZero, -1, true);
+    verilogArrays().new Array(pzVerilog, posZero);
    }
 
   void   posOneArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_one(); i <= N; ++i) posOne[i] = pos_one(i);
-    verilogArrays().new Array(poVerilog, posOne, -1, true);
+    verilogArrays().new Array(poVerilog, posOne);
    }
 
   void limitsUpperOne ()                                                                                                // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
     final int N = top_one();
     for (int i = 0; i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
-    verilogArrays().new Array(luoVerilog, limitsUpperOne, -1, true);
+    verilogArrays().new Array(luoVerilog, limitsUpperOne);
    }
 
   void limitsUpperZero ()                                                                                               // Upper limits of the zeros tree
@@ -345,13 +345,13 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i];
       else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
-    verilogArrays().new Array(luzVerilog, limitsUpperZero, -1, true);
+    verilogArrays().new Array(luzVerilog, limitsUpperZero);
    }
 
   void limitsLowerOne ()                                                                                                // Lower limits of the ones tree
    {int l = 0, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
-    verilogArrays().new Array(lloVerilog, limitsLowerOne, -1, true);
+    verilogArrays().new Array(lloVerilog, limitsLowerOne);
    }
 
   void limitsLowerZero ()                                                                                               // Lower limits of the zeros tree
@@ -359,20 +359,20 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i];
       else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
-    verilogArrays().new Array(llzVerilog, limitsLowerZero, -1, true);
+    verilogArrays().new Array(llzVerilog, limitsLowerZero);
    }
 
   void heightOne ()                                                                                                     // Height of each node in the ones tree
    {int l = 0, w = bitSize, h = 0;
     for (int i = 0, N = top_one(); i <= N; ++i) {heightOne[i] = h; if (i >= l+w-1) {l += w; w >>>= 1; ++h;}}
-    verilogArrays().new Array(hoVerilog, heightOne, -1, true);
+    verilogArrays().new Array(hoVerilog, heightOne);
    }
 
   void heightZero ()                                                                                                    // Height of each node in the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
      }
-    verilogArrays().new Array(hzVerilog, heightZero, -1, true);
+    verilogArrays().new Array(hzVerilog, heightZero);
    }
 
   Int lowOne (Int Pos)                                                                                                  // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
