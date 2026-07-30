@@ -1801,7 +1801,7 @@ Zero:
      {void slotsCode()
        {final Slots         s = this;
         final StringBuilder t = new StringBuilder();
-        verilogArrays().new Array("keys", keys, -1, false);
+        verilogArrays().new Array("keys", keys);
 
         new ForCount(keys.length)                                                                              // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
@@ -1894,7 +1894,7 @@ keys     :   14  13  16  15  18  17  12  11
     final int [] keys = new int[] {11, 12, 13, 15, 16, 17, 18, 14};
     final Slots s = new Slots(new Build().numberOfKeys(keys.length).immediate(Ex))
      {void slotsCode()
-       {verilogArrays().new Array("keys", keys, -1, false);
+       {verilogArrays().new Array("keys", keys);
 
         new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
