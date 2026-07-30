@@ -14,7 +14,7 @@ import java.nio.file.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                     compressInstructions = true;                                                        // Compress out identical instructions
+  final boolean                     compressInstructions =!true;                                                        // Compress out identical instructions
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
@@ -1668,8 +1668,8 @@ task automatic {name};
       int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
-      verilogArrays().new Array("pcConstant",   pcConstant(),                   -1, true);                              // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
-      verilogArrays().new Array("pcToMatchSet", instructionMatches.pcToMatch(), -1, true);                              // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+      verilogArrays().new Array("pcConstant",   pcConstant());                                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
+      verilogArrays().new Array("pcToMatchSet", instructionMatches.pcToMatch());                                        // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
       try
        (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                     // Write the verilog to a file
@@ -1838,6 +1838,8 @@ module {name};                                                                  
         /*End*/out.write("""
 endmodule
 """);
+
+        for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.module());                                      // Write memory module definitions for read only arrays
        }
       catch(Exception e)                                                                                                // Failed to generate verilog
        {stop(e, fullTraceBack(e));                                                                                      // Write the error and stop
@@ -2088,21 +2090,17 @@ check
     class Array                                                                                                         // Matching set of instructions
      {final String      name;                                                                                           // Name of the array
       final int []     array;                                                                                           // Array to map inputs to outputs
-      final int        error;                                                                                           // Value to be used on output for an undefined input
-      final boolean readOnly;                                                                                           // Value to be used on output for an undefined input
 
-      Array (String Name, int[]Array, int Error, boolean ReadOnly)                                                      // Create a new match set and add it to the existing matching instructions
-       {name = Name; array = Array; error = Error; readOnly = ReadOnly;
+      Array (String Name, int[]Array)                                                                                   // Create a new match set and add it to the existing matching instructions
+       {name = Name; array = Array;
         arrays.put(name, this);
        }
 
-      Array (String Name, TreeMap<Integer,Integer> map, int Error, boolean ReadOnly)                                    // Define a verilog array from a java tree map
+      Array (String Name, TreeMap<Integer,Integer> map)                                                                 // Define a verilog array from a java tree map
        {final int  size  = map.size() == 0 ? 0 : map.lastKey() + 1;
         name  = Name;
-        error = Error;
-        readOnly = ReadOnly;
         array = new int[size];
-        Arrays.fill(array, Error);
+        Arrays.fill(array, 0);
         for (Integer i : map.keySet()) array[i] = map.get(i);
         arrays.put(name, this);
        }
@@ -2144,6 +2142,27 @@ check
       String loadName ()       {return "load_"       +name;}                                                            // Free data associated with instruction matching as it can get quite big
       String arrayName ()      {return "array_"      +name;}                                                            // Free data associated with instruction matching as it can get quite big
       String index ()          {return "index_array_"+name;}                                                            // Index name for clearing this array
+
+      String module()                                                                                                   // Create a Verilog module to represent a memory
+       {final String File = writeInHex();                                                                               // Absolute path name to array file
+        final String file = fn(verilogArrayFiles, fnex(File));                                                          // Relative path name to array file
+        final StringBuilder s = new StringBuilder();
+        s.append(substitute("""
+module {array}                                                                                                          // Memory  module definition
+ (input  wire        clk,
+  input  wire [31:0] address,
+  output reg  [31:0] data
+ );
+
+  reg [31:0] memory [0:{size}];
+
+  initial $readmemh("{file}", memory, 0, {size});
+
+  always @(posedge clk) data <= memory[address];
+endmodule
+""", "name", name, "file", file, "array", arrayName(), "size", ""+array.length));
+        return ""+s;
+       }
      }
    } // VerilogArrays
 
@@ -2555,7 +2574,7 @@ Memory 0
     final Program P = new Program(new Build().immediate(false).memory(16))
      {void code()
        {final int[]array = {0, 0, 0, 2, 4, 6};
-        verilogArrays().new Array("array", array, -1, false);
+        verilogArrays().new Array("array", array);
         execute();
        }
      };
