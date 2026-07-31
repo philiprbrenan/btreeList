@@ -2142,8 +2142,8 @@ check
 """, "name", arrayName(), "index", index(), "length", ""+array.length);
        }
 
-      String indexRegisterName () {return pcIndexed ? "pc" : substitute("arrayIndex_{name}", "name", name);}            // Name of the index register used to index the array
-      String  dataRegisterName () {return                    substitute("arrayData_{name}",  "name", name);}            // Name of the data register  to aontain teh result from the indexed location in the array
+      String indexRegisterName () {return pcIndexed ? "pc" : "arrayIndex_"+ name;}                                      // Name of the index register used to index the array
+      String  dataRegisterName () {return                    "arrayData_" + name;}                                      // Name of the data register  to aontain teh result from the indexed location in the array
 
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
@@ -2153,8 +2153,8 @@ check
 """, "dr", dataRegisterName(), "ir", indexRegisterName(), "name", arrayName());
 
         else return substitute("""
-  integer   {dr};
-  {name} {name}_rom (.address(pc), .data({dr}));
+  integer   {dr};                                                                                                       // Define array data register
+  {name} {name}_rom (.address(pc), .data({dr}));                                                                        // Connect to module providing array
 """, "dr", dataRegisterName(),  "name", arrayName());
        }
 
