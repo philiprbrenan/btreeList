@@ -35,7 +35,7 @@ public class Program extends Test                                               
   final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final static String                       pythonSuffix = "py";                                                        // Suffix for python files
   final static String                        yosysSuffix = "ys";                                                        // Suffix for yosys files
-  final static String                  verilogArrayFiles = "array";                                                     // Suffix for verilog files containing array definitions
+  final static String                verilogIncludeFiles = "includes";                                                  // Folder for include files
   final static String               siliconCompilerImage = "ghcr.io/philiprbrenan/sc:latest";                           // Podman container containing silicon compiler
   final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog code
 
@@ -188,7 +188,7 @@ public class Program extends Test                                               
   String pqExpr (String Text)      {return pad(q(Text), padVerilog);}                                                   // Pad Verilog expressions
 
   String      verilogTestFolder () {return fp(verilogTests,        currentTestNameSuffix());}                           // Folder for this test using Verilog
-  String verilogTestArrayFolder () {return fp(verilogTestFolder(), verilogArrayFiles);}                                 // Folder for arrays used in this test using Verilog
+  String verilogTestIncludeFolder () {return fp(verilogTestFolder(), verilogIncludeFiles);}                                 // Folder for arrays used in this test using Verilog
   String       verilogTraceFile () {return fn(verilogTestFolder(), verilogTraceFile);}                                  // Verilog trace file
   String          javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                     // Java trace file
   String        VerilogCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}            // Verilog code file
@@ -2035,7 +2035,7 @@ check
   String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the verilog method to dump all the variables to the trace file
   String dumpVerilogVariables ()                                                                                        // Dump the value of an integer to the verilog trace file
    {final String variables = "variables";                                                                               // Include file name
-    final String includeFile = fe(verilogArrayFiles, variables, verilogSuffix);                                         // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
+    final String includeFile = fe(verilogIncludeFiles, variables, verilogSuffix);                                         // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
     final StringBuilder s = new StringBuilder();
     s.append(substitute("""
 
@@ -2070,9 +2070,7 @@ check
 """, "id", ""+b.id));
      }
 
-say("AAAA", fn(verilogArrayFiles(), variables, verilogSuffix));
-say("BBBB", fn(verilogTestArrayFolder(), variables, verilogSuffix));
-    writeFile(fn(verilogTestArrayFolder(), variables, verilogSuffix), v);
+    writeFile(fe(verilogTestIncludeFolder(), variables, verilogSuffix), v);
     return ""+s;
    }
 
@@ -2171,13 +2169,13 @@ say("BBBB", fn(verilogTestArrayFolder(), variables, verilogSuffix));
        {final StringBuilder s = new StringBuilder();
         for(int i = 0; i < array.length; ++i) s.append(f("%8x\n", array[i]));
         s.append("0\n");                                                                                                // The array is deliberately made one element bigger than strictly needed - why I cannot recall.
-        final String        f = fe(verilogTestArrayFolder(), name, "txt");
+        final String        f = fe(verilogTestIncludeFolder(), name, "txt");
         return writeFile(f, s);
        }
 
       String load ()                                                                                                    // Load the array by writing its values in hex to a file and then loading that file via $readmemh
        {final String File = writeInHex();                                                                               // Absolute path name to array file
-        final String file = fn(verilogArrayFiles, fnex(File));                                                          // Relative path name to array file
+        final String file = fn(verilogIncludeFiles, fnex(File));                                                          // Relative path name to array file
         return   substitute("""
 
   initial $readmemh("{file}", {array}, 0, {size});
@@ -2190,7 +2188,7 @@ say("BBBB", fn(verilogTestArrayFolder(), variables, verilogSuffix));
 
       String module()                                                                                                   // Create a Verilog module to represent a memory
        {final String File = writeInHex();                                                                               // Absolute path name to array file
-        final String file = fn(verilogArrayFiles, fnex(File));                                                          // Relative path name to array file
+        final String file = fn(verilogIncludeFiles, fnex(File));                                                          // Relative path name to array file
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
 
