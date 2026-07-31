@@ -168,7 +168,7 @@ public class Test                                                               
   static String substitute (String A, String...Pairs)                                                                   // Substitute pairs of key values into a string
    {if (Pairs.length % 2 == 1) stop("Even number of key, values required");
     for (int i = 0; i < Pairs.length; i += 2) A = A.replace("{" + Pairs[i] + "}", Pairs[i+1]);
-    return A;
+    return formatComments(A);
    }
 
   static String formatComments(String Input)                                                                            // Vertically align comments in column 120 to the extent possible
@@ -176,18 +176,17 @@ public class Test                                                               
     final String        C = "//";                                                                                       // Comment symbol
     final String []     L = Input.split("\\R", -1);                                                                     // Split input into lines
     final StringBuilder R = new StringBuilder();                                                                        // Result
-
+    final String        f = "%-" + N + "s%s%s%n";
     for (String l : L)
      {final int c = l.indexOf(C);
       if (c >= 0)
        {final String a = l.substring(0, c).stripTrailing();
         final String b = l.substring(c + C.length());
-        if (a.length() < 120) R.append(f("%-120s", a);
-        R.append(C+b+"\n");
+        R.append(f(f, a, C, b));
        }
       else R.append(l+"\n");
      }
-    return ""+R;
+    return nws(""+R);
    }
 
   static String nws (Object S)                                                                                          // Normalize white space in a string describing an object
@@ -1626,9 +1625,17 @@ a   aa    AAA
    {final String s = """
 a // Aaaa
 b                                                                                                                                 // Bbbb
-ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc // Cccc
-""")
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc // Cccc
+// Ddddd
+  array_pcConstant array_pcConstant_rom (.address(pc), .data(arrayData_pcConstant)); // Connect to module providing array
+
+""";
     ok(formatComments(s), """
+a                                                                                                                       // Aaaa
+b                                                                                                                       // Bbbb
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc// Cccc
+                                                                                                                        // Ddddd
+  array_pcConstant array_pcConstant_rom (.address(pc), .data(arrayData_pcConstant));                                    // Connect to module providing array
 """);
    }
 
