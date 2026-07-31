@@ -1533,10 +1533,10 @@ cd {f}; yosys {y}
         if (defined.contains(n)) return ""; else defined.add(n);                                                          // The dump routine should only be defined once
         return  substitute("""
 
-task automatic {name};
-  begin
+  task automatic {name};
+    begin
 `ifndef SYNTHESIS
-    $fwrite(traceFile, "{title}\\n"); $fflush(traceFile);
+      $fwrite(traceFile, "{title}\\n"); $fflush(traceFile);
 `endif
     end
   endtask
@@ -1696,8 +1696,8 @@ module {name};                                                                  
          }
 
       /*Execution State Variables*/out.write(substitute("""
-  parameter        INT_VARS = {numberOfInts};                                                                           // Number of integer variables
-  parameter       BOOL_VARS = {numberOfBools};                                                                          // Number of boolean variables
+  parameter        INT_VARS = {i};                                                                                      // Number of integer variables
+  parameter       BOOL_VARS = {b};                                                                                      // Number of boolean variables
   reg                 clock;                                                                                            // Program clock to drive instruction execution
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer            lastPc;                                                                                            // The instruction which started the latest flow of control block
@@ -1718,9 +1718,9 @@ module {name};                                                                  
   integer                 i[INT_VARS:0];  integer index_ints;                                                           // Integers
   reg                     b[BOOL_VARS:0]; integer index_bool;                                                           // Booleans
 
-""", "numberOfInts", ""+numberOfInts, "numberOfBools", ""+numberOfBools));
+""", "i", ""+numberOfInts, "b", ""+numberOfBools));
 
-        for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.define());                                      // Define verilog arrays
+        for(VerilogArrays.Array a : verilogArrays.arrays()) if (!a.pcIndexed)out.write(a.define());                     // Define verilog arrays
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
 
         for(UnitMemory m : memories)                                                                                    // Control registers for each memory
@@ -1809,10 +1809,10 @@ module {name};                                                                  
 
     for(VerilogArrays.Array a: verilogArrays().arrays())                                                                // Control registers for each verilog array
      {if (!a.pcIndexed) out.write("      "+a.indexRegisterName() + " = 0;\n");
-      //out                .write("      "+a. dataRegisterName() + " = 0;\n");                                          // Cannot be initialized because it is the output of a module
      }
 
         /*Open trace file*/out.write(substitute("""
+
 `ifndef SYNTHESIS
     traceFile = $fopen("{traceFile}", "w");                                                                             // Clear the trace file
     if (traceFile == 0) begin
@@ -1845,12 +1845,12 @@ module {name};                                                                  
 """,  "index", m.index(),  "name", m.n(), "SIZE", ""+m.sizeParameter()));
        }
 
-        for(VerilogArrays.Array    a : verilogArrays().arrays())  out.write(a.load());                                  // Write array definitions
+        for(VerilogArrays.Array    a : verilogArrays().arrays())  if (!a.pcIndexed) out.write(a.load());                // Write array definitions
         for(UnitMemory             m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
         for(DumpLocations.Location d : dumpLocations().locations) out.write(d.define());                                // Locations in program that have requested dumps
 
-        out.write(dumpVerilogVariables()+"\n");                                                                         // Dump verilog variables task
-        out.write(dumpVerilogRegisters()+"\n");                                                                         // Dump verilog variables task
+        out.write(dumpVerilogVariables());                                                                              // Dump verilog variables task
+        out.write(dumpVerilogRegisters());                                                                              // Dump verilog variables task
         /*End*/out.write("""
 endmodule
 """);
@@ -2074,6 +2074,7 @@ check
   String dumpVerilogRegisters ()                                                                                        // Dump all verilog registers except those of the memory modules because there are no corresponding entries in the java version - to match the verilog we would have to emulate a continuous assign in Java or provide a read enable flag to synchronize the execution of the java and verilog versions. As the memory results show up very quickly in the other control registers it should be possible to proceed without dumping these extra variables
    {final StringBuilder s = new StringBuilder();
     s.append(substitute("""
+
   task automatic {name} ();
     begin
 `ifndef SYNTHESIS
@@ -2183,6 +2184,7 @@ check
         final String file = fn(verilogArrayFiles, fnex(File));                                                          // Relative path name to array file
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
+
 module {array}                                                                                                          // Memory module definitions for asynchronus read only memory
  (input  wire [31:0] address,
   output integer     data);
