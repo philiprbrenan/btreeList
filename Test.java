@@ -171,6 +171,25 @@ public class Test                                                               
     return A;
    }
 
+  static String formatComments(String Input)                                                                            // Vertically align comments in column 120 to the extent possible
+   {final int           N = 120;                                                                                        // Alignment column
+    final String        C = "//";                                                                                       // Comment symbol
+    final String []     L = Input.split("\\R", -1);                                                                     // Split input into lines
+    final StringBuilder R = new StringBuilder();                                                                        // Result
+
+    for (String l : L)
+     {final int c = l.indexOf(C);
+      if (c >= 0)
+       {final String a = l.substring(0, c).stripTrailing();
+        final String b = l.substring(c + C.length());
+        if (a.length() < 120) R.append(f("%-120s", a);
+        R.append(C+b+"\n");
+       }
+      else R.append(l+"\n");
+     }
+    return ""+R;
+   }
+
   static String nws (Object S)                                                                                          // Normalize white space in a string describing an object
    {final String r = ""+S;                                                                                              // Get string description
     final String s = r.replaceAll("\\s*\\z", "\n").replaceAll("\\s+\\n", "\n").replaceAll("\\n+", "\n");                // Normalize white space
@@ -1603,6 +1622,16 @@ a   aa    AAA
     ok(decToInt("1x1xx"), 11);
    }
 
+  static void test_formatComments()
+   {final String s = """
+a // Aaaa
+b                                                                                                                                 // Bbbb
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc // Cccc
+""")
+    ok(formatComments(s), """
+""");
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
@@ -1621,6 +1650,7 @@ a   aa    AAA
  // test_squeezeVerticalSpaces();
     test_modZero();
     test_hextoInt();
+    test_formatComments();
    }
 
   static void newTests()                                                                                                // Tests being worked on
