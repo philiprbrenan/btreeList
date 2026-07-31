@@ -2070,6 +2070,7 @@ check
 """, "id", ""+b.id));
      }
 
+
     writeFile(fe(verilogTestIncludeFolder(), variables, verilogSuffix), v);
     return ""+s;
    }
