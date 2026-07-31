@@ -1753,7 +1753,7 @@ module {name};                                                                  
 """);
         else                                                                                                            // Compress instruction labels
         /*Execute case*/out.write("""
-      case(array_pcToMatchSet[pc])
+      case (arrayData_pcToMatchSet)                                                                                     // Decode the instruction to be executed
 """);
 
         if (compressInstructions)                                                                                       // Compress instructions
@@ -2185,8 +2185,7 @@ check
         s.append(substitute("""
 module {array}                                                                                                          // Memory module definitions for asynchronus read only memory
  (input  wire [31:0] address,
-  output integer     data
- );
+  output integer     data);
 
   integer memory [0:{size}];
 
