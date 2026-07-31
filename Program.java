@@ -20,7 +20,7 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -2185,15 +2185,16 @@ check
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
 
-module {array}                                                                                                          // Memory module definitions for asynchronus read only memory
+(* blackbox *) module {array}                                                                                                          // Memory module definitions for asynchronus read only memory
  (input  wire [31:0] address,
   output integer     data);
-
+`ifndef SYNTHESIS
   integer memory [0:{size}];
 
   initial $readmemh("{file}", memory, 0, {size});
 
   assign data = memory[address];
+`endif
 endmodule
 """, "name", name, "file", file, "array", arrayName(), "size", ""+array.length));
         return ""+s;
