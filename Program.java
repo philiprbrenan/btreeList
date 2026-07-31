@@ -1526,11 +1526,11 @@ cd {f}; yosys {y}
         locations.push(this);
        }
 
-      String called() {return f("dumpLocation_"+location+"(); ");}                                                        // The name of the dump location
+      String called() {return f("dumpLocation_"+location+"(); ");}                                                      // The name of the dump location
 
-      String define()                                                                                                     // Define a dump locarion
+      String define()                                                                                                   // Define a dump location
        {final String n = called();
-        if (defined.contains(n)) return ""; else defined.add(n);                                                          // The dump routine should only be defined once
+        if (defined.contains(n)) return ""; else defined.add(n);                                                        // The dump routine should only be defined once
         return  substitute("""
 
   task automatic {name};
@@ -1548,7 +1548,7 @@ cd {f}; yosys {y}
   void dumpProgramState (String Title)                                                                                  // Dump program memories and variables
    {new I()
      {void    a()     {appendJavaTrace(Title+"\n");                                         dumpJava();}
-      String  v()     {return dumpLocations.new Location(instructionNumber, Title).called()+dumpVerilog();}                                // Dump entire state of program: memories, variables, registers
+      String  v()     {return dumpLocations.new Location(instructionNumber, Title).called()+dumpVerilog();}             // Dump entire state of program: memories, variables, registers
       boolean trace() {return false;}
      };
    }
@@ -2034,39 +2034,45 @@ check
 
   String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the verilog method to dump all the variables to the trace file
   String dumpVerilogVariables ()                                                                                        // Dump the value of an integer to the verilog trace file
-   {final StringBuilder s = new StringBuilder();
+   {final String variables = "variables";                                                                               // Include file name
+    final String includeFile = fe(verilogArrayFiles, variables, verilogSuffix);                                         // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
+    final StringBuilder s = new StringBuilder();
     s.append(substitute("""
 
   task automatic {name} ();
     begin
 `ifndef SYNTHESIS
-""", "name", dumpVerilogVariablesName()));
-
-      for(Int i : ints)                                                                                                 // Dump integers
-       {if (i.name != null) s.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
-""", "name", i.name, "id", ""+i.id));
-      else s.append(substitute("""
-      $fdisplay(traceFile, "Int  %8d == %8d",        {id}, i[{id}]);
-""", "id", ""+i.id));
-       }
-
-      for(Bool b : bools)                                                                                               // Dump booleans
-       {if (b.nd) continue;                                                                                             // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
-        if (b.name != null) s.append(substitute("""
-      $fdisplay(traceFile, "Bool %8d == %8d {name}", {id}, b[{id}]);
-""", "name", b.name, "id", ""+b.id));
-        else s.append(substitute("""
-      $fdisplay(traceFile, "Bool %8d == %8d", {id}, b[{id}]);
-""", "id", ""+b.id));
-     }
-
-    s.append("""
+   `include "{includeFile}"
     $fflush(traceFile);
 `endif
     end
   endtask
-""");
+""", "name", dumpVerilogVariablesName(), "includeFile", includeFile));
+
+
+    final StringBuilder v = new StringBuilder();                                                                        // Dump each variable
+    for(Int i : ints)                                                                                                   // Dump integers
+     {if (i.name != null) v.append(substitute("""
+      $fdisplay(traceFile, "Int  %8d == %8d {name}", {id}, i[{id}]);
+""", "name", i.name, "id", ""+i.id));
+      else v.append(substitute("""
+      $fdisplay(traceFile, "Int  %8d == %8d",        {id}, i[{id}]);
+""", "id", ""+i.id));
+     }
+
+    for(Bool b : bools)                                                                                                 // Dump booleans
+     {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
+      if (b.name != null) v.append(substitute("""
+      $fdisplay(traceFile, "Bool %8d == %8d {name}", {id}, b[{id}]);
+""", "name", b.name, "id", ""+b.id));
+      else v.append(substitute("""
+      $fdisplay(traceFile, "Bool %8d == %8d", {id}, b[{id}]);
+""", "id", ""+b.id));
+     }
+
+say("AAAA", fn(verilogArrayFiles(), variables, verilogSuffix));
+say("BBBB", fn(verilogTestArrayFolder(), variables, verilogSuffix));
+    writeFile(fn(verilogTestArrayFolder(), variables, verilogSuffix), v);
     return ""+s;
    }
 
@@ -2108,12 +2114,14 @@ check
      {final String       name;                                                                                          // Name of the array
       final int []      array;                                                                                          // Array to map inputs to outputs
       final boolean pcIndexed;                                                                                          // Indexed by the program counter if true else by a generated register associated with the array
+      final String      index;                                                                                          // Register used to index the array
       int       indexRegister;                                                                                          // The value of the index register
       int         dataRegister;                                                                                         // The value of the data register
 
       Array (String Name, int[]Array)                                                                                   // Create a new array possibly indexed by the program counter else a generated register
        {name = Name; pcIndexed = false; array = Array;
         arrays.put(name, this);
+        index = "sourceInt";                                                                                            // Indexed by source integer register
        }
 
       Array (String Name, TreeMap<Integer,Integer> map)                                                                 // Define a verilog array from a java tree map
@@ -2124,6 +2132,7 @@ check
         for (Integer i : map.keySet()) array[i] = map.get(i);
         arrays.put(name, this);
         pcIndexed = true;
+        index = "pc";                                                                                                   // Indexed by program counter
        }
 
       String clear ()                                                                                                   // Clear an array
@@ -2143,7 +2152,7 @@ check
        }
 
       String indexRegisterName () {return pcIndexed ? "pc" : "arrayIndex_"+ name;}                                      // Name of the index register used to index the array
-      String  dataRegisterName () {return                    "arrayData_" + name;}                                      // Name of the data register  to aontain teh result from the indexed location in the array
+      String  dataRegisterName () {return                    "arrayData_" + name;}                                      // Name of the data register  to contain the result from the indexed location in the array
 
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
