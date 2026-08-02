@@ -515,6 +515,7 @@ public class Program extends Test                                               
          {if (!got.v) stop("Invalid Bool being tested at:", executing().instructionLocation());
           Test.ok(i, Value);
          }
+        String v() {return "/* Bool ok(boolean) */";}
         int traces() {return 0;}
        };
       return this;
@@ -528,6 +529,7 @@ public class Program extends Test                                               
          {if (!got.v) stop("Invalid Bool being tested at:", executing().instructionLocation());
           Test.ok(got.b(), Value.b());
          }
+        String v() {return "/* Bool ok(Bool) */";}
         int traces() {return 0;}
        };
       return this;
@@ -895,6 +897,7 @@ public class Program extends Test                                               
          {if (!got.v) stop("Invalid Int being tested at:", executing().instructionLocation());
           Test.ok(i, Value);
          }
+        String v() {return "/* Int ok(int) */";}
         boolean trace() {return false;}                                                                                 // No need to test  under Verilog as long as all data accesses match
        };
       return this;
@@ -908,6 +911,7 @@ public class Program extends Test                                               
          {if (!got.v) stop("Invalid Int being tested at:", executing().instructionLocation());
            Test.ok(got.i(), Value.i());
          }
+        String v() {return "/* Int ok(Int) */";}
         boolean trace() {return false;}
        };
       return this;
