@@ -7,25 +7,25 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Leaf extends Program implements Program.Locatable                                                                 // A leaf in a btree that translates keys into values to be implemented as an application specific integrated circuit
- {final int            maxSize;                                                                                         // The maximum number of entries in a leaf of the tree
-  final Slots          slots;                                                                                           // Slots used to order keys in leaf
-  Memory.Ref       unitMemoryRef = null;                                                                            // Byte memory reference containing the tree
-  final Bint           at            = new Bint();                                                                      // An optional representation of the location of the leaf sufficient to be able to free it
-  final Memory.Ref refMark;                                                                                         // Mark this node as a leaf
-  final Memory.Ref refSlots;                                                                                        // The slot associated with each key being used
-  final Memory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
-  final Build          build;                                                                                           // Build used to construct this leaf
+ {final int         maxSize;                                                                                            // The maximum number of entries in a leaf of the tree
+  final Slots         slots;                                                                                            // Slots used to order keys in leaf
+  Memory.Ref  unitMemoryRef = null;                                                                                     // Byte memory reference containing the tree
+  final Bint             at = new Bint();                                                                               // An optional representation of the location of the leaf sufficient to be able to free it
+  final Memory.Ref  refMark;                                                                                            // Mark this node as a leaf
+  final Memory.Ref refSlots;                                                                                            // The slot associated with each key being used
+  final Memory.Ref refData;                                                                                             // Bitset showing which slots are being mapped to keys
+  final Build        build;                                                                                             // Build used to construct this leaf
 
 //D1 Construction                                                                                                       // Construct and layout a leaf
 
   final static class Build                                                                                              // Parameters describing a leaf
-   {Integer         maxSize;                                                                                            // Maximum number of keys in leaf
-    Int             at;                                                                                                 // The location of the leaf
-    boolean         immediate = true;                                                                                   // Immediate execution mode
-    Program         parent;                                                                                             // Parent program if any
-    Memory.Ref  unitMemoryRef;                                                                                      // Program memory to be used
+   {Integer                 maxSize;                                                                                    // Maximum number of keys in leaf
+    Int                          at;                                                                                    // The location of the leaf
+    boolean               immediate = true;                                                                             // Immediate execution mode
+    Program                  parent;                                                                                    // Parent program if any
+    Memory.Ref        unitMemoryRef;                                                                                    // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
-    Slots.Build     slots;                                                                                              // Bytes needed for slots
+    Slots.Build               slots;                                                                                    // Bytes needed for slots
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
