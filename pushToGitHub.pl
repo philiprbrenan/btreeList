@@ -112,7 +112,7 @@ jobs:
       run: |
         mkdir -p verilog $c
         cp $J $c
-        tree
+        tree --prune -I '*.class'
 
     - name: Java
       run: |
@@ -145,7 +145,7 @@ END
       if: \${{             matrix.task == '$N' }}
       run: |
         java -XX:+UseZGC -cp Classes $c/$C $G
-        tree
+        tree --prune -I '*.class'
 
     - name: Upload $N
       if: \${{ always() && matrix.task == '$N' }}
@@ -197,7 +197,7 @@ jobs:
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
-          tree
+          tree --prune -I '*.class'
 
       - name: Run CPD (Copy/Paste Detector)
         run: |
