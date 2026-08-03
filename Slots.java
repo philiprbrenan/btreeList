@@ -127,10 +127,10 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  Bool    getSlotToKeysInUse(Int Index)    {return usedSlotsToKeys.getBit(Index);}                                      // Check whether a slot is in use
+  Bit    getSlotToKeysInUse(Int Index)    {return usedSlotsToKeys.getBit(Index);}                                       // Check whether a slot is in use
   Int     getSlotToKeyIndex (Int Index)    {return refSlotsToKeys .getInt(Index);}                                      // Index to keys from slots
   Int     getKeyToSlotIndex (Int Index)    {return refKeysToSlots .getInt(Index);}                                      // Index to slots from keys
-  Bool    getKeyInUse       (Int Index)    {return usedKeys       .getBit(Index);}                                      // Check whether a key is in use
+  Bit    getKeyInUse       (Int Index)    {return usedKeys       .getBit(Index);}                                       // Check whether a key is in use
   Int     getKeyValue       (Int Index)    {return refKeys        .getInt(Index);}                                      // Value of referenced key
 
   boolean getSlotToKeysInUse(int Index)    {return usedSlotsToKeys.getBitNC(Index);}                                    // Check whether a slot is in use
@@ -142,8 +142,8 @@ class Slots extends Program                                                     
   Int     getSlotToKeyValue (Int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
   int     getSlotToKeyValue (int Index)    {return getKeyValue(getSlotToKeyIndex(Index));}                              // Value of a key via a specified slot
 
-  Bool                empty ()             {return usedKeys.empty();}                                                   // All bits in the corresponding bitset are unused so the Slots must be empty
-  Bool                 full ()             {return usedKeys.full ();}                                                   // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
+  Bit                empty ()             {return usedKeys.empty();}                                                    // All bits in the corresponding bitset are unused so the Slots must be empty
+  Bit                 full ()             {return usedKeys.full ();}                                                    // The number of bits in the bitset slots is either equal to or greater than the number of slots so we cannot rely on them being simultaneously full
   Int                 count ()             {return usedKeys.count();}                                                   // The computed number of keys in the slots
 //void  invalidateMemory ()                {unitMemoryRef.invalidate(size);}                                            // Invalidate the slots in such a way that they are unlikely to work well if subsequently used
   Int          numberOfKeys ()             {return new Int(numberOfKeys);}                                              // The number of references in the slots definition
@@ -156,7 +156,7 @@ class Slots extends Program                                                     
 
   Bint locateFirstUnusedKey ()             {return usedKeys.firstZero();}                                               // Absolute position of the first unused key
 
-  Int locateNearestFreeSlotToKey(Int Position, Bool FavorLow)                                                           // Absolute position of the nearest free slot to the indicated position.  There will always be one as there are always more slots than keys. Prev will be true if the previous free slot is closest, else false if the next free slot is closest.
+  Int locateNearestFreeSlotToKey(Int Position, Bit FavorLow)                                                            // Absolute position of the nearest free slot to the indicated position.  There will always be one as there are always more slots than keys. Prev will be true if the previous free slot is closest, else false if the next free slot is closest.
    {subStart("Slots.locateNearestFreeSlotToKey");
     final Slots slots = this;                                                                                           // Slots to search
     final Int       r = new Int(0);                                                                                     // Search radius
@@ -164,7 +164,7 @@ class Slots extends Program                                                     
      {void Then()
        {final Bint p = usedSlotsToKeys.prevZero(Position);                                                              // Prev free slot
         final Bint n = usedSlotsToKeys.nextZero(Position);                                                              // Next free slot
-        final Bool d = new Bool(false);                                                                                 // Done when set
+        final Bit d = new Bit(false);                                                                                   // Done when set
 
         new If (p.valid())                                                                                              // Previous is valid
          {void Then()
@@ -207,7 +207,7 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Int locateNearestFreeSlotToKey (Int Position) {return locateNearestFreeSlotToKey(Position, new Bool(false));}         // Locate the nearest free slot favoring a higher slot over a lower one if they are both the same  distance away
+  Int locateNearestFreeSlotToKey (Int Position) {return locateNearestFreeSlotToKey(Position, new Bit(false));}          // Locate the nearest free slot favoring a higher slot over a lower one if they are both the same  distance away
 
   Int allocKey ()                                                                                                       // Allocate a key
    {subStart("Slots.allocKey");
@@ -229,7 +229,7 @@ class Slots extends Program                                                     
     delKey(getSlotToKeyIndex(P)); delSlotToKeys(P);                                                                     // Free key assumed to exist and slots referring to it
    }
 
-  private void moveSlot (Bint T, Bint S, Bool Continue)                                                                 // Move a slot from source to target
+  private void moveSlot (Bint T, Bint S, Bit Continue)                                                                  // Move a slot from source to target
    {subStart("Slots.moveSlot(BBb");
     new If (S)
      {void Then()
@@ -251,7 +251,7 @@ class Slots extends Program                                                     
     subFinish();
    }
 
-  private void moveKey (Bint T, Bint S, Bool Continue)                                                                  // Move a key from the source position to the target position
+  private void moveKey (Bint T, Bint S, Bit Continue)                                                                   // Move a key from the source position to the target position
    {subStart("Slots.moveKey");
     final Int s = refKeysToSlots.getInt(S.i());                                                                         // The slot referencing the key
     final Int q = getKeyValue(S.i());                                                                                   // The value of the key
@@ -272,7 +272,7 @@ class Slots extends Program                                                     
     new If (empty().flip())                                                                                             // Compact slots
      {void Then() {}                                                                                                    // Nothing to compact as empty
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {final Bint s = usedSlotsToKeys.firstZero();                                                                 // First empty slot
             final Bint S = usedSlotsToKeys.nextOne(s.i());                                                              // Next used slot beyond first empty slot
             moveSlot(s, S, Continue);
@@ -290,7 +290,7 @@ class Slots extends Program                                                     
      {void Then() {}                                                                                                    // Nothing to compact as empty
       void Else()
        {new For(numberOfKeys())                                                                                         // No need to make any more than this number of moves
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {final Bint s = usedSlotsToKeys.lastZero();                                                                  // Last empty slot
             final Bint S = usedSlotsToKeys.prevOne(s.i());                                                              // Previously used slot beyond last empty one
             moveSlot(s, S, Continue);
@@ -312,7 +312,7 @@ class Slots extends Program                                                     
        {new If (full().flip())                                                                                          // Keys cannot be compacted if the slots are full or empty
          {void Then()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
-             {void body(Int Index, Bool Continue)
+             {void body(Int Index, Bit Continue)
                {final Bint k = usedKeys .firstZero();                                                                   // First empty key
                 final Bint K = usedKeys .lastOne();                                                                     // Last used key so we get the longest possible move
                 new If (K.i().gt(k.i()))                                                                                // Compaction possible
@@ -339,7 +339,7 @@ class Slots extends Program                                                     
         {new If (full().flip())                                                                                         // Keys cannot be compacted if the slots are full or empty
          {void Then()
            {new For(numberOfKeys())                                                                                     // No need to make any more than this number of moves
-             {void body(Int Index, Bool Continue)
+             {void body(Int Index, Bit Continue)
                {final Bint k = usedKeys .lastZero();                                                                    // Last empty key
                 final Bint K = usedKeys .firstOne();                                                                    // First used key so we get the longest possible move
                 new If (K.i().lt(k.i()))                                                                                // Compaction possible
@@ -486,14 +486,14 @@ class Slots extends Program                                                     
 
 //D5 Even                                                                                                               // Merge slots with an even maximum number of keys
 
-  Bool mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                               //N Merge the specified slots from the right without observing the results
-  Bool mergeFromRightEven(Slots Right, CompactKey CompactKey)                                                           //N Merge the specified slots from the right
+  Bit mergeFromRightEven(Slots Right) {return mergeFromRightEven(Right, (S, t, s)->{});}                                //N Merge the specified slots from the right without observing the results
+  Bit mergeFromRightEven(Slots Right, CompactKey CompactKey)                                                            //N Merge the specified slots from the right
    {subStart("Slots.mergeFromRightEven");
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
     final Int     lc = left .count();                                                                                   // Count on left
     final Int     rc = Right.count();                                                                                   // Count on right
-    final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
+    final Bit     r = new Bit(false);                                                                                   // Assume a merge is not possible
 
     new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
@@ -519,14 +519,14 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Bool mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                                   // Merge the specified slots from the right
-  Bool mergeFromLeftEven(Slots Left, CompactKey CompactKey)                                                             // Merge the specified slots from the right
+  Bit mergeFromLeftEven(Slots Left) {return mergeFromLeftEven(Left, (S, t, s)->{});}                                    // Merge the specified slots from the right
+  Bit mergeFromLeftEven(Slots Left, CompactKey CompactKey)                                                              // Merge the specified slots from the right
    {subStart("Slots.mergeFromLeftEven");
     final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
     final Int      rc = right.count();
     final Int      lc = Left .count();
-    final Bool      r = new Bool(false);
+    final Bit      r = new Bit(false);
 
     new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
@@ -554,14 +554,14 @@ class Slots extends Program                                                     
 
 //D5 Odd                                                                                                                // Merge slots with an odd maximum number of keys and insert the splitting key/  The process of compacting the keys can optionally be observed to align other data structures with the slots
 
-  Bool mergeFromRightOdd(Slots Right, Int Sk) {return mergeFromRightOdd(Right, Sk, (S, t, s)->{});}                     //N Merge the specified slots from the right without observing the key compaction process
-  Bool mergeFromRightOdd(Slots Right, Int Sk, CompactKey CompactKey)                                                    //N Merge the specified slots from the right observing the key compaction process
+  Bit mergeFromRightOdd(Slots Right, Int Sk) {return mergeFromRightOdd(Right, Sk, (S, t, s)->{});}                      //N Merge the specified slots from the right without observing the key compaction process
+  Bit mergeFromRightOdd(Slots Right, Int Sk, CompactKey CompactKey)                                                     //N Merge the specified slots from the right observing the key compaction process
    {subStart("Slots.mergeFromRightOdd");
     final Slots left = this;
     final Int      N = new Int(numberOfSlotsToKeys());
     final Int     lc = left .count();                                                                                   // Count on left
     final Int     rc = Right.count();                                                                                   // Count on right
-    final Bool     r = new Bool(false);                                                                                 // Assume a merge is not possible
+    final Bit     r = new Bit(false);                                                                                   // Assume a merge is not possible
 
     new If (lc.Add(rc).le(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots
      {void Then()
@@ -589,14 +589,14 @@ class Slots extends Program                                                     
     return r;
    }
 
-  Bool mergeFromLeftOdd(Slots Left, Int Sk) {return mergeFromLeftOdd(Left, Sk, (S, t, s)->{});}                         // Merge the specified slots from the right without observing the key compaction process
-  Bool mergeFromLeftOdd(Slots Left, Int Sk, CompactKey CompactKey)                                                      // Merge the specified slots from the right observing the key compaction process
+  Bit mergeFromLeftOdd(Slots Left, Int Sk) {return mergeFromLeftOdd(Left, Sk, (S, t, s)->{});}                          // Merge the specified slots from the right without observing the key compaction process
+  Bit mergeFromLeftOdd(Slots Left, Int Sk, CompactKey CompactKey)                                                       // Merge the specified slots from the right observing the key compaction process
    {subStart("Slots.mergeFromLeftOdd");
     final Slots right = this;
     final Int       N = new Int(numberOfSlotsToKeys());
     final Int      rc = right.count();
     final Int      lc = Left .count();
-    final Bool      r = new Bool(false);
+    final Bit      r = new Bit(false);
 
     new If (lc.Add(rc).lt(numberOfKeys()))                                                                              // Can only merge if the result can fit in one set of slots with space for the additional key
      {void Then()
@@ -689,11 +689,11 @@ class Slots extends Program                                                     
 
   final class Find                                                                                                      // Find result
    {final Bint  slot = new Bint();                                                                                      // Slot found
-    final Bool lower = new Bool(), higher = new Bool(), equal = new Bool(), empty = new Bool();                         // Position of search item relative to the slot found
+    final Bit lower = new Bit(), higher = new Bit(), equal = new Bit(), empty = new Bit();                              // Position of search item relative to the slot found
     boolean insertBelow = false;                                                                                        // If true, then the key to be inserted should be inserted below the indicated slot, otherwise the insertion position will be determined at run time.  Setting this flag reduces the amount of code generated because the case where the key has to be inserted above the found key can be safely ignored
     boolean insertAbove = false;                                                                                        // If true, then the key to be inserted should be inserted above the indicated slot, otherwise the insertion position will be determined at run time.  Setting this flag reduces the amount of code generated because the case where the key has to be inserted above the found key can be safely ignored
 
-    Find set(Int Slot, Bool Lower, Bool Higher)                                                                         // Set a find result
+    Find set(Int Slot, Bit Lower, Bit Higher)                                                                           // Set a find result
      {slot .set(Slot); lower.set(Lower); higher.set(Higher);
       equal.set(lower.And(higher));
       empty.set(lower.Or (higher).flip());
@@ -835,7 +835,7 @@ class Slots extends Program                                                     
 
     new If (empty())                                                                                                    // Nothing to find if all the slots are empty
      {void Then()
-       {f.set(new Int(0), new Bool(false), new Bool(false));                                                            // Empty
+       {f.set(new Int(0), new Bit(false), new Bit(false));                                                              // Empty
        }
       void Else()                                                                                                       // Not empty
        {Int p = u.topOne();                                                                                             // Position in ones tree
@@ -846,24 +846,24 @@ class Slots extends Program                                                     
 
         new If (Key.eq(L))
          {void Then()                                                                                                   // Equal to low bound of search
-           {f.set(l, new Bool(true), new Bool(true));
+           {f.set(l, new Bit(true), new Bit(true));
            }
           void Else()
            {new If (Key.eq(R))                                                                                          // Equal to high bound of search
              {void Then()
-               {f.set(r, new Bool(true), new Bool(true));
+               {f.set(r, new Bit(true), new Bit(true));
                }
               void Else()
                {new For(u.logBitSize1())                                                                                // Step down through ones tree narrowing the search range as we go
-                 {void body(Int Index, Bool Continue)
+                 {void body(Int Index, Bit Continue)
                    {new If (Key.lt(L))
                      {void Then()
-                       {f.set(l, new Bool(true), new Bool(false));                                                      // Lower than the lower bound
+                       {f.set(l, new Bit(true), new Bit(false));                                                        // Lower than the lower bound
                        }
                       void Else()
                        {new If (Key.gt(R))
                          {void Then()
-                           {f.set(r, new Bool(false), new Bool(true));                                                  // Higher than the upper bound
+                           {f.set(r, new Bit(false), new Bit(true));                                                    // Higher than the upper bound
                            }
                           void Else()                                                                                   // Search range
                            {new If (u.canGoLeftToOne(p))                                                                // Go left if possible  to search first part of range if it exists
@@ -874,7 +874,7 @@ class Slots extends Program                                                     
 
                                 new If (Key.eq(lR))                                                                     // Found at upper end of range
                                  {void Then()
-                                   {f.set(lr, new Bool(true), new Bool(true));                                          // Equals current upper end of range
+                                   {f.set(lr, new Bit(true), new Bit(true));                                            // Equals current upper end of range
                                    }
                                   void Else()                                                                           // Search new sub range
                                    {new If (Key.lt(lR))                                                                 // Lower than upper bound
@@ -890,12 +890,12 @@ class Slots extends Program                                                     
                                             final Int rL = getSlotToKeyValue(rl);                                       // Key at lower end of search range
                                             new If (Key.eq(rL))                                                         // Equal to lower bound on right
                                              {void Then()
-                                               {f.set(rl, new Bool(true), new Bool(true));                              // Found equal to lower end of right sub range
+                                               {f.set(rl, new Bit(true), new Bit(true));                                // Found equal to lower end of right sub range
                                                }
                                               void Else()                                                               // Continue search
                                                {new If (Key.lt(rL))                                                     // Less than the lower bound of right sub range
                                                  {void Then()
-                                                   {f.set(rl, new Bool(true), new Bool(false));                         // Not found and less than low end of right
+                                                   {f.set(rl, new Bit(true), new Bit(false));                           // Not found and less than low end of right
                                                    }
                                                   void Else()                                                           // Search new range
                                                    {p.set(rp); l.set(rl); L.set(rL);                                    // Somewhere in the right hand range of which we already know the upper limits
@@ -928,7 +928,7 @@ class Slots extends Program                                                     
                  };
                 new If (f.slot.notValid())                                                                              // Not found so must be inside final range
                  {void Then()
-                   {f.set(l, new Bool(false), new Bool(true));
+                   {f.set(l, new Bit(false), new Bit(true));
                    }
                  };
                }
@@ -953,7 +953,7 @@ class Slots extends Program                                                     
   final class Insert                                                                                                    // Results of an insertion
    {final Int  key      = new Int ("key");                                                                              // The key being inserted
     final Bint slot     = new Bint();                                                                                   // Slot index referring to the inserted key
-    final Bool inserted = new Bool("inserted");                                                                         // True if the key did not exist prior to the insertion else false
+    final Bit inserted = new Bit("inserted");                                                                           // True if the key did not exist prior to the insertion else false
 
     void set(Int Key, Int Slot, boolean Inserted) {key.set(Key); slot.set(Slot); inserted.set(Inserted);}               // Record insertion result
 
@@ -1112,16 +1112,16 @@ usedKeys :    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 keys     :    0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
 """);
 
-        locateNearestFreeSlotToKey(new Int( 2), new Bool( true)).ok( 1);
-        locateNearestFreeSlotToKey(new Int( 2), new Bool(false)).ok( 3);
-        locateNearestFreeSlotToKey(new Int( 4), new Bool( true)).ok( 3);
-        locateNearestFreeSlotToKey(new Int( 5), new Bool( true)).ok( 3);
-        locateNearestFreeSlotToKey(new Int( 5), new Bool(false)).ok( 7);
-        locateNearestFreeSlotToKey(new Int( 6), new Bool( true)).ok( 7);
-        locateNearestFreeSlotToKey(new Int( 9), new Bool( true)).ok( 8);
-        locateNearestFreeSlotToKey(new Int(10), new Bool( true)).ok(11);
-        locateNearestFreeSlotToKey(new Int(12), new Bool( true)).ok(11);
-        locateNearestFreeSlotToKey(new Int(12), new Bool(false)).ok(13);
+        locateNearestFreeSlotToKey(new Int( 2), new Bit( true)).ok( 1);
+        locateNearestFreeSlotToKey(new Int( 2), new Bit(false)).ok( 3);
+        locateNearestFreeSlotToKey(new Int( 4), new Bit( true)).ok( 3);
+        locateNearestFreeSlotToKey(new Int( 5), new Bit( true)).ok( 3);
+        locateNearestFreeSlotToKey(new Int( 5), new Bit(false)).ok( 7);
+        locateNearestFreeSlotToKey(new Int( 6), new Bit( true)).ok( 7);
+        locateNearestFreeSlotToKey(new Int( 9), new Bit( true)).ok( 8);
+        locateNearestFreeSlotToKey(new Int(10), new Bit( true)).ok(11);
+        locateNearestFreeSlotToKey(new Int(12), new Bit( true)).ok(11);
+        locateNearestFreeSlotToKey(new Int(12), new Bit(false)).ok(13);
 
         execute();
        }
