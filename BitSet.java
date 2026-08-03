@@ -2,7 +2,6 @@
 // Locate set or cleared bits in a fixed size bit set in log N time.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Check how often each variable is read or written to eliminate variables that are only used once.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;                                                                                                     // Standard utility library.
@@ -309,9 +308,6 @@ final public class BitSet extends Program                                       
   int      base_zero ()        {return posZero(0);}                                                                     // Start of the zeros tree
   int       base_one ()        {return posOne (0);}                                                                     // Start of the ones tree
 
-
-//  Int       baseZero ()        {subStart("Bitset.baseZero");       final Int r = new Int("baseZero" );         r.T();          new I() {void a() {jt(r, base_zero      ()           );} String v() {return vt(r, ""+posZero(0));}}; r.W(); subFinish(); return r;} //N Position in the current row
-//  Int        baseOne ()        {subStart("Bitset.baseOne");        final Int r = new Int("baseOne"  );         r.T();          new I() {void a() {jt(r, base_one       ()           );} String v() {return vt(r, ""+posOne (0));}}; r.W(); subFinish(); return r;} //N Position in the current row
   Int       pos_zero (Int Pos) {subStart("Bitset.pos_zero");       final Int r = new Int("pos_zero" );         r.T(); Pos.S(); new I() {void a() {jt(r, posZero        [sourceInt()]);} String v() {return vt(r, pzArray );}};      r.W(); subFinish(); return r;} // Position in the current row in the zeros tree
   Int        pos_one (Int Pos) {subStart("Bitset.pos_one");        final Int r = new Int("pos_one"  );         r.T(); Pos.S(); new I() {void a() {jt(r, posOne         [sourceInt()]);} String v() {return vt(r, poArray );}};      r.W(); subFinish(); return r;} //N Position in the current row in the ones tree
 
@@ -323,7 +319,6 @@ final public class BitSet extends Program                                       
   Int     heightZero (Int Pos) {subStart("Bitset.heightZero");     final Int r = new Int("zero height");       r.T(); Pos.S(); new I() {void a() {jt(r, heightZero     [sourceInt()]);} String v() {return vt(r, hzArray );}};      r.W(); subFinish(); return r;} // Height of the specified position in the zeros tree
 
   void   jt (Int R, int    I) {targetInt(I); targetIntValid(true);                                             jTrace(f("%8d "+R.name+" = %8d", currentPc(), I));}                   // Java trace of array look ups
-  //String vt (Int R, String I) {return pName("targetInt") + " <= " + I + "; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        I);}  // Java trace of array look ups
   String vt (Int R, VerilogArrays.Array A) {return pName("targetInt") + " <= " + A.dataRegisterName() + "; " + vTrace(  "%8d "+R.name+" = %8d", "pc",        A.dataRegisterName());} // Java trace of array look ups
 
   int       pos_zero (int Pos)                                                                                          // Position in the indicated row of the zeros tree
@@ -731,7 +726,7 @@ final public class BitSet extends Program                                       
 
     new If (getBitNC(p))                                                                                                // The root has a one so the bit set is not empty
      {void Then()
-       {new For(logBitSize())                                                                                   // Step down looking for an adjacent sub tree that also has a one
+       {new For(logBitSize())                                                                                           // Step down looking for an adjacent sub tree that also has a one
          {void body(Int Index, Bool Continue)
            {final Int l = childLowOne (p);
             final Int h = childHighOne(p);
@@ -851,90 +846,90 @@ final public class BitSet extends Program                                       
 
 //D1 Tests                                                                                                              // Tests
 
-  static BitSet test_bits(boolean Ex, int N)                {return test_bits(Ex, N, false);}                           // Create test bitset.
-  static BitSet test_bits(boolean Ex, int N, boolean Count)                                                             // Create test bitset.
-   {subStart("BitSet.test_bits");
+  static BitSet testBits(boolean Ex, int N)                {return testBits(Ex, N, false);}                           // Create test bitset.
+  static BitSet testBits(boolean Ex, int N, boolean Count)                                                             // Create test bitset.
+   {subStart("BitSet.testBits");
     final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Describe bitset
-    final BitSet    b = new BitSet(build  );                                                                            // Create a bit set
+    final BitSet    b = new BitSet(build);                                                                              // Create a bit set
     subFinish();
     return b;                                                                                                           // Return test bitset.
    }
 
   static void test_prevNext(boolean Ex)
-   {final BitSet b = test_bits(Ex, 32);
+   {final BitSet b = testBits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
     for (int i : s) b.set(b.new Int(i));
-//    b.ok(()->b, """
-//BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-//   1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
-//One:
-//   2   32   16 |  0  0  0  0  0  0  1  0  0  1  0  0  1  1  1  1
-//   3   48    8 |  0  0  0  1  1  0  1  1
-//   4   56    4 |  0  1  1  1
-//   5   60    2 |  1  1
-//   6   62    1 |  1
-//Zero:
-//   1   63   16 |  0  0  0  0  0  0  0  0  0  0  0  0  1  1  0  1
-//   2   79    8 |  0  0  0  0  0  0  1  0
-//   3   87    4 |  0  0  0  0
-//   4   91    2 |  0  0
-//   5   93    1 |  0
-//""");
-//
-//    final Int o = b.countAllOnes ().ok( 9);
-//    final Int z = b.countAllZeros().ok(23);
-//
-//    //b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
-//    //b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
-//    //b.adjacentOnes(b.new Int(24), b.new Int(19)).ok(true);
-//    //b.adjacentOnes(b.new Int(25), b.new Int(19)).ok(false);
-//    //b.adjacentOnes(b.new Int(25), b.new Int(25)).ok(false);
-//
-//    if (true)
-//     {final Bint q = b.prevZero(b.new Int(14));
-//      q.ok(true);
-//      q.ok(12);
-//     }
-//
-//    for (int i : range(13))     b.nextOne(b.new Int( i)).ok( 13);
-//    for (int i : range(13, 19)) b.nextOne(b.new Int( i)).ok( 19);
-//    for (int i : range(19, 24)) b.nextOne(b.new Int( i)).ok( 24);
-//    for (int i : range(23, 28)) b.nextOne(b.new Int( i)).ok(i+1);
-//                                b.nextOne(b.new Int(28)).ok( 30);
-//                                b.nextOne(b.new Int(29)).ok( 30);
-//                                b.nextOne(b.new Int(30)).ok( 31);
-//                                b.nextOne(b.new Int(31)).ok(false);
-//
-//    for (int i : range(14))     b.prevOne(b.new Int( i)).ok(false);
-//
-//    for (int i : range(14, 20)) b.prevOne(b.new Int( i)).ok( 13);
-//    for (int i : range(20, 24)) b.prevOne(b.new Int( i)).ok( 19);
-//    for (int i : range(25, 29)) b.prevOne(b.new Int( i)).ok(i-1);
-//                                b.prevOne(b.new Int(30)).ok( 28);
-//                                b.prevOne(b.new Int(31)).ok( 30);
-//
-//                                b.firstOne().ok(13);
-//                                b. lastOne().ok(31);
-//
-//    for (int i : range(12))     b.nextZero(b.new Int( i)).ok(i+1);
-//                                b.nextZero(b.new Int(12)).ok( 14);
-//    for (int i : range(13, 18)) b.nextZero(b.new Int( i)).ok(i+1);
-//    for (int i : range(19, 23)) b.nextZero(b.new Int( i)).ok(i+1);
-//    for (int i : range(23, 28)) b.nextZero(b.new Int( i)).ok( 29);
-//    for (int i : range(29, 32)) b.nextZero(b.new Int( i)).ok(false);
-//
-//
-//                                b.prevZero(b.new Int( 0)).ok(false);
-//    for (int i : range( 1, 14)) b.prevZero(b.new Int( i)).ok(i-1);
-//                                b.prevZero(b.new Int(14)).ok( 12);
-//    for (int i : range(15, 19)) b.prevZero(b.new Int( i)).ok(i-1);
-//                                b.prevZero(b.new Int(20)).ok( 18);
-//    for (int i : range(21, 24)) b.prevZero(b.new Int( i)).ok(i-1);
-//    for (int i : range(24, 30)) b.prevZero(b.new Int( i)).ok( 23);
-//    for (int i : range(30, 32)) b.prevZero(b.new Int( i)).ok( 29);
-//
-//                                b.firstZero().ok( 0);
-//                                b. lastZero().ok(29);
+    b.ok(()->b, """
+BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+   1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
+One:
+   2   32   16 |  0  0  0  0  0  0  1  0  0  1  0  0  1  1  1  1
+   3   48    8 |  0  0  0  1  1  0  1  1
+   4   56    4 |  0  1  1  1
+   5   60    2 |  1  1
+   6   62    1 |  1
+Zero:
+   1   63   16 |  0  0  0  0  0  0  0  0  0  0  0  0  1  1  0  1
+   2   79    8 |  0  0  0  0  0  0  1  0
+   3   87    4 |  0  0  0  0
+   4   91    2 |  0  0
+   5   93    1 |  0
+""");
+
+    final Int o = b.countAllOnes ().ok( 9);
+    final Int z = b.countAllZeros().ok(23);
+
+    //b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
+    //b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
+    //b.adjacentOnes(b.new Int(24), b.new Int(19)).ok(true);
+    //b.adjacentOnes(b.new Int(25), b.new Int(19)).ok(false);
+    //b.adjacentOnes(b.new Int(25), b.new Int(25)).ok(false);
+
+    if (true)
+     {final Bint q = b.prevZero(b.new Int(14));
+      q.ok(true);
+      q.ok(12);
+     }
+
+    for (int i : range(13))     b.nextOne(b.new Int( i)).ok( 13);
+    for (int i : range(13, 19)) b.nextOne(b.new Int( i)).ok( 19);
+    for (int i : range(19, 24)) b.nextOne(b.new Int( i)).ok( 24);
+    for (int i : range(23, 28)) b.nextOne(b.new Int( i)).ok(i+1);
+                                b.nextOne(b.new Int(28)).ok( 30);
+                                b.nextOne(b.new Int(29)).ok( 30);
+                                b.nextOne(b.new Int(30)).ok( 31);
+                                b.nextOne(b.new Int(31)).ok(false);
+
+    for (int i : range(14))     b.prevOne(b.new Int( i)).ok(false);
+
+    for (int i : range(14, 20)) b.prevOne(b.new Int( i)).ok( 13);
+    for (int i : range(20, 24)) b.prevOne(b.new Int( i)).ok( 19);
+    for (int i : range(25, 29)) b.prevOne(b.new Int( i)).ok(i-1);
+                                b.prevOne(b.new Int(30)).ok( 28);
+                                b.prevOne(b.new Int(31)).ok( 30);
+
+                                b.firstOne().ok(13);
+                                b. lastOne().ok(31);
+
+    for (int i : range(12))     b.nextZero(b.new Int( i)).ok(i+1);
+                                b.nextZero(b.new Int(12)).ok( 14);
+    for (int i : range(13, 18)) b.nextZero(b.new Int( i)).ok(i+1);
+    for (int i : range(19, 23)) b.nextZero(b.new Int( i)).ok(i+1);
+    for (int i : range(23, 28)) b.nextZero(b.new Int( i)).ok( 29);
+    for (int i : range(29, 32)) b.nextZero(b.new Int( i)).ok(false);
+
+
+                                b.prevZero(b.new Int( 0)).ok(false);
+    for (int i : range( 1, 14)) b.prevZero(b.new Int( i)).ok(i-1);
+                                b.prevZero(b.new Int(14)).ok( 12);
+    for (int i : range(15, 19)) b.prevZero(b.new Int( i)).ok(i-1);
+                                b.prevZero(b.new Int(20)).ok( 18);
+    for (int i : range(21, 24)) b.prevZero(b.new Int( i)).ok(i-1);
+    for (int i : range(24, 30)) b.prevZero(b.new Int( i)).ok( 23);
+    for (int i : range(30, 32)) b.prevZero(b.new Int( i)).ok( 29);
+
+                                b.firstZero().ok( 0);
+                                b. lastZero().ok(29);
     b.maxSteps(999_999);
     b.execute();
    }
@@ -947,7 +942,7 @@ final public class BitSet extends Program                                       
   static void test_prevNext01(boolean Ex)                                                                               // Test tree of searchable one bits
    {sayCurrentTestName();
     final int N = 16;
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = testBits(Ex, N);
 
     for (int i : range(N)) b.set(b.new Int(i), (i / 4) % 2 == 0);
     //testStop(b);
@@ -967,31 +962,31 @@ Zero:
 """);
 
     b.nextOne(b.new Int(0)).ok(1);
-//    for (int i : range( 3))     b.nextOne(b.new Int(i)).ok(i+1);
-//    for (int i : range( 4,  8)) b.nextOne(b.new Int(i)).ok(  8);
-//    for (int i : range( 7, 11)) b.nextOne(b.new Int(i)).ok(i+1);
-//    for (int i : range(11, 16)) b.nextOne(b.new Int(i)).notValid().ok(true);
-//
-//                                b.prevOne(b.new Int(0)).notValid().ok(true);
-//    for (int i : range( 1,  5)) b.prevOne(b.new Int(i)).ok(i-1);
-//    for (int i : range( 4,  9)) b.prevOne(b.new Int(i)).ok(  3);
-//    for (int i : range( 9, 12)) b.prevOne(b.new Int(i)).ok(i-1);
-//    for (int i : range(12, 16)) b.prevOne(b.new Int(i)).ok( 11);
-//                                b.firstOne()           .ok(  0);
-//                                b.lastOne ()           .ok( 11);
-//
-//    for (int i : range( 3))     b.nextZero(b.new Int( i)).ok(  4);
-//    for (int i : range( 3,  7)) b.nextZero(b.new Int( i)).ok(i+1);
-//    for (int i : range( 7, 11)) b.nextZero(b.new Int( i)).ok( 12);
-//    for (int i : range(11, 15)) b.nextZero(b.new Int( i)).ok( i+1);
-//                                b.nextZero(b.new Int(15)).notValid().ok(true);
-//
-//    for (int i : range( 5))     b.prevZero(b.new Int( i)).notValid().ok(true);
-//    for (int i : range( 5,  9)) b.prevZero(b.new Int( i)).ok(i-1);
-//    for (int i : range( 8, 12)) b.prevZero(b.new Int( i)).ok(  7);
-//    for (int i : range(13, 16)) b.prevZero(b.new Int( i)).ok(i-1);
-//                                b.firstZero()            .ok(  4);
-//                                b.lastZero ()            .ok( 15);
+    for (int i : range( 3))     b.nextOne(b.new Int(i)).ok(i+1);
+    for (int i : range( 4,  8)) b.nextOne(b.new Int(i)).ok(  8);
+    for (int i : range( 7, 11)) b.nextOne(b.new Int(i)).ok(i+1);
+    for (int i : range(11, 16)) b.nextOne(b.new Int(i)).notValid().ok(true);
+
+                                b.prevOne(b.new Int(0)).notValid().ok(true);
+    for (int i : range( 1,  5)) b.prevOne(b.new Int(i)).ok(i-1);
+    for (int i : range( 4,  9)) b.prevOne(b.new Int(i)).ok(  3);
+    for (int i : range( 9, 12)) b.prevOne(b.new Int(i)).ok(i-1);
+    for (int i : range(12, 16)) b.prevOne(b.new Int(i)).ok( 11);
+                                b.firstOne()           .ok(  0);
+                                b.lastOne ()           .ok( 11);
+
+    for (int i : range( 3))     b.nextZero(b.new Int( i)).ok(  4);
+    for (int i : range( 3,  7)) b.nextZero(b.new Int( i)).ok(i+1);
+    for (int i : range( 7, 11)) b.nextZero(b.new Int( i)).ok( 12);
+    for (int i : range(11, 15)) b.nextZero(b.new Int( i)).ok( i+1);
+                                b.nextZero(b.new Int(15)).notValid().ok(true);
+
+    for (int i : range( 5))     b.prevZero(b.new Int( i)).notValid().ok(true);
+    for (int i : range( 5,  9)) b.prevZero(b.new Int( i)).ok(i-1);
+    for (int i : range( 8, 12)) b.prevZero(b.new Int( i)).ok(  7);
+    for (int i : range(13, 16)) b.prevZero(b.new Int( i)).ok(i-1);
+                                b.firstZero()            .ok(  4);
+                                b.lastZero ()            .ok( 15);
 
     b.maxSteps(999_999);
     b.execute();
@@ -1005,7 +1000,7 @@ Zero:
   static void test_prevNext10(boolean Ex)
    {sayCurrentTestName();
     final int N = 16;
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = testBits(Ex, N);
     for (int i : range(N)) b.set(b.new Int(i), (i / 4) % 2 == 1);
 
    //testStop(b);
@@ -1060,7 +1055,7 @@ Zero:
   static void test_oneZero(boolean Ex)
    {sayCurrentTestName();
     final int N = 8;
-    final BitSet b = test_bits(Ex, N, true);
+    final BitSet b = testBits(Ex, N, true);
     final StringBuilder s = new StringBuilder();
     b.new I() {void a() {s.append("Start:\n"+b);}         boolean trace() {return false;}};
 
@@ -1276,7 +1271,7 @@ Zero:
 
   static void test_fullEmpty(int N, boolean Ex)
    {sayCurrentTestName();
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = testBits(Ex, N);
 
     b.empty().ok(true);
     b.new ForCount(N)
@@ -1304,7 +1299,7 @@ Zero:
 
   static void test_count(int N, boolean Ex)
    {sayCurrentTestName();
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = testBits(Ex, N);
 
     b.set(b.new Int(  1),   true);
     b.set(b.new Int(N-1),   true);
@@ -1357,11 +1352,11 @@ Zero:
   static void test_powerPosOneZero(boolean Ex)
    {sayCurrentTestName();
     final int N = 16;
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = testBits(Ex, N);
 
     for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), true);
 
-    b.topOne().ok(30); // b.topZero().ok(45); b.baseOne() .ok(16); b.baseZero().ok(31);
+    b.topOne().ok(30);
 
     b.childHighZero(b.new Int(45)).ok(44);
     b.childLowZero (b.new Int(45)).ok(43);
@@ -1531,7 +1526,6 @@ Zero:
     b.canGoLeftToOne(b.new Int(26)).ok(false); b.canGoRightToOne(b.new Int(26)).ok( true);
     b.canGoLeftToOne(b.new Int(29)).ok( true); b.canGoRightToOne(b.new Int(29)).ok(false);
 
-    //b.baseOne() .ok(16); b.baseZero().ok(31);
     b.execute();
    }
 
@@ -1542,7 +1536,7 @@ Zero:
 
   static void test_twoOrMoreOnes(boolean Ex)
    {sayCurrentTestName();
-    final BitSet b = test_bits(Ex, 32);
+    final BitSet b = testBits(Ex, 32);
 
     b.set  (b.new Int(17)); b.twoOrMoreOnes().ok(false);
     b.set  (b.new Int(12)); b.twoOrMoreOnes().ok(true);
@@ -1576,7 +1570,7 @@ Zero:
 
   static void test_limits(boolean Ex)
    {sayCurrentTestName();
-    final BitSet b = test_bits(Ex, 16);
+    final BitSet b = testBits(Ex, 16);
 
     b.limitUpperOne(b.new Int( 0)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    0)).ok(b.new Int(15));
     b.limitUpperOne(b.new Int( 1)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    1)).ok(b.new Int(15));
@@ -1675,7 +1669,7 @@ Zero:
   static void test_lowHighZero(boolean Ex)
    {sayCurrentTestName();
     final int N = 16;
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = testBits(Ex, N);
 
     for (int i : range(N)) if ((i > 4 && i < 8) || (i > 10 && i < 12)) b.set(b.new Int(i), true);
 
@@ -1722,7 +1716,7 @@ Zero:
   static void test_4(boolean Ex)
    {sayCurrentTestName();
     final int N = 8;
-    final BitSet b = test_bits(Ex, N);
+    final BitSet b = testBits(Ex, N);
 
     for (int i : range(N)) if (i == 2 || i == 4 || i == 5 || i == 6) b.set(b.new Int(i));
 
@@ -1764,7 +1758,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();
+   {//oldTests();
+    test_4(true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
