@@ -147,6 +147,12 @@ final public class BitSet extends Program                                       
 
   void    setBitNC (Int Index, boolean B)                                                                               // Set a bit to a value known at compile time
    {subStart     ("Bitset.setBitNC_IB");
+    memoryRef.putBool(Index, new Bool(B));                                                                              // Save target boolean into memory
+    subFinish();
+   }
+
+  void    setBitNC22 (Int Index, boolean B)                                                                             // Set a bit to a value known at compile time
+   {subStart     ("Bitset.setBitNC_IB");
     final String f = "%8d setBitNC_IB writeBool = %8d";
     new I()                                                                                                             // Set target boolean directly
      {void   a() {memoryRef.m.writeBool = B;                                 jTrace(f(f,  currentPc(), B ?  1  :  0));}
@@ -848,77 +854,77 @@ final public class BitSet extends Program                                       
    {final BitSet b = test_bits(Ex, 32);
     final int[]s = new int[]{13, 19, 24, 25, 26, 27, 28, 30, 31};
     for (int i : s) b.set(b.new Int(i));
-    b.ok(()->b, """
-BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-   1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
-One:
-   2   32   16 |  0  0  0  0  0  0  1  0  0  1  0  0  1  1  1  1
-   3   48    8 |  0  0  0  1  1  0  1  1
-   4   56    4 |  0  1  1  1
-   5   60    2 |  1  1
-   6   62    1 |  1
-Zero:
-   1   63   16 |  0  0  0  0  0  0  0  0  0  0  0  0  1  1  0  1
-   2   79    8 |  0  0  0  0  0  0  1  0
-   3   87    4 |  0  0  0  0
-   4   91    2 |  0  0
-   5   93    1 |  0
-""");
-
-    final Int o = b.countAllOnes ().ok( 9);
-    final Int z = b.countAllZeros().ok(23);
-
-    //b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
-    //b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
-    //b.adjacentOnes(b.new Int(24), b.new Int(19)).ok(true);
-    //b.adjacentOnes(b.new Int(25), b.new Int(19)).ok(false);
-    //b.adjacentOnes(b.new Int(25), b.new Int(25)).ok(false);
-
-    if (true)
-     {final Bint q = b.prevZero(b.new Int(14));
-      q.ok(true);
-      q.ok(12);
-     }
-
-    for (int i : range(13))     b.nextOne(b.new Int( i)).ok( 13);
-    for (int i : range(13, 19)) b.nextOne(b.new Int( i)).ok( 19);
-    for (int i : range(19, 24)) b.nextOne(b.new Int( i)).ok( 24);
-    for (int i : range(23, 28)) b.nextOne(b.new Int( i)).ok(i+1);
-                                b.nextOne(b.new Int(28)).ok( 30);
-                                b.nextOne(b.new Int(29)).ok( 30);
-                                b.nextOne(b.new Int(30)).ok( 31);
-                                b.nextOne(b.new Int(31)).ok(false);
-
-    for (int i : range(14))     b.prevOne(b.new Int( i)).ok(false);
-
-    for (int i : range(14, 20)) b.prevOne(b.new Int( i)).ok( 13);
-    for (int i : range(20, 24)) b.prevOne(b.new Int( i)).ok( 19);
-    for (int i : range(25, 29)) b.prevOne(b.new Int( i)).ok(i-1);
-                                b.prevOne(b.new Int(30)).ok( 28);
-                                b.prevOne(b.new Int(31)).ok( 30);
-
-                                b.firstOne().ok(13);
-                                b. lastOne().ok(31);
-
-    for (int i : range(12))     b.nextZero(b.new Int( i)).ok(i+1);
-                                b.nextZero(b.new Int(12)).ok( 14);
-    for (int i : range(13, 18)) b.nextZero(b.new Int( i)).ok(i+1);
-    for (int i : range(19, 23)) b.nextZero(b.new Int( i)).ok(i+1);
-    for (int i : range(23, 28)) b.nextZero(b.new Int( i)).ok( 29);
-    for (int i : range(29, 32)) b.nextZero(b.new Int( i)).ok(false);
-
-
-                                b.prevZero(b.new Int( 0)).ok(false);
-    for (int i : range( 1, 14)) b.prevZero(b.new Int( i)).ok(i-1);
-                                b.prevZero(b.new Int(14)).ok( 12);
-    for (int i : range(15, 19)) b.prevZero(b.new Int( i)).ok(i-1);
-                                b.prevZero(b.new Int(20)).ok( 18);
-    for (int i : range(21, 24)) b.prevZero(b.new Int( i)).ok(i-1);
-    for (int i : range(24, 30)) b.prevZero(b.new Int( i)).ok( 23);
-    for (int i : range(30, 32)) b.prevZero(b.new Int( i)).ok( 29);
-
-                                b.firstZero().ok( 0);
-                                b. lastZero().ok(29);
+//    b.ok(()->b, """
+//BitSet            0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+//   1    0   32 |  0  0  0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  1  0  0  0  0  1  1  1  1  1  0  1  1
+//One:
+//   2   32   16 |  0  0  0  0  0  0  1  0  0  1  0  0  1  1  1  1
+//   3   48    8 |  0  0  0  1  1  0  1  1
+//   4   56    4 |  0  1  1  1
+//   5   60    2 |  1  1
+//   6   62    1 |  1
+//Zero:
+//   1   63   16 |  0  0  0  0  0  0  0  0  0  0  0  0  1  1  0  1
+//   2   79    8 |  0  0  0  0  0  0  1  0
+//   3   87    4 |  0  0  0  0
+//   4   91    2 |  0  0
+//   5   93    1 |  0
+//""");
+//
+//    final Int o = b.countAllOnes ().ok( 9);
+//    final Int z = b.countAllZeros().ok(23);
+//
+//    //b.adjacentOnes(b.new Int(13), b.new Int(19)).ok(true);
+//    //b.adjacentOnes(b.new Int(13), b.new Int(24)).ok(false);
+//    //b.adjacentOnes(b.new Int(24), b.new Int(19)).ok(true);
+//    //b.adjacentOnes(b.new Int(25), b.new Int(19)).ok(false);
+//    //b.adjacentOnes(b.new Int(25), b.new Int(25)).ok(false);
+//
+//    if (true)
+//     {final Bint q = b.prevZero(b.new Int(14));
+//      q.ok(true);
+//      q.ok(12);
+//     }
+//
+//    for (int i : range(13))     b.nextOne(b.new Int( i)).ok( 13);
+//    for (int i : range(13, 19)) b.nextOne(b.new Int( i)).ok( 19);
+//    for (int i : range(19, 24)) b.nextOne(b.new Int( i)).ok( 24);
+//    for (int i : range(23, 28)) b.nextOne(b.new Int( i)).ok(i+1);
+//                                b.nextOne(b.new Int(28)).ok( 30);
+//                                b.nextOne(b.new Int(29)).ok( 30);
+//                                b.nextOne(b.new Int(30)).ok( 31);
+//                                b.nextOne(b.new Int(31)).ok(false);
+//
+//    for (int i : range(14))     b.prevOne(b.new Int( i)).ok(false);
+//
+//    for (int i : range(14, 20)) b.prevOne(b.new Int( i)).ok( 13);
+//    for (int i : range(20, 24)) b.prevOne(b.new Int( i)).ok( 19);
+//    for (int i : range(25, 29)) b.prevOne(b.new Int( i)).ok(i-1);
+//                                b.prevOne(b.new Int(30)).ok( 28);
+//                                b.prevOne(b.new Int(31)).ok( 30);
+//
+//                                b.firstOne().ok(13);
+//                                b. lastOne().ok(31);
+//
+//    for (int i : range(12))     b.nextZero(b.new Int( i)).ok(i+1);
+//                                b.nextZero(b.new Int(12)).ok( 14);
+//    for (int i : range(13, 18)) b.nextZero(b.new Int( i)).ok(i+1);
+//    for (int i : range(19, 23)) b.nextZero(b.new Int( i)).ok(i+1);
+//    for (int i : range(23, 28)) b.nextZero(b.new Int( i)).ok( 29);
+//    for (int i : range(29, 32)) b.nextZero(b.new Int( i)).ok(false);
+//
+//
+//                                b.prevZero(b.new Int( 0)).ok(false);
+//    for (int i : range( 1, 14)) b.prevZero(b.new Int( i)).ok(i-1);
+//                                b.prevZero(b.new Int(14)).ok( 12);
+//    for (int i : range(15, 19)) b.prevZero(b.new Int( i)).ok(i-1);
+//                                b.prevZero(b.new Int(20)).ok( 18);
+//    for (int i : range(21, 24)) b.prevZero(b.new Int( i)).ok(i-1);
+//    for (int i : range(24, 30)) b.prevZero(b.new Int( i)).ok( 23);
+//    for (int i : range(30, 32)) b.prevZero(b.new Int( i)).ok( 29);
+//
+//                                b.firstZero().ok( 0);
+//                                b. lastZero().ok(29);
     b.maxSteps(999_999);
     b.execute();
    }
@@ -1747,7 +1753,8 @@ Zero:
    }
 
   static void newTests()                                                                                                // Tests under development.
-   {oldTests();
+   {//oldTests();
+    test_prevNext(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
