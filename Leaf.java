@@ -79,8 +79,8 @@ class Leaf extends Program implements Program.Locatable                         
 
   public Bint getLocation() {return at;}                                                                                // The location of this node in memory
 
-  Bool empty()   {return slots.empty();}                                                                                // Is the leaf empty
-  Bool full ()   {return slots.full ();}                                                                                // Is the leaf full
+  Bit empty()   {return slots.empty();}                                                                                 // Is the leaf empty
+  Bit full ()   {return slots.full ();}                                                                                 // Is the leaf full
   Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the leaf
   int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the leaf
 
@@ -158,11 +158,11 @@ class Leaf extends Program implements Program.Locatable                         
      };
    }
 
-  Bool mergeRight(Leaf Right)                                                                                           // Merge the specified leaf into the right of this leaf
+  Bit mergeRight(Leaf Right)                                                                                            // Merge the specified leaf into the right of this leaf
    {final Leaf left = this;
     final Int  lc   = left .count();
     final Int  rc   = Right.count();
-    final Bool r    = new Bool().clear();
+    final Bit r    = new Bit().clear();
 
     new If (lc.Add(rc).le(maxSize()))
      {void Then()
@@ -178,11 +178,11 @@ class Leaf extends Program implements Program.Locatable                         
     return r;
    }
 
-  Bool mergeLeft(Leaf Left)                                                                                             // Merge the leaf into the right of this leaf
+  Bit mergeLeft(Leaf Left)                                                                                              // Merge the leaf into the right of this leaf
    {final Leaf right = this;
     final Int  lc    = Left .count();
     final Int  rc    = right.count();
-    final Bool r     = new Bool().clear();
+    final Bit r     = new Bit().clear();
 
     new If (lc.Add(rc).le(maxSize()))
      {void Then()
@@ -212,7 +212,7 @@ class Leaf extends Program implements Program.Locatable                         
     new If (f.valid())
      {void Then()
        {new For(maxSize)
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {final Int i = f.i();
             final Int k = slots.getSlotToKeyValue(i), d = data(slots.getSlotToKeyIndex(i));
             new I() {void a() {Iterator.process(k, d);}  boolean trace() {return false;}};
