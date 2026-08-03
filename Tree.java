@@ -131,7 +131,7 @@ class Tree extends Program                                                      
     freeChain.set(a.i());
    }
 
-  Bool isAllocated (Int Node) {return freeChain.getBit(Node).Flip();}                                                   // Check whether a node is allocated
+  Bit isAllocated (Int Node) {return freeChain.getBit(Node).Flip();}                                                    // Check whether a node is allocated
 
   Int nodeAddress  (Int Node)                                                                                           // Convert an index to a byte address of node in memory
    {if (immediate())
@@ -150,13 +150,13 @@ class Tree extends Program                                                      
    }
 
   Int  root ()        {return new Int(0);}                                                                              // The root is always at node zero
-  Bool isRootLeaf  () {return checkType(root(), BranchOrLeaf.leaf);}                                                    // Whether the root is a leaf
-  Bool isRootBranch() {return checkType(root(), BranchOrLeaf.branch);}                                                  // Whether the root is a branch
+  Bit isRootLeaf  () {return checkType(root(), BranchOrLeaf.leaf);}                                                     // Whether the root is a leaf
+  Bit isRootBranch() {return checkType(root(), BranchOrLeaf.branch);}                                                   // Whether the root is a branch
 
-  Bool checkType(Int Node, BranchOrLeaf Type)                                                                           // Check the type of a node
+  Bit checkType(Int Node, BranchOrLeaf Type)                                                                            // Check the type of a node
    {final Int  a = nodeAddress(Node);
     final Int  t = unitMemory.getInt(a);
-    final Bool r = new Bool(false);
+    final Bit r = new Bit(false);
     new If (t.eq(Type.value())) {void Then() {r.set(true);}};
     return r;
    }
@@ -166,8 +166,8 @@ class Tree extends Program                                                      
     unitMemory.putInt(a, new Int(Type.value()));
    }
 
-  Bool isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                // Whether the indexed node a branch
-  Bool isLeaf  (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                // Whether the indexed node a leaf
+  Bit isBranch(Int Node) {return checkType(Node, BranchOrLeaf.branch);}                                                 // Whether the indexed node a branch
+  Bit isLeaf  (Int Node) {return checkType(Node, BranchOrLeaf.leaf  );}                                                 // Whether the indexed node a leaf
 
   Leaf leaf(Int Node) {return leaf(Node, true);}                                                                        // Index an existing leaf in memory            confirming that it really is a leaf
   Leaf leaf(Int Node, boolean Check)                                                                                    // Index an existing leaf in memory optionally confirming that it really is a leaf
@@ -265,7 +265,7 @@ class Tree extends Program                                                      
    }
 
   final class FindLeaf                                                                                                  // Find results
-   {Bool valid = new Bool("valid");                                                                                     // Whether the search results are valid
+   {Bit valid = new Bit("valid");                                                                                       // Whether the search results are valid
     Int  key   = new Int ("key");                                                                                       // Search key
     Int  leaf  = new Int ("leaf index");                                                                                // Leaf that should contain the key
 
@@ -293,8 +293,8 @@ class Tree extends Program                                                      
     final FindLeaf f = new FindLeaf();                                                                                  // Find results
     f.start(Key);
 
-    new For(mnl())                                                                                             // Step down from branch to branch
-     {void body(Int Index, Bool Continue)
+    new For(mnl())                                                                                                      // Step down from branch to branch
+     {void body(Int Index, Bit Continue)
        {new If (isLeaf(p))                                                                                              // On a leaf
          {void Then()
            {f.set(p);                                                                                                   // Show the key and matching leaf
@@ -323,14 +323,14 @@ class Tree extends Program                                                      
     Path(Int Key)
      {subStart("Tree.Path");
       final Int p = root();                                                                                             // Start at root
-      final Bool valid = new Bool(false);                                                                               // Whether a leaf was reached
+      final Bit valid = new Bit(false);                                                                                 // Whether a leaf was reached
 
       key .set(Key);                                                                                                    // Record search key
       step.set(0);                                                                                                      // Start at the root
       mergePath.clear();                                                                                                // Clear the path
 
       new For(mnl())                                                                                                    // Step down from branch to branch
-       {void body(Int Index, Bool Continue)
+       {void body(Int Index, Bit Continue)
          {new If (isLeaf(p))                                                                                            // On a leaf
            {void Then()
              {valid.set();                                                                                              // Reached a leaf
@@ -354,7 +354,7 @@ class Tree extends Program                                                      
      {subStart("Tree.splitPoint");
       final Int u = new Int();                                                                                          // Location of split point
       new For(step)                                                                                                     // Number of steps in path
-       {void body(Int Index, Bool Continue)                                                                             // Step up from leaf to root
+       {void body(Int Index, Bit Continue)                                                                              // Step up from leaf to root
          {final Int p = step.Sub(Index).dec();                                                                          // Position on path
           final Int b = path.getInt(p);                                                                                 // Branch index
           new If (branch(b).full())                                                                                     // On a full branch
@@ -632,9 +632,9 @@ class Tree extends Program                                                      
 //D2 Merge                                                                                                              // Merge nodes in the tree to make the tree narrower
 //D3 Merge Left                                                                                                         // Merge single and double left
 
-  Bool mergeLeftLeafIntoRightSibling (Branch Parent, Int Left, Leaf Right)                                              // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+  Bit mergeLeftLeafIntoRightSibling (Branch Parent, Int Left, Leaf Right)                                               // Merge the specified left leaf sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftLeafIntoRightSibling");
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Bit   m = new Bit(false);                                                                                     // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Leaf   l = leaf(P.data(P.slots.getSlotToKeyIndex(Left)));                                                     // Left leaf of merge
     new If (Right.mergeLeft(l))                                                                                         // Successfully merged
@@ -648,9 +648,9 @@ class Tree extends Program                                                      
     return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bool mergeLeftBranchIntoRightSibling (Branch Parent, Int Left, Branch Right)                                          // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
+  Bit mergeLeftBranchIntoRightSibling (Branch Parent, Int Left, Branch Right)                                           // Merge the specified left branch sibling into its right sibling if possible separating them with the specified splitting key.  The left sibling is specified by the index of its slot in the specified parent, the right by a leaf description
    {subStart("Tree.mergeLeftBranchIntoRightSibling");
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Bit   m = new Bit(false);                                                                                     // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Branch l = branch(P.data(P.slots.getSlotToKeyIndex(Left)));                                                   // Left branch of merge
     final Int    k = P.slots.getSlotToKeyValue(Left);                                                                   // The parent key for the left sibling
@@ -665,9 +665,9 @@ class Tree extends Program                                                      
     return m;                                                                                                           // Whether the merge succeeded
    }
 
-  Bool mergeLeftIntoRightSibling (Branch Parent, Int Left)                                                              // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
+  Bit mergeLeftIntoRightSibling (Branch Parent, Int Left)                                                               // Merge the specified left sibling into its right sibling if possible.  The left sibling is specified by the index of its slot in the specified parent
    {subStart("Tree.mergeLeftIntoRightSibling");
-    final Bool   m = new Bool(false);                                                                                   // Whether the merge was performed or not - assume it will not until we discover otherwise
+    final Bit   m = new Bit(false);                                                                                     // Whether the merge was performed or not - assume it will not until we discover otherwise
     final Branch P = Parent;
     final Int    l = new Int();                                                                                         // Next sibling location
     final Bint   R = P.slots.usedSlotsToKeys.nextOne(Left);                                                             // Right sibling via next valid slot
@@ -753,7 +753,7 @@ class Tree extends Program                                                      
     final Int        depth  = new Int("depth");                                                                         // Depth we have reached in the tree. -1 indicates thatthe stack is empty.
 
     final class LeafContext                                                                                             // The context of a leaf shows its relationship to its parent branch
-     {final Bool root   = new Bool();                                                                                   // Whether the current leaf is the root or not
+     {final Bit root   = new Bit();                                                                                     // Whether the current leaf is the root or not
       final Int  parent = new Int();                                                                                    // If the current leaf is not the root then the parent branch of the current leaf
       final Int  leaf   = new Int();                                                                                    // The current leaf
       final Int  slot   = new Int();                                                                                    // The slot in the parent branch
@@ -777,7 +777,7 @@ class Tree extends Program                                                      
      }
 
     final class BranchContext                                                                                           // The context of a branch shows its relationship to its parent and currently being processed child
-     {final Bool root       = new Bool();                                                                               // Whether the current branch is the root or not
+     {final Bit root       = new Bit();                                                                                 // Whether the current branch is the root or not
       final Int  parent     = new Int();                                                                                // If the current branch is not the root then the parent of the current branch
       final Int  parentSlot = new Int();                                                                                // If the current branch is not the root then the slot through which this branch was reached
       final Int  branch     = new Int();                                                                                // The current branch
@@ -822,7 +822,7 @@ class Tree extends Program                                                      
       new If (isRootBranch())                                                                                           // Tree starts with a branch
        {void Then()
          {new For(numberOfNodes*2)                                                                                      // Each node in the tree
-           {void body(Int Index, Bool Continue)                                                                         // Process each remaining branch
+           {void body(Int Index, Bit Continue)                                                                          // Process each remaining branch
              {new If (depth.ge(0))                                                                                      // Branches waiting to be processed
                {void Then()                                                                                             // Branches still present on branches stack
                  {Continue.set();                                                                                       // Continue as long as there are branches to be processed
