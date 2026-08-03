@@ -2,7 +2,7 @@
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using integers, booleans and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
-// Change Bool to Bit
+// Change Bit to Bit!!  bools -> bits
 // Start with memory randomized
 // Write pc on memory dump title
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
@@ -25,7 +25,7 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -56,7 +56,7 @@ public class Program extends Test                                               
   private int                                         pc;                                                               // Program counter indicating the instruction to be executed after the current one
   final        Stack<UnitMemory>                memories = new Stack<>();                                               // Memories used by this program and its dependent programs
   final        Stack<Int>                           ints = new Stack<>();                                               // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
-  final        Stack<Bool>                         bools = new Stack<>();                                               // Bool variables processed in the same way as ints.
+  final        Stack<Bit>                           bits = new Stack<>();                                               // Bit variables processed in the same way as ints.
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
         static       String                    subsTrace = null;                                                        // Traceback through the methods currently active
   final static TreeMap<String,Integer> instructionCounts = new TreeMap<>();                                             // Count instructions by subroutine in which they are added
@@ -69,7 +69,7 @@ public class Program extends Test                                               
   private int                                     jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
   private int                                     vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
   private int                                  nextIntId = 0;                                                           // Unique id for each Int
-  private int                                 nextBoolId = 0;                                                           // Unique id for each Bool
+  private int                                 nextBoolId = 0;                                                           // Unique id for each Bit
   private int                                sourceIntId = 0;                                                           // Id of source int
   private int                               source2IntId = 0;                                                           // Id of source2 int
   private int                                targetIntId = 0;                                                           // Id of target int
@@ -98,7 +98,7 @@ public class Program extends Test                                               
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
     initializeRegisters();                                                                                              // Start registers in known state
     unitMemory      = Build.size   != null ? new UnitMemory(Build.size) : null;                                         // Memory associated with program if any
-    deleteAllFiles(verilogTestFolder(), 9);                                                                             // Delete generated Verilog files created by a prior run of the current test
+    deleteAllFiles(verilogTestFolder(), 999);                                                                           // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
     code();                                                                                                             // Load or execute the code associated with this program
    }
@@ -138,7 +138,7 @@ public class Program extends Test                                               
   I executing(I I) {return program().executing = I;}                                                                    // Instruction currently being executed
 
   Stack<Int>  ints ()           {return program().ints;}
-  Stack<Bool> bools ()          {return program().bools;}
+  Stack<Bit>  bits ()           {return program().bits;}
   Stack<UnitMemory> memories () {return program().memories;}
 
   int      currentPc()          {return program().     currentPc;}
@@ -208,7 +208,7 @@ public class Program extends Test                                               
   abstract class For                                                                                                    // For loop: executed a specified number of times as long as the iterated code requests continuation
    {For (Int Start, Int End)                                                                                            // Execute the loop the specified number of times
      {final Int index = new Int("Index");
-      final Bool cont = new Bool("Continue");
+      final Bit cont = new Bit("Continue");
 
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
@@ -222,7 +222,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        final Bool   done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
+        final Bit   done = index.ge(End);                                                                               // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >= End.i()) program().pc = end.offset;}                                           // Index out of range. Program counter has already been incremented so we do not need to do it again
@@ -247,7 +247,7 @@ public class Program extends Test                                               
     For (int End) {this(new Int("Start", 0), new Int("End", End));}                                                     // Execute the loop the specified number of times as long as it returns true
     For (Int End) {this(new Int("Start", 0),                End);}                                                      // Execute the loop the specified number of times as long as it returns true
 
-    abstract void body (Int Index, Bool Continue);                                                                      // Body of the for loop - execute while in range and continuation has been requested
+    abstract void body (Int Index, Bit Continue);                                                                       // Body of the for loop - execute while in range and continuation has been requested
    }
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
@@ -264,7 +264,7 @@ public class Program extends Test                                               
       else                                                                                                              // Machine code
        {final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        final Bool   done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
+        final Bit   done = index.ge(End);                                                                               // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
@@ -298,7 +298,7 @@ public class Program extends Test                                               
      {if (Condition) Then(); else Else();
      }
 
-    If (Bool    Condition)
+    If (Bit    Condition)
      {if (immediate())                                                                                                  // Immediate execution
        {if (Condition.b()) Then();
         else               Else();
@@ -339,46 +339,46 @@ public class Program extends Test                                               
 
 //D2 Boolean values                                                                                                     // Operations on boolean values
 
-  final class Bool                                                                                                      // A boolean value
+  final class Bit                                                                                                       // A boolean value
    {boolean    i = false;                                                                                               // Value of the boolean
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     boolean   nd = false;                                                                                               // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
-    final int id = program().nextBoolId++;                                                                              // Unique id for Bool
+    final int id = program().nextBoolId++;                                                                              // Unique id for Bit
     String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
 
-    Bool (String Name)             {this();  name = Name;}                                                              // Constructors with name supplied
+    Bit (String Name)             {this();  name = Name;}                                                               // Constructors with name supplied
 
-    Bool ()                        {ai(); del(false);      bools().push(this);}                                         // Constructors. Set newly constructed integers to invalid and minus one
-    Bool (boolean I)               {ai();  ie(Ops.set, I); bools().push(this);}
-    Bool (Bool    I)               {ai();  ie(Ops.set, I); bools().push(this);}
-    boolean       b ()             {x(); return i;}
-    void          x ()             {if (!v) variableNotSet("Bool", name);}                                              // Check a value has been set for the boolean
+    Bit ()                        {ai();  del(false);     bits().push(this);}                                           // Constructors. Set newly constructed integers to invalid and minus one
+    Bit (boolean I)               {ai();  ie(Ops.set, I); bits().push(this);}
+    Bit (Bit     I)               {ai();  ie(Ops.set, I); bits().push(this);}
+    boolean      b ()             {x(); return i;}
+    void         x ()             {if (!v) variableNotSet("Bit", name);}                                                // Check a value has been set for the boolean
 
-    Bool        set ()             {return ie(Ops.set,  true); }                                                        // Boolean operations which modify the target
-    Bool        set (boolean I)    {return ie(Ops.set,  I);    }
-    Bool        set (Bool    I)    {return ie(Ops.set,  I);    }
-    Bool      clear ()             {return ie(Ops.set,  false);}
-    Bool        del (boolean I)    {return ie(Ops.del,  I);    }
-    Bool       flip ()             {return ie(Ops.flip);       }
-    Bool       Flip ()             {return dup().flip();}
-    Bool         ne (Bool    I)    {return ie(Ops.ne,  I);}
-    Bool         ne (boolean I)    {return ie(Ops.ne,  I);}
-    Bool         or (Bool    I)    {return ie(Ops.or,  I);}                                                             // "Or" without short circuit. Modifies the target.
-    Bool        and (Bool    I)    {return ie(Ops.and, I);}                                                             // "And" without short circuit. Modifies the target.
-    Bool         Or (Bool    I)    {return dup().or (I);}                                                               // "Or" without short circuit. Does not modify the target
-    Bool        And (Bool    I)    {return dup().and(I);}                                                               // "And" without short circuit. Does not modify the target
-    Bool        dup ()             {return new Bool(this);}                                                             // Duplicate a boolean so that the duplicated version can be modified without modifying the original
+    Bit        set ()             {return ie(Ops.set,  true); }                                                         // Boolean operations which modify the target
+    Bit        set (boolean I)    {return ie(Ops.set,  I);    }
+    Bit        set (Bit    I)     {return ie(Ops.set,  I);    }
+    Bit      clear ()             {return ie(Ops.set,  false);}
+    Bit        del (boolean I)    {return ie(Ops.del,  I);    }
+    Bit       flip ()             {return ie(Ops.flip);       }
+    Bit       Flip ()             {return dup().flip();}
+    Bit         ne (Bit    I)     {return ie(Ops.ne,  I);}
+    Bit         ne (boolean I)    {return ie(Ops.ne,  I);}
+    Bit         or (Bit    I)     {return ie(Ops.or,  I);}                                                              // "Or" without short circuit. Modifies the target.
+    Bit        and (Bit    I)     {return ie(Ops.and, I);}                                                              // "And" without short circuit. Modifies the target.
+    Bit         Or (Bit    I)     {return dup().or (I);}                                                                // "Or" without short circuit. Does not modify the target
+    Bit        And (Bit    I)     {return dup().and(I);}                                                                // "And" without short circuit. Does not modify the target
+    Bit        dup ()             {return new Bit(this);}                                                               // Duplicate a boolean so that the duplicated version can be modified without modifying the original
                                                                                                                         // Execute as an instruction because these are the building blocks of the chip with which we wish to construct the algorithm
-    Bool ie (Ops Op)            {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op);}}; W(); return this;}
-    Bool ie (Ops Op, boolean I) {T(); S(I);  new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
-    Bool ie (Ops Op, Bool    I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
+    Bit ie (Ops Op)            {T();        new I() {void a() {ex(Op   );} String v() {return ev(Op);}}; W(); return this;}
+    Bit ie (Ops Op, boolean I) {T(); S(I);  new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
+    Bit ie (Ops Op, Bit     I) {T(); I.S(); new I() {void a() {ex(Op, I);} String v() {return eV(Op);}}; W(); return this;}
 
     int pc() {return currentPc();}                                                                                      // Address of instruction
 
     abstract class LoadSourceOrTarget
-     {LoadSourceOrTarget(Bool B, String RegisterId, String RegisterValue)                                               // Load source or target value via id of boolean
+     {LoadSourceOrTarget(Bit B, String RegisterId, String RegisterValue)                                                // Load source or target value via id of boolean
        {final String ri = RegisterId;                                                                                   // Id register
         final String rv = RegisterValue;                                                                                // Value register
 
@@ -424,7 +424,7 @@ public class Program extends Test                                               
      }
 
     void W ()                                                                                                           // Write result back into variable
-     {final Bool b = this;
+     {final Bit b = this;
       new I()                                                                                                           // Load value
        {final String f = "%8d writeBool %8d = %8d";
         void   a() {i = targetBool(); v = targetBoolValid();           jTrace(f(f,  pc(), b.id,           b.i ? 1 : 0));}
@@ -432,7 +432,7 @@ public class Program extends Test                                               
        };
      }
 
-    Bool ex (Ops Op)                                                                                                    // Execute a monadic boolean operation
+    Bit ex (Ops Op)                                                                                                     // Execute a monadic boolean operation
      {executingCheck();
       switch(Op)
        {case flip -> {x(); targetBool(!targetBool());}
@@ -442,7 +442,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool ex (Ops Op, boolean I)                                                                                         // Execute a dyadic boolean operation on a constant
+    Bit ex (Ops Op, boolean I)                                                                                          // Execute a dyadic boolean operation on a constant
      {executingCheck();
       switch (Op)
        {case set -> {     targetBool(sourceBool());}
@@ -457,7 +457,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    Bool ex (Ops Op, Bool I)                                                                                            // Execute a dyadic boolean operation on a variable
+    Bit ex (Ops Op, Bit I)                                                                                              // Execute a dyadic boolean operation on a variable
      {executingCheck();
       I.x();
       return ex(Op, I.i);
@@ -504,33 +504,33 @@ public class Program extends Test                                               
       return pName("b["+id+"]"+n);
      }
 
-    Bool ok (boolean Value)                                                                                             // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace and so there will be an empty instruction generated in the verilog to "regulate the service"
-     {final  Bool got = this;
+    Bit ok (boolean Value)                                                                                              // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace and so there will be an empty instruction generated in the verilog to "regulate the service"
+     {final  Bit got = this;
       new I()
        {void a()
-         {if (!got.v) stop("Invalid Bool being tested at:", executing().instructionLocation());
+         {if (!got.v) stop("Invalid Bit being tested at:", executing().instructionLocation());
           Test.ok(i, Value);
          }
-        String v() {return "/* Bool ok(boolean) */";}
+        String v() {return "/* Bit ok(boolean) */";}
         int traces() {return 0;}
        };
       return this;
      }
 
-    Bool ok (Bool Value)                                                                                                // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace  and so there will be an empty instruction generated in the verilog to "regulate the service"
-     {final Bool got = this;
-      if (immediate() && !Value.v) stop("Invalid expected Bool has been supplied for testing");
+    Bit ok (Bit Value)                                                                                                  // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace  and so there will be an empty instruction generated in the verilog to "regulate the service"
+     {final Bit got = this;
+      if (immediate() && !Value.v) stop("Invalid expected Bit has been supplied for testing");
       new I()
        {void a()
-         {if (!got.v) stop("Invalid Bool being tested at:", executing().instructionLocation());
+         {if (!got.v) stop("Invalid Bit being tested at:", executing().instructionLocation());
           Test.ok(got.b(), Value.b());
          }
-        String v() {return "/* Bool ok(Bool) */";}
+        String v() {return "/* Bit ok(Bit) */";}
         int traces() {return 0;}
        };
       return this;
      }
-   }                                                                                                                    // Bool
+   }                                                                                                                    // Bit
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
@@ -783,22 +783,22 @@ public class Program extends Test                                               
     Int  Neg ()      {return dup().neg()  ;}                                                                            //N
     Int  Abs ()      {return dup().abs()  ;}                                                                            //N
 
-    Bool eq ( int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a constant integer
-    Bool ne ( int I) {return bie(Ops.ne, I);}                                                                           //N
-    Bool le ( int I) {return bie(Ops.le, I);}
-    Bool lt ( int I) {return bie(Ops.lt, I);}
-    Bool ge ( int I) {return bie(Ops.ge, I);}
-    Bool gt ( int I) {return bie(Ops.gt, I);}
+    Bit eq ( int I) {return bie(Ops.eq, I);}                                                                            // Comparisons with a constant integer
+    Bit ne ( int I) {return bie(Ops.ne, I);}                                                                            //N
+    Bit le ( int I) {return bie(Ops.le, I);}
+    Bit lt ( int I) {return bie(Ops.lt, I);}
+    Bit ge ( int I) {return bie(Ops.ge, I);}
+    Bit gt ( int I) {return bie(Ops.gt, I);}
 
-    Bool eq ( Int I) {return bie(Ops.eq, I);}                                                                           // Comparisons with a variable integer
-    Bool ne ( Int I) {return bie(Ops.ne, I);}                                                                           //N
-    Bool le ( Int I) {return bie(Ops.le, I);}
-    Bool lt ( Int I) {return bie(Ops.lt, I);}
-    Bool ge ( Int I) {return bie(Ops.ge, I);}                                                                           //N
-    Bool gt ( Int I) {return bie(Ops.gt, I);}
+    Bit eq ( Int I) {return bie(Ops.eq, I);}                                                                            // Comparisons with a variable integer
+    Bit ne ( Int I) {return bie(Ops.ne, I);}                                                                            //N
+    Bit le ( Int I) {return bie(Ops.le, I);}
+    Bit lt ( Int I) {return bie(Ops.lt, I);}
+    Bit ge ( Int I) {return bie(Ops.ge, I);}                                                                            //N
+    Bit gt ( Int I) {return bie(Ops.gt, I);}
 
-    Bool bie (Ops Op, int I)                                                                                            // Instruction to perform a boolean comparison between an integer variable and an integer constant
-     {final Bool b = new Bool();
+    Bit bie (Ops Op, int I)                                                                                             // Instruction to perform a boolean comparison between an integer variable and an integer constant
+     {final Bit b = new Bit();
       S(); S2(I); b.T();
       new I()
        {void   a() {       bex(Op, b, I);}
@@ -808,8 +808,8 @@ public class Program extends Test                                               
       return b;
      }
 
-    Bool bie (Ops Op, Int I)                                                                                            // Instruction to perform a boolean comparison between two integer variables
-     {final Bool b = new Bool();
+    Bit bie (Ops Op, Int I)                                                                                             // Instruction to perform a boolean comparison between two integer variables
+     {final Bit b = new Bit();
       S(); I.S2(); b.T();
       new I()
        {void   a() {I.x(); bex(Op, b, I);}
@@ -819,7 +819,7 @@ public class Program extends Test                                               
       return b;
      }
 
-    void bex (Ops Op, Bool B, int I)                                                                                    // Boolean comparison between an integer variable and an integer constant
+    void bex (Ops Op, Bit B, int I)                                                                                     // Boolean comparison between an integer variable and an integer constant
      {x();
       targetBoolValid(true);
       switch(Op)
@@ -834,9 +834,9 @@ public class Program extends Test                                               
       B.jtrace();
      }
 
-    void bex (Ops Op, Bool B, Int I) {I.x(); bex(Op, B, I.i);}                                                          // Boolean comparison between two integer variables
+    void bex (Ops Op, Bit B, Int I) {I.x(); bex(Op, B, I.i);}                                                           // Boolean comparison between two integer variables
 
-    String bev (Ops Op, Bool B)                                                                                         // Boolean comparison between two integers
+    String bev (Ops Op, Bit B)                                                                                          // Boolean comparison between two integers
      {final StringBuilder s = new StringBuilder();
       final String a = pCR("sourceInt"), b = pCR("source2Int");
       switch(Op)
@@ -855,14 +855,14 @@ public class Program extends Test                                               
 
     void setValid () {v = true;}                                                                                        // Mark an integer as valid
 
-    Bool valid ()                                                                                                       // Whether the integer is valid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
-     {final Bool b = new Bool(); b.nd = true;                                                                           // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
+    Bit valid ()                                                                                                        // Whether the integer is valid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
+     {final Bit b = new Bit(); b.nd = true;                                                                             // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
       new I() {void a() {b.i = v; b.v = true;} int traces() {return 0;}};
       return b;
      }
 
-    Bool notValid ()                                                                                                    // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
-     {final Bool b = new Bool(); b.nd = true;                                                                           // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
+    Bit notValid ()                                                                                                     // Whether the integer is invalid - these checks are not made in Verilog because it is assumed that of the memory traces match then the behavior of the Verilog is identical to that of the java and thus there is no need to test the validity of the integers
+     {final Bit b = new Bit(); b.nd = true;                                                                             // Do not dump this boolean variable because it holds a value that has no analog in the Verilog code
       new I() {void a() {b.i = !v; b.v = true;} int traces() {return 0;}};
       return b;
      }
@@ -917,17 +917,17 @@ public class Program extends Test                                               
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
   final class Bint                                                                                                      // An integer that can be specified as valid or invalid
-   {private final Bool b = new Bool(false);                                                                             // Whether the associated integer is valid or invalid
+   {private final Bit b = new Bit(false);                                                                               // Whether the associated integer is valid or invalid
     private final Int  i = new Int();                                                                                   // The integer component
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
-    Bool   b ()      {return b;}                                                                                        // Return boolean component
+    Bit   b ()      {return b;}                                                                                         // Return boolean component
     Int    i ()
      {new If (b.Flip()) {void Then() {stop("Requested int component from unset Bint");}};                               // Complain if there is no integer component to return
       return new Int(i);
      }
 
-    Bool valid ()      {return b;}                                                                                      // Whether the boolean integer is valid
-    Bool notValid ()   {return b.Flip();}                                                                               // Whether the boolean integer is invalid
+    Bit valid ()      {return b;}                                                                                       // Whether the boolean integer is valid
+    Bit notValid ()   {return b.Flip();}                                                                                // Whether the boolean integer is invalid
     Bint invalidate () {b.clear(); return this;}                                                                        // Mark the integer as invalid after all
 
     Bint copy (Bint Source)                                                                                             // Copy a boolean integer
@@ -981,7 +981,6 @@ public class Program extends Test                                               
 
     UnitMemory (int Length)                                                                                             // Create and clear some memory
      {units = new int[Length];
-      //clear(new Int(0), Length);
       for(int i = 0; i < Length; ++i) units[i] = 0;                                                                     // Clear memory. In Verilog this is done using readmemh in an initial block. For a real chip perhaps an instruction to do this?
       final Stack<UnitMemory> m = memories(); id = m.size(); m.push(this);                                              // Give the memory a unique identifier and save it in the main program
      }
@@ -995,7 +994,7 @@ public class Program extends Test                                               
     String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memory in decimal
 
     void im(Int  I) {pcConstant(compiling(), I.id);}                                                                    // Save the integer variable used for this memory access at this instruction
-    void im(Bool B) {pcConstant(compiling(), B.id);}                                                                    // Save the boolean variable used for this memory access at this instruction
+    void im(Bit B) {pcConstant(compiling(), B.id);}                                                                     // Save the boolean variable used for this memory access at this instruction
 
     String wdi() {return vWriteIntEnable() +" <= 0;";}                                                                  // Write disable integer
     String wdb() {return vWriteBoolEnable()+" <= 0;";}                                                                  // Write disable boolean
@@ -1120,8 +1119,8 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool getBool (Int I, Int J)                                                                                         // Get the bit in the specified byte at the specified position within the byte
-     {Bool r = new Bool();
+    Bit getBool (Int I, Int J)                                                                                          // Get the bit in the specified byte at the specified position within the byte
+     {Bit r = new Bit();
       if (I != null) new I()                                                                                            // Set int index if not already set
        {void   a() {       readIntIndexJ(I);}
         String v() {im(I); return readIntIndexV(I);}
@@ -1142,7 +1141,7 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bool getBool (Int I) {return getBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                    // Get the bit at the bit indexed location
+    Bit getBool (Int I) {return getBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                     // Get the bit at the bit indexed location
 
     UnitMemory putInt (Int I, Int J)                                                                                    // Write to the indexed memory location the value of the specified source integer
      {if (I != null) new I()                                                                                            // Set target index of memory to be written to if not already set
@@ -1162,7 +1161,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    UnitMemory putBool (Int I, Int J, Bool K)                                                                           // Set the bit at the indicated position in the byte at the specified position to the specified value
+    UnitMemory putBool (Int I, Int J, Bit K)                                                                            // Set the bit at the indicated position in the byte at the specified position to the specified value
      {if (I != null) new I()                                                                                            // Set target index if not already set
        {void   a() {              writeIntIndexJ(I);}
         String v() {im(I); return writeIntIndexV(I);}
@@ -1176,7 +1175,7 @@ public class Program extends Test                                               
          void  a() {writeBool = K.b();                                                jTrace(f(f,  pc(), writeIntIndex,    writeBitIndex,         K.i ? 1 : 0,  writeBool ? 1 : 0));}
         String v() {im(K); return vWriteBool() + "<= b[arrayData_pcConstant]; "+web()+vTrace(  f, "pc", vWriteIntIndex(), vWriteBoolIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
-      else stop("Bool to write not set");                                                                               // Writes must have the Bool to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
+      else stop("Bit to write not set");                                                                                // Writes must have the Bit to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
       new I()                                                                                                           // Write into memory
        {void   a() {       writeBoolJ();}
         String v() {return writeBoolV()+wdb();}
@@ -1184,7 +1183,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    UnitMemory putBool (Int I, Bool K) {putBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE), K); return this;}             // Set the bit at the bit indexed position
+    UnitMemory putBool (Int I, Bit K) {putBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE), K); return this;}              // Set the bit at the bit indexed position
 
 //D2 Memory references                                                                                                  // References to byte memory
 
@@ -1198,11 +1197,11 @@ public class Program extends Test                                               
       Ref        copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width);       return this;}       // Copy the specified memory possibly from another byte memory
       Ref       clear (int Width)            {m.clear(offset, Width);                               return this;}       // Clear memory by setting its bytes to zero
       Int      getInt (Int I)                {return m.getInt( I.Add(offset));}                                         // Get the int at the indicated position
-      Bool    getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
+      Bit    getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                        // Get the bit at the bit indexed location
       Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
       Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int at zero offset in this memory reference
       Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
-      Ref     putBool (Int I, Bool K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
+      Ref     putBool (Int I, Bit K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}        // Set the bit at the bit indexed position
       Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
 
 
@@ -1547,7 +1546,7 @@ cd {f}; yosys -q {y}
 
     class Location                                                                                                      // Create a dump location definition to write the title of the dump without having to use string parameters which do not seem to work on iverilog
      {final int location;                                                                                               // Location in program of dump
-      final String title;                                                                                                // Title of dump
+      final String title;                                                                                               // Title of dump
 
       Location(int Location, String Title)
        {location = Location; title = Title;
@@ -1577,8 +1576,8 @@ cd {f}; yosys -q {y}
   void dumpJavaMemories ()     {for(UnitMemory m : memories()) appendJavaTrace(m.dumpAsDecimal());}                     // Dump all the memories
 
   void initializeJavaVars()                                                                                             // Initialize java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
-   {for (Int  i : ints())  {i.i = 0;     i.v = false;}
-    for (Bool b : bools()) {b.i = false; b.v = false;}
+   {for (Int i : ints()) {i.i = 0;     i.v = false;}
+    for (Bit b : bits()) {b.i = false; b.v = false;}
    }
 
   void dumpJavaVariables ()                                                                                             // Dump all memories and variables to the java trace file
@@ -1588,9 +1587,9 @@ cd {f}; yosys -q {y}
       if (i.name != null) s.append(" "+i.name);
       s.append('\n');
      }
-    for (Bool b : bools())                                                                                              // Dump bools
+    for (Bit b : bits())                                                                                                // Dump bools
      {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
-      s.append(f("Bool %8d == %8d", b.id, b.i ? 1 : 0));
+      s.append(f("Bit %8d == %8d", b.id, b.i ? 1 : 0));
       if (b.name != null) s.append(" "+b.name);
       s.append('\n');
      }
@@ -2109,13 +2108,13 @@ check
 """, "id", ""+i.id));
      }
 
-    for(Bool b : bools)                                                                                                 // Dump booleans
+    for(Bit b : bits)                                                                                                   // Dump booleans
      {if (b.nd) continue;                                                                                               // Omit bools that were created as a result of testing the validity of an Int because the Verilog code does not retain this information
       if (b.name != null) v.append(substitute("""
-      $fdisplay(traceFile, "Bool %8d == %8d {name}", {id}, b[{id}]);
+      $fdisplay(traceFile, "Bit %8d == %8d {name}", {id}, b[{id}]);
 """, "name", b.name, "id", ""+b.id));
       else v.append(substitute("""
-      $fdisplay(traceFile, "Bool %8d == %8d", {id}, b[{id}]);
+      $fdisplay(traceFile, "Bit %8d == %8d", {id}, b[{id}]);
 """, "id", ""+b.id));
      }
 
@@ -2277,9 +2276,9 @@ endmodule
        {final Int i = new Int(0);
         final Int N = new Int(11);
         new For(N)
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {final Int  m = new Int();
-            final Bool z = new Bool();
+            final Bit z = new Bit();
             m.set(Index.Mod(2));
             z.set(m.eq(0));
             new If (z)
@@ -2306,8 +2305,8 @@ endmodule
    {sayCurrentTestName();
     final Program  P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Bool z = new Bool("zero").clear();
-        final Bool o = new Bool("one" ).set();
+       {final Bit z = new Bit("zero").clear();
+        final Bit o = new Bit("one" ).set();
         z.Or (z).ok(false);
         z.Or (o).ok(true);
         o.Or (z).ok(true);
@@ -2317,10 +2316,10 @@ endmodule
         z.And(o).ok(false);
         o.And(z).ok(false);
         o.And(o).ok(true);
-        final Bool a = new Bool(true);
-        final Bool b = new Bool(false);
-        final Bool c = a.dup().or(b).flip().ok(false);
-        final Bool d = b.dup().or(a).flip().ok(false);
+        final Bit a = new Bit(true);
+        final Bit b = new Bit(false);
+        final Bit c = a.dup().or(b).flip().ok(false);
+        final Bit d = b.dup().or(a).flip().ok(false);
 
         execute();
        }
@@ -2341,7 +2340,7 @@ endmodule
         final Int N = new Int(10);
         final StringBuilder s = new StringBuilder();
         new For(N)
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {dumpProgramState("AAAA");
             b.add(a.dup().inc());
             dumpProgramState("BBBB");
@@ -2385,7 +2384,7 @@ endmodule
         final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {c.set(a);
             c.add(b);
             a.set(b);
@@ -2410,12 +2409,12 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
        {final Int  a = new Int ("a");
-        final Bool b = new Bool("b");
+        final Bit b = new Bit("b");
         final Int  c = new Int ("c").set(0);
         final Int  N = new Int ("N").set(4);
         final StringBuilder s = new StringBuilder();
         new For(N)
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {dumpProgramState("AAAA");
             a.set(Index.Inc()).mod(2);
             dumpProgramState("BBBB");
@@ -2492,7 +2491,7 @@ endmodule
      {void code()
        {dumpProgramState("AAAA");
         final Int  i = new Int ("i");
-        final Bool b = new Bool("b");
+        final Bit b = new Bit("b");
         dumpProgramState("BBBB");
         i.set(1);
         b.set(true);
@@ -2517,11 +2516,11 @@ endmodule
        {final UnitMemory m = unitMemory;
         final Int  a = new Int("a"); a.set(2) ;           m.putInt(new Int(1), a);
         final Int  b = m.getInt (new Int(1));             b.name = "b"; b.ok(2);
-        final Bool c = m.getBool(new Int(1), new Int(0)); c.name = "c"; c.ok(false);
-        final Bool d = m.getBool(new Int(1), new Int(1)); d.name = "d"; d.ok(true);
-        m.putBool(new Int(1), new Int(0),  new Bool(true));
-        m.putBool(new Int(1), new Int(1),  new Bool(false));
-        m.putBool(new Int(0), new Int(13), new Bool(true));
+        final Bit c = m.getBool(new Int(1), new Int(0)); c.name = "c"; c.ok(false);
+        final Bit d = m.getBool(new Int(1), new Int(1)); d.name = "d"; d.ok(true);
+        m.putBool(new Int(1), new Int(0),  new Bit(true));
+        m.putBool(new Int(1), new Int(1),  new Bit(false));
+        m.putBool(new Int(0), new Int(13), new Bit(true));
         final Int  e = m.getInt(new Int(1));              e.name = "e"; e.ok(1);
         execute();
        }
@@ -2548,15 +2547,15 @@ endmodule
             m.getBool(new Int(1), new Int(0)).ok(false);
             m.getBool(new Int(1), new Int(1)).ok(true );
             m.getBool(new Int(1), new Int(2)).ok(false);
-            m.putBool(new Int(1), new Int(0), new Bool(true));
+            m.putBool(new Int(1), new Int(0), new Bit(true));
             m.getInt (new Int(1)).            ok(3);
             dumpProgramState("BBBB");
-            m.putBool(new Int(32), new Bool(false));
+            m.putBool(new Int(32), new Bit(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(false);
             dumpProgramState("CCCC");
-            m.putBool(new Int(1), new Int(9), new Bool(true));
+            m.putBool(new Int(1), new Int(9), new Bit(true));
             m.getBool(new Int(1), new Int(9)).ok(true);
            }
          };
@@ -2640,8 +2639,8 @@ WriteBoolIndex =        0
 
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true);
-            m.putBool(new Int(32), new Bool(true));
-            m.putBool(new Int(34), new Bool(true));
+            m.putBool(new Int(32), new Bit(true));
+            m.putBool(new Int(34), new Bit(true));
             dumpProgramState("AAAA1111");
             m.getInt (new Int( 1)).ok(7);
             dumpProgramState("AAAA2222");
@@ -2658,7 +2657,7 @@ WriteBoolIndex =        2
 """);
 
             dumpProgramState("AAAA3333");
-            m.putBool(new Int(32), new Bool(false));
+            m.putBool(new Int(32), new Bit(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(true);
@@ -2876,7 +2875,7 @@ WriteBoolIndex =        0
        {final Int  a = new Int(N);
         new ForCount(N)
          {void body(Int Index)
-           {final Bool b = new Bool(false);
+           {final Bit b = new Bit(false);
             new If (b)
              {void Then() {final Int t = new Int();}
               void Else()
@@ -2905,7 +2904,7 @@ WriteBoolIndex =        0
      {void code()
        {final Int  a = new Int("a").set(0);
         new For(new Int(1), new Int(10))
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {new If (Index.le(2))
              {void Then() {a.add(01);}
               void Else() {a.add(11);}
