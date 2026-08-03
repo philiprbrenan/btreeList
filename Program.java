@@ -3,6 +3,8 @@
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Change Bool to Bit
+// Start with memory randomized
+// Write pc on memory dump title and make writeBool etc align vertically with following variables
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -21,7 +23,7 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -1168,6 +1170,7 @@ public class Program extends Test                                               
         void   a() {final int p = writeInt; writeInt = J.i();                        jTrace(f(f,  pc(), writeIntIndex,         J.i,      p));}
         String v() {im(J); return vWriteInt() + "<= i[arrayData_pcConstant]; "+wei()+vTrace(  f, "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
        };
+      else stop("Integer to write not set");                                                                            // Writes must have the integer to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
       new I()                                                                                                           // Write source integer value into target memory at indexed location
        {void   a() {       writeIntJ();}
         String v() {return writeIntV()+wdi();}
@@ -1189,10 +1192,13 @@ public class Program extends Test                                               
          void  a() {writeBool = K.b();                                                jTrace(f(f,  pc(), writeIntIndex,    writeBitIndex,         K.i ? 1 : 0,  writeBool ? 1 : 0));}
         String v() {im(K); return vWriteBool() + "<= b[arrayData_pcConstant]; "+web()+vTrace(  f, "pc", vWriteIntIndex(), vWriteBoolIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
+      else stop("Bool to write not set");                                                                               // Writes must have the Bool to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
+      dumpProgramState("BBBB1111");
       new I()                                                                                                           // Write into memory
        {void   a() {       writeBoolJ();}
         String v() {return writeBoolV()+wdb();}
        };
+      dumpProgramState("BBBB2222");
       return this;
      }
 
@@ -1246,6 +1252,12 @@ public class Program extends Test                                               
         if ((i + 1) % N == 0)                    s.append("\n");
        }
       if (size() % N != 0)                       s.append("\n");
+      s.append(f("  ReadIntIndex = %8d\n", readIntIndex     ));                                                         // Index at which to read an integer from memory
+      s.append(f("  ReadBitIndex = %8d\n", readBitIndex     ));                                                         // Index within an integer from which to get a bit to make a boolean
+      s.append(f(" WriteIntIndex = %8d\n", writeIntIndex    ));                                                         // Index at which to write an integer into memory
+      s.append(f("WriteBoolIndex = %8d\n", writeBitIndex    ));                                                         // Index within an integer at which to set a bit to represent a boolean
+      s.append(f("      WriteInt = %8d\n", writeInt         ));                                                         // Integer to write into memory
+      s.append(f("     WriteBool = %8d\n", writeBool ? 1 : 0));                                                         // Boolean to write into memory
       return ""+s;
      }
 
@@ -1657,7 +1669,7 @@ cd {f}; yosys -q {y}
 
   <A, B> void ok (Supplier<A> a, B b)                                                                                   // Test a result of delayed execution against a known result while the program is still executing
    {new I()
-     {void a() {if (!ok(a.get(), b)) if (traceBack != null) say("====\n", traceBack);}
+     {void a() {if (!ok(""+a.get(), ""+b)) if (traceBack != null) say("====\n", traceBack);}
       boolean trace() {return false;}
      };
    }
@@ -1800,17 +1812,17 @@ module {name};                                                                  
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
 
         for(UnitMemory m : memories)                                                                                    // Control registers for each memory
-         {out.write("\n// Memory module: "+ m.n() + "\n");                                                                // Memory module title
-          out.write("  integer "+ m.       vReadBool() + ";\n");                                                        // Boolean read from memory
-          out.write("  integer "+ m.      vWriteBool() + ";\n");                                                        // Boolean to write into memory
-          out.write("  integer "+ m.        vReadInt() + ";\n");                                                        // Integer read from memory
-          out.write("  integer "+ m.       vWriteInt() + ";\n");                                                        // Integer to write into memory
-          out.write("  integer "+ m.   vReadIntIndex() + ";\n");                                                        // Index at which to read an integer from memory
-          out.write("  integer "+ m.   vReadBitIndex() + ";\n");                                                        // Index within an integer from which to get a bit to make a boolean
-          out.write("  integer "+ m.  vWriteIntIndex() + ";\n");                                                        // Index at which to write an integer into memory
-          out.write("  integer "+ m. vWriteBoolIndex() + ";\n");                                                        // Index within an integer at which to set a bit to represent a boolean
-          out.write("  integer "+ m. vWriteIntEnable() + ";\n");                                                        // Write enable when writing integer data into memory
-          out.write("  integer "+ m.vWriteBoolEnable() + ";\n");                                                        // Write enable when writing boolean data into memory
+         {out.write("\n// Memory module: "+ m.n() + "\n");                                                              // Memory module title
+          out.write("  integer "+ pName(m.       vReadBool())+";\n");                                                   // Boolean read from memory
+          out.write("  integer "+ pName(m.      vWriteBool())+"; initial "+pName(m.      vWriteBool()) + "= 0;\n");     // Boolean to write into memory
+          out.write("  integer "+ pName(m.        vReadInt())+";\n");                                                   // Integer read from memory
+          out.write("  integer "+ pName(m.       vWriteInt())+"; initial "+pName(m.       vWriteInt()) + "= 0;\n");     // Integer to write into memory
+          out.write("  integer "+ pName(m.   vReadIntIndex())+"; initial "+pName(m.   vReadIntIndex()) + "= 0;\n");     // Index at which to read an integer from memory
+          out.write("  integer "+ pName(m.   vReadBitIndex())+"; initial "+pName(m.   vReadBitIndex()) + "= 0;\n");     // Index within an integer from which to get a bit to make a boolean
+          out.write("  integer "+ pName(m.  vWriteIntIndex())+"; initial "+pName(m.  vWriteIntIndex()) + "= 0;\n");     // Index at which to write an integer into memory
+          out.write("  integer "+ pName(m. vWriteBoolIndex())+"; initial "+pName(m. vWriteBoolIndex()) + "= 0;\n");     // Index within an integer at which to set a bit to represent a boolean
+          out.write("  integer "+ pName(m. vWriteIntEnable())+"; initial "+pName(m. vWriteIntEnable()) + "= 0;\n");     // Write enable when writing integer data into memory
+          out.write("  integer "+ pName(m.vWriteBoolEnable())+"; initial "+pName(m.vWriteBoolEnable()) + "= 0;\n");     // Write enable when writing boolean data into memory
           out.write("  "+ m.connectMemoryModule());                                                                     // Connect to memory module
          }
 
@@ -1987,6 +1999,12 @@ endmodule
       end
 
       if ({size} % N != 0) $fwrite(traceFile, "\\n");
+      $fwrite(traceFile, "  ReadIntIndex = %8d\\n", {memoryName}_readIntIndex   );                                      // Index at which to read an integer from memory
+      $fwrite(traceFile, "  ReadBitIndex = %8d\\n", {memoryName}_readBitIndex   );                                      // Index within an integer from which to get a bit to make a boolean
+      $fwrite(traceFile, " WriteIntIndex = %8d\\n", {memoryName}_writeIntIndex  );                                      // Index at which to write an integer into memory
+      $fwrite(traceFile, "WriteBoolIndex = %8d\\n", {memoryName}_writeBoolIndex );                                      // Index within an integer at which to set a bit to represent a boolean
+      $fwrite(traceFile, "      WriteInt = %8d\\n", {memoryName}_writeInt       );                                      // Integer to write into memory
+      $fwrite(traceFile, "     WriteBool = %8d\\n", {memoryName}_writeBool      );                                      // Boolean to write into memory
       $fflush(traceFile);
 `endif
     end
@@ -2191,6 +2209,7 @@ check
 
     class Array                                                                                                         // Matching set of instructions
      {final String       name;                                                                                          // Name of the array
+      final int          size;                                                                                          // Size of the array
       final int []      array;                                                                                          // Array to map inputs to outputs
       final boolean pcIndexed;                                                                                          // Indexed by the program counter if true else by a generated register associated with the array
       final String      index;                                                                                          // Register used to index the array
@@ -2198,13 +2217,13 @@ check
       int         dataRegister;                                                                                         // The value of the data register
 
       Array (String Name, int[]Array)                                                                                   // Create a new array possibly indexed by the program counter else a generated register
-       {name = Name; pcIndexed = false; array = Array;
+       {name = Name; pcIndexed = false; array = Array; size = Array.length;
         arrays.put(name, this);
         index = "sourceInt";                                                                                            // Indexed by source integer register
        }
 
       Array (String Name, TreeMap<Integer,Integer> map)                                                                 // Define a verilog array from a java tree map
-       {final int  size  = map.size() == 0 ? 0 : map.lastKey() + 1;
+       {size = codeSize();
         name  = Name;
         array = new int[size];
         Arrays.fill(array, -1);
@@ -2226,8 +2245,9 @@ check
 
       String define ()                                                                                                  // Define the array
        {return   substitute("""
-  integer   {name}[{length}:0]; integer {index};
-""", "name", arrayName(), "index", index(), "length", ""+array.length);
+  integer {name}[{size}-1:0];
+  integer {index};
+""", "name", arrayName(), "index", index(), "size", ""+size);
        }
 
       String indexRegisterName () {return pcIndexed ? "pc" : "arrayIndex_"+ name;}                                      // Name of the index register used to index the array
@@ -2566,8 +2586,11 @@ endmodule
         final Int  b = m.getInt (new Int(1));             b.name = "b"; b.ok(2);
         final Bool c = m.getBool(new Int(1), new Int(0)); c.name = "c"; c.ok(false);
         final Bool d = m.getBool(new Int(1), new Int(1)); d.name = "d"; d.ok(true);
-        m.putBool(new Int(1), new Int(0), new Bool(true));
-        m.putBool(new Int(1), new Int(1), new Bool(false));
+        m.putBool(new Int(1), new Int(0),  new Bool(true));
+        m.putBool(new Int(1), new Int(1),  new Bool(false));
+        dumpProgramState("AAAA1111");
+        m.putBool(new Int(0), new Int(13), new Bool(true));
+        dumpProgramState("AAAA2222");
         final Int  e = m.getInt(new Int(1));              e.name = "e"; e.ok(1);
         execute();
        }
@@ -2652,11 +2675,35 @@ endmodule
 
             m.putInt(new Int(1), new Int(-1));
             m.putInt(new Int(1), new Int(2));
-            ok(()->nws(M.dumpAsDecimal()), """
+
+            new If (Index.eq(0))
+             {void Then()
+               {ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
+  ReadIntIndex =        0
+  ReadBitIndex =        0
+ WriteIntIndex =        3
+WriteBoolIndex =        0
+      WriteInt =        2
+     WriteBool =        0
 """);
+               }
+              void Else()
+               {ok(()->nws(M.dumpAsDecimal()), """
+Memory 0
+            0    1    2    3    4    5    6    7    8    9
+00000000              1    2
+  ReadIntIndex =        3
+  ReadBitIndex =        2
+ WriteIntIndex =        3
+WriteBoolIndex =        0
+      WriteInt =        2
+     WriteBool =        0
+""");
+               }
+             };
             m.getInt(new Int(0)).ok(1);
             m.getInt(new Int(1)).ok(2);
 
@@ -2671,6 +2718,12 @@ Memory 0
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    7
+  ReadIntIndex =        3
+  ReadBitIndex =        1
+ WriteIntIndex =        3
+WriteBoolIndex =        2
+      WriteInt =        2
+     WriteBool =        1
 """);
 
             dumpProgramState("AAAA3333");
@@ -2683,24 +2736,48 @@ Memory 0
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    6
+  ReadIntIndex =        3
+  ReadBitIndex =        2
+ WriteIntIndex =        3
+WriteBoolIndex =        0
+      WriteInt =        2
+     WriteBool =        0
 """);
             m.clear(1);
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000                   6
+  ReadIntIndex =        3
+  ReadBitIndex =        2
+ WriteIntIndex =        2
+WriteBoolIndex =        0
+      WriteInt =        0
+     WriteBool =        0
 """);
             m.copy(n, 1);
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              6    6
+  ReadIntIndex =        3
+  ReadBitIndex =        2
+ WriteIntIndex =        2
+WriteBoolIndex =        0
+      WriteInt =        6
+     WriteBool =        0
 """);
             M.clear();
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000
+  ReadIntIndex =        3
+  ReadBitIndex =        2
+ WriteIntIndex =        9
+WriteBoolIndex =        0
+      WriteInt =        0
+     WriteBool =        0
 """);
            }
          };
@@ -2951,7 +3028,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_defineArrayViaVerilogFunction();
+    //test_mem(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
