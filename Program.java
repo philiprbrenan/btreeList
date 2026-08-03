@@ -4,7 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Change Bool to Bit
 // Start with memory randomized
-// Write pc on memory dump title and make writeBool etc align vertically with following variables
+// Write pc on memory dump title
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
