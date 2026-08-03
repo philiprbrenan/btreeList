@@ -5,7 +5,8 @@
 // Change Bool to Bit
 // Start with memory randomized
 // Write pc on memory dump title
-// Convert refernces to constant: arrayData_pcConstant to get name via a procedure call
+// Convert references to constant: arrayData_pcConstant to get name via a procedure call
+// Check how often each variable is read or written to eliminate variables that are only used once.
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -24,7 +25,7 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -2722,7 +2723,7 @@ WriteBoolIndex =        0
               test_memoryRef(false);
    }
 
-  static void test_defineArrayViaVerilogFunction()
+  static void test_verilogArray()
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(false).memory(16))
      {void code()
@@ -2948,7 +2949,7 @@ WriteBoolIndex =        0
     test_memory();
     test_memoryNegative();
     test_memoryRef();
-    test_defineArrayViaVerilogFunction();
+    test_verilogArray();
     test_lastInstructionBase();
     test_variables();
     test_boolean();
