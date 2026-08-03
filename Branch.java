@@ -85,8 +85,8 @@ class Branch extends Program implements Program.Locatable                       
 
   void branchCode() {}                                                                                                  // Override this method to provide code for testing the branch
 
-  Bool empty()   {return slots.empty();}                                                                                // Is the branch empty
-  Bool full ()   {return slots.full ();}                                                                                // Is the branch full
+  Bit empty()   {return slots.empty();}                                                                                 // Is the branch empty
+  Bit full ()   {return slots.full ();}                                                                                 // Is the branch full
   Int  count()   {return slots.count();}                                                                                // Number of key/data pairs in the branch
   int  maxSize() {return maxSize;}                                                                                      // Number of key/data pairs in the branch
 
@@ -274,12 +274,12 @@ class Branch extends Program implements Program.Locatable                       
     subFinish();
    }
 
-  Bool mergeRight (Branch Right, Int Sk)                                                                                // Merge the specified branch into the right of this branch separating the two by the specified splitting key
+  Bit mergeRight (Branch Right, Int Sk)                                                                                 // Merge the specified branch into the right of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeRight");
     final Branch left = this;
     final Int    lc   = left .count();
     final Int    rc   = Right.count();
-    final Bool   r    = new Bool().clear();
+    final Bit   r    = new Bit().clear();
 
     new If (lc.Add(rc).lt(maxSize()))
      {void Then()
@@ -302,12 +302,12 @@ class Branch extends Program implements Program.Locatable                       
     return r;
    }
 
-  Bool mergeLeft (Branch Left, Int Sk)                                                                                  // Merge the specified branch into the left of this branch separating the two by the specified splitting key
+  Bit mergeLeft (Branch Left, Int Sk)                                                                                   // Merge the specified branch into the left of this branch separating the two by the specified splitting key
    {subStart("Branch.mergeLeft");
     final Branch right = this;
     final Int    lc    = Left .count();
     final Int    rc    = right.count();
-    final Bool   r     = new Bool().clear();
+    final Bit   r     = new Bit().clear();
 
     new If (lc.Add(rc).lt(maxSize()))
      {void Then()
@@ -343,7 +343,7 @@ class Branch extends Program implements Program.Locatable                       
     new If (f)
      {void Then()
        {new For(maxSize)
-         {void body(Int Index, Bool Continue)
+         {void body(Int Index, Bit Continue)
            {final Int k = slots.getSlotToKeyValue(f.i()), d = data(slots.getSlotToKeyIndex(f.i()));
             new I() {void a() {Iterator.process(k, d);} boolean trace() {return false;}};
             f.copy(slots.usedSlotsToKeys.nextOne(f.i()));
