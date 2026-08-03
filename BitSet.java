@@ -12,8 +12,8 @@ final public class BitSet extends Program                                       
   final boolean        powerOfTwo;                                                                                      // Some operations can be optimized if the bitset has a number of elements that is a power of two
   final boolean        trackCount;                                                                                      // Track the count of number of bits set to one
   final Build               build;                                                                                      // Memory to use
-  final UnitMemory.Ref  memoryRef;                                                                                      // Build used to create bitset
-  final UnitMemory.Ref memoryCount;                                                                                     // Memory for count field of present
+  final Memory.Ref      memoryRef;                                                                                      // Build used to create bitset
+  final Memory.Ref    memoryCount;                                                                                      // Memory for count field of present
   static int         bitsetNumbers = 0;                                                                                 // Bitsets created
   final  int          bitsetNumber = ++bitsetNumbers;                                                                   // Number of this bitset
   final  int[]     limitsUpperOne;                                                                                      // The upper limit of the ones  tree for each possible position in the ones tree
@@ -45,20 +45,20 @@ final public class BitSet extends Program                                       
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
   final static class Build                                                                                              // Specification of a bitset
-   {int                bitSize = 1;                                                                                     // Number of bits in the bit set.
-    boolean          immediate = true;                                                                                  // Immediate mode execution by default
-    boolean         trackCount = true;                                                                                  // Track the count of number of bits set to one
-    Program             parent = null;                                                                                  // Parent program whose code is to be written into.
-    UnitMemory.Ref   memoryRef = null;                                                                                  // Program memory to be used
+   {int            bitSize = 1;                                                                                     // Number of bits in the bit set.
+    boolean      immediate = true;                                                                                  // Immediate mode execution by default
+    boolean     trackCount = true;                                                                                  // Track the count of number of bits set to one
+    Program         parent = null;                                                                                  // Parent program whose code is to be written into.
+    Memory.Ref   memoryRef = null;                                                                                  // Program memory to be used
 
     Build   bitSize (int     BitSize  )          {   bitSize = BitSize;   return this;}                                 // Requested size of bitset
     Build immediate (boolean Immediate)          { immediate = Immediate; return this;}                                 // Execute instructions immediately instead of accumulating them
     Build     count (boolean Count)              {trackCount = Count;     return this;}                                 // Maintain a count field to make retrieval of the count an O(1) operation
-    Build    memory (Program.UnitMemory.Ref Ref) { memoryRef = Ref;       return this;}                                 // Memory for bitset
+    Build    memory (Program.Memory.Ref Ref) { memoryRef = Ref;       return this;}                                 // Memory for bitset
     Build    parent (Program Parent)             {    parent = Parent;    return this;}                                 // Parent program for code
 
     int units()                                                                                                         // Units needed for the bitset, the bitset trees and the count field
-     {final int s = UnitMemory.bitsPerUnit();
+     {final int s = Memory.bitsPerUnit();
       return (s - 1 + 3 * nextPowerOfTwo(bitSize)) / s + (trackCount ? 1 : 0);
      }
 
