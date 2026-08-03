@@ -1193,12 +1193,10 @@ public class Program extends Test                                               
         String v() {im(K); return vWriteBool() + "<= b[arrayData_pcConstant]; "+web()+vTrace(  f, "pc", vWriteIntIndex(), vWriteBoolIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
       else stop("Bool to write not set");                                                                               // Writes must have the Bool to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
-      dumpProgramState("BBBB1111");
       new I()                                                                                                           // Write into memory
        {void   a() {       writeBoolJ();}
         String v() {return writeBoolV()+wdb();}
        };
-      dumpProgramState("BBBB2222");
       return this;
      }
 
@@ -2589,9 +2587,7 @@ endmodule
         final Bool d = m.getBool(new Int(1), new Int(1)); d.name = "d"; d.ok(true);
         m.putBool(new Int(1), new Int(0),  new Bool(true));
         m.putBool(new Int(1), new Int(1),  new Bool(false));
-        dumpProgramState("AAAA1111");
         m.putBool(new Int(0), new Int(13), new Bool(true));
-        dumpProgramState("AAAA2222");
         final Int  e = m.getInt(new Int(1));              e.name = "e"; e.ok(1);
         execute();
        }
