@@ -7,31 +7,30 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Branch extends Program implements Program.Locatable                                                               // A branch in a btree that translates keys into values to be implemented as an application specific integrated circuit
- {final int            maxSize;                                                                                         // The maximum number of entries in a branch of the tree
-  final Slots          slots;                                                                                           // Slots used to order keys in branch
-  final Bint           at            = new Bint();                                                                      // A representation of the location of the branch sufficient to be able to free it
-  UnitMemory.Ref       unitMemoryRef = null;                                                                            // Byte memory reference containing the tree
-  final UnitMemory.Ref refMark;                                                                                         // Mark this node as a branch
-  final UnitMemory.Ref refSlots;                                                                                        // The slot associated with each key being used
-  final UnitMemory.Ref refData;                                                                                         // Bitset showing which slots are being mapped to keys
-  final UnitMemory.Ref refTop;                                                                                          // Target for keys greater than all the keys in the branch bitset
-  final Build          build;                                                                                           // Build used to construct this branch
-  final static String  formatKey = " %3d";                                                                              // Format a key for dumping during testing
+ {final int         maxSize;                                                                                            // The maximum number of entries in a branch of the tree
+  final Slots         slots;                                                                                            // Slots used to order keys in branch
+  final Bint             at = new Bint();                                                                               // A representation of the location of the branch sufficient to be able to free it
+  Memory.Ref  unitMemoryRef = null;                                                                                     // Byte memory reference containing the tree
+  final Memory.Ref  refMark;                                                                                            // Mark this node as a branch
+  final Memory.Ref refSlots;                                                                                            // The slot associated with each key being used
+  final Memory.Ref  refData;                                                                                            // Bitset showing which slots are being mapped to keys
+  final Memory.Ref   refTop;                                                                                            // Target for keys greater than all the keys in the branch bitset
+  final Build         build;                                                                                            // Build used to construct this branch
 
 //D1 Construction                                                                                                       // Construct and layout a branch
 
   final static class Build                                                                                              // Parameters describing a branch
-   {Integer         maxSize;                                                                                            // Maximum number of keys in branch
-    Int             at;                                                                                                 // The location of the branch
-    boolean         immediate = true;                                                                                   // Immediate execution mode
-    Program         parent;                                                                                             // Parent program if any
-    UnitMemory.Ref  unitMemoryRef;                                                                                      // Program memory to be used
+   {Integer                 maxSize;                                                                                    // Maximum number of keys in branch
+    Int                          at;                                                                                    // The location of the branch
+    boolean               immediate = true;                                                                             // Immediate execution mode
+    Program                  parent;                                                                                    // Parent program if any
+    Memory.Ref        unitMemoryRef;                                                                                    // Program memory to be used
     MemoryPositions memoryPositions;                                                                                    // Layout of memory
-    Slots.Build     slots;                                                                                              // Bytes needed for slots
+    Slots.Build               slots;                                                                                    // Bytes needed for slots
 
     Build immediate(boolean Immediate ) {immediate     = Immediate; return this;}
     Build maxSize  (int     MaxSize   ) {maxSize       = MaxSize;   return this;}
-    Build memory   (UnitMemory.Ref Ref) {unitMemoryRef = Ref;       return this;}
+    Build memory   (Memory.Ref Ref) {unitMemoryRef = Ref;       return this;}
     Build parent   (Program Parent    ) {parent        = Parent;    return this;}
     Build at       (Int     At        ) {at            = At;        return this;}
 
