@@ -1799,21 +1799,22 @@ Zero:
 
     final Slots s = new Slots(new Build().numberOfKeys(8).immediate(Ex))
      {void slotsCode()
-       {final Slots         s = this;
-        final StringBuilder t = new StringBuilder();
-        verilogArrays().new Array("keys", keys);
+       {final Slots                s = this;
+        final StringBuilder        t = new StringBuilder();
+        final VerilogArrays.Array a = verilogArrays().new Array("keys", keys);
 
-        new ForCount(keys.length)                                                                              // Using this rather complex for loop reduces the amount of code generated
+        new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
            {final Int  k = new Int();
 
+            Index.S();                                                                                                  // Load index of item we want
             new I()                                                                                                     // Set the key to insert
              {void        a() {targetInt(keys[Index.i()]);}
-              String      v() {return "targetInt <= array_keys["+Index.vn()+"];";}
+              String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                        // Translate index into key
               boolean trace() {return false;}
              };
 
-            k.W();                                                                                                      // Write key into variable
+            k.W();                                                                                                      // Write target register into variable
             insert(k);
             final StringBuilder p = s.print();
             new I() {void a() {t.append(p);}  boolean trace() {return false;}};
@@ -1894,15 +1895,16 @@ keys     :   14  13  16  15  18  17  12  11
     final int [] keys = new int[] {11, 12, 13, 15, 16, 17, 18, 14};
     final Slots s = new Slots(new Build().numberOfKeys(keys.length).immediate(Ex))
      {void slotsCode()
-       {verilogArrays().new Array("keys", keys);
+       {final VerilogArrays.Array a = verilogArrays().new Array("keys", keys);
 
         new ForCount(keys.length)                                                                                       // Using this rather complex for loop reduces the amount of code generated
          {void body(Int Index)
            {final   Int k = new Int();
 
+            Index.S();                                                                                                  // Load index of item we want
             new I()                                                                                                     // Set the key to insert
              {void        a() {targetInt(keys[Index.i()]);}
-              String      v() {return "targetInt <= array_keys["+Index.vn()+"];";}
+              String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                        // Translate index into key
               boolean trace() {return false;}
              };
 
@@ -2421,7 +2423,7 @@ keys     :    0   0   0   0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_mergeFromRightEven(false);
+    test_insert2(false);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
