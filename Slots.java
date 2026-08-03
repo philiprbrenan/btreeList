@@ -8,31 +8,31 @@ package com.AppaApps.Silicon;                                                   
 import java.util.*;
 
 class Slots extends Program                                                                                             // Maps a sparse slot to a key allowing keys to be inserted in order into an array that can be binary searched
- {final int                 numberOfKeys;                                                                               // The maximum number of references maintained by these slots
-  final int                         size;                                                                               // Number of bytes needed to hold slots
-  final BitSet            usedSlotsToKeys;                                                                              // The slots in use.  There are more slots than references so that they can be distributed with intervening empty slots to make insertions faster
-  final BitSet                   usedKeys;                                                                              // The references in use.
-  UnitMemory.Ref            unitMemoryRef = null;                                                                       // Byte memory reference containing the slots
-  final UnitMemory.Ref     refSlotsToKeys;                                                                              // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
-  final UnitMemory.Ref     refKeysToSlots;                                                                              // The slot associated with each in use key
-  final UnitMemory.Ref refUsedSlotsToKeys;                                                                              // Bitset showing which slots are being used to map to keys
-  final UnitMemory.Ref        refUsedKeys;                                                                              // Bitset showing which keys are in use
-  final UnitMemory.Ref            refKeys;                                                                              // The keys are held unordered in this array but ordered by the slot references to them
-  final Build                       build;                                                                              // Build details
+ {final int              numberOfKeys;                                                                                  // The maximum number of references maintained by these slots
+  final int                      size;                                                                                  // Number of bytes needed to hold slots
+  final BitSet        usedSlotsToKeys;                                                                                  // The slots in use.  There are more slots than references so that they can be distributed with intervening empty slots to make insertions faster
+  final BitSet               usedKeys;                                                                                  // The references in use.
+  Memory.Ref            unitMemoryRef = null;                                                                           // Byte memory reference containing the slots
+  final Memory.Ref     refSlotsToKeys;                                                                                  // Slots order the keys which are stored unordered.  Using one level of indirection to the keys speeds up insertions by allowing the narrower slot references to be moved rather than the wider keys
+  final Memory.Ref     refKeysToSlots;                                                                                  // The slot associated with each in use key
+  final Memory.Ref refUsedSlotsToKeys;                                                                                  // Bitset showing which slots are being used to map to keys
+  final Memory.Ref        refUsedKeys;                                                                                  // Bitset showing which keys are in use
+  final Memory.Ref            refKeys;                                                                                  // The keys are held unordered in this array but ordered by the slot references to them
+  final Build                   build;                                                                                  // Build details
 
 //D1 Construction                                                                                                       // Construct and layout the slots
 
   final static class Build                                                                                              // Specification of slots
-   {boolean            immediate = true;                                                                                // Immediate mode
-    boolean                trace = false;                                                                               // Trace execution
-    int             numberOfKeys = 2;                                                                                   // Number of references in the slots
-    UnitMemory.Ref unitMemoryRef;                                                                                       // Program memory to be used
-    Program               parent;                                                                                       // Parent program if any
+   {boolean                    immediate = true;                                                                        // Immediate mode
+    boolean                        trace = false;                                                                       // Trace execution
+    int                     numberOfKeys = 2;                                                                           // Number of references in the slots
+    Memory.Ref             unitMemoryRef;                                                                               // Program memory to be used
+    Program                       parent;                                                                               // Parent program if any
     Build.MemoryPositions memoryPositions;                                                                              // Offsets of fields describing this leaf in memory
 
     Build immediate    (boolean  Immediate) {immediate     = Immediate;    return this;}
     Build numberOfKeys (int   NumberOfKeys) {numberOfKeys  = NumberOfKeys; return this;}
-    Build memory       (UnitMemory.Ref Ref) {unitMemoryRef = Ref;          return this;}
+    Build memory       (Memory.Ref Ref) {unitMemoryRef = Ref;          return this;}
     Build parent       (Program    Parent)  {parent        = Parent;       return this;}
     Build trace        (boolean     Trace)  {trace         = Trace;        return this;}
 
