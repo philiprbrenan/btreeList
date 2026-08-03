@@ -1337,18 +1337,19 @@ Leaf   at:   2 size:   4, count:   4
     final int  N = random_32.length;
     final Tree t = new Tree(new Build().maxLeafSize(4).maxBranchSize(3).numberOfNodes(N).immediate(Ex))
      {void treeBody()
-       {if (!Ex) verilogArrays().new Array("loadRandomKeys", random_32);                                                // Create an array of the random keys to be inserted from Verilog
+       {final VerilogArrays.Array a = verilogArrays().new Array("loadRandomKeys", random_32);                           // Create an array of the random keys to be inserted from Verilog
 
         new ForCount(N)
          {void body(Int Index)
            {final Int k = new Int("Key");
 
+            Index.S();                                                                                                  // Load index of item we want
             new I()
              {void        a() {targetInt(random_32[Index.i()]);}
-              String      v() {return "targetInt <= array_loadRandomKeys["+Index.vn()+"];";}
+              String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                        // Translate index into key
               boolean trace() {return false;}
              };
-            k.W();
+            k.W();                                                                                                      // Write key into variable
             insert(k, Index);
             dumpProgramState("AAAA");
            }
@@ -1627,17 +1628,18 @@ Leaf   at:   2 size:   4, count:   4
     t.dumpProgramState("AAAA");
 
     final StringBuilder s = t.print();
-    if (!Ex) t.verilogArrays().new Array("loadRandomKeys", random_32);                                                  // Create an array of the random keys to be deleted so that the array is accessible from Verilog
+    final VerilogArrays.Array a = t.verilogArrays().new Array("loadRandomKeys", random_32);                                                  // Create an array of the random keys to be deleted so that the array is accessible from Verilog
 
     t.new ForCount(t.new Int(N))
      {void body(Int Index)
        {final Int k = t.new Int("Key");
+        Index.S();                                                                                                      // Load index of item we want
         t.new I()
          {void        a() {t.targetInt(random_32[Index.i()]);}
-          String      v() {return "targetInt <= array_loadRandomKeys["+Index.vn()+"];";}
+          String      v() {return "targetInt <= "+a.dataRegisterName()+";";}                                            // Translate index into key
           boolean trace() {return false;}
          };
-        k.W();
+        k.W();                                                                                                          // Write key into variable
         t.delete(k);
 
         final StringBuilder T = t.print();
