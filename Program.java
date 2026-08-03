@@ -6,6 +6,7 @@
 // Write pc on memory dump title
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once.
+// Create a statistics array and push log entries onto it for each test - then dump as json at end of test
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -20,11 +21,11 @@ public class Program extends Test                                               
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
-  final boolean                               runVerilog =!true;                                                        // Execute  verilog version of each program
+  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -46,14 +47,14 @@ public class Program extends Test                                               
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
   final Stack<Label>                              labels = new Stack<>();                                               // Labels for instructions in this process
   final Program                            parentProgram;                                                               // Redirect the code and variables of one program to another to allow components to be tested in isolation before their code is integrated into a larger program.
-  final UnitMemory                            unitMemory;                                                               // Optional memory associated with the program
+  final Memory                                unitMemory;                                                               // Optional memory associated with the program
   final boolean                                immediate;                                                               // Execute immediately if true else generate machine code and execute later
   public  I                                    executing = null;                                                        // Instruction currently being executed
   public  I                                    compiling = null;                                                        // Instruction currently being compiled
   private static int                            programs = 0;                                                           // Unique id for each program
   final   int                                  programId = ++programs;                                                  // Unique id for this program
   private int                                         pc;                                                               // Program counter indicating the instruction to be executed after the current one
-  final        Stack<UnitMemory>                memories = new Stack<>();                                               // Memories used by this program and its dependent programs
+  final        Stack<Memory>                    memories = new Stack<>();                                               // Memories used by this program and its dependent programs
   final        Stack<Int>                           ints = new Stack<>();                                               // Int variables. These are addressed individually by Java and Verilog and expanded into named registers by Yosys.
   final        Stack<Bit>                           bits = new Stack<>();                                               // Bit variables processed in the same way as ints.
   final static Stack<String>                        subs = new Stack<>();                                               // Name of the current method is cached here so that we can count instructions
@@ -96,7 +97,7 @@ public class Program extends Test                                               
    {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
     initializeRegisters();                                                                                              // Start registers in known state
-    unitMemory      = Build.size   != null ? new UnitMemory(Build.size) : null;                                         // Memory associated with program if any
+    unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                         // Memory associated with program if any
     deleteAllFiles(verilogTestFolder(), 999);                                                                           // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
     code();                                                                                                             // Load or execute the code associated with this program
@@ -138,7 +139,7 @@ public class Program extends Test                                               
 
   Stack<Int>  ints ()           {return program().ints;}
   Stack<Bit>  bits ()           {return program().bits;}
-  Stack<UnitMemory> memories () {return program().memories;}
+  Stack<Memory> memories () {return program().memories;}
 
   int      currentPc()          {return program().     currentPc;}
   int    sourceIntId()          {return program().   sourceIntId;}
@@ -964,7 +965,7 @@ public class Program extends Test                                               
   static int ib (int I) {return I * ib();}                                                                              // Number of bytes in a number of integers
   static Int ib (Int I) {return I.Mul(ib());}                                                                           // Number of bytes in a number of integers
 
-  final class UnitMemory                                                                                                // Memory made of units
+  final class Memory                                                                                                    // Memory made of units
    {private final int id;                                                                                               // Unique identifier for this memory
     private int[]units;                                                                                                 // Bytes of main memory
     boolean   readBool = false;                                                                                         // Boolean read from memory
@@ -978,10 +979,10 @@ public class Program extends Test                                               
 
     static int bitsPerUnit() {return Integer.SIZE;}                                                                     // Bits per memory unit
 
-    UnitMemory (int Length)                                                                                             // Create and clear some memory
+    Memory (int Length)                                                                                                 // Create and clear some memory
      {units = new int[Length];
       for(int i = 0; i < Length; ++i) units[i] = 0;                                                                     // Clear memory. In Verilog this is done using readmemh in an initial block. For a real chip perhaps an instruction to do this?
-      final Stack<UnitMemory> m = memories(); id = m.size(); m.push(this);                                              // Give the memory a unique identifier and save it in the main program
+      final Stack<Memory> m = memories(); id = m.size(); m.push(this);                                                  // Give the memory a unique identifier and save it in the main program
      }
 
     int size()  {return units.length;}                                                                                  // Size of memory
@@ -1031,12 +1032,9 @@ public class Program extends Test                                               
 
     int pc() {return currentPc();}
 
-    int     setBit(int X, int I, boolean V) {return  X & ~(1 << I) | (V ? 1 : 0) << I;}                                 // Set a bit in an integer
-    boolean getBit(int X, int I)            {return (X >> I & 1) != 0;}                                                 // Get a bit from an integer
-
-    UnitMemory copy (UnitMemory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                            // Copy the specified memory
-     {subStart("Program.UnitMemory.copy");
-      final UnitMemory S = SourceMemory;
+    Memory copy (Memory SourceMemory, Int SourceOffset, Int TargetOffset, int Width)                                    // Copy the specified memory
+     {subStart("Program.Memory.copy");
+      final Memory S = SourceMemory;
       new ForCount(Width)
        {void body(Int Index)
          {final Int s = SourceOffset.Add(Index);
@@ -1068,8 +1066,8 @@ public class Program extends Test                                               
       return this;
      }
 
-    UnitMemory clearUnit (Int Index)                                                                                    // Clear memory unit
-     {subStart("Program.UnitMemory.clearUnit(I)");
+    Memory clearUnit (Int Index)                                                                                        // Clear memory unit
+     {subStart("Program.Memory.clearUnit(I)");
       new I()                                                                                                           // Set target index
        {void   a() {       writeIntIndexJ(Index);}
         String v() {return writeIntIndexV(Index);}
@@ -1086,15 +1084,15 @@ public class Program extends Test                                               
       return this;
      }
 
-    UnitMemory clear ()                                                                                                 // Clear memory in Java
-     {subStart("Program.UnitMemory.clear(I)");
+    Memory clear ()                                                                                                     // Clear memory in Java
+     {subStart("Program.Memory.clear(I)");
       new ForCount(size()) {void  body(Int Index) {clearUnit(Index);}};
       subFinish();
       return this;
      }
 
-    UnitMemory clear (Int Start, int Width)                                                                             // Clear memory range in Java
-     {subStart("Program.UnitMemory.clear(II)");
+    Memory clear (Int Start, int Width)                                                                                 // Clear memory range in Java
+     {subStart("Program.Memory.clear(II)");
       new ForCount (Start, Start.Add(Width)) {void  body(Int Index) {clearUnit(Index);}};
       subFinish();
       return this;
@@ -1142,7 +1140,7 @@ public class Program extends Test                                               
 
     Bit getBool (Int I) {return getBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                     // Get the bit at the bit indexed location
 
-    UnitMemory putInt (Int I, Int J)                                                                                    // Write to the indexed memory location the value of the specified source integer
+    Memory putInt (Int I, Int J)                                                                                        // Write to the indexed memory location the value of the specified source integer
      {if (I != null) new I()                                                                                            // Set target index of memory to be written to if not already set
        {void   a() {              writeIntIndexJ(I);}
         String v() {im(I); return writeIntIndexV(I);}
@@ -1160,7 +1158,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    UnitMemory putBool (Int I, Int J, Bit K)                                                                            // Set the bit at the indicated position in the byte at the specified position to the specified value
+    Memory putBool (Int I, Int J, Bit K)                                                                                // Set the bit at the indicated position in the byte at the specified position to the specified value
      {if (I != null) new I()                                                                                            // Set target index if not already set
        {void   a() {              writeIntIndexJ(I);}
         String v() {im(I); return writeIntIndexV(I);}
@@ -1182,13 +1180,13 @@ public class Program extends Test                                               
       return this;
      }
 
-    UnitMemory putBool (Int I, Bit K) {putBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE), K); return this;}              // Set the bit at the bit indexed position
+    Memory putBool (Int I, Bit K) {putBool(I.Div(Integer.SIZE), I.Mod(Integer.SIZE), K); return this;}                  // Set the bit at the bit indexed position
 
 //D2 Memory references                                                                                                  // References to byte memory
 
     final class Ref                                                                                                     // Reference into memory
      {final Int   offset = new Int("memoryReferenceOffset");                                                            // Offset of this reference in memory
-      final UnitMemory m = UnitMemory.this;
+      final Memory m = Memory.this;
 
       Ref (int Offset) {offset.set(Offset);}                                                                            // Offset this ref
       Ref (Int Offset) {offset.set(Offset);}                                                                            // Offset this ref
@@ -1314,7 +1312,7 @@ endmodule
     .readBool        ({name}_readBool       ));                                                                         // Boolean data read
 """, "moduleName", m(), "name", n());
      }
-   }  // UnitMemory
+   }  // Memory
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
 
@@ -1322,7 +1320,7 @@ endmodule
 
   String saveMemories ()                                                                                                // Save all the memories to an array of strings
    {final StringJoiner j = new StringJoiner(", ");
-    for (UnitMemory m : memories()) j.add(q(m.save()));
+    for (Memory m : memories()) j.add(q(m.save()));
     return "{"+j+"}";
    }
 
@@ -1571,8 +1569,8 @@ cd {f}; yosys -q {y}
      } //Location
    } //DumpLocations
 
-  void initializeJavaMemory () {for(UnitMemory m : memories()) for (int i = 0, N = m.size(); i < N;++i) m.units[i] = 0;}// Clear all of memory to zero
-  void dumpJavaMemories ()     {for(UnitMemory m : memories()) appendJavaTrace(m.dumpAsDecimal());}                     // Dump all the memories
+  void initializeJavaMemory () {for(Memory m : memories()) for (int i = 0, N = m.size(); i < N;++i) m.units[i] = 0;}    // Clear all of memory to zero
+  void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpAsDecimal());}                         // Dump all the memories
 
   void initializeJavaVars()                                                                                             // Initialize java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
    {for (Int i : ints()) {i.i = 0;     i.v = false;}
@@ -1787,7 +1785,7 @@ module {name};                                                                  
         for(VerilogArrays.Array a : verilogArrays.arrays()) if (!a.pcIndexed)out.write(a.define());                     // Define verilog arrays
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
 
-        for(UnitMemory m : memories)                                                                                    // Control registers for each memory
+        for(Memory m : memories)                                                                                        // Control registers for each memory
          {out.write("\n// Memory module: "+ m.n() + "\n");                                                              // Memory module title
           out.write("  integer "+ pName(m.       vReadBool())+";\n");                                                   // Boolean read from memory
           out.write("  integer "+ pName(m.      vWriteBool())+"; initial "+pName(m.      vWriteBool()) + "= 0;\n");     // Boolean to write into memory
@@ -1901,7 +1899,7 @@ module {name};                                                                  
 """);
 
         for(VerilogArrays.Array    a : verilogArrays().arrays())  if (!a.pcIndexed) out.write(a.load());                // Write array definitions
-        for(UnitMemory             m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
+        for(Memory                 m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
         for(DumpLocations.Location d : dumpLocations().locations) out.write(d.define());                                // Locations in program that have requested dumps
 
         out.write(dumpVerilogVariables());                                                                              // Dump verilog variables task
@@ -1910,7 +1908,7 @@ module {name};                                                                  
 endmodule
 """);
         for(VerilogArrays.Array    a : verilogArrays.arrays())    out.write(a.module());                                // Write memory module definitions for read only arrays
-        for(UnitMemory             m : memories())                out.write(m.memoryModule());                          // Memory modules
+        for(Memory                 m : memories())                out.write(m.memoryModule());                          // Memory modules
        }
       catch(Exception e)                                                                                                // Failed to generate verilog
        {stop(e, fullTraceBack(e));                                                                                      // Write the error and stop
@@ -1920,7 +1918,7 @@ endmodule
 
 //D2 Dumps                                                                                                              // Dump memory, variables, registers
 
-    String dumpVerilogMemoryInDecimal (UnitMemory M)                                                                    // Dump memory in decimal
+    String dumpVerilogMemoryInDecimal (Memory M)                                                                        // Dump memory in decimal
      {return substitute("""
 
   task {dumpVerilogMemoryInDecimalName};                                                                                // Dump verilog memories in decimal
@@ -2075,7 +2073,7 @@ check
 
   String dumpVerilogMemories ()                                                                                         // Dump verilog memories
    {final StringBuilder s = new StringBuilder();
-    for(UnitMemory m : memories) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
+    for(Memory m : memories) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
     return ""+s;
    }
 
@@ -2512,7 +2510,7 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
-       {final UnitMemory m = unitMemory;
+       {final Memory m = unitMemory;
         final Int  a = new Int("a"); a.set(2) ;           m.putInt(new Int(1), a);
         final Int  b = m.getInt (new Int(1));             b.name = "b"; b.ok(2);
         final Bit c = m.getBool(new Int(1), new Int(0)); c.name = "c"; c.ok(false);
@@ -2535,7 +2533,7 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
-       {final UnitMemory m = unitMemory;
+       {final Memory m = unitMemory;
         new ForCount(2)
          {void body(Int Index)
            {m.putInt(new Int(0), new Int(1));
@@ -2572,7 +2570,7 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(8))
      {void code()
-       {final UnitMemory m = unitMemory;
+       {final Memory m = unitMemory;
         new ForCount(2)
          {void body(Int Index)
            {m.putInt(new Int(0), new Int(-2));
@@ -2595,9 +2593,9 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(10))
      {void code()
-       {final UnitMemory     M = unitMemory;
-        final UnitMemory.Ref m = M.new Ref(2);
-        final UnitMemory.Ref n = M.new Ref(3);
+       {final Memory     M = unitMemory;
+        final Memory.Ref m = M.new Ref(2);
+        final Memory.Ref n = M.new Ref(3);
         new ForCount(2)
          {void body(Int Index)
            {m.putInt(new Int(0), new Int(1));
