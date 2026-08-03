@@ -20,11 +20,11 @@ public class Program extends Test                                               
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
-  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog =!true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
