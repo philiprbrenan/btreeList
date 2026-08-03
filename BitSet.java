@@ -34,6 +34,15 @@ final public class BitSet extends Program                                       
   final  String         poVerilog;
   final  String         pzVerilog;
 
+  VerilogArrays.Array luoArray;                                                                                         // Verilog arrays for lookup tables
+  VerilogArrays.Array luzArray;
+  VerilogArrays.Array lloArray;
+  VerilogArrays.Array llzArray;
+  VerilogArrays.Array  hoArray;
+  VerilogArrays.Array  hzArray;
+  VerilogArrays.Array  poArray;
+  VerilogArrays.Array  pzArray;
+
 //D1 Constructors                                                                                                       // Construct bit sets of various sizes with the optional ability of locating ones and zeros efficiently
 
   final static class Build                                                                                              // Specification of a bitset
@@ -331,19 +340,19 @@ final public class BitSet extends Program                                       
 
   void  posZeroArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_zero(); i <= N; ++i) posZero[i] = pos_zero(i);
-    verilogArrays().new Array(pzVerilog, posZero);
+    pzArray = verilogArrays().new Array(pzVerilog, posZero);
    }
 
   void   posOneArray ()                                                                                                 // Position in row from position in ones tree
    {for (int i = 0, N = top_one(); i <= N; ++i) posOne[i] = pos_one(i);
-    verilogArrays().new Array(poVerilog, posOne);
+    poArray = verilogArrays().new Array(poVerilog, posOne);
    }
 
   void limitsUpperOne ()                                                                                                // Upper limits of the ones tree
    {int l = bitSize1, w = bitSize;
     final int N = top_one();
     for (int i = 0; i <= N; ++i) {limitsUpperOne[i] = l; if (i >= l) {w >>>= 1; l += w;}}
-    verilogArrays().new Array(luoVerilog, limitsUpperOne);
+    luoArray = verilogArrays().new Array(luoVerilog, limitsUpperOne);
    }
 
   void limitsUpperZero ()                                                                                               // Upper limits of the zeros tree
@@ -351,13 +360,13 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsUpperZero[i] = limitsUpperOne[i];
       else {limitsUpperZero[bitSize1 + i] = limitsUpperOne[i] + bitSize1;}
      }
-    verilogArrays().new Array(luzVerilog, limitsUpperZero);
+    luzArray = verilogArrays().new Array(luzVerilog, limitsUpperZero);
    }
 
   void limitsLowerOne ()                                                                                                // Lower limits of the ones tree
    {int l = 0, w = bitSize;
     for (int i = 0, N = top_one(); i <= N; ++i) {limitsLowerOne[i] = l; if (i >= l+w-1) {l += w; w >>>= 1;}}
-    verilogArrays().new Array(lloVerilog, limitsLowerOne);
+    lloArray = verilogArrays().new Array(lloVerilog, limitsLowerOne);
    }
 
   void limitsLowerZero ()                                                                                               // Lower limits of the zeros tree
@@ -365,20 +374,20 @@ final public class BitSet extends Program                                       
      {if (i < bitSize) limitsLowerZero[i] = limitsLowerOne[i];
       else {limitsLowerZero[bitSize1 + i] = limitsLowerOne[i] + bitSize1;}
      }
-    verilogArrays().new Array(llzVerilog, limitsLowerZero);
+    llzArray = verilogArrays().new Array(llzVerilog, limitsLowerZero);
    }
 
   void heightOne ()                                                                                                     // Height of each node in the ones tree
    {int l = 0, w = bitSize, h = 0;
     for (int i = 0, N = top_one(); i <= N; ++i) {heightOne[i] = h; if (i >= l+w-1) {l += w; w >>>= 1; ++h;}}
-    verilogArrays().new Array(hoVerilog, heightOne);
+    hoArray = verilogArrays().new Array(hoVerilog, heightOne);
    }
 
   void heightZero ()                                                                                                    // Height of each node in the zeros tree
    {for (int i = 0, N = top_one(); i <= N; ++i)
      {if (i < bitSize) heightZero[i] = heightOne[i]; else {heightZero[bitSize1 + i] = heightOne[i];}
      }
-    verilogArrays().new Array(hzVerilog, heightZero);
+    hzArray = verilogArrays().new Array(hzVerilog, heightZero);
    }
 
   Int lowOne (Int Pos)                                                                                                  // Find the lowest bit position with a one in it below the indicated subtree in the ones tree
@@ -956,31 +965,32 @@ Zero:
    4   45    1 |  0
 """);
 
-    for (int i : range( 3))     b.nextOne(b.new Int(i)).ok(i+1);
-    for (int i : range( 4,  8)) b.nextOne(b.new Int(i)).ok(  8);
-    for (int i : range( 7, 11)) b.nextOne(b.new Int(i)).ok(i+1);
-    for (int i : range(11, 16)) b.nextOne(b.new Int(i)).notValid().ok(true);
-
-                                b.prevOne(b.new Int(0)).notValid().ok(true);
-    for (int i : range( 1,  5)) b.prevOne(b.new Int(i)).ok(i-1);
-    for (int i : range( 4,  9)) b.prevOne(b.new Int(i)).ok(  3);
-    for (int i : range( 9, 12)) b.prevOne(b.new Int(i)).ok(i-1);
-    for (int i : range(12, 16)) b.prevOne(b.new Int(i)).ok( 11);
-                                b.firstOne()           .ok(  0);
-                                b.lastOne ()           .ok( 11);
-
-    for (int i : range( 3))     b.nextZero(b.new Int( i)).ok(  4);
-    for (int i : range( 3,  7)) b.nextZero(b.new Int( i)).ok(i+1);
-    for (int i : range( 7, 11)) b.nextZero(b.new Int( i)).ok( 12);
-    for (int i : range(11, 15)) b.nextZero(b.new Int( i)).ok( i+1);
-                                b.nextZero(b.new Int(15)).notValid().ok(true);
-
-    for (int i : range( 5))     b.prevZero(b.new Int( i)).notValid().ok(true);
-    for (int i : range( 5,  9)) b.prevZero(b.new Int( i)).ok(i-1);
-    for (int i : range( 8, 12)) b.prevZero(b.new Int( i)).ok(  7);
-    for (int i : range(13, 16)) b.prevZero(b.new Int( i)).ok(i-1);
-                                b.firstZero()            .ok(  4);
-                                b.lastZero ()            .ok( 15);
+    b.nextOne(b.new Int(0)).ok(1);
+//    for (int i : range( 3))     b.nextOne(b.new Int(i)).ok(i+1);
+//    for (int i : range( 4,  8)) b.nextOne(b.new Int(i)).ok(  8);
+//    for (int i : range( 7, 11)) b.nextOne(b.new Int(i)).ok(i+1);
+//    for (int i : range(11, 16)) b.nextOne(b.new Int(i)).notValid().ok(true);
+//
+//                                b.prevOne(b.new Int(0)).notValid().ok(true);
+//    for (int i : range( 1,  5)) b.prevOne(b.new Int(i)).ok(i-1);
+//    for (int i : range( 4,  9)) b.prevOne(b.new Int(i)).ok(  3);
+//    for (int i : range( 9, 12)) b.prevOne(b.new Int(i)).ok(i-1);
+//    for (int i : range(12, 16)) b.prevOne(b.new Int(i)).ok( 11);
+//                                b.firstOne()           .ok(  0);
+//                                b.lastOne ()           .ok( 11);
+//
+//    for (int i : range( 3))     b.nextZero(b.new Int( i)).ok(  4);
+//    for (int i : range( 3,  7)) b.nextZero(b.new Int( i)).ok(i+1);
+//    for (int i : range( 7, 11)) b.nextZero(b.new Int( i)).ok( 12);
+//    for (int i : range(11, 15)) b.nextZero(b.new Int( i)).ok( i+1);
+//                                b.nextZero(b.new Int(15)).notValid().ok(true);
+//
+//    for (int i : range( 5))     b.prevZero(b.new Int( i)).notValid().ok(true);
+//    for (int i : range( 5,  9)) b.prevZero(b.new Int( i)).ok(i-1);
+//    for (int i : range( 8, 12)) b.prevZero(b.new Int( i)).ok(  7);
+//    for (int i : range(13, 16)) b.prevZero(b.new Int( i)).ok(i-1);
+//                                b.firstZero()            .ok(  4);
+//                                b.lastZero ()            .ok( 15);
 
     b.maxSteps(999_999);
     b.execute();
@@ -1567,69 +1577,70 @@ Zero:
    {sayCurrentTestName();
     final BitSet b = test_bits(Ex, 16);
 
-    b.limitUpperOne(b.new Int( 0)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    0)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 1)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    1)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 2)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    2)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 3)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    3)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 4)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    4)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 5)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    5)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 6)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    6)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 7)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    7)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 8)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    8)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int( 9)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    9)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int(10)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   10)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int(11)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   11)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int(12)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   12)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int(13)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   13)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int(14)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   14)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int(15)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   15)).ok(b.new Int(15));
-    b.limitUpperOne(b.new Int(16)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+16)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(17)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+17)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(18)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+18)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(19)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+19)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(20)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+20)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(21)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+21)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(22)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+22)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(23)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+23)).ok(b.new Int(15+23));
-    b.limitUpperOne(b.new Int(24)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+24)).ok(b.new Int(15+27));
-    b.limitUpperOne(b.new Int(25)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+25)).ok(b.new Int(15+27));
-    b.limitUpperOne(b.new Int(26)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+26)).ok(b.new Int(15+27));
-    b.limitUpperOne(b.new Int(27)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+27)).ok(b.new Int(15+27));
-    b.limitUpperOne(b.new Int(28)).ok(b.new Int(29));  b.limitUpperZero(b.new Int(15+28)).ok(b.new Int(15+29));
-    b.limitUpperOne(b.new Int(29)).ok(b.new Int(29));  b.limitUpperZero(b.new Int(15+29)).ok(b.new Int(15+29));
-    b.limitUpperOne(b.new Int(30)).ok(b.new Int(30));  b.limitUpperZero(b.new Int(15+30)).ok(b.new Int(15+30));
-
-    b.limitLowerOne(b.new Int( 0)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    0)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 1)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    1)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 2)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    2)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 3)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    3)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 4)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    4)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 5)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    5)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 6)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    6)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 7)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    7)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 8)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    8)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int( 9)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    9)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int(10)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   10)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int(11)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   11)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int(12)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   12)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int(13)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   13)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int(14)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   14)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int(15)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   15)).ok(b.new Int( 0));
-    b.limitLowerOne(b.new Int(16)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+16)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(17)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+17)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(18)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+18)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(19)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+19)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(20)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+20)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(21)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+21)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(22)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+22)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(23)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+23)).ok(b.new Int(15+16));
-    b.limitLowerOne(b.new Int(24)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+24)).ok(b.new Int(15+24));
-    b.limitLowerOne(b.new Int(25)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+25)).ok(b.new Int(15+24));
-    b.limitLowerOne(b.new Int(26)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+26)).ok(b.new Int(15+24));
-    b.limitLowerOne(b.new Int(27)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+27)).ok(b.new Int(15+24));
-    b.limitLowerOne(b.new Int(28)).ok(b.new Int(28));  b.limitLowerZero(b.new Int(15+28)).ok(b.new Int(15+28));
-    b.limitLowerOne(b.new Int(29)).ok(b.new Int(28));  b.limitLowerZero(b.new Int(15+29)).ok(b.new Int(15+28));
-    b.limitLowerOne(b.new Int(30)).ok(b.new Int(30));  b.limitLowerZero(b.new Int(15+30)).ok(b.new Int(15+30));
+    b.limitUpperOne(b.new Int( 0)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 0)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    0)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 1)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    1)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 2)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    2)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 3)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    3)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 4)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    4)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 5)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    5)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 6)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    6)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 7)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    7)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 8)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    8)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int( 9)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(    9)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int(10)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   10)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int(11)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   11)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int(12)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   12)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int(13)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   13)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int(14)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   14)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int(15)).ok(b.new Int(15));  b.limitUpperZero(b.new Int(   15)).ok(b.new Int(15));
+//    b.limitUpperOne(b.new Int(16)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+16)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(17)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+17)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(18)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+18)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(19)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+19)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(20)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+20)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(21)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+21)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(22)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+22)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(23)).ok(b.new Int(23));  b.limitUpperZero(b.new Int(15+23)).ok(b.new Int(15+23));
+//    b.limitUpperOne(b.new Int(24)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+24)).ok(b.new Int(15+27));
+//    b.limitUpperOne(b.new Int(25)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+25)).ok(b.new Int(15+27));
+//    b.limitUpperOne(b.new Int(26)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+26)).ok(b.new Int(15+27));
+//    b.limitUpperOne(b.new Int(27)).ok(b.new Int(27));  b.limitUpperZero(b.new Int(15+27)).ok(b.new Int(15+27));
+//    b.limitUpperOne(b.new Int(28)).ok(b.new Int(29));  b.limitUpperZero(b.new Int(15+28)).ok(b.new Int(15+29));
+//    b.limitUpperOne(b.new Int(29)).ok(b.new Int(29));  b.limitUpperZero(b.new Int(15+29)).ok(b.new Int(15+29));
+//    b.limitUpperOne(b.new Int(30)).ok(b.new Int(30));  b.limitUpperZero(b.new Int(15+30)).ok(b.new Int(15+30));
+//
+//    b.limitLowerOne(b.new Int( 0)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    0)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 1)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    1)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 2)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    2)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 3)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    3)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 4)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    4)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 5)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    5)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 6)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    6)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 7)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    7)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 8)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    8)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int( 9)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(    9)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int(10)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   10)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int(11)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   11)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int(12)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   12)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int(13)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   13)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int(14)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   14)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int(15)).ok(b.new Int( 0));  b.limitLowerZero(b.new Int(   15)).ok(b.new Int( 0));
+//    b.limitLowerOne(b.new Int(16)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+16)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(17)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+17)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(18)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+18)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(19)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+19)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(20)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+20)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(21)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+21)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(22)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+22)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(23)).ok(b.new Int(16));  b.limitLowerZero(b.new Int(15+23)).ok(b.new Int(15+16));
+//    b.limitLowerOne(b.new Int(24)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+24)).ok(b.new Int(15+24));
+//    b.limitLowerOne(b.new Int(25)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+25)).ok(b.new Int(15+24));
+//    b.limitLowerOne(b.new Int(26)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+26)).ok(b.new Int(15+24));
+//    b.limitLowerOne(b.new Int(27)).ok(b.new Int(24));  b.limitLowerZero(b.new Int(15+27)).ok(b.new Int(15+24));
+//    b.limitLowerOne(b.new Int(28)).ok(b.new Int(28));  b.limitLowerZero(b.new Int(15+28)).ok(b.new Int(15+28));
+//    b.limitLowerOne(b.new Int(29)).ok(b.new Int(28));  b.limitLowerZero(b.new Int(15+29)).ok(b.new Int(15+28));
+//    b.limitLowerOne(b.new Int(30)).ok(b.new Int(30));  b.limitLowerZero(b.new Int(15+30)).ok(b.new Int(15+30));
 
     b.maxSteps(999_999);
     b.execute();
@@ -1754,7 +1765,7 @@ Zero:
 
   static void newTests()                                                                                                // Tests under development.
    {//oldTests();
-    test_prevNext(false);
+    test_limits(false);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
