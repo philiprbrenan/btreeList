@@ -1443,7 +1443,7 @@ keys     :    7   1   3   2   4   5   6   0
               test_shift(false);
    }
 
-  static void test_mergeFromRightEven(boolean Ex)  // 11,400 s
+  static void test_mergeFromRightEven(boolean Ex)
    {sayCurrentTestName();
     final int N = 4;
     final Slots s = new Slots(new Build().numberOfKeys(N).immediate(Ex))
