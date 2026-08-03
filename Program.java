@@ -1900,7 +1900,7 @@ module {name};                                                                  
 """));
 
     for(VerilogArrays.Array a: verilogArrays().arrays())                                                                // Control registers for each verilog array
-     {if (!a.pcIndexed) out.write("      "+a.indexRegisterName() + " = 0;\n");
+     {if (!a.pcIndexed) out.write("//va  "+a.indexRegisterName() + " = 0;\n");                                          // Initialize array iundex register
      }
 
         /*Open trace file*/out.write(substitute("""
@@ -2250,13 +2250,14 @@ check
 """, "name", arrayName(), "index", index(), "size", ""+size);
        }
 
-      String indexRegisterName () {return pcIndexed ? "pc" : "arrayIndex_"+ name;}                                      // Name of the index register used to index the array
-      String  dataRegisterName () {return                    "arrayData_" + name;}                                      // Name of the data register  to contain the result from the indexed location in the array
+//    String indexRegisterName () {return pcIndexed ? "pc" : "arrayIndex_"+ name;}                                      // Name of the index register used to index the array
+      String indexRegisterName () {return pcIndexed ? "pc" : "sourceInt";}                                              // Name of the register used to index the array
+      String  dataRegisterName () {return                    "arrayData_" + name;}                                      // Name of the register to contain the result from the indexed location in the array
 
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
-  integer   {ir};
-  integer   {dr};
+//va integer   {ir};                                                                                                       // Array index register
+  integer   {dr};                                                                                                       // Array data register
   {name} {name}_rom (.address({ir}), .data({dr}));
 """, "dr", dataRegisterName(), "ir", indexRegisterName(), "name", arrayName());
 
