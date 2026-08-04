@@ -21,7 +21,7 @@ public class Program extends Test                                               
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                             runSynthesis = true;                                                        // Run silicon compiler
@@ -69,7 +69,7 @@ public class Program extends Test                                               
   private int                                     jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
   private int                                     vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
   private int                                  nextIntId = 0;                                                           // Unique id for each Int
-  private int                                 nextBoolId = 0;                                                           // Unique id for each Bit
+  private int                                  nextBitId = 0;                                                           // Unique id for each Bit
   private int                                sourceIntId = 0;                                                           // Id of source int
   private int                               source2IntId = 0;                                                           // Id of source2 int
   private int                                targetIntId = 0;                                                           // Id of target int
@@ -97,7 +97,7 @@ public class Program extends Test                                               
    {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
     initializeRegisters();                                                                                              // Start registers in known state
-    unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                         // Memory associated with program if any
+    unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
     deleteAllFiles(verilogTestFolder(), 999);                                                                           // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
     code();                                                                                                             // Load or execute the code associated with this program
@@ -343,7 +343,7 @@ public class Program extends Test                                               
    {boolean    i = false;                                                                                               // Value of the boolean
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     boolean   nd = false;                                                                                               // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
-    final int id = program().nextBoolId++;                                                                              // Unique id for Bit
+    final int id = program().nextBitId++;                                                                              // Unique id for Bit
     String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
@@ -539,13 +539,16 @@ public class Program extends Test                                               
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
     final int         id = program().nextIntId++;                                                                       // Unique id for Int
+    final boolean    top = callerName() == "code";                                                                      // A declaration at the top level
+          boolean     in = false;                                                                                       // An input wire if true and named and at the top
+          boolean    out = false;                                                                                       // An output register if true and named and at the top
 
     int         i ()  {x(); return i;}                                                                                  // Current value
     void        x ()  {if (!v) variableNotSet("Int", name);}                                                            // Check a value has been set for the integer
 
-    Int (String Name)        {this();  name = Name;}                                                                    // Constructors with name supplied
-    Int (String Name, int I) {this(I); name = Name;}
-    Int (String Name, Int I) {this(I); name = Name;}
+    Int (String Name)        {this();  name = Name; out = top;}                                                         // Constructor with name supplied. Output register if it is at the top
+    Int (String Name, int I) {this(I); name = Name; in  = top;}                                                         // Input wire if we know its value at the start and it is at the top
+    Int (String Name, Int I) {this(I); name = Name; out = top;}                                                         // Output register if its value is unknown at the start and is at the top
 
     Int ()           {ai(); del(-1);        ints().push(this);}                                                         // Constructors without name. Invalidate the integer. The invalidation is done in such a way as to make the instruction trace sequences for java and Verilog match. Recall that the Verilog integers do not carry a valid flag with them as this would be a waste of resources given that the correctness of the algorithm has been already been established by successfully executing the tests associated with the java version . The integers used in the java version do carry a valid flag which has been helpful in validating the correctness of this implementation of the btree algorithm before handing it off to Verilog.
 
@@ -662,8 +665,12 @@ public class Program extends Test                                               
      {final Int w = this;
       new I()                                                                                                           // Load value
        {final String f = "%8d writeInt %8d = %8d";
-        void   a() {            i = targetInt();             v = targetIntValid(); jTrace(f(f,  currentPc(),  targetIntId(), targetInt()));}
-        String v() {return pCR("i[targetIntId]") + " <= "+pExpr("targetInt;")+" " +vTrace(  f, "pc",         "targetIntId", "targetInt");}
+        void   a() {                 i = targetInt();          v = targetIntValid(); jTrace(f(f,  currentPc(),  targetIntId(), targetInt()));}
+        String v() {return syn(pCR("i[targetIntId]")+" <= "+pExpr("targetInt;"))+" "+vTrace(  f, "pc",         "targetIntId", "targetInt");}
+        String syn(String V)                                                                                            // Prevents assignment to input wires to allow the same code to be used for testing and for synthesis
+         {if (w.nio() || w.out) return V;
+          return "`ifndef SYNTHESIS " + V + "`endif";                                                                   // Comment out the assignment when running synthesis - the integer will become an input wire instead. Any assignment will have to be done in the calling module
+         }
        };
      }
 
@@ -912,7 +919,9 @@ public class Program extends Test                                               
        };
       return this;
      }
-   } // Int                                                                                                                    // Int
+
+    boolean nio () {return !in && !out;}                                                                                // Not an input wire or an output register
+   } // Int                                                                                                             // Int
 
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
@@ -1284,7 +1293,6 @@ public class Program extends Test                                               
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
 
   always @(posedge clock) begin                                                                                         // Synchronous memory access
-    $display("AAAA %d  %d  %d", writeIntEnable, writeIntIndex, writeInt);
     if (writeIntEnable)  memory[writeIntIndex]                 <= writeInt;
     if (writeBoolEnable) memory[writeIntIndex][writeBoolIndex] <= writeBool;
              readInt  <= memory[readIntIndex ];
@@ -1307,7 +1315,7 @@ endmodule
     .writeInt        ({name}_writeInt       ),                                                                          // Write data
     .writeBool       ({name}_writeBool      ),                                                                          // Write data
     .readIntIndex    ({name}_readIntIndex   ),                                                                          // Read integer address
-    .readBoolIndex   ({name}_readBitIndex  ),                                                                           // Read boolean address
+    .readBoolIndex   ({name}_readBitIndex   ),                                                                          // Read boolean address
     .readInt         ({name}_readInt        ),                                                                          // Integer data read
     .readBool        ({name}_readBool       ));                                                                         // Boolean data read
 """, "moduleName", m(), "name", n());
@@ -1538,8 +1546,8 @@ cd {f}; yosys -q {y}
 //D2 Dump                                                                                                               // Dump the state of the program at requested locations during execution of both Java and Verilog so that the evolution of memories, variables, registers can be confirmed
 
   class DumpLocations                                                                                                   // Create a dump location definition to write the title of the dump without having to use string parameters which do not seem to work on iverilog
-   {final Stack<Location>  locations = new Stack<>();                                                                   // Locations in the code at which dumps have been requested
-    final TreeSet<String> defined = new TreeSet<>();                                                                    // Location dump routines defined
+   {final Stack<Location> locations = new Stack<>();                                                                    // Locations in the code at which dumps have been requested
+    final TreeSet<String>   defined = new TreeSet<>();                                                                  // Location dump routines defined
 
     class Location                                                                                                      // Create a dump location definition to write the title of the dump without having to use string parameters which do not seem to work on iverilog
      {final int location;                                                                                               // Location in program of dump
@@ -1557,7 +1565,7 @@ cd {f}; yosys -q {y}
         if (defined.contains(n)) return ""; else defined.add(n);                                                        // The dump routine should only be defined once
         return  substitute("""
 
-  task automatic {name};
+  task automatic {name}                                                                                                 // Write dump title
     begin
 `ifndef SYNTHESIS
       $fwrite(traceFile, "{title}\\n"); $fflush(traceFile);
@@ -1735,15 +1743,16 @@ cd {f}; yosys -q {y}
      }
 
     GenerateVerilog ()                                                                                                  // Generate the Verilog corresponding to the java code
-     {final String       name = currentTestNameSuffix();                                                                // Name of program
-      final String  traceFile = verilogTraceFile;                                                                       // Trace file name relative to Verilog code
-      final String   codeFile = VerilogCodeFile();                                                                      // Code file
-      final String     indent = " ".repeat(6);                                                                          // Indentation for verilog code
-      final int    sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                             // Size of memory
-      final int  numberOfInts =  nextIntId;                                                                             // Number of integers needed
-      final int numberOfBools = nextBoolId;                                                                             // Number of bools needed
+     {final String          name = currentTestNameSuffix();                                                             // Name of program
+      final String     traceFile = verilogTraceFile;                                                                    // Trace file name relative to Verilog code
+      final String      codeFile = VerilogCodeFile();                                                                   // Code file
+      final String        indent = " ".repeat(6);                                                                       // Indentation for verilog code
+      final int       sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                          // Size of memory
+      final int     numberOfInts = nextIntId;                                                                           // Number of integers needed
+      final int     numberOfBits = nextBitId;                                                                           // Number of booleans needed
+      final String dimensionInts = ""+(nextIntId-1);                                                                    // Number of integers needed
+      final String dimensionBits = ""+(nextBitId-1);                                                                    // Number of booleans needed
       final InstructionMatches instructionMatches = new InstructionMatches();                                           // Mapping from instructions to blocks of matching instructions
-//          GenerateVerilog       generateVerilog = null;                                                               // Verilog generation statistics
 
       int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
@@ -1754,13 +1763,26 @@ cd {f}; yosys -q {y}
       try
        (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                     // Write the verilog to a file
        {/*Module*/out.write(substitute("""
-module {name};                                                                                                          // Bit machine
+`ifdef SYNTHESIS
+module {name} (                                                                                                         // Bint machine - callable module for synthesis
 """, "name", name));
 
-      /*Execution State Variables*/out.write(substitute("""
-  parameter        INT_VARS = {i};                                                                                      // Number of integer variables
-  parameter       BOOL_VARS = {b};                                                                                      // Number of boolean variables
+        for(Int i : ints) if (i.in)  out.write("  input  integer i_"+i.name+",\n");                                     // Input ports
+        for(Int i : ints) if (i.out) out.write("  output integer o_"+i.name+",\n");                                     // Output ports
+
+        /*Parameters*/out.write(substitute("""
+  input logic clock,
+  input logic reset);
+`else
+module {name};                                                                                                          // Bint machine - standalone for execution
+`endif
+""", "name", name));
+
+
+        /*Execution State Variables*/out.write(substitute("""
+`ifndef SYNTHESIS
   reg                 clock;                                                                                            // Program clock to drive instruction execution
+`endif
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer            lastPc;                                                                                            // The instruction which started the latest flow of control block
   integer         traceFile;                                                                                            // Write verilog trace records to this file
@@ -1777,10 +1799,10 @@ module {name};                                                                  
   integer         targetInt;                                                                                            // Computed target integer value to be loaded into a variable
   integer        targetBool;                                                                                            // Computed target boolean value to be loaded into a variable
 
-  integer                 i[INT_VARS:0];  integer index_ints;                                                           // Integers
-  reg                     b[BOOL_VARS:0]; integer index_bool;                                                           // Booleans
+  integer                 i[{i}:0]; integer index_ints;                                                                 // Integers
+  reg                     b[{b}:0]; integer index_bits;                                                                 // Booleans
 
-""", "i", ""+numberOfInts, "b", ""+numberOfBools));
+""", "i", dimensionInts, "b", dimensionBits));
 
         for(VerilogArrays.Array a : verilogArrays.arrays()) if (!a.pcIndexed)out.write(a.define());                     // Define verilog arrays
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
@@ -1855,6 +1877,9 @@ module {name};                                                                  
     endcase
   end
 """);
+                                                                                                                        // Update variables from inputs and outputs from variables
+        for(Int i : ints) if (i.in)  out.write(substitute("  always_ff @(posedge clock) i[{id}] = i_{n}; // Assign input  port\n", "id", ""+i.id, "n", i.name));
+        for(Int i : ints) if (i.out) out.write(substitute("  always_ff @(posedge clock) o_{n} = i[{id}]; // Assign output port\n", "id", ""+i.id, "n", i.name));
 
         /*Clear registers*/out.write(substitute("""
 
@@ -1890,13 +1915,13 @@ module {name};                                                                  
   end
 """, "traceFile", traceFile));
 
-        /*Clear variables*/out.write("""
+        /*Clear variables*/out.write(substitute("""
 
-  initial begin;                                                                                                        // Clear integers and booleans in verilog
-    for(index_ints = 0; index_ints < INT_VARS;  index_ints = index_ints + 1) i[index_ints] = 0;
-    for(index_bool = 0; index_bool < BOOL_VARS; index_bool = index_bool + 1) b[index_bool] = 0;
+  initial begin                                                                                                         // Clear integers and booleans in verilog
+    for(index_ints = 0; index_ints <= {i}; index_ints = index_ints + 1) i[index_ints] = 0;
+    for(index_bits = 0; index_bits <= {b}; index_bits = index_bits + 1) b[index_bits] = 0;
   end
-""");
+""", "i", dimensionInts, "b", dimensionBits));
 
         for(VerilogArrays.Array    a : verilogArrays().arrays())  if (!a.pcIndexed) out.write(a.load());                // Write array definitions
         for(Memory                 m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
@@ -2223,8 +2248,8 @@ check
         s.append(substitute("""
 
 (* blackbox *) module {array}                                                                                           // Memory module definitions for asynchronus read only memory
- (input  wire [31:0] address,
-  output integer     data);
+ (input  integer address,
+  output integer data);
 `ifndef SYNTHESIS
   integer memory [0:{size}];
 
@@ -2233,7 +2258,7 @@ check
   assign data = memory[address];
 `endif
 endmodule
-""", "name", name, "file", file, "array", arrayName(), "size", ""+array.length));
+""", "name", name, "file", file, "array", arrayName(), "size", ""+(array.length-1)));
         return ""+s;
        }
      } // Array
@@ -2253,8 +2278,10 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int(1).add(2);
-        a.ok(3);
+       {final Int a = new Int("a", 1);
+        final Int b = new Int("b", a.Add(2));
+        a.ok(1);
+        b.ok(3);
         dumpProgramState("AAAA");
         execute();
        }
