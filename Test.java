@@ -508,13 +508,23 @@ public class Test                                                               
     return s[1];
    }
 
-  static String callerName ()                                                                                    // Looks for the first method written in camel case
+  static String camelCaseCaller ()                                                                                      // Looks for the first method written in camel case
    {final StackTraceElement[] T = Thread.currentThread().getStackTrace();                                               // Current stack trace
     for (StackTraceElement t : T)                                                                                       // Locate deepest method with a name written in camel case
      {final String c = t.getMethodName();
       if (c.matches("\\A.*_.*\\Z")) return c;
      }
     return null;                                                                                                        // No method written in camel case
+   }
+
+  static String callerName ()                                                                                           // Looks for the first method abovce this one that is not an initializer of a class
+   {final StackTraceElement[] T = Thread.currentThread().getStackTrace();                                               // Current stack trace
+    for (StackTraceElement t : T)
+     {final String c = t.getMethodName();
+      if (c.matches("\\AcallerName|<init>|getStackTrace\\z")) continue;                                                 // Skip known methods
+      return c;                                                                                                         // First method above is the caller
+     }
+    return null;                                                                                                        // No such method
    }
 
   static String sourceFileName ()                                                                                       // Name of source file calling this method
@@ -1010,7 +1020,7 @@ public class Test                                                               
    {final long start = System.nanoTime();                                                                               // Start time
         double end;                                                                                                     // Last request for elapsed time
     public String toString ()
-     {return String.format("%6.2f %s", seconds(), callerName());
+     {return String.format("%6.2f %s", seconds(), camelCaseCaller());
      }
     double seconds () {return end = elapsedTime(start);}                                                                // Seconds since the timer was started
    }
@@ -1641,6 +1651,14 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   static void test_callerName()
    {ok(callerName(), "test_callerName");
+    class Caller
+     {final String name = callerName();
+      Caller()
+       {ok(callerName(), "test_callerName");                                                                                //
+       }
+     }
+    final Caller c = new Caller();
+    ok(c.name, "test_callerName");
    }
 
   static void oldTests()                                                                                                // Tests thought to be in good shape
