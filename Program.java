@@ -21,11 +21,11 @@ public class Program extends Test                                               
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
   final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
-  final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
-  final boolean                               runVerilog =!true;                                                        // Execute  verilog version of each program
+  final boolean                          generateVerilog =!true;                                                        // Generate verilog version of each program
+  final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                             runSynthesis = true;                                                        // Run silicon compiler
+  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -91,7 +91,7 @@ public class Program extends Test                                               
     Build immediate (boolean Immediate) {immediate = Immediate; return this;}
     Build parent (   Program Parent)    {parent    = Parent;    return this;}
     Build memory (   int     Size)      {size      = Size;      return this;}
-   }
+   }  // Build
 
   Program (Build Build)                                                                                                 // Construct
    {immediate       = Build.immediate;                                                                                  // Immediate or delayed execution
@@ -248,7 +248,7 @@ public class Program extends Test                                               
     For (Int End) {this(new Int("Start", 0),                End);}                                                      // Execute the loop the specified number of times as long as it returns true
 
     abstract void body (Int Index, Bit Continue);                                                                       // Body of the for loop - execute while in range and continuation has been requested
-   }
+   } // For
 
   abstract class ForCount                                                                                               // For loop for a precomputed number of times
    {ForCount (Int Start, Int End)                                                                                       // Execute the loop the specified number of times
@@ -289,7 +289,7 @@ public class Program extends Test                                               
     ForCount (int Start, int End) {this(new Int("Start", Start), new Int("End", End));}                                 // Execute the loop the known number of times
 
     abstract void body (Int Index);                                                                                     // Body of the for loop - execute while in range and continuation requested
-   }
+   } // ForCount
 
 //D2 If                                                                                                                 // If then else
 
@@ -333,7 +333,7 @@ public class Program extends Test                                               
 
     abstract void Then ();                                                                                              // Then clause
              void Else () {}                                                                                            // Else clause
-   }
+   } // If
 
 //D1 Data                                                                                                               // Operations on boolean and integer data
 
@@ -399,7 +399,7 @@ public class Program extends Test                                               
       int pc() {return currentPc();}                                                                                    // Address of this instruction
       abstract void loadId   (int I);                                                                                   // Override to load the id of the variable
       abstract void loadValue(boolean V);                                                                               // Override to record the value of the variable
-     }
+     } // LoadSourceOrTarget
 
     void S ()                                                                                                           // Load source delta and value
      {new LoadSourceOrTarget(this, "sourceBoolId", "sourceBool")
@@ -530,7 +530,7 @@ public class Program extends Test                                               
        };
       return this;
      }
-   }                                                                                                                    // Bit
+   } // Bit
 
 //D2 Integer values                                                                                                     // Operations on integer values
 
@@ -538,7 +538,7 @@ public class Program extends Test                                               
    {private int        i = 0;                                                                                           // Value of the integer
     private boolean    v = false;                                                                                       // Whether the current value of the integer is valid or not
             String  name = null;                                                                                        // The name of the variable
-    final int id = program().nextIntId++;                                                                               // Unique id for Int
+    final int         id = program().nextIntId++;                                                                       // Unique id for Int
 
     int         i ()  {x(); return i;}                                                                                  // Current value
     void        x ()  {if (!v) variableNotSet("Int", name);}                                                            // Check a value has been set for the integer
@@ -612,7 +612,7 @@ public class Program extends Test                                               
       int pc() {return currentPc();}                                                                                    // Address of this instruction
       abstract void loadId   (int I);                                                                                   // Override to save delta from last integer base
       abstract void loadValue(int V);                                                                                   // Override to save the current value of the integer variable
-     }
+     } // LoadSourceOrTarget
 
     abstract class LoadConstant
      {LoadConstant(int I, String Register)                                                                              // Load source constant into source register to increase compressibility of instructions
@@ -625,7 +625,7 @@ public class Program extends Test                                               
        }
       int pc() {return currentPc();}                                                                                    // Address of this instruction
       abstract void load(int C);                                                                                        // Override to load the constant value of the integer variable being loaded into a java variable
-     }
+     } // LoadConstant
 
     void S ()                                                                                                           // Save source delta and value
      {new LoadSourceOrTarget(this, "sourceIntId", "sourceInt")
@@ -912,7 +912,7 @@ public class Program extends Test                                               
        };
       return this;
      }
-   }                                                                                                                    // Int
+   } // Int                                                                                                                    // Int
 
 //D2 Boolean Integer                                                                                                    // An integer that can be specifically valid or invalid thus requiring an extra validity bit only for specified integers rather than all integers in the Verilog representationOperations on integer values
 
@@ -957,7 +957,7 @@ public class Program extends Test                                               
        };
       return ""+s;
      }
-   }
+   } // Bint
 
 //D1 Memory                                                                                                             // Operations on memory divided into units
 
@@ -1206,7 +1206,7 @@ public class Program extends Test                                               
       boolean getBool (int I) {final int i = getInt(I / Integer.SIZE); return getBit(i, I % Integer.SIZE);}             // Get a boolean  immediately when debugging
 
       public String toString () {final StringBuilder s = saySb("Ref: " , offset.i()); return ""+s;}                     // Print memory reference
-     }
+     } // Ref
 
 //D2 Dump memory                                                                                                        // Dump or print memory
 
@@ -1312,7 +1312,7 @@ endmodule
     .readBool        ({name}_readBool       ));                                                                         // Boolean data read
 """, "moduleName", m(), "name", n());
      }
-   }  // Memory
+   } // Memory
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
 
@@ -1983,7 +1983,7 @@ endmodule
           for (I i : matches) j.add(""+i.instructionNumber);
           return ""+j;
          }
-       }
+       } // Match
 
       void add(I I)                                                                                                     // Add an instruction
        {final String v = I.interiorVerilog();
@@ -2025,6 +2025,7 @@ def gen(module):
   design = Design     (module)
   design.set_topmodule(f"{module}",   fileset="rtl")
   design.add_file     (f"{module}.v", fileset="rtl")
+  design.add_define   (f"SYNTHESIS",  fileset="rtl")
 
   project = ASIC(design)
   project.add_fileset(["rtl"])
@@ -2053,7 +2054,6 @@ check
 
       return writeFile(YosysFile(), s);
      }
-
    } // GenerateVerilog
 
 //D2 Dump Verilog                                                                                                       // Dump the state of the Verilog implementation of the bit machine into the trace file for comparison with the equivalent state of the java implementation of the bit machine
@@ -2236,7 +2236,7 @@ endmodule
 """, "name", name, "file", file, "array", arrayName(), "size", ""+array.length));
         return ""+s;
        }
-     }
+     } // Array
    } // VerilogArrays
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
@@ -2954,8 +2954,8 @@ WriteBoolIndex =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_mem(!true);
+   {//oldTests();
+    test_addition(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
