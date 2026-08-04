@@ -508,7 +508,7 @@ public class Test                                                               
     return s[1];
    }
 
-  static String currentCallerName ()                                                                                    // Looks for the first method written in camel case
+  static String callerName ()                                                                                    // Looks for the first method written in camel case
    {final StackTraceElement[] T = Thread.currentThread().getStackTrace();                                               // Current stack trace
     for (StackTraceElement t : T)                                                                                       // Locate deepest method with a name written in camel case
      {final String c = t.getMethodName();
@@ -1010,7 +1010,7 @@ public class Test                                                               
    {final long start = System.nanoTime();                                                                               // Start time
         double end;                                                                                                     // Last request for elapsed time
     public String toString ()
-     {return String.format("%6.2f %s", seconds(), currentCallerName());
+     {return String.format("%6.2f %s", seconds(), callerName());
      }
     double seconds () {return end = elapsedTime(start);}                                                                // Seconds since the timer was started
    }
@@ -1639,6 +1639,10 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 """);
    }
 
+  static void test_callerName()
+   {ok(callerName(), "test_callerName");
+   }
+
   static void oldTests()                                                                                                // Tests thought to be in good shape
    {test_log_two();
     test_power_two();
@@ -1658,6 +1662,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     test_modZero();
     test_hextoInt();
     test_formatComments();
+    test_callerName();
    }
 
   static void newTests()                                                                                                // Tests being worked on
