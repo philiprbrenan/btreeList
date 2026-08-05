@@ -24,7 +24,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                             runSynthesis = true;                                                        // Run silicon compiler
+  final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
   final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
@@ -1484,8 +1484,17 @@ endmodule
 
     if (generateVerilog)                                                                                                // Run verilog
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
-      final StringBuilder message = new StringBuilder(g.message());                                                     // Message describing outcome of execution (all on one line)
-      final StringBuilder    json = new StringBuilder(g.json   ());                                                     // Json describing outcome of execution (all on one line)
+      final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
+      final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
+      final String           scCmd = substitute("""
+podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {n}.py
+""", "f", fqn(verilogTestFolder()), "n", currentTestNameSuffix(), "image", siliconCompilerImage);                       // Silicon compiler command
+      final String           ysCmd = substitute("""
+cd {f}; yosys -q {y}
+""",  "f", fn(pwd(), verilogTestFolder()), "y", yosysFile());
+                                                                                                                        // Yosys command
+      g.siliconCompiler();    say("C=sc; " + scCmd);                                                                    // Generate python to drive silicon compiler
+      g.yosys();              say("C=ys; " + ysCmd);                                                                    // Generate tcl to drive yosys
 
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
@@ -1507,24 +1516,13 @@ endmodule
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
 
         if (runSynthesis)                                                                                               // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
-         {final String        p = g.siliconCompiler();
-          final StringBuilder S = new StringBuilder();
-          S.append(substitute("""
-podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {n}.py
-""", "f", fqn(verilogTestFolder()), "n", currentTestNameSuffix(), "image", siliconCompilerImage));
-          final ExecCommand X = new ExecCommand(S);                                                                     // Execute silicon compiler commands
+         {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
          }
 
         if (runYosys)                                                                                                   // Run yosys to get a faster check on whether the verilog can be synthesized
-         {final String        p = g.yosys();
-          final StringBuilder S = new StringBuilder();                                                                  // Keyword -q for less informational messages
-          S.append(substitute("""
-cd {f}; yosys -q {y}
-""", "f", verilogTestFolder(), "y", yosysFile()));
-
-          final ExecCommand X = new ExecCommand(S);                                                                     // Execute silicon compiler commands
+         {final ExecCommand X = new ExecCommand(ysCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
          }
@@ -1767,27 +1765,26 @@ cd {f}; yosys -q {y}
 module {name} (                                                                                                         // Bint machine - callable module for synthesis
 """, "name", name));
 
-        for(Int i : ints) if (i.in)  out.write("  input  integer i_"+i.name+",\n");                                     // Input ports
-        for(Int i : ints) if (i.out) out.write("  output integer o_"+i.name+",\n");                                     // Output ports
+        for(Int i : ints) if (i.in)  out.write("  input  wire[31:0] i_"+i.name+",\n");                                  // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
+        for(Int i : ints) if (i.out) out.write("  output reg [31:0] o_"+i.name+",\n");                                  // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
 
         /*Parameters*/out.write(substitute("""
-  input logic clock,
-  input logic reset);
+  input wire clock,                                                                                                     // Clock pin
+  input wire reset);                                                                                                    // Reset pin
 `else
 module {name};                                                                                                          // Bint machine - standalone for execution
 `endif
 """, "name", name));
 
-
-        /*Execution State Variables*/out.write(substitute("""
+        /*Execution State Variables*/out.write("""
 `ifndef SYNTHESIS
   reg                 clock;                                                                                            // Program clock to drive instruction execution
+  wire                reset;                                                                                            // Program reset
 `endif
   integer                pc;                                                                                            // Program counter for stepping through user code
-  integer            lastPc;                                                                                            // The instruction which started the latest flow of control block
   integer         traceFile;                                                                                            // Write verilog trace records to this file
-  integer             index;                                                                                            // Index for clearing memory
-  integer        upperIndex;                                                                                            // Upper limit of a block of array entries being loaded in parallel as array load times are very slow if done one element at a time
+//integer             index;                                                                                            // Index for clearing memory
+//integer        upperIndex;                                                                                            // Upper limit of a block of array entries being loaded in parallel as array load times are very slow if done one element at a time
   integer       sourceIntId;                                                                                            // Id of source int
   integer      source2IntId;                                                                                            // Id of source2 int
   integer       targetIntId;                                                                                            // Id of target int
@@ -1798,11 +1795,21 @@ module {name};                                                                  
   integer        source2Int;                                                                                            // Second source value for an integer operation obtained from a variable
   integer         targetInt;                                                                                            // Computed target integer value to be loaded into a variable
   integer        targetBool;                                                                                            // Computed target boolean value to be loaded into a variable
+""");
 
+        /*Declare integers*/if (numberOfInts > 0) out.write(substitute("""
   integer                 i[{i}:0]; integer index_ints;                                                                 // Integers
-  reg                     b[{b}:0]; integer index_bits;                                                                 // Booleans
+  initial begin                                                                                                         // Clear integers and booleans in verilog
+    for(index_ints = 0; index_ints <= {i}; index_ints = index_ints + 1) i[index_ints] = 0;
+  end
+""", "i", dimensionInts));
 
-""", "i", dimensionInts, "b", dimensionBits));
+        /*Declare booleans*/if (numberOfBits > 0) out.write(substitute("""
+  reg                     b[{b}:0]; integer index_bits;                                                                 // Booleans
+  initial begin                                                                                                         // Clear integers and booleans in verilog
+    for(index_bits = 0; index_bits <= {b}; index_bits = index_bits + 1) b[index_bits] = 0;
+  end
+""", "b", dimensionBits));
 
         for(VerilogArrays.Array a : verilogArrays.arrays()) if (!a.pcIndexed)out.write(a.define());                     // Define verilog arrays
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
@@ -1877,14 +1884,23 @@ module {name};                                                                  
     endcase
   end
 """);
-                                                                                                                        // Update variables from inputs and outputs from variables
-        for(Int i : ints) if (i.in)  out.write(substitute("  always_ff @(posedge clock) i[{id}] = i_{n}; // Assign input  port\n", "id", ""+i.id, "n", i.name));
-        for(Int i : ints) if (i.out) out.write(substitute("  always_ff @(posedge clock) o_{n} = i[{id}]; // Assign output port\n", "id", ""+i.id, "n", i.name));
+
+        out.write("`ifdef SYNTHESIS\n");
+        for(Int i : ints)                                                                                               // Update variables from inputs and outputs from variables during synthesis
+         {if (i.in) out.write(substitute("""
+  always_ff @(posedge clock) begin if (reset) i[{i}] <= 0;  else i[{i}]  <= $signed(i_{n}); end                         // Update variables from inputs - the inputs cannot be signed because silicon compiler seems to have difficulty with signed parameters.
+""", "i", ""+i.id, "n", i.name));
+
+          if (i.out) out.write(substitute("""
+  always_ff @(posedge clock) begin if (reset) o_{n} <= 0; else o_{n} <= i[{i}];  end                                    // Update variables from outputs - Verilog just assigns bits without interpreting whether there is a sign present or not
+""", "i", ""+i.id, "n", i.name));
+         }
+        out.write("`endif\n");
 
         /*Clear registers*/out.write(substitute("""
 
   initial begin                                                                                                         // Clear registers
-    index        = 0;
+//  index        = 0;
     pc           = 0;
      sourceIntId = 0;                                                                                                   // Id of source int
     source2IntId = 0;                                                                                                   // Id of source2 int
@@ -1914,14 +1930,6 @@ module {name};                                                                  
 `endif
   end
 """, "traceFile", traceFile));
-
-        /*Clear variables*/out.write(substitute("""
-
-  initial begin                                                                                                         // Clear integers and booleans in verilog
-    for(index_ints = 0; index_ints <= {i}; index_ints = index_ints + 1) i[index_ints] = 0;
-    for(index_bits = 0; index_bits <= {b}; index_bits = index_bits + 1) b[index_bits] = 0;
-  end
-""", "i", dimensionInts, "b", dimensionBits));
 
         for(VerilogArrays.Array    a : verilogArrays().arrays())  if (!a.pcIndexed) out.write(a.load());                // Write array definitions
         for(Memory                 m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
@@ -2981,7 +2989,7 @@ WriteBoolIndex =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
     test_addition(!true);
    }
 
