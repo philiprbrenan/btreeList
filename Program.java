@@ -1479,7 +1479,7 @@ podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" pyth
 
       final String           ysCmd = substitute("""
 cd {f}; yosys -q {y}
-""", "f", verilogTestFolder.folder, "y", verilogTestFolder.ys$());
+""", "f", verilogTestFolder.folder, "y", verilogTestFolder.ys());
                                                                                                                         // Yosys command
       g.generateSiliconCompiler(); if (!runSiliconCompiler) say("C=sc; " + scCmd);                                      // Generate python to drive silicon compiler
       g.generateYosys();           if (!runYosys)           say("C=ys; " + ysCmd);                                      // Generate tcl to drive yosys
