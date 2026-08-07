@@ -25,28 +25,19 @@ public class Program extends Test                                               
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
   final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
-  final static String                          lefSuffix = "lef";                                                       // Suffix for library exchange format (LEF) files
-  final static String                          logSuffix = "log";                                                       // Suffix for log files
-  final static String                         jsonSuffix = "json";                                                      // Suffix for jason files
-  final static String                       pythonSuffix = "py";                                                        // Suffix for python files
-  final static String                          txtSuffix = "txt";                                                       // Suffix for text files
-  final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
-  final static String                        yosysSuffix = "ys";                                                        // Suffix for yosys files
-  final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
-  final static String                         verilogLog = fp(verilogFolder, logSuffix);                                // Verilog log folder
-  final static String                     verilogLogFile = fe(verilogLog,    "Log", txtSuffix);                         // Verilog log file showing instruction execution statistics for each test in text format
-  final static String                     verilogLogJson = fe(verilogLog,    "Log", jsonSuffix);                        // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
-  final static String                       verilogTests = fp(verilogFolder, "tests");                                  // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
-  final static String                   verilogTraceFile = fe("traceVerilog", txtSuffix);                               // Verilog trace file
-  final static String                      javaTraceFile = fe("traceJava",    txtSuffix);                               // Java trace file
-  final static String                verilogIncludeFiles = "includes";                                                  // Folder for include files
+  final static FileNames                   verilogFolder = new FileNames(fp("verilog"));                                // Verilog folder contains temporary files which hold the generated verilog and related files
+  final static FileNames              verilogTestsFolder = verilogFolder.down("test");                                  // Verilog tests
+  final FileNames                      verilogTestFolder = verilogTestsFolder.down(testName()).same(testName());        // Verilog test
+  final FileNames              verilogTestIncludesFolder = verilogTestFolder.down("includes");                          // Verilog test includes folder containing the include files needed for running verilog tests
+  final FileNames                       verilogLogFolder = verilogFolder.down("log");                                   // Verilog log folder
+  final FileNames                             traceFiles = verilogTestFolder.same("traceFile");                         // Verilog trace file
   final static String               siliconCompilerImage = "ghcr.io/philiprbrenan/sc:latest";                           // Podman container containing silicon compiler
-  final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog code
+  final static int padName = 12, padCR = 16, padVerilog = 64;                                                           // Padding for components of the generated verilog code
 
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
   final Stack<Label>                              labels = new Stack<>();                                               // Labels for instructions in this process
@@ -102,9 +93,8 @@ public class Program extends Test                                               
     parentProgram   = Build.parent == null ? this : Build.parent;                                                       // Parent program that will contain the code
     initializeRegisters();                                                                                              // Start registers in known state
     unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
-    deleteAllFiles(verilogTestFolder(), 999);                                                                           // Delete generated Verilog files created by a prior run of the current test
-    makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
-    defaultFileName = fn(verilogTestFolder(), testName());                                                              // Most of the generated files will have names derived from this by adding the appropriate extension
+    deleteAllFiles(verilogTestFolder.folder, 999);                                                                      // Delete generated Verilog files created by a prior run of the current test
+    makePath(verilogTestFolder.folder);                                                                                 // Verilog folder for this test
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -196,15 +186,6 @@ public class Program extends Test                                               
   String pqName (String Text)        {return pad(q(Text), padName   );}                                                 // Pad Verilog names
   String pqCR (  String Text)        {return pad(q(Text), padCR     );}                                                 // Pad Verilog control register names
   String pqExpr (String Text)        {return pad(q(Text), padVerilog);}                                                 // Pad Verilog expressions
-
-  String        verilogTestFolder () {return fp(verilogTests,        currentTestNameSuffix());}                         // Folder for this test using Verilog
-  String verilogTestIncludeFolder () {return fp(verilogTestFolder(), verilogIncludeFiles);}                             // Folder for arrays used in this test using Verilog
-  String         verilogTraceFile () {return fn(verilogTestFolder(), verilogTraceFile);}                                // Verilog trace file
-  String            javaTraceFile () {return fn(verilogTestFolder(), javaTraceFile);}                                   // Java trace file
-  String          VerilogCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), verilogSuffix);}          // Verilog code file
-  String         scDriverCodeFile () {return fe(verilogTestFolder(), currentTestNameSuffix(), pythonSuffix);}           // Python code to drive silicon compiler
-  String                yosysFile () {return fe(currentTestNameSuffix(), yosysSuffix);}                                 // Yosys code file name
-  String                YosysFile () {return fn(verilogTestFolder(),     yosysFile());}                                 // Yosys code path to file name
 
 //D1 Program                                                                                                            // Program execution structures.  the //D* comments are headers at different levels in the documentation describing this code
 
@@ -1426,7 +1407,7 @@ endmodule
     void set () {offset = program().code.size();}                                                                       // Reassign the label to an instruction
    } // Label
 
-  void appendJavaTrace(String Message) {appendFile(javaTraceFile(), Message);}                                          // Append to the java trace file
+  void appendJavaTrace(String Message) {appendFile(traceFiles.java$(), Message);}                                       // Append to the java trace file
 
   void jTrace (String Message)                                                                                          // Trace a java instruction by writing a message to the java trace file unless the instruction has suppressed tracing
    {++program().jtrace;                                                                                                 // Count trace records written
@@ -1452,7 +1433,7 @@ endmodule
 
     if (codeSize() == 0)        stop("No code to execute");                                                             // Complain if there is no code to execute
     else if (!generateVerilog) say(f("            Code size: %,12d", codeSize()));                                      // Code size check unless we are executing Veilog in which case the code size will be printed after the preparation of the Verilog equivalent so that the uncompressed code size can be compared with the compressed code size
-    deleteFile(javaTraceFile());                                                                                        // Clear Java trace file
+    traceFiles.delete_java();                                                                                           // Clear Java trace file
     dumpProgramState("Finished");                                                                                       // Dump program state at end of execution
 
     currentPc   = pc = 0;                                                                                               // Reset program counter to start of program
@@ -1493,37 +1474,37 @@ endmodule
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
 
       final String           scCmd = substitute("""
-podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {n}.py
-""", "f", fqn(verilogTestFolder()), "n", currentTestNameSuffix(), "image", siliconCompilerImage);                       // Silicon compiler command
+podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}
+""", "f", verilogTestFolder.folder, "p", verilogTestFolder.py$(), "image", siliconCompilerImage);                       // Silicon compiler command
 
       final String           ysCmd = substitute("""
 cd {f}; yosys -q {y}
-""",  "f", fn(pwd(), verilogTestFolder()), "y", yosysFile());
+""", "f", verilogTestFolder.folder, "y", verilogTestFolder.ys$());
                                                                                                                         // Yosys command
       g.generateSiliconCompiler(); if (!runSiliconCompiler) say("C=sc; " + scCmd);                                      // Generate python to drive silicon compiler
       g.generateYosys();           if (!runYosys)           say("C=ys; " + ysCmd);                                      // Generate tcl to drive yosys
       g.lef();                                                                                                          // Generate LEF files
 
       if (runVerilog)                                                                                                   // Run verilog
-       {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
+       {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
         final StringBuilder s = new StringBuilder();
         final boolean       r = github_actions || aws_run;                                                              // Running remotely
-      //final String        v = "vvp -M../../vpi -mwall_time " +currentTestNameSuffix();                                // Command to run verilog simulation
-        final String        v = "vvp " +currentTestNameSuffix();                                                        // Command to run verilog simulation
+      //final String        v = "vvp -M../../vpi -mwall_time " +testName();                                             // Command to run verilog simulation
+        final String        v = "vvp " +testName();                                                                     // Command to run verilog simulation
 
-        s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {n}.v && {t} {v}",                               // Construct command
-                            "f", verilogTestFolder(),
-                            "n", currentTestNameSuffix(),
-                            "v", v,
+        s.append(substitute("cd {f}; rm -f {n}; iverilog -g2012 -o {n} {v} && {t} vvp {n}",                             // Construct command
+                            "f", verilogTestFolder.folder,
+                            "n", testName(),
+                            "v", verilogTestFolder.v(),
                             "t", github_actions || aws_run ? "" : f("timeout %ds ", verilogTimeOut)));                  // Time out if running locally.  The progfrsam will return a coed of 124 if it times out
 
         final ExecCommand x = new ExecCommand(s);                                                                       // Execute verilog commands
         message.append(f(" %11.2f seconds for: %s",                    x.timer.seconds(), x.command));                  // Execution time of command in message
         json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", x.timer.seconds(), x.command));                  // Execution time of command in json
 
-        ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
+        ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
 
-        if (runSiliconCompiler)                                                                                               // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
+        if (runSiliconCompiler)                                                                                         // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
          {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
@@ -1538,8 +1519,8 @@ cd {f}; yosys -q {y}
        }
 
       say(message);                                                                                                     // Report Verilog statistics
-      appendFile(verilogLogFile,  message+ "\n");                                                                       // Log in text format
-      appendFile(verilogLogJson, "{"+json+"}\n");                                                                       // Log in json format
+      appendFile(verilogLogFolder.log$(),  message+ "\n");                                                              // Log in text format
+      appendFile(verilogLogFolder.json$(), "{"+json+"}\n");                                                             // Log in json format
      }
    }
 
@@ -1710,7 +1691,7 @@ cd {f}; yosys -q {y}
 //D1 Verilog                                                                                                            // Generate Verilog
 
   class GenerateVerilog                                                                                                 // Generate verilog
-   {final String         name = currentTestNameSuffix();                                                                // Name of test
+   {final String         name = testName();                                                                // Name of test
     final String       source = fnx(mainFileName());                                                                    // Main source file
     final String     dateTime = dateTime();                                                                             // Date and time of test
     final int       execSteps = steps;                                                                                  // Number of execution steps
@@ -1750,9 +1731,9 @@ cd {f}; yosys -q {y}
      }
 
     GenerateVerilog ()                                                                                                  // Generate the Verilog corresponding to the java code
-     {final String          name = currentTestNameSuffix();                                                             // Name of program
-      final String     traceFile = verilogTraceFile;                                                                    // Trace file name relative to Verilog code
-      final String      codeFile = VerilogCodeFile();                                                                   // Code file
+     {final String          name = testName();                                                                          // Name of program
+      final String     traceFile = traceFiles.v();                                                                      // Trace file name relative to Verilog code
+      final String      codeFile = verilogTestFolder.v$();                                                              // Code file
       final String        indent = " ".repeat(6);                                                                       // Indentation for verilog code
       final int       sizeMemory = unitMemory != null ? unitMemory.size() : 0;                                          // Size of memory
       final int     numberOfInts = nextIntId;                                                                           // Number of integers needed
@@ -1940,7 +1921,7 @@ module {name};                                                                  
   end
 """, "traceFile", traceFile));
 
-        for(VerilogArrays.Array    a : verilogArrays().arrays())  if (!a.pcIndexed) out.write(a.load());                // Write array definitions
+//      for(VerilogArrays.Array    a : verilogArrays().arrays())  if (!a.pcIndexed) out.write(a.load());                // Write array definitions
         for(Memory                 m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
         for(DumpLocations.Location d : dumpLocations().locations) out.write(d.define());                                // Locations in program that have requested dumps
 
@@ -1998,7 +1979,7 @@ endmodule
 `endif
     end
   endtask
-""", "traceFile", verilogTraceFile, "memoryId", M.i(), "memoryName", M.n(), "size", ""+M.size(),
+""", "memoryId", M.i(), "memoryName", M.n(), "size", ""+M.size(),
 "dumpVerilogMemoryInDecimalName", M.dumpVerilogMemoryInDecimalName());
     }
 
@@ -2057,6 +2038,7 @@ endmodule
 
     String generateSiliconCompiler ()                                                                                   // Python code to drive silicon compiler
      {final StringBuilder s = new StringBuilder();                                                                      // Generated code
+      final FileNames     t = verilogTestFolder;
       s.append(substitute("""
 #!/usr/bin/env python3
 import sys
@@ -2064,11 +2046,11 @@ from siliconcompiler         import ASIC, Design
 from siliconcompiler.targets import skywater130_demo
 
 def gen(module):
-  design = Design     (module)                                                                                          # Silicon compiler work flow driver
-  design.set_topmodule(f"{module}",     fileset="rtl")
-  design.add_file     (f"{module}.{v}", fileset="rtl")
-  design.add_file     (f"{module}.{l}", fileset="rtl")
-  design.add_define   ("SYNTHESIS",     fileset="rtl")
+  design = Design     (module)                                                                                          #// Silicon compiler work flow driver
+  design.set_topmodule(f"{module}", fileset="rtl")
+  design.add_file     (f"{v}",      fileset="rtl")
+  design.add_file     (f"{l}",      fileset="rtl")
+  design.add_define   ("SYNTHESIS", fileset="rtl")
 
   project = ASIC(design)
   project.add_fileset(["rtl"])
@@ -2079,18 +2061,16 @@ def gen(module):
 
 if __name__ == "__main__":
     gen(sys.argv[1] if len(sys.argv) > 1 else "{name}")
-""", "name", name, "lef", lefFileName(), "v", verilogSuffix, "l", lefSuffix));
+""", "lef", t.lef$(), "v", t.v(), "l", t.lef()));
 
-      return writeFile(scDriverCodeFile(), s);
+      return writeFile(t.py$(), s);
      }
-
-    String lefFileName ()  {return fe(verilogTestFolder(), name, lefSuffix);}                                           // The name of the LEF file describing the black boxes used by this design
 
     void lef ()                                                                                                         // Generate LEF macros in one file
      {final Lef l = new Lef();
                 l.macro("array_pcConstant");
                 l.macro("array_pcMatchSet");
-                l.write(lefFileName());
+                l.write(verilogTestFolder.lef$());
      }
 
 //D2 Yosys                                                                                                              // Generate yosys commands
@@ -2104,7 +2084,7 @@ proc
 check
 """, "n", name));
 
-      return writeFile(YosysFile(), s);
+      return writeFile(verilogTestFolder.ys$(), s);
      }
    } // GenerateVerilog
 
@@ -2130,13 +2110,12 @@ check
    }
 
   String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the verilog method to dump all the variables to the trace file
-  String dumpVerilogVariables ()                                                                                        // Dump the value of an integer to the verilog trace file
-   {final String   variables = "variables";                                                                             // Include file name
-    final String includeFile = fe(verilogIncludeFiles, variables, verilogSuffix);                                       // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
-    final StringBuilder    s = new StringBuilder();
+  String dumpVerilogVariables ()                                                                                        // Dump the value of the integer and boolean variables to the verilog trace file
+   {final FileNames includeFile = verilogTestIncludesFolder.same("variables");                                          // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
+    final StringBuilder       s = new StringBuilder();
     s.append(substitute("""
 
-  task automatic {name} ();
+  task automatic {name} ();                                                                                             // Dump variables
     begin
 `ifndef SYNTHESIS
    `include "{includeFile}"
@@ -2144,8 +2123,7 @@ check
 `endif
     end
   endtask
-""", "name", dumpVerilogVariablesName(), "includeFile", includeFile));
-
+""", "name", dumpVerilogVariablesName(), "includeFile", includeFile.minus(verilogTestFolder).v$()));
 
     final StringBuilder v = new StringBuilder();                                                                        // Dump each variable
     for(Int i : ints)                                                                                                   // Dump integers
@@ -2167,7 +2145,7 @@ check
 """, "id", ""+b.id));
      }
 
-    writeFile(fe(verilogTestIncludeFolder(), variables, verilogSuffix), v);
+    writeFile(includeFile.v$(), v);
     return ""+s;
    }
 
@@ -2226,15 +2204,18 @@ check
         pcIndexed = true;
        }
 
+      String indexRegisterName () {return pcIndexed ? "pc" : "sourceInt";}                                              // Name of the register used to index the array
+      String  dataRegisterName () {return "arrayData_" + name;}                                                         // Name of the register to contain the result from the indexed location in the array
+      String          loadName () {return "load_"       +name;}                                                         // Free data associated with instruction matching as it can get quite big
+      String         arrayName () {return "array_"      +name;}                                                         // Free data associated with instruction matching as it can get quite big
+      String      indexVarName () {return "index_array_"+name;}                                                         // Index name for clearing this array
+
       String define ()                                                                                                  // Define the array
        {return   substitute("""
   integer {name}[{size}-1:0];
   integer {index};
 """, "name", arrayName(), "index", indexVarName(), "size", ""+size);
        }
-
-      String indexRegisterName () {return pcIndexed ? "pc" : "sourceInt";}                                              // Name of the register used to index the array
-      String  dataRegisterName () {return "arrayData_" + name;}                                                         // Name of the register to contain the result from the indexed location in the array
 
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
@@ -2248,29 +2229,23 @@ check
 """, "dr", dataRegisterName(),  "name", arrayName());
        }
 
-      String writeInHex ()                                                                                              // Write the array to a file in hexadecimal
+      void writeInHex ()                                                                                                // Write the array to a file in hexadecimal
        {final StringBuilder s = new StringBuilder();
         for(int i = 0; i < array.length; ++i) s.append(f("%8x\n", array[i]));
-        final String        f = fe(verilogTestIncludeFolder(), name, "txt");
-        return writeFile(f, s);
+        writeFile(verilogTestIncludesFolder.same(name).v$(), s);
        }
 
-      String load ()                                                                                                    // Load the array by writing its values in hex to a file and then loading that file via $readmemh
-       {final String File = writeInHex();                                                                               // Absolute path name to array file
-        final String file = fn(verilogIncludeFiles, fnex(File));                                                        // Relative path name to array file
-        return   substitute("""
-
-  initial $readmemh("{file}", {array}, 0, {size});
-""", "file", file, "array", arrayName(), "size", ""+array.length);
-       }
-
-      String loadName ()       {return "load_"       +name;}                                                            // Free data associated with instruction matching as it can get quite big
-      String arrayName ()      {return "array_"      +name;}                                                            // Free data associated with instruction matching as it can get quite big
-      String indexVarName ()   {return "index_array_"+name;}                                                            // Index name for clearing this array
+//      String load ()                                                                                                    // Load the array by writing its values in hex to a file and then loading that file via $readmemh
+//       {final String File = writeInHex();                                                                               // Absolute path name to array file
+//        final String file = fn(verilogIncludeFiles, fnex(File));                                                        // Relative path name to array file
+//        return   substitute("""
+//
+//  initial $readmemh("{file}", {array}, 0, {size});
+//""", "file", file, "array", arrayName(), "size", ""+array.length);
+//       }
 
       String module()                                                                                                   // Create a Verilog module to represent a memory
-       {final String File = writeInHex();                                                                               // Absolute path name to array file
-        final String file = fn(verilogIncludeFiles, fnex(File));                                                        // Relative path name to array file
+       {writeInHex();                                                                                                   // Write hex representation of array
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
 
@@ -2285,13 +2260,17 @@ check
   assign data = memory[address];
 `endif
 endmodule
-""", "name", name, "file", file, "array", arrayName(), "size", ""+(array.length-1)));
+""",
+"name",  name,        "file", verilogTestIncludesFolder.same(name).minus(verilogTestFolder).v$(),
+"array", arrayName(), "size", ""+(array.length-1)));
         return ""+s;
        }
      } // Array
    } // VerilogArrays
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
+
+  static void deleteAllFileInVerilogTestsFolder() {deleteAllFiles(verilogTestsFolder.folder, 999);}                     // Delete generated Verilog files created by a prior run of the current test
 
   void check (StringBuilder G, String E)                                                                                // Test the supplied content against the specified string, then clear the output area ready for the next report
    {new I() {void a() {Test.ok(nws(G), nws(E));} int traces() {return 0;}};
@@ -3014,7 +2993,7 @@ WriteBoolIndex =        0
 
   public static void main(String[] args)                                                                                // Test if called as a program
    {try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFiles(verilogTests, 999);                                                                                // Delete generated Verilog files created by a prior run of the current test
+     {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Code coverage
       testSummary();                                                                                                    // Summarize test results
