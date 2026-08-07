@@ -982,7 +982,7 @@ public class Test                                                               
   static String fnex (String Path) {return Path.replaceFirst("^.*/", "");}                                              // Extract file name and extension from path
   static String fnx ( String Path) {return fnex(Path).replaceFirst("\\.[^.]*$", "");}                                   // Extract file name without extension from path
   static String fpnx (String Path) {return Path.replaceFirst("\\.[^.]*$", "");}                                         // Remove extension from file path
-  static String fpx ( String Path) {return Path.replaceFirst("[^/]*$", "");}                                            // Extract file path from path
+  static String fpx ( String Path) {return Path.replaceFirst("/*$", "").replaceFirst("[^/]*$", "");}                    // Extract file path from path
 
   static class FileNames                                                                                                // File name generator
    {final String folder;                                                                                                // Default folder
@@ -994,17 +994,37 @@ public class Test                                                               
 
     FileNames down (String Folder) {return new FileNames(fn(folder, Folder), file);}                                    // Create a set of file names for a sub folder of the original fileset
     FileNames same (String File)   {return new FileNames(           folder,  File);}                                    // Same folder but different default file
-    FileNames goUp ()             {return new FileNames(fpx(folder),        file);}                                     // Parent folder
+    FileNames goUp ()              {return new FileNames(fpx(folder),        file);}                                     // Parent folder
 
-    String json$ () {return fe(folder, file, "json");}  String json () {return fe(file, "json");}                       // Long name and short name of file with extension indicated
-    String  lef$ () {return fe(folder, file, "lef" );}  String  lef () {return fe(file, "lef"); }
-    String  log$ () {return fe(folder, file, "log" );}  String  log () {return fe(file, "log"); }
-    String   md$ () {return fe(folder, file, "md"  );}  String   md () {return fe(file, "md");  }
-    String   pl$ () {return fe(folder, file, "pl"  );}  String   pl () {return fe(file, "pl");  }
-    String   py$ () {return fe(folder, file, "py"  );}  String   py () {return fe(file, "py");  }
-    String  txt$ () {return fe(folder, file, "txt" );}  String  txt () {return fe(file, "txt"); }
-    String    v$ () {return fe(folder, file, "v"   );}  String    v () {return fe(file, "v");   }
-    String   ys$ () {return fe(folder, file, "ys"  );}  String   ys () {return fe(file, "ys");  }
+    FileNames minus(FileNames X)
+     {final String f = folder, F = X.folder;
+      if (!f.startsWith(F)) stop("Folder does not start with other folder, folder:", f, "other:", F);
+      return new FileNames(f.substring(F.length()).replaceFirst("^/*", ""), file);
+     }
+
+    String    c$ () {return fe(folder, file, "c"   );}  String    c () {return fe(file, "c"   );}                       // Long name and short name of file with extension indicated
+    String java$ () {return fe(folder, file, "java");}  String java () {return fe(file, "java");}                       // Long name and short name of file with extension indicated
+    String json$ () {return fe(folder, file, "json");}  String json () {return fe(file, "json");}
+    String  lef$ () {return fe(folder, file, "lef" );}  String  lef () {return fe(file, "lef" );}
+    String  log$ () {return fe(folder, file, "log" );}  String  log () {return fe(file, "log" );}
+    String   md$ () {return fe(folder, file, "md"  );}  String   md () {return fe(file, "md"  );}
+    String   pl$ () {return fe(folder, file, "pl"  );}  String   pl () {return fe(file, "pl"  );}
+    String   py$ () {return fe(folder, file, "py"  );}  String   py () {return fe(file, "py"  );}
+    String  txt$ () {return fe(folder, file, "txt" );}  String  txt () {return fe(file, "txt" );}
+    String    v$ () {return fe(folder, file, "v"   );}  String    v () {return fe(file, "v"   );}
+    String   ys$ () {return fe(folder, file, "ys"  );}  String   ys () {return fe(file, "ys"  );}
+
+    void    delete_c () {deleteFile(   c$());}
+    void delete_java () {deleteFile(java$());}
+    void delete_json () {deleteFile(json$());}
+    void  delete_lef () {deleteFile( lef$());}
+    void  delete_log () {deleteFile( log$());}
+    void   delete_md () {deleteFile(  md$());}
+    void   delete_pl () {deleteFile(  pl$());}
+    void   delete_py () {deleteFile(  py$());}
+    void  delete_txt () {deleteFile( txt$());}
+    void    delete_v () {deleteFile(   v$());}
+    void   delete_ys () {deleteFile(  ys$());}
 
     public String toString()  {return "FileNames(folder: "+folder+", file: "+file+")";}
    }
@@ -1618,11 +1638,13 @@ BBBB
     ok(s.pl$(), "aaa/includes/bbb.pl");
     ok(s.pl(),               "bbb.pl");
 
-    final FileNames u = d.goUp();
-say("AAAA", s);
-say("AAAA", u);
-    ok(s.pl$(), "aaa/bbb.pl");
-    ok(s.pl(),      "bbb.pl");
+    final FileNames u = s.goUp();
+    ok(u.pl$(), "aaa/bbb.pl");
+    ok(u.pl(),      "bbb.pl");
+
+    final FileNames x = s.minus(u);
+    ok(x.pl$(), "includes/bbb.pl");
+    ok(x.pl(),           "bbb.pl");
    }
 
   static void test_replaceAll()
