@@ -452,11 +452,15 @@ public class Test                                                               
     return "";
    }
 
-  static String currentTestName ()                                                                                      // Name of the current test
+  static String testName ()                                                                                             // Name of the current test
    {final StackTraceElement[] T = Thread.currentThread().getStackTrace();                                               // Current stack trace
     for (StackTraceElement t : T)                                                                                       // Locate deepest method that starts with test
      {final String c = t.getMethodName();
-      if (c.matches("\\Atest_.*\\Z")) return c;
+      if (c.matches("\\Atest_.*\\Z"))
+       {final String n = c.replaceAll("\\Atest_", "");
+        testsExecuted.add(n);                                                                                           // Record tests executed as a side effect
+        return n;
+       }
      }
     return null;                                                                                                        // Not called in a test
    }
@@ -482,11 +486,11 @@ public class Test                                                               
     return d;
    }
 
-  static void sayCurrentTestName () {say(f("%2d %8.2f", ++currentTestNumber, elapsedTime()), currentTestName());}       // Name of the current test
+  static void sayCurrentTestName () {say(f("%2d %8.2f", ++currentTestNumber, elapsedTime()), testName());}       // Name of the current test
 
   static String testLine()                                                                                              // Locate line associated with the current test
    {final StackTraceElement[] t = Thread.currentThread().getStackTrace();
-    final String T = currentTestName();                                                                                 // Current test name
+    final String T = testName();                                                                                 // Current test name
     for(int i = 0; i < t.length; ++i)
      {final StackTraceElement s = t[i];
       if (s.getMethodName().equals(T))
@@ -497,15 +501,6 @@ public class Test                                                               
        }
      }
     return null;
-   }
-
-  static String currentTestNameSuffix ()                                                                                // Name of the current test
-   {final String t = currentTestName();
-    if (t == null) stop("Not in a test");
-    final String[]s = t.split("_", 2);
-    if (s.length < 2) stop("Not in a test_name");
-    testsExecuted.add(s[1]);
-    return s[1];
    }
 
   static String camelCaseCaller ()                                                                                      // Looks for the first method written in camel case
@@ -934,8 +929,7 @@ public class Test                                                               
 
   static String fileExt (String FilePath)                                                                               // Get the extension name from a file path name
    {final int p = FilePath.lastIndexOf(".");
-    return p > 0 && p < FilePath.length() - 1 ?
-      FilePath.substring(p + 1) : null;
+    return p > 0 && p < FilePath.length() - 1 ? FilePath.substring(p + 1) : null;
    }
 
   static String fe (String...Names)                                                                                     // Join file name components to make a file name with an extension
@@ -943,9 +937,7 @@ public class Test                                                               
     final int N = Names.length;
     for (int i = 0; i < N-2; i++)
      {f.append(Names[i]) ;
-      while(f.length() > 0 && f.charAt(f.length()-1) == '/')
-       {f.setLength(f.length()-1);
-       }
+      while(f.length() > 0 && f.charAt(f.length()-1) == '/') f.setLength(f.length()-1);
       f.append("/");
      }
     return ""+f+Names[N-2]+"."+Names[N-1];
@@ -956,9 +948,7 @@ public class Test                                                               
     final int N = Names.length;
     for (int i = 0; i < N-1; i++)
      {f.append(Names[i]) ;
-      while(f.length() > 0 && f.charAt(f.length()-1) == '/')
-       {f.setLength(f.length()-1);
-       }
+      while(f.length() > 0 && f.charAt(f.length()-1) == '/') f.setLength(f.length()-1);
       f.append("/");
      }
     return ""+f+Names[N-1];
@@ -977,11 +967,47 @@ public class Test                                                               
     return ""+f;
    }
 
-  static String fex ( String Path) {return Path.replaceFirst("^.*\\.", "");}                                            // Extract file extension from path
+  @SafeVarargs @SuppressWarnings("varargs") static <T> T[] makeArray(T First, T...Rest)                                 // Make a single array out of an element and array of elements
+   {final T[] result = Arrays.copyOf(Rest, Rest.length + 1);
+    System.arraycopy(Rest, 0, result, 1, Rest.length);
+    result[0] = First;
+    return result;
+   }
+
+  static String fE (String Name, String...Names) {return fe(makeArray(Name, Names));}                                   // Join file name components to make a file with an extension
+  static String fN (String Name, String...Names) {return fn(makeArray(Name, Names));}                                   // Join file name components to make a file name
+  static String fP (String Name, String...Names) {return fp(makeArray(Name, Names));}                                   // Join file name components to make a file path
+
+  static String fex ( String Path) {return Path.indexOf('.') >= 0 ? Path.replaceFirst("^.*\\.", "") : "";}              // Extract file extension from path
   static String fnex (String Path) {return Path.replaceFirst("^.*/", "");}                                              // Extract file name and extension from path
   static String fnx ( String Path) {return fnex(Path).replaceFirst("\\.[^.]*$", "");}                                   // Extract file name without extension from path
   static String fpnx (String Path) {return Path.replaceFirst("\\.[^.]*$", "");}                                         // Remove extension from file path
   static String fpx ( String Path) {return Path.replaceFirst("[^/]*$", "");}                                            // Extract file path from path
+
+  static class FileNames                                                                                                // File name generator
+   {final String folder;                                                                                                // Default folder
+    final String file;                                                                                                  // Default file name
+
+    FileNames (String Folder)              {this(Folder, "");}                                                          // Describe a folder in which to create files
+    FileNames ()                           {this(".",    "");}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
+    FileNames (String Folder, String File) {folder = Folder; file = fnx(File);}                                         // Describe a file name without an extension, variants of which can be made by adding an extension
+
+    FileNames down (String Folder) {return new FileNames(fn(folder, Folder), file);}                                    // Create a set of file names for a sub folder of the original fileset
+    FileNames same (String File)   {return new FileNames(           folder,  File);}                                    // Same folder but different default file
+    FileNames goUp ()             {return new FileNames(fpx(folder),        file);}                                     // Parent folder
+
+    String json$ () {return fe(folder, file, "json");}  String json () {return fe(file, "json");}                       // Long name and short name of file with extension indicated
+    String  lef$ () {return fe(folder, file, "lef" );}  String  lef () {return fe(file, "lef"); }
+    String  log$ () {return fe(folder, file, "log" );}  String  log () {return fe(file, "log"); }
+    String   md$ () {return fe(folder, file, "md"  );}  String   md () {return fe(file, "md");  }
+    String   pl$ () {return fe(folder, file, "pl"  );}  String   pl () {return fe(file, "pl");  }
+    String   py$ () {return fe(folder, file, "py"  );}  String   py () {return fe(file, "py");  }
+    String  txt$ () {return fe(folder, file, "txt" );}  String  txt () {return fe(file, "txt"); }
+    String    v$ () {return fe(folder, file, "v"   );}  String    v () {return fe(file, "v");   }
+    String   ys$ () {return fe(folder, file, "ys"  );}  String   ys () {return fe(file, "ys");  }
+
+    public String toString()  {return "FileNames(folder: "+folder+", file: "+file+")";}
+   }
 
   static String fqn(String Relative) {return Path.of(Relative).toAbsolutePath().normalize().toString();}                // Fully qualified file name from filename relative to current working directory
 
@@ -1190,7 +1216,7 @@ public class Test                                                               
   static boolean ok (boolean b)                                                                                         // Check test results match expected results.
    {if (b) {++testsPassed; return true;}
     testsFailed++;
-    err(currentTestName(), "failed");
+    err(testName(), "failed");
     return false;
    }
 
@@ -1198,8 +1224,8 @@ public class Test                                                               
    {if (a.toString().equals(b.toString())) {++testsPassed; return true;}
     final boolean n = b.toString().contains("\n");
     testsFailed++;
-    if (n) err(currentTestName(), "Failed, got:\n"+a+"\n");
-    else   err(a, "\ndoes not equal\n", b, "\nin", currentTestName());
+    if (n) err(testName(), "Failed, got:\n"+a+"\n");
+    else   err(a, "\ndoes not equal\n", b, "\nin", testName());
     return false;
    }
 
@@ -1220,7 +1246,7 @@ public class Test                                                               
         if (e != g) ++X;
        }
       if (X == 0)
-       {say(b, currentTestName(), "Failed: mismatched length, got", lg, "expected", le, "but first", N, "characters do match");
+       {say(b, testName(), "Failed: mismatched length, got", lg, "expected", le, "but first", N, "characters do match");
        }
      }
 
@@ -1288,7 +1314,7 @@ public class Test                                                               
     else if ( G == null && E == null) {                                              ++testsPassed; return true ;}
     else if ( G != null && E == null) {err(String.format("Expected null, got:", G)); ++testsFailed; return false;}
     else if ( G == null && E != null) {err(String.format("Got null, expected:", E)); ++testsFailed; return false;}
-    else if (!G.equals(E))            {err(currentTestName(), G, "!=", E);           ++testsFailed; return false;}
+    else if (!G.equals(E))            {err(testName(), G, "!=", E);           ++testsFailed; return false;}
     else                              {                                              ++testsPassed; return true ;}
    }
 
@@ -1297,7 +1323,7 @@ public class Test                                                               
     else if ( G == null && E == null) {                                              ++testsPassed; return true ;}
     else if ( G != null && E == null) {err(String.format("Expected null, got:", G)); ++testsFailed; return false;}
     else if ( G == null && E != null) {err(String.format("Got null, expected:", E)); ++testsFailed; return false;}
-    else if (!G.equals(E))            {err(currentTestName(), G, "!=", E);           ++testsFailed; return false;}
+    else if (!G.equals(E))            {err(testName(), G, "!=", E);           ++testsFailed; return false;}
     else                              {                                              ++testsPassed; return false;}
    }
 
@@ -1310,7 +1336,7 @@ public class Test                                                               
     final int lg = G.length, le = E.length;
 
     if (le != lg)
-     {err(currentTestName(), "Failed:",
+     {err(testName(), "Failed:",
        "mismatched length, got", lg, "expected", le, "got:\n"+G);
       ++testsFailed;
       return false;
@@ -1579,27 +1605,25 @@ BBBB
     ok(fnex("/home/phil/a/b.c"),          "b.c");
     ok(fpx ("/home/phil/a/b.c"),          "/home/phil/a/");
     ok(fpnx("/home/phil/a/b.c"),          "/home/phil/a/b");
-   }
 
-  static void test_executed()
-   {currentTestNameSuffix();
-    ok(testsExecuted, "[executed]");
-   }
+    final FileNames f = new FileNames("aaa", testName());
+    ok(f.pl$(), "aaa/fileNames.pl");
+    ok(f.pl(),      "fileNames.pl");
 
-//  static void test_squeezeVerticalSpaces()
-//   {final Stack<StringBuilder>S = new Stack<>();
-//    S.push(new StringBuilder("a   aa           aaa"));
-//    S.push(new StringBuilder("bb  bbb          bbbb"));
-//    S.push(new StringBuilder("ccc cccc         ccccc"));
-//    squeezeVerticalSpaces(S);
-//    final String s = joinStringBuilders(S, "\n")+"\n";
-//                                            //testStop(s);
-//    ok(s, """
-//a   aa    aaa
-//bb  bbb   bbbb
-//ccc cccc  ccccc
-//""");
-//   }
+    final FileNames d = f.down("includes");
+    ok(d.pl$(), "aaa/includes/fileNames.pl");
+    ok(d.pl(),               "fileNames.pl");
+
+    final FileNames s = d.same("bbb");
+    ok(s.pl$(), "aaa/includes/bbb.pl");
+    ok(s.pl(),               "bbb.pl");
+
+    final FileNames u = d.goUp();
+say("AAAA", s);
+say("AAAA", u);
+    ok(s.pl$(), "aaa/bbb.pl");
+    ok(s.pl(),      "bbb.pl");
+   }
 
   static void test_replaceAll()
    {final StringBuilder s = new StringBuilder();
@@ -1675,8 +1699,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     test_ifs();
     test_md5();
     test_fileNames();
-    test_executed();
- // test_squeezeVerticalSpaces();
     test_modZero();
     test_hextoInt();
     test_formatComments();
