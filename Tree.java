@@ -1828,7 +1828,7 @@ Leaf           size:   4, count:   2
   public static void main(String[] args)                                                                                // Test if called as a program
    {testGroup = args.length > 0 ? args[0] : null;                                                                       // Test groups if supplied
     try                                                                                                                 // Get a traceback in a format clickable in Geany if something goes wrong to speed up debugging.
-     {deleteAllFiles(verilogFolder, 999);                                                                               // Delete generated Verilog files created by a prior run of the current test
+     {deleteAllFileInVerilogTestsFolder();                                                                              // Delete generated Verilog files created by a prior run of the current test
       if (github_actions) oldTests(); else newTests();                                                                  // Tests to run
       if (coverageAnalysis) coverageAnalysis(12);                                                                       // Coverage analysis
       say(subPrint());
