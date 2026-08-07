@@ -24,22 +24,26 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                             runSynthesis =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
+  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
 
-  final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
-  final static String                         verilogLog = fp(verilogFolder, "log");                                    // Verilog log folder
-  final static String                     verilogLogFile = fe(verilogLog,    "Log", "txt" );                            // Verilog log file showing instruction execution statistics for each test in text format
-  final static String                     verilogLogJson = fe(verilogLog,    "Log", "json");                            // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
-  final static String                       verilogTests = fp(verilogFolder, "tests");                                  // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
-  final static String                   verilogTraceFile = fe("traceVerilog", "txt");                                   // Verilog trace file
-  final static String                      javaTraceFile = fe("traceJava",    "txt");                                   // Java trace file
-  final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
+  final static String                          lefSuffix = "lef";                                                       // Suffix for library exchange format (LEF) files
+  final static String                          logSuffix = "log";                                                       // Suffix for log files
+  final static String                         jsonSuffix = "json";                                                      // Suffix for jason files
   final static String                       pythonSuffix = "py";                                                        // Suffix for python files
+  final static String                          txtSuffix = "txt";                                                       // Suffix for text files
+  final static String                      verilogSuffix = "v";                                                         // Suffix for verilog files
   final static String                        yosysSuffix = "ys";                                                        // Suffix for yosys files
+  final static String                      verilogFolder = "verilog/";                                                  // Verilog folder
+  final static String                         verilogLog = fp(verilogFolder, logSuffix);                                // Verilog log folder
+  final static String                     verilogLogFile = fe(verilogLog,    "Log", txtSuffix);                         // Verilog log file showing instruction execution statistics for each test in text format
+  final static String                     verilogLogJson = fe(verilogLog,    "Log", jsonSuffix);                        // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
+  final static String                       verilogTests = fp(verilogFolder, "tests");                                  // Verilog log file showing instruction execution statistics for each test in json format.  Although AI can process text it is helpful to have access to the same information in a structured format so that any plausible AI proposals can be evaluated at scale using conventional code accessing structured data cost because this is many times more cost effective
+  final static String                   verilogTraceFile = fe("traceVerilog", txtSuffix);                               // Verilog trace file
+  final static String                      javaTraceFile = fe("traceJava",    txtSuffix);                               // Java trace file
   final static String                verilogIncludeFiles = "includes";                                                  // Folder for include files
   final static String               siliconCompilerImage = "ghcr.io/philiprbrenan/sc:latest";                           // Podman container containing silicon compiler
   final static int padName = 12, padCR = 16,  padVerilog = 64;                                                          // Padding for components of the generated verilog code
@@ -63,7 +67,7 @@ public class Program extends Test                                               
   final DumpLocations                      dumpLocations = new DumpLocations();                                         // Locations in the code at which dumps have been requested
   final VerilogArrays                      verilogArrays = new VerilogArrays();                                         // Verilog read only array definitions tat are maoed to Read Only Memory to prevent Yosys from expanding them.
         VerilogArrays.Array              pcConstantArray = null;                                                        // Instruction to variable or memory used by the instruction. Mapped to read only memory so that Yos ys does not expand them into registers. Prefetched one instruction in advance to keep the main instruction loop fully occupied except at branches where a one instruction wait has to be inserted to allow the prefetch loop to get ahead again.
-        VerilogArrays.Array            pcToMatchSetArray = null;                                                        // Constants in instructions identified by program counter as above.
+        VerilogArrays.Array              pcMatchSetArray = null;                                                        // Constants in instructions identified by program counter as above.
   final TreeMap<Integer,Integer>              pcConstant = new TreeMap<>();                                             // Instruction equivalence set identified by program counter
   private int                                  currentPc = 0;                                                           // Current program counter
   private int                                     jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
@@ -100,6 +104,7 @@ public class Program extends Test                                               
     unitMemory      = Build.size   != null ? new Memory(Build.size) : null;                                             // Memory associated with program if any
     deleteAllFiles(verilogTestFolder(), 999);                                                                           // Delete generated Verilog files created by a prior run of the current test
     makePath(verilogTestFolder());                                                                                      // Verilog folder for this test
+    defaultFileName = fn(verilogTestFolder(), testName());                                                              // Most of the generated files will have names derived from this by adding the appropriate extension
     code();                                                                                                             // Load or execute the code associated with this program
    }
 
@@ -184,13 +189,13 @@ public class Program extends Test                                               
   void pcConstant(I I, Label Target) {pcConstant().put(I.instructionNumber, Target.offset);}                            // Save a constant label into the instruction to constant map
   void pcConstant(I I, int   Target) {pcConstant().put(I.instructionNumber, Target);}                                   // Save a constant integer into the instruction to constant map
 
-  String pName ( String Text)      {return pad(Text,    padName   );}                                                   // Pad Verilog names
-  String pCR (   String Text)      {return pad(Text,    padCR     );}                                                   // Pad Verilog control register names
-  String pExpr ( String Text)      {return pad(Text,    padVerilog);}                                                   // Pad Verilog expressions
+  String pName ( String Text)        {return pad(Text,    padName   );}                                                 // Pad Verilog names
+  String pCR (   String Text)        {return pad(Text,    padCR     );}                                                 // Pad Verilog control register names
+  String pExpr ( String Text)        {return pad(Text,    padVerilog);}                                                 // Pad Verilog expressions
 
-  String pqName (String Text)      {return pad(q(Text), padName   );}                                                   // Pad Verilog names
-  String pqCR (  String Text)      {return pad(q(Text), padCR     );}                                                   // Pad Verilog control register names
-  String pqExpr (String Text)      {return pad(q(Text), padVerilog);}                                                   // Pad Verilog expressions
+  String pqName (String Text)        {return pad(q(Text), padName   );}                                                 // Pad Verilog names
+  String pqCR (  String Text)        {return pad(q(Text), padCR     );}                                                 // Pad Verilog control register names
+  String pqExpr (String Text)        {return pad(q(Text), padVerilog);}                                                 // Pad Verilog expressions
 
   String        verilogTestFolder () {return fp(verilogTests,        currentTestNameSuffix());}                         // Folder for this test using Verilog
   String verilogTestIncludeFolder () {return fp(verilogTestFolder(), verilogIncludeFiles);}                             // Folder for arrays used in this test using Verilog
@@ -1486,15 +1491,18 @@ endmodule
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
+
       final String           scCmd = substitute("""
 podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {n}.py
 """, "f", fqn(verilogTestFolder()), "n", currentTestNameSuffix(), "image", siliconCompilerImage);                       // Silicon compiler command
+
       final String           ysCmd = substitute("""
 cd {f}; yosys -q {y}
 """,  "f", fn(pwd(), verilogTestFolder()), "y", yosysFile());
                                                                                                                         // Yosys command
-      g.siliconCompiler();    say("C=sc; " + scCmd);                                                                    // Generate python to drive silicon compiler
-      g.yosys();              say("C=ys; " + ysCmd);                                                                    // Generate tcl to drive yosys
+      g.generateSiliconCompiler(); if (!runSiliconCompiler) say("C=sc; " + scCmd);                                      // Generate python to drive silicon compiler
+      g.generateYosys();           if (!runYosys)           say("C=ys; " + ysCmd);                                      // Generate tcl to drive yosys
+      g.lef();                                                                                                          // Generate LEF files
 
       if (runVerilog)                                                                                                   // Run verilog
        {deleteFile(verilogTraceFile());                                                                                 // Clear Verilog trace file
@@ -1515,7 +1523,7 @@ cd {f}; yosys -q {y}
 
         ok(readFileAsString(verilogTraceFile()).equals(readFileAsString(javaTraceFile())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
 
-        if (runSynthesis)                                                                                               // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
+        if (runSiliconCompiler)                                                                                               // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
          {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
@@ -1525,6 +1533,7 @@ cd {f}; yosys -q {y}
          {final ExecCommand X = new ExecCommand(ysCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
+          ok(X.exitCode == 0);                                                                                          // Check return code from Yosys
          }
        }
 
@@ -1730,7 +1739,7 @@ cd {f}; yosys -q {y}
       s.append(f(            ", \"generateVerilog\" : \"%d\"",             generateVerilog ? 1 : 0));                   // Generate verilog version of each program
       s.append(f(                 ", \"runVerilog\" : \"%d\"",                  runVerilog ? 1 : 0));                   // Execute  verilog version of each program
       s.append(f(", \"suppressNamesInInstructions\" : \"%d\"", suppressNamesInInstructions ? 1 : 0));                   // Include names in instructions
-      s.append(f(",                \"runSynthesis\" : \"%d\"",                runSynthesis ? 1 : 0));                   // Run synthesis
+      s.append(f(",                \"runSiliconCompiler\" : \"%d\"",                runSiliconCompiler ? 1 : 0));                   // Run synthesis
       if (github_commit_sha != null) s.append(f(", \"github_commit_sha\" : \"%s\"", github_commit_sha));                // Commit sha if available
       return ""+s;
      }
@@ -1755,8 +1764,8 @@ cd {f}; yosys -q {y}
       int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
-      pcConstantArray   = verilogArrays().new Array("pcConstant",   pcConstant());                                      // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
-      pcToMatchSetArray = verilogArrays().new Array("pcToMatchSet", instructionMatches.pcToMatchSet());                 // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
+      pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
+      pcMatchSetArray = verilogArrays().new Array("pcMatchSet", instructionMatches.pcMatchSet());                       // Translate instruction numbers to first instances of that instruction to compress labels on execution loop case statement
 
       try
        (final var out = Files.newBufferedWriter(Path.of(codeFile)))                                                     // Write the verilog to a file
@@ -1847,9 +1856,9 @@ module {name};                                                                  
       case(pc)
 """);
         else                                                                                                            // Compress instruction labels
-        /*Execute case*/out.write("""
-      case (arrayData_pcToMatchSet)                                                                                     // Decode the instruction to be executed
-""");
+        /*Execute case*/out.write(substitute("""
+      case ({pcMatchSet})                                                                                              // Decode the instruction to be executed
+""", "pcMatchSet", pcMatchSetArray.dataRegisterName()));
 
         if (compressInstructions)                                                                                       // Compress instructions
          {if  (!compressInstructionLabels)                                                                              // Compress by writing all labels against the first instance of an instruction
@@ -2037,7 +2046,7 @@ endmodule
         return m.matches.firstElement() == I ? m : null;
        }
 
-      TreeMap<Integer,Integer> pcToMatchSet()                                                                           // Match instructions to sets of equivalent instructions
+      TreeMap<Integer,Integer> pcMatchSet()                                                                             // Match instructions to sets of equivalent instructions
        {final TreeMap<Integer,Integer> M = new TreeMap<>();                                                             // Instruction number to class of equivalent instructions
         for (Match m : sequence) for (I i : m.matches) M.put(i.instructionNumber, m.block);                             // Instruction to matching instructions block number
         return M;
@@ -2046,7 +2055,7 @@ endmodule
 
 //D2 Silicon compiler                                                                                                   // Create driving python to compile the verilog code using silicon compiler
 
-    String siliconCompiler()                                                                                            // Python code to drive silicon compiler
+    String generateSiliconCompiler ()                                                                                   // Python code to drive silicon compiler
      {final StringBuilder s = new StringBuilder();                                                                      // Generated code
       s.append(substitute("""
 #!/usr/bin/env python3
@@ -2055,10 +2064,11 @@ from siliconcompiler         import ASIC, Design
 from siliconcompiler.targets import skywater130_demo
 
 def gen(module):
-  design = Design     (module)
-  design.set_topmodule(f"{module}",   fileset="rtl")
-  design.add_file     (f"{module}.v", fileset="rtl")
-  design.add_define   (f"SYNTHESIS",  fileset="rtl")
+  design = Design     (module)                                                                                          # Silicon compiler work flow driver
+  design.set_topmodule(f"{module}",     fileset="rtl")
+  design.add_file     (f"{module}.{v}", fileset="rtl")
+  design.add_file     (f"{module}.{l}", fileset="rtl")
+  design.add_define   ("SYNTHESIS",     fileset="rtl")
 
   project = ASIC(design)
   project.add_fileset(["rtl"])
@@ -2069,14 +2079,23 @@ def gen(module):
 
 if __name__ == "__main__":
     gen(sys.argv[1] if len(sys.argv) > 1 else "{name}")
-""", "name", name));
+""", "name", name, "lef", lefFileName(), "v", verilogSuffix, "l", lefSuffix));
 
       return writeFile(scDriverCodeFile(), s);
      }
 
+    String lefFileName ()  {return fe(verilogTestFolder(), name, lefSuffix);}                                           // The name of the LEF file describing the black boxes used by this design
+
+    void lef ()                                                                                                         // Generate LEF macros in one file
+     {final Lef l = new Lef();
+                l.macro("array_pcConstant");
+                l.macro("array_pcMatchSet");
+                l.write(lefFileName());
+     }
+
 //D2 Yosys                                                                                                              // Generate yosys commands
 
-    String yosys()                                                                                                      // Tcl to drive yosys
+    String generateYosys()                                                                                              // Tcl to drive yosys
      {final StringBuilder s = new StringBuilder();                                                                      // Generated code
       s.append(substitute("""
 read_verilog -sv -D SYNTHESIS {n}.v
@@ -2112,9 +2131,9 @@ check
 
   String dumpVerilogVariablesName () {return "dumpVerilogVariables";}                                                   // Name of the verilog method to dump all the variables to the trace file
   String dumpVerilogVariables ()                                                                                        // Dump the value of an integer to the verilog trace file
-   {final String variables = "variables";                                                                               // Include file name
+   {final String   variables = "variables";                                                                             // Include file name
     final String includeFile = fe(verilogIncludeFiles, variables, verilogSuffix);                                       // Put the dump code into a file that can be switched in and out by the preprocessor.  ifdef preprocessor statements fail if there are too many intervening statements before the closing endif
-    final StringBuilder s = new StringBuilder();
+    final StringBuilder    s = new StringBuilder();
     s.append(substitute("""
 
   task automatic {name} ();
@@ -2220,12 +2239,12 @@ check
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
   integer   {dr};                                                                                                       // Array data register
-  {name} {name}_rom (.address({ir}), .data({dr}));
+  {name} {name} (.address({ir}), .data({dr}));
 """, "dr", dataRegisterName(), "ir", indexRegisterName(), "name", arrayName());
 
         else return substitute("""
   integer   {dr};                                                                                                       // Define array data register
-  {name} {name}_rom (.address(pc), .data({dr}));                                                                        // Connect to module providing array
+  {name} {name} (.address(pc), .data({dr}));                                                                            // Connect to module providing array
 """, "dr", dataRegisterName(),  "name", arrayName());
        }
 
@@ -2989,7 +3008,7 @@ WriteBoolIndex =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
+   {//oldTests();
     test_addition(!true);
    }
 
