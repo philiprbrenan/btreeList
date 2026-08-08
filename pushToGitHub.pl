@@ -98,6 +98,7 @@ jobs:
 
     container:
       image: ghcr.io/philiprbrenan/btree:latest
+      options: --privileged
 
     strategy:
       fail-fast: false
