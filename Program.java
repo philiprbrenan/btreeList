@@ -24,8 +24,8 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
-  final boolean                                 runYosys = true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
+  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler
+  final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
         int                                     maxSteps = 99_999;                                                      // Number of steps permitted in code execution - this provides some protection against endless loops during development
@@ -329,7 +329,7 @@ public class Program extends Test                                               
    {boolean    i = false;                                                                                               // Value of the boolean
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     boolean   nd = false;                                                                                               // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
-    final int id = program().nextBitId++;                                                                              // Unique id for Bit
+    final int id = program().nextBitId++;                                                                               // Unique id for Bit
     String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
@@ -1475,7 +1475,7 @@ endmodule
 
       final String           scCmd = substitute("""
 podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                                 # Silicon compiler command
-""", "f", verilogTestFolder.folder, "p", verilogTestFolder.py$(), "image", siliconCompilerImage);
+""", "f", verilogTestFolder.folderWithPwd(), "p", verilogTestFolder.py(), "image", siliconCompilerImage);
 
       final String           ysCmd = substitute("""
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
@@ -1691,7 +1691,7 @@ cd {f}; yosys -q {y}                                                            
 //D1 Verilog                                                                                                            // Generate Verilog
 
   class GenerateVerilog                                                                                                 // Generate verilog
-   {final String         name = testName();                                                                // Name of test
+   {final String         name = testName();                                                                             // Name of test
     final String       source = fnx(mainFileName());                                                                    // Main source file
     final String     dateTime = dateTime();                                                                             // Date and time of test
     final int       execSteps = steps;                                                                                  // Number of execution steps
@@ -1773,8 +1773,6 @@ module {name};                                                                  
 `endif
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer         traceFile;                                                                                            // Write verilog trace records to this file
-//integer             index;                                                                                            // Index for clearing memory
-//integer        upperIndex;                                                                                            // Upper limit of a block of array entries being loaded in parallel as array load times are very slow if done one element at a time
   integer       sourceIntId;                                                                                            // Id of source int
   integer      source2IntId;                                                                                            // Id of source2 int
   integer       targetIntId;                                                                                            // Id of target int
@@ -1801,7 +1799,6 @@ module {name};                                                                  
   end
 """, "b", dimensionBits));
 
-//      for(VerilogArrays.Array a : verilogArrays.arrays()) if (!a.pcIndexed)out.write(a.define());                     // Define verilog arrays
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
 
         for(Memory m : memories)                                                                                        // Control registers for each memory
@@ -1838,7 +1835,7 @@ module {name};                                                                  
 """);
         else                                                                                                            // Compress instruction labels
         /*Execute case*/out.write(substitute("""
-      case ({pcMatchSet})                                                                                              // Decode the instruction to be executed
+      case ({pcMatchSet})                                                                                               // Decode the instruction to be executed
 """, "pcMatchSet", pcMatchSetArray.dataRegisterName()));
 
         if (compressInstructions)                                                                                       // Compress instructions
@@ -1921,7 +1918,6 @@ module {name};                                                                  
   end
 """, "traceFile", traceFile));
 
-//      for(VerilogArrays.Array    a : verilogArrays().arrays())  if (!a.pcIndexed) out.write(a.load());                // Write array definitions
         for(Memory                 m : memories())                out.write(dumpVerilogMemoryInDecimal(m));             // Dump memories in Verilog
         for(DumpLocations.Location d : dumpLocations().locations) out.write(d.define());                                // Locations in program that have requested dumps
 
@@ -2060,8 +2056,8 @@ def gen(module):
   project.summary()
 
 if __name__ == "__main__":
-    gen(sys.argv[1] if len(sys.argv) > 1 else "{name}")
-""", "lef", t.lef$(), "v", t.v(), "l", t.lef()));
+    gen(sys.argv[1] if len(sys.argv) > 1 else "{n}")
+""", "lef", t.lef$(), "v", t.v(), "l", t.lef(), "n", name));
 
       return writeFile(t.py$(), s);
      }
@@ -2234,15 +2230,6 @@ check
         for(int i = 0; i < array.length; ++i) s.append(f("%8x\n", array[i]));
         writeFile(verilogTestIncludesFolder.same(name).v$(), s);
        }
-
-//      String load ()                                                                                                    // Load the array by writing its values in hex to a file and then loading that file via $readmemh
-//       {final String File = writeInHex();                                                                               // Absolute path name to array file
-//        final String file = fn(verilogIncludeFiles, fnex(File));                                                        // Relative path name to array file
-//        return   substitute("""
-//
-//  initial $readmemh("{file}", {array}, 0, {size});
-//""", "file", file, "array", arrayName(), "size", ""+array.length);
-//       }
 
       String module()                                                                                                   // Create a Verilog module to represent a memory
        {writeInHex();                                                                                                   // Write hex representation of array
@@ -3007,3 +2994,4 @@ WriteBoolIndex =        0
    }
  }
 //https://github.com/philiprbrenan/btreeList/compare/oldSha...newSha
+// ^.{10,119}//
