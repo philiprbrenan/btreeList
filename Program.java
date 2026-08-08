@@ -1472,11 +1472,10 @@ endmodule
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
-      final String               d = github_actions ? "docker" : "podman";                                              // Github has docker installed not podman
 
       final String           scCmd = substitute("""
-{d} run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                                    # Silicon compiler command
-""", "f", verilogTestFolder.folderWithCwd(), "p", verilogTestFolder.py(), "image", siliconCompilerImage, "d", d);
+podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                                  # Silicon compiler command
+""", "f", verilogTestFolder.folderWithCwd(), "p", verilogTestFolder.py(), "image", siliconCompilerImage);
 
       final String           ysCmd = substitute("""
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
