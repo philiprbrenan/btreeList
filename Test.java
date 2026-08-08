@@ -173,16 +173,15 @@ public class Test                                                               
 
   static String formatComments(String Input)                                                                            // Vertically align comments in column 120 to the extent possible
    {final int           N = 120;                                                                                        // Alignment column
-    final String        C = "//";                                                                                       // Comment symbol
     final String []     L = Input.split("\\R", -1);                                                                     // Split input into lines
     final StringBuilder R = new StringBuilder();                                                                        // Result
-    final String        f = "%-" + N + "s%s%s%n";
+    final String        f = "%-" + N + "s%s%n";
     for (String l : L)
-     {final int c = l.indexOf(C);
+     {final int c = max(l.indexOf("//"), l.indexOf("#"));
       if (c >= 0)
        {final String a = l.substring(0, c).stripTrailing();
-        final String b = l.substring(c + C.length());
-        R.append(f(f, a, C, b));
+        final String b = l.substring(c);
+        R.append(f(f, a, b));
        }
       else R.append(l+"\n");
      }
@@ -1679,7 +1678,7 @@ a   aa    AAA
 
   static void test_formatComments()
    {final String s = """
-a // Aaaa
+a # Aaaa
 b                                                                                                                                 // Bbbb
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc // Cccc
 // Ddddd
@@ -1687,7 +1686,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 """;
     ok(formatComments(s), """
-a                                                                                                                       // Aaaa
+a                                                                                                                       # Aaaa
 b                                                                                                                       // Bbbb
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc// Cccc
                                                                                                                         // Ddddd
