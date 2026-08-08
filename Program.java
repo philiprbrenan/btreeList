@@ -1475,7 +1475,9 @@ endmodule
 
       final String           scCmd = substitute("""
 podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                                 # Silicon compiler command
-""", "f", verilogTestFolder.folderWithCwd(), "p", verilogTestFolder.py(), "image", siliconCompilerImage);
+""",
+"f", verilogTestFolder.folderWithCwd(),
+"p", verilogTestFolder.py(), "image", siliconCompilerImage);
 
       final String           ysCmd = substitute("""
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
