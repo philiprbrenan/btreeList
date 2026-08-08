@@ -172,12 +172,12 @@ public class Test                                                               
    }
 
   static String formatComments(String Input)                                                                            // Vertically align comments in column 120 to the extent possible
-   {final int           N = 120;                                                                                        // Alignment column
+   {final int           N = 120 - 1;                                                                                    // Alignment column minus one because there is a space in front of each comment symbol
     final String []     L = Input.split("\\R", -1);                                                                     // Split input into lines
     final StringBuilder R = new StringBuilder();                                                                        // Result
     final String        f = "%-" + N + "s%s%n";
     for (String l : L)
-     {final int c = max(l.indexOf("//"), l.indexOf(" #"));
+     {final int c = max(l.indexOf(" //"), l.indexOf(" #"));
       if (c >= 0)
        {final String a = l.substring(0, c).stripTrailing();
         final String b = l.substring(c);
@@ -986,6 +986,7 @@ public class Test                                                               
   static class FileNames                                                                                                // File name generator
    {final String folder;                                                                                                // Default folder
     final String file;                                                                                                  // Default file name
+    final String cwd = Path.of(".").toAbsolutePath().normalize().toString();                                            // Current working folder
 
     FileNames (String Folder)              {this(Folder, "");}                                                          // Describe a folder in which to create files
     FileNames ()                           {this(".",    "");}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
@@ -1025,9 +1026,8 @@ public class Test                                                               
     void    delete_v () {deleteFile(   v$());}
     void   delete_ys () {deleteFile(  ys$());}
 
-    String folderWithPwd() {return fp(pwd(), folder);}
-
-    public String toString()  {return "FileNames(folder: "+folder+", file: "+file+")";}
+    String folderWithCwd ()   {return fp(cwd, folder);}
+    public String toString () {return "FileNames(folder: "+folder+", file: "+file+")";}
    }
 
   static String fqn(String Relative) {return Path.of(Relative).toAbsolutePath().normalize().toString();}                // Fully qualified file name from filename relative to current working directory
@@ -1690,8 +1690,8 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     ok(formatComments(s), """
 a                                                                                                                       # Aaaa
 b                                                                                                                       // Bbbb
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc// Cccc
-                                                                                                                        // Ddddd
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc // Cccc
+// Ddddd
   array_pcConstant array_pcConstant_rom (.address(pc), .data(arrayData_pcConstant));                                    // Connect to module providing array
 """);
    }
