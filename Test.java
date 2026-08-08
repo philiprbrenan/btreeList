@@ -1025,8 +1025,7 @@ public class Test                                                               
     void    delete_v () {deleteFile(   v$());}
     void   delete_ys () {deleteFile(  ys$());}
 
-    String folderWithCwd ()   {return github_actions ? System.getenv("GITHUB_WORKSPACE") :
-                                Path.of(".").toAbsolutePath().normalize().toString();}
+    String folderWithCwd ()   {return fp(""+Path.of(".").toAbsolutePath().normalize(), folder);}                        // Current working directory
     public String toString () {return "FileNames(folder: "+folder+", file: "+file+")";}
    }
 
