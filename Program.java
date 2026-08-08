@@ -1474,7 +1474,7 @@ endmodule
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
 
       final String           scCmd = substitute("""
-podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                                  # Silicon compiler command
+podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                                 # Silicon compiler command
 """, "f", verilogTestFolder.folderWithCwd(), "p", verilogTestFolder.py(), "image", siliconCompilerImage);
 
       final String           ysCmd = substitute("""
