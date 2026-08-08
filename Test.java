@@ -989,7 +989,7 @@ public class Test                                                               
     final String cwd = Path.of(".").toAbsolutePath().normalize().toString();                                            // Current working folder
 
     FileNames (String Folder)              {this(Folder, "");}                                                          // Describe a folder in which to create files
-    FileNames ()                           {this(".",    "");}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
+    FileNames ()                           {this(".",    ""); say("AAAA", cwd);}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
     FileNames (String Folder, String File) {folder = Folder; file = fnx(File);}                                         // Describe a file name without an extension, variants of which can be made by adding an extension
 
     FileNames down (String Folder) {return new FileNames(fn(folder, Folder), file);}                                    // Create a set of file names for a sub folder of the original fileset
