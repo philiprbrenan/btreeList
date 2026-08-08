@@ -1474,11 +1474,11 @@ endmodule
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
 
       final String           scCmd = substitute("""
-podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}
-""", "f", verilogTestFolder.folder, "p", verilogTestFolder.py$(), "image", siliconCompilerImage);                       // Silicon compiler command
+podman run --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                                 # Silicon compiler command
+""", "f", verilogTestFolder.folder, "p", verilogTestFolder.py$(), "image", siliconCompilerImage);
 
       final String           ysCmd = substitute("""
-cd {f}; yosys -q {y}
+cd {f}; yosys -q {y}                                                                                                    # Yosys command
 """, "f", verilogTestFolder.folder, "y", verilogTestFolder.ys());
                                                                                                                         // Yosys command
       g.generateSiliconCompiler(); if (!runSiliconCompiler) say("C=sc; " + scCmd);                                      // Generate python to drive silicon compiler
@@ -1801,7 +1801,7 @@ module {name};                                                                  
   end
 """, "b", dimensionBits));
 
-        for(VerilogArrays.Array a : verilogArrays.arrays()) if (!a.pcIndexed)out.write(a.define());                     // Define verilog arrays
+//      for(VerilogArrays.Array a : verilogArrays.arrays()) if (!a.pcIndexed)out.write(a.define());                     // Define verilog arrays
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
 
         for(Memory m : memories)                                                                                        // Control registers for each memory
@@ -2046,7 +2046,7 @@ from siliconcompiler         import ASIC, Design
 from siliconcompiler.targets import skywater130_demo
 
 def gen(module):
-  design = Design     (module)                                                                                          #// Silicon compiler work flow driver
+  design = Design     (module)                                                                                          # Silicon compiler work flow driver
   design.set_topmodule(f"{module}", fileset="rtl")
   design.add_file     (f"{v}",      fileset="rtl")
   design.add_file     (f"{l}",      fileset="rtl")
@@ -2078,7 +2078,7 @@ if __name__ == "__main__":
     String generateYosys()                                                                                              // Tcl to drive yosys
      {final StringBuilder s = new StringBuilder();                                                                      // Generated code
       s.append(substitute("""
-read_verilog -sv -D SYNTHESIS {n}.v
+read_verilog -sv -D SYNTHESIS {n}.v                                                                                     # Yosys code to confirm the verilog can be synthesised
 hierarchy -top {n}
 proc
 check
