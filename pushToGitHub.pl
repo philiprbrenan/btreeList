@@ -115,6 +115,9 @@ jobs:
         cp $J $c
         tree --prune -I '*.class'
         env
+        id
+        podman info
+        podman version
 
     - name: Java
       run: |
