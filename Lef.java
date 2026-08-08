@@ -22,11 +22,6 @@ public class Lef extends Test
     final int HEIGHT = 200;
     final int BITS   = 32;
 
-    s("VERSION 5.8 ;");
-    s("BUSBITCHARS \"[]\" ;");
-    s("DIVIDERCHAR \"/\" ;");
-    s();
-
     s("MACRO "+Name);
     s("  CLASS BLOCK ;");
     s("  ORIGIN 0 0 ;");
@@ -62,12 +57,15 @@ public class Lef extends Test
       s();
      }
 
-    s("END array_pcConstant");
-    s();
-    s("END LIBRARY");
+    s("END "+Name);
    }
 
-  void write(String File) {writeFile(File, s);}                                                                         // Write lef macros to a file
+  void write(String File)                                                                                               // Write lef macros to a file
+   {s();
+    s("END LIBRARY");
+
+    writeFile(File, s);
+   }
 
   public static void main(String[] args)
    {final Lef l = new Lef();
