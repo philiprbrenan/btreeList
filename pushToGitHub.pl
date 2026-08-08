@@ -114,6 +114,7 @@ jobs:
         mkdir -p verilog $c
         cp $J $c
         tree --prune -A -I '*.class'
+        env
 
     - name: Java
       run: |
