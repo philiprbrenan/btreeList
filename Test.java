@@ -986,10 +986,9 @@ public class Test                                                               
   static class FileNames                                                                                                // File name generator
    {final String folder;                                                                                                // Default folder
     final String file;                                                                                                  // Default file name
-    final String cwd = Path.of(".").toAbsolutePath().normalize().toString();                                            // Current working folder
 
     FileNames (String Folder)              {this(Folder, "");}                                                          // Describe a folder in which to create files
-    FileNames ()                           {this(".",    ""); say("AAAA", cwd);}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
+    FileNames ()                           {this(".",    "");}                                                          // Create files in this folderDescribe a file name without an extension, variants of which can be made by adding an extension
     FileNames (String Folder, String File) {folder = Folder; file = fnx(File);}                                         // Describe a file name without an extension, variants of which can be made by adding an extension
 
     FileNames down (String Folder) {return new FileNames(fn(folder, Folder), file);}                                    // Create a set of file names for a sub folder of the original fileset
@@ -1026,7 +1025,8 @@ public class Test                                                               
     void    delete_v () {deleteFile(   v$());}
     void   delete_ys () {deleteFile(  ys$());}
 
-    String folderWithCwd ()   {return fp(cwd, folder);}
+    String folderWithCwd ()   {return github_actions ? System.getenv("GITHUB_WORKSPACE") :
+                                Path.of(".").toAbsolutePath().normalize().toString();}
     public String toString () {return "FileNames(folder: "+folder+", file: "+file+")";}
    }
 
