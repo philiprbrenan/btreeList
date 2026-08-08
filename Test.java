@@ -177,7 +177,7 @@ public class Test                                                               
     final StringBuilder R = new StringBuilder();                                                                        // Result
     final String        f = "%-" + N + "s%s%n";
     for (String l : L)
-     {final int c = max(l.indexOf("//"), l.indexOf("#"));
+     {final int c = max(l.indexOf("//"), l.indexOf(" #"));
       if (c >= 0)
        {final String a = l.substring(0, c).stripTrailing();
         final String b = l.substring(c);
@@ -1024,6 +1024,8 @@ public class Test                                                               
     void  delete_txt () {deleteFile( txt$());}
     void    delete_v () {deleteFile(   v$());}
     void   delete_ys () {deleteFile(  ys$());}
+
+    String folderWithPwd() {return fp(pwd(), folder);}
 
     public String toString()  {return "FileNames(folder: "+folder+", file: "+file+")";}
    }
