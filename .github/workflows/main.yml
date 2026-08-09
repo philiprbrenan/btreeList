@@ -1,4 +1,4 @@
-# Test 2026-08-09 at 04:30:47
+# Test 2026-08-09 at 04:33:09
 
 name: Test
 run-name: btreeList
@@ -37,7 +37,7 @@ jobs:
     - name: PodMan state
       run: |
         grep '^Cap' /proc/self/status
-        podman run --rm --privileged --security-opt seccomp=unconfined alpine true
+        podman run --rm --privileged --cgroupns=host alpine true
         id
         podman info
         podman version
