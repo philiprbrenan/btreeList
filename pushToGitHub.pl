@@ -116,9 +116,10 @@ jobs:
         cp $J $c
         tree --prune -I '*.class'
 
-    - name: PPod man state
+    - name: PodMan state
       run: |
-        capsh --print
+        grep '^Cap' /proc/self/status
+        id
         podman info
         podman version
 
