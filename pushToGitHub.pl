@@ -119,7 +119,7 @@ jobs:
     - name: PodMan state
       run: |
         grep '^Cap' /proc/self/status
-        podman run --rm --privileged --cgroupns=host alpine true
+        podman run --rm --privileged --cgroups=disabled  alpine true
         id
         podman info
         podman version
