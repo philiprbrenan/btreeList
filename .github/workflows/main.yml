@@ -1,4 +1,4 @@
-# Test 2026-08-09 at 04:26:41
+# Test 2026-08-09 at 04:28:41
 
 name: Test
 run-name: btreeList
@@ -34,9 +34,10 @@ jobs:
         cp BitSet.java Branch.java Leaf.java Lef.java Program.java Slots.java Test.java Tree.java com/AppaApps/Silicon
         tree --prune -I '*.class'
 
-    - name: PPod man state
+    - name: PodMan state
       run: |
-        capsh --print
+        grep '^Cap' /proc/self/status
+        id
         podman info
         podman version
 
