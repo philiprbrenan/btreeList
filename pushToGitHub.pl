@@ -21,6 +21,7 @@ my $wfcpd   = q(.github/workflows/cpd.yml);                                     
 my @ext     = qw(c java pl md);                                                                                         # Extensions of files to upload to github
 my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
 my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
+   $include = q(Program);                                                                                               # Java files to include in testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
@@ -119,8 +120,8 @@ jobs:
     - name: PodMan state
       run: |
         grep '^Cap' /proc/self/status
-        podman run --rm --privileged --cgroups=disabled  alpine true
-        podman run --rm --privileged --cgroups=disabled  --userns=keep-id ghcr.io/philiprbrenan/sc:latest true
+        #podman run --rm --privileged --cgroups=disabled  alpine true
+        #podman run --rm --privileged --cgroups=disabled  --userns=keep-id ghcr.io/philiprbrenan/sc:latest true
         id
         podman info
         podman version
