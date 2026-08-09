@@ -1475,7 +1475,7 @@ endmodule
       final String           scCmd = substitute("""
 podman run {c} --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
 """,
-"c", github_actions ? "--cgroups=disabled" : "",                                                                        // Suppress c-groups if we are already inside a container
+"c", github_actions ? "--privileged --cgroups=disabled" : "",                                                           // Suppress c-groups if we are already inside a container
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
 "p", verilogTestFolder.py(), "image", siliconCompilerImage);                                                            // Python to run in which image
 
