@@ -1472,8 +1472,9 @@ endmodule
      {final GenerateVerilog g = new GenerateVerilog();                                                                  // Generate corresponding Verilog code and run it
       final StringBuilder  message = new StringBuilder(g.message());                                                    // Message describing outcome of execution (all on one line)
       final StringBuilder     json = new StringBuilder(g.json   ());                                                    // Json describing outcome of execution (all on one line)
+//podman run {c} --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
       final String           scCmd = substitute("""
-podman run {c} --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
+podman run {c} --rm --network host --user=phil -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
 """,
 "c", github_actions ? "--privileged --cgroups=disabled" : "",                                                           // Suppress c-groups if we are already inside a container
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
