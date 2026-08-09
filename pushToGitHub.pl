@@ -120,7 +120,7 @@ jobs:
       run: |
         grep '^Cap' /proc/self/status
         podman run --rm --privileged --cgroups=disabled  alpine true
-        podman run --rm --privileged --cgroups=disabled  ghcr.io/philiprbrenan/sc:latest true
+        podman run --rm --privileged --cgroups=disabled  --userns=keep-id ghcr.io/philiprbrenan/sc:latest true
         id
         podman info
         podman version
