@@ -115,8 +115,10 @@ jobs:
         mkdir -p verilog $c
         cp $J $c
         tree --prune -I '*.class'
-        env
-        id
+
+    - name: PPod man state
+      run: |
+        capsh --print
         podman info
         podman version
 
