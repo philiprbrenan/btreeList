@@ -215,22 +215,9 @@ public final class Gds extends Test                                             
 
   static void test_macros()
    {final String f = tempFile();
-    say("AAAA", f);
     final Gds g = new Gds(f);
-    g.rectangle(
-      "array_pcConstant",
-      100,       // width, um
-      200,       // height, um
-      68,        // layer
-      20         // datatype
-    );
-
-    g.rectangle(
-      "array_pcMatchSet",
-      100,
-      200,
-      68,
-      20);
+    g.rectangle("array_pcConstant",  100, 200, 68, 20);
+    g.rectangle("array_pcMatchSet",  100, 200, 68, 20);
     g.close();
     ok(md5SumFile(f), "80eea71a195b450aa837333ab7f03905");
    }
