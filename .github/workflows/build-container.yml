@@ -1,4 +1,4 @@
-# Test 2026-08-08 at 18:42:18
+# Test 2026-08-11 at 18:17:27
 name: Build container image to run tests more quickly by avoiding initial installs
 
 on:
@@ -30,7 +30,7 @@ jobs:
           RUN rm -rf /var/lib/apt/lists/*
           RUN apt-get update
 
-          RUN DEBIAN_FRONTEND=noninteractive apt-get install -y git iverilog  openjdk-25-jdk-headless tree yosys podman
+          RUN DEBIAN_FRONTEND=noninteractive apt-get install -y git iverilog  openjdk-25-jdk-headless tree yosys podman gh
           RUN rm -rf /var/lib/apt/lists/*
 
           WORKDIR /workspace
