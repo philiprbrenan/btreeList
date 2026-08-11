@@ -1483,11 +1483,13 @@ endmodule
 //podman run {c} --rm --network host --user=phil      -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
 
       final String           scCmd = substitute("""
-podman run {c} --rm --network host -v {f}:{f} -w {f} "{image}" python3 {p}                                              # Silicon compiler command
+podman run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                                  # Silicon compiler command
 """,
 "c", github_actions ? "--privileged --cgroups=disabled" : "--userns=keep-id",                                           // Suppress c-groups if we are already inside a container
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
-"p", verilogTestFolder.py(), "image", siliconCompilerImage);                                                            // Python to run in which image
+"i", siliconCompilerImage,                                                                                              // Python to run in which image
+"n", fp("/home/phil/btreeList/verilog/test", verilogTestFolder.folder),                                                 // Folder name in container - which we control
+"p", verilogTestFolder.py());
 
       final String           ysCmd = substitute("""
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
