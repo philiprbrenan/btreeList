@@ -21,7 +21,7 @@ my $wfcpd   = q(.github/workflows/cpd.yml);                                     
 my @ext     = qw(c java pl md);                                                                                         # Extensions of files to upload to github
 my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
 my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
-#  $include = q(Program);                                                                                               # Java files to include in testing as they are not yet ready
+   $include = q(Program);                                                                                               # Java files to include in testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
@@ -174,6 +174,10 @@ END
     needs: test
     if: github.event_name == 'push' && needs.test.result == 'success'
     runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/philiprbrenan/btree:latest
+      options: --privileged
 
     permissions:
       contents: write
