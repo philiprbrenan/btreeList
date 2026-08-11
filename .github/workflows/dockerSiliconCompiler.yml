@@ -1,4 +1,4 @@
-# Test 2026-08-11 at 21:53:03
+# Test 2026-08-11 at 23:52:51
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -10,51 +10,51 @@ on:
 
 jobs:
 
-  build:
-    permissions:
-      contents: read
-      packages: write                                                                                                   # Needed for GHCR push
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: 'Install silicon compiler in a docker container based on: https://docs.siliconcompiler.com/en/stable/user_guide/installation.html'
-      run: |
-        cat << 'EOF' > Dockerfile
-        FROM ubuntu:22.04
-
-        ENV DEBIAN_FRONTEND=noninteractive
-        ENV TZ=Etc/UTC
-
-        RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*; useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
-
-        # Everything below runs as phil
-        USER phil
-        WORKDIR /home/phil
-
-        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
-
-        ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-        CMD ["/bin/bash", "--login"]
-        EOF
-
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v2
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build Docker image
-      run: |
-        docker build -t ghcr.io/philiprbrenan/sc:latest .
-
-    - name: Push Docker image to GHCR
-      run: |
-        docker push ghcr.io/philiprbrenan/sc:latest
+#  build:
+#    permissions:
+#      contents: read
+#      packages: write                                                                                                   # Needed for GHCR push
+#
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - name: Checkout code
+#      uses: actions/checkout@v4
+#
+#    - name: 'Install silicon compiler in a docker container based on: https://docs.siliconcompiler.com/en/stable/user_guide/installation.html'
+#      run: |
+#        cat << 'EOF' > Dockerfile
+#        FROM ubuntu:22.04
+#
+#        ENV DEBIAN_FRONTEND=noninteractive
+#        ENV TZ=Etc/UTC
+#
+#        RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*; useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+#
+#        # Everything below runs as phil
+#        USER phil
+#        WORKDIR /home/phil
+#
+#        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
+#
+#        ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+#        CMD ["/bin/bash", "--login"]
+#        EOF
+#
+#    - name: Log in to GitHub Container Registry
+#      uses: docker/login-action@v2
+#      with:
+#        registry: ghcr.io
+#        username: ${{ github.actor }}
+#        password: ${{ secrets.GITHUB_TOKEN }}
+#
+#    - name: Build Docker image
+#      run: |
+#        docker build -t ghcr.io/philiprbrenan/sc:latest .
+#
+#    - name: Push Docker image to GHCR
+#      run: |
+#        docker push ghcr.io/philiprbrenan/sc:latest
 
   test:
     needs: build
@@ -63,7 +63,7 @@ jobs:
 
     container:
       image: ghcr.io/philiprbrenan/sc:latest
-      options: --privileged
+      options: --privileged --user root
 
     permissions:
       contents: write
