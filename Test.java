@@ -185,7 +185,7 @@ public class Test                                                               
        }
       else R.append(l+"\n");
      }
-    return nws(""+R);
+    return (""+R).replaceFirst("\\R+$", "\n");
    }
 
   static String nws (Object S)                                                                                          // Normalize white space in a string describing an object
@@ -834,31 +834,32 @@ public class Test                                                               
     return FilePath;
    }
 
-  static void writeFile (String FilePath, String String)                                                                // Write a string to a file
-   {writeFile(FilePath, new StringBuilder(String));
+  static String writeFile (String FilePath, String String)                                                                // Write a string to a file
+   {return writeFile(FilePath, new StringBuilder(String));
    }
 
-  static void deleteFile (String FilePath, boolean required)                                                            // Delete a file
+  static String deleteFile (String FilePath, boolean required)                                                            // Delete a file
    {try
      {Files.delete(Paths.get(FilePath));
      }
     catch (Exception e)
      {if (required) stop("Cannot delete file", FilePath, e);
      }
+    return FilePath;
    }
-  static void deleteFile (String FilePath) {deleteFile(FilePath, false);}
+  static String deleteFile (String FilePath) {return deleteFile(FilePath, false);}
 
-  static void makePath (String folder)                                                                                  // Make a path
-   {if (folder == null) return;
-    try
-     {Files.createDirectories(Paths.get(folder));
+  static String makePath (String Folder)                                                                                  // Make a path
+   {try
+     {Files.createDirectories(Paths.get(Folder));
      }
     catch (FileAlreadyExistsException e)
-     {stop("Cannot make path", folder, e);
+     {stop("Cannot make path", Folder, e);
      }
     catch (Exception e)
-     {stop("Cannot make path", folder, e);
+     {stop("Cannot make path", Folder, e);
      }
+    return Folder;
    }
 
   static Stack<Path> findFiles (String FilePath)                                                                        // Find all files in and below a folder
@@ -1680,6 +1681,7 @@ a   aa    AAA
   static void test_formatComments()
    {final String s = """
 a # Aaaa
+
 b                                                                                                                                 // Bbbb
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc // Cccc
 // Ddddd
@@ -1688,6 +1690,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 """;
     ok(formatComments(s), """
 a                                                                                                                       # Aaaa
+
 b                                                                                                                       // Bbbb
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc // Cccc
 // Ddddd
