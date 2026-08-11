@@ -36,7 +36,7 @@ public class Lef extends Test
       s("    DIRECTION INPUT ;");
       s("    USE SIGNAL ;");
       s("    PORT");
-      s("      LAYER metal1 ;");
+      s("      LAYER met1 ;");
       s("        RECT 0 " + y + " 2 " + (y + 2) + " ;");
       s("    END");
       s("  END address[" + bit + "]");
@@ -50,7 +50,7 @@ public class Lef extends Test
       s("    DIRECTION OUTPUT ;");
       s("    USE SIGNAL ;");
       s("    PORT");
-      s("      LAYER metal1 ;");
+      s("      LAYER met1 ;");
       s("        RECT " + (WIDTH - 2) + " " + y + " " + WIDTH + " " + (y + 2) + " ;");
       s("    END");
       s("  END data[" + bit + "]");
