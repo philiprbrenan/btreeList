@@ -189,7 +189,9 @@ END
         run: |
           javac -g -d Classes -cp Classes $c/*.java
           jar -v --create --file Silicon.jar -C Classes .
-          tree
+          pwd
+          ls -lh Silicon.jar
+          tree -L 2
 
       - name: Release JAR file
         env:
