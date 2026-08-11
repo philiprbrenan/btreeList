@@ -96,7 +96,7 @@ jobs:
     - name: test container
       run: |
         pip show siliconcompiler
-        python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
+        python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'
 END
 
 my $f = writeFileUsingSavedToken $user, $repo, $wf,     $y;                                                             # Upload workflow
