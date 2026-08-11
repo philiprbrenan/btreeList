@@ -1,4 +1,4 @@
-# Test 2026-07-27 at 19:16:13
+# Test 2026-08-11 at 20:50:58
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -10,7 +10,7 @@ on:
 
 jobs:
 
-  test:
+  build:
     permissions:
       contents: read
       packages: write                                                                                                   # Needed for GHCR push
@@ -29,16 +29,14 @@ jobs:
         ENV DEBIAN_FRONTEND=noninteractive
         ENV TZ=Etc/UTC
 
-        RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo; rm -rf /var/lib/apt/lists/*; useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+        RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*; useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
         # Everything below runs as phil
         USER phil
         WORKDIR /home/phil
 
-        # Create virtual environment
-        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible  || true
+        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
 
-        # Default command
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
         EOF
@@ -57,3 +55,24 @@ jobs:
     - name: Push Docker image to GHCR
       run: |
         docker push ghcr.io/philiprbrenan/sc:latest
+
+  test:
+    needs: build
+    if: github.event_name == 'push' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/philiprbrenan/sc:latest
+      options: --privileged
+
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: 'test container
+      run: |
+        pip show siliconcompiler
+        python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
