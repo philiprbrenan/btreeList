@@ -1,4 +1,4 @@
-# Test 2026-08-11 at 23:53:26
+# Test 2026-08-12 at 00:01:57
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -63,7 +63,7 @@ jobs:
 
     container:
       image: ghcr.io/philiprbrenan/sc:latest
-      options: --privileged --user root
+      options: --privileged --userns=keep-id
 
     permissions:
       contents: write
