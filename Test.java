@@ -1012,7 +1012,8 @@ public class Test                                                               
      }
 
     String    c$ () {return fe(folder, file, "c"   );}  String    c () {return fe(file, "c"   );}                       // Long name and short name of file with extension indicated
-    String java$ () {return fe(folder, file, "java");}  String java () {return fe(file, "java");}                       // Long name and short name of file with extension indicated
+    String  gds$ () {return fe(folder, file, "gds" );}  String  gds () {return fe(file, "gds" );}
+    String java$ () {return fe(folder, file, "java");}  String java () {return fe(file, "java");}
     String json$ () {return fe(folder, file, "json");}  String json () {return fe(file, "json");}
     String  lef$ () {return fe(folder, file, "lef" );}  String  lef () {return fe(file, "lef" );}
     String  log$ () {return fe(folder, file, "log" );}  String  log () {return fe(file, "log" );}
