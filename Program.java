@@ -24,7 +24,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
+  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler
   final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
