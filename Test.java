@@ -1,4 +1,4 @@
-//----------------------------------------------------------------------------------------------------------------------
+
 // Test a java program.
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -14,6 +14,7 @@ import java.time.format.*;
 import java.util.*;
 import java.util.stream.*;
 import java.util.zip.GZIPOutputStream;
+import java.security.*;
 
 //D1 Construct                                                                                                          // Test a java program describing a chip
 
@@ -147,6 +148,14 @@ public class Test                                                               
      {final MessageDigest m = MessageDigest.getInstance("MD5");
       final byte[]        b = m.digest(text.getBytes("UTF-8"));
       return HexFormat.of().formatHex(b);
+     }
+    catch(Exception e) {stop(e);}
+    return null;
+   }
+
+  static String md5SumFile(String File)                                                                                 // Md5 sum of the bytes in a file
+   {try
+     {return HexFormat.of().formatHex(MessageDigest.getInstance("MD5").digest(Files.readAllBytes(Path.of(File))));
      }
     catch(Exception e) {stop(e);}
     return null;
