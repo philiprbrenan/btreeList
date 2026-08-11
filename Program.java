@@ -24,7 +24,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
+  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler
   final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
@@ -1486,8 +1486,8 @@ endmodule
         ? substitute("""
 cd {f}; python3 {p}                                                                                                     # Silicon compiler command already inside container
 """,
-"f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
-"p", verilogTestFolder.py())
+"f", verilogTestFolder.folder(),                                                                                        // Work folder
+"p", verilogTestFolder.py())                                                                                            // Python file
 
         : substitute("""
 podman run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                                  # Silicon compiler command
@@ -1527,7 +1527,8 @@ cd {f}; yosys -q {y}                                                            
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
 
         if (runSiliconCompiler)                                                                                         // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
-         {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
+         {say("AAAA Run silcion comopiler", );
+          final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
          }
