@@ -1493,9 +1493,10 @@ podman run {c} --rm --network host -v {f}:{f} -w {f} "{image}" python3 {p}      
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
 """, "f", verilogTestFolder.folder, "y", verilogTestFolder.ys());
                                                                                                                         // Yosys command
-      g.generateSiliconCompiler(); /*if (runSiliconCompiler)*/ say("C=sc; " + scCmd);                                       // Generate python to drive silicon compiler
+      g.generateSiliconCompiler(); /*if (runSiliconCompiler)*/ say("C=sc; " + scCmd);                                   // Generate python to drive silicon compiler
       g.generateYosys();           if (runYosys)           say("C=ys; " + ysCmd);                                       // Generate tcl to drive yosys
       g.lef();                                                                                                          // Generate LEF files
+      g.gds();                                                                                                          // Generate gds files to match lef files
 
       if (runVerilog)                                                                                                   // Run verilog
        {traceFiles.delete_v();                                                                                          // Clear Verilog trace file
@@ -2046,10 +2047,10 @@ endmodule
 
     String generateSiliconCompiler ()                                                                                   // Python code to drive silicon compiler
      {final StringBuilder s = new StringBuilder();                                                                      // Generated code
-      final StringBuilder b = new StringBuilder();                                                                      // Generated code
+      final StringBuilder b = new StringBuilder();                                                                      // Black boxes
       final FileNames     t = verilogTestFolder;
 
-      for (FileNames x : blackBoxes) b.append("    macros.add_file(\""+x.minus(verilogTestFolder).v$()+"\")\n");        // Black box files relative to input file
+      for (FileNames x : blackBoxes) b.append("    macros.add_file(\""+x.minus(verilogTestFolder).v$()+"\")\n");        // Black box verilog files relative to input file
 
       s.append(substitute("""
 #!/usr/bin/env python3
@@ -2071,7 +2072,8 @@ def gen(module):
 
 # Physical view for place-and-route
   with macros.active_dataroot("local"), macros.active_fileset("models.physical"):
-    macros.add_file("{l}")
+    macros.add_file("{l}")                                                                                              # Add lef file
+    macros.add_file("{g}")                                                                                              # Add gdes file
     macros.add_asic_aprfileset()
 
 # Blackbox stubs for synthesis
@@ -2085,15 +2087,13 @@ def gen(module):
   project.add_asiclib(macros)
   project.constraint.area.set_diearea_rectangle(500, 500, coremargin=1)                                                 # Area constraints
 
-  project.constraint.area.set_diearea_rectangle(500, 500)                                                               # Area constraints
-
   project.check_manifest()                                                                                              # Check set up
   project.run()                                                                                                         # Run asic flow
   project.summary()                                                                                                     # Summarize results
 
 if __name__ == "__main__":
     gen(sys.argv[1] if len(sys.argv) > 1 else "{n}")
-""", "lef", t.lef$(), "v", t.v(), "l", t.lef(), "n", name, "b", ""+b));
+""", "lef", t.lef$(), "v", t.v(), "g", t.gds(), "l", t.lef(), "n", name, "b", ""+b));
 
       return writeFile(t.py$(), s);
      }
@@ -2103,6 +2103,13 @@ if __name__ == "__main__":
                 l.macro("array_pcConstant");
                 l.macro("array_pcMatchSet");
                 l.write(verilogTestFolder.lef$());
+     }
+
+    void gds ()                                                                                                         // Generate gds blocks pretending to be the designs for the black boxes
+     {final Gds g = new Gds(verilogTestFolder.gds$());
+      g.rectangle("array_pcConstant",  100, 200, 68, 20);
+      g.rectangle("array_pcMatchSet",  100, 200, 68, 20);
+      g.close();
      }
 
 //D2 Yosys                                                                                                              // Generate yosys commands
