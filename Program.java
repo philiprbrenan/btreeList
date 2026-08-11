@@ -1486,7 +1486,7 @@ endmodule
         ? substitute("""
 cd {f}; python3 {p}                                                                                                     # Silicon compiler command already inside container
 """,
-"f", verilogTestFolder.folder(),                                                                                        // Work folder
+"f", verilogTestFolder.folder,                                                                                        // Work folder
 "p", verilogTestFolder.py())                                                                                            // Python file
 
         : substitute("""
