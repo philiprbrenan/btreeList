@@ -1,4 +1,4 @@
-# Test 2026-08-11 at 19:12:39
+# Test 2026-08-11 at 19:15:42
 
 name: Test
 run-name: btreeList
@@ -80,7 +80,7 @@ jobs:
       - name: Build Silicon.jar
         run: |
           javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
-          jar --create --file Silicon.jar -C Classes .
+          jar -v --create --file Silicon.jar -C Classes .
           tree
 
       - name: Release JAR file
