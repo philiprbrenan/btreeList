@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 00:01:57
+# Test 2026-08-12 at 00:09:15
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -63,12 +63,20 @@ jobs:
 
     container:
       image: ghcr.io/philiprbrenan/sc:latest
-      options: --privileged --userns=keep-id
+      options: --privileged --user=phil
 
     permissions:
       contents: write
 
     steps:
+    - name: Show identities
+      run: |
+        id
+        id phil
+        ls -ld /__w
+        ls -ld /__w/_temp
+        ls -ld /__w/_actions    - name: Checkout code
+
     - name: Checkout code
       uses: actions/checkout@v4
 
