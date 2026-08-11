@@ -21,7 +21,7 @@ my $wfcpd   = q(.github/workflows/cpd.yml);                                     
 my @ext     = qw(c java pl md);                                                                                         # Extensions of files to upload to github
 my %tasks   = (BitSet=>11, Branch=>12, Leaf=>10, Slots=>23, Tree=>11);                                                  # Number of tasks for each component - default is one
 my $include = q(.);                                                                                                     # Java files to include in testing as they are not yet ready
-#  $include = q(Program);                                                                                               # Java files to include in testing as they are not yet ready
+   $include = q(Program);                                                                                               # Java files to include in testing as they are not yet ready
 my $copyAndPasteCheck = 0;                                                                                              # Run copy and paste check
 
 say STDERR timeStamp,  " push to github $repo";
@@ -151,7 +151,7 @@ END
     my $G  = $$t{group};
     my $N  = $$t{name};
 
-       $y .= <<END;
+    $y .= <<END;
 
     - name: $N
       if: \${{             matrix.task == '$N' }}
@@ -167,7 +167,34 @@ END
         path: verilog/log/*
         if-no-files-found: ignore
 END
-  }
+   }
+
+  $y .= <<END;                                                                                                          # Release jar file if all tests pass
+  release:
+    needs: test
+    if: github.event_name == 'push' && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout\@v4
+
+      - name: Build Silicon.jar
+        run: |
+          javac -g -d Classes -cp Classes $c/*.java
+          jar --create --file Silicon.jar -C Classes .
+
+      - name: Rlease JAR file
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: |
+          gh release create "v\${{ github.run_number }}" \
+            Silicon.jar \
+            --title "Silicon v\${{ github.run_number }}" \
+            --generate-notes
+END
   my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
   lll "$f  Ubuntu work flow for $repo";
  }
