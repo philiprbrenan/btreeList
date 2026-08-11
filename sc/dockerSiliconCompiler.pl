@@ -1,14 +1,8 @@
 #!/usr/bin/perl -I/home/phil/perl/cpan/DataTableText/lib/ -I/home/phil/perl/cpan/GitHubCrud/lib/
-#-------------------------------------------------------------------------------
-# Use github to package silicon compiler for asic flow in a docker container
+#-----------------------------------------------------------------------------------------------------------------------
+# Install java and silicon compiler in a container that can run as a github action for testing Java to ASIC flow
 # Philip R Brenan at gmail dot com, Appa Apps Ltd Inc., 2025
-#-------------------------------------------------------------------------------
-=pod
-docker run -it --rm  -v "/home/phil/btreeAsm/verilog:/workspace" ghcr.io/philiprbrenan/sc-asic:latest /bin/bash
-source ./sc/bin/activate                 # Activate
-cp -R /root/.local/bin/* /app/sc/bin     # Copy bin files into a location on path
-
-=cut
+#-----------------------------------------------------------------------------------------------------------------------
 use v5.38;
 use warnings FATAL => qw(all);
 use strict;
@@ -37,7 +31,7 @@ on:
 
 jobs:
 
-  test:
+  build:
     permissions:
       contents: read
       packages: write                                                                                                   # Needed for GHCR push
@@ -56,7 +50,7 @@ jobs:
         ENV DEBIAN_FRONTEND=noninteractive
         ENV TZ=Etc/UTC
 
-        RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo; rm -rf /var/lib/apt/lists/*; useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+        RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*; useradd -ms /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
         # Everything below runs as phil
         USER phil
@@ -82,11 +76,31 @@ jobs:
     - name: Push Docker image to GHCR
       run: |
         docker push $n
+
+  test:
+    needs: build
+    if: github.event_name == 'push' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+
+    container:
+      image: $n
+      options: --privileged
+
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout\@v4
+
+    - name: test container
+      run: |
+        pip show siliconcompiler
+        python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
 END
 
-my $f = writeFileUsingSavedToken $user, $repo, $wf,     $y;                                                               # Upload workflow
+my $f = writeFileUsingSavedToken $user, $repo, $wf,     $y;                                                             # Upload workflow
 lll "$f  $wf";
+
 my $F = writeFileUsingSavedToken $user, $repo, "sc/$0", $0;                                                             # Upload this file
 lll "$F  sc/$0";
-# RUN /bin/bash -c "source ./sc/bin/activate && pip show siliconcompiler"
-# RUN /bin/bash -c "source ./sc/bin/activate && python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
