@@ -190,10 +190,11 @@ END
           javac -g -d Classes -cp Classes $c/*.java
           jar --create --file Silicon.jar -C Classes .
 
-      - name: Rlease JAR file
+      - name: Release JAR file
         env:
           GH_TOKEN: \${{ github.token }}
         run: |
+          git config --global --add safe.directory "\$GITHUB_WORKSPACE"
           gh release create "v\${{ github.run_number }}" \
             Silicon.jar \
             --title "Silicon v\${{ github.run_number }}" \
