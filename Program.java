@@ -24,7 +24,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler
+  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
   final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
@@ -1482,16 +1482,23 @@ endmodule
 //podman run {c} --rm --network host --userns=keep-id -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
 //podman run {c} --rm --network host --user=phil      -v {f}:{f} -w {f} "{image}" python3 {p}                             # Silicon compiler command
 
-      final String           scCmd = substitute("""
+      final String scCmd = github_actions                                                                               // Silicon compiler command to perform ASIC flow
+        ? substitute("""
+cd {f}; python3 {p}                                                                                                     # Silicon compiler command already inside container
+""",
+"f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
+"p", verilogTestFolder.py())
+
+        : substitute("""
 podman run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                                  # Silicon compiler command
 """,
-"c", github_actions ? "--privileged --cgroups=disabled" : "--userns=keep-id",                                           // Suppress c-groups if we are already inside a container
+"c", "--userns=keep-id",                                                                                                // Use the same userid inside the container to avoid file permission problems
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
 "i", siliconCompilerImage,                                                                                              // Python to run in which image
 "n", fp("/home/phil/btreeList/verilog/test", verilogTestFolder.folder),                                                 // Folder name in container - which we control
 "p", verilogTestFolder.py());
 
-      final String           ysCmd = substitute("""
+      final String ysCmd = substitute("""
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
 """, "f", verilogTestFolder.folder, "y", verilogTestFolder.ys());
                                                                                                                         // Yosys command
