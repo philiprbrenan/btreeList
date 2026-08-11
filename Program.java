@@ -35,7 +35,9 @@ public class Program extends Test                                               
   final FileNames                      verilogTestFolder = verilogTestsFolder.down(testName()).same(testName());        // Verilog test
   final FileNames              verilogTestIncludesFolder = verilogTestFolder.down("includes");                          // Verilog test includes folder containing the include files needed for running verilog tests
   final FileNames                       verilogLogFolder = verilogFolder.down("log");                                   // Verilog log folder
+  final FileNames                         blackBoxFolder = verilogTestFolder.down("blackboxes");                        // Verilog black boxes
   final FileNames                             traceFiles = verilogTestFolder.same("traceFile");                         // Verilog trace file
+  final Stack<FileNames>                      blackBoxes = new Stack<>();                                               // Black box files created
   final static String               siliconCompilerImage = "ghcr.io/philiprbrenan/sc:latest";                           // Podman container containing silicon compiler
   final static int padName = 12, padCR = 16, padVerilog = 64;                                                           // Padding for components of the generated verilog code
 
@@ -1189,11 +1191,11 @@ public class Program extends Test                                               
       Ref        copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width);       return this;}       // Copy the specified memory possibly from another byte memory
       Ref       clear (int Width)            {m.clear(offset, Width);                               return this;}       // Clear memory by setting its bytes to zero
       Int      getInt (Int I)                {return m.getInt( I.Add(offset));}                                         // Get the int at the indicated position
-      Bit    getBool (Int I)                {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                        // Get the bit at the bit indexed location
+      Bit    getBool (Int I)                 {return m.getBool(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
       Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
       Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int at zero offset in this memory reference
       Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
-      Ref     putBool (Int I, Bit K)        {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}        // Set the bit at the bit indexed position
+      Ref     putBool (Int I, Bit K)         {m.putBool(       I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
       Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
 
 
@@ -1257,7 +1259,7 @@ public class Program extends Test                                               
     String sizeParameter () {return "MEMORY_"+id;}                                                                      // Amount of memory
 
     String memoryModule ()                                                                                              // Verilog module representing memory
-     {return substitute("""
+     {final StringBuilder s = new StringBuilder(substitute("""
 
 (* blackbox *) module {name}                                                                                            // Memory module
  (input  wire    clock,                                                                                                 // Clock
@@ -1271,9 +1273,8 @@ public class Program extends Test                                               
   input  integer readBoolIndex,                                                                                         // Read boolean address
   output integer readInt,                                                                                               // Integer data read
   output reg     readBool);                                                                                             // Boolean data read
-`ifndef SYNTHESIS
   integer memory [0:{size}-1];
-
+`ifdef __ICARUS__
   integer i;                                                                                                            // Index
 
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
@@ -1286,7 +1287,13 @@ public class Program extends Test                                               
   end
 `endif
 endmodule
-""", "name", m(), "size", ""+size());
+""", "name", m(), "size", ""+size()));
+
+      final FileNames f = blackBoxFolder.same(m());
+      writeFile(f.v$(), ""+s);
+      blackBoxes.push(f);
+
+      return "`ifndef SYNTHESIS\n"+s+"`endif\n";
      }
 
     String connectMemoryModule ()                                                                                       // Connect main process to memory module
@@ -1486,7 +1493,7 @@ podman run {c} --rm --network host -v {f}:{f} -w {f} "{image}" python3 {p}      
 cd {f}; yosys -q {y}                                                                                                    # Yosys command
 """, "f", verilogTestFolder.folder, "y", verilogTestFolder.ys());
                                                                                                                         // Yosys command
-      g.generateSiliconCompiler(); if (runSiliconCompiler) say("C=sc; " + scCmd);                                       // Generate python to drive silicon compiler
+      g.generateSiliconCompiler(); /*if (runSiliconCompiler)*/ say("C=sc; " + scCmd);                                       // Generate python to drive silicon compiler
       g.generateYosys();           if (runYosys)           say("C=ys; " + ysCmd);                                       // Generate tcl to drive yosys
       g.lef();                                                                                                          // Generate LEF files
 
@@ -2039,30 +2046,54 @@ endmodule
 
     String generateSiliconCompiler ()                                                                                   // Python code to drive silicon compiler
      {final StringBuilder s = new StringBuilder();                                                                      // Generated code
+      final StringBuilder b = new StringBuilder();                                                                      // Generated code
       final FileNames     t = verilogTestFolder;
+
+      for (FileNames x : blackBoxes) b.append("    macros.add_file(\""+x.minus(verilogTestFolder).v$()+"\")\n");        // Black box files relative to input file
+
       s.append(substitute("""
 #!/usr/bin/env python3
 import sys
 from siliconcompiler         import ASIC, Design
+from siliconcompiler.tools.yosys import YosysStdCellLibrary
 from siliconcompiler.targets import skywater130_demo
 
 def gen(module):
   design = Design     (module)                                                                                          # Silicon compiler work flow driver
-  design.set_topmodule(f"{module}", fileset="rtl")
-  design.add_file     (f"{v}",      fileset="rtl")
-  design.add_file     (f"{l}",      fileset="rtl")
-  design.add_define   ("SYNTHESIS", fileset="rtl")
+  design.set_topmodule(f"{module}", fileset="rtl")                                                                      # Name the top module
+  design.add_file     (f"{v}",      fileset="rtl")                                                                      # Verilog
+  design.add_define   ("SYNTHESIS", fileset="rtl")                                                                      # Set a macro variable to differentiate between testing using iverilog and synthesizing with silicon compiler
 
-  project = ASIC(design)
-  project.add_fileset(["rtl"])
-  skywater130_demo(project)
+  macros = YosysStdCellLibrary()
+  macros.set_name("{n}_macros")
+  macros.set_dataroot("local", __file__)
+  macros.add_asic_pdk("skywater130")
 
-  project.run()
-  project.summary()
+# Physical view for place-and-route
+  with macros.active_dataroot("local"), macros.active_fileset("models.physical"):
+    macros.add_file("{l}")
+    macros.add_asic_aprfileset()
+
+# Blackbox stubs for synthesis
+  with macros.active_dataroot("local"), macros.active_fileset("models.blackbox"):
+{b}  macros.add_yosys_blackbox_fileset("models.blackbox")
+
+  project = ASIC(design)                                                                                                # Create a specific ASIC design
+  project.add_fileset(["rtl"])                                                                                          # Source files
+  skywater130_demo(project)                                                                                             # Technology
+
+  project.add_asiclib(macros)
+  project.constraint.area.set_diearea_rectangle(500, 500, coremargin=1)                                                 # Area constraints
+
+  project.constraint.area.set_diearea_rectangle(500, 500)                                                               # Area constraints
+
+  project.check_manifest()                                                                                              # Check set up
+  project.run()                                                                                                         # Run asic flow
+  project.summary()                                                                                                     # Summarize results
 
 if __name__ == "__main__":
     gen(sys.argv[1] if len(sys.argv) > 1 else "{n}")
-""", "lef", t.lef$(), "v", t.v(), "l", t.lef(), "n", name));
+""", "lef", t.lef$(), "v", t.v(), "l", t.lef(), "n", name, "b", ""+b));
 
       return writeFile(t.py$(), s);
      }
@@ -2240,13 +2271,12 @@ check
        {writeInHex();                                                                                                   // Write hex representation of array
         final StringBuilder s = new StringBuilder();
         s.append(substitute("""
-
 (* blackbox *) module {array}                                                                                           // Memory module definitions for asynchronus read only memory
  (input  integer address,
   output integer data);
-`ifndef SYNTHESIS
   integer memory [0:{size}];
 
+`ifdef __ICARUS__
   initial $readmemh("{file}", memory, 0, {size});
 
   assign data = memory[address];
@@ -2255,7 +2285,12 @@ endmodule
 """,
 "name",  name,        "file", verilogTestIncludesFolder.same(name).minus(verilogTestFolder).v$(),
 "array", arrayName(), "size", ""+(array.length-1)));
-        return ""+s;
+
+        final FileNames f = blackBoxFolder.same(name);
+        writeFile(f.v$(), ""+s);
+        blackBoxes.push(f);
+
+        return "\n`ifndef SYNTHESIS\n"+s+"`endif\n";
        }
      } // Array
    } // VerilogArrays
