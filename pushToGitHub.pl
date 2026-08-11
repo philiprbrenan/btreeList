@@ -198,10 +198,7 @@ END
           GH_TOKEN: \${{ github.token }}
         run: |
           git config --global --add safe.directory "\$GITHUB_WORKSPACE"
-          gh release create "v\${{ github.run_number }}" \
-            Silicon.jar \
-            --title "Silicon v\${{ github.run_number }}" \
-            --generate-notes
+          gh release create "v\${{ github.run_number }}" Silicon.jar --title "Silicon v\${{ github.run_number }}" --generate-notes
 END
   my $f = writeFileUsingSavedToken $user, $repo, $wf, $y;                                                               # Upload workflow
   lll "$f  Ubuntu work flow for $repo";
