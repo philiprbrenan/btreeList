@@ -1,4 +1,4 @@
-# Test 2026-08-11 at 20:50:58
+# Test 2026-08-11 at 21:53:03
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -72,7 +72,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: 'test container
+    - name: test container
       run: |
         pip show siliconcompiler
-        python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'"
+        python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'
