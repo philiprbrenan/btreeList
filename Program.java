@@ -38,7 +38,8 @@ public class Program extends Test                                               
   final FileNames                         blackBoxFolder = verilogTestFolder.down("blackboxes");                        // Verilog black boxes
   final FileNames                             traceFiles = verilogTestFolder.same("traceFile");                         // Verilog trace file
   final Stack<FileNames>                      blackBoxes = new Stack<>();                                               // Black box files created
-  final static String               siliconCompilerImage = "ghcr.io/philiprbrenan/sc:latest";                           // Podman container containing silicon compiler
+  final static String          siliconCompilerImageLocal = "ghcr.io/philiprbrenan/sc_local:latest";                     // Podman container containing silicon compiler when running locally
+  final static String         siliconCompilerImageGitHub = "ghcr.io/philiprbrenan/sc_github:latest";                    // Podman container containing silicon compiler when running on github
   final static int padName = 12, padCR = 16, padVerilog = 64;                                                           // Padding for components of the generated verilog code
 
   final Stack<I>                                    code = new Stack<>();                                               // Machine code instructions
@@ -1486,15 +1487,15 @@ endmodule
         ? substitute("""
 cd {f}; python3 {p}                                                                                                     # Silicon compiler command already inside container
 """,
-"f", verilogTestFolder.folder,                                                                                        // Work folder
+"f", verilogTestFolder.folder,                                                                                          // Work folder
 "p", verilogTestFolder.py())                                                                                            // Python file
 
         : substitute("""
-podman run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                                  # Silicon compiler command
+docker run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                                  # Silicon compiler command running a new container
 """,
-"c", "--userns=keep-id",                                                                                                // Use the same userid inside the container to avoid file permission problems
+"c", "", //"--userns=keep-id",                                                                                                // Use the same userid inside the container to avoid file permission problems
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
-"i", siliconCompilerImage,                                                                                              // Python to run in which image
+"i", siliconCompilerImageLocal,                                                                                         // Python to run in which image
 "n", fp("/home/phil/btreeList/verilog/test", verilogTestFolder.folder),                                                 // Folder name in container - which we control
 "p", verilogTestFolder.py());
 
