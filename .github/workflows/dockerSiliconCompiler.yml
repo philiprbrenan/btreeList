@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 22:34:59
+# Test 2026-08-12 at 23:01:20
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -35,7 +35,7 @@ jobs:
         USER phil
         WORKDIR /home/phil
 
-        RUN python3 -m venv ./sc && ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible && (rm -rf .cache .sc .stack || true)
+        RUN python3 -m venv ./sc && ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys opensta && (rm -rf .cache .sc .stack || true)
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
         EOF
@@ -70,7 +70,7 @@ jobs:
         USER phil
         WORKDIR /home/phil
 
-        RUN python3 -m venv ./sc && ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible && (rm -rf .cache .sc .stack || true)
+        RUN python3 -m venv ./sc && ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys opensta && (rm -rf .cache .sc .stack || true)
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
         EOF
