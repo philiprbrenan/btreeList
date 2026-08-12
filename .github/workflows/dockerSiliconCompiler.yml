@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 22:13:29
+# Test 2026-08-12 at 22:24:32
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -40,9 +40,9 @@ jobs:
         RUN ./sc/bin/pip install siliconcompiler
         #RUN ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible
         RUN ./sc/bin/sc-install netgen
-        RUN rm -rf .cache
-        RUN rm -rf .sc
-        RUN rm =rf .stack
+        RUN rm -rf .cache  || true
+        RUN rm -rf .sc     || true
+        RUN rm =rf .stack  || true
 
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
@@ -83,9 +83,9 @@ jobs:
         RUN ./sc/bin/pip install siliconcompiler
         #RUN ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible
         RUN ./sc/bin/sc-install netgen
-        RUN rm -rf .cache
-        RUN rm -rf .sc
-        RUN rm =rf .stack
+        RUN rm -rf .cache  || true
+        RUN rm -rf .sc     || true
+        RUN rm =rf .stack  || true
 
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
