@@ -80,6 +80,8 @@ if (@java)                                                                      
    }
   my $T = join ", ", map {$$_{name}} @t;                                                                                # Task names as a string
 
+#      image: ghcr.io/philiprbrenan/btree:latest
+
   my $y = <<"END";
 # Test $d
 
@@ -98,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/philiprbrenan/btree:latest
+      image: ghcr.io/philiprbrenan/sc_local:latest
       options: --privileged
 
     strategy:
