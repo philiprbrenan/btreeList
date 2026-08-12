@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 05:54:57
+# Test 2026-08-12 at 06:01:17
 
 name: Test
 run-name: btreeList
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/philiprbrenan/sc_local:latest
+      image: ghcr.io/philiprbrenan/sc_github:latest
       options: --privileged
 
     strategy:
