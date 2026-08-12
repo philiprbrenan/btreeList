@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 01:15:06
+# Test 2026-08-12 at 01:17:29
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -36,7 +36,7 @@ jobs:
         RUN cat /etc/passwd | grep phil
         RUN cat /etc/group  | grep phil
         RUN id phil
-        USER phil                                                                                                       # Everything below runs as phil with a numeric id appropriate to the target environment
+        USER 1001:1001                                                                                                      # Everything below runs as phil with a numeric id appropriate to the target environment
         WORKDIR /home/phil
 
         RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
@@ -86,7 +86,7 @@ jobs:
         RUN cat /etc/passwd | grep phil
         RUN cat /etc/group  | grep phil
         RUN id phil
-        USER phil                                                                                                       # Everything below runs as phil with a numeric id appropriate to the target environment
+        USER 1000:1000                                                                                                      # Everything below runs as phil with a numeric id appropriate to the target environment
         WORKDIR /home/phil
 
         RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
