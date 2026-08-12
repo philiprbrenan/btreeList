@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 02:28:53
+# Test 2026-08-12 at 13:34:07
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -19,7 +19,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - name: Install base packages
+    - name: local - Install base packages
       run: |
         cat << 'EOF' > Dockerfile
         FROM ubuntu:latest
@@ -27,56 +27,64 @@ jobs:
         ENV DEBIAN_FRONTEND=noninteractive
         ENV TZ=Etc/UTC
 
-        RUN apt-get update;
-        RUN apt-get install -y -qq tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*;
+        RUN apt-get update  -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
 
         RUN usermod -l phil ubuntu && groupmod -n phil ubuntu && usermod -d /home/phil -m phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
         USER phil
         WORKDIR /home/phil
 
-        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible
+        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible &&  rm -rf .cache .sc/tool_build .stack
 
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
         EOF
 
-    - name: Local - log in to GitHub Container Registry
+    - name: local - log in to GitHub Container Registry
       uses: docker/login-action@v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Local - Build Docker image
+    - name: local - Build Docker image
       run: |
         docker build -t ghcr.io/philiprbrenan/sc_local:latest .
 
-    - name: Local - push Docker image to GHCR
+    - name: local - push Docker image to GHCR
       run: |
         docker push ghcr.io/philiprbrenan/sc_local:latest
-    - name: Github - change userid
+    - name: github - Install base packages
       run: |
         cat << 'EOF' > Dockerfile
-        FROM ghcr.io/philiprbrenan/sc_local:latest
-        USER root
-        RUN groupmod -g 1001 phil && usermod -u 1001 phil && chown -R 1001:1001 /home/phil
+        FROM ubuntu:latest
 
+        ENV DEBIAN_FRONTEND=noninteractive
+        ENV TZ=Etc/UTC
+
+        RUN apt-get update  -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
+
+        RUN usermod -l phil ubuntu && groupmod -n phil ubuntu && usermod -d /home/phil -m phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
         USER phil
         WORKDIR /home/phil
+
+        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible &&  rm -rf .cache .sc/tool_build .stack
+
+        ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        CMD ["/bin/bash", "--login"]
         EOF
 
-    - name: GitHub - log in to GitHub Container Registry
+    - name: github - log in to GitHub Container Registry
       uses: docker/login-action@v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: GitHub - build Docker image
+    - name: github - Build Docker image
       run: |
         docker build -t ghcr.io/philiprbrenan/sc_github:latest .
 
-    - name: GitHub - push Docker image to GHCR
+    - name: github - push Docker image to GHCR
       run: |
         docker push ghcr.io/philiprbrenan/sc_github:latest
   test:
