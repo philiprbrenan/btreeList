@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 01:51:54
+# Test 2026-08-12 at 01:58:21
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -28,7 +28,7 @@ jobs:
         ENV TZ=Etc/UTC
 
         RUN apt-get update;
-        RUN apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*;
+        RUN apt-get install -y -q tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*;
         EOF
 
     - name: Log in to GitHub Container Registry
@@ -49,6 +49,8 @@ jobs:
       run: |
         cat << 'EOF' > Dockerfile
         FROM ghcr.io/philiprbrenan/sc_base:latest
+        RUN groupadd -g 1000 phil && useradd  -u 1000 -g 1000 -ms /bin/bash phil && mkdir -p /etc/sudoers.d && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+
         USER phil
         WORKDIR /home/phil
 
@@ -76,6 +78,8 @@ jobs:
       run: |
         cat << 'EOF' > Dockerfile
         FROM ghcr.io/philiprbrenan/sc_base:latest
+        RUN groupadd -g 1001 phil && useradd  -u 1001 -g 1001 -ms /bin/bash phil && mkdir -p /etc/sudoers.d && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+
         USER phil
         WORKDIR /home/phil
 
