@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 01:25:18
+# Test 2026-08-12 at 01:33:26
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -9,7 +9,7 @@ on:
       - '**/dockerSiliconCompiler.yml'
 
 jobs:
-  build_github:
+  build:
     permissions:
       contents: read
       packages: write                                                                                                   # Needed for GHCR push
@@ -19,8 +19,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: 'Install silicon compiler in a docker container based on: https://docs.siliconcompiler.com/en/stable/user_guide/installation.html'
+    - name: Install Silicon compiler for github                                                                        # Install silicon compiler in a docker container based on: https://docs.siliconcompiler.com/en/stable/user_guide/installation.html
       run: |
         cat << 'EOF' > Dockerfile
         FROM ubuntu:22.04
@@ -39,26 +38,65 @@ jobs:
         USER phil
         WORKDIR /home/phil
 
-        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
+        #RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
 
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
         EOF
 
-    - name: Log in to GitHub Container Registry
+    - name: Log in to GitHub Container Registry for github
       uses: docker/login-action@v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build Docker image
+    - name: Build Docker image for github
       run: |
         docker build -t ghcr.io/philiprbrenan/sc_github:latest .
 
-    - name: Push Docker image to GHCR
+    - name: Push Docker image to GHCR for github
       run: |
         docker push ghcr.io/philiprbrenan/sc_github:latest
+    - name: Install Silicon compiler for local                                                                        # Install silicon compiler in a docker container based on: https://docs.siliconcompiler.com/en/stable/user_guide/installation.html
+      run: |
+        cat << 'EOF' > Dockerfile
+        FROM ubuntu:22.04
+
+        ENV DEBIAN_FRONTEND=noninteractive
+        ENV TZ=Etc/UTC
+
+        #RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*;
+        RUN groupadd -g 1000 phil;
+        RUN useradd  -u 1000 -g 1000 -ms /bin/bash phil
+        RUN mkdir -p /etc/sudoers.d
+        RUN echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+        #RUN cat /etc/passwd | grep phil
+        #RUN cat /etc/group  | grep phil
+        #RUN id phil
+        USER phil
+        WORKDIR /home/phil
+
+        #RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
+
+        ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        CMD ["/bin/bash", "--login"]
+        EOF
+
+    - name: Log in to GitHub Container Registry for local
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Docker image for local
+      run: |
+        docker build -t ghcr.io/philiprbrenan/sc_local:latest .
+
+    - name: Push Docker image to GHCR for local
+      run: |
+        docker push ghcr.io/philiprbrenan/sc_local:latest
   test:
     needs: build_github
     if: github.event_name == 'push' && needs.build_github.result == 'success'
