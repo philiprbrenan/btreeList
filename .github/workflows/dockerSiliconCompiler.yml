@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 01:33:26
+# Test 2026-08-12 at 01:34:35
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -98,8 +98,8 @@ jobs:
       run: |
         docker push ghcr.io/philiprbrenan/sc_local:latest
   test:
-    needs: build_github
-    if: github.event_name == 'push' && needs.build_github.result == 'success'
+    needs: build
+    if: github.event_name == 'push' && needs.build.result == 'success'
     runs-on: ubuntu-latest
 
     container:
