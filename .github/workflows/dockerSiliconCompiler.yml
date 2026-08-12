@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 01:21:25
+# Test 2026-08-12 at 01:23:24
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -31,12 +31,12 @@ jobs:
         #RUN apt-get update; apt-get install -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*;
         RUN groupadd -g 1001 phil;
         RUN useradd  -u 1001 -g 1001 -ms /bin/bash phil
-        RUN mkdir -p /etc/sudoers.d
+        #RUN mkdir -p /etc/sudoers.d
         RUN echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
-        RUN cat /etc/passwd | grep phil
-        RUN cat /etc/group  | grep phil
-        RUN id phil
-        USER 1001:1001
+        #RUN cat /etc/passwd | grep phil
+        #RUN cat /etc/group  | grep phil
+        #RUN id phil
+        USER phil
         WORKDIR /home/phil
 
         RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip; ./sc/bin/pip install siliconcompiler; ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible || true
