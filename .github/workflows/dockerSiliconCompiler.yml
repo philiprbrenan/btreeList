@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 13:34:07
+# Test 2026-08-12 at 15:10:21
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -25,15 +25,17 @@ jobs:
         FROM ubuntu:latest
 
         ENV DEBIAN_FRONTEND=noninteractive
+        ENV PIP_NO_CACHE_DIR=1
         ENV TZ=Etc/UTC
 
         RUN apt-get update  -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
 
         RUN usermod -l phil ubuntu && groupmod -n phil ubuntu && usermod -d /home/phil -m phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+
         USER phil
         WORKDIR /home/phil
 
-        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible &&  rm -rf .cache .sc/tool_build .stack
+        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible && sudo rm -rf .cache .sc/tool_build .stack
 
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
@@ -59,15 +61,17 @@ jobs:
         FROM ubuntu:latest
 
         ENV DEBIAN_FRONTEND=noninteractive
+        ENV PIP_NO_CACHE_DIR=1
         ENV TZ=Etc/UTC
 
         RUN apt-get update  -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
 
-        RUN usermod -l phil ubuntu && groupmod -n phil ubuntu && usermod -d /home/phil -m phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+        RUN groupadd --gid 1001 phil && useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+
         USER phil
         WORKDIR /home/phil
 
-        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible &&  rm -rf .cache .sc/tool_build .stack
+        RUN python3 -m venv ./sc; ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys sv2v netgen opensta verible && sudo rm -rf .cache .sc/tool_build .stack
 
         ENV PATH=/home/phil/sc/bin:/home/phil/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
@@ -100,16 +104,10 @@ jobs:
       contents: write
 
     steps:
-    - name: Show identities
-      run: |
-        id
-        id phil
-        ls -ld /__w
-
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: test container
+    - name: Test gitHub version of container
       run: |
         pip show siliconcompiler
         python3 -c 'import siliconcompiler; print(siliconcompiler.__version__)'
