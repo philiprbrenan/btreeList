@@ -125,8 +125,8 @@ jobs:
         #podman run --rm --privileged --cgroups=disabled  alpine true
         #podman run --rm --privileged --cgroups=disabled  --userns=keep-id ghcr.io/philiprbrenan/sc:latest true
         id
-        podman info
-        podman version
+        #podman info
+        #podman version
 
     - name: Java
       run: |
