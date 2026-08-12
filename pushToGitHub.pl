@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/philiprbrenan/sc_local:latest
+      image: ghcr.io/philiprbrenan/sc_github:latest
       options: --privileged
 
     strategy:
