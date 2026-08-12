@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 06:03:30
+# Test 2026-08-12 at 06:17:56
 
 name: Test
 run-name: btreeList
@@ -40,8 +40,8 @@ jobs:
         #podman run --rm --privileged --cgroups=disabled  alpine true
         #podman run --rm --privileged --cgroups=disabled  --userns=keep-id ghcr.io/philiprbrenan/sc:latest true
         id
-        podman info
-        podman version
+        #podman info
+        #podman version
 
     - name: Java
       run: |
