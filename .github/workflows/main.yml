@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 06:01:17
+# Test 2026-08-12 at 06:03:30
 
 name: Test
 run-name: btreeList
@@ -16,7 +16,7 @@ jobs:
 
     container:
       image: ghcr.io/philiprbrenan/sc_github:latest
-      options: --privileged
+      options: --privileged  --user=phil
 
     strategy:
       fail-fast: false
