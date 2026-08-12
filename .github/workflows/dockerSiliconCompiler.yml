@@ -1,4 +1,4 @@
-# Test 2026-08-12 at 01:08:24
+# Test 2026-08-12 at 01:14:04
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -33,7 +33,9 @@ jobs:
         RUN useradd  -u 1001 -g 1001 -ms /bin/bash phil
         RUN mkdir -p /etc/sudoers.d
         RUN echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
-
+        RUN cat /etc/passwd | grep phil
+        RUN cat /etc/group  | grep phil
+        RUN cat id phil
         USER phil                                                                                                       # Everything below runs as phil with a numeric id appropriate to the target environment
         WORKDIR /home/phil
 
@@ -81,7 +83,9 @@ jobs:
         RUN useradd  -u 1000 -g 1000 -ms /bin/bash phil
         RUN mkdir -p /etc/sudoers.d
         RUN echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
-
+        RUN cat /etc/passwd | grep phil
+        RUN cat /etc/group  | grep phil
+        RUN cat id phil
         USER phil                                                                                                       # Everything below runs as phil with a numeric id appropriate to the target environment
         WORKDIR /home/phil
 
