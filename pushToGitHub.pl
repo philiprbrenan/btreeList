@@ -101,7 +101,7 @@ jobs:
 
     container:
       image: ghcr.io/philiprbrenan/sc_github:latest
-      options: --privileged
+      options: --privileged  --user=phil
 
     strategy:
       fail-fast: false
