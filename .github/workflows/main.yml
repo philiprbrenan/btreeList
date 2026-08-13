@@ -1,4 +1,4 @@
-# Test 2026-08-13 at 10:26:42
+# Test 2026-08-13 at 11:46:15
 
 name: Test
 run-name: btreeList
@@ -1050,6 +1050,8 @@ jobs:
 
       - name: Build Silicon.jar
         run: |
+          mkdir -p com/AppaApps/Silicon
+          cp BitSet.java Branch.java Gds.java Leaf.java Lef.java Program.java Slots.java Test.java Tree.java com/AppaApps/Silicon
           javac -g -d Classes -cp Classes com/AppaApps/Silicon/*.java
           jar -v --create --file Silicon.jar -C Classes .
           pwd
