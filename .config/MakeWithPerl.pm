@@ -200,7 +200,7 @@ if ($file =~ m(\.(txt|htm)\Z))                                                  
        }
      }
    }
-  if ($run)                                                                                                            # Show html in firefox
+  if ($run)                                                                                                             # Show html in firefox
    {my $c = qq(timeout 3m firefox $o);
     say STDERR qq($c);
     say STDERR qx($c);
@@ -208,7 +208,7 @@ if ($file =~ m(\.(txt|htm)\Z))                                                  
   exit;
  }
 
-if ($file =~ m(\.(v|sv|tb)\Z))                                                                                         # Verilog
+if ($file =~ m(\.(v|sv|tb)\Z))                                                                                          # Verilog
  {my $n = fn $file;
 
   my $ext = fe $file;
