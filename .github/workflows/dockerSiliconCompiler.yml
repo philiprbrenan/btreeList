@@ -1,4 +1,5 @@
-# Test 2026-08-13 at 01:35:51
+# 2026-08-13 at 12:02:33
+# Install java and silicon compiler tools in two containers to create identical environments locally and on github
 
 name: Docker Silicon Compiler
 run-name: btreeList
@@ -19,6 +20,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
     - name: local - Install base packages
       run: |
         cat << 'EOF' > Dockerfile
@@ -28,9 +30,9 @@ jobs:
         ENV PIP_NO_CACHE_DIR=1
         ENV TZ=Etc/UTC
 
-        RUN apt-get update  -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
+        RUN apt-get update -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
 
-        RUN usermod -l phil ubuntu && groupmod -n phil ubuntu && usermod -d /home/phil -m phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
+        RUN usermod -l phil ubuntu && groupmod -n phil ubuntu && usermod -d /home/phil -m phil   && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
         USER phil
         WORKDIR /home/phil
@@ -49,11 +51,12 @@ jobs:
 
     - name: local - Build Docker image
       run: |
-        docker build -t ghcr.io/philiprbrenan/sc_local:latest .
+        docker build -t ghcr.io/${{ github.repository_owner }}/sc_local:latest .
 
     - name: local - push Docker image to GHCR
       run: |
-        docker push ghcr.io/philiprbrenan/sc_local:latest
+        docker push ghcr.io/${{ github.repository_owner }}/sc_local:latest
+
     - name: github - Install base packages
       run: |
         cat << 'EOF' > Dockerfile
@@ -63,7 +66,7 @@ jobs:
         ENV PIP_NO_CACHE_DIR=1
         ENV TZ=Etc/UTC
 
-        RUN apt-get update  -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
+        RUN apt-get update -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
 
         RUN groupadd --gid 1001 phil && useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash phil && echo "phil ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/phil
 
@@ -84,18 +87,18 @@ jobs:
 
     - name: github - Build Docker image
       run: |
-        docker build -t ghcr.io/philiprbrenan/sc_github:latest .
+        docker build -t ghcr.io/${{ github.repository_owner }}/sc_github:latest .
 
     - name: github - push Docker image to GHCR
       run: |
-        docker push ghcr.io/philiprbrenan/sc_github:latest
+        docker push ghcr.io/${{ github.repository_owner }}/sc_github:latest
   test:
     needs: build
     if: github.event_name == 'push' && needs.build.result == 'success'
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/philiprbrenan/sc_github:latest
+      image: ghcr.io/${{ github.repository_owner }}/sc_github:latest
       options: --privileged --user=phil
 
     permissions:
