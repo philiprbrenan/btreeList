@@ -27,8 +27,8 @@ sub GitHub()           {"github";}                                              
 sub imageName($Target) {"ghcr.io/\${{ github.repository_owner }}/sc_$Target:latest";}                                   # Name of container to build
 
 sub createImage($Target)                                                                                                # Install base packages and silion compiler for local use with the correct userid number so that the docker container can write back into the local file system without running into file permission problems
- {my $G = $Target eq GitHub();
-  my $L = $Target eq Local();
+ {my $G = $Target||'' eq GitHub();
+  my $L = $Target||'' eq Local();
      $G or $L or die "Bad $Target";                                                                                     # Decode target
 
   my $imageName  = imageName $Target;                                                                                   # Image name
