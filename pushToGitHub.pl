@@ -173,6 +173,8 @@ END
 
       - name: Build Silicon.jar
         run: |
+          mkdir -p $c
+          cp $J $c
           javac -g -d Classes -cp Classes $c/*.java
           jar -v --create --file Silicon.jar -C Classes .
           pwd
