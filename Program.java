@@ -1493,7 +1493,7 @@ cd {f}; python3 {p}                                                             
         : substitute("""
 docker run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                                  # Silicon compiler command running a new container
 """,
-"c", "", //"--userns=keep-id",                                                                                                // Use the same userid inside the container to avoid file permission problems
+"c", "", //"--userns=keep-id",                                                                                          // Use the same userid inside the container to avoid file permission problems
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
 "i", siliconCompilerImageLocal,                                                                                         // Python to run in which image
 "n", fp("/home/phil/btreeList/verilog/test", verilogTestFolder.folder),                                                 // Folder name in container - which we control
@@ -1528,8 +1528,7 @@ cd {f}; yosys -q {y}                                                            
         ok(readFileAsString(traceFiles.v$()).equals(readFileAsString(traceFiles.java$())));                             // Compare corresponding java and Verilog trace files -  says failed if it fails and provides a traceback
 
         if (runSiliconCompiler)                                                                                         // Run synthesis in a podman container containing silicon compiler and the associated tools needed for ASIC
-         {say("AAAA Run silcion compiler");
-          final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
+         {final ExecCommand X = new ExecCommand(scCmd);                                                                 // Execute silicon compiler commands
           message.append(f(" %11.2f seconds for: %s",                    X.timer.seconds(), X.command));                // Execution time of command in message
           json   .append(f(", \"seconds\": %11.2f, \"command\": \"%s\"", X.timer.seconds(), X.command));                // Execution time of command in json
          }
