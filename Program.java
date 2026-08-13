@@ -137,7 +137,7 @@ public class Program extends Test                                               
 
   Stack<Int>  ints ()           {return program().ints;}
   Stack<Bit>  bits ()           {return program().bits;}
-  Stack<Memory> memories () {return program().memories;}
+  Stack<Memory> memories ()     {return program().memories;}
 
   int      currentPc()          {return program().     currentPc;}
   int    sourceIntId()          {return program().   sourceIntId;}
@@ -197,7 +197,7 @@ public class Program extends Test                                               
   abstract class For                                                                                                    // For loop: executed a specified number of times as long as the iterated code requests continuation
    {For (Int Start, Int End)                                                                                            // Execute the loop the specified number of times
      {final Int index = new Int("Index");
-      final Bit cont = new Bit("Continue");
+      final Bit cont  = new Bit("Continue");
 
       if (immediate())                                                                                                  // Immediate execution
        {index.set(Start);                                                                                               // Start index
@@ -211,7 +211,7 @@ public class Program extends Test                                               
        {index.set(Start);                                                                                               // Start index
         final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        final Bit   done = index.ge(End);                                                                               // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
+        final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >= End.i()) program().pc = end.offset;}                                           // Index out of range. Program counter has already been incremented so we do not need to do it again
@@ -253,7 +253,7 @@ public class Program extends Test                                               
       else                                                                                                              // Machine code
        {final Label start = new Label();                                                                                // Start of for loop code
         final Label   end = new Label();                                                                                // End of for loop code
-        final Bit   done = index.ge(End);                                                                               // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
+        final Bit    done = index.ge(End);                                                                              // Start of loop - make sure the index is still in range - we will use the side effect of this instruction in the next instruction
         index.T();                                                                                                      // Load index
         final I S = new I(false)                                                                                        // Start of loop - make sure the index is still in range
          {void   a()   {if (index.i() >=  End.i()) program().pc = end.offset;}                                          // Index out of range
@@ -287,7 +287,7 @@ public class Program extends Test                                               
      {if (Condition) Then(); else Else();
      }
 
-    If (Bit    Condition)
+    If (Bit Condition)
      {if (immediate())                                                                                                  // Immediate execution
        {if (Condition.b()) Then();
         else               Else();
@@ -333,11 +333,16 @@ public class Program extends Test                                               
     boolean    v = false;                                                                                               // Whether the current value of the integer is valid or not
     boolean   nd = false;                                                                                               // If true the boolean should not be dumped because it represents the validity of an integer variable and no such determination is possible in the Verilog code.
     final int id = program().nextBitId++;                                                                               // Unique id for Bit
+    final boolean    top = callerName() == "code";                                                                      // A declaration at the top level
+          boolean     in = false;                                                                                       // An input wire if true and named and at the top
+          boolean    out = false;                                                                                       // An output register if true and named and at the top
     String  name = null;                                                                                                // The name of the variable
 
     enum Ops {and, del, eq, flip, ne, or, set};                                                                         // Boolean operation classification by argument types
 
-    Bit (String Name)             {this();  name = Name;}                                                               // Constructors with name supplied
+    Bit (String Name)            {this();  name = Name; out = top;}                                                     // Constructor with name supplied. Output register if it is at the top
+    Bit (String Name, boolean I) {this(I); name = Name; in  = top;}                                                     // Input wire if we know its value at the start and it is at the top
+    Bit (String Name, Bit     I) {this(I); name = Name; out = top;}                                                     // Output register if its value is unknown at the start and is at the top
 
     Bit ()                        {ai();  del(false);     bits().push(this);}                                           // Constructors. Set newly constructed integers to invalid and minus one
     Bit (boolean I)               {ai();  ie(Ops.set, I); bits().push(this);}
@@ -418,6 +423,10 @@ public class Program extends Test                                               
        {final String f = "%8d writeBool %8d = %8d";
         void   a() {i = targetBool(); v = targetBoolValid();           jTrace(f(f,  pc(), b.id,           b.i ? 1 : 0));}
         String v() {return pCR("b[targetBoolId]") + " <= targetBool; "+vTrace(  f, "pc", "targetBoolId", "targetBool");}
+        String syn(String V)                                                                                            // Prevents assignment to input wires to allow the same code to be used for testing and for synthesis
+         {if (b.nio() || b.out) return V;
+          return "`ifndef SYNTHESIS " + V + "`endif";                                                                   // Comment out the assignment when running synthesis - the integer will become an input wire instead. Any assignment will have to be done in the calling module
+         }
        };
      }
 
@@ -494,13 +503,13 @@ public class Program extends Test                                               
      }
 
     Bit ok (boolean Value)                                                                                              // Memory trace from java makes this test redundant in Verilog if the Verilog trace matches the java trace and so there will be an empty instruction generated in the verilog to "regulate the service"
-     {final  Bit got = this;
+     {final Bit got = this;
       new I()
        {void a()
          {if (!got.v) stop("Invalid Bit being tested at:", executing().instructionLocation());
           Test.ok(i, Value);
          }
-        String v() {return "/* Bit ok(boolean) */";}
+        String v()   {return "/* Bit ok(boolean) */";}
         int traces() {return 0;}
        };
       return this;
@@ -519,6 +528,8 @@ public class Program extends Test                                               
        };
       return this;
      }
+
+    boolean nio () {return !in && !out;}                                                                                // Not an input wire or an output register
    } // Bit
 
 //D2 Integer values                                                                                                     // Operations on integer values
@@ -916,16 +927,16 @@ public class Program extends Test                                               
 
   final class Bint                                                                                                      // An integer that can be specified as valid or invalid
    {private final Bit b = new Bit(false);                                                                               // Whether the associated integer is valid or invalid
-    private final Int  i = new Int();                                                                                   // The integer component
+    private final Int i = new Int();                                                                                    // The integer component
     Bint set (Int I) {b.set(); i.set(I); return this;}                                                                  // Set to a known value
-    Bit   b ()      {return b;}                                                                                         // Return boolean component
+    Bit    b ()      {return b;}                                                                                         // Return boolean component
     Int    i ()
      {new If (b.Flip()) {void Then() {stop("Requested int component from unset Bint");}};                               // Complain if there is no integer component to return
       return new Int(i);
      }
 
-    Bit valid ()      {return b;}                                                                                       // Whether the boolean integer is valid
-    Bit notValid ()   {return b.Flip();}                                                                                // Whether the boolean integer is invalid
+    Bit       valid () {return b;}                                                                                      // Whether the boolean integer is valid
+    Bit    notValid () {return b.Flip();}                                                                               // Whether the boolean integer is invalid
     Bint invalidate () {b.clear(); return this;}                                                                        // Mark the integer as invalid after all
 
     Bint copy (Bint Source)                                                                                             // Copy a boolean integer
@@ -991,7 +1002,7 @@ public class Program extends Test                                               
     String n (String I1, String I2) {return n() + "["+I1+"]["+I2+"]";}                                                  // Name of indexed memory
     String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memory in decimal
 
-    void im(Int  I) {pcConstant(compiling(), I.id);}                                                                    // Save the integer variable used for this memory access at this instruction
+    void im(Int I) {pcConstant(compiling(), I.id);}                                                                     // Save the integer variable used for this memory access at this instruction
     void im(Bit B) {pcConstant(compiling(), B.id);}                                                                     // Save the boolean variable used for this memory access at this instruction
 
     String wdi() {return vWriteIntEnable() +" <= 0;";}                                                                  // Write disable integer
@@ -2351,7 +2362,7 @@ endmodule
         final Int N = new Int(11);
         new For(N)
          {void body(Int Index, Bit Continue)
-           {final Int  m = new Int();
+           {final Int m = new Int();
             final Bit z = new Bit();
             m.set(Index.Mod(2));
             z.set(m.eq(0));
@@ -2482,10 +2493,10 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int  a = new Int ("a");
+       {final Int a = new Int("a");
         final Bit b = new Bit("b");
-        final Int  c = new Int ("c").set(0);
-        final Int  N = new Int ("N").set(4);
+        final Int c = new Int("c").set(0);
+        final Int N = new Int("N").set(4);
         final StringBuilder s = new StringBuilder();
         new For(N)
          {void body(Int Index, Bit Continue)
@@ -2564,7 +2575,7 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex).memory(3))
      {void code()
        {dumpProgramState("AAAA");
-        final Int  i = new Int ("i");
+        final Int i = new Int("i");
         final Bit b = new Bit("b");
         dumpProgramState("BBBB");
         i.set(1);
@@ -2588,13 +2599,13 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
        {final Memory m = unitMemory;
-        final Int  a = new Int("a"); a.set(2) ;           m.putInt(new Int(1), a);
-        final Int  b = m.getInt (new Int(1));             b.name = "b"; b.ok(2);
+        final Int a = new Int("a"); a.set(2) ;           m.putInt(new Int(1), a);
+        final Int b = m.getInt (new Int(1));             b.name = "b"; b.ok(2);
         final Bit c = m.getBool(new Int(1), new Int(0)); c.name = "c"; c.ok(false);
         final Bit d = m.getBool(new Int(1), new Int(1)); d.name = "d"; d.ok(true);
-        m.putBool(new Int(1), new Int(0),  new Bit(true));
-        m.putBool(new Int(1), new Int(1),  new Bit(false));
-        m.putBool(new Int(0), new Int(13), new Bit(true));
+        m.putBool(new Int(1), new Int(0),   new Bit(true));
+        m.putBool(new Int(1), new Int(1),   new Bit(false));
+        m.putBool(new Int(0), new Int(13),  new Bit(true));
         final Int  e = m.getInt(new Int(1));              e.name = "e"; e.ok(1);
         execute();
        }
@@ -3032,7 +3043,7 @@ WriteBoolIndex =        0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_addition(!true);
+    test_andOr(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
