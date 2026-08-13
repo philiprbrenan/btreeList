@@ -1,6 +1,6 @@
 #!/usr/bin/perl -I/home/phil/perl/cpan/DataTableText/lib/ -I/home/phil/perl/cpan/GitHubCrud/lib/
 #-----------------------------------------------------------------------------------------------------------------------
-# Install java and silicon compiler in two containers, one for use on github, the other for local use
+# Install java and silicon compiler tools in two containers to create identical environments locally and on github
 # Philip R Brenan at gmail dot com, Appa Apps Ltd Inc., 2026
 #-----------------------------------------------------------------------------------------------------------------------
 use v5.38;
@@ -11,31 +11,33 @@ use Data::Dump qw(dump);
 use Data::Table::Text qw(:all);
 use GitHub::Crud qw(:all);
 
-my $user   =  q(philiprbrenan);                                                                                         # User on github
-my $userId =  q(phil);                                                                                                  # User on ubuntu
-my $repo   =  q(btreeList);                                                                                             # Repo
-my $home   = qq(/home/$userId/btreeList);                                                                               # Home folder
-my $wf     =  q(.github/workflows/dockerSiliconCompiler.yml);                                                           # Work flow on Ubuntu
+my $userId  =  q(phil);                                                                                                 # User name when running Silicon Compiler on Ubuntu - typically the useid of the person wishing to use silicon compiler in this manner
+my $user    =  q(philiprbrenan);                                                                                        # User name of repository owner on github
+my $repo    =  q(btreeList);                                                                                            # Repository on github
+my $uGitHub =  q(1001);                                                                                                 # Desired numeric userid on github.
+my $optBase =  q(iverilog openjdk-25-jdk-headless tree yosys gh);                                                       # Optional base packages to be added to containers, assumed to be installable via apt install
+my $scTools =  q(openroad klayout yosys opensta);                                                                       # Silicon compiler tools to be installed. These tools will be compiled from source and then the source code and intermediate build objects will be removed to reduce the sizes of the containers
+my $wf      =  q(.github/workflows/dockerSiliconCompiler.yml);                                                          # Work flow on Ubuntu
 
-sub Local()            {"local" ;}                                                                                      # Name on local
-sub GitHub()           {"github";}                                                                                      # Name on github
-sub imageName($target) {"ghcr.io/philiprbrenan/sc_$target:latest";}                                                     # Return name
+sub Local()            {"local" ;}                                                                                      # Choose container to build - local version
+sub GitHub()           {"github";}                                                                                      # Choose container to build - github version
+sub imageName($Target) {"ghcr.io/\${{ github.repository_owner }}/sc_$Target:latest";}                                   # Name of container to build
 
-sub createImage($Target)                                                                                                # Install base packages and silion compiler for local use with the correct userid number so that the docker container can write back to the local file system without running into file permission problems
+sub createImage($Target)                                                                                                # Install base packages and silion compiler for local use with the correct userid number so that the docker container can write back into the local file system without running into file permission problems
  {$Target eq Local() or $Target eq GitHub() or die "Bad $Target";                                                       # Decode target
   my $G = $Target eq GitHub();
   my $L = $Target eq Local();
 
-  my $l = imageName $Target;                                                                                            # Image name
-  my $u = $G ? 1001 : 1000;                                                                                             # Userid number
+  my $imageName  = imageName $Target;                                                                                   # Image name
 
-  my $createUser = $L ? <<END : <<END2;                                                                                 # How we create the user depends on whether it exists or not in the base operating system image
+  my $createUser = $L ? <<END : <<END2;                                                                                 # How we create the user depends on whether it exists or not in the base operating system image. If the userid ubuntu exists we rename it to the requested user id, else if it is not present, as in the case of the ubuntu presented by github  we create a userid with the requested name. This make it possible for the container to write files back into the users workspace when running locally without file permission problems, allowing the build results to be seen outside the local container.
         RUN usermod -l ${userId} ubuntu && groupmod -n ${userId} ubuntu && usermod -d /home/${userId} -m ${userId}   && echo "${userId} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${userId}
 END
-        RUN groupadd --gid 1001 ${userId} && useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash ${userId} && echo "${userId} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${userId}
+        RUN groupadd --gid $uGitHub ${userId} && useradd --uid $uGitHub --gid $uGitHub --create-home --shell /bin/bash ${userId} && echo "${userId} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${userId}
 END2
 
   return <<"END";                                                                                                       # Workflow
+
     - name: $Target - Install base packages
       run: |
         cat << 'EOF' > Dockerfile
@@ -45,13 +47,13 @@ END2
         ENV PIP_NO_CACHE_DIR=1
         ENV TZ=Etc/UTC
 
-        RUN apt-get update  -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo   iverilog openjdk-25-jdk-headless tree yosys gh; rm -rf /var/lib/apt/lists/*
+        RUN apt-get update -qq && apt-get install -qq -y tzdata python3-dev python3-pip python3-venv curl git build-essential sudo $optBase; rm -rf /var/lib/apt/lists/*
 
 $createUser
         USER ${userId}
         WORKDIR /home/${userId}
 
-        RUN python3 -m venv ./sc && ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install openroad klayout yosys opensta && (sudo rm -rf .cache .sc .stack || true)
+        RUN python3 -m venv ./sc && ./sc/bin/pip install --upgrade pip && ./sc/bin/pip install siliconcompiler && ./sc/bin/sc-install $scTools && (sudo rm -rf .cache .sc .stack || true)
         ENV PATH=/home/${userId}/sc/bin:/home/${userId}/.local/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         CMD ["/bin/bash", "--login"]
         EOF
@@ -65,11 +67,11 @@ $createUser
 
     - name: $Target - Build Docker image
       run: |
-        docker build -t $l .
+        docker build -t $imageName .
 
     - name: $Target - push Docker image to GHCR
       run: |
-        docker push $l
+        docker push $imageName
 END
  }
 
@@ -79,7 +81,7 @@ my $d = dateTimeStamp;                                                          
 my $g = imageName GitHub();                                                                                             # Name on github
 my $y  = <<"END";                                                                                                       # Workflow
 # $d
-# Install java and silicon compiler in two containers, one for use on github, the other for local use
+# Install java and silicon compiler tools in two containers to create identical environments locally and on github
 
 name: Docker Silicon Compiler
 run-name: $repo
