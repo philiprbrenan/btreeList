@@ -24,7 +24,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
+  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler
   final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
@@ -2420,7 +2420,7 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int(1);
+       {final Int a = new Int("a").set(1);
         final Int b = new Int(0);
         final Int N = new Int(10);
         final StringBuilder s = new StringBuilder();
@@ -2463,7 +2463,7 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int("a", 0);
+       {final Int a = new Int("a").set(0);
         final Int b = new Int("b", 1);
         final Int c = new Int("c", 0);
         final Int N = new Int("N", 10);
@@ -2528,12 +2528,12 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int(0);
+       {final Int a = new Int("a").set(0);
         final StringBuilder s = new StringBuilder();
               a.ok(0); new I() {void a() {s.append(a+" ");} int traces() {return 0;}};
         a.inc().ok(1); new I() {void a() {s.append(a+" ");} int traces() {return 0;}};
         a.inc().ok(2); new I() {void a() {s.append(a+" ");} int traces() {return 0;}};
-        Check(s, "0 1 2");
+        Check(s, "a=0 a=1 a=2");
         execute();
        }
      };
@@ -2550,13 +2550,13 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int(1);
+       {final Int a = new Int("a").set(1);
         a.add(2).ok(3);
        }
      };
     final Program Q = new Program(new Build().immediate(Ex).parent(P))
      {void code()
-       {final Int a = new Int(1);
+       {final Int a = new Int("A").set(1);
         a.add(3).ok(4);
        }
      };
@@ -2957,7 +2957,7 @@ WriteBoolIndex =        0
     final int N = 10;
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int  a = new Int(N);
+       {final Int  a = new Int("a").set(N);
         new ForCount(N)
          {void body(Int Index)
            {final Bit b = new Bit(false);
@@ -3042,7 +3042,7 @@ WriteBoolIndex =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
     test_andOr(!true);
    }
 
