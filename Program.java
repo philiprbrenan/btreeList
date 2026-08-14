@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Create a micro-coded cpu in synthesizable Verilog from a Java program coded using integers, booleans and memory
+// Create a micro-coded cpu in synthesizable Verilog from a Java program coded using integers, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
 // Start with memory randomized
@@ -24,7 +24,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler
+  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
   final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
@@ -63,23 +63,25 @@ public class Program extends Test                                               
         VerilogArrays.Array              pcConstantArray = null;                                                        // Instruction to variable or memory used by the instruction. Mapped to read only memory so that Yos ys does not expand them into registers. Prefetched one instruction in advance to keep the main instruction loop fully occupied except at branches where a one instruction wait has to be inserted to allow the prefetch loop to get ahead again.
         VerilogArrays.Array              pcMatchSetArray = null;                                                        // Constants in instructions identified by program counter as above.
   final TreeMap<Integer,Integer>              pcConstant = new TreeMap<>();                                             // Instruction equivalence set identified by program counter
-  private int                                  currentPc = 0;                                                           // Current program counter
-  private int                                     jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
-  private int                                     vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
-  private int                                  nextIntId = 0;                                                           // Unique id for each Int
-  private int                                  nextBitId = 0;                                                           // Unique id for each Bit
-  private int                                sourceIntId = 0;                                                           // Id of source int
-  private int                               source2IntId = 0;                                                           // Id of source2 int
-  private int                                targetIntId = 0;                                                           // Id of target int
-  private int                               sourceBoolId = 0;                                                           // Id of source bool
-  private int                               targetBoolId = 0;                                                           // Id of target bool
-  private boolean                             sourceBool = false;                                                       // Source value for a boolean  operation obtained from a variable
-  private int                                  sourceInt = 0;                                                           // Source value for an integer operation obtained from a variable
-  private int                                 source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
-  private int                                  targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
-  private boolean                             targetBool = false;                                                       // Computed target boolean value to be loaded into a variable
-  private boolean                        targetBoolValid = false;                                                       // Whether the value produced by a boolean operation is valid or not
-  private boolean                         targetIntValid = false;                                                       // Whether the value produced by an integer operation is valid or not
+  int                                          currentPc = 0;                                                           // Current program counter
+  int                                             jtrace = 0;                                                           // Count the number of  times jtrace() has been called to demonstrate that each instruction generates one matching call to jtrace
+  int                                             vtrace = 0;                                                           // Count the number of  times vtrace() has been called to demonstrate that each instruction generates one matching call to vtrace
+  int                                          nextIntId = 0;                                                           // Unique id for each Int
+  int                                          nextBitId = 0;                                                           // Unique id for each Bit
+  int                                        sourceIntId = 0;                                                           // Id of source int
+  int                                       source2IntId = 0;                                                           // Id of source2 int
+  int                                        targetIntId = 0;                                                           // Id of target int
+  int                                       sourceBoolId = 0;                                                           // Id of source bool
+  int                                       targetBoolId = 0;                                                           // Id of target bool
+  boolean                                     sourceBool = false;                                                       // Source value for a boolean  operation obtained from a variable
+  int                                          sourceInt = 0;                                                           // Source value for an integer operation obtained from a variable
+  int                                         source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
+  int                                          targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
+  boolean                                     targetBool = false;                                                       // Computed target boolean value to be loaded into a variable
+  boolean                                targetBoolValid = false;                                                       // Whether the value produced by a boolean operation is valid or not
+  boolean                                 targetIntValid = false;                                                       // Whether the value produced by an integer operation is valid or not
+  int                                         scDieAreaX = 400;                                                         // Size of x dimension for chip
+  int                                         scDieAreaY = 400;                                                         // Size of y dimension for chip
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -108,20 +110,20 @@ public class Program extends Test                                               
   void     executingCheck () {if (!isExecuting()) stop("Not executing");}                                               // Confirm that code is being executed and that consequently an instruction should be executed otherwise complain
   void parentProgramCheck () {if (program() != program().program()) stop("Parent program not set to parent program");}  // Check that code is being written to the expected program
 
-  void  ai ()                                                                                                           // An executing program cannot be extended by adding new data or instructions
+  void ai ()                                                                                                            // An executing program cannot be extended by adding new data or instructions
    {final I      i = executing();
     final String m = immediate() ? "immediate" : "delayed";
     if (i != null) stop("Allocation within an instruction while executing in", m, "mode:", i.traceBack, "====");
    }
 
-  void  rx ()                                                                                                           // This register can only be accessed during execution
+  void rx ()                                                                                                            // This register can only be accessed during execution
    {final I x = executing();
     if (!immediate() && x == null)
      {stop("Control register can only be accessed during execution:", x.traceBack, "====");
      }
    }
 
-  void  rc ()                                                                                                           // This register can only be accessed during compilation
+  void rc ()                                                                                                            // This register can only be accessed during compilation
    {final I x = executing();
     if (x != null)
      {stop("Control registers can only be accessed during compilation:", x.traceBack, "====");
@@ -1502,7 +1504,7 @@ cd {f}; python3 {p}                                                             
 "p", verilogTestFolder.py())                                                                                            // Python file
 
         : substitute("""
-docker run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                                  # Silicon compiler command running a new container
+cd {f} && docker run {c} --rm --network host -v {f}:{n} -w {n} "{i}" python3 {p}                                        # Silicon compiler command running a new container
 """,
 "c", "", //"--userns=keep-id",                                                                                          // Use the same userid inside the container to avoid file permission problems
 "f", verilogTestFolder.folderWithCwd(),                                                                                 // Work folder
@@ -1791,6 +1793,8 @@ module {name} (                                                                 
 
         for(Int i : ints) if (i.in)  out.write("  input  wire[31:0] i_"+i.name+",\n");                                  // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
         for(Int i : ints) if (i.out) out.write("  output reg [31:0] o_"+i.name+",\n");                                  // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
+        for(Bit b : bits) if (b.in)  out.write("  input  wire       i_"+b.name+",\n");                                  // Input ports  - silicon compiler cannot handle logic or integer or signed in port definitions
+        for(Bit b : bits) if (b.out) out.write("  output reg        o_"+b.name+",\n");                                  // Output ports - silicon compiler cannot handle logic or integer or signed in port definitions
 
         /*Parameters*/out.write(substitute("""
   input wire clock,                                                                                                     // Clock pin
@@ -2106,7 +2110,7 @@ def gen(module):
   skywater130_demo(project)                                                                                             # Technology
 
   project.add_asiclib(macros)
-  project.constraint.area.set_diearea_rectangle(500, 500, coremargin=1)                                                 # Area constraints
+  project.constraint.area.set_diearea_rectangle({dx}, {dy}, coremargin=1)                                               # Area constraints
 
   project.check_manifest()                                                                                              # Check set up
   project.run()                                                                                                         # Run asic flow
@@ -2114,7 +2118,8 @@ def gen(module):
 
 if __name__ == "__main__":
     gen(sys.argv[1] if len(sys.argv) > 1 else "{n}")
-""", "lef", t.lef$(), "v", t.v(), "g", t.gds(), "l", t.lef(), "n", name, "b", ""+b));
+""", "lef", t.lef$(), "v", t.v(), "g", t.gds(), "l", t.lef(), "n", name, "b", ""+b,
+"dx", ""+scDieAreaX, "dy", ""+scDieAreaY));
 
       return writeFile(t.py$(), s);
      }
@@ -2325,7 +2330,7 @@ endmodule
 
 //D1 Testing                                                                                                            // Methods useful during testing of byte machine programs
 
-  static void deleteAllFileInVerilogTestsFolder() {deleteAllFiles(verilogTestsFolder.folder, 999);}                     // Delete generated Verilog files created by a prior run of the current test
+  static void deleteAllFileInVerilogTestsFolder() {deleteAllFiles(verilogTestsFolder.folder, 1999);}                    // Delete generated Verilog files created by a prior run of the current test
 
   void check (StringBuilder G, String E)                                                                                // Test the supplied content against the specified string, then clear the output area ready for the next report
    {new I() {void a() {Test.ok(nws(G), nws(E));} int traces() {return 0;}};
@@ -2344,6 +2349,7 @@ endmodule
         a.ok(1);
         b.ok(3);
         dumpProgramState("AAAA");
+        scDieAreaX = 300; scDieAreaY = 400;
         execute();
        }
      };
@@ -2358,8 +2364,8 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int i = new Int(0);
-        final Int N = new Int(11);
+       {final Int i = new Int("i").set(0);
+        final Int N = new Int("N", 11);
         new For(N)
          {void body(Int Index, Bit Continue)
            {final Int m = new Int();
@@ -2376,6 +2382,7 @@ endmodule
          };
         i.ok(5);
         i.valid().ok(true);
+        scDieAreaX = 500; scDieAreaY = 400;
         execute();
        }
      };
@@ -2390,8 +2397,12 @@ endmodule
    {sayCurrentTestName();
     final Program  P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Bit z = new Bit("zero").clear();
-        final Bit o = new Bit("one" ).set();
+       {final Bit Z = new Bit("zero", false);
+        final Bit O = new Bit("one",   true);
+
+        final Bit z = new Bit("z").set(Z);
+        final Bit o = new Bit("o").set(O);
+
         z.Or (z).ok(false);
         z.Or (o).ok(true);
         o.Or (z).ok(true);
@@ -2401,10 +2412,10 @@ endmodule
         z.And(o).ok(false);
         o.And(z).ok(false);
         o.And(o).ok(true);
-        final Bit a = new Bit(true);
-        final Bit b = new Bit(false);
-        final Bit c = a.dup().or(b).flip().ok(false);
-        final Bit d = b.dup().or(a).flip().ok(false);
+        final Bit a = new Bit("a", true);
+        final Bit b = new Bit("b", false);
+        final Bit c = new Bit("c").set(a.dup().or(b).flip().ok(false));
+        final Bit d = new Bit("d").set(b.dup().or(a).flip().ok(false));
 
         execute();
        }
@@ -2465,7 +2476,7 @@ endmodule
      {void code()
        {final Int a = new Int("a").set(0);
         final Int b = new Int("b", 1);
-        final Int c = new Int("c", 0);
+        final Int c = new Int("c");
         final Int N = new Int("N", 10);
         final StringBuilder s = new StringBuilder();
         new For(N)
@@ -2479,6 +2490,7 @@ endmodule
            }
          };
         Check(s, "c=1 c=2 c=3 c=5 c=8 c=13 c=21 c=34 c=55 c=89");
+        scDieAreaX = 500; scDieAreaY = 500;
         execute();
        }
      };
@@ -3042,8 +3054,8 @@ WriteBoolIndex =        0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    test_andOr(!true);
+   {//oldTests();
+    test_fibonacci(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
