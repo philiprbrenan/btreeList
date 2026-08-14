@@ -817,10 +817,9 @@ public class Test                                                               
 
   static void appendFile (String FilePath, StringBuilder String)                                                        // Append a string builder to a file
    {try
-     {makePath(folderName(FilePath));
-      Files.write(Paths.get(FilePath), String.toString().getBytes(),
-        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-      filesWritten.add(FilePath);
+     {makePath(folderName  (FilePath));
+      Files.write(Paths.get(FilePath), (""+String).getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+      filesWritten.add     (FilePath);
      }
     catch (Exception e)
      {stop("Cannot append to file", FilePath, e);
@@ -909,9 +908,9 @@ public class Test                                                               
          }
        });
      }
-    catch (NoSuchFileException e) {}                                                                                    // Folder does not exist
+    catch (NoSuchFileException        e) {}                                                                             // Folder does not exist
     catch (DirectoryNotEmptyException e) {}                                                                             // Folder exists but is not empty
-    catch (Exception e)
+    catch (Exception                  e)
      {stop("Cannot find files under", FilePath, e);
      }
    }
