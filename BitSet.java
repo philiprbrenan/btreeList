@@ -147,15 +147,15 @@ final public class BitSet extends Program                                       
    }
 
   Bit      getBit (Int Index)  {if (immediate()) checkInActual(Index); return getBitNC(Index);}                         // Get a bit from the bit set
-  Bit    getBitNC (Int Index)  {return memoryRef.getBool(Index);}                                                       // Get bit value at an index without checking that the index is valid
-  boolean getBitNC (int Index)  {return memoryRef.getBool(Index);}                                                      // Get bit value at an index without checking that the index is valid
+  Bit     getBitNC (Int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
+  boolean getBitNC (int Index)  {return memoryRef.getBit(Index);}                                                       // Get bit value at an index without checking that the index is valid
 
   void    setBitNC (Int Index)  {setBitNC(Index, true);}                                                                // Set bit value without checking index
   void  clearBitNC (Int Index)  {setBitNC(Index, false);}                                                               // Clear a bit value without checking index
 
   void    setBitNC (Int Index, boolean B)                                                                               // Set a bit to a value known at compile time
    {subStart     ("Bitset.setBitNC_IB");
-    memoryRef.putBool(Index, new Bit(B));                                                                               // Save target boolean into memory
+    memoryRef.putBit(Index, new Bit(B));                                                                                // Save target boolean into memory
     subFinish();
    }
 
@@ -163,10 +163,10 @@ final public class BitSet extends Program                                       
    {subStart     ("Bitset.setBitNC_IB");
     final String f = "%8d setBitNC_IB writeBool = %8d";
     new I()                                                                                                             // Set target boolean directly
-     {void   a() {memoryRef.m.writeBool = B;                                 jTrace(f(f,  currentPc(), B ?  1  :  0));}
-      String v() {return memoryRef.m.vWriteBool() + " <= " + (B ? 1 : 0)+";"+vTrace(  f, "pc",         B ? "1" : "0");}
+     {void   a() {memoryRef.m.writeBit = B;                                 jTrace(f(f,  currentPc(), B ?  1  :  0));}
+      String v() {return memoryRef.m.vWriteBit() + " <= " + (B ? 1 : 0)+";"+vTrace(  f, "pc",         B ? "1" : "0");}
      };
-    memoryRef.putBool(Index, null);                                                                                     // Save target boolean into memory
+    memoryRef.putBit(Index, null);                                                                                      // Save target boolean into memory
     subFinish();
    }
 
@@ -816,7 +816,7 @@ final public class BitSet extends Program                                       
     for   (int i : range(1, size()))                                                                                    // Print the first line and the first bit tree if present
      {s.append(f("%4d %4d %4d |", i, p, r));
       for (int j : range(r))                                                                                            // Bits in level
-       {if (i > 1 || j < size()) s.append(f("  %1d", memoryRef.getBool(p + j) ? 1 : 0));
+       {if (i > 1 || j < size()) s.append(f("  %1d", memoryRef.getBit(p + j) ? 1 : 0));
        }
       s.append("\n");
       if (i == 1)                                                                                                       // The first line is the actual bits
@@ -832,7 +832,7 @@ final public class BitSet extends Program                                       
     for   (int i : range(1, size()))                                                                                    // Each level
      {s.append(f("%4d %4d %4d |", i, p, r));
       for (int j : range(r))                                                                                            // Bits in level
-       {s.append(f("  %1d", memoryRef.getBool(p + j) ? 1 : 0));
+       {s.append(f("  %1d", memoryRef.getBit(p + j) ? 1 : 0));
        }
       s.append("\n");
       p += r;
