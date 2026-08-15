@@ -24,7 +24,7 @@ public class Program extends Test                                               
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
   final boolean              suppressNamesInInstructions = true;                                                        // Include names in instructions
-  final boolean                       runSiliconCompiler = true;                                                        // Run silicon compiler
+  final boolean                       runSiliconCompiler =!true;                                                        // Run silicon compiler
   final boolean                                 runYosys =!true;                                                        // Run synthesis via Yosys to provide a fast check as to whether the verilog code is synthesizable
   final int                               verilogTimeOut = 4000;                                                        // Time out a verilog run after this many seconds if running locally
         int                                        steps =    0;                                                        // Number of instruction steps executed so far during the latest execution of this program
@@ -1007,21 +1007,21 @@ public class Program extends Test                                               
     void im(Int I) {pcConstant(compiling(), I.id);}                                                                     // Save the integer variable used for this memory access at this instruction
     void im(Bit B) {pcConstant(compiling(), B.id);}                                                                     // Save the boolean variable used for this memory access at this instruction
 
-    String wdi() {return vWriteIntEnable() +" <= 0;";}                                                                  // Write disable integer
-    String wdb() {return vWriteBoolEnable()+" <= 0;";}                                                                  // Write disable boolean
-    String wei() {return vWriteIntEnable() +" <= 1;";}                                                                  // Write enable integer
-    String web() {return vWriteBoolEnable()+" <= 1;";}                                                                  // Write enable boolean
+    String wdi() {return vWriteIntEnable() +" <= 0; ";}                                                                 // Write disable integer
+    String wdb() {return vWriteBoolEnable()+" <= 0; ";}                                                                 // Write disable boolean
+    String wei() {return vWriteIntEnable() +" <= 1; ";}                                                                 // Write enable integer
+    String web() {return vWriteBoolEnable()+" <= 1; ";}                                                                 // Write enable boolean
 
-    String        vReadBool()    {return n() + "_readBool       ";}                                                     // Boolean read from memory
-    String       vWriteBool()    {return n() + "_writeBool      ";}                                                     // Boolean to write into memory
-    String         vReadInt()    {return n() + "_readInt        ";}                                                     // Integer read from memory
-    String        vWriteInt()    {return n() + "_writeInt       ";}                                                     // Integer to write into memory
-    String    vReadIntIndex()    {return n() + "_readIntIndex   ";}                                                     // Index at which to read an integer from memory
-    String    vReadBitIndex()    {return n() + "_readBitIndex   ";}                                                     // Index within an integer from which to get a bit to make a boolean
-    String   vWriteIntIndex()    {return n() + "_writeIntIndex  ";}                                                     // Index at which to write an integer into memory
-    String  vWriteBoolIndex()    {return n() + "_writeBoolIndex ";}                                                     // Index within an integer at which to set a bit to represent a boolean
-    String  vWriteIntEnable()    {return n() + "_writeIntEnable ";}                                                     // Write enable flag
-    String vWriteBoolEnable()    {return n() + "_writeBoolEnable";}                                                     // Write enable flag
+    String        vReadBool()    {return pName(n() + "_readBool"       );}                                              // Boolean read from memory
+    String       vWriteBool()    {return pName(n() + "_writeBool"      );}                                              // Boolean to write into memory
+    String         vReadInt()    {return pName(n() + "_readInt"        );}                                              // Integer read from memory
+    String        vWriteInt()    {return pName(n() + "_writeInt"       );}                                              // Integer to write into memory
+    String    vReadIntIndex()    {return pName(n() + "_readIntIndex"   );}                                              // Index at which to read an integer from memory
+    String    vReadBitIndex()    {return pName(n() + "_readBitIndex"   );}                                              // Index within an integer from which to get a bit to make a boolean
+    String   vWriteIntIndex()    {return pName(n() + "_writeIntIndex"  );}                                              // Index at which to write an integer into memory
+    String  vWriteBoolIndex()    {return pName(n() + "_writeBoolIndex" );}                                              // Index within an integer at which to set a bit to represent a boolean
+    String  vWriteIntEnable()    {return pName(n() + "_writeIntEnable" );}                                              // Write enable flag
+    String vWriteBoolEnable()    {return pName(n() + "_writeBoolEnable");}                                              // Write enable flag
 
     String       readIntV()      {return                                                                                            vTrace(  "%8d readInt       %8d",         "pc",       vReadIntIndex ()                                   );}
     String      readBoolV()      {return                                                                                            vTrace(  "%8d readBool      %8d.%8d",     "pc",       vReadIntIndex (),  vReadBitIndex  ()               );}
@@ -1064,12 +1064,12 @@ public class Program extends Test                                               
            };
           new I()                                                                                                       // Set write from read
            {final String f = "%8d writeInt=readInt %8d";
-            void   a() {         writeInt       =   S. readInt;               jTrace(f(f,  pc(),   writeInt));}         // Java updates variables immediately so their value can be used later in the same expression
-            String v() {return vWriteInt() + " <= "+S.vReadInt() + "; "+wei()+vTrace(  f, "pc",  S.vReadInt());}        // Verilog updates at the end of the block so we have to supply the original expression
+            void   a() {              writeInt        =   S. readInt;         jTrace(f(f,  pc(),   writeInt));}         // Java updates variables immediately so their value can be used later in the same expression
+            String v() {return wei()+vWriteInt() + " <= "+S.vReadInt() + "; "+vTrace(  f, "pc",  S.vReadInt());}        // Verilog updates at the end of the block so we have to supply the original expression
            };
           new I()                                                                                                       // Write into target memory
-           {void   a() {       writeIntJ();}
-            String v() {return writeIntV()+wdi();}
+           {void   a() {             writeIntJ();}
+            String v() {return wdi()+writeIntV();}
            };
          }
        };
@@ -1084,12 +1084,12 @@ public class Program extends Test                                               
         String v() {return writeIntIndexV(Index);}
        };
       new I()                                                                                                           // Set write from read
-       {void   a() {writeInt = 0;                        jTrace(f("%8d writeInt=0",  pc()));}
-        String v() {return vWriteInt() + " <= 0; "+wei()+vTrace(  "%8d writeInt=0", "pc"  );}
+       {void   a() {              writeInt = 0;          jTrace(f("%8d writeInt=0",  pc()));}
+        String v() {return wei()+vWriteInt() + " <= 0; "+vTrace(  "%8d writeInt=0", "pc"  );}
        };
       new I()                                                                                                           // Write into target memory
-       {void   a() {       writeIntJ();}
-        String v() {return writeIntV()+wdi();}
+       {void   a() {             writeIntJ();}
+        String v() {return wdi()+writeIntV();}
        };
       subFinish();
       return this;
@@ -1158,13 +1158,13 @@ public class Program extends Test                                               
        };
       if (J != null) new I()                                                                                            // Integer to write if not already set
        {final String f = "%8d writeInt2 %8d = %8d < %8d";
-        void   a() {final int p = writeInt; writeInt = J.i();                        jTrace(f(f,  pc(), writeIntIndex,         J.i,      p));}
-        String v() {im(J); return vWriteInt() + "<= i[arrayData_pcConstant]; "+wei()+vTrace(  f, "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
+        void   a() {final int        p = writeInt; writeInt = J.i();                 jTrace(f(f,  pc(), writeIntIndex,         J.i,      p));}
+        String v() {im(J); return wei()+vWriteInt() + "<= i[arrayData_pcConstant]; "+vTrace(  f, "pc", vWriteIntIndex(),  "i["+J.id+"]", vWriteInt());}
        };
       else stop("Integer to write not set");                                                                            // Writes must have the integer to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
       new I()                                                                                                           // Write source integer value into target memory at indexed location
-       {void   a() {       writeIntJ();}
-        String v() {return writeIntV()+wdi();}
+       {void   a() {             writeIntJ();}
+        String v() {return wdi()+writeIntV();}
        };
       return this;
      }
@@ -1180,13 +1180,13 @@ public class Program extends Test                                               
        };
       if (K != null) new I()                                                                                            // If a value to be written has been supplied then put it into the control register, else assume the control register has already been set
        {final String f = "%8d writeBool2 %8d, %8d = %8d < %8d";
-         void  a() {writeBool = K.b();                                                jTrace(f(f,  pc(), writeIntIndex,    writeBitIndex,         K.i ? 1 : 0,  writeBool ? 1 : 0));}
-        String v() {im(K); return vWriteBool() + "<= b[arrayData_pcConstant]; "+web()+vTrace(  f, "pc", vWriteIntIndex(), vWriteBoolIndex(), "b["+K.id+"]", "b["+K.id+"]");}
+         void  a() {                     writeBool = K.b();                           jTrace(f(f,  pc(), writeIntIndex,    writeBitIndex,         K.i ? 1 : 0,  writeBool ? 1 : 0));}
+        String v() {im(K); return web()+vWriteBool() + "<= b[arrayData_pcConstant]; "+vTrace(  f, "pc", vWriteIntIndex(), vWriteBoolIndex(), "b["+K.id+"]", "b["+K.id+"]");}
        };
       else stop("Bit to write not set");                                                                                // Writes must have the Bit to be written as we need the instruction to write enable - the too, too clever scheme for reusing an existing value has melted, thawed, resolved itself into dew and does not work any more
       new I()                                                                                                           // Write into memory
-       {void   a() {       writeBoolJ();}
-        String v() {return writeBoolV()+wdb();}
+       {void   a() {             writeBoolJ();}
+        String v() {return wdb()+writeBoolV();}
        };
       return this;
      }
@@ -1287,8 +1287,8 @@ public class Program extends Test                                               
   input  integer readBoolIndex,                                                                                         // Read boolean address
   output integer readInt,                                                                                               // Integer data read
   output reg     readBool);                                                                                             // Boolean data read
-  integer memory [0:{size}-1];
 `ifdef __ICARUS__
+  integer memory [0:{size}-1];
   integer i;                                                                                                            // Index
 
   initial for (i = 0; i < {size}; i = i + 1) memory[i] = 0;                                                             // Clear memory to zeros at start
@@ -2112,6 +2112,7 @@ def gen(module):
   project.add_asiclib(macros)
   project.constraint.area.set_diearea_rectangle({dx}, {dy}, coremargin=1)                                               # Area constraints
 
+  project.logger.setLevel("WARNING")                                                                                    # "DEBUG" or "INFO" (the default), "WARNING", "ERROR"
   project.check_manifest()                                                                                              # Check set up
   project.run()                                                                                                         # Run asic flow
   project.summary()                                                                                                     # Summarize results
@@ -2307,11 +2308,9 @@ check
 (* blackbox *) module {array}                                                                                           // Memory module definitions for asynchronus read only memory
  (input  integer address,
   output integer data);
-  integer memory [0:{size}];
-
 `ifdef __ICARUS__
+  integer memory [0:{size}];
   initial $readmemh("{file}", memory, 0, {size});
-
   assign data = memory[address];
 `endif
 endmodule
@@ -2641,28 +2640,33 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
        {final Memory m = unitMemory;
+        final Int Z = new Int("Z", 0);
+        final Int O = new Int("O", 1);
+        final Int T = new Int("T", 2);
         new ForCount(2)
          {void body(Int Index)
-           {m.putInt(new Int(0), new Int(1));
-            m.putInt(new Int(1), new Int(2));
-            m.getInt(new Int(0)).ok(1);
-            m.getInt(new Int(1)).ok(2);
+           {m.putInt(Z, O);
+            m.putInt(O, T);
+            m.getInt(Z).ok(1);
+            m.getInt(O).ok(2);
             dumpProgramState("AAAA");
-            m.getBool(new Int(1), new Int(0)).ok(false);
-            m.getBool(new Int(1), new Int(1)).ok(true );
-            m.getBool(new Int(1), new Int(2)).ok(false);
-            m.putBool(new Int(1), new Int(0), new Bit(true));
-            m.getInt (new Int(1)).            ok(3);
+            m.getBool(O, Z).ok(false);
+            m.getBool(O, O).ok(true );
+            m.getBool(O, T).ok(false);
+            m.putBool(O, Z, new Bit(true));
+            m.getInt (O).            ok(3);
             dumpProgramState("BBBB");
             m.putBool(new Int(32), new Bit(false));
             m.getBool(new Int(32)).ok(false);
             m.getBool(new Int(33)).ok(true );
             m.getBool(new Int(34)).ok(false);
             dumpProgramState("CCCC");
-            m.putBool(new Int(1), new Int(9), new Bit(true));
-            m.getBool(new Int(1), new Int(9)).ok(true);
+            m.putBool(O, new Int(9), new Bit(true));
+            m.getBool(O, new Int(9)).ok(true);
            }
          };
+        final Int r = new Int(m.getInt(O));
+        r.ok(514);
         scDieAreaX = 1000; scDieAreaY = 1000;
         execute();
        }
