@@ -80,8 +80,8 @@ public class Program extends Test                                               
   boolean                                     targetBool = false;                                                       // Computed target boolean value to be loaded into a variable
   boolean                                targetBoolValid = false;                                                       // Whether the value produced by a boolean operation is valid or not
   boolean                                 targetIntValid = false;                                                       // Whether the value produced by an integer operation is valid or not
-  int                                         scDieAreaX = 400;                                                         // Size of x dimension for chip
-  int                                         scDieAreaY = 400;                                                         // Size of y dimension for chip
+  int                                         scDieAreaX = 1000;                                                        // Default size of x dimension for chip
+  int                                         scDieAreaY = 1000;                                                        // Default size of y dimension for chip
 
   final static class Build                                                                                              // Builder for this program
    {boolean immediate;                                                                                                  // Immediate mode
@@ -2126,15 +2126,15 @@ if __name__ == "__main__":
 
     void lef ()                                                                                                         // Generate LEF macros in one file
      {final Lef l = new Lef();
-                l.macro("array_pcConstant");
-                l.macro("array_pcMatchSet");
-                l.write(verilogTestFolder.lef$());
+      for(VerilogArrays.Array a : verilogArrays().arrays()) l.new ArrayLef(a.arrayName());                              // Lef for each array
+      for(Memory              m : memories())               l.new MemoryLef(m.m());                                     // Lef for each memory
+      l.write(verilogTestFolder.lef$());
      }
 
     void gds ()                                                                                                         // Generate gds blocks pretending to be the designs for the black boxes
      {final Gds g = new Gds(verilogTestFolder.gds$());
-      g.rectangle("array_pcConstant",  100, 200, 68, 20);
-      g.rectangle("array_pcMatchSet",  100, 200, 68, 20);
+      for(VerilogArrays.Array a : verilogArrays.arrays()) g.rectangle(a.arrayName(), 100, 200, 68, 20);                 // Gds block for each  array - non functional just to allow silicon compiler to complete
+      for(Memory              m : memories())             g.rectangle(m.m(),         100, 100, 68, 20);                 // Gds block for each memory - non functional just to allow silicon compiler to complete
       g.close();
      }
 
@@ -2170,7 +2170,7 @@ check
 
   String dumpVerilogMemories ()                                                                                         // Dump verilog memories
    {final StringBuilder s = new StringBuilder();
-    for(Memory m : memories) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
+    for(Memory m : memories()) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
     return ""+s;
    }
 
@@ -2526,6 +2526,8 @@ endmodule
            }
          };
         check(s, "c=2 c=1 c=3 c=2");
+//      scDieAreaX = 500; scDieAreaY = 500;
+        scDieAreaX = 400; scDieAreaY = 500;
         execute();
        }
      };
@@ -2540,12 +2542,13 @@ endmodule
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex))
      {void code()
-       {final Int a = new Int("a").set(0);
+       {final Int a = new Int("a", 0);
         final StringBuilder s = new StringBuilder();
-              a.ok(0); new I() {void a() {s.append(a+" ");} int traces() {return 0;}};
-        a.inc().ok(1); new I() {void a() {s.append(a+" ");} int traces() {return 0;}};
-        a.inc().ok(2); new I() {void a() {s.append(a+" ");} int traces() {return 0;}};
-        Check(s, "a=0 a=1 a=2");
+              a.ok(0);
+        a.inc().ok(1);
+        a.inc().ok(2);
+        final Int A = new Int("A").set(a);
+        scDieAreaX = 300; scDieAreaY = 300;
         execute();
        }
      };
@@ -2574,6 +2577,7 @@ endmodule
      };
     ok(P.ints.size(), 2);
     ok(Q.ints.size(), 0);
+    P.scDieAreaX = 300; P.scDieAreaY = 400;
     P.execute();
    }
 
@@ -2587,15 +2591,17 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex).memory(3))
      {void code()
        {dumpProgramState("AAAA");
-        final Int i = new Int("i");
-        final Bit b = new Bit("b");
+        final Int i = new Int("i", 1);
+        final Bit b = new Bit("b", true);
+        final Bit o = new Bit("o");
         dumpProgramState("BBBB");
-        i.set(1);
-        b.set(true);
-         dumpProgramState("CCCC");
-        i.set(2);
-        b.set(false);
+        final Int I = new Int("I", i);
+        final Bit B = new Bit("B", b);
+        dumpProgramState("CCCC");
+        I.add(2).ok(3);
+        B.flip();
         dumpProgramState("DDDD");
+        scDieAreaX = 300; scDieAreaY = 400;
         execute();
        }
      };
@@ -2611,14 +2617,15 @@ endmodule
     final Program P = new Program(new Build().immediate(Ex).memory(2))
      {void code()
        {final Memory m = unitMemory;
-        final Int a = new Int("a"); a.set(2) ;           m.putInt(new Int(1), a);
-        final Int b = m.getInt (new Int(1));             b.name = "b"; b.ok(2);
-        final Bit c = m.getBool(new Int(1), new Int(0)); c.name = "c"; c.ok(false);
-        final Bit d = m.getBool(new Int(1), new Int(1)); d.name = "d"; d.ok(true);
+        final Int a = new Int("a"); a.set(2) ;                    m.putInt(new Int(1), a);
+        final Int b = m.getInt (new Int(1));                      b.name = "b"; b.ok(2);
+        final Bit c = m.getBool(new Int(1), new Int(0));          c.name = "c"; c.ok(false);
+        final Bit d = m.getBool(new Int(1), new Int(1));          d.name = "d"; d.ok(true);
         m.putBool(new Int(1), new Int(0),   new Bit(true));
         m.putBool(new Int(1), new Int(1),   new Bit(false));
         m.putBool(new Int(0), new Int(13),  new Bit(true));
-        final Int  e = m.getInt(new Int(1));              e.name = "e"; e.ok(1);
+        final Int e = new Int("e"); e.set(m.getInt(new Int(1)));  e.name = "e"; e.ok(1);
+        scDieAreaX = 500; scDieAreaY = 500;
         execute();
        }
      };
@@ -2656,6 +2663,7 @@ endmodule
             m.getBool(new Int(1), new Int(9)).ok(true);
            }
          };
+        scDieAreaX = 1000; scDieAreaY = 1000;
         execute();
        }
      };
@@ -2823,9 +2831,20 @@ WriteBoolIndex =        0
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(false).memory(16))
      {void code()
-       {final int[]array = {0, 0, 0, 2, 4, 6};
-        verilogArrays().new Array("array", array);
+       {final int[]array = {1, 3, 5, 2, 4, 6};                                                                          // Array
+        final VerilogArrays.Array A = verilogArrays().new Array("array", array);                                        // Verilog versoin of array
         dumpProgramState("AAAA");
+        final Int i = new Int("i").set(2);                                                                              // Input
+        final Int o = new Int("o");                                                                                     // Output
+        i.S();                                                                                                          // Load the index of the array
+        new I()
+         {void        a() {targetInt(array[i.i()]);}                                                                    // Load from array
+          String      v() {return "targetInt <= "+A.dataRegisterName()+";";}                                            // Load from array data register
+          boolean trace() {return false;}
+         };
+        o.W();                                                                                                          // Write array element into output
+        o.ok(5);
+        scDieAreaX = 300; scDieAreaY = 600;
         execute();
        }
      };
@@ -3041,13 +3060,13 @@ WriteBoolIndex =        0
     test_mod();
     test_incremental();
     test_remote();
+    test_variables();
     test_mem();
     test_memory();
     test_memoryNegative();
     test_memoryRef();
     test_verilogArray();
     test_lastInstructionBase();
-    test_variables();
     test_boolean();
     test_ifInc();
     test_forLoops();
@@ -3055,7 +3074,7 @@ WriteBoolIndex =        0
 
   static void newTests()                                                                                                // Tests being worked on
    {//oldTests();
-    test_fibonacci(!true);
+    test_memory(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
