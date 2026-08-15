@@ -82,7 +82,7 @@ final public class BitSet extends Program                                       
     trackCount       = build.trackCount;
     if (bitSize < 2) stop("Size must be two or more, not:", bitSize);                                                   // There is not much point in bit sets with sizes of less than two.
     unitsSize        = Build.units();                                                                                   // Memory units needed for the bitset and its bit trees
-    if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = unitMemory.new Ref(0);                  // Use memory supplied by caller or create a reference to the default memory
+    if (Build.memoryRef != null) memoryRef = Build.memoryRef;  else memoryRef = program().unitMemory.new Ref(0);        // Use memory supplied by caller or create a reference to the default memory
     memoryCount      = trackCount ? memoryRef.step(unitsNeeded() - 1) : null;                                           // Maintain a count field at the end to determine the number of bits set to one in O(1) time
 
     luoVerilog       = "x_bitSet_limitsUpperOne_" +bitSize;                                                             // Verilog procedures to make references to constant arrays rather than holding them in memory
@@ -846,7 +846,7 @@ final public class BitSet extends Program                                       
 
 //D1 Tests                                                                                                              // Tests
 
-  static BitSet testBits(boolean Ex, int N)                {return testBits(Ex, N, false);}                             // Create test bitset.
+  static BitSet testBits(boolean Ex, int N) {return testBits(Ex, N, false);}                                            // Create test bitset.
   static BitSet testBits(boolean Ex, int N, boolean Count)                                                              // Create test bitset.
    {subStart("BitSet.testBits");
     final Build build = new Build().bitSize(N).immediate(Ex);                                                           // Describe bitset
@@ -1713,7 +1713,7 @@ Zero:
               test_lowHighZero(false);
    }
 
-  static void test_4(boolean Ex)
+  static void test_b4(boolean Ex)
    {sayCurrentTestName();
     final int N = 8;
     final BitSet b = testBits(Ex, N);
@@ -1734,13 +1734,17 @@ Zero:
    3   21    1 |  0
 """);
 
-    b.prevZero(b.new Int(2)).ok(1);
-    b.nextZero(b.new Int(2)).ok(3);
+    final Int s  = b.new Int("s", 2);
+    final Int f1 = b.new Int("f0").set(b.firstOne());  f1.ok(2);
+    final Int p0 = b.new Int("p0").set(b.prevZero(s)); p0.ok(1);
+    final Int n0 = b.new Int("n0").set(b.nextZero(s)); n0.ok(3);
+    final Int l1 = b.new Int("l1").set(b.lastOne());   l1.ok(6);
+    b.execute();
    }
 
-  static void test_4()
-   {          test_4(true);
-              test_4(false);
+  static void test_b4()
+   {          test_b4(true);
+              test_b4(false);
    }
 
   static void oldTests()                                                                                                // Tests thought to be stable.
@@ -1754,12 +1758,12 @@ Zero:
     if (rtg( 8)) test_twoOrMoreOnes();
     if (rtg( 9)) test_limits();
     if (rtg(10)) test_lowHighZero();
-    if (rtg(11)) test_4();
+    if (rtg(11)) test_b4();
    }
 
   static void newTests()                                                                                                // Tests under development.
    {//oldTests();
-    test_4(true);
+    test_b4(!true);
    }
 
   public static void main(String[] args)                                                                                // Program entry point for testing.
