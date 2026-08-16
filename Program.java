@@ -1009,6 +1009,8 @@ public class Program extends Test                                               
     String m ()                             {return "memory_"+id;}                                                      // Name of memory module used to externalize memory for yosys
     String n (String Index)                 {return n() + "["+Index+"]";}                                               // Name of indexed memory
     String n (String I1, String I2)         {return n() + "["+I1+"]["+I2+"]";}                                          // Name of indexed memory
+    String name()                           {return name == null ? "" :     name;}                                      // Name of the verilog routine to dump this memory in decimal
+    String nameSp()                         {return name == null ? "" : " "+name;}                                      // Simplifies code that would otherwise leave a trailing blank when a name was not supplied by the caller
     String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memory in decimal
 
     void im(Int I) {pcConstant(compiling(), I.id);}                                                                     // Save the integer variable used for this memory access at this instruction
@@ -1292,8 +1294,7 @@ public class Program extends Test                                               
     String dumpAsDecimal()                                                                                              // Dump memory in decimal format
      {final int N = 10;
       final StringBuilder s = new StringBuilder();
-      if (name == null) s.append(f("Memory %d\n",    id));
-      else              s.append(f("Memory %d %s\n", id, name));
+      s.append(substitute("Memory {i}{n}\n", "i", ""+id, "n", nameSp()));
       s.append("         ");
       for (int i = 0; i < N; i++)                s.append(f("%4d ", i));
       s.append("\n");
@@ -1384,23 +1385,23 @@ endmodule
     String connectMemoryModule ()                                                                                       // Connect main process to memory module
      {return substitute("""
 
-  {moduleName} {name}                                                                                                   // Memory module
+  {moduleName} {n}                                                                                                      // Memory module {name}
    (.clock           (clock),                                                                                           // Clock
-    .writeIntEnable  ({name}_writeIntEnable ),                                                                          // Write enabled for an integer
-    .writeBitEnable  ({name}_writeBitEnable ),                                                                          // Write enabled for a boolean
-    .writeIntIndex   ({name}_writeIntIndex  ),                                                                          // Write Integer address
-    .writeBitIndex   ({name}_writeBitIndex  ),                                                                          // Write boolean address
-    .writeInt        ({name}_writeInt       ),                                                                          // Write data
-    .writeBit        ({name}_writeBit       ),                                                                          // Write data
-    .readIntIndex    ({name}_readIntIndex   ),                                                                          // Read first integer address
-    .reaDIntIndex    ({name}_reaDIntIndex   ),                                                                          // Read second integer address
-    .readBitIndex    ({name}_readBitIndex   ),                                                                          // Read first boolean address
-    .reaDBitIndex    ({name}_reaDBitIndex   ),                                                                          // Read second boolean address
-    .readInt         ({name}_readInt        ),                                                                          // First integer data read
-    .reaDInt         ({name}_reaDInt        ),                                                                          // Second integer data read
-    .readBit         ({name}_readBit        ),                                                                          // First  boolean data read
-    .reaDBit         ({name}_reaDBit        ));                                                                         // Second boolean data read
-""", "moduleName", m(), "name", n());
+    .writeIntEnable  ({n}_writeIntEnable ),                                                                             // Write enabled for an integer
+    .writeBitEnable  ({n}_writeBitEnable ),                                                                             // Write enabled for a boolean
+    .writeIntIndex   ({n}_writeIntIndex  ),                                                                             // Write Integer address
+    .writeBitIndex   ({n}_writeBitIndex  ),                                                                             // Write boolean address
+    .writeInt        ({n}_writeInt       ),                                                                             // Write data
+    .writeBit        ({n}_writeBit       ),                                                                             // Write data
+    .readIntIndex    ({n}_readIntIndex   ),                                                                             // Read first integer address
+    .reaDIntIndex    ({n}_reaDIntIndex   ),                                                                             // Read second integer address
+    .readBitIndex    ({n}_readBitIndex   ),                                                                             // Read first boolean address
+    .reaDBitIndex    ({n}_reaDBitIndex   ),                                                                             // Read second boolean address
+    .readInt         ({n}_readInt        ),                                                                             // First integer data read
+    .reaDInt         ({n}_reaDInt        ),                                                                             // Second integer data read
+    .readBit         ({n}_readBit        ),                                                                             // First  boolean data read
+    .reaDBit         ({n}_reaDBit        ));                                                                            // Second boolean data read
+""", "moduleName", m(), "n", n(), "name", name());
      }
 
 //D2 Memory Dumps                                                                                                       // Overridable dump memory methods for Java and Verilog
@@ -1863,12 +1864,12 @@ cd {f}; yosys -q {y}                                                            
 
       int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
-      intMemory = new Memory(numberOfInts)                                                                              // Memory for integers
+      intMemory = new Memory(numberOfInts, "Ints")                                                                      // Memory for integers
        {String dumpJava ()    {return "";}
         String dumpVerilog () {return "";}
        };
 
-      bitMemory = new Memory(numberOfBits)                                                                             // Memory for bits
+      bitMemory = new Memory(numberOfBits, "Bits")                                                                      // Memory for bits
        {String dumpJava ()    {return "";}
         String dumpVerilog () {return "";}
        };
@@ -1933,7 +1934,7 @@ module {name};                                                                  
         for(VerilogArrays.Array a : verilogArrays.arrays()) out.write(a.connectModule());                               // Connect to verilog array modules
 
         for(Memory m : memories)                                                                                        // Control registers for each memory
-         {out.write("\n// Memory module: "+ m.n() + "\n");                                                              // Memory module title
+         {out.write("\n// Memory module: "+ m.n() + " "+m.name()+"\n");                                                 // Memory module title
           out.write("  reg     "+ pName(m.        vReadBit())+";\n");                                                   // First boolean read from memory
           out.write("  reg     "+ pName(m.        vReaDBit())+";\n");                                                   // Second boolean read from memory
           out.write("  reg     "+ pName(m.       vWriteBit())+"; initial "+pName(m.       vWriteBit()) + "= 0;\n");     // Boolean to write into memory
@@ -2083,14 +2084,9 @@ endmodule
 `ifndef SYNTHESIS
 """, "dumpVerilogMemoryInDecimalName", M.dumpVerilogMemoryInDecimalName());
 
-      final String m;
-      if (M.name == null) m = substitute("""
-      $fwrite(traceFile, "Memory {memoryId}\\n");
-""", "memoryId", M.i());
-
-      else                m = substitute("""
-      $fwrite(traceFile, "Memory {memoryId} {n}\\n");
-""", "memoryId", M.i(), "n", M.name);
+      final String m = substitute("""
+      $fwrite(traceFile, "Memory {memoryId}{n}\\n");
+""", "memoryId", M.i(), "n", M.nameSp());
 
       final String t = substitute("""
       $fwrite(traceFile, "         ");
@@ -2396,7 +2392,7 @@ check
       String connectModule ()                                                                                           // Connect the main module to the array module
        {if (!pcIndexed) return substitute("""
   integer   {dr};                                                                                                       // Array data register
-  {name} {name} (.address({ir}), .data({dr}));
+  {name} {name} (.address({ir}), .data({dr}));                                                                          // Connect to array
 """, "dr", dataRegisterName(), "ir", indexRegisterName(), "name", arrayName());
 
         else return substitute("""
@@ -3215,6 +3211,7 @@ Memory 0
     test_remote();
     test_variables();
     test_mem();
+    test_namedMemory();
     test_memory();
     test_memoryNegative();
     test_memoryRef();
@@ -3226,9 +3223,8 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    //test_memory(!true);
-    test_namedMemory();
+   {//oldTests();
+    test_memory(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
