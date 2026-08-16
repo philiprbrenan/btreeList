@@ -6,7 +6,6 @@
 // Write pc on memory dump title
 // Convert references to constant: arrayData_pcConstant to get name via a procedure call
 // Check how often each variable is read or written to eliminate variables that are only used once.
-// Create a statistics array and push log entries onto it for each test - then dump as json at end of test
 package com.AppaApps.Silicon;                                                                                           // Btree in a block on the surface of a silicon chip.
 
 import java.util.*;
@@ -19,7 +18,7 @@ import java.nio.file.*;
 public class Program extends Test                                                                                       // Develop and test a Java program to create a micro-coded cpu in Verilog
  {final boolean               suppressInstructionTracing = true;                                                        // Do not write a trace record for each instruction - the dump of program state at the end of the run will be the test of whether the program ran as expected
   final boolean                    suppressTraceComments = true;                                                        // Add trace comments to trace output to locate the point in the java code at which the verilog was generated - requires a lot of memory
-  final boolean                     compressInstructions = true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
+  final boolean                     compressInstructions =!true;                                                        // Compress out identical instructions. Doing so makes Yosys run a lot faster.
   final boolean                compressInstructionLabels = true;                                                        // Reduce the instruction loop case statement by using an array to find the first instruction in the equivalence class associated with each instruction and recording that single instruction id as the sole label for each case statement possibilities
   final boolean                          generateVerilog = true;                                                        // Generate verilog version of each program
   final boolean                               runVerilog = true;                                                        // Execute  verilog version of each program
@@ -427,7 +426,7 @@ public class Program extends Test                                               
         String v() {return pCR("b[targetBitId]") + " <= targetBit; "+vTrace(  f, "pc", "targetBitId", "targetBit");}
         String syn(String V)                                                                                            // Prevents assignment to input wires to allow the same code to be used for testing and for synthesis
          {if (b.nio() || b.out) return V;
-          return "`ifndef SYNTHESIS " + V + "`endif";                                                                   // Comment out the assignment when running synthesis - the integer will become an input wire instead. Any assignment will have to be done in the calling module
+          return pExpr("`ifndef SYNTHESIS " + V + "`endif /*Input bit*/");                                               // Comment out the assignment when running synthesis - the integer will become an input wire instead. Any assignment will have to be done in the calling module
          }
        };
      }
@@ -671,7 +670,7 @@ public class Program extends Test                                               
         String v() {return syn(pCR("i[targetIntId]")+" <= "+pExpr("targetInt;"))+" "+vTrace(  f, "pc",         "targetIntId", "targetInt");}
         String syn(String V)                                                                                            // Prevents assignment to input wires to allow the same code to be used for testing and for synthesis
          {if (w.nio() || w.out) return V;
-          return "`ifndef SYNTHESIS " + V + "`endif";                                                                   // Comment out the assignment when running synthesis - the integer will become an input wire instead. Any assignment will have to be done in the calling module
+          return pExpr("`ifndef SYNTHESIS " + V + "`endif /*Input int*/");                                              // Comment out the assignment when running synthesis - the integer will become an input wire instead. Any assignment will have to be done in the calling module
          }
        };
      }
@@ -3077,8 +3076,9 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {oldTests();
-    test_memory(!true);
+   {//oldTests();
+    //test_memory(!true);
+    test_addition(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
