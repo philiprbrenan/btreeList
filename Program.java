@@ -1,4 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using integers, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -976,7 +977,8 @@ public class Program extends Test                                               
   static Int ib (Int I) {return I.Mul(ib());}                                                                           // Number of bytes in a number of integers
 
   final class Memory                                                                                                    // Memory made of units
-   {private final int id;                                                                                               // Unique identifier for this memory
+   {final String name;                                                                                                  // Optional name for the memory
+    private final int id;                                                                                               // Unique identifier for this memory
     private int[]units;                                                                                                 // Bytes of main memory
     boolean    readBit = false;                                                                                         // Boolean read from memory first memory port
     boolean    reaDBit = false;                                                                                         // Boolean read from memory second memory port
@@ -993,11 +995,14 @@ public class Program extends Test                                               
 
     static int bitsPerUnit() {return Integer.SIZE;}                                                                     // Bits per memory unit
 
-    Memory (int Length)                                                                                                 // Create and clear some memory
-     {units = new int[Length];
+    Memory (int Length, String Name)                                                                                    // Create and clear some memory
+     {name = Name;
+      units = new int[Length];
       for(int i = 0; i < Length; ++i) units[i] = 0;                                                                     // Clear memory. In Verilog this is done using readmemh in an initial block. For a real chip perhaps an instruction to do this?
       final Stack<Memory> m = memories(); id = m.size(); m.push(this);                                                  // Give the memory a unique identifier and save it in the main program
      }
+
+    Memory (int Length) {this(Length, null);}                                                                           // Create and clear some unnamed memory
 
     int size ()                             {return units.length;}                                                      // Size of memory
     String i ()                             {return ""+id;}                                                             // Number of memory a string for use in writing verilog
@@ -1288,7 +1293,8 @@ public class Program extends Test                                               
     String dumpAsDecimal()                                                                                              // Dump memory in decimal format
      {final int N = 10;
       final StringBuilder s = new StringBuilder();
-      s.append(f("Memory %d\n", id));
+      if (name == null) s.append(f("Memory %d\n",    id));
+      else              s.append(f("Memory %d %s\n", id, name));
       s.append("         ");
       for (int i = 0; i < N; i++)                s.append(f("%4d ", i));
       s.append("\n");
@@ -1393,15 +1399,21 @@ endmodule
     .reaDBitIndex    ({name}_reaDBitIndex   ),                                                                          // Read second boolean address
     .readInt         ({name}_readInt        ),                                                                          // First integer data read
     .reaDInt         ({name}_reaDInt        ),                                                                          // Second integer data read
-    .readBit         ({name}_readBit        ),                                                                         // First  boolean data read
+    .readBit         ({name}_readBit        ),                                                                          // First  boolean data read
     .reaDBit         ({name}_reaDBit        ));                                                                         // Second boolean data read
 """, "moduleName", m(), "name", n());
      }
+
+//D2 Memory Dumps                                                                                                       // Overridable dump memory methods for Java and Verilog
+
+    String dumpJava ()    {return dumpAsDecimal();}
+    String dumpVerilog () {return dumpVerilogMemoryInDecimalName()+"();";}
+
    } // Memory
 
   interface Locatable {Bint getLocation();}                                                                             // The location of an object in memory
 
-  String dumpMemory () {return program().unitMemory.dumpAsDecimal();}                                                   // Dump memory in decimal format
+//  String dumpMemory () {return program().unitMemory.dumpAsDecimal();}                                                   // Dump memory in decimal format
 
   String saveMemories ()                                                                                                // Save all the memories to an array of strings
    {final StringJoiner j = new StringJoiner(", ");
@@ -1672,7 +1684,7 @@ cd {f}; yosys -q {y}                                                            
    } //DumpLocations
 
   void initializeJavaMemory () {for(Memory m : memories()) for (int i = 0, N = m.size(); i < N;++i) m.units[i] = 0;}    // Clear all of memory to zero
-  void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpAsDecimal());}                         // Dump all the memories
+  void dumpJavaMemories ()     {for(Memory m : memories()) appendJavaTrace(m.dumpJava());}                              // Dump all the memories
 
   void initializeJavaVars()                                                                                             // Initialize java variables so that they start with a known value despite being invalid because the valid bit is not tracked in the verilog version
    {for (Int i : ints()) {i.i = 0;     i.v = false;}
@@ -1803,10 +1815,12 @@ cd {f}; yosys -q {y}                                                            
     final int       execSteps = steps;                                                                                  // Number of execution steps
     final int        codeSize = codeSize();                                                                             // Original uncompressed code size
     final int instructionSets;                                                                                          // Number of instruction equivalence classes
+///    final Memory    intMemory;                                                                                          // Integer memory
+///    final Memory    bitMemory;                                                                                          // Boolean memory
 
-    GenerateVerilog(int InstructionSets)                                                                                // Constructor records the number of instruction equivalence classes
-     {instructionSets = InstructionSets;
-     }
+//    GenerateVerilog(int InstructionSets)                                                                                // Constructor records the number of instruction equivalence classes
+//     {instructionSets = InstructionSets;
+//     }
 
     String message()                                                                                                    // Message describing statistics
      {return f("%s:  %30s  %,9d execution,  %3d after,  %,9d before, %7.4f percent",
@@ -1849,6 +1863,9 @@ cd {f}; yosys -q {y}                                                            
       final InstructionMatches instructionMatches = new InstructionMatches();                                           // Mapping from instructions to blocks of matching instructions
 
       int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
+
+///      intMemory = new Memory(numberOfInts);                                                                             // Memory for integers
+///      bitMemory = new Memory(numberOfBits);                                                                             // Memory for bits
 
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
@@ -2247,7 +2264,7 @@ check
 
   String dumpVerilogMemories ()                                                                                         // Dump verilog memories
    {final StringBuilder s = new StringBuilder();
-    for(Memory m : memories()) s.append(m.dumpVerilogMemoryInDecimalName()+"(); ");
+    for(Memory m : memories()) s.append(m.dumpVerilog()+" ");
     return ""+s;
    }
 
@@ -2724,18 +2741,18 @@ endmodule
            {m.putInt(Z, O);
             m.putInt(O, T);
             m.getInt(Z).ok(1);
-            m.getInt(O).ok(2);
+            m.geTInt(O).ok(2);
             dumpProgramState("AAAA");
             m.getBit(O, Z).ok(false);
-            m.getBit(O, O).ok(true );
+            m.geTBit(O, O).ok(true );
             m.getBit(O, T).ok(false);
             m.putBit(O, Z, new Bit(true));
             m.getInt (O)         .ok(3);
             dumpProgramState("BBBB");
             m.putBit(new Int(32), new Bit(false));
-            m.getBit(new Int(32)).ok(false);
+            m.geTBit(new Int(32)).ok(false);
             m.getBit(new Int(33)).ok(true );
-            m.getBit(new Int(34)).ok(false);
+            m.geTBit(new Int(34)).ok(false);
             dumpProgramState("CCCC");
             m.putBit(O, new Int(9), new Bit(true));
             m.getBit(O, new Int(9)).ok(true);
@@ -2793,12 +2810,15 @@ endmodule
 
             new If (Index.eq(0))
              {void Then()
-               {ok(()->nws(M.dumpAsDecimal()), """
+               {//stop(nws(M.dumpAsDecimal()));
+                ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
   ReadIntIndex =        0
+  ReaDIntIndex =        0
   ReadBitIndex =        0
+  ReaDBitIndex =        0
  WriteIntIndex =        3
  WriteBitIndex =        0
       WriteInt =        2
@@ -2806,12 +2826,15 @@ Memory 0
 """);
                }
               void Else()
-               {ok(()->nws(M.dumpAsDecimal()), """
+               {//stop(nws(M.dumpAsDecimal()));
+                ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    2
   ReadIntIndex =        3
+  ReaDIntIndex =        3
   ReadBitIndex =        2
+  ReaDBitIndex =        1
  WriteIntIndex =        3
  WriteBitIndex =        0
       WriteInt =        2
@@ -2820,21 +2843,24 @@ Memory 0
                }
              };
             m.getInt(new Int(0)).ok(1);
-            m.getInt(new Int(1)).ok(2);
+            m.geTInt(new Int(1)).ok(2);
 
             m.getBit(new Int(32)).ok(false);
-            m.getBit(new Int(33)).ok(true);
+            m.geTBit(new Int(33)).ok(true);
             m.putBit(new Int(32), new Bit(true));
             m.putBit(new Int(34), new Bit(true));
             dumpProgramState("AAAA1111");
             m.getInt (new Int( 1)).ok(7);
             dumpProgramState("AAAA2222");
+            //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    7
   ReadIntIndex =        3
-  ReadBitIndex =        1
+  ReaDIntIndex =        3
+  ReadBitIndex =        0
+  ReaDBitIndex =        1
  WriteIntIndex =        3
  WriteBitIndex =        2
       WriteInt =        2
@@ -2847,48 +2873,60 @@ Memory 0
             m.getBit(new Int(33)).ok(true );
             m.getBit(new Int(34)).ok(true);
             m.getInt (new Int( 1)).ok(6);
+            //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              1    6
   ReadIntIndex =        3
+  ReaDIntIndex =        3
   ReadBitIndex =        2
+  ReaDBitIndex =        1
  WriteIntIndex =        3
  WriteBitIndex =        0
       WriteInt =        2
       WriteBit =        0
 """);
             m.clear(1);
+            //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000                   6
   ReadIntIndex =        3
+  ReaDIntIndex =        3
   ReadBitIndex =        2
+  ReaDBitIndex =        1
  WriteIntIndex =        2
  WriteBitIndex =        0
       WriteInt =        0
       WriteBit =        0
 """);
             m.copy(n, 1);
+            //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000              6    6
   ReadIntIndex =        3
+  ReaDIntIndex =        3
   ReadBitIndex =        2
+  ReaDBitIndex =        1
  WriteIntIndex =        2
  WriteBitIndex =        0
       WriteInt =        6
       WriteBit =        0
 """);
             M.clear();
+            //stop(nws(M.dumpAsDecimal()));
             ok(()->nws(M.dumpAsDecimal()), """
 Memory 0
             0    1    2    3    4    5    6    7    8    9
 00000000
   ReadIntIndex =        3
+  ReaDIntIndex =        3
   ReadBitIndex =        2
+  ReaDBitIndex =        1
  WriteIntIndex =        9
  WriteBitIndex =        0
       WriteInt =        0
@@ -3154,7 +3192,7 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    //test_memory(!true);
+    test_memory(!true);
     //test_addition(!true);
    }
 
