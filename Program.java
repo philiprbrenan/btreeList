@@ -72,7 +72,7 @@ public class Program extends Test                                               
   int                                        targetIntId = 0;                                                           // Id of target int
   int                                        sourceBitId = 0;                                                           // Id of source bit
   int                                        targetBitId = 0;                                                           // Id of target bit
-  boolean                                     sourceBit = false;                                                       // Source value for a boolean  operation obtained from a variable
+  boolean                                      sourceBit = false;                                                       // Source value for a boolean  operation obtained from a variable
   int                                          sourceInt = 0;                                                           // Source value for an integer operation obtained from a variable
   int                                         source2Int = 0;                                                           // Second source value for an integer operation obtained from a variable
   int                                          targetInt = 0;                                                           // Computed target integer value to be loaded into a variable
@@ -161,7 +161,7 @@ public class Program extends Test                                               
   int      sourceInt(int V)     {return program().     sourceInt = V;}
   int     source2Int(int V)     {return program().    source2Int = V;}
   boolean  sourceBit(boolean V) {return program().    sourceBit = V;}
-  int      targetInt(int V)     {targetIntValid (true); return program().targetInt  = V;}
+  int      targetInt(int V)     {targetIntValid(true); return program().targetInt  = V;}
   boolean  targetBit(boolean V) {targetBitValid(true); return program().targetBit = V;}
 
   boolean targetBitValid()          {return program().targetBitValid;}
@@ -978,12 +978,16 @@ public class Program extends Test                                               
   final class Memory                                                                                                    // Memory made of units
    {private final int id;                                                                                               // Unique identifier for this memory
     private int[]units;                                                                                                 // Bytes of main memory
-    boolean    readBit = false;                                                                                         // Boolean read from memory
+    boolean    readBit = false;                                                                                         // Boolean read from memory first memory port
+    boolean    reaDBit = false;                                                                                         // Boolean read from memory second memory port
     boolean   writeBit = false;                                                                                         // Boolean to write into memory
-    int        readInt = 0;                                                                                             // Integer read from memory
+    int        readInt = 0;                                                                                             // Integer read from memory first memory port
+    int        reaDInt = 0;                                                                                             // Integer read from memory second memory port
     int       writeInt = 0;                                                                                             // Integer to write into memory
-    int   readIntIndex = 0;                                                                                             // Index at which to read an integer from memory
-    int   readBitIndex = 0;                                                                                             // Index within an integer from which to get a bit to make a boolean
+    int   readIntIndex = 0;                                                                                             // Index at which to read an integer from first memory port
+    int   reaDIntIndex = 0;                                                                                             // Index at which to read an integer from second memory port
+    int   readBitIndex = 0;                                                                                             // Index within an integer from which to get a bit first memory port
+    int   reaDBitIndex = 0;                                                                                             // Index within an integer from which to get a bit second memory port
     int  writeIntIndex = 0;                                                                                             // Index at which to write an integer into memory
     int  writeBitIndex = 0;                                                                                             // Index within an integer at which to set a bit to represent a boolean
 
@@ -995,48 +999,60 @@ public class Program extends Test                                               
       final Stack<Memory> m = memories(); id = m.size(); m.push(this);                                                  // Give the memory a unique identifier and save it in the main program
      }
 
-    int size()  {return units.length;}                                                                                  // Size of memory
-    String i () {return ""+id;}                                                                                         // Number of memory a string for use in writing verilog
-    String n () {return "m_"+id;}                                                                                       // Name of memory
-    String m () {return "memory_"+id;}                                                                                  // Name of memory module used to externalize memory for yosys
-    String n (String Index)         {return n() + "["+Index+"]";}                                                       // Name of indexed memory
-    String n (String I1, String I2) {return n() + "["+I1+"]["+I2+"]";}                                                  // Name of indexed memory
+    int size ()                             {return units.length;}                                                      // Size of memory
+    String i ()                             {return ""+id;}                                                             // Number of memory a string for use in writing verilog
+    String n ()                             {return "m_"+id;}                                                           // Name of memory
+    String m ()                             {return "memory_"+id;}                                                      // Name of memory module used to externalize memory for yosys
+    String n (String Index)                 {return n() + "["+Index+"]";}                                               // Name of indexed memory
+    String n (String I1, String I2)         {return n() + "["+I1+"]["+I2+"]";}                                          // Name of indexed memory
     String dumpVerilogMemoryInDecimalName() {return "dumpDecimal_"+id;}                                                 // Name of the verilog routine to dump this memory in decimal
 
     void im(Int I) {pcConstant(compiling(), I.id);}                                                                     // Save the integer variable used for this memory access at this instruction
     void im(Bit B) {pcConstant(compiling(), B.id);}                                                                     // Save the boolean variable used for this memory access at this instruction
 
-    String wdi() {return vWriteIntEnable() + " <= 0; ";}                                                                // Write disable integer
-    String wdb() {return vWriteBitEnable() + " <= 0; ";}                                                                // Write disable boolean
-    String wei() {return vWriteIntEnable() + " <= 1; ";}                                                                // Write enable integer
-    String web() {return vWriteBitEnable() + " <= 1; ";}                                                                // Write enable boolean
+    String wdi ()                {return vWriteIntEnable() + " <= 0; ";}                                                // Write disable integer
+    String wdb ()                {return vWriteBitEnable() + " <= 0; ";}                                                // Write disable boolean
+    String wei ()                {return vWriteIntEnable() + " <= 1; ";}                                                // Write enable integer
+    String web ()                {return vWriteBitEnable() + " <= 1; ";}                                                // Write enable boolean
 
-    String         vReadBit()    {return pName(n() + "_readBit"        );}                                              // Boolean read from memory
+    String         vReadBit()    {return pName(n() + "_readBit"        );}                                              // First boolean read from memory
+    String         vReaDBit()    {return pName(n() + "_reaDBit"        );}                                              // Second boolean read from memory
     String        vWriteBit()    {return pName(n() + "_writeBit"       );}                                              // Boolean to write into memory
-    String         vReadInt()    {return pName(n() + "_readInt"        );}                                              // Integer read from memory
+    String         vReadInt()    {return pName(n() + "_readInt"        );}                                              // First  integer read from memory
+    String         vReaDInt()    {return pName(n() + "_reaDInt"        );}                                              // Second integer read from memory
     String        vWriteInt()    {return pName(n() + "_writeInt"       );}                                              // Integer to write into memory
-    String    vReadIntIndex()    {return pName(n() + "_readIntIndex"   );}                                              // Index at which to read an integer from memory
-    String    vReadBitIndex()    {return pName(n() + "_readBitIndex"   );}                                              // Index within an integer from which to get a bit to make a boolean
+    String    vReadIntIndex()    {return pName(n() + "_readIntIndex"   );}                                              // Index at which to read first  integer from memory
+    String    vReaDIntIndex()    {return pName(n() + "_reaDIntIndex"   );}                                              // Index at which to read second integer from memory
+    String    vReadBitIndex()    {return pName(n() + "_readBitIndex"   );}                                              // Index within first integer from which to get a bit to make a boolean
+    String    vReaDBitIndex()    {return pName(n() + "_reaDBitIndex"   );}                                              // Index within second integer from which to get a bit to make a boolean
     String   vWriteIntIndex()    {return pName(n() + "_writeIntIndex"  );}                                              // Index at which to write an integer into memory
     String   vWriteBitIndex()    {return pName(n() + "_writeBitIndex"  );}                                              // Index within an integer at which to set a bit to represent a boolean
     String  vWriteIntEnable()    {return pName(n() + "_writeIntEnable" );}                                              // Write enable flag
     String  vWriteBitEnable()    {return pName(n() + "_writeBitEnable" );}                                              // Write enable flag
 
     String       readIntV()      {return                                                                                            vTrace(  "%8d readInt       %8d",         "pc",       vReadIntIndex ()                                   );}
+    String       reaDIntV()      {return                                                                                            vTrace(  "%8d reaDInt       %8d",         "pc",       vReaDIntIndex ()                                   );}
     String       readBitV()      {return                                                                                            vTrace(  "%8d readBit       %8d.%8d",     "pc",       vReadIntIndex (),  vReadBitIndex  ()               );}
+    String       reaDBitV()      {return                                                                                            vTrace(  "%8d reaDBit       %8d.%8d",     "pc",       vReaDIntIndex (),  vReaDBitIndex  ()               );}
     String      writeIntV()      {return                                                                                            vTrace(  "%8d writeInt      %8d<%8d",     "pc",       vWriteIntIndex(),  vWriteInt      ()               );}
     String      writeBitV()      {return                                                                                            vTrace(  "%8d writeBit      %8d.%8d<%8d", "pc",       vWriteIntIndex(),  vWriteBitIndex(),  vWriteBit());}
     String  readIntIndexV(Int I) {im(I); return vReadIntIndex ()  + "<= i[arrayData_pcConstant]; "+                                 vTrace(  "%8d readIntIndex  %8d=%8d",     "pc", ""+I.id, I.vn());}
+    String  reaDIntIndexV(Int I) {im(I); return vReaDIntIndex ()  + "<= i[arrayData_pcConstant]; "+                                 vTrace(  "%8d reaDIntIndex  %8d=%8d",     "pc", ""+I.id, I.vn());}
     String  readBitIndexV(Int I) {im(I); return vReadBitIndex ()  + "<= i[arrayData_pcConstant]; "+                                 vTrace(  "%8d readBitIndex  %8d=%8d",     "pc", ""+I.id, I.vn());}
+    String  reaDBitIndexV(Int I) {im(I); return vReaDBitIndex ()  + "<= i[arrayData_pcConstant]; "+                                 vTrace(  "%8d reaDBitIndex  %8d=%8d",     "pc", ""+I.id, I.vn());}
     String writeIntIndexV(Int I) {im(I); return vWriteIntIndex()  + "<= i[arrayData_pcConstant]; "+                                 vTrace(  "%8d writeIntIndex %8d=%8d",     "pc", ""+I.id, I.vn());}
-    String writeBitIndexV(Int I) {im(I); return vWriteBitIndex() + "<= i[arrayData_pcConstant]; "+                                 vTrace(  "%8d writeBitIndex %8d=%8d",     "pc", ""+I.id, I.vn());}
+    String writeBitIndexV(Int I) {im(I); return vWriteBitIndex()  + "<= i[arrayData_pcConstant]; "+                                 vTrace(  "%8d writeBitIndex %8d=%8d",     "pc", ""+I.id, I.vn());}
 
     void         readIntJ()      {readInt  = units[readIntIndex];                                                                   jTrace(f("%8d readInt       %8d",          pc(),      readIntIndex));}
-    void        readBitJ()      {readBit = Test.getBit(units[readIntIndex], readBitIndex);                                         jTrace(f("%8d readBit       %8d.%8d",      pc(),      readIntIndex,      readBitIndex));}
+    void         reaDIntJ()      {reaDInt  = units[reaDIntIndex];                                                                   jTrace(f("%8d reaDInt       %8d",          pc(),      reaDIntIndex));}
+    void         readBitJ()      {readBit = Test.getBit(units[readIntIndex], readBitIndex);                                         jTrace(f("%8d readBit       %8d.%8d",      pc(),      readIntIndex,      readBitIndex));}
+    void         reaDBitJ()      {reaDBit = Test.getBit(units[reaDIntIndex], reaDBitIndex);                                         jTrace(f("%8d reaDBit       %8d.%8d",      pc(),      reaDIntIndex,      reaDBitIndex));}
     void        writeIntJ()      {final int i = writeIntIndex, p = units[i]; units[i] = writeInt;                                   jTrace(f("%8d writeInt      %8d<%8d",      pc(),   i, writeInt));}
-    void       writeBitJ()      {final int i = writeIntIndex, b = writeBitIndex, p = units[i]; units[i] = setBit(p, b, writeBit);  jTrace(f("%8d writeBit      %8d.%8d<%8d",  pc(),   i, b, writeBit ? 1 : 0));}
+    void        writeBitJ()      {final int i = writeIntIndex, b = writeBitIndex, p = units[i]; units[i] = setBit(p, b, writeBit);  jTrace(f("%8d writeBit      %8d.%8d<%8d",  pc(),   i, b, writeBit ? 1 : 0));}
     void    readIntIndexJ(Int I) {readIntIndex  = I.i();                                                                            jTrace(f("%8d readIntIndex  %8d=%8d",      pc(),   I.id, I.i()));}
+    void    reaDIntIndexJ(Int I) {reaDIntIndex  = I.i();                                                                            jTrace(f("%8d reaDIntIndex  %8d=%8d",      pc(),   I.id, I.i()));}
     void    readBitIndexJ(Int I) {readBitIndex  = I.i();                                                                            jTrace(f("%8d readBitIndex  %8d=%8d",      pc(),   I.id, I.i()));}
+    void    reaDBitIndexJ(Int I) {reaDBitIndex  = I.i();                                                                            jTrace(f("%8d reaDBitIndex  %8d=%8d",      pc(),   I.id, I.i()));}
     void   writeIntIndexJ(Int I) {writeIntIndex = I.i();                                                                            jTrace(f("%8d writeIntIndex %8d=%8d",      pc(),   I.id, I.i()));}
     void   writeBitIndexJ(Int I) {writeBitIndex = I.i();                                                                            jTrace(f("%8d writeBitIndex %8d=%8d",      pc(),   I.id, I.i()));}
 
@@ -1108,7 +1124,7 @@ public class Program extends Test                                               
       return this;
      }
 
-    Int getInt (Int I)                                                                                                  // Get the int at the indicated position
+    Int getInt (Int I)                                                                                                  // Get the int at the indicated position  using the first memory read port
      {final Int r = new Int();
       if (I != null) new I()                                                                                            // Set index to read if not already set
        {void   a() {              readIntIndexJ(I);}
@@ -1126,7 +1142,25 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bit getBit (Int I, Int J)                                                                                           // Get the bit in the specified byte at the specified position within the byte
+    Int geTInt (Int I)                                                                                                  // Get the int at the indicated position using the second memory read port
+     {final Int r = new Int();
+      if (I != null) new I()                                                                                            // Set index to read if not already set
+       {void   a() {              reaDIntIndexJ(I);}
+        String v() {im(I); return reaDIntIndexV(I);}
+       };
+      new I()                                                                                                           // Read from memory
+       {void   a() {       reaDIntJ();}
+        String v() {return reaDIntV();}
+       };
+      new I()                                                                                                           // Set target index
+       {final String f = "%8d ReaDInt from Memory %8d = %8d";
+        void   a() {r.i = reaDInt; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                    I.id));}
+        String v() {im(r); return "i[arrayData_pcConstant] <= "+vReaDInt()+"; "+vTrace(  f, "pc",  "arrayData_pcConstant", ""+I.id);}
+       };
+      return r;
+     }
+
+    Bit getBit (Int I, Int J)                                                                                           // Get the bit in the specified byte at the specified position within the byte using the first memory read port
      {Bit r = new Bit();
       if (I != null) new I()                                                                                            // Set int index if not already set
        {void   a() {       readIntIndexJ(I);}
@@ -1148,7 +1182,30 @@ public class Program extends Test                                               
       return r;
      }
 
-    Bit getBit (Int I) {return getBit(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                       // Get the bit at the bit indexed location
+    Bit geTBit (Int I, Int J)                                                                                           // Get the bit in the specified byte at the specified position within the byte using the second memory read port
+     {Bit r = new Bit();
+      if (I != null) new I()                                                                                            // Set int index if not already set
+       {void   a() {       reaDIntIndexJ(I);}
+        String v() {im(I); return reaDIntIndexV(I);}
+       };
+      if (I != null) new I()                                                                                            // Set bit index if not already set
+       {void   a() {       reaDBitIndexJ(J);}
+        String v() {im(J); return reaDBitIndexV(J);}
+       };
+      new I()                                                                                                           // Read from memory
+       {void   a() {       reaDBitJ();}
+        String v() {return reaDBitV();}
+       };
+      new I()                                                                                                           // Set target index
+       {final String f = "%8d ReaDBit from Memory %8d = %8d";
+        void   a() {r.i = reaDBit; r.v = true;                                  jTrace(f(f,  pc(),   r.id,                   reaDBit ? 1 : 0));}
+        String v() {im(r); return "b[arrayData_pcConstant] <= "+vReaDBit()+"; "+vTrace(  f, "pc",   "arrayData_pcConstant", vReaDBit());}
+       };
+      return r;
+     }
+
+    Bit getBit (Int I) {return getBit(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                       // Get the bit at the bit indexed location using the first memory port
+    Bit geTBit (Int I) {return geTBit(I.Div(Integer.SIZE), I.Mod(Integer.SIZE));}                                       // Get the bit at the bit indexed location using the second memory port
 
     Memory putInt (Int I, Int J)                                                                                        // Write to the indexed memory location the value of the specified source integer
      {if (I != null) new I()                                                                                            // Set target index of memory to be written to if not already set
@@ -1203,14 +1260,16 @@ public class Program extends Test                                               
 
       Ref        copy (Ref Source, int Width){m.copy(Source.m, Source.offset, offset, Width);       return this;}       // Copy the specified memory possibly from another byte memory
       Ref       clear (int Width)            {m.clear(offset, Width);                               return this;}       // Clear memory by setting its bytes to zero
-      Int      getInt (Int I)                {return m.getInt( I.Add(offset));}                                         // Get the int at the indicated position
-      Bit      getBit (Int I)                {return m.getBit(I.Add(offset.Mul(Integer.SIZE)));}                       // Get the bit at the bit indexed location
-      Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int
+      Int      getInt (Int I)                {return m.getInt(I.Add(offset));}                                          // Get the int at the indicated position   using the first memory port
+      Int      geTInt (Int I)                {return m.geTInt(I.Add(offset));}                                          // Get the int at the indicated position   using the second memory port
+      Bit      getBit (Int I)                {return m.getBit(I.Add(offset.Mul(Integer.SIZE)));}                        // Get the bit at the bit indexed location using the first memory port
+      Bit      geTBit (Int I)                {return m.geTBit(I.Add(offset.Mul(Integer.SIZE)));}                        // Get the bit at the bit indexed location using the second memory port
+      Int      getInt ()                     {return m.getInt(offset);}                                                 // Get the referenced int                  using the first memory port
+      Int      geTint ()                     {return m.geTInt(offset);}                                                 // Get the referenced int                  using the second memory port
       Ref      putInt (Int J)                {m.putInt (offset, J);                                 return this;}       // Put the referenced int at zero offset in this memory reference
       Ref      putInt (Int I, Int  J)        {m.putInt(        I.Add(offset), J);                   return this;}       // Set the int at the indicated position relative to the start to the specified value
       Ref      putBit (Int I, Bit K)         {m.putBit(        I.Add(offset.Mul(Integer.SIZE)), K); return this;}       // Set the bit at the bit indexed position
       Ref        step (int Width)            {return new Ref(offset.Add(Width));}                                       // Step up from an existing ref to make a new one - only while not executing
-
 
       int      getInt (int I) {                                        return units[I+offset.i];}                       // Get an integer immediately when debugging
       boolean  getBit (int I) {final int i = getInt(I / Integer.SIZE); return Test.getBit(i, I % Integer.SIZE);}        // Get a boolean  immediately when debugging
@@ -1242,10 +1301,12 @@ public class Program extends Test                                               
         if ((i + 1) % N == 0)                    s.append("\n");
        }
       if (size() % N != 0)                       s.append("\n");
-      s.append(f("  ReadIntIndex = %8d\n", readIntIndex     ));                                                         // Index at which to read an integer from memory
-      s.append(f("  ReadBitIndex = %8d\n", readBitIndex     ));                                                         // Index within an integer from which to get a bit to make a boolean
+      s.append(f("  ReadIntIndex = %8d\n", readIntIndex     ));                                                         // Index at which to read first integer from memory
+      s.append(f("  ReaDIntIndex = %8d\n", reaDIntIndex     ));                                                         // Index at which to read second integer from memory
+      s.append(f("  ReadBitIndex = %8d\n", readBitIndex     ));                                                         // Index within first integer from which to get first bit
+      s.append(f("  ReaDBitIndex = %8d\n", reaDBitIndex     ));                                                         // Index within second integer from which to get second bit
       s.append(f(" WriteIntIndex = %8d\n", writeIntIndex    ));                                                         // Index at which to write an integer into memory
-      s.append(f(" WriteBitIndex = %8d\n", writeBitIndex    ));                                                         // Index within an integer at which to set a bit to represent a boolean
+      s.append(f(" WriteBitIndex = %8d\n", writeBitIndex    ));                                                         // Index within an integer at which to set a bit
       s.append(f("      WriteInt = %8d\n", writeInt         ));                                                         // Integer to write into memory
       s.append(f("      WriteBit = %8d\n", writeBit ? 1 : 0));                                                          // Boolean to write into memory
       return ""+s;
@@ -1282,10 +1343,14 @@ public class Program extends Test                                               
   input  integer writeBitIndex,                                                                                         // Write boolean address
   input  integer writeInt,                                                                                              // Write data
   input  integer writeBit,                                                                                              // Write data
-  input  integer readIntIndex,                                                                                          // Read integer address
-  input  integer readBitIndex,                                                                                          // Read boolean address
-  output integer readInt,                                                                                               // Integer data read
-  output reg     readBit);                                                                                              // Boolean data read
+  input  integer readIntIndex,                                                                                          // Read first  integer address
+  input  integer reaDIntIndex,                                                                                          // Read second integer address
+  input  integer readBitIndex,                                                                                          // Read first  boolean address
+  input  integer reaDBitIndex,                                                                                          // Read second boolean address
+  output integer readInt,                                                                                               // Integer data read from first memory port
+  output integer reaDInt,                                                                                               // Integer data read from second memory port
+  output reg     readBit,                                                                                              // Boolean data read from first memory port
+  output reg     reaDBit);                                                                                              // Boolean data read from second memory port
 `ifdef __ICARUS__
   integer memory [0:{size}-1];
   integer i;                                                                                                            // Index
@@ -1296,7 +1361,9 @@ public class Program extends Test                                               
     if (writeIntEnable) memory[writeIntIndex]                <= writeInt;
     if (writeBitEnable) memory[writeIntIndex][writeBitIndex] <= writeBit;
              readInt <= memory[readIntIndex ];
+             reaDInt <= memory[reaDIntIndex ];
              readBit <= memory[readIntIndex ][readBitIndex];
+             reaDBit <= memory[reaDIntIndex ][reaDBitIndex];
   end
 `endif
 endmodule
@@ -1320,10 +1387,14 @@ endmodule
     .writeBitIndex   ({name}_writeBitIndex  ),                                                                          // Write boolean address
     .writeInt        ({name}_writeInt       ),                                                                          // Write data
     .writeBit        ({name}_writeBit       ),                                                                          // Write data
-    .readIntIndex    ({name}_readIntIndex   ),                                                                          // Read integer address
-    .readBitIndex    ({name}_readBitIndex   ),                                                                          // Read boolean address
-    .readInt         ({name}_readInt        ),                                                                          // Integer data read
-    .readBit         ({name}_readBit        ));                                                                         // Boolean data read
+    .readIntIndex    ({name}_readIntIndex   ),                                                                          // Read first integer address
+    .reaDIntIndex    ({name}_reaDIntIndex   ),                                                                          // Read second integer address
+    .readBitIndex    ({name}_readBitIndex   ),                                                                          // Read first boolean address
+    .reaDBitIndex    ({name}_reaDBitIndex   ),                                                                          // Read second boolean address
+    .readInt         ({name}_readInt        ),                                                                          // First integer data read
+    .reaDInt         ({name}_reaDInt        ),                                                                          // Second integer data read
+    .readBit         ({name}_readBit        ),                                                                         // First  boolean data read
+    .reaDBit         ({name}_reaDBit        ));                                                                         // Second boolean data read
 """, "moduleName", m(), "name", n());
      }
    } // Memory
@@ -1813,13 +1884,13 @@ module {name};                                                                  
   integer       sourceIntId;                                                                                            // Id of source int
   integer      source2IntId;                                                                                            // Id of source2 int
   integer       targetIntId;                                                                                            // Id of target int
-  integer      sourceBitId;                                                                                            // Id of source bool
-  integer      targetBitId;                                                                                            // Id of target bool
-  integer        sourceBit;                                                                                            // Source value for a boolean  operation obtained from a variable
+  integer       sourceBitId;                                                                                            // Id of source bool
+  integer       targetBitId;                                                                                            // Id of target bool
+  integer        sourceBit;                                                                                             // Source value for a boolean  operation obtained from a variable
   integer         sourceInt;                                                                                            // Source value for an integer operation obtained from a variable
   integer        source2Int;                                                                                            // Second source value for an integer operation obtained from a variable
   integer         targetInt;                                                                                            // Computed target integer value to be loaded into a variable
-  integer        targetBit;                                                                                            // Computed target boolean value to be loaded into a variable
+  integer        targetBit;                                                                                             // Computed target boolean value to be loaded into a variable
 """);
 
         /*Declare integers*/if (numberOfInts > 0) out.write(substitute("""
@@ -1840,12 +1911,16 @@ module {name};                                                                  
 
         for(Memory m : memories)                                                                                        // Control registers for each memory
          {out.write("\n// Memory module: "+ m.n() + "\n");                                                              // Memory module title
-          out.write("  reg     "+ pName(m.        vReadBit())+";\n");                                                   // Boolean read from memory
+          out.write("  reg     "+ pName(m.        vReadBit())+";\n");                                                   // First boolean read from memory
+          out.write("  reg     "+ pName(m.        vReaDBit())+";\n");                                                   // Second boolean read from memory
           out.write("  reg     "+ pName(m.       vWriteBit())+"; initial "+pName(m.       vWriteBit()) + "= 0;\n");     // Boolean to write into memory
-          out.write("  integer "+ pName(m.        vReadInt())+";\n");                                                   // Integer read from memory
+          out.write("  integer "+ pName(m.        vReadInt())+";\n");                                                   // First integer read from memory
+          out.write("  integer "+ pName(m.        vReaDInt())+";\n");                                                   // Second integer read from memory
           out.write("  integer "+ pName(m.       vWriteInt())+"; initial "+pName(m.       vWriteInt()) + "= 0;\n");     // Integer to write into memory
-          out.write("  integer "+ pName(m.   vReadIntIndex())+"; initial "+pName(m.   vReadIntIndex()) + "= 0;\n");     // Index at which to read an integer from memory
-          out.write("  integer "+ pName(m.   vReadBitIndex())+"; initial "+pName(m.   vReadBitIndex()) + "= 0;\n");     // Index within an integer from which to get a bit to make a boolean
+          out.write("  integer "+ pName(m.   vReadIntIndex())+"; initial "+pName(m.   vReadIntIndex()) + "= 0;\n");     // Index at which to read first integer from memory
+          out.write("  integer "+ pName(m.   vReaDIntIndex())+"; initial "+pName(m.   vReaDIntIndex()) + "= 0;\n");     // Index at which to read second integer from memory
+          out.write("  integer "+ pName(m.   vReadBitIndex())+"; initial "+pName(m.   vReadBitIndex()) + "= 0;\n");     // Index within first integer from which to get a bit
+          out.write("  integer "+ pName(m.   vReaDBitIndex())+"; initial "+pName(m.   vReaDBitIndex()) + "= 0;\n");     // Index within second integer from which to get a bit
           out.write("  integer "+ pName(m.  vWriteIntIndex())+"; initial "+pName(m.  vWriteIntIndex()) + "= 0;\n");     // Index at which to write an integer into memory
           out.write("  integer "+ pName(m.  vWriteBitIndex())+"; initial "+pName(m.  vWriteBitIndex()) + "= 0;\n");     // Index within an integer at which to set a bit to represent a boolean
           out.write("  reg     "+ pName(m. vWriteIntEnable())+"; initial "+pName(m. vWriteIntEnable()) + "= 0;\n");     // Write enable when writing integer data into memory
@@ -2002,8 +2077,10 @@ endmodule
       end
 
       if ({size} % N != 0) $fwrite(traceFile, "\\n");
-      $fwrite(traceFile, "  ReadIntIndex = %8d\\n", {memoryName}_readIntIndex   );                                      // Index at which to read an integer from memory
-      $fwrite(traceFile, "  ReadBitIndex = %8d\\n", {memoryName}_readBitIndex   );                                      // Index within an integer from which to get a bit to make a boolean
+      $fwrite(traceFile, "  ReadIntIndex = %8d\\n", {memoryName}_readIntIndex   );                                      // Index at which to read firstinteger from memory
+      $fwrite(traceFile, "  ReaDIntIndex = %8d\\n", {memoryName}_reaDIntIndex   );                                      // Index at which to read second integer from memory
+      $fwrite(traceFile, "  ReadBitIndex = %8d\\n", {memoryName}_readBitIndex   );                                      // Index within first integer from which to get a bit
+      $fwrite(traceFile, "  ReaDBitIndex = %8d\\n", {memoryName}_reaDBitIndex   );                                      // Index within second integer from which to get a bit
       $fwrite(traceFile, " WriteIntIndex = %8d\\n", {memoryName}_writeIntIndex  );                                      // Index at which to write an integer into memory
       $fwrite(traceFile, " WriteBitIndex = %8d\\n", {memoryName}_writeBitIndex );                                       // Index within an integer at which to set a bit to represent a boolean
       $fwrite(traceFile, "      WriteInt = %8d\\n", {memoryName}_writeInt       );                                      // Integer to write into memory
@@ -3076,9 +3153,9 @@ Memory 0
    }
 
   static void newTests()                                                                                                // Tests being worked on
-   {//oldTests();
+   {oldTests();
     //test_memory(!true);
-    test_addition(!true);
+    //test_addition(!true);
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
