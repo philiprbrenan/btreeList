@@ -1,5 +1,4 @@
 //----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
 // Create a micro-coded cpu in synthesizable Verilog from a Java program coded using integers, bits, bints and memory
 // Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2026
 //----------------------------------------------------------------------------------------------------------------------
@@ -976,7 +975,7 @@ public class Program extends Test                                               
   static int ib (int I) {return I * ib();}                                                                              // Number of bytes in a number of integers
   static Int ib (Int I) {return I.Mul(ib());}                                                                           // Number of bytes in a number of integers
 
-  final class Memory                                                                                                    // Memory made of units
+  class Memory                                                                                                          // Memory made of units
    {final String name;                                                                                                  // Optional name for the memory
     private final int id;                                                                                               // Unique identifier for this memory
     private int[]units;                                                                                                 // Bytes of main memory
@@ -1815,8 +1814,8 @@ cd {f}; yosys -q {y}                                                            
     final int       execSteps = steps;                                                                                  // Number of execution steps
     final int        codeSize = codeSize();                                                                             // Original uncompressed code size
     final int instructionSets;                                                                                          // Number of instruction equivalence classes
-///    final Memory    intMemory;                                                                                          // Integer memory
-///    final Memory    bitMemory;                                                                                          // Boolean memory
+    final Memory    intMemory;                                                                                          // Integer memory
+    final Memory    bitMemory;                                                                                          // Boolean memory
 
 //    GenerateVerilog(int InstructionSets)                                                                                // Constructor records the number of instruction equivalence classes
 //     {instructionSets = InstructionSets;
@@ -1864,8 +1863,15 @@ cd {f}; yosys -q {y}                                                            
 
       int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
-///      intMemory = new Memory(numberOfInts);                                                                             // Memory for integers
-///      bitMemory = new Memory(numberOfBits);                                                                             // Memory for bits
+      intMemory = new Memory(numberOfInts)                                                                              // Memory for integers
+       {String dumpJava ()    {return "";}
+        String dumpVerilog () {return "";}
+       };
+
+      bitMemory = new Memory(numberOfBits)                                                                             // Memory for bits
+       {String dumpJava ()    {return "";}
+        String dumpVerilog () {return "";}
+       };
 
       for(I i : code) {compiling(i); instructionMatches.add(i);}                                                        // Match instructions
       pcConstantArray = verilogArrays().new Array("pcConstant", pcConstant());                                          // Instruction to variable or memory used by the instruction. Defined here so that the state enum can be generated
@@ -2067,7 +2073,7 @@ endmodule
 //D2 Dumps                                                                                                              // Dump memory, variables, registers
 
     String dumpVerilogMemoryInDecimal (Memory M)                                                                        // Dump memory in decimal
-     {return substitute("""
+     {final String h = substitute("""
 
   task {dumpVerilogMemoryInDecimalName};                                                                                // Dump verilog memories in decimal
     integer i;
@@ -2075,8 +2081,18 @@ endmodule
     parameter integer N = 10;
     begin
 `ifndef SYNTHESIS
-      $fwrite(traceFile, "Memory %s\\n", "{memoryId}");
+""", "dumpVerilogMemoryInDecimalName", M.dumpVerilogMemoryInDecimalName());
 
+      final String m;
+      if (M.name == null) m = substitute("""
+      $fwrite(traceFile, "Memory {memoryId}\\n");
+""", "memoryId", M.i());
+
+      else                m = substitute("""
+      $fwrite(traceFile, "Memory {memoryId} {n}\\n");
+""", "memoryId", M.i(), "n", M.name);
+
+      final String t = substitute("""
       $fwrite(traceFile, "         ");
       for (i = 0; i < N; i = i + 1)   $fwrite(traceFile, "%4d ", i);
                                       $fwrite(traceFile, "\\n");
@@ -2106,8 +2122,9 @@ endmodule
 `endif
     end
   endtask
-""", "memoryId", M.i(), "memoryName", M.n(), "size", ""+M.size(),
-"dumpVerilogMemoryInDecimalName", M.dumpVerilogMemoryInDecimalName());
+""", "memoryName", M.n(), "size", ""+M.size());
+
+     return h + m + t;
     }
 
 //D2 Instruction Matching                                                                                               // Classify instructions into blocks of identical instructions and then compressing out the duplicates to reduce code size
@@ -2728,6 +2745,24 @@ endmodule
     test_mem(false);
    }
 
+  static void test_namedMemory(boolean Ex)
+   {sayCurrentTestName();
+    final Program P = new Program(new Build().immediate(Ex))
+     {void code()
+       {final Memory m = new Memory(2, "test memory name");
+        final Int a = new Int("a"); a.set(2); m.putInt(new Int(1), a);
+        dumpProgramState("aaaa");
+        scDieAreaX = 500; scDieAreaY = 500;
+        execute();
+       }
+     };
+   }
+
+  static void test_namedMemory()
+   {test_namedMemory(true);
+    test_namedMemory(false);
+   }
+
   static void test_memory(boolean Ex)
    {sayCurrentTestName();
     final Program P = new Program(new Build().immediate(Ex).memory(2))
@@ -3192,8 +3227,8 @@ Memory 0
 
   static void newTests()                                                                                                // Tests being worked on
    {oldTests();
-    test_memory(!true);
-    //test_addition(!true);
+    //test_memory(!true);
+    test_namedMemory();
    }
 
   public static void main(String[] args)                                                                                // Test if called as a program
