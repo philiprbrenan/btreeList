@@ -167,8 +167,8 @@ public class Program extends Test                                               
   int      targetInt(int V)     {targetIntValid(true); return program().targetInt  = V;}
   boolean  targetBit(boolean V) {targetBitValid(true); return program().targetBit = V;}
 
-  boolean targetBitValid()          {return program().targetBitValid;}
-  boolean targetBitValid(boolean V) {return program().targetBitValid = V;}
+  boolean targetBitValid()           {return program().targetBitValid;}
+  boolean targetBitValid(boolean V)  {return program().targetBitValid = V;}
 
   boolean targetIntValid ()          {return program().targetIntValid;}
   boolean targetIntValid (boolean V) {return program().targetIntValid = V;}
@@ -1409,8 +1409,8 @@ public class Program extends Test                                               
   input  wire    writeBitEnable,                                                                                        // Write enabled for a boolean
   input  reg[31:0] writeIntIndex,                                                                                       // Write Integer address
   input  reg[31:0] writeBitIndex,                                                                                       // Write boolean address
-  input  integer writeInt,                                                                                              // Write data
-  input  integer writeBit,                                                                                              // Write data
+  input  integer        writeInt,                                                                                       // Write integer
+  input  reg            writeBit,                                                                                       // Write boolean
   input  reg[31:0] read1IntIndex,                                                                                       // Read first  integer address
   input  reg[31:0] read2IntIndex,                                                                                       // Read second integer address
   input  reg[31:0] read3IntIndex,                                                                                       // Read third integer address
@@ -1935,8 +1935,8 @@ cd {f}; yosys -q {y}                                                            
      {int countInstructionSets = 0;                                                                                     // Count of instructions in instruction set before we make it final
 
       intMemory = new Memory(numberOfInts, "Ints")                                                                      // Memory for integers
-       {String dumpJava ()    {return "";}
-        String dumpVerilog () {return "";}
+       {String            dumpJava () {return "";}
+        String         dumpVerilog () {return "";}
        };
 
       bitMemory = new Memory(numberOfBits, "Bits")                                                                      // Memory for bits
@@ -1976,16 +1976,16 @@ module {name};                                                                  
 `endif
   integer                pc;                                                                                            // Program counter for stepping through user code
   integer         traceFile;                                                                                            // Write verilog trace records to this file
-  reg[31:0]       sourceIntId;                                                                                          // Id of source int
-  reg[31:0]      source2IntId;                                                                                          // Id of source2 int
-  reg[31:0]       targetIntId;                                                                                          // Id of target int
-  reg[31:0]       sourceBitId;                                                                                          // Id of source bool
-  reg[31:0]       targetBitId;                                                                                          // Id of target bool
-  integer        sourceBit;                                                                                             // Source value for a boolean  operation obtained from a variable
+  reg[31:0]     sourceIntId;                                                                                            // Id of source int
+  reg[31:0]    source2IntId;                                                                                            // Id of source2 int
+  reg[31:0]     targetIntId;                                                                                            // Id of target int
+  reg[31:0]     sourceBitId;                                                                                            // Id of source bool
+  reg[31:0]     targetBitId;                                                                                            // Id of target bool
+  reg             sourceBit;                                                                                            // Source value for a boolean  operation obtained from a variable
   integer         sourceInt;                                                                                            // Source value for an integer operation obtained from a variable
   integer        source2Int;                                                                                            // Second source value for an integer operation obtained from a variable
-  integer        targetInt;                                                                                             // Computed target integer value to be loaded into a variable
-  integer        targetBit;                                                                                             // Computed target boolean value to be loaded into a variable
+  integer         targetInt;                                                                                            // Computed target integer value to be loaded into a variable
+  reg             targetBit;                                                                                            // Computed target boolean value to be loaded into a variable
 """);
 
       /*Declare integers*/if (numberOfInts > 0) put(substitute("""
